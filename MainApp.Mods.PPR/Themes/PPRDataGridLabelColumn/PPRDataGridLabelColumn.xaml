@@ -1,0 +1,21 @@
+﻿<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:ppr="clr-namespace:MainApp.Mods.PPR">
+
+    <Style TargetType="{x:Type ppr:PPRDataGridLabelColumn}">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type ppr:PPRDataGridLabelColumn}">
+                    <Label
+                        HorizontalContentAlignment="{TemplateBinding HorizontalMessageAlignment}"
+                        VerticalContentAlignment="{TemplateBinding VerticalMessageAlignment}"
+                        BorderBrush="{TemplateBinding BorderBrush}"
+                        BorderThickness="{TemplateBinding BorderThickness}"
+                        Content="{TemplateBinding Message}"
+                        TextBlock.Foreground="{TemplateBinding Foreground}" />
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+</ResourceDictionary>

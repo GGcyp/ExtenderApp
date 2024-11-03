@@ -1,0 +1,14 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AppHost.Extensions.DependencyInjection\AppHost.Extensions.DependencyInjection.csproj" />
+    <ProjectReference Include="..\AppHost.Extensions.Configuration\AppHost.Extensions.Configuration.csproj" />
+  </ItemGroup>
+
+</Project>

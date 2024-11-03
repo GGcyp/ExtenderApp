@@ -1,0 +1,9 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <ResourceDictionary.MergedDictionaries>
+        <ResourceDictionary Source="/MainApp.Mods.PPR;component/Themes/PPRDataGrid/PPRDataGrid.xaml" />
+        <ResourceDictionary Source="/MainApp.Mods.PPR;component/Themes/PPRDataGridTextColumn/PPRDataGridTextColumn.xaml" />
+        <ResourceDictionary Source="/MainApp.Mods.PPR;component/Themes/PPRPeriodTreeViewItem/PPRPeriodTreeViewItem.xaml" />
+        <ResourceDictionary Source="/MainApp.Mods.PPR;component/Themes/PPRDataGridLabelColumn/PPRDataGridLabelColumn.xaml" />
+        <ResourceDictionary Source="/MainApp.Mods.PPR;component/Themes/PPRInventoryTreeViewItem/PPRInventoryTreeViewItem.xaml" />
+    </ResourceDictionary.MergedDictionaries>
+</ResourceDictionary>

@@ -1,0 +1,116 @@
+﻿using System.Reflection;
+using AppHost.Common;
+
+
+namespace AppHost.Builder
+{
+    /// <summary>
+    /// startup扩展程序
+    /// </summary>
+    public static class StartupExtensions
+    {
+        /// <summary>
+        /// 加载指定文件夹下所有程序集，并启动其中的starup
+        /// </summary>
+        /// <param name="builder"></param>
+        /// <param name="path"></param>
+        /// <remarks>注意不要重复加载</remarks>
+        /// <returns></returns>
+        public static IHostApplicationBuilder FindStarupForFolder(this IHostApplicationBuilder builder, string folderName)
+        {
+            string folderPath = Path.Combine(builder.HostEnvironment.ContentRootPath, folderName);
+            if (!Path.IsPathRooted(folderPath)) throw new ArgumentException("path is not rooted");
+
+            object[] args = new object[1] { builder };
+
+            var assmblies = AppHostAssemblyExtensions.LoadAssemblyForFolder(folderPath);
+
+            foreach (var assmbly in assmblies)
+            {
+                builder.FindStarupForAssembly(assmbly, args);
+            }
+
+            return builder;
+        }
+
+        /// <summary>
+        /// 加载指定文件夹下所有程序集，并启动其中的starup
+        /// </summary>
+        /// <param name="builder"></param>
+        /// <param name="path"></param>
+        /// <remarks>注意不要重复加载</remarks>
+        /// <returns></returns>
+        public static IHostApplicationBuilder FindStarupForFolder<TStartup>(this IHostApplicationBuilder builder, string folderName, out List<TStartup> startups) where TStartup : Startup
+        {
+            string folderPath = Path.Combine(builder.HostEnvironment.ContentRootPath, folderName);
+            if (!Path.IsPathRooted(folderPath)) throw new ArgumentException("path is not rooted");
+
+            startups = new List<TStartup>();
+
+            object[] args = new object[1] { builder };
+
+            var assmblies = AppHostAssemblyExtensions.LoadAssemblyForFolder(folderPath);
+
+            foreach (var assmbly in assmblies)
+            {
+                var startup = builder.FindStarupForAssembly<TStartup>(assmbly, args);
+                if (startup is null) continue;
+                startups.Add(startup);
+            }
+
+            return builder;
+        }
+
+        /// <summary>
+        /// 加载程序集，并启动其中的starup
+        /// </summary>
+        /// <param name="builder"></param>
+        /// <param name="path"></param>
+        /// <remarks>注意不要重复加载</remarks>
+        /// <returns></returns>
+        public static IHostApplicationBuilder FindStarupForLoadAssemblyFile(this IHostApplicationBuilder builder, string path)
+        {
+            if (!Path.IsPathRooted(path)) throw new ArgumentException("path is not rooted");
+            return builder.FindStarupForAssembly(Assembly.LoadFrom(path));
+        }
+
+        /// <summary>
+        /// 启动程序集中的starup
+        /// </summary>
+        /// <param name="builder"></param>
+        /// <param name="path"></param>
+        /// <returns></returns>
+        public static IHostApplicationBuilder FindStarupForAssembly(this IHostApplicationBuilder builder, Assembly assembly, object?[]? args = null)
+        {
+            if (assembly == null) throw new ArgumentNullException(nameof(assembly));
+            var startType = assembly.GetTypes().FirstOrDefault(t => !t.IsAbstract && Startup.Type.IsAssignableFrom(t));
+            if (startType is null) return builder;
+
+            var startMethod = startType.GetMethod(Startup.StartMethodName);
+            if (args == null) args = new object[] { builder };
+            startMethod?.Invoke(Activator.CreateInstance(startType), args);
+
+            return builder;
+        }
+
+        /// <summary>
+        /// 启动程序集中的starup
+        /// </summary>
+        /// <param name="builder"></param>
+        /// <param name="path"></param>
+        /// <returns></returns>
+        public static TStartup? FindStarupForAssembly<TStartup>(this IHostApplicationBuilder builder, Assembly assembly, object?[]? args = null) where TStartup : Startup
+        {
+            if (assembly == null) throw new ArgumentNullException(nameof(assembly));
+            var startType = assembly.GetTypes().FirstOrDefault(t => !t.IsAbstract && Startup.Type.IsAssignableFrom(t));
+            if (startType is null) return null;
+
+            var startMethod = startType.GetMethod(Startup.StartMethodName);
+            if (args == null) args = new object[] { builder };
+            TStartup startup = (Activator.CreateInstance(startType) as TStartup)!;
+            startMethod?.Invoke(startup, args);
+
+            return startup;
+        }
+    }
+}

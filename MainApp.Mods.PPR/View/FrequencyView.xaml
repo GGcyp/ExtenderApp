@@ -1,0 +1,32 @@
+﻿<Window
+    x:Class="MainApp.Mods.PPR.FrequencyView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:local="clr-namespace:MainApp.Mods.PPR"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    Title="FrequencyView"
+    Width="200"
+    Height="110"
+    mc:Ignorable="d">
+    <StackPanel Margin="10,0,10,0">
+        <TextBlock HorizontalAlignment="Center" Text="请输入期数" />
+        <TextBox x:Name="textBox_Frequency" />
+        <Grid Margin="0,5,0,0">
+            <Button
+                Width="50"
+                Height="25"
+                Margin="25,0,0,25"
+                HorizontalAlignment="Left"
+                Click="ConfirmButton_Click"
+                Content="确认" />
+            <Button
+                Width="50"
+                Height="25"
+                Margin="0,0,25,25"
+                HorizontalAlignment="Right"
+                Click="CancellationButton_Click"
+                Content="取消" />
+        </Grid>
+    </StackPanel>
+</Window>
