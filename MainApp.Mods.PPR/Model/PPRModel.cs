@@ -2,7 +2,7 @@
 using MainApp.Models.Converters;
 using MainApp.ViewModels;
 
-namespace MainApp.Mods.PPR
+namespace MainApp.Mod.PPR
 {
     /// <summary>
     /// 工程支数据的读取和写入

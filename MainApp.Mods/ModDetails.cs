@@ -1,39 +1,37 @@
-﻿using System.Drawing;
-using MainApp.Abstract;
+﻿using MainApp.Mods;
 
-namespace MainApp.Mods
+namespace MainApp.Mod
 {
     /// <summary>
     /// 模组详情类
     /// </summary>
-    public sealed class ModDetails
+    internal sealed class ModDetails
     {
+        public ModDetails(ModeInfo modeInfo)
+        {
+            this.modeInfo = modeInfo;
+        }
+
+        private ModeInfo modeInfo;
+
         /// <summary>
         /// 模组标题
         /// </summary>
-        public string Title { get; set; }
+        public string Title => modeInfo.ModTitle;
 
         /// <summary>
         /// 模组描述
         /// </summary>
-        public string Description { get; set; }
+        public string Description => modeInfo.ModDescription;
 
         /// <summary>
-        /// 模组图标
+        /// 模组主程序集地址
         /// </summary>
-        public Image Icon { get; set; }
+        public string? ModPath { get; set; }
 
         /// <summary>
-        /// 获取模组主窗口
+        /// 模组窗口类型
         /// </summary>
-        public Func<IView> FactoryMainView {  get; set; }
-
-        public bool IsEmpty
-        {
-            get
-            {
-                return string.IsNullOrEmpty(Title);
-            }
-        }
+        public Type? viewType { get; set; }
     }
 }

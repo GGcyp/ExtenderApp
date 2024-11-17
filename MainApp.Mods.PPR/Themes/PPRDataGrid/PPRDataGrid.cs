@@ -2,7 +2,7 @@
 using System.Windows.Controls;
 using MainApp.Common.ObjectPool;
 
-namespace MainApp.Mods.PPR
+namespace MainApp.Mod.PPR
 {
     /// <summary>
     /// PPR数据显示控件

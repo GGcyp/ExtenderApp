@@ -1,4 +1,4 @@
-﻿namespace MainApp.Mods.PPR
+﻿namespace MainApp.Mod.PPR
 {
     /// <summary>
     /// 实体，工程记录头文件

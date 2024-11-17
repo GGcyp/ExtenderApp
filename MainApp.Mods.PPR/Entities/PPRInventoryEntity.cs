@@ -1,4 +1,4 @@
-﻿namespace MainApp.Mods.PPR
+﻿namespace MainApp.Mod.PPR
 {
     /// <summary>
     /// 清单项工程付款及工程量数据

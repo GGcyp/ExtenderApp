@@ -6,15 +6,10 @@ namespace MainApp.MainView
 {
     internal class MainViewStartup : Startup
     {
-        public override void Start(IHostApplicationBuilder builder)
+        protected override void AddService(IServiceCollection services)
         {
-            AddService(builder.Services);
-        }
-
-        private void AddService(IServiceCollection services)
-        {
-            services.AddScoped<IMainView, MainViewWindow>();
-            services.AddScoped<MainViewModel>();
+            services.AddSingleton<IMainViewWindow, MainViewWindow>();
+            services.AddSingleton<MainViewModel>();
         }
     }
 }

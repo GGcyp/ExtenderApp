@@ -3,7 +3,7 @@ using MainApp.Common.ObjectPool;
 using MainApp.ViewModels;
 using PropertyChanged;
 
-namespace MainApp.Mods.PPR
+namespace MainApp.Mod.PPR
 {
     /// <summary>
     /// PPREntity的数据交互类

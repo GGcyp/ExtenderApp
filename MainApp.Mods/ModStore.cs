@@ -1,6 +1,6 @@
 ﻿using MainApp.Common.Data;
 
-namespace MainApp.Mods
+namespace MainApp.Mod
 {
     /// <summary>
     /// 模型详情存储

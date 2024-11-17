@@ -2,7 +2,7 @@
 using MainApp.ViewModels;
 using PropertyChanged;
 
-namespace MainApp.Mods.PPR
+namespace MainApp.Mod.PPR
 {
     /// <summary>
     /// PPRInventoryEntity的数据交互类

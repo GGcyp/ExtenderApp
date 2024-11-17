@@ -1,6 +1,6 @@
 ﻿using MainApp.Common.Data;
 
-namespace MainApp.Mods.PPR
+namespace MainApp.Mod.PPR
 {
     /// <summary>
     /// 存储PPREntity的节点

@@ -3,7 +3,7 @@ using System.Windows;
 using System.Windows.Controls;
 using MainApp.Common.ObjectPool;
 
-namespace MainApp.Mods.PPR
+namespace MainApp.Mod.PPR
 {
     public class PPRInventoryTreeViewItem : TreeViewItem
     {

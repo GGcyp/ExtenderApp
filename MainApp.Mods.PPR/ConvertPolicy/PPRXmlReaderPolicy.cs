@@ -5,7 +5,7 @@ using MainApp.Common;
 using MainApp.Models;
 using MainApp.Models.Converters;
 
-namespace MainApp.Mods.PPR
+namespace MainApp.Mod.PPR
 {
     /// <summary>
     /// 专门处理PPRHead到XML的类

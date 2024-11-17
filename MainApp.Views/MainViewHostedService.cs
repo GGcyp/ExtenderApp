@@ -5,16 +5,16 @@ namespace MainApp.Views
 {
     internal class MainViewHostedService : BackgroundService
     {
-        private readonly IMainView _mainView;
+        private readonly IMainWindow _mainWindow;
 
-        public MainViewHostedService(IMainView mainView)
+        public MainViewHostedService(IMainWindow mainView)
         {
-            _mainView = mainView;
+            _mainWindow = mainView;
         }
 
         protected override Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            _mainView.Show();
+            _mainWindow.Show();
             return Task.CompletedTask;
         }
     }

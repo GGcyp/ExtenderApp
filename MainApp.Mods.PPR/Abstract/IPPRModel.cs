@@ -1,6 +1,6 @@
 ﻿using MainApp.Abstract;
 
-namespace MainApp.Mods.PPR
+namespace MainApp.Mod.PPR
 {
     public interface IPPRModel : IModel<PPRDto>
     {

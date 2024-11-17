@@ -4,7 +4,7 @@ using MainApp.Common.Data;
 using MainApp.Models;
 using MainApp.Models.Converters;
 
-namespace MainApp.Mods.PPR
+namespace MainApp.Mod.PPR
 {
     internal class PPRExcelPolicy : ExcelPolicy<object,object>
     {

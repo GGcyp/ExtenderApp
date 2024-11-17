@@ -1,7 +1,7 @@
 ﻿using MainApp.ViewModels;
 using PropertyChanged;
 
-namespace MainApp.Mods.PPR
+namespace MainApp.Mod.PPR
 {
     /// <summary>
     /// PPRPeriodQuantityDot 类表示一个与 PPRPeriodQuantityEntity周期数量相关的数据点。

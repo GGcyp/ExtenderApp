@@ -1,7 +1,7 @@
 ﻿
 namespace MainApp.Abstract
 {
-    public interface IMainView : IWindowView
+    public interface IMainView : IWindow
     {
 
     }

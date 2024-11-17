@@ -4,7 +4,7 @@ using MainApp.Common;
 using MainApp.ViewModels;
 using PropertyChanged;
 
-namespace MainApp.Mods.PPR
+namespace MainApp.Mod.PPR
 {
     [AddINotifyPropertyChangedInterface]
     public class PPRViewModel : BaseViewModel<IPPRModel>

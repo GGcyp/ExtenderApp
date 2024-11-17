@@ -11,6 +11,6 @@
     DataContext="{x:Type local:MainViewModel}"
     mc:Ignorable="d">
     <Grid>
-        <TabControl />
+        <ContentControl x:Name="viewControl" />
     </Grid>
 </Window>

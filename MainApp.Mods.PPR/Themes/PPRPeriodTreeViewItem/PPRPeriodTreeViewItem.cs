@@ -13,7 +13,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 
-namespace MainApp.Mods.PPR
+namespace MainApp.Mod.PPR
 {
     public class PPRPeriodTreeViewItem : TreeViewItem
     {

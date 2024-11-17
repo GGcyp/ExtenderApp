@@ -1,17 +1,12 @@
 ﻿using AppHost.Extensions.DependencyInjection;
 using MainApp.Models.Converters;
 using MainApp.Models.Converters.Extensions;
+using AppHost.Builder;
 
-namespace MainApp.Mods.PPR
+namespace MainApp.Mod.PPR
 {
-    public class PPRModStartup : ModStartup
+    public class PPRModStartup : Startup
     {
-        public override void CreateModDetails(ModDetails details)
-        {
-            details.Title = "工程进度插件";
-            details.Description = "记录工程进度数据";
-        }
-
         protected override void AddService(IServiceCollection services)
         {
             services.AddTransient<PPRViewModel>();

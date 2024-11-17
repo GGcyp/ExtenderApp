@@ -1,7 +1,7 @@
 ﻿using MainApp.Views.Themes;
 using PropertyChanged;
 
-namespace MainApp.Mods.PPR
+namespace MainApp.Mod.PPR
 {
     /// <summary>
     /// PPR详细列表数据标题类

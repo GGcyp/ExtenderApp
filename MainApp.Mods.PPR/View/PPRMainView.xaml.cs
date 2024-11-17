@@ -5,7 +5,7 @@ using MainApp.Views.Expansions;
 using Microsoft.Win32;
 
 
-namespace MainApp.Mods.PPR
+namespace MainApp.Mod.PPR
 {
     /// <summary>
     /// PPRMainView.xaml 的交互逻辑

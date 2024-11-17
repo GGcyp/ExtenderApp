@@ -18,10 +18,9 @@ namespace MainApp.MainView
     /// <summary>
     /// MainViewWindow.xaml 的交互逻辑
     /// </summary>
-    public partial class MainViewWindow : Window,IMainView
+    public partial class MainViewWindow : Window, IMainViewWindow
     {
         private readonly MainViewModel _model;
-        public IViewModel ViewModel => _model;
 
         public MainViewWindow(MainViewModel model)
         {
@@ -30,6 +29,5 @@ namespace MainApp.MainView
             _model = model;
             DataContext = model;
         }
-
     }
 }

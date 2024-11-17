@@ -1,15 +1,12 @@
 ﻿using MainApp.Abstract;
-using MainApp.Mods;
+using MainApp.ViewModels;
 
 namespace MainApp.MainView
 {
-    public class MainViewModel : IViewModel
+    public class MainViewModel : BaseViewModel<MainModel>
     {
-        private readonly ModStore _store;
-
-        public MainViewModel(ModStore store)
+        public MainViewModel(MainModel model, IDispatcher dispatcher) : base(model, dispatcher)
         {
-            _store = store;
         }
     }
 }
