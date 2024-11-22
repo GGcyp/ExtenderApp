@@ -37,7 +37,9 @@ namespace AppHost.Extensions.DependencyInjection
                 if (types is null) return default;
 
                 Type elementType = types[0];
+                object[] objects = new object[1];
 
+                // 使用反射创建 List<T> 的类型
                 Type listType = typeof(List<>).MakeGenericType(elementType);
                 // 使用反射创建 List<T> 的实例
                 object listInstance = Activator.CreateInstance(listType);
@@ -46,7 +48,6 @@ namespace AppHost.Extensions.DependencyInjection
 
 
                 var collection = p.GetRequiredService<IServiceCollection>();
-                object[] objects = new object[1];
 
 
                 foreach (var item in collection)

@@ -1,0 +1,145 @@
+﻿<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:ppr="clr-namespace:ExtenderApp.Mod.PPR"
+    xmlns:views="clr-namespace:ExtenderApp.Views.Themes;assembly=MainApp.Views">
+
+    <Style TargetType="{x:Type ppr:PPRInventoryTreeViewItem}">
+        <Setter Property="ItemsSource" Value="{Binding Periods}" />
+        <Setter Property="BorderBrush" Value="#AAAAAA" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type ppr:PPRInventoryTreeViewItem}">
+                    <Grid x:Name="item">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*" />
+                            <RowDefinition x:Name="itemsRowDefinition" Height="0" />
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition SharedSizeGroup="ProjectID" />
+                            <ColumnDefinition SharedSizeGroup="InventoryProjectName" />
+                            <ColumnDefinition SharedSizeGroup="ProjectFeatureDescription" />
+                            <ColumnDefinition SharedSizeGroup="Unit" />
+                            <ColumnDefinition SharedSizeGroup="UnitPrice" />
+                            <ColumnDefinition SharedSizeGroup="TotalAmount" />
+                            <ColumnDefinition SharedSizeGroup="BillOfQuantitiesQuantity" />
+                            <ColumnDefinition SharedSizeGroup="CompletedQuantity" />
+                            <ColumnDefinition SharedSizeGroup="ReportedQuantity" />
+                            <ColumnDefinition SharedSizeGroup="RemainingBillQuantity" />
+                            <ColumnDefinition SharedSizeGroup="RemainingActualQuantity" />
+                            <ColumnDefinition SharedSizeGroup="ProjectRemark" />
+                        </Grid.ColumnDefinitions>
+                        <Border
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="1">
+                            <Grid Grid.Column="0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="20" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <views:ExpandSwitch
+                                    Grid.Column="0"
+                                    Background="Transparent"
+                                    IsChecked="{Binding RelativeSource={RelativeSource Templatedparent}, Path=IsExpanded}"
+                                    PathHeight="15"
+                                    PathWidth="15" />
+                                <ppr:PPRDataGridLabelColumn
+                                    Grid.Column="1"
+                                    Margin="5,0,0,0"
+                                    BorderThickness="0"
+                                    Message="{Binding ProjectID}" />
+                            </Grid>
+                        </Border>
+                        <ppr:PPRDataGridLabelColumn
+                            Grid.Column="1"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            Message="{Binding InventoryProjectName}" />
+                        <ppr:PPRDataGridLabelColumn
+                            Grid.Column="2"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            HorizontalMessageAlignment="Left"
+                            Message="{Binding ProjectFeatureDescription}" />
+                        <ppr:PPRDataGridLabelColumn
+                            Grid.Column="3"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            Message="{Binding Unit}" />
+                        <ppr:PPRDataGridLabelColumn
+                            Grid.Column="4"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            Message="{Binding UnitPrice}" />
+                        <ppr:PPRDataGridLabelColumn
+                            Grid.Column="5"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            Message="{Binding TotalAmount}" />
+                        <ppr:PPRDataGridLabelColumn
+                            Grid.Column="6"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            Message="{Binding BillOfQuantitiesQuantity}" />
+                        <ppr:PPRDataGridLabelColumn
+                            Grid.Column="7"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            Message="{Binding CompletedQuantity}" />
+                        <ppr:PPRDataGridLabelColumn
+                            Grid.Column="8"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            Message="{Binding ReportedQuantity}" />
+                        <ppr:PPRDataGridLabelColumn
+                            Grid.Column="9"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            Message="{Binding RemainingBillQuantity}" />
+                        <ppr:PPRDataGridLabelColumn
+                            Grid.Column="10"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            Message="{Binding RemainingActualQuantity}" />
+                        <ppr:PPRDataGridLabelColumn
+                            Grid.Column="11"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            Message="{Binding ProjectRemark}" />
+                        <!--  每次进度的金额  -->
+                        <StackPanel
+                            Grid.Row="1"
+                            Grid.ColumnSpan="12"
+                            Background="#FFFFFF"
+                            Grid.IsSharedSizeScope="True">
+                            <Grid Height="25" DataContext="{TemplateBinding Titles}">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="75" SharedSizeGroup="Frequency" />
+                                    <ColumnDefinition Width="75" SharedSizeGroup="FrequencyAmount" />
+                                    <ColumnDefinition Width="75" SharedSizeGroup="FrequencyQuantity" />
+                                    <ColumnDefinition Width="125" SharedSizeGroup="FrequencyReportedQuantity" />
+                                    <ColumnDefinition Width="150" SharedSizeGroup="FrequencyRemark" />
+                                </Grid.ColumnDefinitions>
+                                <views:TitleLable Grid.Column="0" DataContext="{Binding FrequencyTitle}" />
+                                <views:TitleLable Grid.Column="1" DataContext="{Binding FrequencyAmountTitle}" />
+                                <views:TitleLable Grid.Column="2" DataContext="{Binding FrequencyQuantityTitle}" />
+                                <views:TitleLable Grid.Column="3" DataContext="{Binding FrequencyReportedQuantityTitle}" />
+                                <views:TitleLable
+                                    Grid.Column="4"
+                                    BorderThickness="1,1,2,1"
+                                    DataContext="{Binding FrequencyRemarkTitle}" />
+                            </Grid>
+                            <ItemsPresenter
+                                x:Name="items"
+                                Grid.Row="1"
+                                Visibility="Collapsed" />
+                        </StackPanel>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsExpanded" Value="True">
+                            <Setter TargetName="items" Property="Visibility" Value="Visible" />
+                            <Setter TargetName="itemsRowDefinition" Property="Height" Value="Auto" />
+                        </Trigger>
+                        <DataTrigger Binding="{Binding ElementName=item, Path=IsMouseOver}" Value="true">
+                            <Setter TargetName="item" Property="Background" Value="#D1E3FF" />
+                        </DataTrigger>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter TargetName="item" Property="Background" Value="#004EFF" />
+                            <Setter TargetName="item" Property="TextElement.Foreground" Value="#FFFFFF" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+</ResourceDictionary>

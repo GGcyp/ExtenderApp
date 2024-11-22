@@ -22,10 +22,9 @@ namespace AppHost.Extensions.DependencyInjection
 
         public ServiceProvider(IServiceCollection services)
         {
-            //因为目前只有获取，所以先不进行多线程的保护
             services.AddSingleton(this);
-            services.AddSingleton(services);
 
+            //因为目前只有获取，所以先不进行多线程的保护
             serviceDescriptorDict = services.ToDictionary(sd => sd.ServiceType, sd => sd).ToFrozenDictionary();
             serviceConstructorDetailsDict = new();
         }

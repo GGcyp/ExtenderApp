@@ -12,7 +12,7 @@ namespace AppHost.Common
         public static List<Assembly> LoadAssemblyForFolder(string folderPath)
         {
             List<string> paths = new List<string>();
-            FilePathExtensons.GetAllFiles(folderPath, ref paths, _AssmeblySearchPattern);
+            FilePathHandle.GetAllFiles(folderPath, ref paths, _AssmeblySearchPattern);
             
             List<Assembly> assmblies = new List<Assembly>(paths.Count);
             foreach (var path in paths)

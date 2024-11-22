@@ -1,20 +1,39 @@
 ﻿namespace AppHost.Extensions.Hosting
 {
+    /// <summary>
+    /// 抽象基类BackgroundService，实现IHostedService和IDisposable接口。
+    /// 用于实现需要在后台运行的服务的基类。
+    /// </summary>
     public abstract class BackgroundService : IHostedService, IDisposable
     {
+        /// <summary>
+        /// 私有字段，存储正在执行的任务。
+        /// </summary>
         private Task m_ExecuteTask;
+
+        /// <summary>
+        /// 私有字段，存储取消令牌源。
+        /// </summary>
         private CancellationTokenSource? m_StoppingCts;
 
+        /// <summary>
+        /// 获取当前正在执行的任务。
+        /// </summary>
         public Task ExecuteTask => m_ExecuteTask;
 
         /// <summary>
-        /// 当<see-cref=“IHostedService”/>启动时，会调用此方法。
+        /// 当<see cref="IHostedService"/>启动时，会调用此方法。
         /// 实现应返回一个要在后台执行的任务。
         /// </summary>
         /// <param name="stoppingToken">标识任务已终止</param>
         /// <returns>需要执行的任务</returns>
         protected abstract Task ExecuteAsync(CancellationToken stoppingToken);
 
+        /// <summary>
+        /// 启动服务，创建并执行任务。
+        /// </summary>
+        /// <param name="cancellationToken">取消令牌</param>
+        /// <returns>任务对象</returns>
         public virtual Task StartAsync(CancellationToken cancellationToken)
         {
             //创建链接的取消令牌源: 它允许你将多个取消令牌组合成一个单一的取消令牌源，这样可以简化对多个取消条件的处理。
@@ -32,6 +51,11 @@
             return Task.CompletedTask;
         }
 
+        /// <summary>
+        /// 停止服务，取消正在执行的任务。
+        /// </summary>
+        /// <param name="cancellationToken">取消令牌</param>
+        /// <returns>任务对象</returns>
         public virtual async Task StopAsync(CancellationToken cancellationToken)
         {
             //停止调用而不启动
@@ -55,6 +79,9 @@
             }
         }
 
+        /// <summary>
+        /// 释放资源。
+        /// </summary>
         public void Dispose()
         {
             m_StoppingCts?.Cancel();

@@ -1,11 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace AppHost.Extensions.Hosting
+﻿namespace AppHost.Extensions.Hosting
 {
+    /// <summary>
+    /// 主机环境接口
+    /// </summary>
     public interface IHostEnvironment
     {
         /// <summary>

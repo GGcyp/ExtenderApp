@@ -2,8 +2,6 @@
 {
     public static class ServiceCollectionExtensions
     {
-        #region Add
-
         public static IServiceCollection AddSingleton<TService>(this IServiceCollection services)
         {
             services.Add(ServiceDescriptor.Singleton<TService>());
@@ -143,7 +141,5 @@
             services.Add(new ServiceDescriptor(serviceType, implementationType, lifetime));
             return services;
         }
-
-        #endregion
     }
 }

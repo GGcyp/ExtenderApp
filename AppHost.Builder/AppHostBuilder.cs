@@ -32,6 +32,9 @@ namespace AppHost.Builder
         /// </summary>
         private void AddHostService()
         {
+            Services.AddSingleton(Services);
+            Services.AddSingleton(HostEnvironment);
+
             this.AddHostedServiceExecutor();
         }
 
