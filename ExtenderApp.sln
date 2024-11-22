@@ -16,9 +16,6 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AppHost.Extensions.Configuration", "AppHost.Extensions.Configuration\AppHost.Extensions.Configuration.csproj", "{144AD2E6-7F27-4B0F-BD24-AEEF73C40742}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "3.Mods", "3.Mods", "{464FDC8D-4380-4125-B384-0A55FE9ADD47}"
-	ProjectSection(SolutionItems) = preProject
-		ExtenderApp.Mods.PPR\ExtenderApp.Mods.PPR.csproj = ExtenderApp.Mods.PPR\ExtenderApp.Mods.PPR.csproj
-	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "2.Main", "2.Main", "{15EAE96D-4CAB-4539-B4C4-6D1A40F52297}"
 EndProject
@@ -28,23 +25,25 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MainApp-Avalonia", "MainApp
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MainApp-Avalonia.Desktop", "MainApp-Avalonia.Desktop\MainApp-Avalonia.Desktop.csproj", "{B179E3C8-54D1-4C88-B9FA-577748984B70}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExtenderApp.Abstract", "ExtenderApp.Abstract\ExtenderApp.Abstract.csproj", "{5E722C7E-E2F6-4B4E-9A38-61897F1DC95C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ExtenderApp.Abstract", "ExtenderApp.Abstract\ExtenderApp.Abstract.csproj", "{5E722C7E-E2F6-4B4E-9A38-61897F1DC95C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExtenderApp.MainView", "ExtenderApp.MainView\ExtenderApp.MainView.csproj", "{2E166CBE-A0E2-4A2C-B89C-C5F57C657F45}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ExtenderApp.MainView", "ExtenderApp.MainView\ExtenderApp.MainView.csproj", "{2E166CBE-A0E2-4A2C-B89C-C5F57C657F45}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExtenderApp.Common", "ExtenderApp.Common\ExtenderApp.Common.csproj", "{B0E25176-A5AF-47D3-A942-865DB62B2A95}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ExtenderApp.Common", "ExtenderApp.Common\ExtenderApp.Common.csproj", "{B0E25176-A5AF-47D3-A942-865DB62B2A95}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExtenderApp.Models", "ExtenderApp.Models\ExtenderApp.Models.csproj", "{E1DF24FC-6747-4EDF-8839-2277B7BB0D74}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ExtenderApp.Models", "ExtenderApp.Models\ExtenderApp.Models.csproj", "{E1DF24FC-6747-4EDF-8839-2277B7BB0D74}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExtenderApp.Mods", "ExtenderApp.Mods\ExtenderApp.Mods.csproj", "{7B1C2387-A797-4403-942A-71DD8487A9E9}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ExtenderApp.Mods", "ExtenderApp.Mods\ExtenderApp.Mods.csproj", "{7B1C2387-A797-4403-942A-71DD8487A9E9}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExtenderApp", "ExtenderApp\ExtenderApp.csproj", "{31497CE2-F9F6-450C-8C0E-B0F9F16A63C0}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ExtenderApp", "ExtenderApp\ExtenderApp.csproj", "{31497CE2-F9F6-450C-8C0E-B0F9F16A63C0}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExtenderApp.Common.SupportPackage", "ExtenderApp.SupportPackage\ExtenderApp.Common.SupportPackage.csproj", "{2F43F8CF-65C4-480D-8C75-6717CFA3FFA9}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ExtenderApp.Common.SupportPackage", "ExtenderApp.SupportPackage\ExtenderApp.Common.SupportPackage.csproj", "{2F43F8CF-65C4-480D-8C75-6717CFA3FFA9}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExtenderApp.ViewModels", "ExtenderApp.ViewModels\ExtenderApp.ViewModels.csproj", "{B903D5D7-8A36-4D91-92BB-FD101AD878E0}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ExtenderApp.ViewModels", "ExtenderApp.ViewModels\ExtenderApp.ViewModels.csproj", "{B903D5D7-8A36-4D91-92BB-FD101AD878E0}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExtenderApp.Views", "ExtenderApp.Views\ExtenderApp.Views.csproj", "{B7444FBB-E650-4A1F-AC20-3924353B32DC}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ExtenderApp.Views", "ExtenderApp.Views\ExtenderApp.Views.csproj", "{B7444FBB-E650-4A1F-AC20-3924353B32DC}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ExtenderApp.Mods.PPR", "ExtenderApp.Mods.PPR\ExtenderApp.Mods.PPR.csproj", "{AEA5F7F7-CAAD-4E77-95EB-B27B988D8706}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -116,6 +115,10 @@ Global
 		{B7444FBB-E650-4A1F-AC20-3924353B32DC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B7444FBB-E650-4A1F-AC20-3924353B32DC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B7444FBB-E650-4A1F-AC20-3924353B32DC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AEA5F7F7-CAAD-4E77-95EB-B27B988D8706}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AEA5F7F7-CAAD-4E77-95EB-B27B988D8706}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AEA5F7F7-CAAD-4E77-95EB-B27B988D8706}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AEA5F7F7-CAAD-4E77-95EB-B27B988D8706}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -137,6 +140,7 @@ Global
 		{2F43F8CF-65C4-480D-8C75-6717CFA3FFA9} = {15EAE96D-4CAB-4539-B4C4-6D1A40F52297}
 		{B903D5D7-8A36-4D91-92BB-FD101AD878E0} = {15EAE96D-4CAB-4539-B4C4-6D1A40F52297}
 		{B7444FBB-E650-4A1F-AC20-3924353B32DC} = {15EAE96D-4CAB-4539-B4C4-6D1A40F52297}
+		{AEA5F7F7-CAAD-4E77-95EB-B27B988D8706} = {464FDC8D-4380-4125-B384-0A55FE9ADD47}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {07F96706-A0E9-4590-819E-3841EC1BB7E5}
