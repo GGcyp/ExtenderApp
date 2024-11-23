@@ -13,7 +13,7 @@ namespace AppHost.Extensions.DependencyInjection
         /// <summary>
         /// 所有依赖注入关系字典
         /// </summary>
-        private readonly FrozenDictionary<Type, ServiceDescriptor> serviceDescriptorDict;
+        private FrozenDictionary<Type, ServiceDescriptor> serviceDescriptorDict;
 
         /// <summary>
         /// 并发字典，存储服务构造详情
@@ -22,11 +22,18 @@ namespace AppHost.Extensions.DependencyInjection
 
         public ServiceProvider(IServiceCollection services)
         {
-            services.AddSingleton(this);
+            services.AddSingleton<IServiceProvider>(this);
+            services.AddSingleton(new ResetDependencyOrgan(services, ResetDict));
 
             //因为目前只有获取，所以先不进行多线程的保护
             serviceDescriptorDict = services.ToDictionary(sd => sd.ServiceType, sd => sd).ToFrozenDictionary();
             serviceConstructorDetailsDict = new();
+        }
+
+        private void ResetDict(IServiceCollection services)
+        {
+            serviceDescriptorDict = services.ToDictionary(sd => sd.ServiceType, sd => sd).ToFrozenDictionary();
+            serviceConstructorDetailsDict.Clear();
         }
 
         public object? GetService(Type serviceType)

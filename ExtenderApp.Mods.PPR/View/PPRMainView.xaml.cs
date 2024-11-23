@@ -71,10 +71,10 @@ namespace ExtenderApp.Mod.PPR
             OpenFileDialog openFileDialog = new OpenFileDialog();
             openFileDialog.Filter = _viewModel.Filer;
             openFileDialog.Title = "打开预算工程文件";
-            if ((bool)openFileDialog.ShowDialog()!)
-            {
-                _viewModel.Read(openFileDialog.FileName);
-            }
+            //if ((bool)openFileDialog.ShowDialog()!)
+            //{
+            //    _viewModel.Read(openFileDialog.FileName);
+            //}
         }
 
         private void AddFileClick(object sender, RoutedEventArgs e)
@@ -122,7 +122,7 @@ namespace ExtenderApp.Mod.PPR
                 });
                 frequencyView.ShowDialog();
             }
-            _viewModel.Write("E:\\工程文件\\海口市秀英区西秀中心小学重建项目\\工程进度记录\\进度文件.xml");
+            //_viewModel.Write("E:\\工程文件\\海口市秀英区西秀中心小学重建项目\\工程进度记录\\进度文件.xml");
         }
     }
 }

@@ -1,5 +1,7 @@
 ﻿using AppHost.Builder;
+using AppHost.Extensions.DependencyInjection;
 using AppHost.Extensions.Hosting;
+using ExtenderApp.Abstract;
 
 namespace ExtenderApp.Views
 {

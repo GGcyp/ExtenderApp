@@ -18,7 +18,7 @@ namespace ExtenderApp.Common.File
         private static IServiceCollection AddJsonParser(this IServiceCollection services)
         {
             services.AddSingleton<JsonParser_Microsoft>();
-
+            services.AddSingleton<JsonParserStore>();
             return services;
         }
     }

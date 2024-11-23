@@ -1,4 +1,5 @@
 ﻿using AppHost.Extensions.DependencyInjection;
+using ExtenderApp.Abstract;
 using ExtenderApp.Common.File;
 
 namespace ExtenderApp.Common

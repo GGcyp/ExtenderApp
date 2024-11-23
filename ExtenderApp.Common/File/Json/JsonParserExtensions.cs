@@ -1,4 +1,7 @@
-﻿namespace ExtenderApp.Common
+﻿using ExtenderApp.Abstract;
+using ExtenderApp.Data;
+
+namespace ExtenderApp.Common
 {
     public static class JsonParserExtensions
     {

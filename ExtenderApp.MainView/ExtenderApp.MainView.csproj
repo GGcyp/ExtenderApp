@@ -14,7 +14,9 @@
   <ItemGroup>
     <ProjectReference Include="..\AppHost.Builder\AppHost.Builder.csproj" />
     <ProjectReference Include="..\ExtenderApp.Abstract\ExtenderApp.Abstract.csproj" />
-    <ProjectReference Include="..\ExtenderApp.Mods\ExtenderApp.Mods.csproj" />
+    <ProjectReference Include="..\ExtenderApp.Mod\ExtenderApp.Mod.csproj" />
+    <ProjectReference Include="..\ExtenderApp.Service\ExtenderApp.Service.csproj" />
+    <ProjectReference Include="..\ExtenderApp.Views\ExtenderApp.Views.csproj" />
   </ItemGroup>
 
     <Target Name="PostBuild" AfterTargets="PostBuildEvent">

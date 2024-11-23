@@ -13,6 +13,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\AppHost.Builder\AppHost.Builder.csproj" />
+    <ProjectReference Include="..\ExtenderApp.Abstract\ExtenderApp.Abstract.csproj" />
+    <ProjectReference Include="..\ExtenderApp.Data\ExtenderApp.Data.csproj" />
     <ProjectReference Include="..\ExtenderApp.SupportPackage\ExtenderApp.Common.SupportPackage.csproj" />
   </ItemGroup>
 

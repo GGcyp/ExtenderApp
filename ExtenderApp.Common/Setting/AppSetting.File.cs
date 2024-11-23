@@ -35,5 +35,6 @@
         public static string AppConfigFolderName = "config";
         public static string AppSaveFolderName = "save";
         public static string AppModsFolderName = "mods";
+        public static string AppPackFolderName = "pack";
     }
 }

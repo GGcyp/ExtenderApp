@@ -1,4 +1,7 @@
-﻿namespace ExtenderApp.Common.File
+﻿using ExtenderApp.Abstract;
+using ExtenderApp.Data;
+
+namespace ExtenderApp.Common.File
 {
     /// <summary>
     /// 文件解析器提供者类
@@ -14,11 +17,11 @@
         /// 存储文件解析器列表
         /// </summary>
         /// <remarks>因为不会有特别多的解析器，所以直接使用列表</remarks>
-        private readonly List<T> _list;
+        protected readonly FileParserStore<T> _store;
 
-        public FileParserProvider(IEnumerable<T> list)
+        public FileParserProvider(FileParserStore<T> store)
         {
-            _list = new(list);
+            _store = store;
         }
 
         public IFileParser? GetParser(string libraryName = null)
@@ -30,9 +33,9 @@
             if (string.IsNullOrEmpty(libraryName))
                 libraryName = LibrarySetting.MICROSOFT_LIBRARY;
 
-            for (int i = 0; i < _list.Count; i++)
+            for (int i = 0; i < _store.Count; i++)
             {
-                var item = _list[i];
+                var item = _store[i];
                 if (item.LibraryName == libraryName)
                 {
                     return item;

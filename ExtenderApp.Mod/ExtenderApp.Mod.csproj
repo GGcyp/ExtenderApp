@@ -1,0 +1,21 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AppHost.Builder\AppHost.Builder.csproj" />
+    <ProjectReference Include="..\ExtenderApp.Abstract\ExtenderApp.Abstract.csproj" />
+    <ProjectReference Include="..\ExtenderApp.Common\ExtenderApp.Common.csproj" />
+    <ProjectReference Include="..\ExtenderApp.Models\ExtenderApp.Models.csproj" />
+    <ProjectReference Include="..\ExtenderApp.ViewModels\ExtenderApp.ViewModels.csproj" />
+  </ItemGroup>
+
+	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
+		<Exec Command="copy &quot;$(ProjectDir)\bin\Debug\net8.0\$(ProjectName).dll&quot; &quot;E:\WPF_Project\ExtenderApp\ExtenderApp\bin\Debug\net8.0-windows\bin\$(ProjectName).dll&quot;" />
+	</Target>
+
+</Project>

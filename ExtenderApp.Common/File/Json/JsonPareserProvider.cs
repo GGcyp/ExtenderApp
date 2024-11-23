@@ -1,4 +1,6 @@
-﻿
+﻿using ExtenderApp.Abstract;
+using ExtenderApp.Data;
+
 namespace ExtenderApp.Common.File
 {
     /// <summary>
@@ -11,7 +13,7 @@ namespace ExtenderApp.Common.File
 
         protected override string DefaultLibraryName => LibrarySetting.MICROSOFT_LIBRARY;
 
-        public JsonPareserProvider(IEnumerable<IJsonParser> list) : base(list)
+        public JsonPareserProvider(JsonParserStore store) : base(store)
         {
         }
     }

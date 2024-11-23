@@ -6,17 +6,17 @@ namespace ExtenderApp.Views
     internal class MainViewHostedService : BackgroundService
     {
         private readonly IMainWindow _mainWindow;
-        private readonly IMainView _mainView;
+        private readonly INavigationService _navigationService;
 
-        public MainViewHostedService(IMainWindow mainWindow, IMainView mainView)
+        public MainViewHostedService(IMainWindow mainWindow, INavigationService service)
         {
             _mainWindow = mainWindow;
-            _mainView = mainView;
+            _navigationService = service;
         }
 
         protected override Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            _mainWindow.View = _mainView;
+            _mainWindow.View = _navigationService.NavigateTo(typeof(IMainView), null);
             _mainWindow.Show();
             return Task.CompletedTask;
         }

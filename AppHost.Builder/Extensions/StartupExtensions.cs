@@ -23,7 +23,7 @@ namespace AppHost.Builder
 
             object[] args = new object[1] { builder };
 
-            var assmblies = AppHostAssemblyExtensions.LoadAssemblyForFolder(folderPath);
+            var assmblies = AppHostAssemblyHandle.LoadAssemblyForFolder(folderPath);
 
             foreach (var assmbly in assmblies)
             {
@@ -49,7 +49,7 @@ namespace AppHost.Builder
 
             object[] args = new object[1] { builder };
 
-            var assmblies = AppHostAssemblyExtensions.LoadAssemblyForFolder(folderPath);
+            var assmblies = AppHostAssemblyHandle.LoadAssemblyForFolder(folderPath);
 
             foreach (var assmbly in assmblies)
             {
@@ -58,6 +58,22 @@ namespace AppHost.Builder
                 startups.Add(startup);
             }
 
+            return builder;
+        }
+
+        /// <summary>
+        /// 加载程序集，并启动其中的starup
+        /// </summary>
+        /// <param name="builder">主机程序</param>
+        /// <param name="path">程序集地址</param>
+        /// <param name="startup">启动类</param>
+        /// <remarks>注意不要重复加载</remarks>
+        /// <returns>主机程序</returns>
+        public static IHostApplicationBuilder FindStarupForLoadAssemblyFile<TStartup>(this IHostApplicationBuilder builder, string path, out TStartup startup) where TStartup : Startup
+        {
+            if (!Path.IsPathRooted(path)) throw new ArgumentException("path is not rooted");
+            object[] args = new object[1] { builder };
+            startup = builder.FindStarupForAssembly<TStartup>(Assembly.LoadFrom(path), args);
             return builder;
         }
 

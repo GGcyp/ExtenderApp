@@ -17,7 +17,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\ExtenderApp.Mods\ExtenderApp.Mods.csproj" />
+    <ProjectReference Include="..\ExtenderApp.Views\ExtenderApp.Views.csproj" />
   </ItemGroup>
 
   <ItemGroup>
