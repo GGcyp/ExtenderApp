@@ -3,7 +3,7 @@ using ExtenderApp.Abstract;
 
 namespace ExtenderApp.Views
 {
-    internal class WPF_Dispatcher : IDispatcher
+    internal class WPF_Dispatcher : IDispatcherService
     {
         private readonly Dispatcher _dispatcher;
 

@@ -24,7 +24,7 @@ namespace ExtenderApp
 
             var builder = AppHostApplication.CreateBuilder();
 
-            AddWPFServices(builder);
+            AddWPFData(builder);
 
             //builder.FindStarupForFolder(AppSetting.AppBinFolderName);
             builder.FindStarupForFolder("bin");
@@ -52,9 +52,9 @@ namespace ExtenderApp
         /// 添加WPF的服务
         /// </summary>
         /// <param name="builder"></param>
-        private static void AddWPFServices(IHostApplicationBuilder builder)
+        private static void AddWPFData(IHostApplicationBuilder builder)
         {
-            builder.Services.AddSingleton<IDispatcher>(new WPF_Dispatcher(app.Dispatcher));
+            builder.Services.AddSingleton<IDispatcherService>(new WPF_Dispatcher(app.Dispatcher));
         }
     }
 }

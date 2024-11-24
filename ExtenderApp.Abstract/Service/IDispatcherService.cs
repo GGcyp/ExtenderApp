@@ -3,7 +3,7 @@
     /// <summary>
     /// 调度器接口
     /// </summary>
-    public interface IDispatcher
+    public interface IDispatcherService
     {
         /// <summary>
         /// 同步调用指定操作。

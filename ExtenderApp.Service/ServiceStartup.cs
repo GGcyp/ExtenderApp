@@ -8,6 +8,7 @@ namespace ExtenderApp.Service
     {
         protected override void AddService(IServiceCollection services)
         {
+            services.AddSingleton<IServiceStore, ServiceStore>();
             services.AddSingleton<INavigationService, NavigationService>();
         }
     }

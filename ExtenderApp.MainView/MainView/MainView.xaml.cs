@@ -22,19 +22,18 @@ namespace ExtenderApp.MainView
     /// </summary>
     public partial class MainViewControl : UserControl, IMainView
     {
-        private readonly INavigationService _navigationService;
-        public IViewModel ViewModel { get; }
+        private readonly MainViewModel _viewModel;
+        public IViewModel ViewModel => ViewModel;
 
-        public MainViewControl(MainViewModel viewModel, INavigationService navigationService)
+        public MainViewControl(MainViewModel viewModel)
         {
             InitializeComponent();
-            ViewModel = viewModel;
-            _navigationService = navigationService;
+            _viewModel = viewModel;
         }
 
         public void Enter(IView oldView)
         {
-            navigationControl.Content = _navigationService.NavigateTo<ModView>();
+            
         }
 
         public void Exit(IView newView)

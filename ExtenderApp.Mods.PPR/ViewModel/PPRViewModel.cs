@@ -19,7 +19,7 @@ namespace ExtenderApp.Mod.PPR
 
         public PPRTitles Titles { get; set; }
 
-        public PPRViewModel(IPPRModel model, IDispatcher dispatcher) : base(model, dispatcher)
+        public PPRViewModel(IPPRModel model, IDispatcherService dispatcher) : base(model, dispatcher)
         {
             Inventories = new();
             Titles = new();

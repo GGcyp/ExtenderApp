@@ -11,9 +11,17 @@ namespace ExtenderApp.MainView
             services.AddSingleton<IMainWindow, MainViewWindow>();
             services.AddTransient<IMainView, MainViewControl>();
             services.AddSingleton<MainViewModel>();
-            services.AddSingleton<MainModel>();
+            services.AddSingleton<DisplayDetailsStore>();
+
+
+
             services.AddTransient<ModView>();
             services.AddTransient<ModViewModle>();
+        }
+
+        private void AddMainDisplayDetails(IServiceCollection services)
+        {
+            services.AddSingleton<DisplayDetailsStore>();
         }
     }
 }

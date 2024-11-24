@@ -26,35 +26,26 @@ namespace ExtenderApp.MainView
         private readonly ModViewModle _viewModle;
         public IViewModel ViewModel => _viewModle;
 
-
         public ModView(ModViewModle viewModle)
         {
             InitializeComponent();
             _viewModle = viewModle;
             ModTab.Callback = viewModle.OpenMod;
-
-            var modDetails = new Mod.ModDetails(new Mods.ModeInfo() { ModTitle = "测试", ModDescription = "简介", ModVersion = "0.0.1" });
-            modGrid.Children.Add(CreateModTab(modDetails));
-            modGrid.Children.Add(CreateModTab(modDetails));
-            modGrid.Children.Add(CreateModTab(modDetails));
-            modGrid.Children.Add(CreateModTab(modDetails));
-            modGrid.Children.Add(CreateModTab(modDetails));
-        }
-
-        private ModTab CreateModTab(ModDetails modDetails)
-        {
-            ModTab modTab = new ModTab(modDetails);
-            return modTab;
         }
 
         public void Enter(IView oldView)
         {
-            
+            var modStore = _viewModle.ModStore;
+            for (int i = 0; i < modStore.Count; i++)
+            {
+                ModTab modTab = new ModTab(modStore[i]);
+                modGrid.Children.Add(modTab);
+            }
         }
 
         public void Exit(IView newView)
         {
-            
+
         }
     }
 }

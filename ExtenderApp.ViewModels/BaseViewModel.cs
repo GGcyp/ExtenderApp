@@ -6,11 +6,11 @@ namespace ExtenderApp.ViewModels
 {
     public abstract class BaseViewModel : IViewModel
     {
-        protected readonly IDispatcher _dispatcher;
+        protected readonly IServiceStore _serviceStore;
 
-        public BaseViewModel(IDispatcher dispatcher)
+        protected BaseViewModel(IServiceStore serviceStore)
         {
-            _dispatcher = dispatcher;
+            _serviceStore = serviceStore;
         }
 
         //public abstract void Read(string path, Action? callBack = null, Action<string>? errorCallBack = null);
@@ -26,7 +26,7 @@ namespace ExtenderApp.ViewModels
     {
         protected readonly TModel _model;
 
-        public BaseViewModel(TModel model, IDispatcher dispatcher) : base(dispatcher)
+        public BaseViewModel(TModel model,IServiceStore serviceStore) : base(serviceStore)
         {
             _model = model;
         }
