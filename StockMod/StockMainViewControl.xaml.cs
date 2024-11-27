@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
@@ -14,25 +15,25 @@ using System.Windows.Navigation;
 using System.Windows.Shapes;
 using ExtenderApp.Abstract;
 
-namespace ExtenderApp.MainView
+namespace StockMod
 {
     /// <summary>
-    /// MainViewControl.xaml 的交互逻辑
+    /// StockMainViewControl.xaml 的交互逻辑
     /// </summary>
-    public partial class MainViewControl : UserControl, IMainView
+    public partial class StockMainViewControl : UserControl,IView
     {
-        private readonly MainViewModel _viewModel;
-        public IViewModel ViewModel => ViewModel;
+        private readonly StockMainViewModel viewModel;
+        public IViewModel ViewModel => viewModel;
 
-        public MainViewControl(MainViewModel viewModel)
+        public StockMainViewControl(StockMainViewModel viewModel)
         {
             InitializeComponent();
-            _viewModel = viewModel;
+            this.viewModel = viewModel;
         }
 
         public void Enter(IView oldView)
         {
-            navigationControl.Content = _viewModel.NavigateTo<ModView>();
+            
         }
 
         public void Exit(IView newView)

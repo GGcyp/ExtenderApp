@@ -95,7 +95,7 @@
         public static IServiceCollection AddScoped<TService>(this IServiceCollection services)
             where TService : class
         {
-            services.AddScoped<TService,TService>();
+            services.AddScoped<TService, TService>();
             return services;
         }
 

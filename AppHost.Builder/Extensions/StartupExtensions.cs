@@ -47,13 +47,11 @@ namespace AppHost.Builder
 
             startups = new List<TStartup>();
 
-            object[] args = new object[1] { builder };
-
             var assmblies = AppHostAssemblyHandle.LoadAssemblyForFolder(folderPath);
 
             foreach (var assmbly in assmblies)
             {
-                var startup = builder.FindStarupForAssembly<TStartup>(assmbly, args);
+                var startup = builder.FindStarupForAssembly<TStartup>(assmbly);
                 if (startup is null) continue;
                 startups.Add(startup);
             }
@@ -72,8 +70,7 @@ namespace AppHost.Builder
         public static IHostApplicationBuilder FindStarupForLoadAssemblyFile<TStartup>(this IHostApplicationBuilder builder, string path, out TStartup startup) where TStartup : Startup
         {
             if (!Path.IsPathRooted(path)) throw new ArgumentException("path is not rooted");
-            object[] args = new object[1] { builder };
-            startup = builder.FindStarupForAssembly<TStartup>(Assembly.LoadFrom(path), args);
+            startup = builder.FindStarupForAssembly<TStartup>(Assembly.LoadFrom(path));
             return builder;
         }
 
@@ -115,16 +112,14 @@ namespace AppHost.Builder
         /// <param name="builder"></param>
         /// <param name="path"></param>
         /// <returns></returns>
-        public static TStartup? FindStarupForAssembly<TStartup>(this IHostApplicationBuilder builder, Assembly assembly, object?[]? args = null) where TStartup : Startup
+        public static TStartup? FindStarupForAssembly<TStartup>(this IHostApplicationBuilder builder, Assembly assembly) where TStartup : Startup
         {
             if (assembly == null) throw new ArgumentNullException(nameof(assembly));
             var startType = assembly.GetTypes().FirstOrDefault(t => !t.IsAbstract && Startup.Type.IsAssignableFrom(t));
             if (startType is null) return null;
 
-            var startMethod = startType.GetMethod(Startup.StartMethodName);
-            if (args == null) args = new object[] { builder };
             TStartup startup = (Activator.CreateInstance(startType) as TStartup)!;
-            startMethod?.Invoke(startup, args);
+            startup.Start(builder);
 
             return startup;
         }

@@ -37,7 +37,7 @@ namespace ExtenderApp.Common
         /// <param name="infoData">文件信息数据</param>
         /// <param name="callback">回调方法，用于处理反序列化后的对象</param>
         /// <param name="options">文件设置（可选）</param>
-        public static void Deserialize<T>(this IJsonPareserProvider provider, FileInfoData infoData, Action<T?> callback, FileParserOptions options = default) where T : class
+        public static void Deserialize<T>(this IJsonPareserProvider provider, FileInfoData infoData, Action<T?> callback, FileParserOptions options = default)
         {
             T? result = provider.Deserialize<T>(infoData, options);
             callback?.Invoke(result);
@@ -50,10 +50,10 @@ namespace ExtenderApp.Common
         /// <param name="infoData">文件信息数据</param>
         /// <param name="options">文件设置（可选）</param>
         /// <returns>反序列化后的对象</returns>
-        public static T? Deserialize<T>(this IJsonPareserProvider provider, FileInfoData infoData, FileParserOptions options = default) where T : class
+        public static T? Deserialize<T>(this IJsonPareserProvider provider, FileInfoData infoData, FileParserOptions options = default)
         {
             object? result = provider.Deserialize(infoData, typeof(T), options);
-            return result as T;
+            return (T)result;
         }
 
         /// <summary>
@@ -75,9 +75,9 @@ namespace ExtenderApp.Common
         /// <param name="type">目标类型</param>
         /// <param name="options">文件设置（可选）</param>
         /// <returns>反序列化后的对象</returns>
-        public static T? Deserialize<T>(this IJsonPareserProvider provider, string json, FileParserOptions options = default) where T : class
+        public static T? Deserialize<T>(this IJsonPareserProvider provider, string json, FileParserOptions options = default)
         {
-            return provider.GetParser<IJsonParser>(options.LibraryName)?.Deserialize(json, typeof(T), options.Options) as T;
+            return (T)provider.GetParser<IJsonParser>(options.LibraryName)?.Deserialize(json, typeof(T), options.Options);
         }
 
         /// <summary>

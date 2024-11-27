@@ -13,27 +13,21 @@ namespace AppHost.Extensions.DependencyInjection
         /// <summary>
         /// 所有依赖注入关系字典
         /// </summary>
-        private FrozenDictionary<Type, ServiceDescriptor> serviceDescriptorDict;
+        private readonly Dictionary<Type, ServiceDescriptor> _serviceDescriptorDict;
 
         /// <summary>
         /// 并发字典，存储服务构造详情
         /// </summary>
-        private readonly ConcurrentDictionary<Type, ServiceConstructorDetail> serviceConstructorDetailsDict;
+        private readonly ConcurrentDictionary<Type, ServiceConstructorDetail> _serviceConstructorDetailsDict;
 
         public ServiceProvider(IServiceCollection services)
         {
             services.AddSingleton<IServiceProvider>(this);
-            services.AddSingleton(new ResetDependencyOrgan(services, ResetDict));
+            services.AddSingleton<IScopeExecutor>(new ScopeExecutor(AddService, RemoveService));
 
             //因为目前只有获取，所以先不进行多线程的保护
-            serviceDescriptorDict = services.ToDictionary(sd => sd.ServiceType, sd => sd).ToFrozenDictionary();
-            serviceConstructorDetailsDict = new();
-        }
-
-        private void ResetDict(IServiceCollection services)
-        {
-            serviceDescriptorDict = services.ToDictionary(sd => sd.ServiceType, sd => sd).ToFrozenDictionary();
-            serviceConstructorDetailsDict.Clear();
+            _serviceDescriptorDict = services.ToDictionary(sd => sd.ServiceType, sd => sd);
+            _serviceConstructorDetailsDict = new();
         }
 
         public object? GetService(Type serviceType)
@@ -50,6 +44,8 @@ namespace AppHost.Extensions.DependencyInjection
             return result;
         }
 
+        #region 基础服务
+
         /// <summary>
         /// 获取服务构建详情
         /// </summary>
@@ -58,7 +54,7 @@ namespace AppHost.Extensions.DependencyInjection
         private ServiceConstructorDetail CreateOrGetServiceConstructorDetail(Type serviceType)
         {
             //查询是否已经装进字典的注册服务构造详情
-            if (serviceConstructorDetailsDict.TryGetValue(serviceType, out var detail))
+            if (_serviceConstructorDetailsDict.TryGetValue(serviceType, out var detail))
             {
                 return detail;
             }
@@ -92,7 +88,7 @@ namespace AppHost.Extensions.DependencyInjection
             Type serviceGenericTypeDefinition = serviceGenericType.GetGenericTypeDefinition();
 
             //服务是否被注册
-            if (serviceDescriptorDict.TryGetValue(serviceGenericTypeDefinition, out var descriptor))
+            if (_serviceDescriptorDict.TryGetValue(serviceGenericTypeDefinition, out var descriptor))
             {
                 // 获取泛型类型参数
                 Type[] serviceTypeArguments = serviceGenericType.GetGenericArguments();
@@ -105,7 +101,7 @@ namespace AppHost.Extensions.DependencyInjection
                 }
 
                 serviceGenericType = descriptor.ImplementationType!.MakeGenericType(serviceTypeArguments);
-                
+
             }
             else
             {
@@ -118,7 +114,7 @@ namespace AppHost.Extensions.DependencyInjection
             ServiceConstructorDetail[] details = GetServiceConstructorParameterInfoDetails(constructorInfo.GetParameters());
 
             detail = new ServiceConstructorDetail(constructorInfo, details, descriptor);
-            serviceConstructorDetailsDict.TryAdd(serviceGenericType, detail);
+            _serviceConstructorDetailsDict.TryAdd(serviceGenericType, detail);
             return detail;
         }
 
@@ -132,12 +128,12 @@ namespace AppHost.Extensions.DependencyInjection
             ServiceConstructorDetail detail;
             ConstructorInfo constructorInfo;
             //查看是否是注册服务类
-            if (serviceDescriptorDict.TryGetValue(serviceType, out var descriptor))
+            if (_serviceDescriptorDict.TryGetValue(serviceType, out var descriptor))
             {
                 if (descriptor.HasFactory)
                 {
                     detail = new ServiceConstructorDetail(descriptor);
-                    serviceConstructorDetailsDict.TryAdd(serviceType, detail);
+                    _serviceConstructorDetailsDict.TryAdd(serviceType, detail);
                     return detail;
                 }
                 else
@@ -160,7 +156,7 @@ namespace AppHost.Extensions.DependencyInjection
             ServiceConstructorDetail[] details = GetServiceConstructorParameterInfoDetails(constructorInfo?.GetParameters());
 
             detail = new ServiceConstructorDetail(constructorInfo, details, descriptor);
-            serviceConstructorDetailsDict.TryAdd(serviceType, detail);
+            _serviceConstructorDetailsDict.TryAdd(serviceType, detail);
             return detail;
         }
 
@@ -180,7 +176,7 @@ namespace AppHost.Extensions.DependencyInjection
                     var parameterInfo = parameterInfos[i];
                     Type parameterType = parameterInfo.ParameterType;
                     ServiceConstructorDetail detail = CreateOrGetServiceConstructorDetail(parameterType);
-                    
+
                     //没有在已注册的可创建类中发现
                     if (detail == null)
                     {
@@ -195,5 +191,36 @@ namespace AppHost.Extensions.DependencyInjection
             }
             return details;
         }
+
+        #endregion
+
+        #region Scope
+
+        private ServiceDescriptor? AddService(ServiceDescriptor item)
+        {
+            if (!_serviceDescriptorDict.TryGetValue(item.ServiceType, out ServiceDescriptor? originaService))
+            {
+                _serviceDescriptorDict.Add(item.ServiceType, item);
+                return null;
+            }
+
+            _serviceDescriptorDict[item.ServiceType] = item;
+            _serviceConstructorDetailsDict.Remove(item.ServiceType, out var temp2);
+            return originaService;
+        }
+
+        private void RemoveService(ServiceDescriptor scope, ServiceDescriptor originaService)
+        {
+            if (!_serviceDescriptorDict.TryGetValue(scope.ServiceType, out ServiceDescriptor? scopeService))
+            {
+                _serviceConstructorDetailsDict.Remove(scope.ServiceType, out var temp);
+                return;
+            }
+
+            _serviceDescriptorDict[scope.ServiceType] = originaService;
+            _serviceConstructorDetailsDict.Remove(scope.ServiceType, out var temp2);
+        }
+
+        #endregion
     }
 }

@@ -8,14 +8,14 @@ namespace ExtenderApp.MainView
     {
         public ModStore ModStore { get; }
 
-        public ModViewModle(ModStore mods, IServiceStore serviceStore) : base(serviceStore)
+        public ModViewModle(INetworkClient client, ModStore mods, IServiceStore serviceStore) : base(serviceStore)
         {
             ModStore = mods;
         }
 
         public void OpenMod(ModDetails modDetails)
         {
-
+            NavigateTo(modDetails.StartupType);
         }
     }
 }

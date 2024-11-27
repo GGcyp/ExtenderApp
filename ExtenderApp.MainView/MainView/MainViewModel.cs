@@ -4,18 +4,18 @@ using ExtenderApp.Service;
 
 namespace ExtenderApp.MainView
 {
-    public class MainViewModel : BaseViewModel<DisplayDetailsStore>
+    public class MainViewModel : BaseViewModel
     {
         public DisplayDetailsStore DisplayDetailsStore { get; }
 
-        public MainViewModel(DisplayDetailsStore store, IServiceStore serviceStore) : base(store, serviceStore)
+        public MainViewModel(DisplayDetailsStore store, IServiceStore serviceStore) : base(serviceStore)
         {
             DisplayDetailsStore = store;
         }
 
-        public void NavigateTo(DisplayDetails details, IView view)
+        public void NavigateTo(DisplayDetails details)
         {
-            _serviceStore.NavigationService.NavigateTo(details.ViewType, null);
+            NavigateTo(details.ViewType);
         }
     }
 }
