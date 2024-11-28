@@ -3,7 +3,7 @@
 
 namespace AppHost.Extensions.DependencyInjection
 {
-    internal class ServiceCollection : List<ServiceDescriptor>, IServiceCollection
+    public class ServiceCollection : List<ServiceDescriptor>, IServiceCollection
     {
         //private List<ServiceDescriptor> m_ServiceDescriptors = new List<ServiceDescriptor>();
         //public ServiceDescriptor this[int index] { get => m_ServiceDescriptors[index]; set { } }

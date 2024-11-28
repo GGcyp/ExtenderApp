@@ -28,24 +28,19 @@ namespace AppHost.Builder
         }
 
         /// <summary>
-        /// 启动方法的名称
-        /// </summary>
-        public static string StartMethodName => nameof(Start);
-
-        /// <summary>
         /// 启动方法
         /// </summary>
         /// <param name="builder">主机应用程序构建器</param>
         public virtual void Start(IHostApplicationBuilder builder)
         {
-            AddService(builder.Services);
+
         }
 
         /// <summary>
         /// 添加服务
         /// </summary>
         /// <param name="services">服务集合</param>
-        protected virtual void AddService(IServiceCollection services)
+        public virtual void AddService(IServiceCollection services)
         {
 
         }

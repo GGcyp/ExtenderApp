@@ -1,5 +1,4 @@
-﻿using System.IO;
-using AppHost.Extensions.Hosting;
+﻿using AppHost.Extensions.Hosting;
 using AppHost.Extensions.DependencyInjection;
 using ExtenderApp.Abstract;
 using ExtenderApp.Common;
@@ -28,8 +27,7 @@ namespace ExtenderApp.Mods
 
                 //加载模组主程序集
                 ModDetails details = new ModDetails(info);
-                //details.AddModAssembly(builder, dir);
-
+                details.Path = dir;
                 ////添加模组依赖库
                 //var packPath = Path.Combine(dir, AppSetting.AppPackFolderName);
                 //if (Directory.Exists(packPath))
@@ -41,7 +39,7 @@ namespace ExtenderApp.Mods
                 //}
 
                 store.Add(details);
-                details.StartupType = executor.LoadScope<ModEntityStartup>(Path.Combine(dir, details.StartupDll)).StartType;
+                //details.StartupType = executor.LoadScope<ModEntityStartup>(Path.Combine(dir, details.StartupDll)).StartType;
             }
         }
 

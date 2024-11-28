@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+﻿
 
 namespace AppHost.Extensions.DependencyInjection
 {
@@ -47,22 +47,22 @@ namespace AppHost.Extensions.DependencyInjection
             return (T)provider.GetRequiredService(typeof(T));
         }
 
-        /// <summary>
-        /// 从<see cref="IServiceProvider"/>获取指定服务类型实例<see cref="ServiceDescriptor"/>。
-        /// </summary>
-        /// <param name="provider"></param>
-        /// <param name="serviceDescriptor"></param>
-        /// <returns></returns>
-        /// <exception cref="InvalidOperationException"></exception>
-        public static object GetRequiredService(this IServiceProvider provider, ServiceDescriptor serviceDescriptor)
-        {
-            object? service = provider.GetService(serviceDescriptor.ServiceType);
-            if (service == null)
-            {
-                throw new InvalidOperationException(serviceDescriptor.ServiceType.ToString());
-            }
+        ///// <summary>
+        ///// 从<see cref="IServiceProvider"/>获取指定服务类型实例<see cref="ServiceDescriptor"/>。
+        ///// </summary>
+        ///// <param name="provider"></param>
+        ///// <param name="serviceDescriptor"></param>
+        ///// <returns></returns>
+        ///// <exception cref="InvalidOperationException"></exception>
+        //public static object GetRequiredService(this IServiceProvider provider, ServiceDescriptor serviceDescriptor)
+        //{
+        //    object? service = provider.GetService(serviceDescriptor.ServiceType);
+        //    if (service == null)
+        //    {
+        //        throw new InvalidOperationException(serviceDescriptor.ServiceType.ToString());
+        //    }
 
-            return service;
-        }
+        //    return service;
+        //}
     }
 }

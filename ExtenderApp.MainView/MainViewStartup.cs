@@ -6,7 +6,7 @@ namespace ExtenderApp.MainView
 {
     internal class MainViewStartup : Startup
     {
-        protected override void AddService(IServiceCollection services)
+        public override void AddService(IServiceCollection services)
         {
             services.AddSingleton<IMainWindow, MainViewWindow>();
             services.AddTransient<IMainView, MainViewControl>();

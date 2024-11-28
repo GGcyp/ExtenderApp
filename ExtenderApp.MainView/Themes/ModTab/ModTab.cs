@@ -1,5 +1,6 @@
 ﻿using System.Windows;
 using System.Windows.Controls;
+using ExtenderApp.Data;
 using ExtenderApp.Mod;
 
 namespace ExtenderApp.MainView

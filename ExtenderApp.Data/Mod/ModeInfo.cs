@@ -1,6 +1,6 @@
 ﻿
 
-namespace ExtenderApp.Mods
+namespace ExtenderApp.Data
 {
     /// <summary>
     /// 模组信息

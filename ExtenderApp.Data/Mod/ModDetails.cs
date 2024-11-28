@@ -1,7 +1,6 @@
 ﻿using System.Runtime.Loader;
-using ExtenderApp.Mods;
 
-namespace ExtenderApp.Mod
+namespace ExtenderApp.Data
 {
     /// <summary>
     /// 模组详情类
@@ -29,7 +28,7 @@ namespace ExtenderApp.Mod
         /// 获取模式信息的版本信息。
         /// </summary>
         /// <returns>返回版本信息字符串，如果没有版本信息则返回null。</returns>
-        public string? VersionInformation=>modeInfo.ModVersionInformation;
+        public string? VersionInformation => modeInfo.ModVersionInformation;
 
         /// <summary>
         /// 模组主程序集名字，或在本文件夹下的地址
@@ -40,6 +39,11 @@ namespace ExtenderApp.Mod
         /// 获取或设置程序集的加载上下文。
         /// </summary>
         public AssemblyLoadContext? LoadContext { get; set; }
+
+        /// <summary>
+        /// 模组的文件位置
+        /// </summary>
+        public string? Path { get; set; }
 
         /// <summary>
         /// 模组视图启动类类型

@@ -27,7 +27,7 @@ namespace AppHost.Builder
 
             foreach (var assmbly in assmblies)
             {
-                builder.FindStarupForAssembly(assmbly, args);
+                builder.FindStarupForAssembly(assmbly);
             }
 
             return builder;
@@ -93,16 +93,9 @@ namespace AppHost.Builder
         /// <param name="builder"></param>
         /// <param name="path"></param>
         /// <returns></returns>
-        public static IHostApplicationBuilder FindStarupForAssembly(this IHostApplicationBuilder builder, Assembly assembly, object?[]? args = null)
+        public static IHostApplicationBuilder FindStarupForAssembly(this IHostApplicationBuilder builder, Assembly assembly)
         {
-            if (assembly == null) throw new ArgumentNullException(nameof(assembly));
-            var startType = assembly.GetTypes().FirstOrDefault(t => !t.IsAbstract && Startup.Type.IsAssignableFrom(t));
-            if (startType is null) return builder;
-
-            var startMethod = startType.GetMethod(Startup.StartMethodName);
-            if (args == null) args = new object[] { builder };
-            startMethod?.Invoke(Activator.CreateInstance(startType), args);
-
+            FindStarupForAssembly<Startup>(builder, assembly);
             return builder;
         }
 
@@ -120,6 +113,7 @@ namespace AppHost.Builder
 
             TStartup startup = (Activator.CreateInstance(startType) as TStartup)!;
             startup.Start(builder);
+            startup.AddService(builder.Services);
 
             return startup;
         }

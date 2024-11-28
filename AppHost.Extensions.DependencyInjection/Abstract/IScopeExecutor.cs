@@ -4,12 +4,11 @@ namespace AppHost.Extensions.DependencyInjection
     public interface IScopeExecutor
     {
         /// <summary>
-        /// 加载作用域。
+        /// 根据作用域名称加载作用域。
         /// </summary>
-        /// <param name="startup">作用域启动参数。</param>
-        /// <exception cref="ArgumentNullException">当 startup 或 startup.ScopeName 为 null 时抛出。</exception>
-        /// <exception cref="InvalidOperationException">当作用域已加载时抛出。</exception>
-        void LoadScope(ScopeStartup startup);
+        /// <param name="scopeName">作用域名称。</param>
+        /// <param name="collection">作用域服务集合。</param>
+        void LoadScope(string scopeName, IScopeServiceCollection collection);
 
         /// <summary>
         /// 卸载作用域。

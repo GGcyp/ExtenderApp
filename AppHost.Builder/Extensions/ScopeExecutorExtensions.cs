@@ -1,11 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Reflection;
+using AppHost.Extensions.DependencyInjection;
 
-namespace AppHost.Extensions.DependencyInjection
+
+namespace AppHost.Builder.Extensions
 {
     /// <summary>
     /// ScopeExecutor 的扩展方法类。
@@ -20,7 +17,8 @@ namespace AppHost.Extensions.DependencyInjection
         /// <returns>返回更新后的 ScopeExecutor 实例。</returns>
         public static TStartup? LoadScope<TStartup>(this IScopeExecutor executor, string assemblyPath) where TStartup : ScopeStartup
         {
-            return executor.LoadScope<TStartup>(Assembly.LoadFrom(assemblyPath));
+            var assembly = Assembly.LoadFrom(assemblyPath);
+            return executor.LoadScope<TStartup>(assembly);
         }
 
         /// <summary>
@@ -33,11 +31,14 @@ namespace AppHost.Extensions.DependencyInjection
         public static TStartup? LoadScope<TStartup>(this IScopeExecutor executor, Assembly assembly) where TStartup : ScopeStartup
         {
             if (assembly == null) throw new ArgumentNullException(nameof(assembly));
-            var startType = assembly.GetTypes().FirstOrDefault(t => !t.IsAbstract && ScopeStartup.SatrtupType.IsAssignableFrom(t));
+            var startType = assembly.GetTypes().FirstOrDefault(t => !t.IsAbstract && ScopeStartup.Type.IsAssignableFrom(t));
             if (startType is null) return null;
 
             var startup = (Activator.CreateInstance(startType) as TStartup)!;
-            executor.LoadScope(startup);
+
+            IScopeServiceCollection serviceDescriptors = ScopeServiceCollectionFactory.CreateScopeServiceCollection();
+            startup.AddService(serviceDescriptors);
+            executor.LoadScope(startup.ScopeName, serviceDescriptors);
 
             return startup;
         }

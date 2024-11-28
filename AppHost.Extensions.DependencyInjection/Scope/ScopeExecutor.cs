@@ -16,7 +16,7 @@ namespace AppHost.Extensions.DependencyInjection
         /// </summary>
         private readonly Action<ServiceDescriptor, ServiceDescriptor> _removeAction;
 
-        private Dictionary<string, ScopeServiceCollection> scopes;
+        private Dictionary<string, IScopeServiceCollection> scopes;
 
         /// <summary>
         /// 初始化作用域执行器
@@ -29,32 +29,28 @@ namespace AppHost.Extensions.DependencyInjection
             _removeAction = removeAction;
         }
 
-        public void LoadScope(ScopeStartup startup)
+        public void LoadScope(string scopeName, IScopeServiceCollection collection)
         {
             if (scopes is null)
                 scopes = new();
 
-            if (startup is null)
-                throw new ArgumentNullException(nameof(startup), "The startup parameter cannot be null.");
+            if (collection is null)
+                throw new ArgumentNullException(nameof(collection), "The collection parameter cannot be null.");
 
-            if (string.IsNullOrEmpty(startup.ScopeName))
-                throw new ArgumentNullException(nameof(startup.ScopeName), "The ScopeName property cannot be null or empty.");
+            if (string.IsNullOrEmpty(scopeName))
+                throw new ArgumentNullException(nameof(scopeName), "The ScopeName property cannot be null or empty.");
 
-            if (scopes.ContainsKey(startup.ScopeName))
-                throw new InvalidOperationException(string.Format("the {0} scopes service already loaded", startup.ScopeName));
+            if (scopes.ContainsKey(scopeName))
+                throw new InvalidOperationException(string.Format("the {0} scopes service already loaded", scopeName));
 
-            ScopeServiceCollection collection = new();
-
-            scopes.Add(startup.ScopeName, collection);
-
-            startup.AddService(collection);
+            scopes.Add(scopeName, collection);
 
             AddScopes(collection);
         }
 
         public void UnLoadScope(string scopeName)
         {
-            if (this.scopes is null) 
+            if (this.scopes is null)
                 return;
 
             if (string.IsNullOrEmpty(scopeName))
@@ -72,17 +68,15 @@ namespace AppHost.Extensions.DependencyInjection
         /// 添加作用域
         /// </summary>
         /// <param name="services">作用域服务集合</param>
-        private void AddScopes(ScopeServiceCollection services)
+        private void AddScopes(IScopeServiceCollection services)
         {
-            int socpeIndex = 0;
             for (int i = 0; i < services.Count; i++)
             {
                 var service = services[i];
                 var originaService = _addAction(service);
-                if (originaService == null) continue;
+                if (originaService == null || service is not ScopeDescriptor scopeDescriptor) continue;
 
-                services.ScopeServices[socpeIndex].OriginaService = originaService;
-                socpeIndex++;
+                scopeDescriptor.OriginaService = originaService;
             }
         }
 
@@ -90,20 +84,12 @@ namespace AppHost.Extensions.DependencyInjection
         /// 移除作用域
         /// </summary>
         /// <param name="services">作用域服务集合</param>
-        private void RemoveScopes(ScopeServiceCollection services)
+        private void RemoveScopes(IScopeServiceCollection services)
         {
-            int socpeIndex = 0;
             for (int i = 0; i < services.Count; i++)
             {
                 var service = services[i];
-                if (service.Lifetime != ServiceLifetime.Scoped)
-                {
-                    _removeAction(service, null);
-                    continue;
-                }
-
-                _removeAction(service, services.ScopeServices[socpeIndex].OriginaService!);
-                socpeIndex++;
+                _removeAction(service, (service is not ScopeDescriptor scopeDescriptor) ? null : scopeDescriptor.OriginaService);
             }
         }
     }

@@ -7,6 +7,6 @@ namespace AppHost.Extensions.DependencyInjection
     /// </summary>
     public interface IScopeServiceCollection : IServiceCollection
     {
-
+       
     }
 }

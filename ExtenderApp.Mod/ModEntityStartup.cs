@@ -1,4 +1,4 @@
-﻿using AppHost.Extensions.DependencyInjection;
+﻿using AppHost.Builder;
 
 
 namespace ExtenderApp.Mod

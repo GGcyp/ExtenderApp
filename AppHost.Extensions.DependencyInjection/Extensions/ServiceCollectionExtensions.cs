@@ -88,7 +88,7 @@
             where TService : class
             where TImplementation : class, TService
         {
-            services.Add(new ServiceDescriptor(typeof(TService), typeof(TImplementation), ServiceLifetime.Scoped));
+            services.Add(new ScopeDescriptor(typeof(TService), typeof(TImplementation), ServiceLifetime.Scoped));
             return services;
         }
 
@@ -106,39 +106,33 @@
             return services;
         }
 
-        public static IServiceCollection Add<TService, TImplementation>(this IServiceCollection services, ServiceLifetime lifetime)
-        {
-            services.Add(typeof(TService), typeof(TImplementation), lifetime);
-            return services;
-        }
-
         public static IServiceCollection Add(this IServiceCollection services, Type serviceType, Func<IServiceProvider, object?, object> factory, ServiceLifetime lifetime)
         {
-            services.Add(new ServiceDescriptor(serviceType, factory, lifetime));
+            services.Add(ServiceDescriptorFactory.Create(serviceType, factory, lifetime));
             return services;
         }
 
         public static IServiceCollection Add(this IServiceCollection services, Type serviceType, Func<IServiceProvider, object?, object> factory, object? serviceKey, ServiceLifetime lifetime)
         {
-            services.Add(new ServiceDescriptor(serviceType, factory, serviceKey, lifetime));
+            services.Add(ServiceDescriptorFactory.Create(serviceType, factory, serviceKey, lifetime));
             return services;
         }
 
         public static IServiceCollection Add(this IServiceCollection services, Type serviceType, Func<IServiceProvider, object> factory, ServiceLifetime lifetime)
         {
-            services.Add(new ServiceDescriptor(serviceType, factory, lifetime));
+            services.Add(ServiceDescriptorFactory.Create(serviceType, factory, lifetime));
             return services;
         }
 
         public static IServiceCollection Add(this IServiceCollection services, Type serviceType, Type implementationType, Func<IServiceProvider, object?, object> factory, object? serviceKey, ServiceLifetime lifetime)
         {
-            services.Add(new ServiceDescriptor(serviceType, implementationType, factory, serviceKey, lifetime));
+            services.Add(ServiceDescriptorFactory.Create(serviceType, implementationType, factory, serviceKey, lifetime));
             return services;
         }
 
         public static IServiceCollection Add(this IServiceCollection services, Type serviceType, Type implementationType, ServiceLifetime lifetime)
         {
-            services.Add(new ServiceDescriptor(serviceType, implementationType, lifetime));
+            services.Add(ServiceDescriptorFactory.Create(serviceType, implementationType, lifetime));
             return services;
         }
     }
