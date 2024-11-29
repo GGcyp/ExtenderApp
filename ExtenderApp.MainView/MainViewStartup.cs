@@ -9,14 +9,20 @@ namespace ExtenderApp.MainView
         public override void AddService(IServiceCollection services)
         {
             services.AddSingleton<IMainWindow, MainViewWindow>();
-            services.AddTransient<IMainView, MainViewControl>();
-            services.AddSingleton<MainViewModel>();
             services.AddSingleton<DisplayDetailsStore>();
 
-
+            AddMainView(services);
 
             services.AddTransient<ModView>();
             services.AddTransient<ModViewModle>();
+        }
+
+        private void AddMainView(IServiceCollection services)
+        {
+            services.AddTransient<IMainView, MainView>();
+            services.AddTransient<MainView_Run>();
+            services.AddSingleton<MainViewModel>();
+            services.AddSingleton<MainModel>();
         }
 
         private void AddMainDisplayDetails(IServiceCollection services)

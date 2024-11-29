@@ -17,18 +17,16 @@ using ExtenderApp.Abstract;
 namespace ExtenderApp.MainView
 {
     /// <summary>
-    /// MainViewControl.xaml 的交互逻辑
+    /// MainView_Run.xaml 的交互逻辑
     /// </summary>
-    public partial class MainView : UserControl, IMainView
+    public partial class MainView_Run : UserControl, IMainView
     {
-        private readonly MainViewModel _viewModel;
-        public IViewModel ViewModel => ViewModel;
-
-        public MainView(MainViewModel viewModel)
+        private MainViewModel _viewModel;
+        public IViewModel ViewModel => _viewModel;
+        public MainView_Run(MainViewModel viewModel)
         {
             InitializeComponent();
             _viewModel = viewModel;
-            _viewModel.Start(this);
         }
 
         public void Enter(IView oldView)

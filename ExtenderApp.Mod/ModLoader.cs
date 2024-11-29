@@ -42,6 +42,7 @@ namespace ExtenderApp.Mod
             details.LoadContext = loadContext;
             string dllPath = Path.Combine(details.Path, details.StartupDll);
             var startAssembly = LoadAssembly(loadContext, dllPath);
+
             details.StartupType = _scopeExecutor.LoadScope<ModEntityStartup>(startAssembly).StartType;
 
             string packPath = Path.Combine(details.Path, AppSetting.AppPackFolderName);

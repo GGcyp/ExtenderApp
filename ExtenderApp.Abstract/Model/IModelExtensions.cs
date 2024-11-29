@@ -64,8 +64,8 @@ namespace ExtenderApp.Abstract
         /// <returns>转换后的模型对象</returns>
         public static IModel ModelConverter(this IModel model, FileInfoData fileInfo)
         {
-            var converter = model.Converter;
-            converter.Execute(model, fileInfo);
+            //var converter = model.Converter;
+            //converter.Execute(model, fileInfo);
             return model;
         }
     }

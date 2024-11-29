@@ -6,10 +6,10 @@ namespace ExtenderApp.Abstract
     /// </summary>
     public interface IModel
     {
-        /// <summary>
-        /// 模型转换启动器
-        /// </summary>
-        IModelConverterExecutor Converter { get; }
+        ///// <summary>
+        ///// 模型转换启动器
+        ///// </summary>
+        //IModelConverterExecutor Converter { get; }
 
         /// <summary>
         /// 向数据源添加数据。

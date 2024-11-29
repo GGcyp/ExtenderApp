@@ -53,6 +53,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AppHost.Extensions.Configur
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AppHost.Extensions.Hosting", "AppHost.Extensions.Hosting\AppHost.Extensions.Hosting.csproj", "{C277AF8F-6F3C-4E54-AD83-98A4232640A7}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MachineLearning", "MachineLearning\MachineLearning.csproj", "{3BCFA064-AC20-4567-9CF2-AA50BFD6367A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -135,6 +137,10 @@ Global
 		{C277AF8F-6F3C-4E54-AD83-98A4232640A7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C277AF8F-6F3C-4E54-AD83-98A4232640A7}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C277AF8F-6F3C-4E54-AD83-98A4232640A7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3BCFA064-AC20-4567-9CF2-AA50BFD6367A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3BCFA064-AC20-4567-9CF2-AA50BFD6367A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3BCFA064-AC20-4567-9CF2-AA50BFD6367A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3BCFA064-AC20-4567-9CF2-AA50BFD6367A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -159,6 +165,7 @@ Global
 		{38674CB6-1DC1-4FDD-81BB-ABC7F71AE957} = {5BCAF184-996C-47B8-9A02-4909A121E92E}
 		{21AED668-F83E-40F6-9B0F-B558488CE9D3} = {5BCAF184-996C-47B8-9A02-4909A121E92E}
 		{C277AF8F-6F3C-4E54-AD83-98A4232640A7} = {5BCAF184-996C-47B8-9A02-4909A121E92E}
+		{3BCFA064-AC20-4567-9CF2-AA50BFD6367A} = {464FDC8D-4380-4125-B384-0A55FE9ADD47}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {07F96706-A0E9-4590-819E-3841EC1BB7E5}

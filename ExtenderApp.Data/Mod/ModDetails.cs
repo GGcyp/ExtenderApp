@@ -36,6 +36,11 @@ namespace ExtenderApp.Data
         public string? StartupDll => modeInfo.ModStartupDll;
 
         /// <summary>
+        /// 是否是可以显示的模组
+        /// </summary>
+        public bool IsDisplayeMod => modeInfo.IsDisplayMod != 0;
+
+        /// <summary>
         /// 获取或设置程序集的加载上下文。
         /// </summary>
         public AssemblyLoadContext? LoadContext { get; set; }

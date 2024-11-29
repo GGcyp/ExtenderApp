@@ -25,11 +25,16 @@ namespace ExtenderApp.Data
         /// <summary>
         /// 获取或设置模块的版本信息。
         /// </summary>
-        public string? ModVersionInformation {  get; set; }
+        public string? ModVersionInformation { get; set; }
 
         /// <summary>
         /// 模组主程序集名字，或在本文件夹下的地址
         /// </summary>
         public string? ModStartupDll { get; set; }
+
+        /// <summary>
+        /// 是否是可以显示的模组，1为可以 0为不可以
+        /// </summary>
+        public int IsDisplayMod { get; set; }
     }
 }

@@ -9,17 +9,19 @@ namespace ExtenderApp.MainView
     {
         public ModStore ModStore { get; }
         private readonly IModLoader _modLoad;
+        private readonly MainModel _mainModel;
 
-        public ModViewModle(ModStore mods, IModLoader modLoad, IServiceStore serviceStore) : base(serviceStore)
+        public ModViewModle(ModStore mods, IModLoader modLoad, MainModel mainModel, IServiceStore serviceStore) : base(serviceStore)
         {
             ModStore = mods;
             _modLoad = modLoad;
+            _mainModel = mainModel;
         }
 
         public void OpenMod(ModDetails modDetails)
         {
             _modLoad.Load(modDetails);
-            NavigateTo(modDetails.StartupType);
+            _mainModel.ToRunAction?.Invoke(modDetails.StartupType);
         }
     }
 }

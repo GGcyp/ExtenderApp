@@ -84,9 +84,9 @@ namespace ExtenderApp.ViewModels
         /// 导航到指定的视图。
         /// </summary>
         /// <typeparam name="TView">目标视图的类型，必须实现 IView 接口。</typeparam>
-        public IView NavigateTo<TView>() where TView : class, IView
+        public TView NavigateTo<TView>() where TView : class, IView
         {
-            return NavigateTo(typeof(TView));
+            return NavigateTo(typeof(TView)) as TView;
         }
 
         /// <summary>
