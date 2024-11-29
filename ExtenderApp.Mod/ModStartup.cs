@@ -1,9 +1,7 @@
 ﻿using AppHost.Builder;
 using AppHost.Extensions.DependencyInjection;
-using AppHost.Extensions.Hosting;
 using ExtenderApp.Abstract;
-using ExtenderApp.Mods;
-
+using AppHost.Extensions.Hosting;
 
 namespace ExtenderApp.Mod
 {

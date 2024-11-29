@@ -3,9 +3,8 @@ using AppHost.Extensions.DependencyInjection;
 using ExtenderApp.Abstract;
 using ExtenderApp.Common;
 using ExtenderApp.Data;
-using ExtenderApp.Mod;
 
-namespace ExtenderApp.Mods
+namespace ExtenderApp.Mod
 {
     internal class ModsHostedService : BackgroundService
     {

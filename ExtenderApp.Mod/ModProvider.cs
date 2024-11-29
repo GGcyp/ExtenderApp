@@ -1,6 +1,6 @@
 ﻿using ExtenderApp.Abstract;
 
-namespace ExtenderApp.Mods
+namespace ExtenderApp.Mod
 {
     /// <summary>
     /// 模组提供者
