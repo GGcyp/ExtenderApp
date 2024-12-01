@@ -6,7 +6,7 @@
              xmlns:local="clr-namespace:MachineLearning.view"
              mc:Ignorable="d"
              d:DesignHeight="450" d:DesignWidth="800">
-    <Grid Background="White">
-        <TextBlock Text="MachineLearning"/>
+    <Grid>
+        <Canvas x:Name="canvas"  Background="White"/>
     </Grid>
 </UserControl>
