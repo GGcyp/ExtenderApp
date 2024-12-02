@@ -1,5 +1,4 @@
 ﻿using ExtenderApp.Data;
-using System;
 
 namespace ExtenderApp.Common.Math
 {
@@ -122,16 +121,17 @@ namespace ExtenderApp.Common.Math
             //if (!IsSquareMatrix(matrix))
             //    throw new ArgumentException("Matrix must be square.");
 
-            int row = matrix.Row;
-            int col = matrix.Column;
-            transpose = matrix.CopyTo(transpose);
+            int row = matrix.Column;
+            int col = matrix.Row;
+            if (transpose.IsEmpty || (transpose.Row != row || transpose.Column != col))
+                transpose = new Matrix(row, col);
 
 
-            for (int i = 0; i < row; i++)
+            for (int i = 0; i < matrix.Row; i++)
             {
-                for (int j = 0; j < col; j++)
+                for (int j = 0; j < matrix.Column; j++)
                 {
-                    transpose[i, j] = matrix[j, i];
+                    transpose[j, i] = matrix[i, j];
                 }
             }
 
@@ -139,18 +139,15 @@ namespace ExtenderApp.Common.Math
         }
 
         /// <summary>
-        /// 计算两个矩阵的点积。
+        /// 对两个矩阵进行点乘运算。
         /// </summary>
-        /// <param name="matrixLeft">左侧的矩阵。</param>
-        /// <param name="matrixRight">右侧的矩阵。</param>
-        /// <returns>点积的结果矩阵。</returns>
-        /// <exception cref="ArgumentNullException">如果任意一个输入矩阵为空。</exception>
-        /// <exception cref="ArgumentException">如果左矩阵的列数不等于右矩阵的行数。</exception>
-        /// <remarks>
-        /// 此方法计算两个矩阵的点积。如果左矩阵的列数不等于右矩阵的行数，则抛出异常。
-        /// 结果矩阵的行数等于左矩阵的行数，列数等于右矩阵的列数。
-        /// </remarks>
-        public static Matrix Dot(this Matrix matrixLeft, Matrix matrixRight)
+        /// <param name="matrixLeft">左侧矩阵。</param>
+        /// <param name="matrixRight">右侧矩阵。</param>
+        /// <param name="canKroneckerProduct">是否允许克罗内克积运算，默认为false。</param>
+        /// <returns>返回点乘后的矩阵。</returns>
+        /// <exception cref="ArgumentNullException">如果输入的矩阵为空，则抛出此异常。</exception>
+        /// <exception cref="ArgumentException">如果两个矩阵不是同型矩阵且不允许克罗内克积运算，则抛出此异常。</exception>
+        public static Matrix Dot(this Matrix matrixLeft, Matrix matrixRight, bool canKroneckerProduct = true)
         {
             // 检查输入矩阵是否为空
             if (matrixLeft.IsEmpty)
@@ -158,33 +155,30 @@ namespace ExtenderApp.Common.Math
             if (matrixRight.IsEmpty)
                 throw new ArgumentNullException(nameof(matrixRight));
 
-            // 检查矩阵维度是否满足乘法规则
-            int leftColumns = matrixLeft.Column;
-            int rightRows = matrixRight.Row;
-            if (leftColumns != rightRows)
-                throw new ArgumentException("左矩阵的列数必须等于右矩阵的行数才能进行矩阵乘法。");
+            //// 检查矩阵是否为同型矩阵，满足点乘条件
+            //if (matrixLeft.Row != matrixRight.Row || matrixLeft.Column != matrixRight.Column)
+            //{
+            //    if (!canKroneckerProduct)
+            //        throw new ArgumentException("进行矩阵点乘的两个矩阵必须是同型矩阵。");
 
-            // 获取左矩阵的行数和右矩阵的列数，用于结果矩阵的维度
-            int resultRows = matrixLeft.Row;
-            int resultColumns = matrixRight.Column;
+            //    matrixRight = matrixLeft.KroneckerProduct(matrixRight);
+            //}
 
+            if (matrixLeft.Column != matrixRight.Row)
+                throw new ArgumentException("左侧矩阵的列数必须等于右侧矩阵的行数才能进行矩阵乘法。");
 
-            // 创建结果矩阵
-            Matrix resultMatrix = new Matrix(resultRows, resultColumns);
+            //// 创建结果矩阵
+            Matrix resultMatrix = matrixLeft * matrixRight;
+            //Matrix resultMatrix = new Matrix(matrixLeft.Row, matrixLeft.Column);
 
-            // 执行矩阵乘法运算
-            for (int i = 0; i < resultRows; i++)
-            {
-                for (int j = 0; j < resultColumns; j++)
-                {
-                    double sum = 0;
-                    for (int k = 0; k < leftColumns; k++)
-                    {
-                        sum += matrixLeft[i, k] * matrixRight[k, j];
-                    }
-                    resultMatrix[i, j] = sum;
-                }
-            }
+            //// 执行矩阵点乘运算
+            //for (int i = 0; i < matrixLeft.Row; i++)
+            //{
+            //    for (int j = 0; j < matrixLeft.Column; j++)
+            //    {
+            //        resultMatrix[i, j] = matrixLeft[i, j] * matrixRight[i, j];
+            //    }
+            //}
 
             return resultMatrix;
         }
@@ -308,8 +302,7 @@ namespace ExtenderApp.Common.Math
                 return false;
             }
 
-            int rows = matrix.Row;
-            double determinant = CalculateDeterminant(matrix, rows);
+            double determinant = CalculateDeterminant(matrix, matrix.Row);
             return determinant != 0;
         }
 
@@ -449,6 +442,35 @@ namespace ExtenderApp.Common.Math
         }
 
         /// <summary>
+        /// 将一个矩阵作为列附加到另一个矩阵的右侧。
+        /// </summary>
+        /// <param name="matrix">要进行列附加操作的矩阵。</param>
+        /// <param name="matrixY">要附加到matrix右侧的矩阵。</param>
+        /// <returns>返回一个新矩阵，其中包含了matrix和matrixY的内容，matrixY的内容作为新矩阵的附加列。</returns>
+        /// <exception cref="ArgumentNullException">如果matrix和matrixY的行数不相等，则抛出此异常。</exception>
+        public static Matrix AppendColumn(this Matrix matrix, Matrix matrixY)
+        {
+            if (matrix.Row != matrixY.Row)
+                throw new ArgumentException(nameof(matrixY));
+
+            var resultMatrix = new Matrix(matrix.Row, matrix.Column + matrixY.Column);
+
+            for (int i = 0; i < matrix.Row; i++)
+            {
+                for (int j = 0; j < matrix.Column; j++)
+                {
+                    resultMatrix[i, j] = matrix[i, j];
+                }
+                for (int j = 0; j < matrixY.Column; j++)
+                {
+                    resultMatrix[i, matrix.Column + j] = matrixY[i, j];
+                }
+            }
+
+            return resultMatrix;
+        }
+
+        /// <summary>
         /// 向矩阵末尾添加一行。
         /// </summary>
         /// <param name="matrix">待添加行的矩阵。</param>
@@ -472,23 +494,93 @@ namespace ExtenderApp.Common.Math
         }
 
         /// <summary>
-        /// 在矩阵的最后一行追加一个新的行，该行只有一个元素。
+        /// 在矩阵的最后一行追加一个新的行。
         /// </summary>
         /// <param name="matrix">待追加行的矩阵。</param>
         /// <param name="num">要追加的新行中的元素值。</param>
         /// <returns>返回追加新行后的矩阵。</returns>
-        /// <exception cref="ArgumentException">如果添加数据矩阵不只一列数据时，则抛出此异常。</exception>
         public static Matrix AppendRow(this Matrix matrix, double num)
         {
-            if (matrix.Column > 1)
-                throw new ArgumentNullException(nameof(matrix));
-
             int row = matrix.Row + 1;
-            var resultMatrix = matrix.CopyTo(new Matrix(matrix.Row + 1, 1));
+            var resultMatrix = matrix.CopyTo(new Matrix(matrix.Row + 1, matrix.Column));
 
-            resultMatrix[matrix.Row, 0] = num;
+            for (int i = 0; i < matrix.Column; i++)
+            {
+                resultMatrix[matrix.Row, i] = num;
+            }
 
             return resultMatrix;
         }
+
+        /// <summary>
+        /// 在矩阵的最后一行追加一个新的行。
+        /// </summary>
+        /// <param name="matrix">待追加行的矩阵。</param>
+        /// <param name="num">要追加的新行中的元素值。</param>
+        /// <returns>返回追加新行后的矩阵。</returns>
+        public static Matrix AppendRow(this Matrix matrix, double num, int count)
+        {
+            if (count <= 0)
+                throw new AggregateException(nameof(count));
+
+            int row = matrix.Row + 1;
+            var resultMatrix = matrix.CopyTo(new Matrix(matrix.Row + count, matrix.Column));
+
+            for (int i = matrix.Row; i < resultMatrix.Row; i++)
+            {
+                for (int j = 0; j < matrix.Column; j++)
+                {
+                    resultMatrix[i, j] = num;
+                }
+            }
+
+            return resultMatrix;
+        }
+
+        /// <summary>
+        /// 计算两个矩阵的克罗内克积（Kronecker Product）
+        /// </summary>
+        /// <param name="matrix">参与运算的第一个矩阵</param>
+        /// <param name="other">参与运算的第二个矩阵</param>
+        /// <returns>返回两个矩阵的克罗内克积</returns>
+        public static Matrix KroneckerProduct(this Matrix matrix, Matrix other)
+        {
+            Matrix result = new Matrix(matrix.Row * other.Row, matrix.Column * other.Column);
+
+            for (int i = 0; i < matrix.Row; i++)
+            {
+                for (int j = 0; j < matrix.Column; j++)
+                {
+                    for (int k = 0; k < other.Row; k++)
+                    {
+                        for (int l = 0; l < other.Column; l++)
+                            result[(i * other.Row) + k, (j * other.Column) + l] = matrix[i, j] * other[k, l];
+                    }
+                }
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// 计算矩阵与向量的外积（Outer Product）
+        /// </summary>
+        /// <param name="matrix">参与运算的矩阵</param>
+        /// <param name="other">参与运算的向量</param>
+        /// <returns>返回矩阵与向量的外积</returns>
+        public static Matrix OuterProduct(this Matrix matrix, double[] other)
+        {
+            Matrix result = new Matrix(matrix.Row, other.Length);
+
+            for (int i = 0; i < matrix.Row; i++)
+            {
+                for (int j = 0; j < other.Length; j++)
+                {
+                    result[i, j] = matrix[i, 0] * other[j];
+                }
+            }
+
+            return result;
+        }
+
     }
 }

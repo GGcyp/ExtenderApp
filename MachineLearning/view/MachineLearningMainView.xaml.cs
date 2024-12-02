@@ -30,74 +30,48 @@ namespace MachineLearning.view
         {
             InitializeComponent();
 
-            //// 示例数据点
-            //List<(double X, double Y)> dataPoints = new List<(double, double)>
-            //{
-            //    (1, 2),
-            //    (2, 3),
-            //    (3, 5),
-            //    (4, 6),
-            //    (5, 7)
-            //};
+            //var x = new ExtenderApp.Data.Matrix(new double[,] { { 1, -1, 1 }, { 2, 1, -1 }, { 3, -2, 6 } });
+            ////var y = new double[,] { { 100, 80, 256 } };
+            //var y = new ExtenderApp.Data.Matrix(new double[,] { { 100 }, { 80 }, { 256 } });
 
-            //// 创建线性回归模型
-            //LinearRegression model = new LinearRegression(dataPoints);
+            ////var x = new ExtenderApp.Data.Matrix(new double[,] { { 1, 1 }, { 2, -1 } });
+            ////var y = new ExtenderApp.Data.Matrix(new double[,] { { 14 }, { 10 } });
 
-            //// 输出模型参数
-            //Debug.Print($"Slope: {model.Slope}, Intercept: {model.Intercept}");
+            ////var temp = MatrixMath.Dot(MatrixMath.Inverse(MatrixMath.Dot(MatrixMath.Transpose(x), x)), MatrixMath.Transpose(x));
+            ////temp = MatrixMath.Dot(temp, y);
+            ////var temp = x.Transpose().Dot(x).Inverse().Dot(x.Transpose()).Dot(y);
 
-            //// 进行预测
-            //double x = 6;
-            //double predictedY = model.Predict(x);
-            //Debug.Print($"Predicted Y for X={x}: {predictedY}");
-            //DrawLineGraph();
-            //DrawLineGraphWithScales();
-            //            MatrixMath.Determinant(new double[,]
-            //            {
-            //                { 4, 2, 1, 5 },
-            //                { 8, 7, 2, 10 },
-            //                { 4, 8, 3, 6 },
-            //                { 6, 8, 4, 9 }
-            //            });
+            //LinearRegression linear = new(true);
+            //linear.Exercise(x.AppendColumn(1).AppendRow(new double[4] { 1, 1, 1, 1 }), y.AppendRow(50));
+            //Debug.Print("截距" + " : " + linear.Intercept.ToString());
+            //Debug.Print("系数矩阵" + " : " + linear.CoefficientMatrix.ToString());
+            //linear = new(false);
+            //linear.Exercise(x, y);
+            //Debug.Print("截距" + " : " + linear.Intercept.ToString());
+            //Debug.Print("系数矩阵" + " : " + linear.CoefficientMatrix.ToString());
 
-            //            MatrixMath.InvertMatrix(new double[,]
-            //{
-            //                { 4, 2, 1, 5 },
-            //                { 8, 7, 2, 10 },
-            //                { 4, 8, 3, 6 },
-            //                //{ 6, 8, 4, 9 }
-            //            });
+            var x = new ExtenderApp.Data.Matrix(new double[5, 1] { { 5 }, { 3 }, { 7 }, { 8 }, { 9 } });
+            var w = new ExtenderApp.Data.Matrix(new double[1, 1] { { 1 } }); ;
+            var b = new ExtenderApp.Data.Matrix(new double[1, 1] { { 3 } }); ;
 
-            //            MatrixMath.MatrixMultiply(new double[,]
-            //            {
-            //                { 1, -1 },
-            //                { -2, 3},
-            //                { 4, -2 },
-            //            }, new double[,]
-            //{
-            //                { 2, 1 },
-            //                { 3, 4 },
-            //            });
-
-            var x = new ExtenderApp.Data.Matrix(new double[,] { { 1, -1, 1 }, { 2, 1, -1 }, { 3, -2, 6 } });
-            //var y = new double[,] { { 100, 80, 256 } };
-            var y = new ExtenderApp.Data.Matrix(new double[,] { { 100 }, { 80 }, { 256 } });
-
-            //var x = new ExtenderApp.Data.Matrix(new double[,] { { 1, 1 }, { 2, -1 } });
-            //var y = new ExtenderApp.Data.Matrix(new double[,] { { 14 }, { 10 } });
-
-            //var temp = MatrixMath.Dot(MatrixMath.Inverse(MatrixMath.Dot(MatrixMath.Transpose(x), x)), MatrixMath.Transpose(x));
-            //temp = MatrixMath.Dot(temp, y);
-            //var temp = x.Transpose().Dot(x).Inverse().Dot(x.Transpose()).Dot(y);
-
+            ExtenderApp.Data.Matrix y = x * w + b + new double[] { 5, 2, 3, 1, 5 };
+            Debug.Print(" 斜率 : " + w.ToString() + " 截距 : " + b.ToString());
+            var X = x.AppendColumn(1);
             LinearRegression linear = new(true);
-            linear.Exercise(x.AppendColumn(1).AppendRow(new double[4] { 1, 1, 1, 1 }), y.AppendRow(50));
-            Debug.Print("截距" + " : " + linear.Intercept.ToString());
-            Debug.Print("系数矩阵" + " : " + linear.CoefficientMatrix.ToString());
-            linear = new(false);
-            linear.Exercise(x, y);
-            Debug.Print("截距" + " : " + linear.Intercept.ToString());
-            Debug.Print("系数矩阵" + " : " + linear.CoefficientMatrix.ToString());
+            linear.Exercise(X, y);
+            Debug.Print(linear.CoefficientMatrix.ToString());
+
+            var x1 = new ExtenderApp.Data.Matrix(new double[3, 1] { { 5 }, { 4 }, { 6 } });
+            var x2 = new ExtenderApp.Data.Matrix(new double[3, 1] { { 6 }, { 3 }, { 2 } });
+            w = new ExtenderApp.Data.Matrix(new double[2, 1] { { 1 }, { 8 } }); ;
+            b = new ExtenderApp.Data.Matrix(new double[1, 1] { { 3 } }); ;
+
+            y = x1 * w[0, 0] + x2 * w[1, 0] + b + 10;
+            Debug.Print("真实值是 : " + y.ToString() + " 斜率 : " + w.ToString() + " 截距 : " + b.ToString());
+            X = x1.AppendColumn(x2).AppendColumn(1);
+            linear = new(true);
+            linear.Exercise(X, y);
+            Debug.Print(linear.CoefficientMatrix.ToString());
         }
 
 

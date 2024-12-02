@@ -53,6 +53,15 @@ namespace ExtenderApp.Data
         }
 
         /// <summary>
+        /// 使用一个数字初始化一个1x1的矩阵
+        /// </summary>
+        /// <param name="num">要初始化的矩阵中的唯一元素</param>
+        public Matrix(double num) : this(1, 1)
+        {
+            _matrix[0, 0] = num;
+        }
+
+        /// <summary>
         /// 使用指定的行数和列数初始化 Matrix 结构的新实例。
         /// </summary>
         /// <param name="row">矩阵的行数。</param>
@@ -79,7 +88,7 @@ namespace ExtenderApp.Data
             _matrix = new double[Row, Column];
             for (int i = 0; i < Row; i++)
             {
-                _matrix[i, Column] = doubles[i];
+                _matrix[i, 0] = doubles[i];
             }
         }
 
@@ -121,6 +130,8 @@ namespace ExtenderApp.Data
             return new Matrix((double[,])_matrix.Clone());
         }
 
+        #region Operator
+
         /// <summary>
         /// 重载加法运算符，用于矩阵加法运算。
         /// </summary>
@@ -132,17 +143,24 @@ namespace ExtenderApp.Data
         {
             if (left.Row != right.Row || left.Column != right.Column)
             {
+                //判断是否为单一矩阵
+                if (right.Row == 1 && right.Column == 1)
+                {
+                    return left + right[0, 0];
+                }
                 throw new ArgumentException("The dimensions of the matrices do not match, so addition cannot be performed.");
             }
+
+            Matrix result = new Matrix(left.Row, left.Row);
 
             for (int i = 0; i < left.Row; i++)
             {
                 for (int j = 0; j < left.Column; j++)
                 {
-                    left[i, j] += right[i, j];
+                    result[i, j] = left[i, j] + right[i, j];
                 }
             }
-            return left;
+            return result;
         }
 
         /// <summary>
@@ -153,14 +171,15 @@ namespace ExtenderApp.Data
         /// <returns>返回矩阵与常数相加的结果。</returns>
         public static Matrix operator +(Matrix left, double @const)
         {
+            Matrix result = new Matrix(left.Row, left.Column);
             for (int i = 0; i < left.Row; i++)
             {
                 for (int j = 0; j < left.Column; j++)
                 {
-                    left[i, j] += @const;
+                    result[i, j] = left[i, j] + @const;
                 }
             }
-            return left;
+            return result;
         }
 
         /// <summary>
@@ -171,14 +190,39 @@ namespace ExtenderApp.Data
         /// <returns>返回矩阵与整数相加的结果。</returns>
         public static Matrix operator +(Matrix left, int @const)
         {
+            Matrix result = new Matrix(left.Row, left.Column);
             for (int i = 0; i < left.Row; i++)
             {
                 for (int j = 0; j < left.Column; j++)
                 {
-                    left[i, j] += @const;
+                    result[i, j] = left[i, j] + @const;
                 }
             }
-            return left;
+            return result;
+        }
+
+
+        /// <summary>
+        /// 重载加法运算符，将Matrix对象与double数组相加
+        /// </summary>
+        /// <param name="left">左操作数，Matrix类型</param>
+        /// <param name="nums">右操作数，double数组</param>
+        /// <returns>返回一个新的Matrix对象，其行数与left相同，列数比left多一列</returns>
+        public static Matrix operator +(Matrix left, double[] nums)
+        {
+            if (nums.Length != left.Row)
+                throw new ArgumentException("The length of nums array must match the number of rows in the Matrix.");
+
+            Matrix result = new Matrix(left.Row, left.Column+1);
+            for (int i = 0; i < left.Row; i++)
+            {
+                for (int j = 0; j < left.Column; j++)
+                {
+                    result[i, j] = left[i, j];
+                }
+                result[i,left.Column] = nums[i];
+            }
+            return result;
         }
 
         /// <summary>
@@ -195,14 +239,16 @@ namespace ExtenderApp.Data
                 throw new ArgumentException("The dimensions of the matrices do not match, so addition cannot be performed.");
             }
 
+            Matrix result = new Matrix(left.Row, left.Row);
+
             for (int i = 0; i < left.Row; i++)
             {
                 for (int j = 0; j < left.Column; j++)
                 {
-                    left[i, j] -= right[i, j];
+                    result[i, j] = left[i, j] + right[i, j];
                 }
             }
-            return left;
+            return result;
         }
 
         /// <summary>
@@ -213,14 +259,15 @@ namespace ExtenderApp.Data
         /// <returns>返回矩阵与常数相减的结果。</returns>
         public static Matrix operator -(Matrix left, double @const)
         {
+            Matrix result = new Matrix(left.Row, left.Column);
             for (int i = 0; i < left.Row; i++)
             {
                 for (int j = 0; j < left.Column; j++)
                 {
-                    left[i, j] -= @const;
+                    result[i, j] = left[i, j] - @const;
                 }
             }
-            return left;
+            return result;
         }
 
         /// <summary>
@@ -231,15 +278,126 @@ namespace ExtenderApp.Data
         /// <returns>返回矩阵与整数相减的结果。</returns>
         public static Matrix operator -(Matrix left, int @const)
         {
+            Matrix result = new Matrix(left.Row, left.Column);
             for (int i = 0; i < left.Row; i++)
             {
                 for (int j = 0; j < left.Column; j++)
                 {
-                    left[i, j] -= @const;
+                    result[i, j] = left[i, j] - @const;
                 }
             }
-            return left;
+            return result;
         }
+
+        /// <summary>
+        /// 矩阵与整数的乘法运算符重载。
+        /// </summary>
+        /// <param name="left">左侧操作数，矩阵类型。</param>
+        /// <param name="const">右侧操作数，整型常量。</param>
+        /// <returns>返回一个新的矩阵，其元素是原矩阵元素与整数的乘积。</returns>
+        public static Matrix operator *(Matrix left, int @const)
+        {
+            Matrix result = new Matrix(left.Row, left.Column);
+            for (int i = 0; i < left.Row; i++)
+            {
+                for (int j = 0; j < left.Column; j++)
+                {
+                    result[i, j] = left[i, j] * @const;
+                }
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// 矩阵与双精度浮点数的乘法运算符重载。
+        /// </summary>
+        /// <param name="left">左侧操作数，矩阵类型。</param>
+        /// <param name="const">右侧操作数，双精度浮点型常量。</param>
+        /// <returns>返回一个新的矩阵，其元素是原矩阵元素与双精度浮点数的乘积。</returns>
+        public static Matrix operator *(Matrix left, double @const)
+        {
+            Matrix result = new Matrix(left.Row, left.Column);
+            for (int i = 0; i < left.Row; i++)
+            {
+                for (int j = 0; j < left.Column; j++)
+                {
+                    result[i, j] = left[i, j] * @const;
+                }
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// 矩阵乘法运算符重载
+        /// </summary>
+        /// <param name="left">左矩阵</param>
+        /// <param name="right">右矩阵</param>
+        /// <returns>返回两个矩阵相乘的结果</returns>
+        /// <exception cref="ArgumentException">如果左矩阵的列数不等于右矩阵的行数，则抛出异常</exception>
+        public static Matrix operator *(Matrix left, Matrix right)
+        {
+            if (left.Column != right.Row)
+            {
+                //左矩阵的列数必须等于右矩阵的行数才能进行乘法运算。
+                throw new ArgumentException("The number of columns in the first matrix must be equal to the number of rows in the second matrix for multiplication to be possible.");
+            }
+
+            Matrix result = new Matrix(left.Row, right.Column);
+
+            for (int i = 0; i < left.Row; i++)
+            {
+                for (int j = 0; j < right.Column; j++)
+                {
+                    double sum = 0;
+                    for (int k = 0; k < left.Column; k++)
+                    {
+                        sum += left[i, k] * right[k, j];
+                    }
+                    result[i, j] = sum;
+                }
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// 矩阵与整数的除法运算符重载。
+        /// </summary>
+        /// <param name="left">左侧操作数，矩阵类型。</param>
+        /// <param name="const">右侧操作数，整型常量。</param>
+        /// <returns>返回一个新的矩阵，其元素是原矩阵元素与整数的商。</returns>
+        public static Matrix operator /(Matrix left, int @const)
+        {
+            Matrix result = new Matrix(left.Row, left.Column);
+            for (int i = 0; i < left.Row; i++)
+            {
+                for (int j = 0; j < left.Column; j++)
+                {
+                    result[i, j] = left[i, j] / @const;
+                }
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// 矩阵与双精度浮点数的除法运算符重载。
+        /// </summary>
+        /// <param name="left">左侧操作数，矩阵类型。</param>
+        /// <param name="const">右侧操作数，双精度浮点型常量。</param>
+        /// <returns>返回一个新的矩阵，其元素是原矩阵元素与双精度浮点数的商。</returns>
+        public static Matrix operator /(Matrix left, double @const)
+        {
+            Matrix result = new Matrix(left.Row, left.Column);
+            for (int i = 0; i < left.Row; i++)
+            {
+                for (int j = 0; j < left.Column; j++)
+                {
+                    result[i, j] = left[i, j] / @const;
+                }
+            }
+            return result;
+        }
+
+        #endregion
 
         public override string ToString()
         {

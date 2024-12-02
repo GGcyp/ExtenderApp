@@ -20,6 +20,15 @@ namespace MachineLearning
         public double Intercept { get; private set; }
 
         /// <summary>
+        /// 训练数据集
+        /// </summary>
+        public Matrix MatrixX { get; private set; }
+        /// <summary>
+        /// 结果集
+        /// </summary>
+        public Matrix MatrixY { get; private set; }
+
+        /// <summary>
         /// 获取计算得到的系数矩阵。
         /// </summary>
         public Matrix CoefficientMatrix { get; private set; }
@@ -56,17 +65,19 @@ namespace MachineLearning
         /// <summary>
         /// 对给定的矩阵和矩阵进行线性回归分析。
         /// </summary>
-        /// <param name="matrix">输入的自变量矩阵。</param>
+        /// <param name="matrixX">输入的自变量矩阵。</param>
         /// <param name="matrixY">因变量的矩阵。</param>
-        public void Exercise(Matrix matrix, Matrix matrixY)
+        public void Exercise(Matrix matrixX, Matrix matrixY)
         {
+            MatrixX = matrixX;
+            MatrixY = matrixY;
             if (InterceptRequired)
             {
-                CalculateInterceptCoefficient(matrix, matrixY);
+                CalculateInterceptCoefficient(matrixX, matrixY);
             }
             else
             {
-                CalculateCoefficient(matrix, matrixY);
+                CalculateCoefficient(matrixX, matrixY);
             }
         }
 
@@ -102,15 +113,22 @@ namespace MachineLearning
             //    interceptMatrix = matrix;
             //}
 
+            // 如果添加截距列后矩阵的行数不等于因变量矩阵的行数，需要对因变量矩阵进行处理
+            if (matrix.Row != matrixY.Row)
+            {
+                matrixY = matrixY.AppendRow(0, matrix.Row - matrixY.Row);
+            }
+
             //默认最后为截距值
             // 计算 (X^T * X) 的逆矩阵
-            var inverseMatrix = matrix.Transpose().Dot(matrix).Inverse();
+            var transpose = matrix.Transpose();
+            var inverseMatrix = transpose.Dot(matrix).Inverse();
 
             // 计算系数向量，其中包含截距和斜率
-            CoefficientMatrix = inverseMatrix.Dot(matrix).Dot(matrixY);
+            CoefficientMatrix = inverseMatrix.Dot(transpose).Dot(matrixY);
 
             //赋值截距
-            Intercept = CoefficientMatrix[CoefficientMatrix.Row - 1, CoefficientMatrix.Column - 1];
+            Intercept = CoefficientMatrix[CoefficientMatrix.Row - 1, 0];
         }
 
         /// <summary>
@@ -128,9 +146,123 @@ namespace MachineLearning
             return true;
         }
 
+        /// <summary>
+        /// 使用系数矩阵对单个数值进行预测。
+        /// </summary>
+        /// <param name="num">待预测的数值。</param>
+        /// <returns>预测结果矩阵，维度与因变量维度相同。</returns>
+        /// <exception cref="ArgumentException">如果系数矩阵的行数与 1 不相等或系数矩阵的列数与因变量维度不相等，则抛出此异常。</returns>
         public double Prediction(double num)
         {
-            return 0.0;
+            if (CoefficientMatrix.Row != 1 || CoefficientMatrix.Column != MatrixY.Column)
+                throw new ArgumentException(nameof(Prediction));
+
+            Matrix inputMatrix = new Matrix(num);
+            var transpose = inputMatrix.Transpose();
+
+            return transpose.Dot(CoefficientMatrix)[0, 0];
+        }
+
+        /// <summary>
+        /// 使用系数矩阵对一组数值进行预测。
+        /// </summary>
+        /// <param name="nums">待预测的数值数组。</returns>
+        /// <returns>预测结果矩阵，维度与因变量维度相同。</returns>
+        /// <exception cref="ArgumentException">如果系数矩阵的行数与待预测数值数组的长度不相等或系数矩阵的列数与因变量维度不相等，则抛出此异常。</returns>
+        public Matrix Prediction(double[] nums)
+        {
+            if (CoefficientMatrix.Row != nums.Length || CoefficientMatrix.Column != MatrixY.Column)
+                throw new ArgumentException(nameof(Prediction));
+
+            Matrix inputMatrix = new Matrix(nums);
+            var transpose = inputMatrix.Transpose();
+
+            return transpose.Dot(CoefficientMatrix);
+        }
+
+        /// <summary>
+        /// 使用系数矩阵对矩阵进行预测。
+        /// </summary>
+        /// <param name="matrix">待预测的矩阵。</returns>
+        /// <returns>预测结果矩阵，维度与因变量维度相同。</returns>
+        public Matrix Prediction(Matrix matrix)
+        {
+            if (CoefficientMatrix.Row != matrix.Row || CoefficientMatrix.Column != MatrixY.Column)
+                throw new ArgumentException(nameof(Prediction));
+
+            var transpose = matrix.Transpose();
+
+            return transpose.Dot(CoefficientMatrix);
+        }
+
+        /// <summary>
+        /// 计算每个因变量维度的均方误差（MSE）。
+        /// </summary>
+        /// <returns>返回一个数组，数组中的每个元素是对应因变量维度的均方误差。</returns>
+        public double[] CalculateMSE()
+        {
+            double[] mseArray = new double[MatrixY.Column];
+
+            for (int j = 0; j < MatrixY.Column; j++)
+            {
+                double sumSquaredError = 0;
+                for (int i = 0; i < MatrixY.Row; i++)
+                {
+                    Matrix prediction = Prediction(MatrixX);
+                    double error = MatrixY[i, j] - prediction[i, j];
+                    sumSquaredError += error * error;
+                }
+
+                mseArray[j] = sumSquaredError / MatrixY.Row;
+            }
+
+            return mseArray;
+        }
+
+        /// <summary>
+        /// 计算平均绝对误差（MAE）。
+        /// </summary>
+        /// <returns>返回平均绝对误差的值。</returns>
+        public double CalculateMAE()
+        {
+            double sumAbsoluteError = 0;
+
+            for (int j = 0; j < MatrixY.Column; j++)
+            {
+                for (int i = 0; i < MatrixY.Row; i++)
+                {
+                    Matrix prediction = Prediction(MatrixX);
+                    double error = MatrixY[i, j] - prediction[i, j];
+                    sumAbsoluteError += Math.Abs(error);
+                }
+            }
+
+            return sumAbsoluteError / (MatrixY.Row * MatrixY.Column);
+        }
+
+        /// <summary>
+        /// 计算决定系数（R²）。
+        /// </summary>
+        /// <returns>返回决定系数的值。</returns>
+        public double CalculateR2()
+        {
+            double[] mseArray = CalculateMSE();
+            double totalSumSquaredError = 0;
+            double totalSumSquaredResidual = 0;
+
+            for (int j = 0; j < MatrixY.Column; j++)
+            {
+                for (int i = 0; i < MatrixY.Row; i++)
+                {
+                    Matrix prediction = Prediction(MatrixX);
+                    double error = MatrixY[i, j] - prediction[i, j];
+                    totalSumSquaredError += error * error;
+                    double residual = MatrixY[i, j] - MatrixY[i, j];
+                    totalSumSquaredResidual += residual * residual;
+                }
+            }
+
+            return 1 - (totalSumSquaredError / totalSumSquaredResidual);
         }
     }
 }
