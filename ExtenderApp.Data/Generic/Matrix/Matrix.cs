@@ -151,7 +151,7 @@ namespace ExtenderApp.Data
                 throw new ArgumentException("The dimensions of the matrices do not match, so addition cannot be performed.");
             }
 
-            Matrix result = new Matrix(left.Row, left.Row);
+            Matrix result = new Matrix(left.Row, left.Column);
 
             for (int i = 0; i < left.Row; i++)
             {
@@ -201,7 +201,6 @@ namespace ExtenderApp.Data
             return result;
         }
 
-
         /// <summary>
         /// 重载加法运算符，将Matrix对象与double数组相加
         /// </summary>
@@ -213,14 +212,14 @@ namespace ExtenderApp.Data
             if (nums.Length != left.Row)
                 throw new ArgumentException("The length of nums array must match the number of rows in the Matrix.");
 
-            Matrix result = new Matrix(left.Row, left.Column+1);
+            Matrix result = new Matrix(left.Row, left.Column + 1);
             for (int i = 0; i < left.Row; i++)
             {
                 for (int j = 0; j < left.Column; j++)
                 {
                     result[i, j] = left[i, j];
                 }
-                result[i,left.Column] = nums[i];
+                result[i, left.Column] = nums[i];
             }
             return result;
         }
@@ -239,13 +238,13 @@ namespace ExtenderApp.Data
                 throw new ArgumentException("The dimensions of the matrices do not match, so addition cannot be performed.");
             }
 
-            Matrix result = new Matrix(left.Row, left.Row);
+            Matrix result = new Matrix(left.Row, left.Column);
 
             for (int i = 0; i < left.Row; i++)
             {
                 for (int j = 0; j < left.Column; j++)
                 {
-                    result[i, j] = left[i, j] + right[i, j];
+                    result[i, j] = left[i, j] - right[i, j];
                 }
             }
             return result;
@@ -398,6 +397,27 @@ namespace ExtenderApp.Data
         }
 
         #endregion
+
+        /// <summary>
+        /// 创建一个 n*n 的单位矩阵
+        /// </summary>
+        /// <param name="n">矩阵的维数</param>
+        /// <param name="num">矩阵中元素的值</param>
+        /// <returns>返回一个 n*n 的单位矩阵</returns>
+        public static Matrix Identity(int n, double num = 1)
+        {
+            Matrix matrix = new(n, n);
+
+            for (int i = 0; n < 0; i++)
+            {
+                for (int j = 0; j < n; j++)
+                {
+                    matrix[i, j] = num;
+                }
+            }
+
+            return matrix;
+        }
 
         public override string ToString()
         {

@@ -34,10 +34,10 @@ namespace ExtenderApp.Data
         public ValueList()
             : this(m_DefaultLength) { }
 
-        public ValueList(int size)
+        public ValueList(int capacity)
         {
             Count = 0;
-            array = new T[size];
+            array = new T[capacity];
         }
 
         public ValueList(T[] array)

@@ -2,8 +2,147 @@
 
 namespace ExtenderApp.Common.Math
 {
+    /// <summary>
+    /// 矩阵拓展类
+    /// </summary>
     public static class MatrixExtensions
     {
+        #region 基础矩阵运算
+
+        /// <summary>
+        /// 将两个矩阵相加。
+        /// </summary>
+        /// <param name="matrixLeft">左侧矩阵。</param>
+        /// <param name="matrixRight">右侧矩阵。</param>
+        /// <returns>返回相加后的左矩阵。</returns>
+        /// <exception cref="ArgumentException">如果两个矩阵的维度不匹配且右侧矩阵不是1x1矩阵，则抛出异常。</exception>
+        public static Matrix Sum(this Matrix matrixLeft, Matrix matrixRight)
+        {
+            // 首先判断两个矩阵的维度（行数和列数）是否一致，如果不一致则进一步判断是否是右矩阵为1x1的特殊情况（可当作标量来处理与左矩阵相加）
+            if (matrixLeft.Row != matrixRight.Row || matrixLeft.Column != matrixRight.Column)
+            {
+                if (matrixRight.Row == 1 && matrixRight.Column == 1)
+                {
+                    for (int i = 0; i < matrixLeft.Row; i++)
+                    {
+                        for (int j = 0; j < matrixRight.Column; j++)
+                        {
+                            matrixLeft[i, j] += matrixRight[1, 1];
+                        }
+                    }
+                    return matrixLeft;
+                }
+                throw new ArgumentException("The dimensions of the matrices do not match, so addition cannot be performed.");
+            }
+
+            for (int i = 0; i < matrixLeft.Row; i++)
+            {
+                for (int j = 0; j < matrixLeft.Column; j++)
+                {
+                    matrixLeft[i, j] += matrixRight[i, j];
+                }
+            }
+
+            return matrixLeft;
+        }
+
+        /// <summary>
+        /// 将两个矩阵相减。
+        /// </summary>
+        /// <param name="matrixLeft">左侧矩阵。</param>
+        /// <param name="matrixRight">右侧矩阵。</param>
+        /// <returns>返回相减后的左矩阵。</returns>
+        /// <exception cref="ArgumentException">如果两个矩阵的维度不匹配且右侧矩阵不是1x1矩阵，则抛出异常。</exception>
+        public static Matrix Sub(this Matrix matrixLeft, Matrix matrixRight)
+        {
+            // 首先判断两个矩阵的维度（行数和列数）是否一致，如果不一致则进一步判断是否是右矩阵为1x1的特殊情况（可当作标量来处理与左矩阵相加）
+            if (matrixLeft.Row != matrixRight.Row || matrixLeft.Column != matrixRight.Column)
+            {
+                if (matrixRight.Row == 1 && matrixRight.Column == 1)
+                {
+                    for (int i = 0; i < matrixLeft.Row; i++)
+                    {
+                        for (int j = 0; j < matrixRight.Column; j++)
+                        {
+                            matrixLeft[i, j] -= matrixRight[1, 1];
+                        }
+                    }
+                    return matrixLeft;
+                }
+                throw new ArgumentException("The dimensions of the matrices do not match, so addition cannot be performed.");
+            }
+
+            for (int i = 0; i < matrixLeft.Row; i++)
+            {
+                for (int j = 0; j < matrixLeft.Column; j++)
+                {
+                    matrixLeft[i, j] -= matrixRight[i, j];
+                }
+            }
+
+            return matrixLeft;
+        }
+
+        /// <summary>
+        /// 矩阵乘法扩展方法
+        /// </summary>
+        /// <param name="matrixLeft">左矩阵</param>
+        /// <param name="matrixRight">右矩阵</param>
+        /// <param name="result">结果矩阵，默认为空矩阵</param>
+        /// <returns>返回乘法结果矩阵</returns>
+        /// <exception cref="ArgumentException">当左矩阵的列数不等于右矩阵的行数时抛出</exception>
+        public static Matrix Multiplication(this Matrix matrixLeft, Matrix matrixRight, Matrix result = default)
+        {
+            // 判断左矩阵的列数是否等于右矩阵的行数，若不相等则抛出参数异常，因为不符合矩阵乘法的基本规则，无法进行乘法运算
+            if (matrixLeft.Column != matrixRight.Row)
+            {
+                throw new ArgumentException("The number of columns in the first matrix must be equal to the number of rows in the second matrix for multiplication to be possible.");
+            }
+
+            if (result.IsEmpty || result.Row != matrixLeft.Row || result.Column != matrixRight.Column)
+                result = new Matrix(matrixLeft.Row, matrixRight.Column);
+
+
+            for (int i = 0; i < matrixLeft.Row; i++)
+            {
+                for (int j = 0; j < matrixRight.Column; j++)
+                {
+                    double sum = 0;
+                    for (int k = 0; k < matrixLeft.Column; k++)
+                    {
+                        sum += matrixLeft[i, k] * matrixRight[k, j];
+                    }
+                    result[i, j] = sum;
+                }
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// 矩阵数乘扩展方法
+        /// </summary>
+        /// <param name="matrixLeft">待数乘的矩阵</param>
+        /// <param name="num">乘数</param>
+        /// <returns>返回数乘后的矩阵,返回矩阵为修改后的待数乘矩阵</returns>
+
+        public static Matrix Multiplication(this Matrix matrixLeft, double num)
+        {
+            for (int i = 0; i < matrixLeft.Row; i++)
+            {
+                for (int j = 0; j < matrixLeft.Column; j++)
+                {
+                    matrixLeft[i, j] *= num;
+                }
+            }
+
+            return matrixLeft;
+        }
+
+        #endregion
+
+        #region 矩阵运算
+
         /// <summary>
         /// 复制矩阵行数和列数，如果目标矩阵不为空但行列不一致则报错
         /// </summary>
@@ -139,15 +278,15 @@ namespace ExtenderApp.Common.Math
         }
 
         /// <summary>
-        /// 对两个矩阵进行点乘运算。
+        /// 执行矩阵乘法运算。
         /// </summary>
         /// <param name="matrixLeft">左侧矩阵。</param>
         /// <param name="matrixRight">右侧矩阵。</param>
-        /// <param name="canKroneckerProduct">是否允许克罗内克积运算，默认为false。</param>
-        /// <returns>返回点乘后的矩阵。</returns>
-        /// <exception cref="ArgumentNullException">如果输入的矩阵为空，则抛出此异常。</exception>
-        /// <exception cref="ArgumentException">如果两个矩阵不是同型矩阵且不允许克罗内克积运算，则抛出此异常。</exception>
-        public static Matrix Dot(this Matrix matrixLeft, Matrix matrixRight, bool canKroneckerProduct = true)
+        /// <param name="resultMatrix">可选参数，结果矩阵。如果传入的是空矩阵或不符合要求的矩阵，则会自动创建一个新的结果矩阵。适合重复使用时内存优化</param>
+        /// <returns>返回结果矩阵。</returns>
+        /// <exception cref="ArgumentNullException">如果左侧矩阵或右侧矩阵为空，则抛出此异常。</exception>
+        /// <exception cref="ArgumentException">如果左侧矩阵的列数不等于右侧矩阵的行数，则抛出此异常。</exception>
+        public static Matrix Dot(this Matrix matrixLeft, Matrix matrixRight, Matrix resultMatrix = default)
         {
             // 检查输入矩阵是否为空
             if (matrixLeft.IsEmpty)
@@ -168,7 +307,6 @@ namespace ExtenderApp.Common.Math
                 throw new ArgumentException("左侧矩阵的列数必须等于右侧矩阵的行数才能进行矩阵乘法。");
 
             //// 创建结果矩阵
-            Matrix resultMatrix = matrixLeft * matrixRight;
             //Matrix resultMatrix = new Matrix(matrixLeft.Row, matrixLeft.Column);
 
             //// 执行矩阵点乘运算
@@ -179,6 +317,22 @@ namespace ExtenderApp.Common.Math
             //        resultMatrix[i, j] = matrixLeft[i, j] * matrixRight[i, j];
             //    }
             //}
+
+            if (resultMatrix.IsEmpty || resultMatrix.Row != matrixLeft.Row || resultMatrix.Column != matrixRight.Column)
+                resultMatrix = new Matrix(matrixLeft.Row, matrixRight.Column);
+
+            for (int i = 0; i < matrixLeft.Row; i++)
+            {
+                for (int j = 0; j < matrixRight.Column; j++)
+                {
+                    double sum = 0;
+                    for (int k = 0; k < matrixLeft.Column; k++)
+                    {
+                        sum += matrixLeft[i, k] * matrixRight[k, j];
+                    }
+                    resultMatrix[i, j] = sum;
+                }
+            }
 
             return resultMatrix;
         }
@@ -394,6 +548,56 @@ namespace ExtenderApp.Common.Math
             return inverseMatrix;
         }
 
+
+        /// <summary>
+        /// 计算两个矩阵的克罗内克积（Kronecker Product）
+        /// </summary>
+        /// <param name="matrix">参与运算的第一个矩阵</param>
+        /// <param name="other">参与运算的第二个矩阵</param>
+        /// <returns>返回两个矩阵的克罗内克积</returns>
+        public static Matrix KroneckerProduct(this Matrix matrix, Matrix other)
+        {
+            Matrix result = new Matrix(matrix.Row * other.Row, matrix.Column * other.Column);
+
+            for (int i = 0; i < matrix.Row; i++)
+            {
+                for (int j = 0; j < matrix.Column; j++)
+                {
+                    for (int k = 0; k < other.Row; k++)
+                    {
+                        for (int l = 0; l < other.Column; l++)
+                            result[(i * other.Row) + k, (j * other.Column) + l] = matrix[i, j] * other[k, l];
+                    }
+                }
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// 计算矩阵与向量的外积（Outer Product）
+        /// </summary>
+        /// <param name="matrix">参与运算的矩阵</param>
+        /// <param name="other">参与运算的向量</param>
+        /// <returns>返回矩阵与向量的外积</returns>
+        public static Matrix OuterProduct(this Matrix matrix, double[] other)
+        {
+            Matrix result = new Matrix(matrix.Row, other.Length);
+
+            for (int i = 0; i < matrix.Row; i++)
+            {
+                for (int j = 0; j < other.Length; j++)
+                {
+                    result[i, j] = matrix[i, 0] * other[j];
+                }
+            }
+
+            return result;
+        }
+
+        #endregion
+
+        #region 矩阵操作
+
         /// <summary>
         /// 在矩阵最后添加一列
         /// </summary>
@@ -537,50 +741,445 @@ namespace ExtenderApp.Common.Math
             return resultMatrix;
         }
 
+        #endregion
+
+        #region 随机
+
         /// <summary>
-        /// 计算两个矩阵的克罗内克积（Kronecker Product）
+        /// 随机生成指定行数和列数的矩阵，矩阵元素服从均匀分布且可定义范围。
         /// </summary>
-        /// <param name="matrix">参与运算的第一个矩阵</param>
-        /// <param name="other">参与运算的第二个矩阵</param>
-        /// <returns>返回两个矩阵的克罗内克积</returns>
-        public static Matrix KroneckerProduct(this Matrix matrix, Matrix other)
+        /// <param name="rows">矩阵的行数。</param>
+        /// <param name="columns">矩阵的列数。</param>
+        /// <param name="minValue">随机数的最小值。</param>
+        /// <param name="maxValue">随机数的最大值。</param>
+        /// <returns>生成的随机矩阵。</returns>
+        public static Matrix NextMatrix(this Random random, int rows, int columns, double minValue = 0, double maxValue = 0)
         {
-            Matrix result = new Matrix(matrix.Row * other.Row, matrix.Column * other.Column);
+            if (random is null) random = new Random();
+            var matrix = new Matrix(rows, columns);
+
+            //差值
+            double differenceValue = maxValue - minValue;
+            if (differenceValue == 0) differenceValue = 1;
+
+            for (int i = 0; i < rows; i++)
+            {
+                for (int j = 0; j < columns; j++)
+                {
+                    matrix[i, j] = random.NextDouble() * differenceValue + minValue;
+                }
+            }
+
+            return matrix;
+        }
+
+        /// <summary>
+        /// 在同一个矩阵内基于矩阵长度相关计算打乱其元素顺序。
+        /// </summary>
+        /// <param name="matrix">要打乱的矩阵。</param>
+        public static Matrix ShuffleMatrixInPlaceWithoutRandom(this Matrix matrix)
+        {
+            int rows = matrix.Row;
+            int cols = matrix.Column;
+            int matrixSize = rows * cols;
+
+            // 遍历矩阵元素，通过特定的索引变换来打乱顺序
+            for (int i = 0; i < matrixSize; i++)
+            {
+                // 计算新的索引位置，这里采用一种简单的基于矩阵长度的变换方式
+                // 例如：将索引i乘以一个基于矩阵大小的数，然后取模得到新索引
+                int newIndex = (i * (matrixSize - 1)) % matrixSize;
+
+                // 将原索引i和新索引newIndex对应的元素在矩阵中进行交换
+                int rowI = i / cols;
+                int colI = i % cols;
+                int rowNewIndex = newIndex / cols;
+                int colNewIndex = newIndex % cols;
+
+                double temp = matrix[rowI, colI];
+                matrix[rowI, colI] = matrix[rowNewIndex, colNewIndex];
+                matrix[rowNewIndex, colNewIndex] = temp;
+            }
+
+            return matrix;
+        }
+
+        /// <summary>
+        /// 生成线性回归测试数据
+        /// </summary>
+        /// <param name="random">随机数生成器</param>
+        /// <param name="numSamples">样本数量</param>
+        /// <param name="numIndependentVariables">独立变量的数量，默认为1</param>
+        /// <param name="testRatio">测试集的比例，默认为20%</param>
+        /// <param name="trueIntercept">真实截距，默认为0</param>
+        /// <param name="noiseStdDev">噪声的标准差，默认为0</param>
+        /// <returns>返回一个包含训练集特征矩阵、训练集标签矩阵、测试集特征矩阵、测试集标签矩阵和真实斜率数组的值元组</returns>
+        /// <remarks>噪声的标准差最好在0~10之间，本测试数据生成范围在0~10之间</remarks>
+        public static ValueTuple<Matrix, Matrix, Matrix, Matrix, double[]> CreateLinearRegressionTestData(this Random random, int numSamples, int numIndependentVariables = 1, int testRatio = 20, double trueIntercept = 0, double noiseStdDev = 0)
+        {
+            double[] trueSlopes = new double[numIndependentVariables];
+            for (int i = 0; i < numIndependentVariables; i++)
+            {
+                trueSlopes[i] = random.NextDouble() * 10;
+            }
+            var result = random.CreateLinearRegressionTestData(numSamples, testRatio, trueIntercept, noiseStdDev, trueSlopes);
+
+            return ValueTuple.Create(result.Item1, result.Item2, result.Item1, result.Item2, trueSlopes);
+        }
+
+        /// <summary>
+        /// 生成线性回归测试数据
+        /// </summary>
+        /// <param name="random">随机数生成器</param>
+        /// <param name="numSamples">样本数量</param>
+        /// <param name="testRatio">测试集的比例，默认为20%</param>
+        /// <param name="trueIntercept">真实截距，默认为0</param>
+        /// <param name="noiseStdDev">噪声的标准差，默认为0</param>
+        /// <param name="trueSlopes">真实斜率数组，默认为null</param>
+        /// <returns>返回一个包含训练集特征矩阵、训练集标签矩阵、测试集特征矩阵和测试集标签矩阵的值元组</returns>
+        /// <remarks>噪声的标准差最好在0~10之间，本测试数据生成范围在0~10之间</remarks>
+        public static ValueTuple<Matrix, Matrix, Matrix, Matrix> CreateLinearRegressionTestData(this Random random, int numSamples, int testRatio = 20, double trueIntercept = 0, double noiseStdDev = 0, double[] trueSlopes = null)
+        {
+            var train = random.CreateLinearRegressionTestData(numSamples, trueSlopes, trueIntercept, noiseStdDev);
+            var test = random.CreateLinearRegressionTestData(numSamples * testRatio / 100, trueSlopes, trueIntercept, noiseStdDev);
+
+            return ValueTuple.Create(train.Item1, train.Item2, test.Item1, test.Item2);
+        }
+
+        /// <summary>
+        /// 创建线性回归测试数据
+        /// </summary>
+        /// <param name="random">随机数生成器</param>
+        /// <param name="numSamples">样本数量</param>
+        /// <param name="numIndependentVariables">自变量数量</param>
+        /// <param name="trueSlopes">真实的斜率数组</param>
+        /// <param name="trueIntercept">真实截距，默认为0</param>
+        /// <param name="noiseStdDev">噪声标准差，默认为0</param>
+        /// <returns>包含自变量矩阵和因变量矩阵的元组</returns>
+        public static ValueTuple<Matrix, Matrix> CreateLinearRegressionTestData(this Random random, int numSamples, double[] trueSlopes, double trueIntercept = 0, double noiseStdDev = 0)
+        {
+            if (numSamples == 0)
+                return default;
+
+            //真实斜率数组
+            if (trueSlopes is null)
+                throw new ArgumentNullException(nameof(trueSlopes));
+
+            // 生成随机的自变量矩阵
+            //给定自变量数组的自变量数据
+            int numIndependentVariables = trueSlopes.Length;
+            //是否有截距
+            bool hasTrueIntercept = trueIntercept != 0;
+            //实际自变量数量，是否需要加上截距
+            int numVariables = hasTrueIntercept ? numIndependentVariables + 1 : numIndependentVariables;
+            var independentVariablesMatrix = new Matrix(numSamples, numVariables);
+            if (random is null) random = new Random();
+            for (int i = 0; i < numSamples; i++)
+            {
+                for (int j = 0; j < numVariables; j++)
+                {
+                    independentVariablesMatrix[i, j] = random.NextDouble();
+                }
+            }
+
+            //如果有斜率，则将最后一列改为1
+            if (hasTrueIntercept)
+            {
+                for (int i = 0; i < numSamples; i++)
+                {
+                    independentVariablesMatrix[i, numVariables - 1] = 1;
+                }
+            }
+
+            // 生成因变量数组，根据真实斜率、截距和添加噪声
+            var dependentVariablesArray = new Matrix(numSamples, 1);
+            for (int i = 0; i < numSamples; i++)
+            {
+                double predictedValue = 0.0;
+                for (int j = 0; j < numIndependentVariables; j++)
+                {
+                    predictedValue += trueSlopes[j] * independentVariablesMatrix[i, j];
+                }
+                dependentVariablesArray[i, 0] = predictedValue + trueIntercept + random.NextGaussian(0, noiseStdDev);
+            }
+
+            return ValueTuple.Create(independentVariablesMatrix, dependentVariablesArray);
+        }
+
+        #endregion
+
+        #region 误差
+
+        /// <summary>
+        /// 计算均方误差（MSE）。
+        /// </summary>
+        /// <param name="PredictionMatrix">预测结果矩阵。</param>
+        /// <param name="TrueYMatrix">真实的因变量矩阵。</param>
+        /// <returns>均方误差值。</returns>
+        public static double CalculateMSE(this Matrix PredictionMatrix, Matrix TrueYMatrix)
+        {
+            if (PredictionMatrix.Row != TrueYMatrix.Row)
+                throw new ArgumentException("预测结果矩阵和真实因变量矩阵的行数必须相同。");
+
+            int n = PredictionMatrix.Row;
+            double sumSquaredError = 0;
+
+            for (int i = 0; i < n; i++)
+            {
+                for (int j = 0; j < PredictionMatrix.Column; j++)
+                {
+                    double error = TrueYMatrix[i, j] - PredictionMatrix[i, j];
+                    sumSquaredError += error * error;
+                }
+            }
+
+            return sumSquaredError / n;
+        }
+
+        /// <summary>
+        /// 计算平均绝对误差（MAE）。
+        /// </summary>
+        /// <param name="PredictionMatrix">预测结果矩阵。</param>
+        /// <param name="TrueYMatrix">真实的因变量矩阵。</param>
+        /// <returns>平均绝对误差值。</returns>
+        public static double CalculateMAE(this Matrix PredictionMatrix, Matrix TrueYMatrix)
+        {
+            if (PredictionMatrix.Row != TrueYMatrix.Row)
+                throw new ArgumentException("预测结果矩阵和真实因变量矩阵的行数必须相同。");
+
+            int n = PredictionMatrix.Row;
+            double sumAbsoluteError = 0;
+
+            for (int i = 0; i < n; i++)
+            {
+                for (int j = 0; j < PredictionMatrix.Column; j++)
+                {
+                    double error = TrueYMatrix[i, j] - PredictionMatrix[i, j];
+                    sumAbsoluteError += System.Math.Abs(error);
+                }
+            }
+
+            return sumAbsoluteError / n;
+        }
+
+        /// <summary>
+        /// 计算均方根误差（RMSE）。
+        /// </summary>
+        /// <param name="PredictionMatrix">预测结果矩阵。</param>
+        /// <param name="TrueYMatrix">真实的因变量矩阵。</param>
+        /// <returns>均方根误差值。</returns>
+        public static double CalculateRMSE(this Matrix PredictionMatrix, Matrix TrueYMatrix)
+        {
+            double mse = CalculateMSE(PredictionMatrix, TrueYMatrix);
+            return System.Math.Sqrt(mse);
+        }
+
+        #endregion
+
+        #region 归一化
+
+        /// <summary>
+        /// 对矩阵每一列进行最小-最大归一化处理
+        /// </summary>
+        /// <param name="matrix">输入的矩阵</param>
+        /// <param name="result">结果矩阵，如果为空，则创建一个新的矩阵存储结果</param>
+        /// <returns>归一化后的矩阵</returns>
+        /// <exception cref="ArgumentException">当输入的矩阵为空时抛出</exception>
+        public static Matrix MinMaxNormalizationColumn(this Matrix matrix, Matrix result = default)
+        {
+            if (matrix.IsEmpty)
+            {
+                throw new ArgumentException("输入矩阵不能为空", "data");
+            }
+
+            if (result.IsEmpty || result.Row != matrix.Row || result.Column != matrix.Column)
+                result = new Matrix(matrix.Row, matrix.Column);
+
+            for (int i = 0; i < matrix.Column; i++)
+            {
+                double min = 0.0;
+                double max = 0.0;
+                // 找到数据中的最小值和最大值
+                for (int j = 0; j < matrix.Row; j++)
+                {
+                    double num = matrix[j, i];
+                    if (num < min)
+                    {
+                        min = num;
+                    }
+                    else if (num > max)
+                    {
+                        max = num;
+                    }
+                }
+
+                //计算归一化
+                double diff = max - min;
+                for (int j = 0; j < matrix.Row; j++)
+                {
+                    result[j, i] = (matrix[j, i] - min) / diff;
+                }
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// 对矩阵每一行进行最小-最大归一化处理
+        /// </summary>
+        /// <param name="matrix">输入的矩阵</param>
+        /// <param name="result">结果矩阵，如果为空，则创建一个新的矩阵存储结果</param>
+        /// <returns>归一化后的矩阵</returns>
+        /// <exception cref="ArgumentException">当输入的矩阵为空时抛出</exception>
+        public static Matrix MinMaxNormalizationRow(this Matrix matrix, Matrix result = default)
+        {
+            if (matrix.IsEmpty)
+            {
+                throw new ArgumentException("输入矩阵不能为空", "data");
+            }
+
+            if (result.IsEmpty || result.Row != matrix.Row || result.Column != matrix.Column)
+                result = new Matrix(matrix.Row, matrix.Column);
 
             for (int i = 0; i < matrix.Row; i++)
             {
+                double min = 0.0;
+                double max = 0.0;
+                // 找到数据中的最小值和最大值
                 for (int j = 0; j < matrix.Column; j++)
                 {
-                    for (int k = 0; k < other.Row; k++)
+                    double num = matrix[i, j];
+                    if (num < min)
                     {
-                        for (int l = 0; l < other.Column; l++)
-                            result[(i * other.Row) + k, (j * other.Column) + l] = matrix[i, j] * other[k, l];
+                        min = num;
+                    }
+                    else if (num > max)
+                    {
+                        max = num;
+                    }
+                }
+
+                //计算归一化
+                double diff = max - min;
+                for (int j = 0; j < matrix.Column; j++)
+                {
+                    result[i, j] = (matrix[i, j] - min) / diff;
+                }
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// 对矩阵的每一列进行Z分数归一化处理
+        /// </summary>
+        /// <param name="matrix">待处理的矩阵</param>
+        /// <param name="result">结果矩阵，如果为空，则创建一个新的矩阵来存储结果</param>
+        /// <returns>归一化后的矩阵</returns>
+        /// <exception cref="ArgumentException">当输入矩阵为空时抛出异常</exception>
+        public static Matrix ZScoreNormalizationColumn(this Matrix matrix, Matrix result = default)
+        {
+            if (matrix.IsEmpty)
+            {
+                throw new ArgumentException("输入矩阵不能为空", "data");
+            }
+
+            if (result.IsEmpty || result.Row != matrix.Row || result.Column != matrix.Column)
+                result = new Matrix(matrix.Row, matrix.Column);
+
+            int row = matrix.Row;
+            for (int i = 0; i < matrix.Column; i++)
+            {
+                double sum = 0;
+                // 计算数据的总和
+                for (int j = 0; j < row; j++)
+                {
+                    sum += matrix[j, i];
+                }
+
+                double mean = sum / row;
+
+                double sumSquaredDiff = 0;
+                // 计算数据与均值的差的平方和
+                for (int j = 0; j < row; j++)
+                {
+                    double diff = matrix[j, i] - mean;
+                    sumSquaredDiff += diff * diff;
+                }
+
+                double stdDeviation = System.Math.Sqrt(sumSquaredDiff / row);
+
+                //计算归一化
+                //如果这一列全为相同数时候会出现零除零，直接让他相等就行
+                if (stdDeviation == 0)
+                {
+                    for (int j = 0; j < row; j++)
+                    {
+                        result[j, i] = 1;
+                    }
+                }
+                else
+                {
+                    for (int j = 0; j < row; j++)
+                    {
+                        result[j, i] = (matrix[j, i] - mean) / stdDeviation;
                     }
                 }
             }
+
             return result;
         }
 
         /// <summary>
-        /// 计算矩阵与向量的外积（Outer Product）
+        /// 对矩阵的行进行Z分数归一化处理
         /// </summary>
-        /// <param name="matrix">参与运算的矩阵</param>
-        /// <param name="other">参与运算的向量</param>
-        /// <returns>返回矩阵与向量的外积</returns>
-        public static Matrix OuterProduct(this Matrix matrix, double[] other)
+        /// <param name="matrix">待处理的矩阵</param>
+        /// <param name="result">存储结果的矩阵，默认为null</param>
+        /// <returns>归一化后的矩阵</returns>
+        /// <exception cref="ArgumentException">当输入矩阵为空时抛出</exception>
+        public static Matrix ZScoreNormalizationRow(this Matrix matrix, Matrix result = default)
         {
-            Matrix result = new Matrix(matrix.Row, other.Length);
+            if (matrix.IsEmpty)
+            {
+                throw new ArgumentException("输入矩阵不能为空", "data");
+            }
 
+            if (result.IsEmpty || result.Row != matrix.Row || result.Column != matrix.Column)
+                result = new Matrix(matrix.Row, matrix.Column);
+
+            int column = matrix.Column;
             for (int i = 0; i < matrix.Row; i++)
             {
-                for (int j = 0; j < other.Length; j++)
+                double sum = 0;
+                // 计算数据的总和
+                for (int j = 0; j < column; j++)
                 {
-                    result[i, j] = matrix[i, 0] * other[j];
+                    sum += matrix[i, j];
                 }
+
+                double mean = sum / column;
+
+                double sumSquaredDiff = 0;
+                // 计算数据与均值的差的平方和
+                for (int j = 0; j < column; j++)
+                {
+                    double diff = matrix[i, j] - mean;
+                    sumSquaredDiff += diff * diff;
+                }
+
+                double stdDeviation = System.Math.Sqrt(sumSquaredDiff / column);
+
+                //计算归一化
+                for (int j = 0; j < column; j++)
+                {
+                    result[i, j] = (matrix[i, j] - mean) / stdDeviation;
+                }
+
             }
 
             return result;
         }
 
+        #endregion
     }
 }
