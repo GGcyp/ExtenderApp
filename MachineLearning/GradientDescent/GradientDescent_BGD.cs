@@ -12,10 +12,8 @@ namespace MachineLearning
         {
         }
 
-        public override void DataFit(Matrix matrixX, Matrix matrixY)
+        public override void DataFit()
         {
-            base.DataFit(matrixX, matrixY);
-
             //梯度
             Matrix gradient;
             var transpose = MatrixX.Transpose();

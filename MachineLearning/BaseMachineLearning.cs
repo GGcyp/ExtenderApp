@@ -55,7 +55,19 @@ namespace MachineLearning
         {
             MatrixX = matrixX;
             MatrixY = matrixY;
+
+            DataFit();
+
+            SplitIntercept();
         }
+
+        /// <summary>
+        /// 抽象的数据拟合方法
+        /// </summary>
+        /// <remarks>
+        /// 该方法应被子类实现，用于计算自变量矩阵和因变量矩阵之间的线性关系，并将结果存储在CoefficientMatrix属性中。
+        /// </remarks>
+        public abstract void DataFit();
 
         /// <summary>
         /// 使用系数矩阵对矩阵进行预测。
@@ -68,6 +80,20 @@ namespace MachineLearning
                 throw new ArgumentException(nameof(Prediction));
 
             return matrix.Dot(CoefficientMatrix);
+        }
+
+        /// <summary>
+        /// 分割拦截方法
+        /// </summary>
+        /// <remarks>
+        /// 该方法用于根据条件分割拦截，如果拦截条件不满足则直接返回。
+        /// 如果满足拦截条件，则从系数矩阵中获取对应位置的元素值并赋值给拦截属性。
+        /// </remarks>
+        protected void SplitIntercept()
+        {
+            if (!InterceptRequired) return;
+
+            Intercept = CoefficientMatrix[CoefficientMatrix.Row - 1, CoefficientMatrix.Column - 1];
         }
 
         public override string ToString()

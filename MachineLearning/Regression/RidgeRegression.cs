@@ -14,23 +14,21 @@ namespace MachineLearning
         /// 构造函数，初始化岭回归的正则化参数
         /// </summary>
         /// <param name="lambda">正则化参数值</param>
-        public RidgeRegression(double lambda) : base(true)
+        public RidgeRegression(double lambda = 1.0) : base(true)
         {
             this.Lambda = lambda;
         }
 
-        public override void DataFit(Matrix matrixX, Matrix matrixY)
+        public override void DataFit()
         {
-            base.DataFit(matrixX, matrixY);
-
-            Matrix transpose = matrixX.Transpose();
-            var identityMatrix = Matrix.Identity(matrixX.Column, 1);
+            Matrix transpose = MatrixX.Transpose();
+            var identityMatrix = Matrix.Identity(MatrixX.Column);
             // 计算 (X^T * X + lambda * I)^(-1) 原生加减乘法会产生新的内存消耗
-            var inverseMatrix = (transpose + identityMatrix.Multiplication(Lambda)).Inverse();
+            var inverseMatrix = (transpose * MatrixX + identityMatrix.Multiplication(Lambda)).Inverse();
             // 计算 (X^T * X + lambda * I)^(-1) * X^T
             var result = inverseMatrix.Multiplication(transpose);
 
-            CoefficientMatrix = result.Dot(matrixY);
+            CoefficientMatrix = result.Dot(MatrixY);
         }
     }
 }

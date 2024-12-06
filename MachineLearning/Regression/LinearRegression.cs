@@ -9,21 +9,19 @@ namespace MachineLearning
     /// </summary>
     public class LinearRegression : BaseMachineLearning
     {
-        public LinearRegression(bool interceptRequired = false) : base(interceptRequired)
+        public LinearRegression(bool interceptRequired = true) : base(interceptRequired)
         {
         }
 
-        public override void DataFit(Matrix matrixX, Matrix matrixY)
+        public override void DataFit()
         {
-            base.DataFit(matrixX, matrixY);
-
             //默认最后为截距值
             // 计算 (X^T * X + lambda * I)^(-1) 的逆矩阵
-            var transpose = matrixX.Transpose();
-            var inverseMatrix = transpose.Dot(matrixX).Inverse();
+            var transpose = MatrixX.Transpose();
+            var inverseMatrix = transpose.Dot(MatrixX).Inverse();
 
             // 计算系数向量，其中包含截距和斜率(X^T * X + lambda * I)^(-1) * X^T
-            CoefficientMatrix = inverseMatrix.Dot(transpose).Dot(matrixY);
+            CoefficientMatrix = inverseMatrix.Dot(transpose).Dot(MatrixY);
 
             //赋值截距
             if (InterceptRequired)

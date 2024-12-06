@@ -25,10 +25,9 @@ namespace MachineLearning
             this.randomCount = randomCount;
         }
 
-        public override void DataFit(Matrix matrixX, Matrix matrixY)
+        public override void DataFit()
         {
-            base.DataFit(matrixX, matrixY);
-            calculateMatrixX = new Matrix(randomCount, matrixX.Column);
+            calculateMatrixX = new Matrix(randomCount, MatrixX.Column);
             calculateMatrixY = new Matrix(randomCount, 1);
 
             //梯度

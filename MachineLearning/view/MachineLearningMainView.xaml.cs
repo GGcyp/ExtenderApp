@@ -60,12 +60,17 @@ namespace MachineLearning.view
 
             LinearRegression linear = new();
             linear.DataFit(temp.Item1, temp.Item2);
-            Debug.Print(linear.ToString());            
+            Debug.Print(linear.ToString());
             Debug.Print("----------------");
             linear = new();
             var normX = temp.Item1.MinMaxNormalizationColumn();
             linear.DataFit(normX, temp.Item2);
             Debug.Print(linear.ToString());
+            RidgeRegression ridge = new RidgeRegression();
+            ridge.DataFit(temp.Item1, temp.Item2);
+            Debug.Print(ridge.ToString());
+            ridge.DataFit(normX, temp.Item2);
+            Debug.Print(ridge.ToString());
         }
 
         private void DrawLineGraph()

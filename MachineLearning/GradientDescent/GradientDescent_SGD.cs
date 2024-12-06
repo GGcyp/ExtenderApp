@@ -34,11 +34,9 @@ namespace MachineLearning
 
         }
 
-        public override void DataFit(Matrix matrixX, Matrix matrixY)
+        public override void DataFit()
         {
-            base.DataFit(matrixX, matrixY);
-
-            calculateMatrixX = new Matrix(1, matrixX.Column);
+            calculateMatrixX = new Matrix(1, MatrixX.Column);
             calculateMatrixY = new Matrix(1, 1);
 
             //梯度
