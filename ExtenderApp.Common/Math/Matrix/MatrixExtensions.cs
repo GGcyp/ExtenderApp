@@ -1,4 +1,6 @@
-﻿using ExtenderApp.Data;
+﻿using System.Runtime;
+using ExtenderApp.Data;
+using HandyControl.Controls;
 
 namespace ExtenderApp.Common.Math
 {
@@ -96,11 +98,24 @@ namespace ExtenderApp.Common.Math
             // 判断左矩阵的列数是否等于右矩阵的行数，若不相等则抛出参数异常，因为不符合矩阵乘法的基本规则，无法进行乘法运算
             if (matrixLeft.Column != matrixRight.Row)
             {
-                throw new ArgumentException("The number of columns in the first matrix must be equal to the number of rows in the second matrix for multiplication to be possible.");
+                if (matrixRight.Column != 1 && matrixRight.Row != 1)
+                    throw new ArgumentException("The number of columns in the first matrix must be equal to the number of rows in the second matrix for multiplication to be possible.");
+
+                if (result.IsEmpty)
+                    return matrixLeft.Multiplication(matrixRight[0, 0]);
+                else
+                    return matrixLeft.CopyTo(result).Multiplication(matrixRight[0, 0]);
             }
 
-            if (result.IsEmpty || result.Row != matrixLeft.Row || result.Column != matrixRight.Column)
-                result = new Matrix(matrixLeft.Row, matrixRight.Column);
+            //除非指定，不然都是直接在左矩阵上操作
+            if (result.IsEmpty)
+            {
+                if (result.Row != matrixLeft.Row || result.Column != matrixRight.Column)
+                    result = new Matrix(matrixLeft.Row, matrixRight.Column);
+                else
+                    result = matrixLeft;
+            }
+
 
 
             for (int i = 0; i < matrixLeft.Row; i++)
@@ -125,7 +140,6 @@ namespace ExtenderApp.Common.Math
         /// <param name="matrixLeft">待数乘的矩阵</param>
         /// <param name="num">乘数</param>
         /// <returns>返回数乘后的矩阵,返回矩阵为修改后的待数乘矩阵</returns>
-
         public static Matrix Multiplication(this Matrix matrixLeft, double num)
         {
             for (int i = 0; i < matrixLeft.Row; i++)
@@ -133,6 +147,72 @@ namespace ExtenderApp.Common.Math
                 for (int j = 0; j < matrixLeft.Column; j++)
                 {
                     matrixLeft[i, j] *= num;
+                }
+            }
+
+            return matrixLeft;
+        }
+
+        /// <summary>
+        /// 矩阵除法法扩展方法
+        /// </summary>
+        /// <param name="matrixLeft">左矩阵</param>
+        /// <param name="matrixRight">右矩阵</param>
+        /// <param name="result">结果矩阵，默认为空矩阵</param>
+        /// <returns>返回除法结果矩阵</returns>
+        /// <exception cref="ArgumentException">当左矩阵的列数不等于右矩阵的行数时抛出</exception>
+        public static Matrix Division(this Matrix matrixLeft, Matrix matrixRight, Matrix result = default)
+        {
+            // 判断左矩阵的列数是否等于右矩阵的行数，若不相等则抛出参数异常，因为不符合矩阵乘法的基本规则，无法进行乘法运算
+            if (matrixLeft.Column != matrixRight.Row)
+            {
+                if (matrixRight.Column != 1 && matrixRight.Row != 1)
+                    throw new ArgumentException("The number of columns in the first matrix must be equal to the number of rows in the second matrix for multiplication to be possible.");
+
+                if (result.IsEmpty || result.Row != matrixLeft.Row || result.Column != matrixRight.Column)
+                    return matrixLeft.Division(matrixRight[0, 0]);
+                else
+                    return matrixLeft.CopyTo(result).Division(matrixRight[0, 0]);
+            }
+
+            //除非指定，不然都是直接在左矩阵上操作
+            if (result.IsEmpty)
+            {
+                if (result.Row != matrixLeft.Row || result.Column != matrixRight.Column)
+                    result = new Matrix(matrixLeft.Row, matrixRight.Column);
+                else
+                    result = matrixLeft;
+            }
+
+            for (int i = 0; i < matrixLeft.Row; i++)
+            {
+                for (int j = 0; j < matrixRight.Column; j++)
+                {
+                    double sum = 0;
+                    for (int k = 0; k < matrixLeft.Column; k++)
+                    {
+                        sum += matrixLeft[i, k] / matrixRight[k, j];
+                    }
+                    result[i, j] = sum;
+                }
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// 矩阵除法法扩展方法
+        /// </summary>
+        /// <param name="matrixLeft">左矩阵</param>
+        /// <param name="num">除数</param>
+        /// <returns>返回除法结果矩阵</returns>
+        public static Matrix Division(this Matrix matrixLeft, double num)
+        {
+            for (int i = 0; i < matrixLeft.Row; i++)
+            {
+                for (int j = 0; j < matrixLeft.Column; j++)
+                {
+                    matrixLeft[i, j] /= num;
                 }
             }
 
@@ -548,7 +628,6 @@ namespace ExtenderApp.Common.Math
             return inverseMatrix;
         }
 
-
         /// <summary>
         /// 计算两个矩阵的克罗内克积（Kronecker Product）
         /// </summary>
@@ -591,6 +670,184 @@ namespace ExtenderApp.Common.Math
                 }
             }
 
+            return result;
+        }
+
+        /// <summary>
+        /// 使用QR分解法求解矩阵的特征值
+        /// </summary>
+        /// <param name="matrix">输入的方阵</param>
+        /// <param name="tolerance">收敛容忍度，用于判断迭代是否收敛</param>
+        /// <param name="maxIterations">最大迭代次数，防止迭代不收敛时无限循环</param>
+        /// <returns>特征值数组</returns>
+        public static double[] QRDecompositionEigenvalues(this Matrix matrix, double tolerance = 1e-10, int maxIterations = 1000)
+        {
+            Matrix a = matrix;
+            int n = a.Row;
+            double[] eigenvalues = new double[n];
+
+            List<double> x = new(a.Row);
+            List<double> v = new(a.Row);
+
+            for (int iter = 0; iter < maxIterations; iter++)
+            {
+                // 进行QR分解
+                (Matrix q, Matrix r) = QRDecomposition(a, x, v);
+                // 更新矩阵 A = R * Q
+                a = r.Multiplication(q);
+
+                // 检查是否收敛，判断非对角线上元素的绝对值之和是否小于容忍度
+                double offDiagonalSum = 0;
+                for (int i = 0; i < n; i++)
+                {
+                    for (int j = 0; j < n; j++)
+                    {
+                        if (i != j)
+                        {
+                            offDiagonalSum += System.Math.Abs(a[i, j]);
+                        }
+                    }
+                }
+
+                if (offDiagonalSum < tolerance)
+                {
+                    // 如果收敛，提取对角线上的元素作为特征值
+                    for (int i = 0; i < n; i++)
+                    {
+                        eigenvalues[i] = a[i, i];
+                    }
+                    return eigenvalues;
+                }
+            }
+
+            throw new Exception("QR分解法未在指定迭代次数内收敛");
+        }
+
+        /// <summary>
+        /// 对矩阵进行QR分解，返回正交矩阵Q和上三角矩阵R
+        /// </summary>
+        /// <param name="matrix">输入的矩阵</param>
+        /// <returns>包含正交矩阵Q和上三角矩阵R的元组</returns>
+        private static (Matrix Q, Matrix R) QRDecomposition(this Matrix matrix, List<double> x, List<double> v)
+        {
+            int m = matrix.Row;
+            int n = matrix.Column;
+            Matrix q = Matrix.Identity(m, 0);
+            Matrix r = matrix;
+
+            Matrix h = Matrix.Identity(m, 0);
+
+            Matrix result = Matrix.Identity(m, 0);
+
+            for (int j = 0; j < n; j++)
+            {
+                x.Clear();
+                v.Clear();
+                for (int i = j; i < m; i++)
+                {
+                    //x[i - j] = r[i, j];
+                    x.Add(r[i, j]);
+                }
+
+                // 计算Householder向量
+                HouseholderVector(x, v);
+
+                // 构造Householder矩阵H
+                h = HouseholderMatrix(v, h);
+
+                // 更新Q和R
+                q = q.Multiplication(InsertIdentity(q.Row, h, j, result));
+                r = h.Multiplication(r, r);
+            }
+
+            return (q, r);
+        }
+
+        /// <summary>
+        /// 计算Householder向量
+        /// </summary>
+        /// <param name="x">输入向量，通常是矩阵某列的子向量</param>
+        /// <param name="v">输出向量，Householder向量</param>
+        private static void HouseholderVector(List<double> x, List<double> v)
+        {
+            int n = x.Count;
+            double normX = 0;
+            for (int i = 0; i < n; i++)
+            {
+                normX += x[i] * x[i];
+            }
+            normX = System.Math.Sqrt(normX);
+
+            double sign = System.Math.Sign(x[0]);
+            double alpha = -sign * normX;
+
+            if (v is null)
+                v = new(n);
+
+            //v[0] = x[0] - alpha;
+            v.Add(x[0] - alpha);
+            for (int i = 1; i < n; i++)
+            {
+                //v[i] = x[i];
+                v.Add(x[i]);
+            }
+
+            double normV = 0;
+            for (int i = 0; i < n; i++)
+            {
+                normV += v[i] * v[i];
+            }
+            normV = System.Math.Sqrt(normV);
+
+            for (int i = 0; i < n; i++)
+            {
+                v[i] /= normV;
+            }
+        }
+
+        /// <summary>
+        /// 构造Householder矩阵
+        /// </summary>
+        /// <param name="v">Householder向量</param>
+        /// <param name="v">Householder矩阵</param>
+        /// <returns>Householder矩阵</returns>
+        private static Matrix HouseholderMatrix(List<double> v, Matrix h)
+        {
+            int n = v.Count;
+
+            double vTv = 0;
+            for (int i = 0; i < n; i++)
+            {
+                vTv += v[i] * v[i];
+            }
+
+            for (int i = 0; i < n; i++)
+            {
+                for (int j = 0; j < n; j++)
+                {
+                    h[i, j] -= 2 * v[i] * v[j] / vTv;
+                }
+            }
+
+            return h;
+        }
+
+        /// <summary>
+        /// 将Householder矩阵插入到单位矩阵的对应位置，形成扩展的正交矩阵
+        /// </summary>
+        /// <param name="size">扩展后的矩阵行数（或列数）</param>
+        /// <param name="h">Householder矩阵</param>
+        /// <param name="offset">插入的起始位置（行和列）</param>
+        /// <returns>扩展后的正交矩阵</returns>
+        private static Matrix InsertIdentity(int size, Matrix h, int offset, Matrix result)
+        {
+            for (int i = 0; i < h.Row - 1; i++)
+            {
+                for (int j = 0; j < h.Column - 1; j++)
+                {
+                    result[i + offset, j + offset] = h[i, j];
+                }
+            }
             return result;
         }
 
@@ -824,7 +1081,7 @@ namespace ExtenderApp.Common.Math
             }
             var result = random.CreateLinearRegressionTestData(numSamples, testRatio, trueIntercept, noiseStdDev, trueSlopes);
 
-            return ValueTuple.Create(result.Item1, result.Item2, result.Item1, result.Item2, trueSlopes);
+            return ValueTuple.Create(result.Item1, result.Item2, result.Item3, result.Item4, trueSlopes);
         }
 
         /// <summary>
@@ -841,7 +1098,7 @@ namespace ExtenderApp.Common.Math
         public static ValueTuple<Matrix, Matrix, Matrix, Matrix> CreateLinearRegressionTestData(this Random random, int numSamples, int testRatio = 20, double trueIntercept = 0, double noiseStdDev = 0, double[] trueSlopes = null)
         {
             var train = random.CreateLinearRegressionTestData(numSamples, trueSlopes, trueIntercept, noiseStdDev);
-            var test = random.CreateLinearRegressionTestData(numSamples * testRatio / 100, trueSlopes, trueIntercept, noiseStdDev);
+            var test = random.CreateLinearRegressionTestData(numSamples / 100 * testRatio, trueSlopes, trueIntercept, noiseStdDev);
 
             return ValueTuple.Create(train.Item1, train.Item2, test.Item1, test.Item2);
         }
@@ -977,6 +1234,21 @@ namespace ExtenderApp.Common.Math
         #endregion
 
         #region 归一化
+
+        public static double TwoNorm(this Matrix matrix)
+        {
+            var tempMatrix = matrix.Transpose() * matrix;
+
+            var array = tempMatrix.QRDecompositionEigenvalues();
+
+            double maxEigenvalue = array[0];
+            for (int i = 1; i < array.Length; i++)
+            {
+                maxEigenvalue = System.Math.Max(maxEigenvalue, array[i]);
+            }
+
+            return System.Math.Sqrt(maxEigenvalue);
+        }
 
         /// <summary>
         /// 对矩阵每一列进行最小-最大归一化处理
@@ -1115,7 +1387,7 @@ namespace ExtenderApp.Common.Math
                 {
                     for (int j = 0; j < row; j++)
                     {
-                        result[j, i] = 1;
+                        result[j, i] = matrix[j, i];
                     }
                 }
                 else
@@ -1170,14 +1442,168 @@ namespace ExtenderApp.Common.Math
                 double stdDeviation = System.Math.Sqrt(sumSquaredDiff / column);
 
                 //计算归一化
-                for (int j = 0; j < column; j++)
+                if (stdDeviation == 0)
                 {
-                    result[i, j] = (matrix[i, j] - mean) / stdDeviation;
+                    for (int j = 0; j < column; j++)
+                    {
+                        result[i, j] = matrix[i, j];
+                    }
                 }
-
+                else
+                {
+                    for (int j = 0; j < column; j++)
+                    {
+                        result[i, j] = (matrix[i, j] - mean) / stdDeviation;
+                    }
+                }
             }
 
             return result;
+        }
+
+        #endregion
+
+        #region 生成多项式特征
+
+        /// <summary>
+        /// 对矩阵进行多项式拟合变换
+        /// </summary>
+        /// <param name="matrix">输入矩阵</param>
+        /// <param name="degree">多项式的次数，默认为2</param>
+        /// <param name="result">输出矩阵，默认为空矩阵</param>
+        /// <returns>变换后的矩阵</returns>
+        public static Matrix FitTransform(this Matrix matrix, int degree = 2, Matrix result = default)
+        {
+            int numSamples = matrix.Row;
+            int numOriginalFeatures = matrix.Column;
+
+            // 计算生成后的特征数量
+            int numNewFeatures = CalculateNumNewFeatures(numOriginalFeatures, degree);
+
+            if (result.IsEmpty || result.Row != numSamples || result.Column != numNewFeatures)
+                result = new Matrix(numSamples, numNewFeatures);
+
+            // 填充结果矩阵的第一列全为1，对应截距项
+            for (int i = 0; i < numSamples; i++)
+            {
+                result[i, 0] = 1;
+            }
+
+            //int featureIndex = 1;
+            //// 生成原始特征的幂次项,不考虑位置
+            //for (int d = 1; d <= degree; d++)
+            //{
+            //    int numNewFeature = CalculateBinomialCoefficient(numOriginalFeatures, d);
+            //    for (int feature = 0; feature < numOriginalFeatures; feature++)
+            //    {
+            //        for (int i = 0; i < numSamples; i++)
+            //        {
+            //            result[i, featureIndex] = System.Math.Pow(matrix[i, feature], d);
+            //        }
+            //        featureIndex++;
+            //    }
+            //    featureIndex += numNewFeature - numOriginalFeatures;
+            //}
+
+            // 生成交叉项（不同原始特征之间的乘积组合）
+            GenerateCrossTerms(matrix, result, numOriginalFeatures, numSamples, degree);
+
+            return result;
+        }
+
+        /// <summary>
+        /// 计算生成后的特征数量
+        /// </summary>
+        /// <param name="numOriginalFeatures">原始特征数量</param>
+        /// <param name="degree">多项式的次数</param>
+        /// <returns>生成后的特征数量</returns>
+        public static int CalculateNumNewFeatures(int numOriginalFeatures, int degree)
+        {
+            int numNewFeatures = 0;
+            for (int d = 0; d <= degree; d++)
+            {
+                numNewFeatures += CalculateBinomialCoefficient(numOriginalFeatures + d - 1, d);
+            }
+            return numNewFeatures;
+        }
+
+        /// <summary>
+        /// 计算组合数
+        /// </summary>
+        /// <param name="n">需要组合的总数</param>
+        /// <param name="k">幂次</param>
+        /// <returns>组合数</returns>
+        private static int CalculateBinomialCoefficient(int n, int k)
+        {
+            int result = 1;
+            if (k == 0 || k == n)
+                return result;
+
+            int minK = k < (n - k) ? k : (n - k); // 利用组合数的对称性，选择较小的数进行计算，减少循环次数
+            for (int i = 1; i <= minK; i++)
+            {
+                result *= (n - (minK - i));
+                result /= i;
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// 生成交叉项（不同原始特征之间的乘积组合）
+        /// </summary>
+        /// <param name="matrix">输入矩阵</param>
+        /// <param name="result">输出矩阵</param>
+        /// <param name="numOriginalFeatures">原始特征数量</param>
+        /// <param name="numSamples">样本数量</param>
+        /// <param name="degree">多项式的次数</param>
+        private static void GenerateCrossTerms(Matrix matrix, Matrix result, int numOriginalFeatures, int numSamples, int degree)
+        {
+            //加上1次幂的初始值
+            int featureIndex = CalculateNumNewFeatures(numOriginalFeatures, 1);
+            var list = new List<int>(degree) { 0 };
+            //当前次幂
+            for (int k = 2; k <= degree; k++)
+            {
+                //每一列
+                //计算当前次幂的组合总数
+                list.Add(0);
+                for (int i = 0; i < numSamples; i++)
+                {
+                    CalculateCrossTerms(matrix, result, numOriginalFeatures, featureIndex, k, i, ref list);
+                }
+                featureIndex += CalculateBinomialCoefficient(numOriginalFeatures + k - 1, k) + 1;
+            }
+        }
+
+        private static void CalculateCrossTerms(Matrix matrix, Matrix result, int numOriginalFeatures, int crossTermIndex, int degree, int samplesIndex, ref List<int> degreelist)
+        {
+            //因为组合里的第一个数是原始数的幂运算结果，需要跳过
+            
+            for(int i=0; i < degreelist.Count; i++)
+            {
+                degreelist[i] = 0;
+            }
+
+            for (int i = 0; i < degreelist.Count; i++)
+            {
+                for (int j = 0; j < degree; j++)
+                {
+                    CrossTerm(matrix, result, samplesIndex, crossTermIndex, degreelist);
+                    crossTermIndex++;
+                    degreelist[i]++;
+                }
+            }
+        }
+
+        private static void CrossTerm(Matrix matrix, Matrix result, int samplesIndex, int crossTermIndex, List<int> degreelist)
+        {
+            double crossTermValue = 1;
+            for (int i = 0; i < degreelist.Count; i++)
+            {
+                int currentFeature = degreelist[i];
+                crossTermValue *= matrix[samplesIndex, currentFeature];
+            }
+            result[samplesIndex, crossTermIndex] = crossTermValue;
         }
 
         #endregion

@@ -9,7 +9,7 @@ namespace MachineLearning
     /// </summary>
     public class LinearRegression : BaseMachineLearning
     {
-        public LinearRegression(bool interceptRequired = true) : base(interceptRequired)
+        public LinearRegression(bool interceptRequired = true)
         {
         }
 
@@ -22,10 +22,6 @@ namespace MachineLearning
 
             // 计算系数向量，其中包含截距和斜率(X^T * X + lambda * I)^(-1) * X^T
             CoefficientMatrix = inverseMatrix.Dot(transpose).Dot(MatrixY);
-
-            //赋值截距
-            if (InterceptRequired)
-                Intercept = CoefficientMatrix[CoefficientMatrix.Row - 1, 0];
         }
     }
 }

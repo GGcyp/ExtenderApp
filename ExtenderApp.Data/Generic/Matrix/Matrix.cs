@@ -337,8 +337,11 @@ namespace ExtenderApp.Data
         {
             if (left.Column != right.Row)
             {
-                //左矩阵的列数必须等于右矩阵的行数才能进行乘法运算。
-                throw new ArgumentException("The number of columns in the first matrix must be equal to the number of rows in the second matrix for multiplication to be possible.");
+                if (right.Column != 1 && right.Row != 1)
+                    //左矩阵的列数必须等于右矩阵的行数才能进行乘法运算。
+                    throw new ArgumentException("The number of columns in the first matrix must be equal to the number of rows in the second matrix for multiplication to be possible.");
+
+                return left * right[0, 0];
             }
 
             Matrix result = new Matrix(left.Row, right.Column);
@@ -391,6 +394,71 @@ namespace ExtenderApp.Data
                 for (int j = 0; j < left.Column; j++)
                 {
                     result[i, j] = left[i, j] / @const;
+                }
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// 矩阵除法运算符重载
+        /// </summary>
+        /// <param name="left">左矩阵</param>
+        /// <param name="right">右矩阵</param>
+        /// <returns>返回两个矩阵相除的结果</returns>
+        /// <exception cref="ArgumentException">如果左矩阵的列数不等于右矩阵的行数，则抛出异常</exception>
+        public static Matrix operator /(Matrix left, Matrix right)
+        {
+            if (left.Column != right.Row)
+            {
+                if (right.Column != 1 && right.Row != 1)
+                    //左矩阵的列数必须等于右矩阵的行数才能进行除法运算。
+                    throw new ArgumentException("The number of columns in the first matrix must be equal to the number of rows in the second matrix for division to be possible.");
+
+
+                return left / right[0, 0];
+            }
+
+            Matrix result = new Matrix(left.Row, right.Column);
+
+            for (int i = 0; i < left.Row; i++)
+            {
+                for (int j = 0; j < right.Column; j++)
+                {
+                    double sum = 0;
+                    for (int k = 0; k < left.Column; k++)
+                    {
+                        sum += left[i, k] * right[k, j];
+                    }
+                    result[i, j] = sum;
+                }
+            }
+            return result;
+        }
+
+        public static Matrix operator ^(Matrix left, int n)
+        {
+            //负整数次幂未实现
+
+            Matrix result = new Matrix(left.Row, left.Column);
+
+            if (n == 0)
+            {
+                int count = Math.Min(left.Row, left.Column);
+                for (int i = 0; i < count; i++)
+                {
+                    result[i, i] = 0;
+                }
+                return result;
+            }
+
+            for(int index=0; index < n; index++)
+            {
+                for (int i = 0; i < left.Row; i++)
+                {
+                    for (int j = 0; j < left.Column; j++)
+                    {
+                        result[i, j] = left[i, j] * left[i, j];
+                    }
                 }
             }
             return result;

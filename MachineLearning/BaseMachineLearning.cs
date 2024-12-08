@@ -1,6 +1,7 @@
 ﻿using System.Text;
 using ExtenderApp.Data;
 using ExtenderApp.Common.Math;
+using System.Diagnostics;
 
 namespace MachineLearning
 {
@@ -9,10 +10,24 @@ namespace MachineLearning
     /// </summary>
     public abstract class BaseMachineLearning
     {
-        /// <summary>
-        /// 获取一个值，该值指示是否需要计算截距。
-        /// </summary>
-        public bool InterceptRequired { get; }
+        //private bool interceptRequired;
+        ///// <summary>
+        ///// 是否需要计算截距。
+        ///// </summary>
+        //public bool InterceptRequired
+        //{
+        //    get => interceptRequired;
+        //    set
+        //    {
+        //        InterceptAction = value ? WithIntercept : WithoutIntercept;
+        //         interceptRequired = value;
+        //    }
+        //}
+
+        ///// <summary>
+        ///// 选择是否需要计算截距的函数
+        ///// </summary>
+        //protected Action InterceptAction { get; private set; }
 
         /// <summary>
         /// 获取计算得到的截距值。
@@ -34,12 +49,17 @@ namespace MachineLearning
         public Matrix CoefficientMatrix { get; protected set; }
 
         /// <summary>
+        /// 拟合时间
+        /// </summary>
+        private Stopwatch? stopwatch;
+
+        /// <summary>
         /// 初始化 Regression 类的新实例。
         /// </summary>
         /// <param name="interceptRequired">指示是否需要计算截距。</param>
-        public BaseMachineLearning(bool interceptRequired = true)
+        public BaseMachineLearning()
         {
-            InterceptRequired = interceptRequired;
+
         }
 
         /// <summary>
@@ -47,17 +67,26 @@ namespace MachineLearning
         /// </summary>
         /// <param name="matrixX">自变量矩阵</param>
         /// <param name="matrixY">因变量矩阵</param>
+        /// <param name="needTiming">是否需要计时</param>
         /// <remarks>
         /// 方法会计算自变量矩阵和因变量矩阵之间的线性关系，并将结果存储在CoefficientMatrix属性中。
         /// 如果InterceptRequired属性为true，则会计算截距并存储在Intercept属性中。
         /// </remarks>
-        public virtual void DataFit(Matrix matrixX, Matrix matrixY)
+        public virtual void DataFit(Matrix matrixX, Matrix matrixY, bool needTiming = false)
         {
             MatrixX = matrixX;
             MatrixY = matrixY;
+            if (needTiming && stopwatch is null)
+                stopwatch = new Stopwatch();
+            else
+                stopwatch?.Reset();
 
+
+            stopwatch?.Start();
             DataFit();
 
+
+            stopwatch?.Stop();
             SplitIntercept();
         }
 
@@ -78,6 +107,8 @@ namespace MachineLearning
         {
             if (CoefficientMatrix.Row != matrix.Column)
                 throw new ArgumentException(nameof(Prediction));
+            else if (CoefficientMatrix.Row == matrix.Row)
+                matrix = matrix.Transpose();
 
             return matrix.Dot(CoefficientMatrix);
         }
@@ -91,7 +122,7 @@ namespace MachineLearning
         /// </remarks>
         protected void SplitIntercept()
         {
-            if (!InterceptRequired) return;
+            //if (!InterceptRequired) return;
 
             Intercept = CoefficientMatrix[CoefficientMatrix.Row - 1, CoefficientMatrix.Column - 1];
         }
@@ -100,21 +131,43 @@ namespace MachineLearning
         {
             StringBuilder sb = new StringBuilder();
             string line = "--------";
+            sb.AppendLine();
+
+            sb.Append(line);
+            sb.Append(GetType().Name);
+            sb.Append(line);
+            sb.AppendLine();
+
             sb.Append(line);
             sb.Append("系数");
             sb.Append(line);
             sb.AppendLine();
+
             sb.Append("系数个数：");
             sb.Append(CoefficientMatrix.Row.ToString());
             sb.AppendLine();
+
             sb.Append(CoefficientMatrix.ToString());
             sb.AppendLine();
+
             sb.Append(line);
             sb.Append("截距");
             sb.Append(line);
             sb.AppendLine();
+
             sb.Append(Intercept.ToString());
             sb.AppendLine();
+
+            if (stopwatch != null)
+            {
+                sb.Append(line);
+                sb.Append("耗时");
+                sb.Append(line);
+                sb.AppendLine();
+
+                sb.Append(stopwatch.ElapsedMilliseconds.ToString());
+            }
+
 
             return sb.ToString();
         }

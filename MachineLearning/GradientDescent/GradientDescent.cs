@@ -83,9 +83,9 @@ namespace MachineLearning
             currentDecayStep = decayStep;
         }
 
-        public override void DataFit(Matrix matrixX, Matrix matrixY)
+        public override void DataFit(Matrix matrixX, Matrix matrixY, bool needTiming = false)
         {
-            base.DataFit(matrixX, matrixY);
+            base.DataFit(matrixX, matrixY, needTiming);
             CoefficientMatrix = Random.NextMatrix(MatrixX.Column, 1);
         }
 

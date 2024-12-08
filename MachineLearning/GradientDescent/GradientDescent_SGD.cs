@@ -54,11 +54,9 @@ namespace MachineLearning
                 //计算梯度
                 gradient = calculateMatrixX.Transpose(transpose).Dot(calculateMatrixX.Dot(CoefficientMatrix, thetaDot).Sub(calculateMatrixY), xDot);
                 //更新系数
-
                 CoefficientMatrix = CoefficientMatrix.Sub(gradient.Multiplication(LearningRate));
 
                 UpdateLearningRateFixedDecay();
-                //UpdateLearningRateExponentialDecay();
             }
         }
 
@@ -71,15 +69,6 @@ namespace MachineLearning
         /// </remarks>
         private void RandomCalculateMatrix()
         {
-            //for (int i = 0; i < calculateMatrixX.Row; i++)
-            //{
-            //    int index = Random.Next(0, MatrixX.Row - 1);
-            //    for (int j = 0; j < calculateMatrixX.Column; j++)
-            //    {
-            //        calculateMatrixX[i, j] = MatrixX[index, j];
-            //    }
-            //    calculateMatrixY[i, 0] = MatrixY[index, 0];
-            //}
             int index = Random.Next(0, MatrixX.Row - 1);
             for (int j = 0; j < calculateMatrixX.Column; j++)
             {

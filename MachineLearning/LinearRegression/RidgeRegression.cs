@@ -14,8 +14,10 @@ namespace MachineLearning
         /// 构造函数，初始化岭回归的正则化参数
         /// </summary>
         /// <param name="lambda">正则化参数值</param>
-        public RidgeRegression(double lambda = 1.0) : base(true)
+        public RidgeRegression(double lambda = 0.1)
         {
+            if (lambda < 0) 
+                throw new ArgumentNullException(nameof(lambda));
             this.Lambda = lambda;
         }
 

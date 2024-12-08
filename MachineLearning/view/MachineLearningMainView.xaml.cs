@@ -14,7 +14,6 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
-
 using ExtenderApp.Abstract;
 using ExtenderApp.Common.Math;
 using ExtenderApp.Data;
@@ -36,7 +35,7 @@ namespace MachineLearning.view
             //Debug.Print(linear.MatrixX.ToString());
             //Debug.Print(linear.MatrixY.ToString());
             Random random = new Random();
-            var temp = random.CreateLinearRegressionTestData(500, numIndependentVariables: 10, trueIntercept: 20, noiseStdDev: 1);
+            var temp = random.CreateLinearRegressionTestData(500, numIndependentVariables: 10, trueIntercept: 10, noiseStdDev: 1);
             //GradientDescent gradient;
             //double rate = 0.0001;
             //int epochCount = 10000;
@@ -59,18 +58,35 @@ namespace MachineLearning.view
             //Debug.Print(matrix.MinMaxNormalizationRow().ToString());
 
             LinearRegression linear = new();
-            linear.DataFit(temp.Item1, temp.Item2);
+            linear.DataFit(temp.Item1, temp.Item2, true);
             Debug.Print(linear.ToString());
-            Debug.Print("----------------");
-            linear = new();
-            var normX = temp.Item1.MinMaxNormalizationColumn();
-            linear.DataFit(normX, temp.Item2);
+            Debug.Print(linear.Prediction(temp.Item3).CalculateMSE(temp.Item4).ToString());
+
+            var normX = temp.Item1.ZScoreNormalizationColumn();
+            linear.DataFit(normX, temp.Item2, true);
             Debug.Print(linear.ToString());
-            RidgeRegression ridge = new RidgeRegression();
-            ridge.DataFit(temp.Item1, temp.Item2);
+            Debug.Print(linear.Prediction(temp.Item3).CalculateMSE(temp.Item4).ToString());
+
+            RidgeRegression ridge = new(0.1);
+            ridge.DataFit(temp.Item1, temp.Item2, true);
             Debug.Print(ridge.ToString());
-            ridge.DataFit(normX, temp.Item2);
+            Debug.Print(ridge.Prediction(temp.Item3).CalculateMSE(temp.Item4).ToString());
+
+            ridge.DataFit(normX, temp.Item2, true);
             Debug.Print(ridge.ToString());
+            Debug.Print(ridge.Prediction(temp.Item3).CalculateMSE(temp.Item4).ToString());
+            //ridge.DataFit(normX, temp.Item2);
+            //Debug.Print(ridge.ToString());
+            //LassoRegression lasso = new(0.5);
+            //lasso.DataFit(normX, temp.Item2);
+            //Debug.Print(lasso.ToString());
+
+            ExtenderApp.Data.Matrix inputMatrix = new ExtenderApp.Data.Matrix(1, 3);
+            inputMatrix[0, 0] = 3;
+            inputMatrix[0, 1] = 2;
+            inputMatrix[0, 2] = 2;
+            //inputMatrix[0, 3] = 2;
+            Debug.Print(inputMatrix.FitTransform(2).ToString());
         }
 
         private void DrawLineGraph()
