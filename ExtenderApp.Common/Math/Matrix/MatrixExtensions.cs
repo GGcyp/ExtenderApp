@@ -1559,10 +1559,10 @@ namespace ExtenderApp.Common.Math
         private static void GenerateCrossTerms(Matrix matrix, Matrix result, int numOriginalFeatures, int numSamples, int degree)
         {
             //加上1次幂的初始值
-            int featureIndex = CalculateNumNewFeatures(numOriginalFeatures, 1);
-            var list = new List<int>(degree) { 0 };
+            int featureIndex = 1;
+            var list = new List<int>(degree);
             //当前次幂
-            for (int k = 2; k <= degree; k++)
+            for (int k = 1; k <= degree; k++)
             {
                 //每一列
                 //计算当前次幂的组合总数
@@ -1571,23 +1571,25 @@ namespace ExtenderApp.Common.Math
                 {
                     CalculateCrossTerms(matrix, result, numOriginalFeatures, featureIndex, k, i, ref list);
                 }
-                featureIndex += CalculateBinomialCoefficient(numOriginalFeatures + k - 1, k) + 1;
+                featureIndex += CalculateBinomialCoefficient(numOriginalFeatures + k - 1, k);
             }
         }
 
         private static void CalculateCrossTerms(Matrix matrix, Matrix result, int numOriginalFeatures, int crossTermIndex, int degree, int samplesIndex, ref List<int> degreelist)
         {
             //因为组合里的第一个数是原始数的幂运算结果，需要跳过
-            
-            for(int i=0; i < degreelist.Count; i++)
-            {
-                degreelist[i] = 0;
-            }
 
             for (int i = 0; i < degreelist.Count; i++)
             {
-                for (int j = 0; j < degree; j++)
+                for (int j = 0; j < numOriginalFeatures; j++)
                 {
+                    for (int k = 0; k < degreelist.Count; i++)
+                    {
+                        degreelist[k] = j;
+                    }
+                    // 0,0,0  1,0,0  2,0,0
+                    // 1,1,0  1,2,0  1,1,1
+                    // 2,1,1  2,2,1  2,2,2
                     CrossTerm(matrix, result, samplesIndex, crossTermIndex, degreelist);
                     crossTermIndex++;
                     degreelist[i]++;
@@ -1597,6 +1599,7 @@ namespace ExtenderApp.Common.Math
 
         private static void CrossTerm(Matrix matrix, Matrix result, int samplesIndex, int crossTermIndex, List<int> degreelist)
         {
+            //确定一个次幂内的一个交叉项的值
             double crossTermValue = 1;
             for (int i = 0; i < degreelist.Count; i++)
             {
