@@ -4,7 +4,7 @@ using System.Numerics;
 using ExtenderApp.Common.Math;
 using ExtenderApp.Data;
 
-namespace MachineLearning
+namespace MachineLearning.Linear
 {
     public class LassoRegression : BaseMachineLearning
     {

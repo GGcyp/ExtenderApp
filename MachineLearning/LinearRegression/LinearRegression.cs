@@ -2,7 +2,7 @@
 using ExtenderApp.Common.Math;
 using System.Text;
 
-namespace MachineLearning
+namespace MachineLearning.Linear
 {
     /// <summary>
     /// 线性回归类，用于根据一组数据点计算线性回归模型的参数，并允许进行预测和模型性能评估。

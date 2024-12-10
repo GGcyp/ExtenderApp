@@ -30,11 +30,6 @@ namespace MachineLearning
         //protected Action InterceptAction { get; private set; }
 
         /// <summary>
-        /// 获取计算得到的截距值。
-        /// </summary>
-        public double Intercept { get; protected set; }
-
-        /// <summary>
         /// 训练数据集
         /// </summary>
         public Matrix MatrixX { get; protected set; }
@@ -87,7 +82,6 @@ namespace MachineLearning
 
 
             stopwatch?.Stop();
-            SplitIntercept();
         }
 
         /// <summary>
@@ -105,26 +99,12 @@ namespace MachineLearning
         /// <returns>预测结果矩阵，维度与因变量维度相同。</returns>
         public virtual Matrix Prediction(Matrix matrix)
         {
-            if (CoefficientMatrix.Row != matrix.Column)
+            if (CoefficientMatrix.Row != matrix.Column && CoefficientMatrix.Row != matrix.Row)
                 throw new ArgumentException(nameof(Prediction));
             else if (CoefficientMatrix.Row == matrix.Row)
                 matrix = matrix.Transpose();
 
             return matrix.Dot(CoefficientMatrix);
-        }
-
-        /// <summary>
-        /// 分割拦截方法
-        /// </summary>
-        /// <remarks>
-        /// 该方法用于根据条件分割拦截，如果拦截条件不满足则直接返回。
-        /// 如果满足拦截条件，则从系数矩阵中获取对应位置的元素值并赋值给拦截属性。
-        /// </remarks>
-        protected void SplitIntercept()
-        {
-            //if (!InterceptRequired) return;
-
-            Intercept = CoefficientMatrix[CoefficientMatrix.Row - 1, CoefficientMatrix.Column - 1];
         }
 
         public override string ToString()
@@ -155,8 +135,8 @@ namespace MachineLearning
             sb.Append(line);
             sb.AppendLine();
 
-            sb.Append(Intercept.ToString());
-            sb.AppendLine();
+            //sb.Append(Intercept.ToString());
+            //sb.AppendLine();
 
             if (stopwatch != null)
             {

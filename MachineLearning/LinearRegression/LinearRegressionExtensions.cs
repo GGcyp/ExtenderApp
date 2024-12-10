@@ -2,6 +2,7 @@
 using System.Text;
 using ExtenderApp.Common.Math;
 using ExtenderApp.Data;
+using MachineLearning.Linear;
 
 namespace MachineLearning
 {

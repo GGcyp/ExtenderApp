@@ -17,6 +17,7 @@ using System.Windows.Shapes;
 using ExtenderApp.Abstract;
 using ExtenderApp.Common.Math;
 using ExtenderApp.Data;
+using MachineLearning.Linear;
 
 namespace MachineLearning.view
 {
