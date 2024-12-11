@@ -1463,6 +1463,224 @@ namespace ExtenderApp.Common.Math
 
         #endregion
 
+        //#region 生成多项式特征
+
+        ///// <summary>
+        ///// 对矩阵进行多项式拟合变换
+        ///// </summary>
+        ///// <param name="matrix">输入矩阵</param>
+        ///// <param name="degree">多项式的次数，默认为2</param>
+        ///// <param name="result">输出矩阵，默认为空矩阵</param>
+        ///// <returns>变换后的矩阵</returns>
+        //public static Matrix FitTransform(this Matrix matrix, int degree = 2, Matrix result = default)
+        //{
+        //    if (matrix.IsEmpty)
+        //        throw new ArgumentNullException(nameof(matrix), "输入矩阵不能为null");
+        //    if (degree < 0)
+        //        throw new ArgumentException("多项式次数不能为负数", nameof(degree));
+
+        //    int numSamples = matrix.Row;
+        //    int numOriginalFeatures = matrix.Column;
+
+        //    // 计算生成后的特征数量
+        //    int numNewFeatures = CalculateNumNewFeatures(numOriginalFeatures, degree);
+
+        //    if (result.IsEmpty || result.Row != numSamples || result.Column != numNewFeatures)
+        //        result = new Matrix(numSamples, numNewFeatures);
+
+        //    // 填充结果矩阵的第一列全为1，对应截距项
+        //    for (int i = 0; i < numSamples; i++)
+        //    {
+        //        result[i, 0] = 1;
+        //    }
+
+        //    // 生成交叉项（不同原始特征之间的乘积组合）
+        //    GenerateCrossTerms(matrix, result, numOriginalFeatures, numSamples, degree);
+
+        //    return result;
+        //}
+
+        ///// <summary>
+        ///// 计算生成后的特征数量
+        ///// </summary>
+        ///// <param name="numOriginalFeatures">原始特征数量</param>
+        ///// <param name="degree">多项式的次数</param>
+        ///// <returns>生成后的特征数量</returns>
+        //public static int CalculateNumNewFeatures(int numOriginalFeatures, int degree)
+        //{
+        //    int numNewFeatures = 0;
+        //    for (int d = 0; d <= degree; d++)
+        //    {
+        //        numNewFeatures += CalculateBinomialCoefficient(numOriginalFeatures + d - 1, d);
+        //    }
+        //    return numNewFeatures;
+        //}
+
+        ///// <summary>
+        ///// 计算组合数
+        ///// </summary>
+        ///// <param name="n">需要组合的总数</param>
+        ///// <param name="k">幂次</param>
+        ///// <returns>组合数</returns>
+        //private static int CalculateBinomialCoefficient(int n, int k)
+        //{
+        //    int result = 1;
+        //    if (k == 0 || k == n)
+        //        return result;
+
+        //    int minK = k < (n - k) ? k : (n - k); // 利用组合数的对称性，选择较小的数进行计算，减少循环次数
+        //    for (int i = 1; i <= minK; i++)
+        //    {
+        //        result *= (n - (minK - i));
+        //        result /= i;
+        //    }
+        //    return result;
+        //}
+
+        ///// <summary>
+        ///// 生成交叉项（不同原始特征之间的乘积组合）
+        ///// </summary>
+        ///// <param name="matrix">输入矩阵</param>
+        ///// <param name="result">输出矩阵</param>
+        ///// <param name="numOriginalFeatures">原始特征数量</param>
+        ///// <param name="numSamples">样本数量</param>
+        ///// <param name="degree">多项式的次数</param>
+        //private static void GenerateCrossTerms(Matrix matrix, Matrix result, int numOriginalFeatures, int numSamples, int degree)
+        //{
+        //    //加上1次幂的初始值
+        //    int featureIndex = 1;
+        //    var list = new List<int>(degree);
+        //    //当前次幂
+        //    for (int k = 1; k <= degree; k++)
+        //    {
+        //        //每一列
+        //        //计算当前次幂的组合总数
+        //        list.Add(0);
+        //        for (int i = 0; i < numSamples; i++)
+        //        {
+        //            CalculateCrossTerms(matrix, result, numOriginalFeatures, featureIndex, k, i, list);
+        //        }
+        //        featureIndex += CalculateBinomialCoefficient(numOriginalFeatures + k - 1, k);
+        //    }
+        //}
+
+        ///// <summary>
+        ///// 计算交叉项的值。
+        ///// </summary>
+        ///// <param name="matrix">原始数据矩阵。</param>
+        ///// <param name="result">存储计算结果的矩阵。</param>
+        ///// <param name="numOriginalFeatures">原始特征的数量。</param>
+        ///// <param name="crossTermIndex">当前交叉项的索引。</param>
+        ///// <param name="degree">交叉项的度数。</param>
+        ///// <param name="samplesIndex">当前样本的索引。</param>
+        ///// <param name="list">存储交叉项特征索引的列表。</param>
+        //private static void CalculateCrossTerms(Matrix matrix, Matrix result, int numOriginalFeatures, int crossTermIndex, int degree, int samplesIndex, List<int> list)
+        //{
+        //    //指针个数
+        //    int numPoint = degree - 1;
+        //    //总共需要循环的次数
+        //    int allCount = numPoint * (numOriginalFeatures - 1);
+
+        //    for (int i = 0; i < numOriginalFeatures; i++)
+        //    {
+        //        //0,0,0 | 1,1,1 | 2,2,2
+        //        for (int j = 0; j < list.Count; j++)
+        //        {
+        //            list[j] = i;
+        //        }
+        //        CrossTerm(matrix, result, samplesIndex, crossTermIndex, list);
+        //        crossTermIndex++;
+
+        //        if (list.Count <= 1) continue;
+        //        int count = allCount - (i * numPoint);
+
+        //        for (int j = 1; j <= count; j++)
+        //        {
+        //            int currentListIndex = numPoint - (j % numPoint);
+        //            list[currentListIndex]++;
+        //            CrossTerm(matrix, result, samplesIndex, crossTermIndex, list);
+        //            crossTermIndex++;
+        //        }
+
+        //        if (list.Count <= 2) continue;
+        //        count = allCount - ((numOriginalFeatures - i - 2) * (numPoint - 1));
+
+        //        int currentNumFeatureIndex = 2;
+        //        int currentAllNumFeatureIndex = i;
+        //        int currentNumIndex = list.Count - 1;
+        //        for (int c = 1; c < count; c++)
+        //        {
+        //            //int currentListIndex = list.Count - (numPoint - (c % numPoint));
+
+        //            //调正
+        //            for (int j = currentNumIndex; j > 1; j--)
+        //            {
+        //                list[j] = currentAllNumFeatureIndex;
+        //            }
+
+
+        //            list[currentNumIndex] = currentNumFeatureIndex;
+        //            CrossTerm(matrix, result, samplesIndex, crossTermIndex, list);
+
+        //            if (currentNumFeatureIndex >= numOriginalFeatures - 1)
+        //            {
+        //                currentNumIndex--;
+        //                currentAllNumFeatureIndex++;
+        //            }
+        //            else
+        //            {
+        //                currentNumFeatureIndex++;
+        //            }
+
+
+        //            crossTermIndex++;
+        //        }
+        //        //CalculateCrossTerm(matrix, result, numOriginalFeatures, i, samplesIndex, list, ref crossTermIndex);
+        //    }
+        //}
+
+        //private static void CalculateCrossTerm(Matrix matrix, Matrix result, int numOriginalFeatures, int currentFeatures, int samplesIndex, List<int> list, ref int crossTermIndex)
+        //{
+        //    for (int k = currentFeatures; k < numOriginalFeatures - 2; k++)
+        //    {
+        //        //调正
+        //        for (int j = 1; j < list.Count; j++)
+        //        {
+        //            list[j] = k;
+        //        }
+
+        //        //抬升最后一行，并逐步往前
+        //        for (int j = k + 2; j < numOriginalFeatures; j++)
+        //        {
+        //            list[list.Count - 1] = j;
+        //            CrossTerm(matrix, result, samplesIndex, crossTermIndex, list);
+        //            crossTermIndex++;
+        //        }
+        //    }
+        //}
+
+        ///// <summary>
+        ///// 计算并存储一个交叉项的值。
+        ///// </summary>
+        ///// <param name="matrix">原始数据矩阵。</param>
+        ///// <param name="result">存储计算结果的矩阵。</param>
+        ///// <param name="samplesIndex">当前样本的索引。</param>
+        ///// <param name="crossTermIndex">当前交叉项的索引。</param>
+        ///// <param name="degreelist">存储交叉项特征索引的列表。</param>
+        //private static void CrossTerm(Matrix matrix, Matrix result, int samplesIndex, int crossTermIndex, List<int> degreelist)
+        //{
+        //    //确定一个次幂内的一个交叉项的值
+        //    double crossTermValue = 1;
+        //    for (int i = 0; i < degreelist.Count; i++)
+        //    {
+        //        int currentFeature = degreelist[i];
+        //        crossTermValue *= matrix[samplesIndex, currentFeature];
+        //    }
+        //    result[samplesIndex, crossTermIndex] = crossTermValue;
+        //}
+
+        //#endregion
+
         #region 生成多项式特征
 
         /// <summary>
@@ -1474,36 +1692,28 @@ namespace ExtenderApp.Common.Math
         /// <returns>变换后的矩阵</returns>
         public static Matrix FitTransform(this Matrix matrix, int degree = 2, Matrix result = default)
         {
+            // 输入矩阵合法性检查
+            if (matrix.IsEmpty)
+                throw new ArgumentNullException(nameof(matrix), "输入矩阵不能为null");
+            // 多项式次数合法性检查
+            if (degree < 0)
+                throw new ArgumentException("多项式次数不能为负数", nameof(degree));
+
             int numSamples = matrix.Row;
             int numOriginalFeatures = matrix.Column;
 
             // 计算生成后的特征数量
             int numNewFeatures = CalculateNumNewFeatures(numOriginalFeatures, degree);
 
+            // 初始化或验证输出矩阵维度是否正确
             if (result.IsEmpty || result.Row != numSamples || result.Column != numNewFeatures)
                 result = new Matrix(numSamples, numNewFeatures);
 
             // 填充结果矩阵的第一列全为1，对应截距项
-            for (int i = 0; i < numSamples; i++)
+            for (int sampleIndex = 0; sampleIndex < numSamples; sampleIndex++)
             {
-                result[i, 0] = 1;
+                result[sampleIndex, 0] = 1;
             }
-
-            //int featureIndex = 1;
-            //// 生成原始特征的幂次项,不考虑位置
-            //for (int d = 1; d <= degree; d++)
-            //{
-            //    int numNewFeature = CalculateBinomialCoefficient(numOriginalFeatures, d);
-            //    for (int feature = 0; feature < numOriginalFeatures; feature++)
-            //    {
-            //        for (int i = 0; i < numSamples; i++)
-            //        {
-            //            result[i, featureIndex] = System.Math.Pow(matrix[i, feature], d);
-            //        }
-            //        featureIndex++;
-            //    }
-            //    featureIndex += numNewFeature - numOriginalFeatures;
-            //}
 
             // 生成交叉项（不同原始特征之间的乘积组合）
             GenerateCrossTerms(matrix, result, numOriginalFeatures, numSamples, degree);
@@ -1520,9 +1730,9 @@ namespace ExtenderApp.Common.Math
         public static int CalculateNumNewFeatures(int numOriginalFeatures, int degree)
         {
             int numNewFeatures = 0;
-            for (int d = 0; d <= degree; d++)
+            for (int currentDegree = 0; currentDegree <= degree; currentDegree++)
             {
-                numNewFeatures += CalculateBinomialCoefficient(numOriginalFeatures + d - 1, d);
+                numNewFeatures += CalculateBinomialCoefficient(numOriginalFeatures + currentDegree - 1, currentDegree);
             }
             return numNewFeatures;
         }
@@ -1535,11 +1745,11 @@ namespace ExtenderApp.Common.Math
         /// <returns>组合数</returns>
         private static int CalculateBinomialCoefficient(int n, int k)
         {
-            int result = 1;
             if (k == 0 || k == n)
-                return result;
+                return 1;
 
-            int minK = k < (n - k) ? k : (n - k); // 利用组合数的对称性，选择较小的数进行计算，减少循环次数
+            int result = 1;
+            int minK = System.Math.Min(k, n - k); // 利用组合数的对称性，选择较小的数进行计算，减少循环次数
             for (int i = 1; i <= minK; i++)
             {
                 result *= (n - (minK - i));
@@ -1558,57 +1768,115 @@ namespace ExtenderApp.Common.Math
         /// <param name="degree">多项式的次数</param>
         private static void GenerateCrossTerms(Matrix matrix, Matrix result, int numOriginalFeatures, int numSamples, int degree)
         {
-            //加上1次幂的初始值
-            int featureIndex = 1;
-            var list = new List<int>(degree);
-            //当前次幂
-            for (int k = 1; k <= degree; k++)
+            int currentFeatureIndex = 1; // 用于标记交叉项在结果矩阵中的列索引，从1开始（0列是截距项）
+            for (int currentDegree = 1; currentDegree <= degree; currentDegree++)
             {
-                //每一列
-                //计算当前次幂的组合总数
-                list.Add(0);
-                for (int i = 0; i < numSamples; i++)
+                // 用于存储当前交叉项涉及的原始特征索引组合
+                var featureIndexList = new List<int>();
+                // 计算当前次幂下的所有交叉项组合
+                int combinationCount = CalculateBinomialCoefficient(numOriginalFeatures + currentDegree - 1, currentDegree);
+                for (int sample = 0; sample < numSamples; sample++)
                 {
-                    CalculateCrossTerms(matrix, result, numOriginalFeatures, featureIndex, k, i, ref list);
+                    GenerateCrossTermsForSample(matrix, result, numOriginalFeatures, currentFeatureIndex, currentDegree, sample, featureIndexList);
                 }
-                featureIndex += CalculateBinomialCoefficient(numOriginalFeatures + k - 1, k);
+                currentFeatureIndex += combinationCount;
             }
         }
 
-        private static void CalculateCrossTerms(Matrix matrix, Matrix result, int numOriginalFeatures, int crossTermIndex, int degree, int samplesIndex, ref List<int> degreelist)
+        /// <summary>
+        /// 针对单个样本生成当前次幂下的所有交叉项
+        /// </summary>
+        /// <param name="matrix">原始数据矩阵</param>
+        /// <param name="result">存储计算结果的矩阵</param>
+        /// <param name="numOriginalFeatures">原始特征的数量</param>
+        /// <param name="currentFeatureIndex">当前交叉项在结果矩阵中的起始列索引</param>
+        /// <param name="currentDegree">当前交叉项的度数（幂次）</param>
+        /// <param name="sampleIndex">当前样本的索引</param>
+        /// <param name="featureIndexList">存储当前交叉项涉及的原始特征索引组合的列表</param>
+        private static void GenerateCrossTermsForSample(Matrix matrix, Matrix result, int numOriginalFeatures, int currentFeatureIndex, int currentDegree, int sampleIndex, List<int> featureIndexList)
         {
-            //因为组合里的第一个数是原始数的幂运算结果，需要跳过
-
-            for (int i = 0; i < degreelist.Count; i++)
+            // 计算当前次幂下单个特征的最大变化次数（用于控制循环生成交叉项）
+            int maxFeatureChangeCount = GetMaxFeatureChangeCount(currentDegree, numOriginalFeatures);
+            for (int baseFeature = 0; baseFeature < numOriginalFeatures; baseFeature++)
             {
-                for (int j = 0; j < numOriginalFeatures; j++)
+                // 初始化当前交叉项的特征索引组合为当前基本特征
+                InitializeFeatureIndexList(featureIndexList, baseFeature, currentDegree);
+                CalculateAndStoreCrossTerm(matrix, result, sampleIndex, currentFeatureIndex, featureIndexList);
+                currentFeatureIndex++;
+
+                // 如果交叉项涉及多个特征（度数大于1），则生成更多组合
+                if (currentDegree > 1)
                 {
-                    for (int k = 0; k < degreelist.Count; i++)
+                    for (int changeCount = 1; changeCount < maxFeatureChangeCount; changeCount++)
                     {
-                        degreelist[k] = j;
+                        UpdateFeatureIndexList(featureIndexList, changeCount, currentDegree, numOriginalFeatures);
+                        CalculateAndStoreCrossTerm(matrix, result, sampleIndex, currentFeatureIndex, featureIndexList);
+                        currentFeatureIndex++;
                     }
-                    // 0,0,0  1,0,0  2,0,0
-                    // 1,1,0  1,2,0  1,1,1
-                    // 2,1,1  2,2,1  2,2,2
-                    CrossTerm(matrix, result, samplesIndex, crossTermIndex, degreelist);
-                    crossTermIndex++;
-                    degreelist[i]++;
                 }
             }
         }
 
-        private static void CrossTerm(Matrix matrix, Matrix result, int samplesIndex, int crossTermIndex, List<int> degreelist)
+        /// <summary>
+        /// 计算当前次幂下单个特征的最大变化次数（用于控制循环生成交叉项）
+        /// </summary>
+        /// <param name="degree">当前交叉项的度数（幂次）</param>
+        /// <param name="numOriginalFeatures">原始特征的数量</param>
+        /// <returns>最大变化次数</returns>
+        private static int GetMaxFeatureChangeCount(int degree, int numOriginalFeatures)
         {
-            //确定一个次幂内的一个交叉项的值
-            double crossTermValue = 1;
-            for (int i = 0; i < degreelist.Count; i++)
+            if (degree == 1)
+                return 0;
+            return (degree - 1) * (numOriginalFeatures - 1);
+        }
+
+        /// <summary>
+        /// 初始化当前交叉项的特征索引组合为当前基本特征
+        /// </summary>
+        /// <param name="featureIndexList">存储当前交叉项涉及的原始特征索引组合的列表</param>
+        /// <param name="baseFeature">当前基本特征索引</param>
+        /// <param name="degree">当前交叉项的度数（幂次）</param>
+        private static void InitializeFeatureIndexList(List<int> featureIndexList, int baseFeature, int degree)
+        {
+            featureIndexList.Clear();
+            for (int i = 0; i < degree; i++)
             {
-                int currentFeature = degreelist[i];
-                crossTermValue *= matrix[samplesIndex, currentFeature];
+                featureIndexList.Add(baseFeature);
             }
-            result[samplesIndex, crossTermIndex] = crossTermValue;
+        }
+
+        /// <summary>
+        /// 根据变化次数更新当前交叉项的特征索引组合
+        /// </summary>
+        /// <param name="featureIndexList">存储当前交叉项涉及的原始特征索引组合的列表</param>
+        /// <param name="changeCount">特征索引的变化次数</param>
+        /// <param name="degree">当前交叉项的度数（幂次）</param>
+        /// <param name="numOriginalFeatures">原始特征的数量</param>
+        private static void UpdateFeatureIndexList(List<int> featureIndexList, int changeCount, int degree, int numOriginalFeatures)
+        {
+            int featureChangeIndex = (degree - 1) - (changeCount % (degree - 1));
+            featureIndexList[featureChangeIndex]++;
+        }
+
+        /// <summary>
+        /// 计算并存储一个交叉项的值到结果矩阵中
+        /// </summary>
+        /// <param name="matrix">原始数据矩阵</param>
+        /// <param name="result">存储计算结果的矩阵</param>
+        /// <param name="sampleIndex">当前样本的索引</param>
+        /// <param name="crossTermIndex">当前交叉项在结果矩阵中的索引</param>
+        /// <param name="featureIndexList">存储当前交叉项涉及的原始特征索引组合的列表</param>
+        private static void CalculateAndStoreCrossTerm(Matrix matrix, Matrix result, int sampleIndex, int crossTermIndex, List<int> featureIndexList)
+        {
+            double crossTermValue = 1;
+            foreach (int featureIndex in featureIndexList)
+            {
+                crossTermValue *= matrix[sampleIndex, featureIndex];
+            }
+            result[sampleIndex, crossTermIndex] = crossTermValue;
         }
 
         #endregion
     }
+
 }
