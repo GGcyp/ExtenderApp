@@ -1,6 +1,4 @@
-﻿using System.Runtime;
-using ExtenderApp.Data;
-using HandyControl.Controls;
+﻿using ExtenderApp.Data;
 
 namespace ExtenderApp.Common.Math
 {
@@ -1000,7 +998,7 @@ namespace ExtenderApp.Common.Math
 
         #endregion
 
-        #region 随机
+        #region 随机矩阵创建
 
         /// <summary>
         /// 随机生成指定行数和列数的矩阵，矩阵元素服从均匀分布且可定义范围。
@@ -1062,7 +1060,7 @@ namespace ExtenderApp.Common.Math
         }
 
         /// <summary>
-        /// 生成线性回归测试数据
+        /// 生成训练集特征矩阵测试数据
         /// </summary>
         /// <param name="random">随机数生成器</param>
         /// <param name="numSamples">样本数量</param>
@@ -1072,7 +1070,7 @@ namespace ExtenderApp.Common.Math
         /// <param name="noiseStdDev">噪声的标准差，默认为0</param>
         /// <returns>返回一个包含训练集特征矩阵、训练集标签矩阵、测试集特征矩阵、测试集标签矩阵和真实斜率数组的值元组</returns>
         /// <remarks>噪声的标准差最好在0~10之间，本测试数据生成范围在0~10之间</remarks>
-        public static ValueTuple<Matrix, Matrix, Matrix, Matrix, double[]> CreateLinearRegressionTestData(this Random random, int numSamples, int numIndependentVariables = 1, int testRatio = 20, double trueIntercept = 0, double noiseStdDev = 0)
+        public static ValueTuple<Matrix, Matrix, Matrix, Matrix, double[]> CreateMatrixTestData(this Random random, int numSamples, int numIndependentVariables = 1, int testRatio = 20, double trueIntercept = 0, double noiseStdDev = 0)
         {
             double[] trueSlopes = new double[numIndependentVariables];
             for (int i = 0; i < numIndependentVariables; i++)
@@ -1085,7 +1083,7 @@ namespace ExtenderApp.Common.Math
         }
 
         /// <summary>
-        /// 生成线性回归测试数据
+        /// 生成随机矩阵测试数据
         /// </summary>
         /// <param name="random">随机数生成器</param>
         /// <param name="numSamples">样本数量</param>
@@ -1104,7 +1102,7 @@ namespace ExtenderApp.Common.Math
         }
 
         /// <summary>
-        /// 创建线性回归测试数据
+        /// 创建随机矩阵测试数据
         /// </summary>
         /// <param name="random">随机数生成器</param>
         /// <param name="numSamples">样本数量</param>
@@ -1161,74 +1159,6 @@ namespace ExtenderApp.Common.Math
             }
 
             return ValueTuple.Create(independentVariablesMatrix, dependentVariablesArray);
-        }
-
-        #endregion
-
-        #region 误差
-
-        /// <summary>
-        /// 计算均方误差（MSE）。
-        /// </summary>
-        /// <param name="PredictionMatrix">预测结果矩阵。</param>
-        /// <param name="TrueYMatrix">真实的因变量矩阵。</param>
-        /// <returns>均方误差值。</returns>
-        public static double CalculateMSE(this Matrix PredictionMatrix, Matrix TrueYMatrix)
-        {
-            if (PredictionMatrix.Row != TrueYMatrix.Row)
-                throw new ArgumentException("预测结果矩阵和真实因变量矩阵的行数必须相同。");
-
-            int n = PredictionMatrix.Row;
-            double sumSquaredError = 0;
-
-            for (int i = 0; i < n; i++)
-            {
-                for (int j = 0; j < PredictionMatrix.Column; j++)
-                {
-                    double error = TrueYMatrix[i, j] - PredictionMatrix[i, j];
-                    sumSquaredError += error * error;
-                }
-            }
-
-            return sumSquaredError / n;
-        }
-
-        /// <summary>
-        /// 计算平均绝对误差（MAE）。
-        /// </summary>
-        /// <param name="PredictionMatrix">预测结果矩阵。</param>
-        /// <param name="TrueYMatrix">真实的因变量矩阵。</param>
-        /// <returns>平均绝对误差值。</returns>
-        public static double CalculateMAE(this Matrix PredictionMatrix, Matrix TrueYMatrix)
-        {
-            if (PredictionMatrix.Row != TrueYMatrix.Row)
-                throw new ArgumentException("预测结果矩阵和真实因变量矩阵的行数必须相同。");
-
-            int n = PredictionMatrix.Row;
-            double sumAbsoluteError = 0;
-
-            for (int i = 0; i < n; i++)
-            {
-                for (int j = 0; j < PredictionMatrix.Column; j++)
-                {
-                    double error = TrueYMatrix[i, j] - PredictionMatrix[i, j];
-                    sumAbsoluteError += System.Math.Abs(error);
-                }
-            }
-
-            return sumAbsoluteError / n;
-        }
-
-        /// <summary>
-        /// 计算均方根误差（RMSE）。
-        /// </summary>
-        /// <param name="PredictionMatrix">预测结果矩阵。</param>
-        /// <param name="TrueYMatrix">真实的因变量矩阵。</param>
-        /// <returns>均方根误差值。</returns>
-        public static double CalculateRMSE(this Matrix PredictionMatrix, Matrix TrueYMatrix)
-        {
-            double mse = CalculateMSE(PredictionMatrix, TrueYMatrix);
-            return System.Math.Sqrt(mse);
         }
 
         #endregion

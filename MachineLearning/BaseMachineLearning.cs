@@ -1,7 +1,6 @@
 ﻿using System.Text;
 using ExtenderApp.Data;
 using ExtenderApp.Common.Math;
-using System.Diagnostics;
 
 namespace MachineLearning
 {
@@ -44,11 +43,6 @@ namespace MachineLearning
         public Matrix CoefficientMatrix { get; protected set; }
 
         /// <summary>
-        /// 拟合时间
-        /// </summary>
-        private Stopwatch? stopwatch;
-
-        /// <summary>
         /// 初始化 Regression 类的新实例。
         /// </summary>
         /// <param name="interceptRequired">指示是否需要计算截距。</param>
@@ -63,25 +57,11 @@ namespace MachineLearning
         /// <param name="matrixX">自变量矩阵</param>
         /// <param name="matrixY">因变量矩阵</param>
         /// <param name="needTiming">是否需要计时</param>
-        /// <remarks>
-        /// 方法会计算自变量矩阵和因变量矩阵之间的线性关系，并将结果存储在CoefficientMatrix属性中。
-        /// 如果InterceptRequired属性为true，则会计算截距并存储在Intercept属性中。
-        /// </remarks>
         public virtual void DataFit(Matrix matrixX, Matrix matrixY, bool needTiming = false)
         {
             MatrixX = matrixX;
             MatrixY = matrixY;
-            if (needTiming && stopwatch is null)
-                stopwatch = new Stopwatch();
-            else
-                stopwatch?.Reset();
-
-
-            stopwatch?.Start();
             DataFit();
-
-
-            stopwatch?.Stop();
         }
 
         /// <summary>
@@ -137,17 +117,6 @@ namespace MachineLearning
 
             //sb.Append(Intercept.ToString());
             //sb.AppendLine();
-
-            if (stopwatch != null)
-            {
-                sb.Append(line);
-                sb.Append("耗时");
-                sb.Append(line);
-                sb.AppendLine();
-
-                sb.Append(stopwatch.ElapsedMilliseconds.ToString());
-            }
-
 
             return sb.ToString();
         }

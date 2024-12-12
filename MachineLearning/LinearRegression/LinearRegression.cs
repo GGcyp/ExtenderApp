@@ -9,10 +9,6 @@ namespace MachineLearning.Linear
     /// </summary>
     public class LinearRegression : BaseMachineLearning
     {
-        public LinearRegression(bool interceptRequired = true)
-        {
-        }
-
         public override void DataFit()
         {
             //默认最后为截距值
