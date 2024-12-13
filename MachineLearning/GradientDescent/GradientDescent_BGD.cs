@@ -8,7 +8,7 @@ namespace MachineLearning
     /// </summary>
     public class GradientDescent_BGD : GradientDescent
     {
-        public GradientDescent_BGD(double learningRate, int epochCount) : base(learningRate, epochCount)
+        public GradientDescent_BGD(double learningRate, int epochCount, Matrix theta = default) : base(learningRate, epochCount, theta)
         {
         }
 

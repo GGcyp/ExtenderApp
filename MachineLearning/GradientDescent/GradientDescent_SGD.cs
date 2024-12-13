@@ -29,7 +29,7 @@ namespace MachineLearning
         /// <param name="theta">初始参数向量，默认为默认矩阵</param>
         /// <param name="decayStep">衰减步长，衰减步长为总循环次数的n分之一,默认为10</param>
         /// <param name="decayRate">衰减率，默认为0.99</param>
-        public GradientDescent_SGD(double learningRate, int epochCount, int decayStep = 8, double decayRate = 0.99) : base(learningRate, epochCount, decayStep, decayRate)
+        public GradientDescent_SGD(double learningRate, int epochCount, Matrix theta, int decayStep = 8, double decayRate = 0.99) : base(learningRate, epochCount, theta, decayStep, decayRate)
         {
 
         }

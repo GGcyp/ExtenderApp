@@ -233,6 +233,7 @@ namespace ExtenderApp.Data
         /// <exception cref="ArgumentException">当两个矩阵的维度不匹配时抛出。</exception>
         public static Matrix operator -(Matrix left, Matrix right)
         {
+
             if (left.Row != right.Row || left.Column != right.Column)
             {
                 throw new ArgumentException("The dimensions of the matrices do not match, so addition cannot be performed.");
@@ -451,7 +452,7 @@ namespace ExtenderApp.Data
                 return result;
             }
 
-            for(int index=0; index < n; index++)
+            for (int index = 0; index < n; index++)
             {
                 for (int i = 0; i < left.Row; i++)
                 {

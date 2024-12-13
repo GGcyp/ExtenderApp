@@ -1,6 +1,4 @@
-﻿using ExtenderApp.Data;
-using ExtenderApp.Common.Math;
-using System.Text;
+﻿using ExtenderApp.Common.Math;
 
 namespace MachineLearning.Linear
 {

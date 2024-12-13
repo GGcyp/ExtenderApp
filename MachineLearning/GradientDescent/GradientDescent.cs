@@ -65,14 +65,14 @@ namespace MachineLearning
         private int currentDecayStep;
 
         /// <summary>
-        /// 构造函数
+        /// 初始化梯度下降算法
         /// </summary>
-        /// <param name="matrixX">X矩阵</param>
-        /// <param name="matrixY">Y矩阵</param>
         /// <param name="learningRate">学习率</param>
-        /// <param name="epochCount">学习次数</param>
-        /// <param name="theta">求解系数，默认为null</param>
-        public GradientDescent(double learningRate, int epochCount, int decayStep = 8, double decayRate = 0.99)
+        /// <param name="epochCount">迭代次数</param>
+        /// <param name="theta">参数矩阵</param>
+        /// <param name="decayStep">衰减步长，默认为8</param>
+        /// <param name="decayRate">衰减率，默认为0.99</param>
+        public GradientDescent(double learningRate, int epochCount, Matrix theta, int decayStep = 8, double decayRate = 0.99)
         {
             LearningRate = learningRate;
             InitialLearningRate = learningRate;
@@ -81,12 +81,14 @@ namespace MachineLearning
             DecayRate = decayRate;
             DecayStep = epochCount / decayStep;
             currentDecayStep = decayStep;
+            CoefficientMatrix = theta;
         }
 
-        public override void DataFit(Matrix matrixX, Matrix matrixY, bool needTiming = false)
+        public override void DataFit(Matrix matrixX, Matrix matrixY)
         {
-            base.DataFit(matrixX, matrixY, needTiming);
-            CoefficientMatrix = Random.NextMatrix(MatrixX.Column, 1);
+            if (CoefficientMatrix.IsEmpty)
+                CoefficientMatrix = Random.NextMatrix(matrixX.Column, 1);
+            base.DataFit(matrixX, matrixY);
         }
 
         /// <summary>

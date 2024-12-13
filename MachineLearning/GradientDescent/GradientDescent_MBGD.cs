@@ -20,7 +20,7 @@ namespace MachineLearning
 
         private int randomCount;
 
-        public GradientDescent_MBGD(double learningRate, int epochCount, int randomCount = 1, int decayStep = 8, double decayRate = 0.99) : base(learningRate, epochCount, decayStep, decayRate)
+        public GradientDescent_MBGD(double learningRate, int epochCount, Matrix theta = default, int randomCount = 1, int decayStep = 8, double decayRate = 0.99) : base(learningRate, epochCount, theta, decayStep, decayRate)
         {
             this.randomCount = randomCount;
         }

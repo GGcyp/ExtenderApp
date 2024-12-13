@@ -42,6 +42,9 @@ namespace MachineLearning.view
             linear.DataFit(nom, temp.Item2);
             //var result = linear.Prediction(temp.Item3);
             var result = linear.InspectLoss(temp.Item3);
+            var temp1 = linear.Predict(temp.Item3);
+            temp1 = linear.Prediction(temp.Item3);
+            Debug.Print(linear.ToString());
         }
 
         private void DrawLineGraph()

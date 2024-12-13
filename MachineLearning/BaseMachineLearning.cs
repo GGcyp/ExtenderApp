@@ -57,7 +57,7 @@ namespace MachineLearning
         /// <param name="matrixX">自变量矩阵</param>
         /// <param name="matrixY">因变量矩阵</param>
         /// <param name="needTiming">是否需要计时</param>
-        public virtual void DataFit(Matrix matrixX, Matrix matrixY, bool needTiming = false)
+        public virtual void DataFit(Matrix matrixX, Matrix matrixY)
         {
             MatrixX = matrixX;
             MatrixY = matrixY;
@@ -110,10 +110,10 @@ namespace MachineLearning
             sb.Append(CoefficientMatrix.ToString());
             sb.AppendLine();
 
-            sb.Append(line);
-            sb.Append("截距");
-            sb.Append(line);
-            sb.AppendLine();
+            //sb.Append(line);
+            //sb.Append("截距");
+            //sb.Append(line);
+            //sb.AppendLine();
 
             //sb.Append(Intercept.ToString());
             //sb.AppendLine();

@@ -217,6 +217,29 @@ namespace ExtenderApp.Common.Math
             return matrixLeft;
         }
 
+        /// <summary>
+        /// 将给定的矩阵应用指定的函数，并将结果存储在结果矩阵中。
+        /// </summary>
+        /// <param name="matrix">原始矩阵。</param>
+        /// <param name="func">应用于矩阵元素的函数。</param>
+        /// <param name="result">存储结果的矩阵。如果未提供或为空或尺寸不足，则创建一个新的矩阵。</param>
+        /// <returns>存储结果的矩阵。</returns>
+        public static Matrix Map(this Matrix matrix, Func<double, double> func, Matrix result = default)
+        {
+            if (result.IsEmpty || result.Row < matrix.Row || result.Column < matrix.Column)
+                result = new Matrix(matrix.Row, matrix.Column);
+
+            for (int i = 0; i < matrix.Row; i++)
+            {
+                for (int j = 0; j < matrix.Column; j++)
+                {
+                    result[i, j] = func(matrix[i, j]);
+                }
+            }
+
+            return result;
+        }
+
         #endregion
 
         #region 矩阵运算
@@ -234,19 +257,19 @@ namespace ExtenderApp.Common.Math
             {
                 targetMatrix = new Matrix(matrix.Row, matrix.Column);
             }
-            else
+            else if (targetMatrix.Row < matrix.Row || targetMatrix.Column < matrix.Column)
             {
-                if (targetMatrix.Row < matrix.Row || targetMatrix.Column < matrix.Column)
-                    throw new ArgumentException("The target matrix and the original matrix have different row and column dimensions.");
+                throw new ArgumentException("The target matrix and the original matrix have different row and column dimensions.");
+            }
 
-                for (int i = 0; i < matrix.Row; i++)
+            for (int i = 0; i < matrix.Row; i++)
+            {
+                for (int j = 0; j < matrix.Column; j++)
                 {
-                    for (int j = 0; j < matrix.Column; j++)
-                    {
-                        targetMatrix[i, j] = matrix[i, j];
-                    }
+                    targetMatrix[i, j] = matrix[i, j];
                 }
             }
+
             return targetMatrix;
         }
 
