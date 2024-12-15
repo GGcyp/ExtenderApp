@@ -62,9 +62,20 @@ namespace ExtenderApp.Common.Math
                 {
                     for (int i = 0; i < matrixLeft.Row; i++)
                     {
-                        for (int j = 0; j < matrixRight.Column; j++)
+                        for (int j = 0; j < matrixLeft.Column; j++)
                         {
-                            matrixLeft[i, j] -= matrixRight[1, 1];
+                            matrixLeft[i, j] -= matrixRight[0, 0];
+                        }
+                    }
+                    return matrixLeft;
+                }
+                else if (matrixLeft.Row == matrixRight.Row && matrixRight.Column == 1)
+                {
+                    for (int i = 0; i < matrixLeft.Row; i++)
+                    {
+                        for (int j = 0; j < matrixLeft.Column; j++)
+                        {
+                            matrixLeft[i, j] -= matrixRight[i, 0];
                         }
                     }
                     return matrixLeft;

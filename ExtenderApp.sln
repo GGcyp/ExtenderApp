@@ -49,7 +49,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AppHost.Extensions.Configur
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AppHost.Extensions.Hosting", "AppHost.Extensions.Hosting\AppHost.Extensions.Hosting.csproj", "{C277AF8F-6F3C-4E54-AD83-98A4232640A7}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MachineLearning", "MachineLearning\MachineLearning.csproj", "{3BCFA064-AC20-4567-9CF2-AA50BFD6367A}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExtenderApp.ML", "MachineLearning\ExtenderApp.ML.csproj", "{3BCFA064-AC20-4567-9CF2-AA50BFD6367A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -1,8 +1,8 @@
 ﻿using AppHost.Extensions.DependencyInjection;
+using ExtenderApp.ML.View;
 using ExtenderApp.Mod;
-using MachineLearning.view;
 
-namespace MachineLearning
+namespace ExtenderApp.ML
 {
     internal class MachineLearningStartup : ModEntityStartup
     {

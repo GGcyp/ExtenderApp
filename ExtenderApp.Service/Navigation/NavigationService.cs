@@ -16,8 +16,8 @@ namespace ExtenderApp.Service
             IView newView = _serviceProvider.GetService(targetViewType) as IView;
             ArgumentNullException.ThrowIfNull(newView, string.Format("not found the view {0}", targetViewType.Name));
 
-            oldView?.Exit(newView);
-            newView.Enter(oldView);
+            oldView?.Exit(newView.ViewInfo);
+            newView.Enter(oldView is null ? default : oldView.ViewInfo);
 
             return newView;
         }

@@ -1,4 +1,6 @@
-﻿namespace ExtenderApp.Abstract
+﻿using ExtenderApp.Data;
+
+namespace ExtenderApp.Abstract
 {
     /// <summary>
     /// 视图接口
@@ -6,20 +8,20 @@
     public interface IView
     {
         /// <summary>
-        /// 视图模型
+        /// 获取当前视图信息。
         /// </summary>
-        IViewModel ViewModel { get; }
+        ViewInfo ViewInfo { get; }
 
         /// <summary>
-        /// 进入视图
+        /// 进入新视图时执行的操作。
         /// </summary>
-        /// <param name="oldView">将要离开的视图</param>
-        void Enter(IView oldView);
+        /// <param name="oldViewInfo">旧的视图信息。</param>
+        void Enter(ViewInfo oldViewInfo);
 
         /// <summary>
-        /// 离开视图
+        /// 退出当前视图时执行的操作。
         /// </summary>
-        /// <param name="newView">将要进入的视图</param>
-        void Exit(IView newView);
+        /// <param name="newViewInfo">新的视图信息。</param>
+        void Exit(ViewInfo newViewInfo);
     }
 }
