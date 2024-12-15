@@ -45,6 +45,7 @@ namespace ExtenderApp.Mod
 
             details.StartupType = _scopeExecutor.LoadScope<ModEntityStartup>(startAssembly).StartType;
 
+            //添加模组依赖库
             string packPath = Path.Combine(details.Path, AppSetting.AppPackFolderName);
             if (!Directory.Exists(packPath)) return;
 

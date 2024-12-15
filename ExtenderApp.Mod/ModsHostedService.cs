@@ -27,15 +27,6 @@ namespace ExtenderApp.Mod
                 //加载模组主程序集
                 ModDetails details = new ModDetails(info);
                 details.Path = dir;
-                ////添加模组依赖库
-                //var packPath = Path.Combine(dir, AppSetting.AppPackFolderName);
-                //if (Directory.Exists(packPath))
-                //{
-                //    foreach (var packDllPath in Directory.GetFiles(Path.Combine(dir, AppSetting.AppPackFolderName), "*.dll"))
-                //    {
-                //        Assembly.LoadFile(packDllPath);
-                //    }
-                //}
 
                 store.Add(details);
                 //details.StartupType = executor.LoadScope<ModEntityStartup>(Path.Combine(dir, details.StartupDll)).StartType;
