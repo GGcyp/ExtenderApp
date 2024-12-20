@@ -22,7 +22,6 @@ namespace ExtenderApp.ML.View
     /// <summary>
     /// MachineLearningMainView.xaml 的交互逻辑
     /// </summary>
-    public partial class MachineLearningMainView : ExtenderAppView
     {
         public MachineLearningMainView()
         {
@@ -139,5 +138,15 @@ namespace ExtenderApp.ML.View
         //        canvas.Children.Add(scaleLabel);
         //    }
         //}
+
+        public void Enter(IView oldView)
+        {
+
+        }
+
+        public void Exit(IView newView)
+        {
+
+        }
     }
 }
