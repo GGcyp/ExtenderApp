@@ -2,9 +2,9 @@
 using ExtenderApp.ViewModels;
 using ExtenderApp.Service;
 
-namespace ExtenderApp.MainView
+namespace ExtenderApp.MainViews
 {
-    public class MainViewModel : BaseViewModel
+    public class MainViewModel : ExtenderAppViewModel
     {
         public DisplayDetailsStore DisplayDetailsStore { get; }
         private readonly MainModel _mainModel;

@@ -3,9 +3,9 @@ using ExtenderApp.Data;
 using ExtenderApp.Mod;
 using ExtenderApp.ViewModels;
 
-namespace ExtenderApp.MainView
+namespace ExtenderApp.MainViews
 {
-    public class ModViewModle : BaseViewModel
+    public class ModViewModle : ExtenderAppViewModel
     {
         public ModStore ModStore { get; }
         private readonly IModLoader _modLoad;

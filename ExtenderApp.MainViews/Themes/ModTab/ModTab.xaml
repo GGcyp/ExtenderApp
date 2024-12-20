@@ -1,6 +1,6 @@
 ﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-                    xmlns:mainView="clr-namespace:ExtenderApp.MainView">
+                    xmlns:mainView="clr-namespace:ExtenderApp.MainViews">
 
     <Style  TargetType="{x:Type mainView:ModTab}">
         <Setter Property="Background" Value="#20ffffff"/>

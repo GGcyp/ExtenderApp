@@ -13,7 +13,7 @@ using StockMod.Data;
 
 namespace StockMod
 {
-    public class StockMainViewModel : BaseViewModel
+    public class StockMainViewModel : ExtenderAppViewModel
     {
         private string myToken = "bdf712b758795a1a76758186891dbb13-c-app";
         string testUrl = "https://quote.tradeswitcher.com/quote-stock-b-api/kline?token=testtoken&query=Query";

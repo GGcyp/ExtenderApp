@@ -2,7 +2,7 @@
 using AppHost.Extensions.DependencyInjection;
 using ExtenderApp.Abstract;
 
-namespace ExtenderApp.MainView
+namespace ExtenderApp.MainViews
 {
     internal class MainViewStartup : Startup
     {

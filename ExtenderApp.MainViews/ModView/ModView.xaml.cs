@@ -1,5 +1,7 @@
 ﻿using ExtenderApp.Abstract;
+using ExtenderApp.Data;
 using ExtenderApp.Mod;
+using ExtenderApp.Views;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -16,15 +18,14 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 
-namespace ExtenderApp.MainView
+namespace ExtenderApp.MainViews
 {
     /// <summary>
     /// ModView.xaml 的交互逻辑
     /// </summary>
-    public partial class ModView : UserControl, IView
+    public partial class ModView : ExtenderAppView
     {
         private readonly ModViewModle _viewModle;
-        public IViewModel ViewModel => _viewModle;
 
         public ModView(ModViewModle viewModle)
         {
@@ -33,7 +34,7 @@ namespace ExtenderApp.MainView
             ModTab.Callback = viewModle.OpenMod;
         }
 
-        public void Enter(IView oldView)
+        public override void Enter(ViewInfo oldViewInfo)
         {
             var modStore = _viewModle.ModStore;
             for (int i = 0; i < modStore.Count; i++)
@@ -41,11 +42,6 @@ namespace ExtenderApp.MainView
                 ModTab modTab = new ModTab(modStore[i]);
                 modGrid.Children.Add(modTab);
             }
-        }
-
-        public void Exit(IView newView)
-        {
-
         }
     }
 }

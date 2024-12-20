@@ -14,5 +14,10 @@
         /// 显示导航服务
         /// </summary>
         INavigationService NavigationService { get; }
+
+        /// <summary>
+        /// 获取临时存储服务
+        /// </summary>
+        ITemporarilyService TemporarilyService { get; }
     }
 }

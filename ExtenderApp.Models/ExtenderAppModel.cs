@@ -6,11 +6,11 @@ namespace ExtenderApp.Models
     /// Model层，Model基类
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public abstract class BaseModel<TDto> : IModel<TDto> where TDto : class,IDto,new()
+    public abstract class ExtenderAppModel<TDto> : IModel<TDto> where TDto : class,IDto,new()
     {
         public IModelConverterExecutor Converter { get; }
 
-        public BaseModel(IModelConverterExecutor converter)
+        public ExtenderAppModel(IModelConverterExecutor converter)
         {
             Converter = converter;
         }

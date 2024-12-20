@@ -1,7 +1,7 @@
 ﻿using ExtenderApp.Abstract;
 
 
-namespace ExtenderApp.MainView
+namespace ExtenderApp.MainViews
 {
     public class MainModel
     {

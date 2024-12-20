@@ -10,6 +10,7 @@ namespace ExtenderApp.Service
         {
             services.AddSingleton<IServiceStore, ServiceStore>();
             services.AddSingleton<INavigationService, NavigationService>();
+            services.AddSingleton<ITemporarilyService, TemporarilyService>();
         }
     }
 }

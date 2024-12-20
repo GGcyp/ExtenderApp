@@ -1,4 +1,4 @@
-﻿namespace ExtenderApp.MainView
+﻿namespace ExtenderApp.MainViews
 {
     /// <summary>
     /// 主窗口显示详情

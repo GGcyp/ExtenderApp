@@ -14,7 +14,7 @@ using System.Windows.Shapes;
 using ExtenderApp.Abstract;
 using ExtenderApp.Views;
 
-namespace ExtenderApp.MainView
+namespace ExtenderApp.MainViews
 {
     /// <summary>
     /// MainViewWindow.xaml 的交互逻辑

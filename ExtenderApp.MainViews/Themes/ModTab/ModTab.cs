@@ -3,7 +3,7 @@ using System.Windows.Controls;
 using ExtenderApp.Data;
 using ExtenderApp.Mod;
 
-namespace ExtenderApp.MainView
+namespace ExtenderApp.MainViews
 {
     class ModTab : Button
     {

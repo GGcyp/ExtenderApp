@@ -2,7 +2,7 @@
 using ExtenderApp.Data;
 using ExtenderApp.Mod;
 
-namespace ExtenderApp.MainView
+namespace ExtenderApp.MainViews
 {
     public class DisplayDetailsStore : Store<DisplayDetails>
     {

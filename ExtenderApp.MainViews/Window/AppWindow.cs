@@ -5,7 +5,7 @@ using System.Windows.Media;
 using System.Windows.Shell;
 using ExtenderApp.Abstract;
 
-namespace ExtenderApp.MainView
+namespace ExtenderApp.MainViews
 {
     public class AppWindow : Window, IWindow
     {

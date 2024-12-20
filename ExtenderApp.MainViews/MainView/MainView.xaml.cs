@@ -13,30 +13,22 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using ExtenderApp.Abstract;
+using ExtenderApp.Views;
 
-namespace ExtenderApp.MainView
+namespace ExtenderApp.MainViews
 {
     /// <summary>
-    /// MainView_Run.xaml 的交互逻辑
+    /// MainViewControl.xaml 的交互逻辑
     /// </summary>
-    public partial class MainView_Run : UserControl, IMainView
+    public partial class MainView : ExtenderAppView, IMainView
     {
-        private MainViewModel _viewModel;
-        public IViewModel ViewModel => _viewModel;
-        public MainView_Run(MainViewModel viewModel)
+        private readonly MainViewModel _viewModel;
+
+        public MainView(MainViewModel viewModel)
         {
             InitializeComponent();
             _viewModel = viewModel;
-        }
-
-        public void Enter(IView oldView)
-        {
-
-        }
-
-        public void Exit(IView newView)
-        {
-
+            _viewModel.Start(this);
         }
     }
 }
