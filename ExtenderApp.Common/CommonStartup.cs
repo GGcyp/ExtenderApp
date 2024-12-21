@@ -1,5 +1,4 @@
 ﻿using AppHost.Builder;
-using AppHost.Extensions.DependencyInjection;
 using ExtenderApp.Common.File;
 using ExtenderApp.Common.Network;
 

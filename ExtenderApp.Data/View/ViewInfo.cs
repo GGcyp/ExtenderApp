@@ -11,22 +11,16 @@ namespace ExtenderApp.Data
         /// </summary>
         public int ViewHashCode { get; }
 
+        public string ViewName { get; }
+
         /// <summary>
         /// 使用视图名称初始化 <see cref="ViewInfo"/> 结构体的新实例。
         /// </summary>
         /// <param name="viewName">视图名称。</param>
-        public ViewInfo(string viewName) : this(viewName.GetHashCode())
+        public ViewInfo(string viewName)
         {
-
-        }
-
-        /// <summary>
-        /// 使用视图名称初始化 <see cref="ViewInfo"/> 结构体的新实例。
-        /// </summary>
-        /// <param name="viewName">视图名称哈希值。</param>
-        public ViewInfo(int viewHashCode)
-        {
-            ViewHashCode = viewHashCode;
+            ViewHashCode = viewName.GetHashCode();
+            ViewName = viewName;
         }
     }
 }

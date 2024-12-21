@@ -13,28 +13,12 @@
         //默认(暂时
         public static string DefaultFileName = "新建文件";
 
-        //文件夹
-        private static string m_AppFolderPath;
-        /// <summary>
-        /// 获取当前程序文件夹路径
-        /// </summary>
-        public static string AppFolderPath
-        {
-            get
-            {
-                if (string.IsNullOrEmpty(m_AppFolderPath))
-                {
-                    m_AppFolderPath = Directory.GetCurrentDirectory();
-                }
-                return m_AppFolderPath;
-            }
-        }
-
         //文件夹名字
         public static string AppBinFolderName = "bin";
         public static string AppConfigFolderName = "config";
         public static string AppSaveFolderName = "save";
         public static string AppModsFolderName = "mods";
         public static string AppPackFolderName = "pack";
+        public static string AppLogFolderName = "log";
     }
 }
