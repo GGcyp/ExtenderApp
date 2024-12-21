@@ -1,4 +1,5 @@
-﻿using ExtenderApp.Abstract;
+﻿using System.Data;
+using ExtenderApp.Abstract;
 using ExtenderApp.ViewModels;
 
 namespace ExtenderApp.MainViews
@@ -48,7 +49,7 @@ namespace ExtenderApp.MainViews
         {
             ArgumentNullException.ThrowIfNull(runViewType, nameof(runViewType));
 
-            var view= NavigateTo<MainView_Run>();
+            var view = NavigateTo<MainView_Run>();
             _mainModel.CurrentMainView = view;
             _mainModel.MainWindow.View = view;
             view.viewContenControl.Content = NavigateTo(runViewType);

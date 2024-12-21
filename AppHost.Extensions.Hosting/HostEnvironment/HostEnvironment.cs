@@ -1,12 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿
 
 namespace AppHost.Extensions.Hosting
 {
-    public class HostEnvironment : IHostEnvironment
+    internal class HostEnvironment : IHostEnvironment
     {
         private string _applicationName;
         public string ApplicationName

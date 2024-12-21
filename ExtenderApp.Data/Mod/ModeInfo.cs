@@ -33,8 +33,8 @@ namespace ExtenderApp.Data
         public string? ModStartupDll { get; set; }
 
         /// <summary>
-        /// 是否是可以显示的模组，1为可以 0为不可以
+        /// 引用动态库地址
         /// </summary>
-        public int IsDisplayMod { get; set; }
+        public string? PackPath { get; set; }
     }
 }

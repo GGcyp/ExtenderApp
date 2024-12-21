@@ -36,9 +36,9 @@ namespace ExtenderApp.Data
         public string? StartupDll => modeInfo.ModStartupDll;
 
         /// <summary>
-        /// 是否是可以显示的模组
+        /// 引用的动态库地址
         /// </summary>
-        public bool IsDisplayeMod => modeInfo.IsDisplayMod != 0;
+        public string? PackPath => modeInfo.PackPath;
 
         /// <summary>
         /// 获取或设置程序集的加载上下文。
@@ -53,11 +53,14 @@ namespace ExtenderApp.Data
         /// <summary>
         /// 模组视图启动类类型
         /// </summary>
-        public Type StartupType { get; set; }
+        public Type? StartupType { get; set; }
 
         public ModDetails(ModeInfo modeInfo)
         {
             this.modeInfo = modeInfo;
+            Path = string.Empty;
+            StartupType = null;
+            LoadContext = null;
         }
     }
 }

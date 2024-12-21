@@ -1,5 +1,4 @@
 ﻿using AppHost.Extensions.DependencyInjection;
-using ExtenderApp.ML.View;
 using ExtenderApp.Mod;
 
 namespace ExtenderApp.ML

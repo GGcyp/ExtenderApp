@@ -14,8 +14,8 @@
     <ProjectReference Include="..\ExtenderApp.Data\ExtenderApp.Data.csproj" />
   </ItemGroup>
 
-  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+  <!--<Target Name="PostBuild" AfterTargets="PostBuildEvent">
     <Exec Command="copy &quot;$(ProjectDir)\bin\Debug\net8.0\$(ProjectName).dll&quot; &quot;E:\WPF_Project\ExtenderApp\ExtenderApp\bin\Debug\net8.0-windows\bin\$(ProjectName).dll&quot;" />
-  </Target>
+  </Target>-->
 
 </Project>

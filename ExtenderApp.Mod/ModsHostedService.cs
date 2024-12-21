@@ -10,9 +10,9 @@ namespace ExtenderApp.Mod
     {
         private const string MOD_INIT_FILE_NAME = "init.json";
 
-        public ModsHostedService(ModStore store, IHostEnvironment environment, IJsonPareserProvider provider, IScopeExecutor executor)
+        public ModsHostedService(ModStore store, IPathProvider pathProvider, IJsonPareserProvider provider, IScopeExecutor executor)
         {
-            string modFolderPath = Path.Combine(environment.ContentRootPath, AppSetting.AppModsFolderName);
+            string modFolderPath = pathProvider.ModsPath;
 
             foreach (var dir in Directory.GetDirectories(modFolderPath))
             {

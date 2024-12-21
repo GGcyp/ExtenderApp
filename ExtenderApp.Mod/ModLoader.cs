@@ -17,14 +17,19 @@ namespace ExtenderApp.Mod
         /// 作用域执行器
         /// </summary>
         private IScopeExecutor _scopeExecutor;
+        /// <summary>
+        /// 路径提供者接口实例
+        /// </summary>
+        private IPathProvider _pathProvider;
 
         /// <summary>
         /// 构造函数
         /// </summary>
         /// <param name="executor">作用域执行器</param>
-        public ModLoader(IScopeExecutor executor)
+        public ModLoader(IScopeExecutor executor, IPathProvider pathProvider)
         {
             _scopeExecutor = executor;
+            _pathProvider = pathProvider;
         }
 
         /// <summary>
@@ -46,7 +51,8 @@ namespace ExtenderApp.Mod
             details.StartupType = _scopeExecutor.LoadScope<ModEntityStartup>(startAssembly).StartType;
 
             //添加模组依赖库
-            string packPath = Path.Combine(details.Path, AppSetting.AppPackFolderName);
+            string packName = string.IsNullOrEmpty(details.PackPath) ? _pathProvider.PackFolderName : details.PackPath;
+            string packPath = Path.Combine(details.Path, packName);
             if (!Directory.Exists(packPath)) return;
 
             foreach (var dir in Directory.GetFiles(packPath))

@@ -3,8 +3,6 @@ using AppHost;
 using AppHost.Builder;
 using AppHost.Extensions.DependencyInjection;
 using ExtenderApp.Abstract;
-using ExtenderApp.Common;
-using ExtenderApp.Views;
 
 namespace ExtenderApp
 {
@@ -23,8 +21,6 @@ namespace ExtenderApp
             app = new App();
 
             var builder = AppHostApplication.CreateBuilder();
-
-            AddWPFData(builder);
 
             //builder.FindStarupForFolder(AppSetting.AppBinFolderName);
             builder.FindStarupForFolder("bin");
@@ -46,15 +42,6 @@ namespace ExtenderApp
                 Debug.Print(ex.Message);
                 throw new Exception(ex.Message);
             }
-        }
-
-        /// <summary>
-        /// 添加WPF的服务
-        /// </summary>
-        /// <param name="builder"></param>
-        private static void AddWPFData(IHostApplicationBuilder builder)
-        {
-            builder.Services.AddSingleton<IDispatcherService>(new WPF_Dispatcher(app.Dispatcher));
         }
     }
 }

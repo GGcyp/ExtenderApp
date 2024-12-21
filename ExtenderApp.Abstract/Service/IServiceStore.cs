@@ -19,5 +19,19 @@
         /// 获取临时存储服务
         /// </summary>
         ITemporarilyService TemporarilyService { get; }
+
+        /// <summary>
+        /// 获取刷新服务接口。
+        /// </summary>
+        /// <value>
+        /// 返回刷新服务接口的实例。
+        /// </value>
+        IRefreshService RefreshService { get; }
+
+        /// <summary>
+        /// 获取日志服务。
+        /// </summary>
+        /// <returns>返回日志服务接口。</returns>
+        ILogingService LoggingService { get; }
     }
 }

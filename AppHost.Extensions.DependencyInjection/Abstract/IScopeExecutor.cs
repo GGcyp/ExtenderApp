@@ -1,6 +1,9 @@
 ﻿
 namespace AppHost.Extensions.DependencyInjection
 {
+    /// <summary>
+    /// 作用域执行器接口。
+    /// </summary>
     public interface IScopeExecutor
     {
         /// <summary>

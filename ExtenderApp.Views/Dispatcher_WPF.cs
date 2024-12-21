@@ -3,13 +3,13 @@ using ExtenderApp.Abstract;
 
 namespace ExtenderApp.Views
 {
-    internal class WPF_Dispatcher : IDispatcherService
+    internal class Dispatcher_WPF : IDispatcherService
     {
         private readonly Dispatcher _dispatcher;
 
-        public WPF_Dispatcher(Dispatcher dispatcher)
+        public Dispatcher_WPF()
         {
-            _dispatcher = dispatcher;
+            _dispatcher = Dispatcher.CurrentDispatcher;
         }
 
         public void Invoke(Action action)

@@ -1,4 +1,6 @@
 ﻿using ExtenderApp.Abstract;
+using ExtenderApp.Data;
+using ExtenderApp.Service;
 
 namespace ExtenderApp.ViewModels
 {
@@ -8,6 +10,8 @@ namespace ExtenderApp.ViewModels
         /// 服务存储接口实例
         /// </summary>
         protected readonly IServiceStore _serviceStore;
+
+        private readonly string _viewModelName;
 
         /// <summary>
         /// 视图接口实例
@@ -32,15 +36,10 @@ namespace ExtenderApp.ViewModels
             return view;
         }
 
-        protected ExtenderAppViewModel(IServiceStore serviceStore) : this(null, serviceStore)
-        {
-
-        }
-
-        protected ExtenderAppViewModel(IView view, IServiceStore serviceStore)
+        protected ExtenderAppViewModel(IServiceStore serviceStore)
         {
             _serviceStore = serviceStore;
-            _view = view;
+            _viewModelName = GetType().Name;
         }
 
         /// <summary>
@@ -60,5 +59,34 @@ namespace ExtenderApp.ViewModels
         {
             return _serviceStore.NavigationService.NavigateTo(targetView, _view);
         }
+
+        #region Log
+
+        protected void Debug(string message)
+        {
+            _serviceStore.LoggingService.Debug(message, _viewModelName);
+        }
+
+        protected void Info(string message)
+        {
+            _serviceStore.LoggingService.Info(message, _viewModelName);
+        }
+
+        protected void Warning(string message)
+        {
+            _serviceStore.LoggingService.Warning(message, _viewModelName);
+        }
+
+        protected void Error(string message, Exception exception)
+        {
+            _serviceStore.LoggingService.Error(message, _viewModelName, exception);
+        }
+
+        protected void Fatal(string message, Exception exception)
+        {
+            _serviceStore.LoggingService.Fatal(message, _viewModelName, exception);
+        }
+
+        #endregion
     }
 }

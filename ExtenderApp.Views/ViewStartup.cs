@@ -10,6 +10,7 @@ namespace ExtenderApp.Views
         public override void Start(IHostApplicationBuilder builder)
         {
             builder.Services.AddHosted<MainViewHostedService>();
+            builder.Services.AddSingleton<IDispatcherService>(new Dispatcher_WPF());
         }
     }
 }

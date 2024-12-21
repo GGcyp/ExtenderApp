@@ -17,11 +17,12 @@ using System.Windows.Shapes;
 using ExtenderApp.Abstract;
 using ExtenderApp.Views;
 
-namespace ExtenderApp.ML.View
+namespace ExtenderApp.ML
 {
     /// <summary>
     /// MachineLearningMainView.xaml 的交互逻辑
     /// </summary>
+    public partial class MachineLearningMainView : ExtenderAppView
     {
         public MachineLearningMainView()
         {
@@ -138,15 +139,5 @@ namespace ExtenderApp.ML.View
         //        canvas.Children.Add(scaleLabel);
         //    }
         //}
-
-        public void Enter(IView oldView)
-        {
-
-        }
-
-        public void Exit(IView newView)
-        {
-
-        }
     }
 }

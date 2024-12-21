@@ -12,7 +12,6 @@
   <ItemGroup>
     <ProjectReference Include="..\AppHost.Builder\AppHost.Builder.csproj" />
     <ProjectReference Include="..\ExtenderApp.Abstract\ExtenderApp.Abstract.csproj" />
-    <ProjectReference Include="..\ExtenderApp.Common\ExtenderApp.Common.csproj" />
   </ItemGroup>
 
 </Project>
