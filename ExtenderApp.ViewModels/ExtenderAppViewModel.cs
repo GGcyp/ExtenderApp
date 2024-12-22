@@ -1,6 +1,4 @@
 ﻿using ExtenderApp.Abstract;
-using ExtenderApp.Data;
-using ExtenderApp.Service;
 
 namespace ExtenderApp.ViewModels
 {
@@ -59,34 +57,5 @@ namespace ExtenderApp.ViewModels
         {
             return _serviceStore.NavigationService.NavigateTo(targetView, _view);
         }
-
-        #region Log
-
-        protected void Debug(string message)
-        {
-            _serviceStore.LoggingService.Debug(message, _viewModelName);
-        }
-
-        protected void Info(string message)
-        {
-            _serviceStore.LoggingService.Info(message, _viewModelName);
-        }
-
-        protected void Warning(string message)
-        {
-            _serviceStore.LoggingService.Warning(message, _viewModelName);
-        }
-
-        protected void Error(string message, Exception exception)
-        {
-            _serviceStore.LoggingService.Error(message, _viewModelName, exception);
-        }
-
-        protected void Fatal(string message, Exception exception)
-        {
-            _serviceStore.LoggingService.Fatal(message, _viewModelName, exception);
-        }
-
-        #endregion
     }
 }

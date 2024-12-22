@@ -13,17 +13,11 @@ namespace ExtenderApp.Service
 
         public ITemporarilyService TemporarilyService { get; }
 
-        public IRefreshService RefreshService { get; }
-
-        public ILogingService LoggingService { get; }
-
-        public ServiceStore(IDispatcherService dispatcherService, INavigationService navigationService, ITemporarilyService temporarilyStore, IRefreshService refreshService, ILogingService loggingService)
+        public ServiceStore(IDispatcherService dispatcherService, INavigationService navigationService, ITemporarilyService temporarilyStore)
         {
             DispatcherService = dispatcherService;
             NavigationService = navigationService;
             TemporarilyService = temporarilyStore;
-            RefreshService = refreshService;
-            LoggingService = loggingService;
         }
     }
 }
