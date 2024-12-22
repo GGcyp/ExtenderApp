@@ -14,11 +14,10 @@
         public static string DefaultFileName = "新建文件";
 
         //文件夹名字
-        //public static string AppBinFolderName = "bin";
-        //public static string AppConfigFolderName = "config";
-        //public static string AppSaveFolderName = "save";
-        //public static string AppModsFolderName = "mods";
-        //public static string AppPackFolderName = "pack";
-        //public static string AppLogFolderName = "log";
+        public static string AppBinFolderName = "bin";
+        public static string AppConfigFolderName = "config";
+        public static string AppSaveFolderName = "save";
+        public static string AppModsFolderName = "mods";
+        public static string AppPackFolderName = "pack";
     }
 }

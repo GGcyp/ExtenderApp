@@ -92,9 +92,31 @@ namespace ExtenderApp.Service
 
                 using (StreamWriter stream = File.Exists(filePath) ? File.AppendText(filePath) : File.CreateText(filePath))
                 {
-                    stream.WriteLine(info.ToString(_logText));
+                    stream.WriteLine(LogInfoToStringBuilder(info));
                 }
             }
+        }
+
+        /// <summary>
+        /// 将日志信息转换为字符串构建器中的字符串
+        /// </summary>
+        /// <param name="info">日志信息对象</param>
+        /// <returns>包含日志信息的字符串</returns>
+        public string LogInfoToStringBuilder(LogInfo info)
+        {
+            _logText.Append($"时间: {info.Time.ToString("yyyy-MM-dd HH:mm:ss")}");
+            _logText.Append($"，线程ID: {info.ThreadId}");
+            _logText.Append($"，日志级别: {info.LogLevel}");
+            _logText.Append($"，消息源: {info.Source}");
+            _logText.Append($"，消息: {info.Message}");
+
+            if (info.Exception != null)
+            {
+                _logText.Append($"，异常详情: {info.Exception.Message}");
+                _logText.Append($"，异常堆栈: {info.Exception.StackTrace}");
+            }
+
+            return _logText.ToString();
         }
     }
 }
