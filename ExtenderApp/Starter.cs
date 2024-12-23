@@ -30,10 +30,19 @@ namespace ExtenderApp
             application = builder.Builde();
             Debug.Print($"生成服务成功 : {DateTime.Now}");
 
+            ILogingService? logingService = application.Service.GetService<ILogingService>();
+
             try
             {
                 sw.Stop();
-                Debug.Print($"启动成功 : {DateTime.Now} : 本次启动用时 ：{sw.ElapsedMilliseconds} 毫秒");
+                logingService?.Print(new Data.LogInfo()
+                {
+                    LogLevel = Data.LogLevel.INFO,
+                    Message = $"启动成功 本次启动用时 ：{sw.ElapsedMilliseconds} 毫秒",
+                    Source = nameof(Starter),
+                    Time = DateTime.Now,
+                    ThreadId = Thread.CurrentThread.ManagedThreadId
+                });
                 application.Run();
                 app.Run();
             }

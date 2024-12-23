@@ -19,6 +19,20 @@ namespace ExtenderApp.Service
             services.AddSingleton<IServiceStore, ServiceStore>();
             services.AddSingleton<INavigationService, NavigationService>();
             services.AddSingleton<ITemporarilyService, TemporarilyService>();
+            services.AddSingleton<ILogingService, LoggingService>();
+
+            AddRefreshService(services);
+        }
+
+        /// <summary>
+        /// 添加刷新服务到服务集合中。
+        /// </summary>
+        /// <param name="services">服务集合。</param>
+        private void AddRefreshService(IServiceCollection services)
+        {
+            services.AddHosted<RefreshServiceExecutor>();
+            services.AddSingleton<RefreshStore>();
+            services.AddSingleton<IRefreshService, RefreshService>();
         }
     }
 }
