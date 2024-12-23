@@ -1,5 +1,4 @@
 ﻿using ExtenderApp.Abstract;
-using ExtenderApp.Common.Logger;
 
 namespace ExtenderApp.Service
 {
