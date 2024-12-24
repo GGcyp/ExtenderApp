@@ -49,7 +49,16 @@ namespace ExtenderApp
             catch (Exception ex)
             {
                 Debug.Print(ex.Message);
-                throw new Exception(ex.Message);
+                //throw new Exception(ex.Message);
+                logingService?.Print(new Data.LogInfo()
+                {
+                    LogLevel = Data.LogLevel.INFO,
+                    Message = "程序出现问题了！",
+                    Source = nameof(Starter),
+                    Time = DateTime.Now,
+                    ThreadId = Thread.CurrentThread.ManagedThreadId,
+                    Exception = ex
+                });
             }
         }
     }
