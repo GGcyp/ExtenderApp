@@ -5,13 +5,33 @@
     <UseWPF>true</UseWPF>
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
-  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command="copy &quot;$(ProjectDir)\bin\Debug\net8.0-windows\$(ProjectName).dll&quot; &quot;E:\WPF_Project\ExtenderApp\ExtenderApp\bin\Debug\net8.0-windows\mods\MachineLearning\$(ProjectName).dll&quot;" />
-  </Target>
+  <!--<Target Name="PostBuild" AfterTargets="PostBuildEvent">
+    <Exec Command="copy &quot;$(TargetDir)\$(ProjectName).dll&quot; &quot;E:\WPF_Project\ExtenderApp\ExtenderApp\bin\Debug\net8.0-windows\mods\MachineLearning\$(ProjectName).dll&quot;" />
+  </Target>-->
+	<Target Name="CopyFilesAfterBuild" AfterTargets="PostBuildEvent">
+		<!-- 收集要复制的动态库文件（.dll） -->
+		<ItemGroup>
+			<DllFiles Include="$(TargetDir)\$(ProjectName).dll" />
+		</ItemGroup>
+		<!-- 收集要复制的 JSON 文件 -->
+		<ItemGroup>
+			<JsonFiles Include="$(TargetDir)\init.json" />
+		</ItemGroup>
+		<ItemGroup>
+			<TargetFolder Include="E:\WPF_Project\ExtenderApp\ExtenderApp\bin\Debug\net8.0-windows\mods" />
+		</ItemGroup>
+		<!-- 创建目标文件夹（如果不存在）并复制动态库文件 -->
+		<MakeDir Directories="@(TargetFolder)\ExtenderApp.ML" Condition="!Exists('@(TargetFolder)\ExtenderApp.ML')" />
+		<Copy SourceFiles="@(DllFiles)" DestinationFolder="@(TargetFolder)\ExtenderApp.ML" SkipUnchangedFiles="true" />
+		<!-- 创建目标文件夹（如果不存在）并复制 JSON 文件 -->
+		<MakeDir Directories="@(TargetFolder)\ExtenderApp.ML" Condition="!Exists('@(TargetFolder)\ExtenderApp.ML')" />
+		<Copy SourceFiles="@(JsonFiles)" DestinationFolder="@(TargetFolder)\ExtenderApp.ML" SkipUnchangedFiles="true" />
+	</Target>
   <ItemGroup>
+    <PackageReference Include="LLamaSharp" Version="0.19.0" />
     <PackageReference Include="Microsoft.ML" Version="4.0.0" />
-    <PackageReference Include="Microsoft.ML.LightGbm" Version="3.0.1" />
-    <PackageReference Include="Plotly.NET" Version="3.0.1" />
+    <PackageReference Include="Microsoft.ML.LightGbm" Version="4.0.0" />
+    <PackageReference Include="Plotly.NET" Version="5.1.0" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\AppHost.Builder\AppHost.Builder.csproj" />
@@ -21,11 +41,9 @@
     <ProjectReference Include="..\ExtenderApp.Views\ExtenderApp.Views.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="Data\" />
-    <Folder Include="Model\" />
-    <Folder Include="新文件夹\" />
-  </ItemGroup>
-  <ItemGroup>
+    <None Update="init.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="TaxiFareTrainModel.mlnet">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

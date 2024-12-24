@@ -36,13 +36,13 @@ namespace ExtenderApp.Service
         /// </summary>
         /// <param name="service">刷新服务</param>
         /// <param name="environment">主机环境</param>
-        public LogService(IRefreshService service, IHostEnvironment environment)
+        public LogService(IRefreshService service, IPathProvider pathProvider)
         {
             _logQueue = new ConcurrentQueue<LogInfo>();
             service.AddFixUpdate(FixUpdate);
 
             //检查是否存在存放日志文件夹，如不存在则创建
-            _logFolderPath = Path.Combine(environment.ContentRootPath, AppSetting.AppLogFolderName);
+            _logFolderPath = pathProvider.LoggingPath;
             if (!Directory.Exists(_logFolderPath))
             {
                 Directory.CreateDirectory(_logFolderPath);
@@ -89,10 +89,31 @@ namespace ExtenderApp.Service
                 var fileName = string.Concat(fileTime, EXTENSION);
                 var filePath = Path.Combine(_logFolderPath, fileName);
 
+                LogInfoToStringBuilder(info);
+
                 using (StreamWriter stream = File.Exists(filePath) ? File.AppendText(filePath) : File.CreateText(filePath))
                 {
-                    stream.WriteLine(info.ToString(_logText));
+                    stream.WriteLine(_logText.ToString());
                 }
+            }
+        }
+
+        /// <summary>
+        /// 将日志信息追加到StringBuilder中
+        /// </summary>
+        /// <param name="info">日志信息对象</param>
+        public void LogInfoToStringBuilder(LogInfo info)
+        {
+            _logText.Append($"时间: {info.Time.ToString("yyyy-MM-dd HH:mm:ss")}");
+            _logText.Append($"，线程ID: {info.ThreadId}");
+            _logText.Append($"，日志级别: {info.LogLevel}");
+            _logText.Append($"，异常源: {info.Source}");
+            _logText.Append($"，异常信息: {info.Message}");
+
+            if (info.Exception != null)
+            {
+                _logText.Append($"，异常详情: {info.Exception.Message}");
+                _logText.Append($"，异常堆栈: {info.Exception.StackTrace}");
             }
         }
     }

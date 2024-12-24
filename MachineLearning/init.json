@@ -1,0 +1,6 @@
+{
+  "ModTitle": "MachineLearning",
+  "ModDescription": "MachineLearning",
+  "ModVersion": "0.0.1",
+  "ModStartupDll": "ExtenderApp.ML.dll"
+}
