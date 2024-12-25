@@ -1,4 +1,4 @@
-﻿using ExtenderApp.Common.ObjectPool;
+﻿using ExtenderApp.Common.ObjectPools;
 using ExtenderApp.ViewModels;
 using PropertyChanged;
 

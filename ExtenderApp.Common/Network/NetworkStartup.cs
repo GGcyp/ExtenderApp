@@ -7,8 +7,8 @@ namespace ExtenderApp.Common.Network
     {
         public static IServiceCollection AddNetwork(this IServiceCollection services)
         {
-            services.AddSingleton<INetworkClient, NetworkClient>();
-
+            //services.AddSingleton<INetworkClient, HttpClient>();
+            services.AddSingleton<INetWorkProider, NetWorkProider>();
             return services;
         }
     }

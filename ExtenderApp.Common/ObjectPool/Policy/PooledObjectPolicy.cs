@@ -1,4 +1,4 @@
-﻿namespace ExtenderApp.Common.ObjectPool
+﻿namespace ExtenderApp.Common.ObjectPools
 {
     public abstract class PooledObjectPolicy<T> : IPooledObjectPolicy<T> where T : notnull
     {

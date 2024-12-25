@@ -1,5 +1,9 @@
-﻿namespace ExtenderApp.Common.ObjectPool
+﻿namespace ExtenderApp.Common.ObjectPools
 {
+    /// <summary>
+    /// 可池化的对象类，用于管理对象的创建和释放，以便重用对象以减少内存分配和垃圾回收的开销。
+    /// </summary>
+    /// <typeparam name="T">要池化的对象类型，必须是类类型，并且必须有一个无参数的构造函数。</typeparam>
     public class ObjectPoolable<T> where T : class,new()
     {
         /// <summary>

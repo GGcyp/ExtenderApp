@@ -1,4 +1,4 @@
-﻿namespace ExtenderApp.Common.ObjectPool
+﻿namespace ExtenderApp.Common.ObjectPools
 {
     /// <summary>
     /// 默认可以被销毁对象的对象池

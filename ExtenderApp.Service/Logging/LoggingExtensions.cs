@@ -29,6 +29,7 @@ namespace ExtenderApp.Service
         {
             LogInfo info = new LogInfo()
             {
+                Time = DateTime.Now,
                 Message = message,
                 ThreadId = Thread.CurrentThread.ManagedThreadId,
                 Source = source,
@@ -58,6 +59,7 @@ namespace ExtenderApp.Service
         {
             LogInfo info = new LogInfo()
             {
+                Time = DateTime.Now,
                 Message = message,
                 Source = source,
                 LogLevel = LogLevel.INFO,
@@ -86,6 +88,7 @@ namespace ExtenderApp.Service
         {
             LogInfo info = new LogInfo()
             {
+                Time = DateTime.Now,
                 Message = message,
                 Source = source,
                 LogLevel = LogLevel.WARNING,
@@ -116,6 +119,7 @@ namespace ExtenderApp.Service
         {
             LogInfo info = new LogInfo()
             {
+                Time = DateTime.Now,
                 Message = message,
                 ThreadId = Thread.CurrentThread.ManagedThreadId,
                 Source = source,
@@ -148,6 +152,7 @@ namespace ExtenderApp.Service
         {
             LogInfo info = new LogInfo()
             {
+                Time = DateTime.Now,
                 Message = message,
                 ThreadId = Thread.CurrentThread.ManagedThreadId,
                 Source = source,

@@ -2,7 +2,7 @@
 using System.Collections.Specialized;
 using System.ComponentModel;
 using ExtenderApp.Data;
-using ExtenderApp.Common.ObjectPool;
+using ExtenderApp.Common.ObjectPools;
 
 namespace ExtenderApp.ViewModels
 {

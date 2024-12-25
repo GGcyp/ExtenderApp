@@ -1,4 +1,5 @@
 ﻿using ExtenderApp.Abstract;
+using ExtenderApp.Service;
 
 namespace ExtenderApp.ViewModels
 {
@@ -57,5 +58,46 @@ namespace ExtenderApp.ViewModels
         {
             return _serviceStore.NavigationService.NavigateTo(targetView, _view);
         }
+
+        #region Log
+
+        /// <summary>
+        /// 记录信息级别的日志。
+        /// </summary>
+        /// <param name="message">要记录的信息内容。</param>
+        protected void Info(string message)
+        {
+            _serviceStore.LogingService.Info(message, _viewModelName);
+        }
+
+        /// <summary>
+        /// 记录调试级别的日志。
+        /// </summary>
+        /// <param name="message">要记录的调试信息内容。</param>
+        protected void Debug(string message)
+        {
+            _serviceStore.LogingService.Debug(message, _viewModelName);
+        }
+
+        /// <summary>
+        /// 记录错误级别的日志。
+        /// </summary>
+        /// <param name="message">要记录的错误信息内容。</param>
+        /// <param name="exception">引发的异常。</param>
+        protected void Error(string message,Exception exception)
+        {
+            _serviceStore.LogingService.Error(message, _viewModelName, exception);
+        }
+
+        /// <summary>
+        /// 记录警告级别的日志。
+        /// </summary>
+        /// <param name="message">要记录的警告信息内容。</param>
+        protected void Warning(string message)
+        {
+            _serviceStore.LogingService.Warning(message, _viewModelName);
+        }
+
+        #endregion
     }
 }

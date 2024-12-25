@@ -1,7 +1,7 @@
 ﻿using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
-using ExtenderApp.Common.ObjectPool;
+using ExtenderApp.Common.ObjectPools;
 
 namespace ExtenderApp.Mod.PPR
 {

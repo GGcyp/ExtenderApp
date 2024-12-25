@@ -1,6 +1,6 @@
 ﻿
 
-namespace ExtenderApp.Common.ObjectPool
+namespace ExtenderApp.Common.ObjectPools
 {
     /// <summary>
     /// 公共层,对象池策略

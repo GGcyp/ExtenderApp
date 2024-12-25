@@ -1,5 +1,5 @@
 ﻿using ExtenderApp.Abstract;
-using ExtenderApp.Common.ObjectPool;
+using ExtenderApp.Common.ObjectPools;
 
 namespace ExtenderApp.ViewModels
 {

@@ -8,11 +8,10 @@ namespace ExtenderApp.Abstract
     public interface INetworkClient
     {
         /// <summary>
-        /// 异步发送网络请求消息并返回响应消息。
+        /// 异步发送网络请求。
         /// </summary>
-        /// <param name="message">要发送的网络请求消息。</param>
-        /// <param name="option">指定何时完成请求。</param>
-        /// <returns>返回一个包含网络响应消息的 <see cref="ValueTask{NetworkResponseMessage}"/>。</returns>
-        ValueTask<NetworkResponseMessage> SendAsync(NetworkRequestMessage message, HttpCompletionOption option);
+        /// <param name="request">网络请求对象。</param>
+        /// <returns>返回一个包含请求结果的Task对象。</returns>
+        Task<object> SendAsync(NetworkRequest request);
     }
 }

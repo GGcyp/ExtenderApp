@@ -1,4 +1,4 @@
-﻿namespace ExtenderApp.Common.ObjectPool
+﻿namespace ExtenderApp.Common.ObjectPools
 {
     /// <summary>
     /// 通用层,基础对象池策略

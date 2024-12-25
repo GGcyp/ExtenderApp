@@ -2,6 +2,7 @@
 using AppHost.Extensions.DependencyInjection;
 using AppHost.Extensions.Hosting;
 using ExtenderApp.Abstract;
+using ExtenderApp.Service.NetWork;
 
 namespace ExtenderApp.Service
 {
@@ -20,6 +21,7 @@ namespace ExtenderApp.Service
             services.AddSingleton<INavigationService, NavigationService>();
             services.AddSingleton<ITemporarilyService, TemporarilyService>();
             services.AddSingleton<ILogingService, LoggingService>();
+            services.AddSingleton<INetWorkService, NetWorkService>();
 
             AddRefreshService(services);
         }

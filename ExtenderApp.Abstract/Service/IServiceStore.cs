@@ -19,5 +19,15 @@
         /// 获取临时存储服务
         /// </summary>
         ITemporarilyService TemporarilyService { get; }
+
+        /// <summary>
+        /// 获取日志服务
+        /// </summary>
+        ILogingService LogingService { get; }
+
+        /// <summary>
+        /// 获取网络服务
+        /// </summary>
+        INetWorkService NetWorkService { get; }
     }
 }

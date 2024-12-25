@@ -1,6 +1,6 @@
 ﻿using System.Collections.Concurrent;
 
-namespace ExtenderApp.Common.ObjectPool
+namespace ExtenderApp.Common.ObjectPools
 {
     public interface IObjectPool
     {

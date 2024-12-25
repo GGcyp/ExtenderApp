@@ -1,6 +1,6 @@
 ﻿using System.Collections.Concurrent;
 
-namespace ExtenderApp.Common.ObjectPool
+namespace ExtenderApp.Common.ObjectPools
 {
     /// <summary>
     /// 继承至<see cref="ObjectPool{T}"/>的默认对象池。

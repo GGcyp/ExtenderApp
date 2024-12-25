@@ -3,6 +3,7 @@ using AppHost.Extensions.Hosting;
 using ExtenderApp.Abstract;
 using ExtenderApp.Data;
 using System.Text;
+using System.Diagnostics;
 
 namespace ExtenderApp.Service
 {
@@ -92,7 +93,11 @@ namespace ExtenderApp.Service
 
                 using (StreamWriter stream = File.Exists(filePath) ? File.AppendText(filePath) : File.CreateText(filePath))
                 {
-                    stream.WriteLine(LogInfoToStringBuilder(info));
+                    string logInfoMessage = LogInfoToStringBuilder(info);
+                    stream.WriteLine(logInfoMessage);
+#if DEBUG
+                    Debug.Print(logInfoMessage);
+#endif
                 }
             }
         }
