@@ -4,6 +4,7 @@ using ExtenderApp.Abstract;
 using ExtenderApp.Data;
 using System.Text;
 using System.Diagnostics;
+using Microsoft.Extensions.Logging;
 
 namespace ExtenderApp.Service
 {

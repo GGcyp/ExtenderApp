@@ -17,6 +17,8 @@ using System.Windows.Navigation;
 using System.Windows.Shapes;
 using ExtenderApp.Abstract;
 using ExtenderApp.Views;
+using LLama.Common;
+using LLama;
 
 namespace ExtenderApp.ML
 {
@@ -25,120 +27,44 @@ namespace ExtenderApp.ML
     /// </summary>
     public partial class MachineLearningMainView : ExtenderAppView
     {
-        public MachineLearningMainView(IHttpClient client)
+        public MachineLearningMainView()
         {
             InitializeComponent();
+            Temp();
         }
 
-        //private void DrawLineGraph()
-        //{
-        //    // 定义点集
-        //    Point[] points =
-        //    {
-        //        new Point(50, 150),
-        //        new Point(150, 200),
-        //        new Point(250, 100),
-        //        new Point(350, 300),
-        //        new Point(450, 250)
-        //    };
 
-        //    // 创建一个Polyline并设置其点集
-        //    Polyline polyline = new Polyline
-        //    {
-        //        Stroke = Brushes.Blue,
-        //        StrokeThickness = 2,
-        //        Points = new PointCollection(points)
-        //    };
+        private async void Temp()
+        {
+            // 请更改为你自己的模型路径
+            string modelPath = @"<Your model path>";
+            var prompt = "Transcript of a dialog, where the User interacts with an Assistant named Bob. Bob is helpful, kind, honest, good at writing, and never fails to answer the User's requests immediately and with precision.\r\n\r\nUser: Hello, Bob.\r\nBob: Hello. How may I help you today?\r\nUser: Please tell me the largest city in Europe.\r\nBob: Sure. The largest city in Europe is Moscow, the capital of Russia.\r\nUser:";
 
-        //    // 将Polyline添加到Canvas中
-        //    canvas.Children.Add(polyline);
-        //}
+            // 加载模型
+            var parameters = new ModelParams(modelPath) { ContextSize = 1024, GpuLayerCount = 5 };
+            using var model = LLamaWeights.LoadFromFile(parameters);
 
-        //private void DrawLineGraphWithScales()
-        //{
-        //    // 定义绘图区域的大小和位置
-        //    double graphWidth = 400;
-        //    double graphHeight = 300;
-        //    double leftMargin = 50;
-        //    double bottomMargin = 50;
+            // 初始化一个聊天会话
+            using var context = model.CreateContext(parameters);
+            var ex = new InteractiveExecutor(context);
+            ChatSession session = new ChatSession(ex);
 
-        //    // 定义刻度的间隔和数量
-        //    double scaleInterval = 50;
-        //    int numVerticalScales = (int)Math.Ceiling(graphHeight / scaleInterval);
-        //    int numHorizontalScales = (int)Math.Ceiling(graphWidth / scaleInterval);
+            // 展示提示内容
+            Console.WriteLine();
+            Console.Write(prompt);
 
-        //    // 创建线图点集
-        //    Point[] points =
-        //    {
-        //        new Point(leftMargin + 50, bottomMargin + 250),
-        //        new Point(leftMargin + 150, bottomMargin + 100),
-        //        new Point(leftMargin + 250, bottomMargin + 200),
-        //        new Point(leftMargin + 350, bottomMargin + 300)
-        //    };
+            // 循环运行推理，与 LLM 聊天
+            while (prompt != "stop")
+            {
+                await foreach (var text in session.ChatAsync(new ChatHistory.Message(AuthorRole.User, prompt), new InferenceParams { AntiPrompts = new List<string> { "User:" } }))
+                {
+                    Console.Write(text);
+                }
+                prompt = Console.ReadLine() ?? "";
+            }
 
-        //    // 绘制线图
-        //    Polyline polyline = new Polyline
-        //    {
-        //        Stroke = Brushes.Blue,
-        //        StrokeThickness = 2,
-        //        Points = new System.Windows.Media.PointCollection(points)
-        //    };
-        //    canvas.Children.Add(polyline);
-
-        //    // 绘制左边的刻度
-        //    for (int i = 0; i <= numVerticalScales; i++)
-        //    {
-        //        double y = bottomMargin + i * scaleInterval;
-        //        Line scaleLine = new Line
-        //        {
-        //            X1 = leftMargin - 10,
-        //            Y1 = y,
-        //            X2 = leftMargin,
-        //            Y2 = y,
-        //            Stroke = Brushes.Black,
-        //            StrokeThickness = 1
-        //        };
-        //        canvas.Children.Add(scaleLine);
-
-        //        // 绘制刻度标签
-        //        TextBlock scaleLabel = new TextBlock
-        //        {
-        //            Text = $"{i * scaleInterval}",
-        //            VerticalAlignment = VerticalAlignment.Center,
-        //            HorizontalAlignment = HorizontalAlignment.Right,
-        //            Margin = new Thickness(-30, 0, 0, 0)
-        //        };
-        //        Canvas.SetLeft(scaleLabel, leftMargin - 40);
-        //        Canvas.SetTop(scaleLabel, y);
-        //        canvas.Children.Add(scaleLabel);
-        //    }
-
-        //    // 绘制下边的刻度（水平方向）
-        //    for (int i = 0; i <= numHorizontalScales; i++)
-        //    {
-        //        double x = leftMargin + i * scaleInterval;
-        //        Line scaleLine = new Line
-        //        {
-        //            X1 = x,
-        //            Y1 = bottomMargin,
-        //            X2 = x,
-        //            Y2 = bottomMargin - 10,
-        //            Stroke = Brushes.Black,
-        //            StrokeThickness = 1
-        //        };
-        //        canvas.Children.Add(scaleLine);
-
-        //        // 绘制刻度标签
-        //        TextBlock scaleLabel = new TextBlock
-        //        {
-        //            Text = i.ToString(CultureInfo.InvariantCulture),
-        //            VerticalAlignment = VerticalAlignment.Bottom,
-        //            HorizontalAlignment = HorizontalAlignment.Center
-        //        };
-        //        Canvas.SetLeft(scaleLabel, x);
-        //        Canvas.SetTop(scaleLabel, bottomMargin - 20);
-        //        canvas.Children.Add(scaleLabel);
-        //    }
-        //}
+            // 保存会话
+            session.SaveSession("SavedSessionPath");
+        }
     }
 }

@@ -26,6 +26,9 @@
 		</PropertyGroup>
 		<ItemGroup>
 			<NuGetDllFiles Include="$(USERPROFILE)\.nuget\packages\llamasharp\0.19.0\lib\netstandard2.0\*.dll" />
+			<NuGetDllFiles Include="$(USERPROFILE)\.nuget\packages\llamasharp.backend.cuda12.windows\0.19.0\runtimes\win-x64\native\cuda12\lib\netstandard2.0\*.dll" />
+			<NuGetDllFiles Include="$(USERPROFILE)\.nuget\packages\llamasharp.kernel-memory\0.19.0\lib\net8.0\*.dll" />
+			<NuGetDllFiles Include="$(USERPROFILE)\.nuget\packages\llamasharp.semantic-kernel\0.19.0\lib\netstandard2.0\*.dll" />
 			<NuGetDllFiles Include="$(USERPROFILE)\.nuget\packages\microsoft.ml\4.0.0\lib\netstandard2.0\*.dll" />
 			<NuGetDllFiles Include="$(USERPROFILE)\.nuget\packages\microsoft.ml.cpumath\4.0.0\lib\netstandard2.0\*.dll" />
 			<NuGetDllFiles Include="$(USERPROFILE)\.nuget\packages\microsoft.ml.lightgbm\4.0.0\lib\netstandard2.0\*.dll" />
@@ -42,6 +45,10 @@
 	</Target>
 	<ItemGroup>
 		<PackageReference Include="LLamaSharp" Version="0.19.0" />
+		<PackageReference Include="LLamaSharp.Backend.Cuda12" Version="0.19.0" />
+		<PackageReference Include="LLamaSharp.kernel-memory" Version="0.19.0" />
+		<PackageReference Include="LLamaSharp.semantic-kernel" Version="0.19.0" />
+		<PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="9.0.0" />
 		<PackageReference Include="Microsoft.ML" Version="4.0.0" />
 		<PackageReference Include="Microsoft.ML.CpuMath" Version="4.0.0" />
 		<PackageReference Include="Microsoft.ML.LightGbm" Version="4.0.0" />
