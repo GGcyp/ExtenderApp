@@ -26,7 +26,7 @@
         ILogingService LogingService { get; }
 
         /// <summary>
-        /// 获取网络服务
+        /// 获取网路服务
         /// </summary>
         INetWorkService NetWorkService { get; }
     }

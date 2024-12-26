@@ -21,7 +21,7 @@ namespace ExtenderApp.Service
             services.AddSingleton<INavigationService, NavigationService>();
             services.AddSingleton<ITemporarilyService, TemporarilyService>();
             services.AddSingleton<ILogingService, LoggingService>();
-            services.AddSingleton<INetWorkService, NetWorkService>();
+            services.AddScoped<INetWorkService, NetWorkService>();
 
             AddRefreshService(services);
         }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -8,6 +9,19 @@ namespace ExtenderApp.Data
 {
     public struct LogInfo
     {
+        public static LogInfo DefaultLogInfo(LogLevel level, string source, string message, Exception exception = null)
+        {
+            return new LogInfo()
+            {
+                Time = DateTime.Now,
+                ThreadId = Thread.CurrentThread.ManagedThreadId,
+                Source = source,
+                LogLevel = level,
+                Message = message,
+                Exception = exception
+            };
+        }
+
         /// <summary>
         /// 时间
         /// </summary>

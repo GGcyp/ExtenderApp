@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
+using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
@@ -24,7 +25,7 @@ namespace ExtenderApp.ML
     /// </summary>
     public partial class MachineLearningMainView : ExtenderAppView
     {
-        public MachineLearningMainView()
+        public MachineLearningMainView(IHttpClient client)
         {
             InitializeComponent();
         }

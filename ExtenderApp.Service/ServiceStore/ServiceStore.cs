@@ -9,21 +9,21 @@ namespace ExtenderApp.Service
     {
         public IDispatcherService DispatcherService { get; }
 
-        public INavigationService NavigationService {  get; }
+        public INavigationService NavigationService { get; }
 
         public ITemporarilyService TemporarilyService { get; }
 
+        public ILogingService LogingService { get; }
+
         public INetWorkService NetWorkService { get; }
 
-        public ILogingService LogingService {  get; }
-
-        public ServiceStore(IDispatcherService dispatcherService, INavigationService navigationService, ITemporarilyService temporarilyStore, INetWorkService netWorkService, ILogingService logingService)
+        public ServiceStore(IDispatcherService dispatcherService, INavigationService navigationService, ITemporarilyService temporarilyStore, ILogingService logingService, INetWorkService netWorkService)
         {
             DispatcherService = dispatcherService;
             NavigationService = navigationService;
             TemporarilyService = temporarilyStore;
-            NetWorkService = netWorkService;
             LogingService = logingService;
+            NetWorkService = netWorkService;
         }
     }
 }

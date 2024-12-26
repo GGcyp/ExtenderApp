@@ -65,7 +65,7 @@ namespace ExtenderApp.Common.ObjectPools
         /// 回收对象
         /// </summary>
         /// <returns>已经回收了就返回<see cref="true"/></returns>
-        private protected bool ReleaseCore(T obj)
+        protected bool ReleaseCore(T obj)
         {
             if (!_releaseFunc(obj))
             {

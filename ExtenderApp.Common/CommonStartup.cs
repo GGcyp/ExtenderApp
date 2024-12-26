@@ -1,6 +1,5 @@
 ﻿using AppHost.Builder;
 using ExtenderApp.Common.File;
-using ExtenderApp.Common.Network;
 
 namespace ExtenderApp.Common
 {
@@ -12,7 +11,6 @@ namespace ExtenderApp.Common
         public override void Start(IHostApplicationBuilder builder)
         {
             builder.Services.AddFile();
-            builder.Services.AddNetwork();
         }
     }
 }

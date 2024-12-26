@@ -17,9 +17,9 @@ namespace StockMod
     {
         private string myToken = "bdf712b758795a1a76758186891dbb13-c-app";
         string testUrl = "https://quote.tradeswitcher.com/quote-stock-b-api/kline?token=testtoken&query=Query";
-        private readonly INetworkClient _networkClient;
+        private readonly IHttpClient _networkClient;
 
-        public StockMainViewModel(IJsonPareserProvider provider, INetworkClient client, IServiceStore service) : base(service)
+        public StockMainViewModel(IJsonPareserProvider provider, IHttpClient client, IServiceStore service) : base(service)
         {
             string requestUrl = testUrl.Replace("testtoken", myToken); // 替换令牌
             _networkClient = client;
