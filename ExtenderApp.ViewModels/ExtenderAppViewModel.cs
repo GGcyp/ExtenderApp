@@ -1,43 +1,42 @@
-﻿using System.Net;
+﻿using System.ComponentModel;
+using System.Net;
 using System.Net.Sockets;
+using System.Runtime.CompilerServices;
 using ExtenderApp.Abstract;
-using ExtenderApp.Service;
+using ExtenderApp.Services;
 
 namespace ExtenderApp.ViewModels
 {
-    public abstract class ExtenderAppViewModel : IViewModel
+    public abstract class ExtenderAppViewModel : IViewModel, INotifyPropertyChanged
     {
         /// <summary>
         /// 服务存储接口实例
         /// </summary>
         protected readonly IServiceStore _serviceStore;
-
+        /// <summary>
+        /// 视图模型名称（只读）
+        /// </summary>
         private readonly string _viewModelName;
 
         /// <summary>
-        /// 视图接口实例
+        /// 当属性更改时发生的事件
         /// </summary>
-        protected readonly IView _view;
+        public event PropertyChangedEventHandler? PropertyChanged;
 
         /// <summary>
-        /// 获取指定类型的视图实例
+        /// 当属性更改时触发PropertyChanged事件
         /// </summary>
-        /// <typeparam name="TView">视图类型，需要继承自IView接口</typeparam>
-        /// <returns>返回指定类型的视图实例</returns>
-        /// <exception cref="ArgumentNullException">如果_view为null，则抛出此异常</exception>
-        /// <exception cref="InvalidCastException">如果_view无法转换为指定类型，则抛出此异常</exception>
-        protected TView GetView<TView>() where TView : class, IView
+        /// <param name="propertyName">发生更改的属性名称</param>
+        protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
         {
-            ArgumentNullException.ThrowIfNull(_view, string.Format("视图为空 : {0}", GetType().Name));
-
-            var view = _view as TView;
-            if (view is null)
-                throw new InvalidCastException(string.Format("类型无效，{0}无法转换为{1}", _view.GetType().Name, typeof(TView)));
-
-            return view;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
 
-        protected ExtenderAppViewModel(IServiceStore serviceStore)
+        /// <summary>
+        /// ExtenderAppViewModel构造函数
+        /// </summary>
+        /// <param name="serviceStore">服务存储对象</param>
+        public ExtenderAppViewModel(IServiceStore serviceStore)
         {
             _serviceStore = serviceStore;
             _viewModelName = GetType().Name;
@@ -58,12 +57,12 @@ namespace ExtenderApp.ViewModels
         /// 导航到指定的视图类型。
         /// </summary>
         /// <param name="targetView">目标视图的类型。</param>
-        public IView NavigateTo(Type targetView)
+        public virtual IView NavigateTo(Type targetView)
         {
             IView view = null;
             try
             {
-                view = _serviceStore.NavigationService.NavigateTo(targetView, _view);
+                view = _serviceStore.NavigationService.NavigateTo(targetView, null);
             }
             catch (Exception ex)
             {
@@ -237,5 +236,50 @@ namespace ExtenderApp.ViewModels
         }
 
         #endregion
+    }
+
+    public abstract class ExtenderAppViewModel<TView> : ExtenderAppViewModel, IViewModel<TView> where TView : IView
+    {
+        /// <summary>
+        /// 视图接口实例
+        /// </summary>
+        protected TView? View { get; set; }
+
+        public ExtenderAppViewModel(IServiceStore serviceStore) : base(serviceStore)
+        {
+
+        }
+
+        /// <summary>
+        /// 注入视图
+        /// </summary>
+        /// <param name="view">要注入的视图</param>
+        /// <exception cref="ArgumentNullException">如果传入的视图为空，则抛出此异常</exception>
+        /// <exception cref="InvalidDataException">如果当前视图不可更改且已存在视图，则抛出此异常</exception>
+        public virtual void InjectView(TView view)
+        {
+            if (view is null)
+                throw new ArgumentNullException(nameof(view));
+
+            View = view;
+        }
+
+        /// <summary>
+        /// 导航到指定的视图类型。
+        /// </summary>
+        /// <param name="targetView">目标视图的类型。</param>
+        public override IView NavigateTo(Type targetView)
+        {
+            IView view = null;
+            try
+            {
+                view = _serviceStore.NavigationService.NavigateTo(targetView, view);
+            }
+            catch (Exception ex)
+            {
+                Error("视图导航出现了问题！", ex);
+            }
+            return view;
+        }
     }
 }

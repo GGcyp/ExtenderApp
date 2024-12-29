@@ -1,6 +1,6 @@
 ﻿using ExtenderApp.Abstract;
 
-namespace ExtenderApp.Service
+namespace ExtenderApp.Services
 {
     /// <summary>
     /// 服务存储类，实现了IServiceStore接口
@@ -17,13 +17,18 @@ namespace ExtenderApp.Service
 
         public INetWorkService NetWorkService { get; }
 
-        public ServiceStore(IDispatcherService dispatcherService, INavigationService navigationService, ITemporarilyService temporarilyStore, ILogingService logingService, INetWorkService netWorkService)
+        public IModService ModService { get; }
+
+        public ServiceStore(IDispatcherService dispatcherService, 
+            INavigationService navigationService, ITemporarilyService temporarilyStore, 
+            ILogingService logingService, INetWorkService netWorkService, IModService modService)
         {
             DispatcherService = dispatcherService;
             NavigationService = navigationService;
             TemporarilyService = temporarilyStore;
             LogingService = logingService;
             NetWorkService = netWorkService;
+            ModService = modService;
         }
     }
 }

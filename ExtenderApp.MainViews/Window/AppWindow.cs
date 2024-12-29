@@ -63,6 +63,11 @@ namespace ExtenderApp.MainViews
             }));
         }
 
+        public void ShowView(IView view)
+        {
+            throw new NotImplementedException();
+        }
+
         #region 系统按钮
 
         /// <summary>

@@ -1,0 +1,63 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <UseWPF>true</UseWPF>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="PropertyChanged.Fody" Version="4.1.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AppHost.Builder\AppHost.Builder.csproj" />
+    <ProjectReference Include="..\AppHost.Common\AppHost.Common.csproj" />
+    <ProjectReference Include="..\ExtenderApp.ViewModels\ExtenderApp.ViewModels.csproj" />
+    <ProjectReference Include="..\ExtenderApp.Views\ExtenderApp.Views.csproj" />
+  </ItemGroup>
+
+	<Target Name="CopyFilesAfterBuild" AfterTargets="PostBuildEvent">
+		<!-- 收集要复制的动态库文件（.dll） -->
+		<ItemGroup>
+			<DllFiles Include="$(TargetDir)\$(ProjectName).dll" />
+		</ItemGroup>
+		<!-- 收集要复制的 JSON 文件 -->
+		<ItemGroup>
+			<JsonFiles Include="$(TargetDir)\init.json" />
+		</ItemGroup>
+		<ItemGroup>
+			<TargetFolder Include="E:\WPF_Project\ExtenderApp\ExtenderApp\bin\Debug\net8.0-windows\mods" />
+		</ItemGroup>
+		<!-- 通过环境变量获取当前用户名（Windows 系统下常用的 USERNAME 环境变量） --><!--
+		<PropertyGroup>
+			<CurrentUserName>$([System.Environment]::GetEnvironmentVariable('USERNAME'))</CurrentUserName>
+		</PropertyGroup>
+		<ItemGroup>
+			<NuGetDllFiles Include="$(USERPROFILE)\.nuget\packages\llamasharp\0.19.0\lib\netstandard2.0\*.dll" />
+			<NuGetDllFiles Include="$(USERPROFILE)\.nuget\packages\llamasharp.backend.cuda12.windows\0.19.0\runtimes\win-x64\native\cuda12\lib\netstandard2.0\*.dll" />
+			<NuGetDllFiles Include="$(USERPROFILE)\.nuget\packages\llamasharp.kernel-memory\0.19.0\lib\net8.0\*.dll" />
+			<NuGetDllFiles Include="$(USERPROFILE)\.nuget\packages\llamasharp.semantic-kernel\0.19.0\lib\netstandard2.0\*.dll" />
+			<NuGetDllFiles Include="$(USERPROFILE)\.nuget\packages\microsoft.ml\4.0.0\lib\netstandard2.0\*.dll" />
+			<NuGetDllFiles Include="$(USERPROFILE)\.nuget\packages\microsoft.ml.cpumath\4.0.0\lib\netstandard2.0\*.dll" />
+			<NuGetDllFiles Include="$(USERPROFILE)\.nuget\packages\microsoft.ml.lightgbm\4.0.0\lib\netstandard2.0\*.dll" />
+			<NuGetDllFiles Include="$(USERPROFILE)\.nuget\packages\plotly.net\5.1.0\lib\netstandard2.0\*.dll" />
+		</ItemGroup>-->
+		<!-- 创建目标文件夹（如果不存在）并复制动态库文件和init.json -->
+		<MakeDir Directories="%(TargetFolder.Identity)\$(ProjectName)" Condition="!Exists('%(TargetFolder.Identity)\$(ProjectName)')" />
+		<Copy SourceFiles="@(DllFiles)" DestinationFolder="%(TargetFolder.Identity)\$(ProjectName)" SkipUnchangedFiles="true" />
+		<Copy SourceFiles="@(JsonFiles)" DestinationFolder="%(TargetFolder.Identity)\$(ProjectName)" SkipUnchangedFiles="true" />
+
+		<!--NuGet包的动态库复制--><!--
+		<MakeDir Directories="%(TargetFolder.Identity)\$(ProjectName)\pack" Condition="Exists('%(TargetFolder.Identity)\$(ProjectName)\pack')" />
+		<Copy SourceFiles="@(NuGetDllFiles)" DestinationFolder="%(TargetFolder.Identity)\$(ProjectName)\pack" SkipUnchangedFiles="true" />-->
+	</Target>
+	
+  <ItemGroup>
+    <None Update="init.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+</Project>

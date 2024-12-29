@@ -2,7 +2,7 @@
 using System.Net.Sockets;
 using ExtenderApp.Abstract;
 
-namespace ExtenderApp.Service
+namespace ExtenderApp.Services
 {
     /// <summary>
     /// 网络扩展类，提供对INetWorkService接口的扩展方法

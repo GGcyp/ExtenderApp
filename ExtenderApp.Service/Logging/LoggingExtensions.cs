@@ -1,7 +1,7 @@
 ﻿using ExtenderApp.Abstract;
 using ExtenderApp.Data;
 
-namespace ExtenderApp.Service
+namespace ExtenderApp.Services
 {
     /// <summary>
     /// 日志服务扩展方法类

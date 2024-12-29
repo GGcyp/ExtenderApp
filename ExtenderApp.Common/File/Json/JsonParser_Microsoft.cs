@@ -6,7 +6,8 @@ namespace ExtenderApp.Common.File
 {
     internal class JsonParser_Microsoft : IJsonParser
     {
-        public string LibraryName => LibrarySetting.MICROSOFT_LIBRARY;
+        public FileExtensionType ExtensionTypeType => FileExtensionType.Json;
+
         private readonly JsonSerializerOptions _jsonSerializerOptions;
 
         public JsonParser_Microsoft()
@@ -15,27 +16,16 @@ namespace ExtenderApp.Common.File
             {
                 // 例如: 配置缩进、命名策略等
                 WriteIndented = true,
-                PropertyNameCaseInsensitive = true
+                PropertyNameCaseInsensitive = true,
+                Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
             };
         }
 
-        public void Parser(FileInfoData infoData, Action<object?> callback, object? options = null)
-        {
-            var obj = Deserialize(infoData, typeof(object), options);
-            callback?.Invoke(obj);
-        }
-
-        public void Parser(FileInfoData infoData, object obj, Action<object?> callback, object? options = null)
-        {
-            Serialize(infoData, options);
-            callback?.Invoke(obj);
-        }
-
-        public object? Deserialize(FileInfoData infoData, Type type, object? options = null)
+        public object? Deserialize(FileOperate operate, Type type, object? options = null)
         {
             var jsonOptions = options as JsonSerializerOptions ?? _jsonSerializerOptions;
             object? result = null;
-            using (FileStream stream = new FileStream(infoData.Path, FileMode.Open, FileAccess.Read))
+            using (FileStream stream = operate.OpenFile())
             {
                 result = JsonSerializer.Deserialize(stream, type, jsonOptions);
             }
@@ -48,13 +38,59 @@ namespace ExtenderApp.Common.File
             return JsonSerializer.Deserialize(json, type, jsonOptions);
         }
 
-        public bool Serialize(object jsonObject, FileInfoData infoData, object? options = null)
+        public T? Deserialize<T>(FileOperate operate, object? options = null)
+        {
+            var jsonOptions = options as JsonSerializerOptions ?? _jsonSerializerOptions;
+            T? result = default;
+            using (FileStream stream = operate.OpenFile())
+            {
+                result = JsonSerializer.Deserialize<T>(stream, jsonOptions);
+            }
+            return result;
+        }
+
+        public T? Deserialize<T>(string json, object? options = null)
+        {
+            var jsonOptions = options as JsonSerializerOptions ?? _jsonSerializerOptions;
+            return JsonSerializer.Deserialize<T>(json, jsonOptions);
+        }
+
+        public async ValueTask<T?> DeserializeAsync<T>(FileOperate operate, object? options = null)
+        {
+            var jsonOptions = options as JsonSerializerOptions ?? _jsonSerializerOptions;
+            T? result = default;
+            using (FileStream stream = operate.OpenFile())
+            {
+                result = await JsonSerializer.DeserializeAsync<T>(stream, jsonOptions);
+            }
+            return result;
+        }
+
+        public ValueTask<object?> DeserializeAsync(FileOperate operate, Type type, object? options = null)
+        {
+            try
+            {
+                var jsonOptions = options as JsonSerializerOptions ?? _jsonSerializerOptions;
+                ValueTask<object?> result;
+                using (FileStream stream = operate.OpenFile())
+                {
+                    result = JsonSerializer.DeserializeAsync(stream, type, jsonOptions);
+                }
+                return result;
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
+        }
+
+        public bool Serialize(object jsonObject, FileOperate operate, object? options = null)
         {
             try
             {
                 var jsonOptions = options as JsonSerializerOptions ?? _jsonSerializerOptions;
 
-                using (FileStream stream = new FileStream(infoData.Path, FileMode.Create, FileAccess.Write))
+                using (FileStream stream = operate.OpenFile())
                 {
                     JsonSerializer.Serialize(stream, jsonObject, jsonOptions);
                 }
@@ -63,8 +99,7 @@ namespace ExtenderApp.Common.File
             catch (Exception ex)
             {
                 // 在这里处理异常，例如记录日志或通知用户
-                Console.WriteLine($"An error occurred during serialization: {ex.Message}");
-                return false;
+                throw;
             }
         }
 
@@ -75,31 +110,12 @@ namespace ExtenderApp.Common.File
             return JsonSerializer.Serialize(jsonObject, jsonOptions);
         }
 
-        public ValueTask<object?> DeserializeAsync(FileInfoData infoData, Type type, object? options = null)
+        public async ValueTask<bool> SerializeAsync(object jsonObject, FileOperate operate, object? options = null)
         {
             try
             {
                 var jsonOptions = options as JsonSerializerOptions ?? _jsonSerializerOptions;
-                ValueTask<object?> result;
-                using (FileStream stream = new FileStream(infoData.Path, FileMode.Open, FileAccess.Read))
-                {
-                    result = JsonSerializer.DeserializeAsync(stream, type, jsonOptions);
-                }
-                return result;
-            }
-            catch(Exception ex)
-            {
-
-                return default;
-            }
-        }
-
-        public async ValueTask<bool> SerializeAsync(object jsonObject, FileInfoData infoData, object? options = null)
-        {
-            try
-            {
-                var jsonOptions = options as JsonSerializerOptions ?? _jsonSerializerOptions;
-                using (FileStream stream = new FileStream(infoData.Path, FileMode.Create, FileAccess.Write))
+                using (FileStream stream = operate.OpenFile())
                 {
                     await JsonSerializer.SerializeAsync(stream, jsonObject, jsonOptions);
                 }
@@ -107,8 +123,7 @@ namespace ExtenderApp.Common.File
             }
             catch (Exception ex)
             {
-                // 在这里处理异常，例如记录日志或通知用户
-                return false; 
+                throw;
             }
         }
     }

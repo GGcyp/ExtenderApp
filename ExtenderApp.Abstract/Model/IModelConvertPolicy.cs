@@ -29,6 +29,6 @@ namespace ExtenderApp.Abstract
         /// <param name="infoData">文件信息数据对象，包含文件路径、文件名等。</param>
         /// <param name="readOrWriteData">读取或写入的数据对象，根据操作类型决定。</param>
         /// <param name="objects">可选参数，包含其他与操作相关的对象数组。</param>
-        void Convert(IModel model, FileInfoData infoData, object readOrWriteData, object objects);
+        void Convert(IModel model, FileOperate infoData, object readOrWriteData, object objects);
     }
 }

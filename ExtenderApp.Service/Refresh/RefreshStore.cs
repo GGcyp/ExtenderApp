@@ -1,6 +1,6 @@
 ﻿using ExtenderApp.Data;
 
-namespace ExtenderApp.Service
+namespace ExtenderApp.Services
 {
     /// <summary>
     /// RefreshStore 类用于管理更新操作的存储。

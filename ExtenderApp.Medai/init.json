@@ -1,0 +1,6 @@
+{
+  "ModTitle": "Medai",
+  "ModDescription": "一个简单的视频组件",
+  "ModVersion": "0.0.1",
+  "ModStartupDll": "ExtenderApp.Medai.dll"
+}

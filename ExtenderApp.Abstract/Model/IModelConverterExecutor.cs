@@ -9,6 +9,6 @@ namespace ExtenderApp.Abstract
         /// </summary>
         /// <param name="model">待转换的模型对象</param>
         /// <param name="infoData">文件信息数据对象</param>
-        void Execute(IModel model, FileInfoData infoData);
+        void Execute(IModel model, FileOperate infoData);
     }
 }

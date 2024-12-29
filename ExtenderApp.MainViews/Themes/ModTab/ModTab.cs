@@ -1,7 +1,6 @@
 ﻿using System.Windows;
 using System.Windows.Controls;
 using ExtenderApp.Data;
-using ExtenderApp.Mod;
 
 namespace ExtenderApp.MainViews
 {
@@ -14,7 +13,7 @@ namespace ExtenderApp.MainViews
                 new FrameworkPropertyMetadata(typeof(ModTab)));
         }
 
-        private readonly ModDetails _modDetails;
+        public ModDetails ModDetails { get; }
         /// <summary>
         /// 全局统一回调
         /// </summary>
@@ -22,7 +21,7 @@ namespace ExtenderApp.MainViews
 
         public ModTab(ModDetails modDetails)
         {
-            _modDetails = modDetails;
+            ModDetails = modDetails;
             Title = modDetails.Title;
             Description = modDetails.Description;
             Version = modDetails.Version;
@@ -30,7 +29,7 @@ namespace ExtenderApp.MainViews
 
         protected override void OnClick()
         {
-            Callback?.Invoke(_modDetails);
+            Callback?.Invoke(ModDetails);
         }
 
         #region 名称

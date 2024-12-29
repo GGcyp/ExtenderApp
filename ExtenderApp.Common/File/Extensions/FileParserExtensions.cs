@@ -15,24 +15,9 @@ namespace ExtenderApp.Common.File
         /// <returns>返回修改后的服务集合</returns>
         public static IServiceCollection AddFile(this IServiceCollection services)
         {
-            //Provider
-            services.AddFileParserProvider();
-            services.AddPathProvider();
-
             //Parser
-            services.AddJsonParser();
+            services.AddParser();
 
-            return services;
-        }
-
-        /// <summary>
-        /// 为服务集合添加路径提供者
-        /// </summary>
-        /// <param name="services">服务集合</param>
-        /// <returns>返回修改后的服务集合</returns>
-        private static IServiceCollection AddPathProvider(this IServiceCollection services)
-        {
-            services.AddSingleton<IPathProvider, PathProvider>();
             return services;
         }
 
@@ -41,10 +26,9 @@ namespace ExtenderApp.Common.File
         /// </summary>
         /// <param name="services">服务集合</param>
         /// <returns>返回修改后的服务集合</returns>
-        private static IServiceCollection AddJsonParser(this IServiceCollection services)
+        private static IServiceCollection AddParser(this IServiceCollection services)
         {
-            services.AddSingleton<JsonParser_Microsoft>();
-            services.AddSingleton<JsonParserStore>();
+            services.AddSingleton<IJsonParser, JsonParser_Microsoft>();
             return services;
         }
     }

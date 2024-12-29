@@ -13,6 +13,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 using ExtenderApp.Abstract;
 using ExtenderApp.Views;
+using Newtonsoft.Json.Linq;
 
 namespace ExtenderApp.MainViews
 {
@@ -21,28 +22,6 @@ namespace ExtenderApp.MainViews
     /// </summary>
     public partial class MainViewWindow : Window, IMainWindow
     {
-        public IView View
-        {
-            get
-            {
-                if (!active) return null;
-                return viewControl.Content as IView;
-            }
-
-            set
-            {
-                //if(value is not ContentControl contentControl)
-                //    throw new ArgumentNullException("The view not be ContentControl");
-
-                ArgumentNullException.ThrowIfNull(value, "The view null");
-
-                if (!active)
-                    new ArgumentNullException("MainWiodow not active");
-
-                viewControl.Content = value;
-            }
-        }
-
         private bool active;
 
         public MainViewWindow()
@@ -52,5 +31,17 @@ namespace ExtenderApp.MainViews
             active = true;
         }
 
+        public void ShowView(IView view)
+        {
+            ArgumentNullException.ThrowIfNull(view, "The view null");
+
+            if(view is not IMainView)
+                throw new InvalidCastException(nameof(IView));
+
+            if (!active)
+                 new ArgumentNullException("MainWiodow not active");
+
+            viewControl.Content = view;
+        }
     }
 }

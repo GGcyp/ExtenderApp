@@ -3,7 +3,7 @@ using System.Net.Sockets;
 using ExtenderApp.Abstract;
 using ExtenderApp.Common.ObjectPools;
 
-namespace ExtenderApp.Service.NetWork
+namespace ExtenderApp.Services.NetWork
 {
     /// <summary>
     /// 网络服务类，实现了 INetWorkService 接口。

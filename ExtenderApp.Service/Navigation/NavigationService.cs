@@ -1,6 +1,6 @@
 ﻿using ExtenderApp.Abstract;
 
-namespace ExtenderApp.Service
+namespace ExtenderApp.Services
 {
     internal class NavigationService : INavigationService
     {

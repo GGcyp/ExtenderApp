@@ -2,9 +2,10 @@
 using AppHost.Extensions.DependencyInjection;
 using AppHost.Extensions.Hosting;
 using ExtenderApp.Abstract;
-using ExtenderApp.Service.NetWork;
+using ExtenderApp.Service;
+using ExtenderApp.Services.NetWork;
 
-namespace ExtenderApp.Service
+namespace ExtenderApp.Services
 {
     /// <summary>
     /// ServiceStartup 类，继承自 Startup 类，用于配置应用程序的服务。
@@ -23,7 +24,9 @@ namespace ExtenderApp.Service
             services.AddSingleton<ILogingService, LoggingService>();
             services.AddScoped<INetWorkService, NetWorkService>();
 
+
             AddRefreshService(services);
+            AddModService(services);
         }
 
         /// <summary>
@@ -35,6 +38,16 @@ namespace ExtenderApp.Service
             services.AddHosted<RefreshServiceExecutor>();
             services.AddSingleton<RefreshStore>();
             services.AddSingleton<IRefreshService, RefreshService>();
+        }
+
+        /// <summary>
+        /// 向服务容器中添加Mod服务。
+        /// </summary>
+        /// <param name="services">服务集合。</param>
+        private void AddModService(IServiceCollection services)
+        {
+            services.AddSingleton<IModService, ModService>();
+            services.AddSingleton<ModStore>();
         }
     }
 }

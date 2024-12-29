@@ -1,5 +1,5 @@
 ﻿using ExtenderApp.Abstract;
-namespace ExtenderApp.Service
+namespace ExtenderApp.Services
 {
     public static class NavigationServiceExpansions
     {

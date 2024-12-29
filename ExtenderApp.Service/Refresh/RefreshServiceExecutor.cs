@@ -1,6 +1,6 @@
 ﻿using AppHost.Extensions.Hosting;
 
-namespace ExtenderApp.Service
+namespace ExtenderApp.Services
 {
     /// <summary>
     /// 刷新服务执行器类，继承自BackgroundService类，用于在后台执行刷新任务。

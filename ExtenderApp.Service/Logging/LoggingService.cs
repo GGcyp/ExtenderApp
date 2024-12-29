@@ -4,9 +4,8 @@ using ExtenderApp.Abstract;
 using ExtenderApp.Data;
 using System.Text;
 using System.Diagnostics;
-using Microsoft.Extensions.Logging;
 
-namespace ExtenderApp.Service
+namespace ExtenderApp.Services
 {
     /// <summary>
     /// 日志服务类，实现了ILogService接口
@@ -26,7 +25,7 @@ namespace ExtenderApp.Service
         /// <summary>
         /// 日志文件夹路径
         /// </summary>
-        private readonly IPathProvider _pathProvider;
+        private readonly IPathService _pathProvider;
 
         /// <summary>
         /// 日志文本内容
@@ -38,7 +37,7 @@ namespace ExtenderApp.Service
         /// </summary>
         /// <param name="service">刷新服务</param>
         /// <param name="environment">主机环境</param>
-        public LoggingService(IRefreshService service, IPathProvider provider)
+        public LoggingService(IRefreshService service, IPathService provider)
         {
             _logQueue = new ConcurrentQueue<LogInfo>();
             service.AddFixUpdate(FixUpdate);

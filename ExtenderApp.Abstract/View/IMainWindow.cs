@@ -7,6 +7,5 @@ namespace ExtenderApp.Abstract
     /// </summary>
     public interface IMainWindow : IWindow
     {
-        IView View { get; set; }
     }
 }
