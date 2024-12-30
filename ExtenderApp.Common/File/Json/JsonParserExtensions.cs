@@ -8,51 +8,62 @@ namespace ExtenderApp.Common
         /// <summary>
         /// 从文件中反序列化对象，并通过回调返回结果
         /// </summary>
-        /// <param name="infoData">文件信息数据</param>
+        /// <param name="info">文件信息数据</param>
         /// <param name="type">目标类型</param>
         /// <param name="callback">回调方法，用于处理反序列化后的对象</param>
         /// <param name="options">文件设置（可选）</param>
-        public static void Deserialize(this IJsonParser parser, FileOperate infoData, Type type, Action<object?> callback, object options = default)
+        public static void Deserialize(this IJsonParser parser, FileOperate info, Type type, Action<object?> callback, object options = default)
         {
-            object? result = parser.Deserialize(infoData, type, options);
+            object? result = parser.Deserialize(info, type, options);
             callback?.Invoke(result);
         }
 
         /// <summary>
         /// 从文件中反序列化对象
         /// </summary>
-        /// <param name="infoData">文件信息数据</param>
+        /// <param name="info">文件信息数据</param>
         /// <param name="type">目标类型</param>
         /// <param name="options">文件设置（可选）</param>
         /// <returns>反序列化后的对象</returns>
-        public static object? Deserialize(this IJsonParser parser, FileOperate infoData, Type type, object options = default)
+        public static object? Deserialize(this IJsonParser parser, FileOperate info, Type type, object options = default)
         {
-            return parser.Deserialize(infoData, type, options);
+            return parser.Deserialize(info, type, options);
         }
 
         /// <summary>
         /// 从文件中反序列化特定类型的对象，并通过回调返回结果
         /// </summary>
         /// <typeparam name="T">目标类型</typeparam>
-        /// <param name="infoData">文件信息数据</param>
+        /// <param name="info">文件信息数据</param>
         /// <param name="callback">回调方法，用于处理反序列化后的对象</param>
         /// <param name="options">文件设置（可选）</param>
-        public static void Deserialize<T>(this IJsonParser parser, FileOperate infoData, Action<T?> callback, object options = default)
+        public static void Deserialize<T>(this IJsonParser parser, FileOperate info, Action<T?> callback, object options = default)
         {
-            T? result = parser.Deserialize<T>(infoData, options);
+            T? result = parser.Deserialize<T>(info, options);
             callback?.Invoke(result);
+        }
+
+        /// <summary>
+        /// 从文件中反序列化特定类型的对象，并通过回调返回结果
+        /// </summary>
+        /// <typeparam name="T">目标类型</typeparam>
+        /// <param name="info">文件信息数据</param>
+        /// <param name="options">文件设置（可选）</param>
+        public static T? Deserialize<T>(this IJsonParser parser, LocalFileInfo info, object options = default)
+        {
+            return parser.Deserialize<T>(new FileOperate(info), options);
         }
 
         ///// <summary>
         ///// 从文件中反序列化特定类型的对象
         ///// </summary>
         ///// <typeparam name="T">目标类型</typeparam>
-        ///// <param name="infoData">文件信息数据</param>
+        ///// <param name="info">文件信息数据</param>
         ///// <param name="options">文件设置（可选）</param>
         ///// <returns>反序列化后的对象</returns>
-        //public static T? Deserialize<T>(this IJsonParser parser, FileInfoData infoData, object options = default)
+        //public static T? Deserialize<T>(this IJsonParser parser, FileInfoData info, object options = default)
         //{
-        //    object? result = parser.Deserialize(infoData, typeof(T), options);
+        //    object? result = parser.Deserialize(info, typeof(T), options);
         //    return (T)result;
         //}
 
@@ -84,27 +95,27 @@ namespace ExtenderApp.Common
         /// 异步反序列化JSON数据到指定类型对象。
         /// </summary>
         /// <param name="parser">JSON解析器提供者。</param>
-        /// <param name="infoData">文件信息数据。</param>
+        /// <param name="info">文件信息数据。</param>
         /// <param name="type">目标类型。</param>
         /// <param name="options">文件解析选项（可选）。</param>
         /// <returns>包含反序列化对象的ValueTask。</returns>
-        public static ValueTask<object?> DeserializeAsync(this IJsonParser parser, FileOperate infoData, Type type, object options = default)
+        public static ValueTask<object?> DeserializeAsync(this IJsonParser parser, FileOperate info, Type type, object options = default)
         {
             ArgumentNullException.ThrowIfNull(parser, nameof(parser));
-            return parser.DeserializeAsync(infoData, type, options);
+            return parser.DeserializeAsync(info, type, options);
         }
 
         /// <summary>
         /// 异步反序列化JSON数据到指定类型对象，并调用回调函数处理结果。
         /// </summary>
         /// <param name="parser">JSON解析器提供者。</param>
-        /// <param name="infoData">文件信息数据。</param>
+        /// <param name="info">文件信息数据。</param>
         /// <param name="type">目标类型。</param>
         /// <param name="callback">处理反序列化结果的回调函数。</param>
         /// <param name="options">文件解析选项（可选）。</param>
-        public static async void DeserializeAsync(this IJsonParser parser, FileOperate infoData, Type type, Action<object?> callback, object options = default)
+        public static async void DeserializeAsync(this IJsonParser parser, FileOperate info, Type type, Action<object?> callback, object options = default)
         {
-            var obj = await parser.DeserializeAsync(infoData, type, options);
+            var obj = await parser.DeserializeAsync(info, type, options);
             callback?.Invoke(obj);
         }
 
@@ -144,26 +155,26 @@ namespace ExtenderApp.Common
         /// 将对象序列化为JSON字符串并保存到文件中
         /// </summary>
         /// <param name="jsonObject">要序列化的对象</param>
-        /// <param name="infoData">文件信息数据</param>
+        /// <param name="info">文件信息数据</param>
         /// <param name="options">文件设置（可选）</param>
         /// <returns>序列化操作是否成功</returns>
-        public static bool Serialize(this IJsonParser parser, object jsonObject, FileOperate infoData, object options = default)
+        public static bool Serialize(this IJsonParser parser, object jsonObject, FileOperate info, object options = default)
         {
             ArgumentNullException.ThrowIfNull(parser, nameof(jsonObject));
 
-            return parser.Serialize(jsonObject, infoData, options);
+            return parser.Serialize(jsonObject, info, options);
         }
 
         /// <summary>
         /// 将对象序列化为JSON字符串并保存到文件中，通过回调返回序列化结果
         /// </summary>
         /// <param name="jsonObject">要序列化的对象</param>
-        /// <param name="infoData">文件信息数据</param>
+        /// <param name="info">文件信息数据</param>
         /// <param name="callback">回调方法，用于处理序列化结果</param>
         /// <param name="options">文件设置（可选）</param>
-        public static void Serialize(this IJsonParser parser, object jsonObject, FileOperate infoData, Action<bool> callback, object options = default)
+        public static void Serialize(this IJsonParser parser, object jsonObject, FileOperate info, Action<bool> callback, object options = default)
         {
-            bool result = parser.Serialize(jsonObject, infoData, options);
+            bool result = parser.Serialize(jsonObject, info, options);
             callback?.Invoke(result);
         }
 
@@ -177,7 +188,7 @@ namespace ExtenderApp.Common
         {
             ArgumentNullException.ThrowIfNull(parser, nameof(jsonObject));
 
-            return parser.Serialize(jsonObject, options);
+            return parser.SerializeToString(jsonObject, options);
         }
 
         /// <summary>
@@ -189,7 +200,7 @@ namespace ExtenderApp.Common
         /// <param name="options">文件设置（可选）</param>
         public static void Serialize(this IJsonParser parser, object jsonObject, Action<string> callback, object options = default)
         {
-            string json = parser.Serialize(jsonObject, options);
+            string json = parser.SerializeToString(jsonObject, options);
             callback?.Invoke(json);
         }
 
@@ -197,26 +208,37 @@ namespace ExtenderApp.Common
         /// 异步将对象序列化为JSON字符串并保存到文件中，通过回调返回序列化结果。
         /// </summary>
         /// <param name="jsonObject">要序列化的对象。</param>
-        /// <param name="infoData">文件信息数据。</param>
+        /// <param name="info">文件信息数据。</param>
         /// <param name="callback">回调方法，用于处理序列化结果。</param>
         /// <param name="options">文件设置（可选）。</param>
-        public static async void SerializeAsync(this IJsonParser parser, object jsonObject, FileOperate infoData, Action<bool> callback, object options = default)
+        public static async void SerializeAsync(this IJsonParser parser, object jsonObject, FileOperate info, Action<bool> callback, object options = default)
         {
-            bool result = await parser.SerializeAsync(jsonObject, infoData, options);
+            bool result = await parser.SerializeAsync(jsonObject, info, options);
             callback?.Invoke(result);
+        }
+
+        /// <summary>
+        /// 异步将对象序列化为JSON字符串并保存到文件中，通过回调返回序列化结果。
+        /// </summary>
+        /// <param name="jsonObject">要序列化的对象。</param>
+        /// <param name="info">文件信息数据。</param>
+        /// <param name="options">文件设置（可选）。</param>
+        public static void Serialize(this IJsonParser parser, object jsonObject, LocalFileInfo info, object options = default)
+        {
+            parser.Serialize(jsonObject, new FileOperate(info, fileMode: FileMode.OpenOrCreate, fileAccess: FileAccess.ReadWrite), options);
         }
 
         /// <summary>
         /// 异步将对象序列化为JSON字符串并保存到文件中。
         /// </summary>
         /// <param name="jsonObject">要序列化的对象。</param>
-        /// <param name="infoData">文件信息数据。</param>
+        /// <param name="info">文件信息数据。</param>
         /// <param name="options">文件设置（可选）。</param>
         /// <returns>表示序列化操作是否成功的ValueTask。</returns>
-        public static ValueTask<bool> SerializeAsync(this IJsonParser parser, object jsonObject, FileOperate infoData, object options = default)
+        public static ValueTask<bool> SerializeAsync(this IJsonParser parser, object jsonObject, FileOperate info, object options = default)
         {
             ArgumentNullException.ThrowIfNull(parser, nameof(parser));
-            return parser.SerializeAsync(jsonObject, infoData, options);
+            return parser.SerializeAsync(jsonObject, info, options);
         }
     }
 }

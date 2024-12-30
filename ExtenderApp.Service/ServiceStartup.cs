@@ -2,6 +2,7 @@
 using AppHost.Extensions.DependencyInjection;
 using AppHost.Extensions.Hosting;
 using ExtenderApp.Abstract;
+using ExtenderApp.Common.File;
 using ExtenderApp.Service;
 using ExtenderApp.Services.NetWork;
 
@@ -22,7 +23,9 @@ namespace ExtenderApp.Services
             services.AddSingleton<INavigationService, NavigationService>();
             services.AddSingleton<ITemporarilyService, TemporarilyService>();
             services.AddSingleton<ILogingService, LoggingService>();
-            services.AddScoped<INetWorkService, NetWorkService>();
+            services.AddSingleton<INetWorkService, NetWorkService>();
+            services.AddSingleton<IPathService, PathService>();
+            services.AddSingleton<ILocalDataService, LocalDataService>();
 
 
             AddRefreshService(services);

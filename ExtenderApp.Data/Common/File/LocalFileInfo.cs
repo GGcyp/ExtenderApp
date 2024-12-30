@@ -14,7 +14,18 @@ namespace ExtenderApp.Data
         /// <summary>
         /// 文件的完整路径
         /// </summary>
-        public string DataPath => FileInfo.FullName;
+        public string FilePath => FileInfo.FullName;
+
+        /// <summary>
+        /// 文件名(包含扩展名)
+        /// </summary>
+        public string FileName => FileInfo.Name;
+
+        /// <summary>
+        /// 获取文件的名称。(不包含扩展名)
+        /// </summary>
+        /// <returns>返回文件的名称。</returns>
+        public string FileNameWithoutExtension { get; }
 
         /// <summary>
         /// 文件大小（单位：字节）
@@ -58,15 +69,16 @@ namespace ExtenderApp.Data
         public LocalFileInfo(FileInfo fileInfo)
         {
             FileInfo = fileInfo;
+            FileNameWithoutExtension = Path.GetFileNameWithoutExtension(fileInfo.FullName);
         }
 
         /// <summary>
         /// 初始化LocalDataInfo结构体
         /// </summary>
         /// <param name="fileInfo">FileInfo对象</param>
-        public LocalFileInfo(string filePath)
+        public LocalFileInfo(string filePath) : this(new FileInfo(filePath))
         {
-            FileInfo = new FileInfo(filePath);
+
         }
     }
 }

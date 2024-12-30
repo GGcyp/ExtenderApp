@@ -13,7 +13,7 @@
         /// <summary>
         /// 获取主程序文件路径
         /// </summary>
-        string BinPath { get; }
+        string LibPath { get; }
 
         /// <summary>
         /// 获取模组路径
@@ -29,5 +29,11 @@
         /// 引用包的文件夹名字
         /// </summary>
         string PackFolderName { get; }
+
+
+        /// <summary>
+        /// 数据文件扩展名
+        /// </summary>
+        string JsonFileExtension { get; }
     }
 }

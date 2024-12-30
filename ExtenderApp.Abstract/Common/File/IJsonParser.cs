@@ -76,7 +76,7 @@ namespace ExtenderApp.Abstract
         /// <param name="jsonObject">要序列化的对象。</param>
         /// <param name="options">可选的序列化选项。</param>
         /// <returns>序列化后的 JSON 字符串。</returns>
-        string Serialize(object jsonObject, object? options = null);
+        string SerializeToString(object jsonObject, object? options = null);
 
         /// <summary>
         /// 异步将给定的对象序列化为文件信息数据。

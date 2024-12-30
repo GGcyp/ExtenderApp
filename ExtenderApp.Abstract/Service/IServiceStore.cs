@@ -34,5 +34,11 @@
         /// 获取模组服务
         /// </summary>
         IModService ModService { get; }
+
+        /// <summary>
+        /// 获取本地数据服务接口。
+        /// </summary>
+        /// <returns>返回本地数据服务接口。</returns>
+        ILocalDataService LocalDataService { get; }
     }
 }

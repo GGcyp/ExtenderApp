@@ -23,7 +23,7 @@ namespace ExtenderApp
             var builder = AppHostApplication.CreateBuilder();
 
             //builder.FindStarupForFolder(AppSetting.AppBinFolderName);
-            builder.FindStarupForFolder("bin");
+            builder.FindStarupForFolder("lib");
             Debug.Print($"启动成功 : {DateTime.Now}");
 
             Debug.Print($"开始生成服务 : {DateTime.Now}");

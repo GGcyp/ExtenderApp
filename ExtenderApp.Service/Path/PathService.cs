@@ -8,15 +8,17 @@ namespace ExtenderApp.Common.File
     /// </summary>
     internal class PathService : IPathService
     {
+        #region PathName
+
         /// <summary>
         /// 日志文件的存储路径
         /// </summary>
         private const string LOOGINGNAME = "log";
 
         /// <summary>
-        /// 可执行文件的存储路径
+        /// 动态库的存储路径
         /// </summary>
-        private const string BINNAME = "bin";
+        private const string LIBNAME = "lib";
 
         /// <summary>
         /// 模块文件的存储路径
@@ -33,10 +35,21 @@ namespace ExtenderApp.Common.File
         /// </summary>
         private const string DATANAME = "data";
 
+        #endregion
+
+        #region FileExtension
+
+        /// <summary>
+        /// 数据文件扩展名
+        /// </summary>
+        private const string JSONFILEEXTENSION = ".json";
+
+        #endregion
+
         public PathService(IHostEnvironment environment)
         {
             LoggingPath = ChekAndCreateFolder(environment, LOOGINGNAME);
-            BinPath = ChekAndCreateFolder(environment, BINNAME);
+            LibPath = ChekAndCreateFolder(environment, LIBNAME);
             ModsPath = ChekAndCreateFolder(environment, MODSNAME);
             DataPath = ChekAndCreateFolder(environment, DATANAME);
 
@@ -63,12 +76,14 @@ namespace ExtenderApp.Common.File
 
         public string LoggingPath { get; }
 
-        public string BinPath { get; }
+        public string LibPath { get; }
 
         public string ModsPath { get; }
 
         public string DataPath { get; }
 
         public string PackFolderName { get; }
+
+        public string JsonFileExtension => JSONFILEEXTENSION;
     }
 }

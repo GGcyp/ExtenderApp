@@ -1,4 +1,5 @@
 ﻿using AppHost.Builder;
+using AppHost.Extensions.DependencyInjection;
 using ExtenderApp.Common.File;
 
 namespace ExtenderApp.Common
@@ -8,9 +9,9 @@ namespace ExtenderApp.Common
     /// </summary>
     public class CommonStartup : Startup
     {
-        public override void Start(IHostApplicationBuilder builder)
+        public override void AddService(IServiceCollection services)
         {
-            builder.Services.AddFile();
+            services.AddFile();
         }
     }
 }

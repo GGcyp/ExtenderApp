@@ -19,9 +19,12 @@ namespace ExtenderApp.Services
 
         public IModService ModService { get; }
 
-        public ServiceStore(IDispatcherService dispatcherService, 
-            INavigationService navigationService, ITemporarilyService temporarilyStore, 
-            ILogingService logingService, INetWorkService netWorkService, IModService modService)
+        public ILocalDataService LocalDataService { get; }
+
+        public ServiceStore(IDispatcherService dispatcherService,
+            INavigationService navigationService, ITemporarilyService temporarilyStore,
+            ILogingService logingService, INetWorkService netWorkService, IModService modService,
+            ILocalDataService localDataService)
         {
             DispatcherService = dispatcherService;
             NavigationService = navigationService;
@@ -29,6 +32,7 @@ namespace ExtenderApp.Services
             LogingService = logingService;
             NetWorkService = netWorkService;
             ModService = modService;
+            LocalDataService = localDataService;
         }
     }
 }

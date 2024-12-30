@@ -24,12 +24,16 @@ namespace ExtenderApp.Service
         /// 路径提供者接口实例
         /// </summary>
         private IPathService _pathProvider;
+        /// <summary>
+        /// Json文件接口
+        /// </summary>
         private IJsonParser _jsonParser;
         public ModService(ModStore mods, IPathService pathProvider, IJsonParser parser, IScopeExecutor executor)
         {
             _modStore = mods;
             _scopeExecutor = executor;
             _pathProvider = pathProvider;
+            _jsonParser = parser;
 
             LoadModInfo();
         }

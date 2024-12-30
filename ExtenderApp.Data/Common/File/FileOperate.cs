@@ -63,7 +63,7 @@
         /// <returns>返回一个 FileStream 对象。</returns>
         public FileStream OpenFile()
         {
-            return new FileStream(LocalFileInfo.DataPath, FileMode, FileAccess);
+            return LocalFileInfo.FileInfo.Open(FileMode, FileAccess);
         }
 
         /// <summary>
@@ -72,7 +72,7 @@
         /// <param name="action">要执行的操作，该操作需要一个FileStream参数。</param>
         public void OpenFile(Action<FileStream> action)
         {
-            using (FileStream stream = new FileStream(LocalFileInfo.DataPath, FileMode, FileAccess))
+            using (FileStream stream = OpenFile())
             {
                 action(stream);
             }
@@ -87,7 +87,7 @@
         public T OpenFile<T>(Func<FileStream, T> func)
         {
             T result;
-            using (FileStream stream = new FileStream(LocalFileInfo.DataPath, FileMode, FileAccess))
+            using (FileStream stream = OpenFile())
             {
                 result = func(stream);
             }

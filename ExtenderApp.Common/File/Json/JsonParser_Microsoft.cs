@@ -103,7 +103,7 @@ namespace ExtenderApp.Common.File
             }
         }
 
-        public string Serialize(object jsonObject, object? options = null)
+        public string SerializeToString(object jsonObject, object? options = null)
         {
             var jsonOptions = options as JsonSerializerOptions ?? _jsonSerializerOptions;
 
