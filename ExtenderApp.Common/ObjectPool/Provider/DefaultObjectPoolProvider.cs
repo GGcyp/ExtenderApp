@@ -5,6 +5,8 @@
     /// </summary>
     public class DefaultObjectPoolProvider : ObjectPoolProvider
     {
+        public static DefaultObjectPoolProvider Default = new DefaultObjectPoolProvider();
+
         /// <summary>
         /// 要保留在池中的最大对象数。
         /// </summary>
@@ -20,14 +22,15 @@
             MaximumRetained = maximumRetained;
         }
 
-        public override ObjectPool<T> Create<T>(IPooledObjectPolicy<T> policy)
+        public override ObjectPool<T> Create<T>(IPooledObjectPolicy<T> policy, int maximumRetained)
         {
+            maximumRetained = maximumRetained == -1 ? MaximumRetained : maximumRetained;
             if (typeof(IDisposable).IsAssignableFrom(typeof(T)))
             {
-                return new DisposableObjectPool<T>(policy, MaximumRetained);
+                return new DisposableObjectPool<T>(policy, maximumRetained);
             }
 
-            return new DefaultObjectPool<T>(policy, MaximumRetained);
+            return new DefaultObjectPool<T>(policy, maximumRetained);
         }
     }
 }

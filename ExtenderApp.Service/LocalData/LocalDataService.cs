@@ -29,6 +29,7 @@ namespace ExtenderApp.Service
 
             SetData("5555", new Temp() { Name = "sssss" });
             var temp = GetData("5555");
+            byte[] objectBytes = System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(new Temp() { Name = "sssss" });
         }
 
         private void CheckLocalData()

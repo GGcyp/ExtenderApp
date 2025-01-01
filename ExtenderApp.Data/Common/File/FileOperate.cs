@@ -33,8 +33,6 @@
             if (Path.IsPathFullyQualified(filePath))
                 throw new ArgumentNullException(nameof(filePath));
 
-            if(File.Exists(filePath))
-                throw new FileNotFoundException(nameof(filePath));
 
             FileAccess = fileAccess;
             FileMode = fileMode;
@@ -100,8 +98,9 @@
         /// <param name="action">要执行的操作，该操作需要一个FileStream参数。</param>
         public void OpenFileAsync(Action<FileStream> action)
         {
-            var buffer = MultiThreadDataBuffer<Action<FileStream>>.Create(OpenFile, action);
-            buffer.Run();
+            //var buffer = MultiThreadDataBuffer<Action<FileStream>>.Create(OpenFile, action);
+            //buffer.Run();
+            throw new NotImplementedException();
         }
     }
 }

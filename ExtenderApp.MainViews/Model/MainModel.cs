@@ -1,4 +1,5 @@
 ﻿using ExtenderApp.Abstract;
+using ExtenderApp.Data;
 
 
 namespace ExtenderApp.MainViews
@@ -6,9 +7,10 @@ namespace ExtenderApp.MainViews
     public class MainModel
     {
         public IMainWindow MainWindow { get; }
-        public IMainView? CurrentMainView { get; set; }
-        public Action? ToHomeAction { get; set; }
-        public Action<Type>? ToRunAction { get; set; }
+        public IMainView CurrentMainView { get; set; }
+        public Action ToHomeAction { get; set; }
+        public Action ToRunAction { get; set; }
+        public ModDetails CurrentModDetails { get; set; }
 
         public MainModel(IMainWindow mainWindow)
         {

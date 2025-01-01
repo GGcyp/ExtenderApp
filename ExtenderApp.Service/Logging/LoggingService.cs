@@ -117,7 +117,9 @@ namespace ExtenderApp.Services
 
             if (info.Exception != null)
             {
-                _logText.Append($"，异常详情: {info.Exception.Message}");
+                _logText.Append("，异常详情: ");
+                _logText.AppendLine();
+                _logText.Append(info.Exception.Message);
                 _logText.Append($"，异常堆栈: {info.Exception.StackTrace}");
             }
 

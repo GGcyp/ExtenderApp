@@ -4,6 +4,8 @@ using System.Net.Sockets;
 using System.Runtime.CompilerServices;
 using ExtenderApp.Abstract;
 using ExtenderApp.Services;
+using ExtenderApp.Data;
+using ExtenderApp.Common.Error;
 
 namespace ExtenderApp.ViewModels
 {
@@ -45,24 +47,52 @@ namespace ExtenderApp.ViewModels
         #region Navigate
 
         /// <summary>
-        /// 导航到指定的视图。
+        /// 导航到指定的视图，没有指定作用域。
         /// </summary>
-        /// <typeparam name="TView">目标视图的类型，必须实现 IView 接口。</typeparam>
-        public TView NavigateTo<TView>() where TView : class, IView
+        /// <typeparam name="TView">目标视图的类型。</typeparam>
+        /// <returns>返回目标视图的实例。</returns>
+        protected TView NavigateTo<TView>() where TView : class, IView
         {
-            return NavigateTo(typeof(TView)) as TView;
+            var details = GetCurrentModDetails();
+            string scope = details is null ? string.Empty : details.ModScope;
+            return (TView)NavigateTo(typeof(TView), scope);
         }
 
         /// <summary>
-        /// 导航到指定的视图类型。
+        /// 导航到指定的视图，并指定作用域。
+        /// </summary>
+        /// <typeparam name="TView">目标视图的类型。</typeparam>
+        /// <param name="scope">作用域。</param>
+        /// <returns>返回目标视图的实例。</returns>
+        protected TView NavigateTo<TView>(string scope) where TView : class, IView
+        {
+            return (TView)NavigateTo(typeof(TView), scope);
+        }
+
+        protected TView NavigateTo<TView>(ModDetails modDetails) where TView : class, IView
+        {
+            return NavigateTo<TView>(modDetails.ModScope);
+        }
+
+        protected IView NavigateTo(ModDetails modDetails)
+        {
+            modDetails.ArgumentNull(nameof(modDetails));
+            modDetails.StartupType.ArgumentObjectNull(nameof(modDetails));
+            return NavigateTo(modDetails.StartupType, modDetails.ModScope);
+        }
+
+        /// <summary>
+        /// 导航到指定的视图类型，并指定作用域。
         /// </summary>
         /// <param name="targetView">目标视图的类型。</param>
-        public virtual IView NavigateTo(Type targetView)
+        /// <param name="scope">作用域。</param>
+        /// <returns>返回目标视图的实例。</returns>
+        protected virtual IView NavigateTo(Type targetView, string scope)
         {
             IView view = null;
             try
             {
-                view = _serviceStore.NavigationService.NavigateTo(targetView, null);
+                view = _serviceStore.NavigationService.NavigateTo(targetView, scope);
             }
             catch (Exception ex)
             {
@@ -236,6 +266,21 @@ namespace ExtenderApp.ViewModels
         }
 
         #endregion
+
+        #region Mod
+
+        /// <summary>
+        /// 获取当前模块的详细信息。
+        /// </summary>
+        /// <returns>当前模块的详细信息，如果无法获取则返回null。</returns>
+        protected ModDetails? GetCurrentModDetails()
+        {
+            if (_serviceStore is IModServiceStore service)
+                return service.ModDetails;
+            return null;
+        }
+
+        #endregion
     }
 
     public abstract class ExtenderAppViewModel<TView> : ExtenderAppViewModel, IViewModel<TView> where TView : IView
@@ -268,12 +313,13 @@ namespace ExtenderApp.ViewModels
         /// 导航到指定的视图类型。
         /// </summary>
         /// <param name="targetView">目标视图的类型。</param>
-        public override IView NavigateTo(Type targetView)
+        /// <param name="scope">目标作用域</param>
+        protected override IView NavigateTo(Type targetView, string scope)
         {
             IView view = null;
             try
             {
-                view = _serviceStore.NavigationService.NavigateTo(targetView, view);
+                view = _serviceStore.NavigationService.NavigateTo(targetView, scope, view);
             }
             catch (Exception ex)
             {

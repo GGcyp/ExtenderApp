@@ -5,9 +5,13 @@ using AppHost.Extensions.DependencyInjection;
 using ExtenderApp.Abstract;
 using ExtenderApp.Data;
 using ExtenderApp.Services;
+using ExtenderApp.Common.Error;
 
 namespace ExtenderApp.Service
 {
+    /// <summary>
+    /// ModService类，实现了IModService接口
+    /// </summary>
     internal class ModService : IModService
     {
         private const string MOD_INIT_FILE_NAME = "init.json";
@@ -16,6 +20,9 @@ namespace ExtenderApp.Service
         /// 模组厂库
         /// </summary>
         private readonly ModStore _modStore;
+        private readonly LoadModTransform _modTransform;
+
+
         /// <summary>
         /// 作用域执行器
         /// </summary>
@@ -34,8 +41,9 @@ namespace ExtenderApp.Service
             _scopeExecutor = executor;
             _pathProvider = pathProvider;
             _jsonParser = parser;
+            _modTransform = new();
 
-            LoadModInfo();
+            LoadModInfo(_pathProvider.ModsPath);
         }
 
         private bool Contains(ModeInfo info)
@@ -54,9 +62,9 @@ namespace ExtenderApp.Service
             return null;
         }
 
-        public void LoadModInfo(string modFolderPath = null)
+        public void LoadModInfo(string modFolderPath)
         {
-            if (string.IsNullOrEmpty(modFolderPath)) modFolderPath = _pathProvider.ModsPath;
+            string.IsNullOrEmpty(modFolderPath).ArgumentFalse(nameof(IModService), "加载模组地址不能为空");
             var modPaths = Directory.GetDirectories(modFolderPath);
 
             foreach (var dir in modPaths)
@@ -93,7 +101,10 @@ namespace ExtenderApp.Service
             string dllPath = Path.Combine(details.Path, details.StartupDll);
             var startAssembly = LoadAssembly(loadContext, dllPath);
 
-            details.StartupType = _scopeExecutor.LoadScope<ModEntityStartup>(startAssembly).StartType;
+            _modTransform.Details = details;
+            details.StartupType = _scopeExecutor.LoadScope<ModEntityStartup>(startAssembly, _modTransform.AddServiceToModeScope)?.StartType;
+
+
 
             //添加模组依赖库
             string packName = string.IsNullOrEmpty(details.PackPath) ? _pathProvider.PackFolderName : details.PackPath;
@@ -104,6 +115,16 @@ namespace ExtenderApp.Service
             {
                 LoadAssembly(loadContext, dir);
             }
+        }
+
+        /// <summary>
+        /// 卸载Mod
+        /// </summary>
+        /// <param name="details">Mod详情</param>
+        public void UnloadMod(ModDetails details)
+        {
+            _scopeExecutor.UnLoadScope(details.Title);
+            details.LoadContext.Unload();
         }
 
         /// <summary>
@@ -122,14 +143,34 @@ namespace ExtenderApp.Service
             return reslut;
         }
 
+
+
         /// <summary>
-        /// 卸载Mod
+        /// 用于加载模组临时类。
         /// </summary>
-        /// <param name="details">Mod详情</param>
-        public void UnloadMod(ModDetails details)
+        private class LoadModTransform
         {
-            _scopeExecutor.UnLoadScope(details.Title);
-            details.LoadContext.Unload();
+            /// <summary>
+            /// 模组的详细信息。
+            /// </summary>
+            public ModDetails Details { get; set; }
+
+            /// <summary>
+            /// 向服务集合中添加模组作用域。
+            /// </summary>
+            /// <param name="options">作用域选项</param>
+            /// <param name="services">服务集合</param>
+            /// <remarks>
+            /// 此方法会将<see cref="IServiceStore"/>服务注册为单例，并将其实现类设置为<see cref="ScopeServiceStore"/>。
+            /// 同时，还会将<see cref="Details"/>属性作为单例服务添加到服务集合中。
+            /// </remarks>
+            public void AddServiceToModeScope(ScopeOptions options, IServiceCollection services)
+            {
+                Details.ModScope = options.ScopeName;
+
+                services.AddSingleton<IServiceStore, ScopeServiceStore>();
+                services.AddSingleton(Details);
+            }
         }
     }
 }

@@ -20,7 +20,7 @@ namespace AppHost.Builder
 
         public AppHostBuilder()
         {
-            Services = SericeBuilder.CreateServiceCollection();
+            Services = ServiceBuilder.CreateServiceCollection();
             HostEnvironment = HostEnvironmentBuilder.CreateEnvironment();
             Properties = new Dictionary<object, object>();
 
@@ -36,6 +36,7 @@ namespace AppHost.Builder
             Services.AddSingleton(HostEnvironment);
 
             this.AddHostedServiceExecutor();
+            this.AddScopeExecutor();
         }
 
         public AppHostApplication Builde()

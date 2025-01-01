@@ -18,9 +18,13 @@ namespace ExtenderApp.Common.ObjectPools
         }
 
         /// <summary>
-        /// 用<see cref="IPooledObjectPolicy{T}"/>生成<see cref="ObjectPool"/>。
+        /// 使用<see cref="IPooledObjectPolicy{T}"/>生成<see cref="ObjectPool"/>。
         /// </summary>
-        /// <typeparam name="T">用这个类型生成对象池</typeparam>
-        public abstract ObjectPool<T> Create<T>(IPooledObjectPolicy<T> policy) where T : class;
+        /// <typeparam name="T">要生成对象池的类型</typeparam>
+        /// <param name="policy">用于管理对象的<see cref="IPooledObjectPolicy{T}"/>策略</param>
+        /// <param name="maximumRetained">对象池中最多保留的对象数量</param>
+        /// <returns>生成的<see cref="ObjectPool{T}"/>对象</returns>
+        /// <remarks>此方法是一个抽象方法，需要子类实现。</remarks>
+        public abstract ObjectPool<T> Create<T>(IPooledObjectPolicy<T> policy, int maximumRetained = -1) where T : class;
     }
 }

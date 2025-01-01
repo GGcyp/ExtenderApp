@@ -15,12 +15,6 @@ namespace ExtenderApp.Abstract
         ModDetails? GetModDetails(string modStartDLLName);
 
         /// <summary>
-        /// 加载模组
-        /// </summary>
-        /// <param name="details">模组详细信息</param>
-        void LoadMod(ModDetails details);
-
-        /// <summary>
         /// 加载模组信息
         /// </summary>
         /// <param name="modFolderPath">模组文件夹路径</param>
@@ -28,6 +22,12 @@ namespace ExtenderApp.Abstract
         /// 此方法用于加载指定路径下的模组信息。
         /// </remarks>
         void LoadModInfo(string modFolderPath = null);
+
+        /// <summary>
+        /// 加载模组
+        /// </summary>
+        /// <param name="details">模组详细信息</param>
+        void LoadMod(ModDetails details);
 
         /// <summary>
         /// 卸载模组

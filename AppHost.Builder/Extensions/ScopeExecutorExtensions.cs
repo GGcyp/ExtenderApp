@@ -10,25 +10,41 @@ namespace AppHost.Builder.Extensions
     public static class ScopeExecutorExtensions
     {
         /// <summary>
-        /// 从指定程序集路径加载作用域。
+        /// 为 IHostApplicationBuilder 添加 ScopeExecutor 服务。
         /// </summary>
-        /// <param name="executor">ScopeExecutor 实例。</param>
-        /// <param name="assemblyPath">程序集路径。</param>
-        /// <returns>返回更新后的 ScopeExecutor 实例。</returns>
-        public static TStartup? LoadScope<TStartup>(this IScopeExecutor executor, string assemblyPath) where TStartup : ScopeStartup
+        /// <param name="host">IHostApplicationBuilder 实例。</param>
+        /// <returns>返回添加了 ScopeExecutor 服务的 IHostApplicationBuilder 实例。</returns>
+        public static IHostApplicationBuilder AddScopeExecutor(this IHostApplicationBuilder host)
         {
-            var assembly = Assembly.LoadFrom(assemblyPath);
-            return executor.LoadScope<TStartup>(assembly);
+            host.Services.AddSingleton<IScopeExecutor, ScopeExecutor>();
+            return host;
         }
 
         /// <summary>
-        /// 从指定程序集加载作用域。
+        /// 根据程序集路径加载作用域。
         /// </summary>
-        /// <param name="executor">ScopeExecutor 实例。</param>
+        /// <typeparam name="TStartup">启动类类型，必须继承自 ScopeStartup。</typeparam>
+        /// <param name="executor">IScopeExecutor 接口实例。</param>
+        /// <param name="assemblyPath">程序集文件路径。</param>
+        /// <param name="callback">可选的回调函数，用于配置作用域选项和服务集合。</param>
+        /// <returns>加载的启动类实例，如果未找到匹配的启动类则返回 null。</returns>
+        /// <exception cref="ArgumentNullException">如果 assembly 参数为 null，则抛出此异常。</exception>
+        public static TStartup? LoadScope<TStartup>(this IScopeExecutor executor, string assemblyPath, Action<ScopeOptions, IServiceCollection> callback = null) where TStartup : ScopeStartup
+        {
+            var assembly = Assembly.LoadFrom(assemblyPath);
+            return executor.LoadScope<TStartup>(assembly, callback);
+        }
+
+        /// <summary>
+        /// 根据程序集加载作用域。
+        /// </summary>
+        /// <typeparam name="TStartup">启动类类型，必须继承自 ScopeStartup。</typeparam>
+        /// <param name="executor">IScopeExecutor 接口实例。</param>
         /// <param name="assembly">程序集实例。</param>
-        /// <returns>返回更新后的 ScopeExecutor 实例。</returns>
-        /// <exception cref="ArgumentNullException">如果程序集参数为 null，则抛出此异常。</exception>
-        public static TStartup? LoadScope<TStartup>(this IScopeExecutor executor, Assembly assembly) where TStartup : ScopeStartup
+        /// <param name="callback">可选的回调函数，用于配置作用域选项和服务集合。</param>
+        /// <returns>加载的启动类实例，如果未找到匹配的启动类则返回 null。</returns>
+        /// <exception cref="ArgumentNullException">如果 assembly 参数为 null，则抛出此异常。</exception>
+        public static TStartup? LoadScope<TStartup>(this IScopeExecutor executor, Assembly assembly, Action<ScopeOptions, IServiceCollection> callback = null) where TStartup : ScopeStartup
         {
             if (assembly == null) throw new ArgumentNullException(nameof(assembly));
             var startType = assembly.GetTypes().FirstOrDefault(t => !t.IsAbstract && ScopeStartup.Type.IsAssignableFrom(t));
@@ -36,9 +52,12 @@ namespace AppHost.Builder.Extensions
 
             var startup = (Activator.CreateInstance(startType) as TStartup)!;
 
-            IScopeServiceCollection serviceDescriptors = ScopeServiceCollectionFactory.CreateScopeServiceCollection();
-            startup.AddService(serviceDescriptors);
-            executor.LoadScope(startup.ScopeName, serviceDescriptors);
+            IServiceCollection services = ServiceBuilder.CreateServiceCollection();
+            startup.AddService(services);
+            ScopeOptions options = new ScopeOptions();
+            startup.ConfigureScopeOptions(options);
+            callback?.Invoke(options, services);
+            executor.LoadScope(options, services);
 
             return startup;
         }

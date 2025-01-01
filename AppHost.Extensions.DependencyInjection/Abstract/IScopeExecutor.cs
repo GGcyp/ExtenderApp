@@ -7,11 +7,18 @@ namespace AppHost.Extensions.DependencyInjection
     public interface IScopeExecutor
     {
         /// <summary>
-        /// 根据作用域名称加载作用域。
+        /// 根据指定的作用域名称获取服务提供程序。
         /// </summary>
-        /// <param name="scopeName">作用域名称。</param>
-        /// <param name="collection">作用域服务集合。</param>
-        void LoadScope(string scopeName, IScopeServiceCollection collection);
+        /// <param name="scope">作用域的名称。</param>
+        /// <returns>返回指定作用域的服务提供程序。如果未找到，则返回null。</returns>
+        IScopeServiceProvider? GetServiceProvider(string scope);
+
+        /// <summary>
+        /// 加载作用域。
+        /// </summary>
+        /// <param name="options">作用域选项。</param>
+        /// <param name="collection">服务集合。</param>
+        void LoadScope(ScopeOptions options, IServiceCollection collection);
 
         /// <summary>
         /// 卸载作用域。

@@ -7,10 +7,15 @@ namespace AppHost.Builder
     /// </summary>
     public abstract class ScopeStartup : Startup
     {
+        public sealed override void Start(IHostApplicationBuilder builder)
+        {
+
+        }
+
         /// <summary>
-        /// 获取作用域的名称。
+        /// 配置作用域选项。
         /// </summary>
-        /// <returns>返回作用域的名称。</returns>
-        public abstract string ScopeName { get; }
+        /// <param name="options">作用域选项实例。</param>
+        public abstract void ConfigureScopeOptions(ScopeOptions options);
     }
 }

@@ -13,6 +13,11 @@ namespace ExtenderApp.Common.ObjectPools
     public abstract class ObjectPool<T> : IObjectPool where T : class
     {
         /// <summary>
+        /// 对象池中还有多少对象
+        /// </summary>
+        public abstract int Count { get; }
+
+        /// <summary>
         /// 从池中获取一个对象（如果有），否则创建一个对象。
         /// </summary>
         /// <returns><typeparamref name="T"/></returns>
@@ -38,7 +43,7 @@ namespace ExtenderApp.Common.ObjectPools
         /// <typeparam name="T"></typeparam>
         /// <param name="policy"></param>
         /// <returns><see cref="ObjectPool{T}"/></returns>
-        public static ObjectPool<T> Create<T>(IPooledObjectPolicy<T>? policy = null, ObjectPoolProvider objectPoolProvider = null) where T : class, new()
+        public static ObjectPool<T> Create<T>(IPooledObjectPolicy<T>? policy = null, ObjectPoolProvider objectPoolProvider = null, int maximumRetained = -1) where T : class, new()
         {
             //暂时
             Type poolType = typeof(T);
@@ -46,8 +51,8 @@ namespace ExtenderApp.Common.ObjectPools
             {
                 return (ObjectPool<T>)pool;
             }
-            var provider = objectPoolProvider ?? new DefaultObjectPoolProvider();
-            var objPool = provider.Create(policy ?? new DefaultPooledObjectPolicy<T>());
+            var provider = objectPoolProvider ?? DefaultObjectPoolProvider.Default;
+            var objPool = provider.Create(policy ?? new DefaultPooledObjectPolicy<T>(), maximumRetained);
             _poolDict.TryAdd(poolType, objPool);
             return objPool;
         }

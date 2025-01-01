@@ -1,12 +1,8 @@
-﻿using System;
-using System.Windows;
-using System.Windows.Controls;
+﻿using System.Windows;
 using ExtenderApp.Abstract;
 using ExtenderApp.ViewModels;
-using PropertyChanged;
 using ExtenderApp.Views;
-using System.Windows.Input;
-using System.Reflection.Metadata;
+
 
 namespace ExtenderApp.Medai
 {
@@ -21,9 +17,24 @@ namespace ExtenderApp.Medai
 
         #region 按钮
 
+        /// <summary>
+        /// 播放命令。
+        /// </summary>
         public NoValueCommand PlayCommand { get; private set; }
+
+        /// <summary>
+        /// 暂停命令。
+        /// </summary>
         public NoValueCommand PauseCommand { get; private set; }
+
+        /// <summary>
+        /// 停止命令。
+        /// </summary>
         public NoValueCommand StopCommand { get; private set; }
+
+        /// <summary>
+        /// 快进命令。
+        /// </summary>
         public NoValueCommand FastForwardCommand { get; private set; }
 
         #endregion

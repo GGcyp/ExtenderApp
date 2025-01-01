@@ -1,96 +1,55 @@
 ﻿
+
 namespace AppHost.Extensions.DependencyInjection
 {
     /// <summary>
     /// 作用域执行器类
     /// </summary>
-    internal class ScopeExecutor : IScopeExecutor
+    public class ScopeExecutor : IScopeExecutor
     {
-        /// <summary>
-        /// 添加作用域到描述符的委托
-        /// </summary>
-        private readonly Func<ServiceDescriptor, ServiceDescriptor?> _addAction;
+        private readonly IServiceProvider _serviceProvider;
 
-        /// <summary>
-        /// 从描述符中移除作用域的委托
-        /// </summary>
-        private readonly Action<ServiceDescriptor, ServiceDescriptor> _removeAction;
-
-        private Dictionary<string, IScopeServiceCollection> scopes;
+        private readonly Dictionary<string, IScopeServiceProvider> _scopesProviderDict;
 
         /// <summary>
         /// 初始化作用域执行器
         /// </summary>
         /// <param name="addAction">添加作用域的委托</param>
         /// <param name="removeAction">移除作用域的委托</param>
-        public ScopeExecutor(Func<ServiceDescriptor, ServiceDescriptor?> addAction, Action<ServiceDescriptor, ServiceDescriptor> removeAction)
+        public ScopeExecutor(IServiceProvider provider)
         {
-            _addAction = addAction;
-            _removeAction = removeAction;
+            _serviceProvider = provider;
+            _scopesProviderDict = new();
         }
 
-        public void LoadScope(string scopeName, IScopeServiceCollection collection)
+        public void LoadScope(ScopeOptions options, IServiceCollection collection)
         {
-            if (scopes is null)
-                scopes = new();
-
-            if (collection is null)
-                throw new ArgumentNullException(nameof(collection), "The collection parameter cannot be null.");
-
-            if (string.IsNullOrEmpty(scopeName))
-                throw new ArgumentNullException(nameof(scopeName), "The ScopeName property cannot be null or empty.");
-
-            if (scopes.ContainsKey(scopeName))
-                throw new InvalidOperationException(string.Format("the {0} scopes service already loaded", scopeName));
-
-            scopes.Add(scopeName, collection);
-
-            AddScopes(collection);
-        }
-
-        public void UnLoadScope(string scopeName)
-        {
-            if (this.scopes is null)
-                return;
-
-            if (string.IsNullOrEmpty(scopeName))
-                throw new ArgumentNullException(nameof(scopeName), "The ScopeName property cannot be null or empty.");
-
-            if (!this.scopes.TryGetValue(scopeName, out var scopes))
-                return;
-
-            this.scopes.Remove(scopeName);
-            RemoveScopes(scopes);
-        }
-
-
-        /// <summary>
-        /// 添加作用域
-        /// </summary>
-        /// <param name="services">作用域服务集合</param>
-        private void AddScopes(IScopeServiceCollection services)
-        {
-            for (int i = 0; i < services.Count; i++)
+            if (_scopesProviderDict.ContainsKey(options.ScopeName))
             {
-                var service = services[i];
-                var originaService = _addAction(service);
-                if (originaService == null || service is not ScopeDescriptor scopeDescriptor) continue;
-
-                scopeDescriptor.OriginaService = originaService;
+                throw new InvalidOperationException(string.Concat("不可以重复注册作用域: ", options.ScopeName));
             }
+
+            var provider = collection.BuilderScopeServiceProvider(this, options, _serviceProvider);
+            _scopesProviderDict.Add(options.ScopeName, provider);
         }
 
-        /// <summary>
-        /// 移除作用域
-        /// </summary>
-        /// <param name="services">作用域服务集合</param>
-        private void RemoveScopes(IScopeServiceCollection services)
+        public void UnLoadScope(string scope)
         {
-            for (int i = 0; i < services.Count; i++)
+            _scopesProviderDict.Remove(scope);
+        }
+
+        public IScopeServiceProvider? GetServiceProvider(string scope)
+        {
+            if (string.IsNullOrEmpty(scope))
             {
-                var service = services[i];
-                _removeAction(service, (service is not ScopeDescriptor scopeDescriptor) ? null : scopeDescriptor.OriginaService);
+                throw new InvalidOperationException(nameof(IScopeExecutor));
             }
+
+            if (_scopesProviderDict.TryGetValue(scope, out var provider))
+            {
+                return provider;
+            }
+            return null;
         }
     }
 }

@@ -28,10 +28,10 @@ namespace ExtenderApp.Medai
 
         public MedaiMainView(MedaiMainViewModel viewModel)
         {
-            InitializeComponent();
             _viewModel = viewModel;
-            _viewModel.InjectView(this);
             DataContext = _viewModel;
+            InitializeComponent();
+            _viewModel.InjectView(this);
 
             //拖拽视屏文件
             AllowDrop = true;

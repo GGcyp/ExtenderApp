@@ -8,8 +8,6 @@ namespace ExtenderApp.Medai
     {
         public override Type StartType => typeof(MedaiMainView);
 
-        public override string ScopeName => nameof(ExtenderApp.Medai);
-
         public override void AddService(IServiceCollection services)
         {
             //View

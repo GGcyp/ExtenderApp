@@ -1,0 +1,145 @@
+﻿using System.Reflection;
+
+namespace AppHost.Extensions.DependencyInjection
+{
+    /// <summary>
+    /// 服务构建详情类
+    /// </summary>
+    internal class ServiceConstructorDetail
+    {
+        /// <summary>
+        /// 获取一个空的 <see cref="ServiceConstructorDetail"/> 实例。
+        /// </summary>
+        /// <value>
+        /// 一个空的 <see cref="ServiceConstructorDetail"/> 实例。
+        /// </value>
+        public static ServiceConstructorDetail Empty { get; } = new ServiceConstructorDetail(null, null, null);
+
+        /// <summary>
+        /// 获取一个值，该值指示当前实例是否为空。
+        /// </summary>
+        /// <value>
+        /// 如果当前实例为空，则为 <c>true</c>；否则为 <c>false</c>。
+        /// </value>
+        public bool IsEmpty => this == Empty;
+
+        /// <summary>
+        /// 服务类构造信息
+        /// </summary>
+        public ConstructorInfo ServiceConstructorInfo { get; }
+
+        /// <summary>
+        /// 构造所需要的传入参数
+        /// </summary>
+        public ServiceConstructorDetail[]? ConstructorDetails { get; }
+
+        /// <summary>
+        /// 服务描述
+        /// </summary>
+        public ServiceDescriptor? ServiceDescriptor { get; }
+
+        public ServiceConstructorDetail(ServiceDescriptor serviceDescriptor) : this(null, null, serviceDescriptor)
+        {
+
+        }
+
+        public ServiceConstructorDetail(ConstructorInfo serviceConstructorInfo) : this(serviceConstructorInfo, null, null)
+        {
+
+        }
+
+        public ServiceConstructorDetail(ConstructorInfo serviceConstructorInfo, ServiceConstructorDetail[] constructorDetails, ServiceDescriptor serviceDescriptor)
+        {
+            ServiceConstructorInfo = serviceConstructorInfo;
+            ConstructorDetails = constructorDetails;
+            ServiceDescriptor = serviceDescriptor;
+        }
+
+        /// <summary>
+        /// 获得服务
+        /// </summary>
+        /// <returns></returns>
+        public object? GetService(IServiceProvider provider)
+        {
+            if (ServiceDescriptor == null && ServiceConstructorInfo == null)
+            {
+                return null;
+            }
+
+            if (ServiceDescriptor == null && ServiceConstructorInfo != null)
+            {
+                return GetDefaultService();
+            }
+
+            if (ServiceDescriptor!.HasFactory)
+            {
+                return GetServiceForFactory(provider);
+            }
+
+            return GetRegisterService(provider);
+        }
+
+        /// <summary>
+        /// 获取已经被注册的服务
+        /// </summary>
+        /// <param name="serviceType"></param>
+        /// <returns></returns>
+        private object GetRegisterService(IServiceProvider provider)
+        {
+            if (ServiceDescriptor!.ImplementationInstance != null)
+            {
+                //如果是单例类，则直接返回单例
+                return ServiceDescriptor.ImplementationInstance;
+            }
+
+            object result;
+            if (ConstructorDetails != null)
+            {
+                //如果这个类的构建函数需要其他服务作为参数，则去查找并放入
+                object?[]? parameters = new object[ConstructorDetails.Length];
+                for (int i = 0; i < ConstructorDetails.Length; i++)
+                {
+                    parameters[i] = ConstructorDetails[i]?.GetService(provider);
+                }
+                result = ServiceConstructorInfo.Invoke(parameters);
+            }
+            else
+            {
+                //构造函数无参数的
+                result = ServiceConstructorInfo!.Invoke(null);
+            }
+
+            if (ServiceDescriptor.Lifetime == ServiceLifetime.Singleton)
+            {
+                //如果是单例则保存
+                ServiceDescriptor.ImplementationInstance = result;
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// 获取没有注册，但无构造函数的服务类
+        /// </summary>
+        /// <param name="serviceType"></param>
+        /// <returns></returns>
+        private object GetDefaultService()
+        {
+            return ServiceConstructorInfo.Invoke(null);
+        }
+
+        /// <summary>
+        /// 通过工厂创建的服务
+        /// </summary>
+        /// <param name="provider"></param>
+        /// <returns></returns>
+        private object GetServiceForFactory(IServiceProvider provider)
+        {
+            if (ServiceDescriptor!.IsKeyedService)
+            {
+                return ServiceDescriptor!.KeyedImplementationFactory!.Invoke(provider, ServiceDescriptor.ServiceKey);
+            }
+            return ServiceDescriptor!.ImplementationFactory!.Invoke(provider);
+        }
+    }
+}

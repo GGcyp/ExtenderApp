@@ -22,13 +22,7 @@
             <!-- 视频列表区域 -->
             <Border Grid.Column="1" >
                 <ScrollViewer >
-                    <ListBox x:Name="videoListBox" Background="Black">
-                        <ListBox.ItemTemplate>
-                            <DataTemplate>
-                                <TextBlock Text="{Binding}" Padding="5"/>
-                            </DataTemplate>
-                        </ListBox.ItemTemplate>
-                    </ListBox>
+                    <ListBox x:Name="videoListBox" Background="Black"/>
                 </ScrollViewer>
             </Border>
         </Grid>

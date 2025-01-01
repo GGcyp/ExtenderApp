@@ -28,7 +28,11 @@
 	</ItemGroup>
 
 	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
-		<Exec Command="copy &quot;$(ProjectDir)\bin\Debug\net8.0-windows\$(ProjectName).dll&quot; &quot;E:\WPF_Project\ExtenderApp\ExtenderApp\bin\Debug\net8.0-windows\lib\$(ProjectName).dll&quot;" />
+		<ItemGroup>
+			<TargetFolder Include="E:\WPF_Project\ExtenderApp\ExtenderApp\bin\Debug\net8.0-windows" />
+		</ItemGroup>
+		<MakeDir Directories="%(TargetFolder.Identity)\lib" Condition="!Exists('%(TargetFolder.Identity)\lib')" />
+		<Exec Command="copy &quot;$(TargetDir)\$(ProjectName).dll&quot; &quot;%(TargetFolder.Identity)\lib\$(ProjectName).dll&quot;" />
 	</Target>
 
 </Project>

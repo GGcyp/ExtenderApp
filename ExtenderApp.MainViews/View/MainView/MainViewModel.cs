@@ -1,5 +1,7 @@
 ﻿using ExtenderApp.Abstract;
+using ExtenderApp.Data;
 using ExtenderApp.ViewModels;
+using ExtenderApp.Common.Error;
 
 namespace ExtenderApp.MainViews
 {
@@ -16,10 +18,10 @@ namespace ExtenderApp.MainViews
             _mainModel.ToHomeAction = GoHomeView;
         }
 
-        public void NavigateTo(DisplayDetails details)
-        {
-            NavigateTo(details.ViewType);
-        }
+        //public void NavigateTo(DisplayDetails details)
+        //{
+        //    NavigateTo(details.ViewType);
+        //}
 
         public override void InjectView(IMainView view)
         {
@@ -45,14 +47,15 @@ namespace ExtenderApp.MainViews
         /// 开始运行程序或模组，切换到另一个主页页面进行显示
         /// </summary>
         /// <param name="runViewType">要运行的程序或模组的类型</param>
-        public void ToRunView(Type runViewType)
+        public void ToRunView()
         {
-            ArgumentNullException.ThrowIfNull(runViewType, nameof(runViewType));
+            var modDetails = _mainModel.CurrentModDetails;
+            modDetails.ArgumentNull(nameof(modDetails));
 
             var view = NavigateTo<MainView_Run>();
             _mainModel.CurrentMainView = view;
             _mainModel.MainWindow.ShowView(view);
-            view.ShowView(NavigateTo(runViewType));
+            view.ShowView(NavigateTo(modDetails));
         }
     }
 }

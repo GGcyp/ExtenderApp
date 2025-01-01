@@ -52,7 +52,8 @@ namespace ExtenderApp.MainViews
         public void OpenMod(ModDetails modDetails)
         {
             _serviceStore.ModService.LoadMod(modDetails);
-            _mainModel.ToRunAction?.Invoke(modDetails.StartupType);
+            _mainModel.CurrentModDetails = modDetails;
+            _mainModel.ToRunAction?.Invoke();
         }
 
         private void AddModTab(IList newItems)
