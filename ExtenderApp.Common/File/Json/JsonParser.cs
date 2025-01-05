@@ -6,8 +6,6 @@ namespace ExtenderApp.Common.File
 {
     internal class JsonParser : IJsonParser
     {
-        public FileExtensionType ExtensionTypeType => FileExtensionType.Json;
-
         private readonly JsonSerializerOptions _jsonSerializerOptions;
 
         public JsonParser()
@@ -19,23 +17,6 @@ namespace ExtenderApp.Common.File
                 PropertyNameCaseInsensitive = true,
                 Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
             };
-        }
-
-        public object? Deserialize(FileOperate operate, Type type, object? options = null)
-        {
-            var jsonOptions = options as JsonSerializerOptions ?? _jsonSerializerOptions;
-            object? result = null;
-            using (FileStream stream = operate.OpenFile())
-            {
-                result = JsonSerializer.Deserialize(stream, type, jsonOptions);
-            }
-            return result;
-        }
-
-        public object? Deserialize(string json, Type type, object? options = null)
-        {
-            var jsonOptions = options as JsonSerializerOptions ?? _jsonSerializerOptions;
-            return JsonSerializer.Deserialize(json, type, jsonOptions);
         }
 
         public T? Deserialize<T>(FileOperate operate, object? options = null)
@@ -66,25 +47,14 @@ namespace ExtenderApp.Common.File
             return result;
         }
 
-        public ValueTask<object?> DeserializeAsync(FileOperate operate, Type type, object? options = null)
+        public string Serialize<T>(T value, object? options = null)
         {
-            try
-            {
-                var jsonOptions = options as JsonSerializerOptions ?? _jsonSerializerOptions;
-                ValueTask<object?> result;
-                using (FileStream stream = operate.OpenFile())
-                {
-                    result = JsonSerializer.DeserializeAsync(stream, type, jsonOptions);
-                }
-                return result;
-            }
-            catch (Exception ex)
-            {
-                throw;
-            }
+            var jsonOptions = options as JsonSerializerOptions ?? _jsonSerializerOptions;
+
+            return JsonSerializer.Serialize(value, jsonOptions);
         }
 
-        public bool Serialize(object jsonObject, FileOperate operate, object? options = null)
+        public bool Serialize<T>(FileOperate operate, T value, object? options = null)
         {
             try
             {
@@ -92,7 +62,7 @@ namespace ExtenderApp.Common.File
 
                 using (FileStream stream = operate.OpenFile())
                 {
-                    JsonSerializer.Serialize(stream, jsonObject, jsonOptions);
+                    JsonSerializer.Serialize(stream, value, jsonOptions);
                 }
                 return true;
             }
@@ -103,21 +73,14 @@ namespace ExtenderApp.Common.File
             }
         }
 
-        public string SerializeToString(object jsonObject, object? options = null)
-        {
-            var jsonOptions = options as JsonSerializerOptions ?? _jsonSerializerOptions;
-
-            return JsonSerializer.Serialize(jsonObject, jsonOptions);
-        }
-
-        public async ValueTask<bool> SerializeAsync(object jsonObject, FileOperate operate, object? options = null)
+        public async ValueTask<bool> SerializeAsync<T>(T value, FileOperate operate, object? options = null)
         {
             try
             {
                 var jsonOptions = options as JsonSerializerOptions ?? _jsonSerializerOptions;
                 using (FileStream stream = operate.OpenFile())
                 {
-                    await JsonSerializer.SerializeAsync(stream, jsonObject, jsonOptions);
+                    await JsonSerializer.SerializeAsync(stream, value, jsonOptions);
                 }
                 return true; // 表示序列化成功
             }

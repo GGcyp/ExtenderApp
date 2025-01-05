@@ -1,4 +1,5 @@
-﻿using System.Buffers;
+﻿using System;
+using System.Buffers;
 using System.Drawing;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -75,7 +76,7 @@ namespace ExtenderApp.Data.File
             if (sequencePool is null) throw new ArgumentNullException(nameof(sequencePool));
             this.SequencePool = sequencePool;
             Rental = default;
-            Output = null;
+            Output = default;
 
             _segment = new ArraySegment<byte>(array);
             Span = _segment.AsSpan();

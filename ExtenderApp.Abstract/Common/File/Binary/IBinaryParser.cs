@@ -6,5 +6,7 @@ namespace ExtenderApp.Abstract
     /// </summary>
     public interface IBinaryParser : IFileParser
     {
+        T? Deserialize<T>(byte[] bytes);
+        byte[] Serialize<T>(T value);
     }
 }

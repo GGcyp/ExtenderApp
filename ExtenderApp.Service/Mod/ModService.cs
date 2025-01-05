@@ -35,6 +35,7 @@ namespace ExtenderApp.Service
         /// Json文件接口
         /// </summary>
         private IJsonParser _jsonParser;
+
         public ModService(ModStore mods, IPathService pathProvider, IJsonParser parser, IScopeExecutor executor)
         {
             _modStore = mods;

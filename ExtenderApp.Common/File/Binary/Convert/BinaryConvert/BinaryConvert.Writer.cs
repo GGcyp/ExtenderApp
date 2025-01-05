@@ -1,28 +1,20 @@
 ﻿using System.Diagnostics.CodeAnalysis;
+using System.Text;
 using ExtenderApp.Data;
 
 namespace ExtenderApp.Common.File.Binary
 {
     /// <summary>
-    /// 表示一个二进制原始类。
+    /// BinaryConvert 类的一部分，提供二进制数据转换功能。
     /// </summary>
-    public class BinaryConvert
+    public partial class BinaryConvert
     {
         /// <summary>
-        /// 获取或设置二进制选项。
+        /// 尝试将 Nil 值写入目标字节数组。
         /// </summary>
-        public BinaryOptions BinaryOptions { get; set; }
-
-        public BinaryConvert() : this(new BinaryOptions())
-        {
-
-        }
-
-        public BinaryConvert(BinaryOptions options)
-        {
-            BinaryOptions = options;
-        }
-
+        /// <param name="destination">目标字节数组。</param>
+        /// <param name="bytesWritten">实际写入的字节数。</param>
+        /// <returns>如果成功写入则返回 true，否则返回 false。</returns>
         public bool TryWriteNil(Span<byte> destination, out int bytesWritten)
         {
             bytesWritten = 1;
@@ -35,6 +27,13 @@ namespace ExtenderApp.Common.File.Binary
             return true;
         }
 
+        /// <summary>
+        /// 尝试将数组头部信息写入目标字节数组。
+        /// </summary>
+        /// <param name="destination">目标字节数组。</param>
+        /// <param name="count">数组元素个数。</param>
+        /// <param name="bytesWritten">实际写入的字节数。</param>
+        /// <returns>如果成功写入则返回 true，否则返回 false。</returns>
         public bool TryWriteArrayHeader(Span<byte> destination, uint count, out int bytesWritten)
         {
             if (count <= BinaryOptions.BinaryRang.MaxFixArrayCount)
@@ -72,6 +71,13 @@ namespace ExtenderApp.Common.File.Binary
             return true;
         }
 
+        /// <summary>
+        /// 尝试将映射头部信息写入目标字节数组。
+        /// </summary>
+        /// <param name="destination">目标字节数组。</param>
+        /// <param name="count">映射项个数。</param>
+        /// <param name="bytesWritten">实际写入的字节数。</param>
+        /// <returns>如果成功写入则返回 true，否则返回 false。</returns>
         public bool TryWriteMapHeader(Span<byte> destination, uint count, out int bytesWritten)
         {
             if (count <= BinaryOptions.BinaryRang.MaxFixMapCount)
@@ -109,6 +115,13 @@ namespace ExtenderApp.Common.File.Binary
             return true;
         }
 
+        /// <summary>
+        /// 尝试将固定整数（不安全）写入目标字节数组。
+        /// </summary>
+        /// <param name="destination">目标字节数组。</param>
+        /// <param name="value">要写入的固定整数值。</param>
+        /// <param name="bytesWritten">实际写入的字节数。</param>
+        /// <returns>如果成功写入则返回 true，否则返回 false。</returns>
         private bool TryWriteFixIntUnsafe(Span<byte> destination, byte value, out int bytesWritten)
         {
             bytesWritten = 1;
@@ -121,6 +134,13 @@ namespace ExtenderApp.Common.File.Binary
             return true;
         }
 
+        /// <summary>
+        /// 尝试将字符串头部信息写入目标字节数组。
+        /// </summary>
+        /// <param name="destination">目标字节数组。</param>
+        /// <param name="byteCount">字符串的字节数。</param>
+        /// <param name="bytesWritten">实际写入的字节数。</param>
+        /// <returns>如果成功写入则返回 true，否则返回 false。</returns>
         public bool TryWriteBinHeader(Span<byte> destination, uint length, out int bytesWritten)
         {
             switch (length)
@@ -158,6 +178,13 @@ namespace ExtenderApp.Common.File.Binary
             }
         }
 
+        /// <summary>
+        /// 尝试将字符串头部信息写入目标字节数组。
+        /// </summary>
+        /// <param name="destination">目标字节数组。</param>
+        /// <param name="byteCount">字符串的字节数。</param>
+        /// <param name="bytesWritten">实际写入的字节数。</param>
+        /// <returns>如果成功写入则返回 true，否则返回 false。</returns>
         public bool TryWriteStringHeader(Span<byte> destination, uint byteCount, out int bytesWritten)
         {
             if (byteCount <= BinaryOptions.BinaryRang.MaxFixStringLength)
@@ -207,6 +234,13 @@ namespace ExtenderApp.Common.File.Binary
             return true;
         }
 
+        /// <summary>
+        /// 尝试将扩展格式头部信息写入目标字节数组。
+        /// </summary>
+        /// <param name="destination">目标字节数组。</param>
+        /// <param name="extensionHeader">扩展头部信息。</param>
+        /// <param name="bytesWritten">实际写入的字节数。</param>
+        /// <returns>如果成功写入则返回 true，否则返回 false。</returns>
         public bool TryWriteExtensionFormatHeader(Span<byte> destination, ExtensionHeader extensionHeader, out int bytesWritten)
         {
             int dataLength = (int)extensionHeader.Length;
@@ -267,6 +301,13 @@ namespace ExtenderApp.Common.File.Binary
             }
         }
 
+        /// <summary>
+        /// 尝试将负固定整数（不安全）写入目标字节数组。
+        /// </summary>
+        /// <param name="destination">目标字节数组。</param>
+        /// <param name="value">要写入的负固定整数值。</param>
+        /// <param name="bytesWritten">实际写入的字节数。</param>
+        /// <returns>如果成功写入则返回 true，否则返回 false。</returns>
         private bool TryWriteNegativeFixIntUnsafe(Span<byte> destination, sbyte value, out int bytesWritten)
         {
             bytesWritten = 1;
@@ -281,6 +322,13 @@ namespace ExtenderApp.Common.File.Binary
 
         #region TryWrite
 
+        /// <summary>
+        /// 尝试将指定值写入目标字节序列。
+        /// </summary>
+        /// <param name="destination">目标字节序列。</param>
+        /// <param name="value">要写入的值。</param>
+        /// <param name="bytesWritten">实际写入的字节数。</param>
+        /// <returns>如果写入成功，则返回true；否则返回false。</returns>
         public bool TryWrite(Span<byte> destination, sbyte value, out int bytesWritten)
         {
             if (value >= 0)
@@ -537,6 +585,13 @@ namespace ExtenderApp.Common.File.Binary
 
         #region int
 
+        /// <summary>
+        /// 尝试将8位有符号整数写入指定的字节跨度中。
+        /// </summary>
+        /// <param name="destination">目标字节跨度。</param>
+        /// <param name="value">要写入的8位有符号整数。</param>
+        /// <param name="bytesWritten">实际写入的字节数。</param>
+        /// <returns>如果成功写入，则返回true；否则返回false。</returns>
         public bool TryWriteInt8(Span<byte> destination, sbyte value, out int bytesWritten)
         {
             bytesWritten = 2;
@@ -550,6 +605,13 @@ namespace ExtenderApp.Common.File.Binary
             return true;
         }
 
+        /// <summary>
+        /// 尝试将16位有符号整数写入指定的字节跨度中。
+        /// </summary>
+        /// <param name="destination">目标字节跨度。</param>
+        /// <param name="value">要写入的16位有符号整数。</param>
+        /// <param name="bytesWritten">实际写入的字节数。</param>
+        /// <returns>如果成功写入，则返回true；否则返回false。</returns>
         public bool TryWriteInt16(Span<byte> destination, short value, out int bytesWritten)
         {
             bytesWritten = 3;
@@ -563,6 +625,13 @@ namespace ExtenderApp.Common.File.Binary
             return true;
         }
 
+        /// <summary>
+        /// 尝试将32位有符号整数写入指定的字节跨度中。
+        /// </summary>
+        /// <param name="destination">目标字节跨度。</param>
+        /// <param name="value">要写入的32位有符号整数。</param>
+        /// <param name="bytesWritten">实际写入的字节数。</param>
+        /// <returns>如果成功写入，则返回true；否则返回false。</returns>
         public bool TryWriteInt32(Span<byte> destination, int value, out int bytesWritten)
         {
             bytesWritten = 5;
@@ -576,6 +645,13 @@ namespace ExtenderApp.Common.File.Binary
             return true;
         }
 
+        /// <summary>
+        /// 尝试将64位有符号整数写入指定的字节跨度中。
+        /// </summary>
+        /// <param name="destination">目标字节跨度。</param>
+        /// <param name="value">要写入的64位有符号整数。</param>
+        /// <param name="bytesWritten">实际写入的字节数。</param>
+        /// <returns>如果成功写入，则返回true；否则返回false。</returns>
         public bool TryWriteInt64(Span<byte> destination, long value, out int bytesWritten)
         {
             bytesWritten = 9;
@@ -593,6 +669,13 @@ namespace ExtenderApp.Common.File.Binary
 
         #region uint
 
+        /// <summary>
+        /// 尝试将无符号8位整数写入到目标字节序列中。
+        /// </summary>
+        /// <param name="destination">目标字节序列。</param>
+        /// <param name="value">要写入的无符号8位整数值。</param>
+        /// <param name="bytesWritten">实际写入的字节数。</param>
+        /// <returns>如果写入成功，则返回true；否则返回false。</returns>
         public bool TryWriteUInt8(Span<byte> destination, byte value, out int bytesWritten)
         {
             bytesWritten = 2;
@@ -606,6 +689,13 @@ namespace ExtenderApp.Common.File.Binary
             return true;
         }
 
+        /// <summary>
+        /// 尝试将无符号16位整数写入到目标字节序列中。
+        /// </summary>
+        /// <param name="destination">目标字节序列。</param>
+        /// <param name="value">要写入的无符号16位整数值。</param>
+        /// <param name="bytesWritten">实际写入的字节数。</param>
+        /// <returns>如果写入成功，则返回true；否则返回false。</returns>
         public bool TryWriteUInt16(Span<byte> destination, ushort value, out int bytesWritten)
         {
             bytesWritten = 3;
@@ -619,6 +709,13 @@ namespace ExtenderApp.Common.File.Binary
             return true;
         }
 
+        /// <summary>
+        /// 尝试将无符号32位整数写入到目标字节序列中。
+        /// </summary>
+        /// <param name="destination">目标字节序列。</param>
+        /// <param name="value">要写入的无符号32位整数值。</param>
+        /// <param name="bytesWritten">实际写入的字节数。</param>
+        /// <returns>如果写入成功，则返回true；否则返回false。</returns>
         public bool TryWriteUInt32(Span<byte> destination, uint value, out int bytesWritten)
         {
             bytesWritten = 5;
@@ -632,6 +729,13 @@ namespace ExtenderApp.Common.File.Binary
             return true;
         }
 
+        /// <summary>
+        /// 尝试将无符号64位整数写入到目标字节序列中。
+        /// </summary>
+        /// <param name="destination">目标字节序列。</param>
+        /// <param name="value">要写入的无符号64位整数值。</param>
+        /// <param name="bytesWritten">实际写入的字节数。</param>
+        /// <returns>如果写入成功，则返回true；否则返回false。</returns>
         public bool TryWriteUInt64(Span<byte> destination, ulong value, out int bytesWritten)
         {
             bytesWritten = 9;
@@ -647,6 +751,11 @@ namespace ExtenderApp.Common.File.Binary
 
         #endregion
 
+        /// <summary>
+        /// 将无符号短整型值以大端字节序写入到指定的字节数组中。
+        /// </summary>
+        /// <param name="destination">目标字节数组。</param>
+        /// <param name="value">要写入的无符号短整型值。</param>
         private void WriteBigEndian(Span<byte> destination, ushort value)
         {
             unchecked
@@ -656,6 +765,11 @@ namespace ExtenderApp.Common.File.Binary
             }
         }
 
+        /// <summary>
+        /// 将无符号整型值以大端字节序写入到指定的字节数组中。
+        /// </summary>
+        /// <param name="destination">目标字节数组。</param>
+        /// <param name="value">要写入的无符号整型值。</param>
         private void WriteBigEndian(Span<byte> destination, uint value)
         {
             unchecked
@@ -667,6 +781,11 @@ namespace ExtenderApp.Common.File.Binary
             }
         }
 
+        /// <summary>
+        /// 将无符号长整型值以大端字节序写入到指定的字节数组中。
+        /// </summary>
+        /// <param name="destination">目标字节数组。</param>
+        /// <param name="value">要写入的无符号长整型值。</param>
         private void WriteBigEndian(Span<byte> destination, ulong value)
         {
             unchecked
@@ -682,15 +801,35 @@ namespace ExtenderApp.Common.File.Binary
             }
         }
 
+        /// <summary>
+        /// 将短整型值以大端字节序写入到指定的字节数组中。
+        /// </summary>
+        /// <param name="destination">目标字节数组。</param>
+        /// <param name="value">要写入的短整型值。</param>
         private void WriteBigEndian(Span<byte> destination, short value)
             => WriteBigEndian(destination, unchecked((ushort)value));
 
+        /// <summary>
+        /// 将整型值以大端字节序写入到指定的字节数组中。
+        /// </summary>
+        /// <param name="destination">目标字节数组。</param>
+        /// <param name="value">要写入的整型值。</param>
         private void WriteBigEndian(Span<byte> destination, int value)
             => WriteBigEndian(destination, unchecked((uint)value));
 
+        /// <summary>
+        /// 将长整型值以大端字节序写入到指定的字节数组中。
+        /// </summary>
+        /// <param name="destination">目标字节数组。</param>
+        /// <param name="value">要写入的长整型值。</param>
         private void WriteBigEndian(Span<byte> destination, long value)
             => WriteBigEndian(destination, unchecked((ulong)value));
 
+        /// <summary>
+        /// 抛出不可达异常。
+        /// </summary>
+        /// <returns>不会返回任何值，因为总是抛出异常。</returns>
+        /// <exception cref="Exception">始终抛出异常，消息为"转换二进制出现问题"。</exception>
         [DoesNotReturn]
         private Exception ThrowUnreachable() => throw new Exception("转换二进制出现问题");
     }

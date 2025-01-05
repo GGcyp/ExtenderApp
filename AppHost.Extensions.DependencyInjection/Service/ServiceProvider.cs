@@ -50,7 +50,7 @@ namespace AppHost.Extensions.DependencyInjection
         /// <returns>返回ServiceConstructorDetail类型的服务构建详情</returns>
         internal ServiceConstructorDetail CreateOrGetServiceConstructorDetail(Type serviceType)
         {
-            ServiceConstructorDetail result = null;
+            ServiceConstructorDetail? result = null;
             //查询是否已经装进字典的注册服务构造详情
             if (_serviceConstructorDetailsDict.TryGetValue(serviceType, out result))
             {
@@ -76,11 +76,11 @@ namespace AppHost.Extensions.DependencyInjection
         /// </summary>
         /// <param name="serviceGenericType">泛型服务类型</param>
         /// <returns>返回ServiceConstructorDetail类型的泛型服务构建详情</returns>
-        protected ServiceConstructorDetail CreateGenericServiceConstructorDetail(Type serviceGenericType)
+        protected ServiceConstructorDetail? CreateGenericServiceConstructorDetail(Type serviceGenericType)
         {
             //整个泛型类是否已经被注册
             //已经被注册则就以整个类型进行创建构造类
-            ServiceConstructorDetail detail = CreateServiceConstructorDetail(serviceGenericType);
+            ServiceConstructorDetail? detail = CreateServiceConstructorDetail(serviceGenericType);
             if (detail != null) return detail;
 
             //获取泛型基础定义
@@ -110,7 +110,7 @@ namespace AppHost.Extensions.DependencyInjection
                 return null;
             }
 
-            ConstructorInfo constructorInfo = serviceGenericType.GetConstructors().FirstOrDefault();
+            ConstructorInfo constructorInfo = serviceGenericType.GetConstructors().FirstOrDefault()!;
             //获取已经注册的服务类构造信息，或者是无参数构造参数
             ServiceConstructorDetail[] details = GetServiceConstructorParameterInfoDetails(constructorInfo.GetParameters());
 
@@ -124,7 +124,7 @@ namespace AppHost.Extensions.DependencyInjection
         /// </summary>
         /// <param name="serviceType">服务类型</param>
         /// <returns>返回ServiceConstructorDetail类型的服务构造详情</returns>
-        protected ServiceConstructorDetail CreateServiceConstructorDetail(Type serviceType)
+        protected ServiceConstructorDetail? CreateServiceConstructorDetail(Type serviceType)
         {
             ServiceConstructorDetail detail;
             ConstructorInfo? constructorInfo;
@@ -142,7 +142,7 @@ namespace AppHost.Extensions.DependencyInjection
                     if (descriptor.ImplementationType is null)
                         throw new ArgumentNullException(string.Format("该服务类型实例为空:{0}", serviceType.Name));
 
-                    constructorInfo = descriptor.ImplementationType.GetConstructors().FirstOrDefault();
+                    constructorInfo = descriptor.ImplementationType.GetConstructors().FirstOrDefault()!;
                 }
             }
             else
@@ -155,11 +155,13 @@ namespace AppHost.Extensions.DependencyInjection
 
                     return null;
                 }
-                constructorInfo = serviceType.GetConstructors().FirstOrDefault();
+                constructorInfo = serviceType.GetConstructors().FirstOrDefault()!;
             }
 
+            if (constructorInfo == null) return null;
+
             //获取已经注册的服务类构造信息，或者是无参数构造参数
-            ServiceConstructorDetail[] details = GetServiceConstructorParameterInfoDetails(constructorInfo?.GetParameters());
+            ServiceConstructorDetail[] details = GetServiceConstructorParameterInfoDetails(constructorInfo.GetParameters());
 
             detail = new ServiceConstructorDetail(constructorInfo!, details, descriptor!);
             _serviceConstructorDetailsDict.TryAdd(serviceType, detail);
@@ -174,30 +176,30 @@ namespace AppHost.Extensions.DependencyInjection
         protected virtual ServiceConstructorDetail[] GetServiceConstructorParameterInfoDetails(ParameterInfo[]? parameterInfos)
         {
             ServiceConstructorDetail[] details = null;
-            if (parameterInfos != null && parameterInfos.Length > 0)
+            if (parameterInfos is null) return details;
+
+            details = new ServiceConstructorDetail[parameterInfos.Length];
+            for (int i = 0; i < parameterInfos.Length; i++)
             {
-                details = new ServiceConstructorDetail[parameterInfos.Length];
-                for (int i = 0; i < parameterInfos.Length; i++)
+                var parameterInfo = parameterInfos[i];
+                Type parameterType = parameterInfo.ParameterType;
+                ServiceConstructorDetail detail = CreateOrGetServiceConstructorDetail(parameterType);
+
+                //没有在已注册的可创建类中发现
+                if (detail == null)
                 {
-                    var parameterInfo = parameterInfos[i];
-                    Type parameterType = parameterInfo.ParameterType;
-                    ServiceConstructorDetail detail = CreateOrGetServiceConstructorDetail(parameterType);
+                    //无默认值的,无构造参数
+                    if (!parameterInfo.HasDefaultValue)
+                        ThrowInvalidOperation(parameterType.Name);
 
-                    //没有在已注册的可创建类中发现
-                    if (detail == null)
-                    {
-                        //无默认值的,无构造参数
-                        if (!parameterInfo.HasDefaultValue)
-                            ThrowInvalidOperation(parameterType.Name);
+                    detail = new ServiceConstructorDetail(parameterType.GetConstructors().FirstOrDefault());
 
-                        detail = new ServiceConstructorDetail(parameterType.GetConstructors().FirstOrDefault());
-
-                        //不用注册，可能这个无参服务只有他用
-                        //m_ServiceConstructorDetailsDict.TryAdd(parameterType, detail);
-                    }
-                    details[i] = detail;
+                    //不用注册，可能这个无参服务只有他用
+                    //m_ServiceConstructorDetailsDict.TryAdd(parameterType, detail);
                 }
+                details[i] = detail;
             }
+
             return details;
         }
 

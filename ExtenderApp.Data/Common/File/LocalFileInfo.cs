@@ -4,7 +4,7 @@ namespace ExtenderApp.Data
     /// <summary>
     /// 本地文件信息结构体
     /// </summary>
-    public struct LocalFileInfo
+    public struct LocalFileInfo : IEquatable<LocalFileInfo>
     {
         /// <summary>
         /// 存储文件信息的FileInfo对象
@@ -79,6 +79,11 @@ namespace ExtenderApp.Data
         public LocalFileInfo(string filePath) : this(new FileInfo(filePath))
         {
 
+        }
+
+        public bool Equals(LocalFileInfo other)
+        {
+            return FileInfo.Equals(other.FileInfo);
         }
     }
 }

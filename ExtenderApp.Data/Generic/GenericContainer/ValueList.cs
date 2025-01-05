@@ -8,7 +8,7 @@ namespace ExtenderApp.Data
     /// 类内部使用类，最好不要传递
     /// </summary>
     /// <typeparam name="T">集合中元素的类型。</typeparam>
-    public struct ValueList<T> : IList<T>
+    public struct ValueList<T> : IList<T>, IEquatable<ValueList<T>>
     {
         /// <summary>
         /// 默认的数组长度。

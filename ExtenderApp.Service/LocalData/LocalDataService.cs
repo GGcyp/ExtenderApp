@@ -1,24 +1,17 @@
-﻿using System.Text.Json.Serialization;
-using System.Text.Json;
-using ExtenderApp.Abstract;
-using ExtenderApp.Data;
-using System.Text.Encodings.Web;
+﻿using ExtenderApp.Abstract;
 using ExtenderApp.Common;
-using System.Runtime.Serialization.Formatters.Binary;
+using ExtenderApp.Data;
+
 
 namespace ExtenderApp.Service
 {
     internal class LocalDataService : ILocalDataService
     {
-        private class Temp : LocalData
-        {
-            public string Name { get; set; }
-        }
-        private readonly IJsonParser _parser;
+        private readonly IBinaryParser _parser;
         private readonly IPathService _pathService;
         private ValueList<LocalDataInfo> _localDataInfos;
 
-        public LocalDataService(IPathService pathService, IJsonParser parser)
+        public LocalDataService(IPathService pathService, IBinaryParser parser, BinaryFormatterResolverStore store)
         {
             _parser = parser;
             _pathService = pathService;
@@ -26,10 +19,7 @@ namespace ExtenderApp.Service
             _localDataInfos = new();
 
             CheckLocalData();
-
-            SetData("5555", new Temp() { Name = "sssss" });
-            var temp = GetData("5555");
-            byte[] objectBytes = System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(new Temp() { Name = "sssss" });
+            parser.Serialize(new(new LocalFileInfo("E:\\浏览器下载\\temo.ext"), FileMode.OpenOrCreate, FileAccess.ReadWrite), 10);
         }
 
         private void CheckLocalData()
@@ -49,9 +39,10 @@ namespace ExtenderApp.Service
             var info = _localDataInfos.Find((d, name) => d.LocalFileInfo.FileNameWithoutExtension == name, dataName);
             if (info is null) return null;
 
-            var result = _parser.Deserialize<LocalData>(info.LocalFileInfo);
-            info.LocalData = result;
-            return result;
+            //var result = _parser.Deserialize<LocalData>(info.LocalFileInfo);
+            //info.LocalData = result;
+            //return result;
+            return null;
         }
 
         public void SetData(string dataName, LocalData data)
@@ -66,7 +57,7 @@ namespace ExtenderApp.Service
             if (data is not null)
                 info.LocalData = data;
 
-            _parser.Serialize(info.LocalData, info.LocalFileInfo);
+            //_parser.Serialize();
         }
     }
 }

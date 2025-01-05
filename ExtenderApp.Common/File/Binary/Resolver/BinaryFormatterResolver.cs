@@ -1,6 +1,8 @@
-﻿using ExtenderApp.Abstract;
+﻿using AppHost.Extensions.DependencyInjection;
+using ExtenderApp.Abstract;
+using ExtenderApp.Common.File.Binary.Formatter;
 
-namespace ExtenderApp.Common.File.Binary
+namespace ExtenderApp.Common
 {
     /// <summary>
     /// 内部类 BinaryFormatterResolver，实现了 IBinaryFormatterResolver 接口。
@@ -12,15 +14,19 @@ namespace ExtenderApp.Common.File.Binary
         /// </summary>
         private readonly Dictionary<Type, IBinaryFormatter> _formmaterDict;
         private readonly BinaryFormatterResolverStore _store;
+        private readonly ITentativeProvider _serviceProvider;
+        private readonly BinaryFormatCreator _formatCreator;
 
         /// <summary>
         /// 使用指定的BinaryFormatter解析器仓库创建BinaryFormatter解析器实例
         /// </summary>
         /// <param name="store">BinaryFormatter解析器仓库</param>
-        public BinaryFormatterResolver(BinaryFormatterResolverStore store)
+        public BinaryFormatterResolver(BinaryFormatterResolverStore store, ITentativeProvider provider)
         {
             _formmaterDict = new();
             _store = store;
+            _serviceProvider = provider;
+            _formatCreator = new(store);
         }
 
         /// <summary>
@@ -33,7 +39,22 @@ namespace ExtenderApp.Common.File.Binary
         {
             var resultType = typeof(T);
             if (!_formmaterDict.TryGetValue(resultType, out var formatter))
-                throw new InvalidOperationException(string.Format("未找到{0}的解析方法", resultType.Name));
+            {
+                if (!_store.TryGetValue(resultType, out var formatterType))
+                {
+                    formatterType = _formatCreator.CreatFormatter(resultType);
+                    if (formatterType is null)
+                        throw new DirectoryNotFoundException(resultType.FullName);
+                }
+
+
+                formatter = _serviceProvider.GetService(formatterType!) as IBinaryFormatter;
+                if (formatter == null)
+                    throw new DirectoryNotFoundException(resultType.FullName);
+
+                _formmaterDict.Add(resultType, formatter);
+            }
+
 
             return (IBinaryFormatter<T>)formatter;
         }

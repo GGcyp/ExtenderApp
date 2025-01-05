@@ -1,5 +1,5 @@
-﻿using BinaryWriter = ExtenderApp.Data.BinaryWriter;
-using BinaryReader = ExtenderApp.Data.BinaryReader;
+﻿using ExtenderBinaryWriter = ExtenderApp.Data.ExtenderBinaryWriter;
+using ExtenderBinaryReader = ExtenderApp.Data.ExtenderBinaryReader;
 
 namespace ExtenderApp.Abstract
 {
@@ -18,17 +18,17 @@ namespace ExtenderApp.Abstract
     public interface IBinaryFormatter<T> : IBinaryFormatter
     {
         /// <summary>
-        /// 将指定对象序列化为二进制数据并写入到 <see cref="Data.BinaryWriter"/> 中。
+        /// 将指定对象序列化为二进制数据并写入到 <see cref="Data.ExtenderBinaryWriter"/> 中。
         /// </summary>
-        /// <param name="writer"><see cref="Data.BinaryWriter"/> 实例，用于写入二进制数据。</param>
+        /// <param name="writer"><see cref="Data.ExtenderBinaryWriter"/> 实例，用于写入二进制数据。</param>
         /// <param name="value">需要序列化的对象。</param>
-        void Serialize(ref BinaryWriter writer, T value);
+        void Serialize(ref ExtenderBinaryWriter writer, T value);
 
         /// <summary>
-        /// 从 <see cref="Data.BinaryReader"/> 中读取二进制数据并反序列化为指定类型的对象。
+        /// 从 <see cref="Data.ExtenderBinaryReader"/> 中读取二进制数据并反序列化为指定类型的对象。
         /// </summary>
-        /// <param name="reader"><see cref="Data.BinaryReader"/> 实例，用于读取二进制数据。</param>
+        /// <param name="reader"><see cref="Data.ExtenderBinaryReader"/> 实例，用于读取二进制数据。</param>
         /// <returns>反序列化得到的对象。</returns>
-        T Deserialize(ref BinaryReader reader);
+        T Deserialize(ref ExtenderBinaryReader reader);
     }
 }

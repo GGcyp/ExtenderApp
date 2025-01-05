@@ -9,7 +9,7 @@ namespace ExtenderApp.Data.File
     /// 泛型序列类，实现了IBufferWriter<T>和IDisposable接口。
     /// </summary>
     /// <typeparam name="T">序列中元素的类型。</typeparam>
-    internal class Sequence<T> : IBufferWriter<T>, IDisposable
+    public class Sequence<T> : IBufferWriter<T>, IDisposable
     {
         /// <summary>
         /// 自动增长的最大大小。

@@ -61,22 +61,45 @@ namespace AppHost.Extensions.DependencyInjection
         /// <returns></returns>
         public object? GetService(IServiceProvider provider)
         {
-            if (ServiceDescriptor == null && ServiceConstructorInfo == null)
+            if (ServiceDescriptor == null)
             {
-                return null;
+                if (ServiceConstructorInfo == null)
+                {
+                    return null;
+                }
+
+                if (ConstructorDetails == null)
+                {
+                    return GetDefaultService();
+                }
+                else
+                {
+                    return CreateService(provider);
+                }
             }
 
-            if (ServiceDescriptor == null && ServiceConstructorInfo != null)
-            {
-                return GetDefaultService();
-            }
-
-            if (ServiceDescriptor!.HasFactory)
+            if (ServiceDescriptor.HasFactory)
             {
                 return GetServiceForFactory(provider);
             }
 
             return GetRegisterService(provider);
+        }
+
+        /// <summary>
+        /// 创建一个服务实例。
+        /// </summary>
+        /// <param name="provider">服务提供者。</param>
+        /// <returns>返回创建的服务实例。</returns>
+        private object CreateService(IServiceProvider provider)
+        {
+            //如果这个类的构建函数需要其他服务作为参数，则去查找并放入
+            object?[]? parameters = new object[ConstructorDetails.Length];
+            for (int i = 0; i < ConstructorDetails.Length; i++)
+            {
+                parameters[i] = ConstructorDetails[i]?.GetService(provider);
+            }
+            return ServiceConstructorInfo.Invoke(parameters);
         }
 
         /// <summary>
@@ -92,22 +115,8 @@ namespace AppHost.Extensions.DependencyInjection
                 return ServiceDescriptor.ImplementationInstance;
             }
 
-            object result;
-            if (ConstructorDetails != null)
-            {
-                //如果这个类的构建函数需要其他服务作为参数，则去查找并放入
-                object?[]? parameters = new object[ConstructorDetails.Length];
-                for (int i = 0; i < ConstructorDetails.Length; i++)
-                {
-                    parameters[i] = ConstructorDetails[i]?.GetService(provider);
-                }
-                result = ServiceConstructorInfo.Invoke(parameters);
-            }
-            else
-            {
-                //构造函数无参数的
-                result = ServiceConstructorInfo!.Invoke(null);
-            }
+
+            object result = ConstructorDetails == null ? GetDefaultService() : CreateService(provider);
 
             if (ServiceDescriptor.Lifetime == ServiceLifetime.Singleton)
             {

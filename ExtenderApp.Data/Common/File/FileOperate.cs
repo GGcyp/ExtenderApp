@@ -3,7 +3,7 @@
     /// <summary>
     /// 文件操作结构体
     /// </summary>
-    public struct FileOperate
+    public struct FileOperate : IEquatable<FileOperate>
     {
         /// <summary>
         /// 文件访问权限
@@ -101,6 +101,11 @@
             //var buffer = MultiThreadDataBuffer<Action<FileStream>>.Create(OpenFile, action);
             //buffer.Run();
             throw new NotImplementedException();
+        }
+
+        public bool Equals(FileOperate other)
+        {
+            return LocalFileInfo.Equals(other.LocalFileInfo);
         }
     }
 }

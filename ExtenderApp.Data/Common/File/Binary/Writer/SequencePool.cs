@@ -5,7 +5,7 @@ namespace ExtenderApp.Data.File
     /// <summary>
     /// 序列池类，用于管理Sequence<byte>对象的重用。
     /// </summary>
-    internal class SequencePool
+    public class SequencePool
     {
         /// <summary>
         /// 序列的最小跨度长度。
@@ -72,7 +72,7 @@ namespace ExtenderApp.Data.File
         /// 租用一个Sequence<byte>对象。
         /// </summary>
         /// <returns>包含租用Sequence<byte>对象的Rental实例。</returns>
-        internal Rental Rent()
+        public Rental Rent()
         {
             if (_pool.Count > 0)
             {
@@ -103,7 +103,7 @@ namespace ExtenderApp.Data.File
         /// <summary>
         /// 表示一个用于管理租用的序列的结构体。
         /// </summary>
-        internal struct Rental : IDisposable
+        public struct Rental : IDisposable
         {
             /// <summary>
             /// 序列池所有者。

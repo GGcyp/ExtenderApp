@@ -37,6 +37,7 @@ namespace AppHost.Builder
 
             this.AddHostedServiceExecutor();
             this.AddScopeExecutor();
+            Services.AddTentativeProvider();
         }
 
         public AppHostApplication Builde()

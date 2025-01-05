@@ -7,10 +7,10 @@ namespace ExtenderApp.Views
 {
     internal class ViewStartup : Startup
     {
-        public override void Start(IHostApplicationBuilder builder)
+        public override void AddService(IServiceCollection services)
         {
-            builder.Services.AddHosted<MainViewHostedService>();
-            builder.Services.AddSingleton<IDispatcherService>(new Dispatcher_WPF());
+            services.AddHosted<MainViewHostedService>();
+            services.AddSingleton<IDispatcherService>(new Dispatcher_WPF());
         }
     }
 }

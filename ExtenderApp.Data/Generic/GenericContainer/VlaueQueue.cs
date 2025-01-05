@@ -5,7 +5,7 @@
     /// (注意：最好不要传值使用！)
     /// </summary>
     /// <typeparam name="T">队列中元素的类型</typeparam>
-    public struct ValueQueue<T>
+    public struct ValueQueue<T> : IEquatable<ValueQueue<T>>
     {
         private const int m_DefaultLength = 4;
 
@@ -129,6 +129,11 @@
             rightIndex = 0;
             leftIndex = 0;
             count = 0;
+        }
+
+        public bool Equals(ValueQueue<T> other)
+        {
+            return array.Equals(other.array);
         }
     }
 }
