@@ -23,6 +23,7 @@ namespace ExtenderApp.MainViews
     public partial class MainView : ExtenderAppView, IMainView
     {
         private readonly MainViewModel _viewModel;
+        public IView CurrentView { get; set; }
 
         public MainView(MainViewModel viewModel)
         {
@@ -31,9 +32,11 @@ namespace ExtenderApp.MainViews
             _viewModel.InjectView(this);
         }
 
+
         public void ShowView(IView view)
         {
             navigationControl.Content = view;
+            CurrentView = view;
         }
     }
 }

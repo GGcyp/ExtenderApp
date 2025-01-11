@@ -6,6 +6,7 @@ using ExtenderApp.Abstract;
 using ExtenderApp.Services;
 using ExtenderApp.Data;
 using ExtenderApp.Common.Error;
+using ExtenderApp.Service;
 
 namespace ExtenderApp.ViewModels
 {
@@ -279,6 +280,39 @@ namespace ExtenderApp.ViewModels
                 return service.ModDetails;
             return null;
         }
+
+        #endregion
+
+        #region LocalData
+
+        /// <summary>
+        /// 获取指定类型的数据
+        /// </summary>
+        /// <typeparam name="T">数据类型</typeparam>
+        /// <param name="data">输出参数，用于存储获取的数据</param>
+        /// <returns>如果成功获取到数据则返回true，否则返回false</returns>
+        protected bool GetData<T>(out T? data, Action<LocalData<T>> checkAction = null)
+        {
+            data = default;
+            if (!_serviceStore.LocalDataService.GetData(GetCurrentModDetails(), out LocalData<T> localData))
+                return false;
+
+            data = localData.Data;
+            checkAction?.Invoke(localData);
+            return true;
+        }
+
+        /// <summary>
+        /// 设置指定类型的数据
+        /// </summary>
+        /// <typeparam name="T">数据类型</typeparam>
+        /// <param name="data">要设置的数据</param>
+        /// <returns>如果成功设置数据则返回true，否则返回false</returns>
+        protected bool SetData<T>(T? data)
+        {
+            return _serviceStore.LocalDataService.SetData(GetCurrentModDetails(), data);
+        }
+
 
         #endregion
     }

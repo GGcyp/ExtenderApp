@@ -1,6 +1,4 @@
-﻿using System;
-using System.Buffers;
-using System.Drawing;
+﻿using System.Buffers;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -119,14 +117,13 @@ namespace ExtenderApp.Data.File
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Commit()
         {
-            var buffered = _buffered;
-            if (buffered > 0)
+            if (_buffered > 0)
             {
                 MigrateToSequence();
 
-                BytesCommitted += buffered;
+                BytesCommitted += _buffered;
+                Output.Advance(_buffered);
                 _buffered = 0;
-                Output.Advance(buffered);
                 Span = default;
             }
         }

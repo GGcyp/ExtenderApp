@@ -3,6 +3,7 @@ using AppHost.Extensions.DependencyInjection;
 using AppHost.Extensions.Hosting;
 using ExtenderApp.Abstract;
 using ExtenderApp.Common.File;
+using ExtenderApp.Data;
 using ExtenderApp.Service;
 using ExtenderApp.Services.NetWork;
 
@@ -25,11 +26,10 @@ namespace ExtenderApp.Services
             services.AddSingleton<ILogingService, LoggingService>();
             services.AddSingleton<INetWorkService, NetWorkService>();
             services.AddSingleton<IPathService, PathService>();
-            services.AddSingleton<ILocalDataService, LocalDataService>();
-
 
             AddRefreshService(services);
             AddModService(services);
+            AddLocaDataService(services);
         }
 
         /// <summary>
@@ -51,6 +51,16 @@ namespace ExtenderApp.Services
         {
             services.AddSingleton<IModService, ModService>();
             services.AddSingleton<ModStore>();
+        }
+
+        /// <summary>
+        /// 添加本地化数据服务
+        /// </summary>
+        /// <param name="services">服务集合</param>
+        private void AddLocaDataService(IServiceCollection services)
+        {
+            services.AddSingleton<ILocalDataService, LocalDataService>();
+            services.Configuration<IBinaryFormatterStore>(s => { s.AddFormatter(typeof(LocalData<>), typeof(LocalDataFormatter<>)); });
         }
     }
 }

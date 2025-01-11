@@ -23,9 +23,9 @@ namespace ExtenderApp.Common.File.Binary.Formatter
         /// <param name="binaryWriterConvert">二进制写入转换器。</param>
         /// <param name="binaryReaderConvert">二进制读取转换器。</param>
         /// <param name="options">二进制选项。</param>
-        protected CollectionFormatter(IBinaryFormatter<T> formatter, ExtenderBinaryWriterConvert binaryWriterConvert, ExtenderBinaryReaderConvert binaryReaderConvert, BinaryOptions options) : base(binaryWriterConvert, binaryReaderConvert, options)
+        protected CollectionFormatter(IBinaryFormatterResolver resolver, ExtenderBinaryWriterConvert binaryWriterConvert, ExtenderBinaryReaderConvert binaryReaderConvert, BinaryOptions options) : base(binaryWriterConvert, binaryReaderConvert, options)
         {
-            _formatter = formatter;
+            _formatter = resolver.GetFormatter<T>();
         }
 
         /// <summary>
@@ -38,19 +38,6 @@ namespace ExtenderApp.Common.File.Binary.Formatter
             if (value == null)
             {
                 _binaryWriterConvert.WriteNil(ref writer);
-                return;
-            }
-
-            if (value is T[] array)
-            {
-                _binaryWriterConvert.WriteArrayHeader(ref writer, array.Length);
-
-                foreach (T item in array)
-                {
-                    writer.CancellationToken.ThrowIfCancellationRequested();
-                    _formatter.Serialize(ref writer, item);
-                }
-
                 return;
             }
 

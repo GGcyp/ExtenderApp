@@ -1,4 +1,6 @@
-﻿namespace ExtenderApp.Common.File.Binary.Formatter
+﻿using ExtenderApp.Abstract;
+
+namespace ExtenderApp.Common.File.Binary.Formatter
 {
     /// <summary>
     /// 二进制格式创建器类
@@ -8,23 +10,23 @@
         /// <summary>
         /// 类型字典
         /// </summary>
-        private BinaryFormatterResolverStore _store;
+        private IBinaryFormatterStore _store;
 
         /// <summary>
         /// 初始化二进制格式创建器
         /// </summary>
         /// <param name="store">二进制格式化解析器存储</param>
-        public BinaryFormatCreator(BinaryFormatterResolverStore store)
+        public BinaryFormatCreator(IBinaryFormatterStore store)
         {
             _store = store;
 
-            _store.Add(typeof(Enum), typeof(EnumFormatter<>));
-            _store.Add(typeof(List<>), typeof(ListFormatter<>));
-            _store.Add(typeof(Stack<>), typeof(StackFormatter<>));
-            _store.Add(typeof(Queue<>), typeof(QueueFormatter<>));
-            _store.Add(typeof(Array), typeof(ArrayFormatter<>));
+            _store.AddFormatter(typeof(Enum), typeof(EnumFormatter<>));
+            _store.AddFormatter(typeof(List<>), typeof(ListFormatter<>));
+            _store.AddFormatter(typeof(Stack<>), typeof(StackFormatter<>));
+            _store.AddFormatter(typeof(Queue<>), typeof(QueueFormatter<>));
+            _store.AddFormatter(typeof(Array), typeof(ArrayFormatter<>));
 
-            _store.Add(typeof(Dictionary<,>), typeof(DictionaryFormatter<,>));
+            _store.AddFormatter(typeof(Dictionary<,>), typeof(DictionaryFormatter<,>));
         }
 
         /// <summary>

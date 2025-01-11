@@ -1,7 +1,4 @@
-﻿using System.Buffers;
-using System;
-using System.Threading;
-using ExtenderApp.Abstract;
+﻿using ExtenderApp.Abstract;
 using ExtenderApp.Data;
 using ExtenderApp.Data.File;
 
@@ -12,22 +9,26 @@ namespace ExtenderApp.Common.File
     {
         private readonly IBinaryFormatterResolver _binaryFormatterResolver;
         private readonly SequencePool _sequencePool;
+        private readonly Stack<byte[]> _arrayStack;
 
         public BinaryParser(IBinaryFormatterResolver binaryFormatterResolver)
         {
             _binaryFormatterResolver = binaryFormatterResolver;
             _sequencePool = new SequencePool();
+            _arrayStack = new Stack<byte[]>();
         }
 
         #region Serialize
 
         public byte[] Serialize<T>(T value)
         {
-            byte[]? array = new byte[65536];
-            var writer = new ExtenderBinaryWriter(_sequencePool, array);
+            byte[] bytes = GetBytes();
+            var writer = new ExtenderBinaryWriter(_sequencePool, bytes);
             Serialize(ref writer, value);
 
-            return writer.FlushAndGetArray();
+            var result = writer.FlushAndGetArray();
+            _arrayStack.Push(bytes);
+            return result;
         }
 
         public void Serialize<T>(ref ExtenderBinaryWriter writer, T value)
@@ -45,29 +46,12 @@ namespace ExtenderApp.Common.File
 
         public bool Serialize<T>(FileOperate operate, T value, object? options = null)
         {
-            //using (SequencePool.Rental rental = _sequencePool.Rent())
-            //{
-            //    var writer = new ExtenderBinaryWriter(rental.Value);
-            //    Serialize(ref writer, value);
-            //    writer.Flush();
-            //    using (FileStream stream = operate.OpenFile())
-            //    {
-            //        stream.Write(writer.GetSpan());
-            //        foreach (ReadOnlyMemory<byte> segment in rental.Value.AsReadOnlySequence)
-            //        {
-            //            var sharedBuffer = ArrayPool<byte>.Shared.Rent(segment.Length);
-            //            segment.CopyTo(sharedBuffer);
-            //            stream.Write(sharedBuffer, 0, segment.Length);
-            //        }
-            //    }
-            //}
-
+            //暂时先这么写
             byte[] bytes = Serialize(value);
             using (FileStream stream = operate.OpenFile())
             {
                 stream.Write(bytes);
             }
-
 
             return true;
         }
@@ -89,32 +73,31 @@ namespace ExtenderApp.Common.File
         private T? Deserialize<T>(ExtenderBinaryReader reader)
         {
             return _binaryFormatterResolver.GetFormatterWithVerify<T>().Deserialize(ref reader);
-
         }
 
 
         public T? Deserialize<T>(FileOperate operate, object? options = null)
         {
-            throw new NotImplementedException();
+            //暂时先这么写
+            byte[] bytes = GetBytes();
+            int length = -1;
+            using (FileStream stream = operate.OpenFile())
+            {
+                length = stream.Read(bytes);
+            }
+
+            if (length == -1) return default;
+
+            ExtenderBinaryReader reader = new ExtenderBinaryReader(new ReadOnlyMemory<byte>(bytes, 0, length));
+
+            return Deserialize<T>(reader);
         }
 
         #endregion
 
-        private bool IsFixedSizePrimitiveType(Type type)
+        private byte[] GetBytes()
         {
-            return type == typeof(short)
-                || type == typeof(int)
-                || type == typeof(long)
-                || type == typeof(ushort)
-                || type == typeof(uint)
-                || type == typeof(ulong)
-                || type == typeof(float)
-                || type == typeof(double)
-                || type == typeof(bool)
-                || type == typeof(byte)
-                || type == typeof(sbyte)
-                || type == typeof(char)
-            ;
+            return _arrayStack.Count > 0 ? _arrayStack.Pop() : new byte[65536];
         }
     }
 }

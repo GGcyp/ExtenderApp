@@ -1,7 +1,6 @@
 ﻿
-namespace ExtenderApp.Medai
+namespace ExtenderApp.Media
 {
-
     /// <summary>
     /// 视频信息类，用于存储视频相关的各种信息。
     /// </summary>
@@ -58,18 +57,45 @@ namespace ExtenderApp.Medai
         public bool IsFavorite { get; set; }
 
         /// <summary>
-        /// 视频的标签列表，用于对视频进行分类、标注等操作，方便用户查找和筛选视频。
-        /// </summary>
-        public List<string> Tags { get; set; }
-
-        /// <summary>
         /// 视频所属的分类或类别，例如电影、纪录片、教学视频等，有助于构建分类浏览功能。
         /// </summary>
         public string Category { get; set; }
 
         /// <summary>
+        /// 视频的标签列表，用于对视频进行分类、标注等操作，方便用户查找和筛选视频。
+        /// </summary>
+        public List<string> Tags { get; set; }
+
+        /// <summary>
         /// 视频的评分（如果有相关评分机制，比如用户打分或者平台综合评分等情况）。
         /// </summary>
         public double Rating { get; set; }
+
+        /// <summary>
+        /// 获取或设置该配置是否被启用。
+        /// </summary>
+        /// <value>
+        /// 如果配置被启用，则为true；否则为false。
+        /// </value>
+        public bool IsConfiguration => string.IsNullOrEmpty(VideoPath) && TotalVideoDuration == TimeSpan.Zero;
+
+        public VideoInfo() : this(string.Empty)
+        {
+        }
+
+        public VideoInfo(string videoPath)
+        {
+            VideoPath = videoPath;
+        }
+
+        public static bool operator ==(VideoInfo left, VideoInfo right)
+        {
+            return left.VideoPath==right.VideoPath;
+        }
+
+        public static bool operator !=(VideoInfo left, VideoInfo right)
+        {
+            return !(left == right);
+        }
     }
 }

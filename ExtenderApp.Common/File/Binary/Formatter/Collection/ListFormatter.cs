@@ -9,7 +9,7 @@ namespace ExtenderApp.Common.File.Binary.Formatter
     /// <typeparam name="T">List 中元素的类型。</typeparam>
     internal sealed class ListFormatter<T> : InterfaceListFormatter<T, List<T>>
     {
-        public ListFormatter(IBinaryFormatter<T> formatter, ExtenderBinaryWriterConvert binaryWriterConvert, ExtenderBinaryReaderConvert binaryReaderConvert, BinaryOptions options) : base(formatter, binaryWriterConvert, binaryReaderConvert, options)
+        public ListFormatter(IBinaryFormatterResolver resolver, ExtenderBinaryWriterConvert binaryWriterConvert, ExtenderBinaryReaderConvert binaryReaderConvert, BinaryOptions options) : base(resolver, binaryWriterConvert, binaryReaderConvert, options)
         {
 
         }

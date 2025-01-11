@@ -21,9 +21,9 @@ namespace ExtenderApp.Common.File.Binary.Formatter
         /// <param name="binaryWriterConvert">二进制写入转换器</param>
         /// <param name="binaryReaderConvert">二进制读取转换器</param>
         /// <param name="options">二进制选项</param>
-        public ArrayFormatter(IBinaryFormatter<T> formatter, ExtenderBinaryWriterConvert binaryWriterConvert, ExtenderBinaryReaderConvert binaryReaderConvert, BinaryOptions options) : base(binaryWriterConvert, binaryReaderConvert, options)
+        public ArrayFormatter(IBinaryFormatterResolver resolver, ExtenderBinaryWriterConvert binaryWriterConvert, ExtenderBinaryReaderConvert binaryReaderConvert, BinaryOptions options) : base(binaryWriterConvert, binaryReaderConvert, options)
         {
-            _binaryFormatter = formatter;
+            _binaryFormatter = resolver.GetFormatter<T>();
         }
 
         /// <summary>

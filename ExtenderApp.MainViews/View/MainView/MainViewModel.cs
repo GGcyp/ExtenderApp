@@ -28,7 +28,7 @@ namespace ExtenderApp.MainViews
             base.InjectView(view);
 
             _mainModel.CurrentMainView = View;
-            if (View.GetType() == typeof(MainView)) 
+            if (View.GetType() == typeof(MainView))
                 View.ShowView(NavigateTo<ModView>());
         }
 
@@ -56,6 +56,16 @@ namespace ExtenderApp.MainViews
             _mainModel.CurrentMainView = view;
             _mainModel.MainWindow.ShowView(view);
             view.ShowView(NavigateTo(modDetails));
+        }
+
+        /// <summary>
+        /// 导航到指定视图。
+        /// </summary>
+        /// <typeparam name="T">目标视图的类型，必须继承自 IView 接口。</typeparam>
+        /// <returns>返回导航到的视图实例，如果导航失败则返回 null。</returns>
+        private new T NavigateTo<T>() where T : class, IView
+        {
+            return _serviceStore.NavigationService.NavigateTo(typeof(T), string.Empty, _mainModel.CurrentMainView.CurrentView) as T;
         }
     }
 }

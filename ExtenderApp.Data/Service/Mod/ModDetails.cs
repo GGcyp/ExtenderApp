@@ -22,7 +22,7 @@ namespace ExtenderApp.Data
         /// <summary>
         /// 模组版本号
         /// </summary>
-        public string? Version => modeInfo.ModVersion;
+        public Version? Version { get; }
 
         /// <summary>
         /// 获取模式信息的版本信息。
@@ -71,6 +71,7 @@ namespace ExtenderApp.Data
             Path = string.Empty;
             StartupType = null;
             LoadContext = null;
+            Version = modeInfo.ModVersion == null ? null : new Version(modeInfo.ModVersion);
         }
     }
 }

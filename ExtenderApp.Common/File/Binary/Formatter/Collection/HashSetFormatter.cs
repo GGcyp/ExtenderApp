@@ -9,7 +9,7 @@ namespace ExtenderApp.Common.File.Binary.Formatter
     /// <typeparam name="T">HashSet<T> 中元素的类型。</typeparam>
     internal class HashSetFormatter<T> : CollectionFormatter<T, HashSet<T>>
     {
-        public HashSetFormatter(IBinaryFormatter<T> formatter, ExtenderBinaryWriterConvert binaryWriterConvert, ExtenderBinaryReaderConvert binaryReaderConvert, BinaryOptions options) : base(formatter, binaryWriterConvert, binaryReaderConvert, options)
+        public HashSetFormatter(IBinaryFormatterResolver resolver, ExtenderBinaryWriterConvert binaryWriterConvert, ExtenderBinaryReaderConvert binaryReaderConvert, BinaryOptions options) : base(resolver, binaryWriterConvert, binaryReaderConvert, options)
         {
         }
 

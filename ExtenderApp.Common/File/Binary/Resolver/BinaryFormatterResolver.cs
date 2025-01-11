@@ -13,7 +13,7 @@ namespace ExtenderApp.Common
         /// 存储BinaryFormatter解析器的仓库
         /// </summary>
         private readonly Dictionary<Type, IBinaryFormatter> _formmaterDict;
-        private readonly BinaryFormatterResolverStore _store;
+        private readonly IBinaryFormatterStore _store;
         private readonly ITentativeProvider _serviceProvider;
         private readonly BinaryFormatCreator _formatCreator;
 
@@ -21,11 +21,12 @@ namespace ExtenderApp.Common
         /// 使用指定的BinaryFormatter解析器仓库创建BinaryFormatter解析器实例
         /// </summary>
         /// <param name="store">BinaryFormatter解析器仓库</param>
-        public BinaryFormatterResolver(BinaryFormatterResolverStore store, ITentativeProvider provider)
+        public BinaryFormatterResolver(IBinaryFormatterStore store, ITentativeProvider provider)
         {
             _formmaterDict = new();
-            _store = store;
             _serviceProvider = provider;
+
+            _store = store;
             _formatCreator = new(store);
         }
 
@@ -44,13 +45,13 @@ namespace ExtenderApp.Common
                 {
                     formatterType = _formatCreator.CreatFormatter(resultType);
                     if (formatterType is null)
-                        throw new DirectoryNotFoundException(resultType.FullName);
+                        throw new ArgumentNullException(resultType.FullName);
                 }
 
 
                 formatter = _serviceProvider.GetService(formatterType!) as IBinaryFormatter;
                 if (formatter == null)
-                    throw new DirectoryNotFoundException(resultType.FullName);
+                    throw new ArgumentNullException(resultType.FullName);
 
                 _formmaterDict.Add(resultType, formatter);
             }

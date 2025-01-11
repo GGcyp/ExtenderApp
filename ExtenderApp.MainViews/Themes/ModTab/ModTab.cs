@@ -9,7 +9,7 @@ namespace ExtenderApp.MainViews
         static ModTab()
         {
             DefaultStyleKeyProperty.OverrideMetadata(
-                typeof(ModTab), 
+                typeof(ModTab),
                 new FrameworkPropertyMetadata(typeof(ModTab)));
         }
 
@@ -17,14 +17,14 @@ namespace ExtenderApp.MainViews
         /// <summary>
         /// 全局统一回调
         /// </summary>
-        public static Action<ModDetails> Callback {  get; set; }
+        public static Action<ModDetails> Callback { get; set; }
 
         public ModTab(ModDetails modDetails)
         {
             ModDetails = modDetails;
             Title = modDetails.Title;
             Description = modDetails.Description;
-            Version = modDetails.Version;
+            Version = modDetails.Version is null ? "未知版本" : modDetails.Version.ToString();
         }
 
         protected override void OnClick()
@@ -41,9 +41,9 @@ namespace ExtenderApp.MainViews
         }
 
         public static readonly DependencyProperty TitleProperty =
-            DependencyProperty.Register("Title", 
-                typeof(string), 
-                typeof(ModTab), 
+            DependencyProperty.Register("Title",
+                typeof(string),
+                typeof(ModTab),
                 new PropertyMetadata());
 
         #endregion
@@ -57,9 +57,9 @@ namespace ExtenderApp.MainViews
         }
 
         public static readonly DependencyProperty DescriptionProperty =
-            DependencyProperty.Register("Description", 
-                typeof(string), 
-                typeof(ModTab), 
+            DependencyProperty.Register("Description",
+                typeof(string),
+                typeof(ModTab),
                 new PropertyMetadata());
 
         #endregion
@@ -73,9 +73,9 @@ namespace ExtenderApp.MainViews
         }
 
         public static readonly DependencyProperty VersionProperty =
-            DependencyProperty.Register("Version", 
-                typeof(string), 
-                typeof(ModTab), 
+            DependencyProperty.Register("Version",
+                typeof(string),
+                typeof(ModTab),
                 new PropertyMetadata());
 
         #endregion

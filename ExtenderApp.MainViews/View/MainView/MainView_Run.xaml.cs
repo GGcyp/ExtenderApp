@@ -30,9 +30,12 @@ namespace ExtenderApp.MainViews
             _viewModel.InjectView(this);
         }
 
+        public IView CurrentView { get; set; }
+
         public void ShowView(IView view)
         {
             viewContenControl.Content = view;
+            CurrentView = view;
         }
 
         private void GoHome_Click(object sender, RoutedEventArgs e)

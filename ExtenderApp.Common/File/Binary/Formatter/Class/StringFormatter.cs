@@ -2,6 +2,12 @@
 
 namespace ExtenderApp.Common.File.Binary.Formatter
 {
+    /// <summary>
+    /// 字符串格式化器类
+    /// </summary>
+    /// <remarks>
+    /// 继承自<see cref="ExtenderFormatter{T}"/>泛型类，专门用于对字符串类型的对象进行格式化。
+    /// </remarks>
     internal class StringFormatter : ExtenderFormatter<string>
     {
         public StringFormatter(ExtenderBinaryWriterConvert binaryWriterConvert, ExtenderBinaryReaderConvert binaryReaderConvert, BinaryOptions options) : base(binaryWriterConvert, binaryReaderConvert, options)

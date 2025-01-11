@@ -9,7 +9,7 @@ namespace ExtenderApp.Common.File.Binary.Formatter.Collection
     /// <typeparam name="T">集合中元素的类型。</typeparam>
     internal class InterfaceCollectionFormatter<T> : CollectionFormatter<T, ICollection<T>>
     {
-        public InterfaceCollectionFormatter(IBinaryFormatter<T> formatter, ExtenderBinaryWriterConvert binaryWriterConvert, ExtenderBinaryReaderConvert binaryReaderConvert, BinaryOptions options) : base(formatter, binaryWriterConvert, binaryReaderConvert, options)
+        public InterfaceCollectionFormatter(IBinaryFormatterResolver resolver, ExtenderBinaryWriterConvert binaryWriterConvert, ExtenderBinaryReaderConvert binaryReaderConvert, BinaryOptions options) : base(resolver, binaryWriterConvert, binaryReaderConvert, options)
         {
         }
 

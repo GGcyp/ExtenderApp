@@ -9,7 +9,7 @@ namespace ExtenderApp.Common.File.Binary.Formatter
     /// <typeparam name="T">队列中元素的类型。</typeparam>
     internal class QueueFormatter<T> : CollectionFormatter<T, Queue<T>>
     {
-        public QueueFormatter(IBinaryFormatter<T> formatter, ExtenderBinaryWriterConvert binaryWriterConvert, ExtenderBinaryReaderConvert binaryReaderConvert, BinaryOptions options) : base(formatter, binaryWriterConvert, binaryReaderConvert, options)
+        public QueueFormatter(IBinaryFormatterResolver resolver, ExtenderBinaryWriterConvert binaryWriterConvert, ExtenderBinaryReaderConvert binaryReaderConvert, BinaryOptions options) : base(resolver, binaryWriterConvert, binaryReaderConvert, options)
         {
         }
 

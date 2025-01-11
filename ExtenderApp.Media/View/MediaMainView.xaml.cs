@@ -17,16 +17,16 @@ using ExtenderApp.Abstract;
 using ExtenderApp.Data;
 using ExtenderApp.Views;
 
-namespace ExtenderApp.Medai
+namespace ExtenderApp.Media
 {
     /// <summary>
     /// MedaiMainView.xaml 的交互逻辑
     /// </summary>
-    public partial class MedaiMainView : ExtenderAppView
+    public partial class MediaMainView : ExtenderAppView
     {
-        private readonly MedaiMainViewModel _viewModel;
+        private readonly MediaMainViewModel _viewModel;
 
-        public MedaiMainView(MedaiMainViewModel viewModel)
+        public MediaMainView(MediaMainViewModel viewModel)
         {
             _viewModel = viewModel;
             DataContext = _viewModel;
@@ -45,7 +45,7 @@ namespace ExtenderApp.Medai
             {
                 e.Effects = DragDropEffects.Copy;
                 // 可以在这里添加一些视觉提示，例如改变窗口背景色等（以下是简单示例，可按需完善）
-                this.Background = Brushes.LightGray;
+                Background = Brushes.Gray;
             }
             else
             {
@@ -68,50 +68,28 @@ namespace ExtenderApp.Medai
             e.Handled = true;
         }
 
-        private void VideoListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            //if (videoListBox.SelectedItem != null)
-            //{
-            //    string selectedVideo = videoListBox.SelectedItem.ToString();
-            //    mediaElement.Source = new Uri(selectedVideo);
-            //    mediaElement.Play();
-            //}
-        }
-
-        private void TextBlock_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
-        {
-            //var textBlock = sender as TextBlock;
-            //if (textBlock != null)
-            //{
-            //    string selectedVideo = textBlock.Text;
-            //    mediaElement.Source = new Uri(selectedVideo);
-            //    mediaElement.Play();
-            //}
-        }
-
-        private void HideListButton_Click(object sender, RoutedEventArgs e)
-        {
-            var border = (Border)FindName("videoListBorder");
-            if (border != null)
-            {
-                border.Visibility = Visibility.Collapsed;
-            }
-        }
-
-        private void ShowListButton_Click(object sender, RoutedEventArgs e)
-        {
-            var border = (Border)FindName("videoListBorder");
-            if (border != null)
-            {
-                border.Visibility = Visibility.Visible;
-            }
-        }
-
-        #region 显示控件
-
+        #region 基础操作
         public void ShowVideoView(IView view)
         {
             playbackViewControl.Content = view;
+        }
+
+        public override void Exit(ViewInfo newViewInfo)
+        {
+            _viewModel.StopCommand.Execute(null);
+        }
+
+        #endregion
+
+        #region 视频列表
+
+        private void VideoListClik(object sender, MouseButtonEventArgs e)
+        {
+            if (sender is TextBlock textBlock && textBlock.DataContext is VideoInfo videoInfo)
+            {
+                // 处理点击事件，例如播放视频
+                _viewModel.OpenVideo(videoInfo);
+            }
         }
 
         #endregion

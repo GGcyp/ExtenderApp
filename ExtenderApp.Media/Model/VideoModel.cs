@@ -1,10 +1,15 @@
-﻿namespace ExtenderApp.Medai
+﻿namespace ExtenderApp.Media
 {
     /// <summary>
     /// 视频模型类，用于表示视频操作相关的属性和方法。
     /// </summary>
     public class VideoModel
     {
+        /// <summary>
+        /// 获取或设置当前视频信息。
+        /// </summary>
+        public VideoInfo CurrentVideoInfo { get; set; }
+
         /// <summary>
         /// 播放视频。
         /// </summary>
@@ -26,9 +31,9 @@
         public Action<double> FastForwardAction { get; set; }
 
         /// <summary>
-        /// 打开视频指定地址的视频。
+        /// 打开视频。
         /// </summary>
-        public Action<string> OpenVideoAction { get; set; }
+        public Action OpenVideoAction { get; set; }
 
         /// <summary>
         /// 获取或设置用于设置速度比例的动作。

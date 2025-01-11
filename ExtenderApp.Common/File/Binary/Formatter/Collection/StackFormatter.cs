@@ -9,7 +9,7 @@ namespace ExtenderApp.Common.File.Binary.Formatter
     /// <typeparam name="T">Stack<T> 集合中元素的类型。</typeparam>
     internal class StackFormatter<T> : CollectionFormatter<T, Stack<T>>
     {
-        public StackFormatter(IBinaryFormatter<T> formatter, ExtenderBinaryWriterConvert binaryWriterConvert, ExtenderBinaryReaderConvert binaryReaderConvert, BinaryOptions options) : base(formatter, binaryWriterConvert, binaryReaderConvert, options)
+        public StackFormatter(IBinaryFormatterResolver resolver, ExtenderBinaryWriterConvert binaryWriterConvert, ExtenderBinaryReaderConvert binaryReaderConvert, BinaryOptions options) : base(resolver, binaryWriterConvert, binaryReaderConvert, options)
         {
         }
 

@@ -1,5 +1,6 @@
 ﻿using AppHost.Builder;
 using AppHost.Extensions.DependencyInjection;
+using ExtenderApp.Abstract;
 
 
 namespace ExtenderApp.Services
@@ -11,6 +12,11 @@ namespace ExtenderApp.Services
         public override void ConfigureScopeOptions(ScopeOptions options)
         {
             options.ScopeName = GetType().Name;
+        }
+
+        public virtual void ConfigureBinaryFormatterStore(IBinaryFormatterStore store)
+        {
+
         }
     }
 }

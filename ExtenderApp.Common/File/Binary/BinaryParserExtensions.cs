@@ -36,7 +36,7 @@ namespace ExtenderApp.Common.File.Binary
         /// <param name="services">服务集合。</param>
         private static IServiceCollection AddBinaryFormatter(this IServiceCollection services)
         {
-            var store = new BinaryFormatterResolverStore();
+            var store = new BinaryFormatterStore();
 
             store.AddStructFormatter<DateTime, DateTimeFormatter>();
             store.AddStructFormatter<TimeSpan, TimeSpanFormatter>();
@@ -52,10 +52,13 @@ namespace ExtenderApp.Common.File.Binary
             store.AddStructFormatter<sbyte, SByteFormatter>();
             store.AddStructFormatter<double, DoubleFormatter>();
             store.AddStructFormatter<float, SingleFormatter>();
-            
-            store.AddClassFormatter<string, StringFormatter>();
+            store.AddStructFormatter<char, CharFormatter>();
 
-            return services.AddSingleton(store);
+            store.AddClassFormatter<string, StringFormatter>();
+            store.AddClassFormatter<Version, VersionFoematter>();
+            store.AddClassFormatter<Uri, UriFormatter>();
+
+            return services.AddSingleton<IBinaryFormatterStore>(store);
         }
     }
 }

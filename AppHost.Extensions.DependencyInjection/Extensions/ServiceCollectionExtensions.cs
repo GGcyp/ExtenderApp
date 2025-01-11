@@ -6,6 +6,8 @@
     /// </summary>
     public static class ServiceCollectionExtensions
     {
+        #region Add
+
         /// <summary>
         /// 向 <see cref="IServiceCollection"/> 中注册一个指定类型 <typeparamref name="TService"/> 的单例服务，使用默认的构造函数来实例化服务类型。
         /// 即容器在整个应用程序生命周期内只会创建一个该服务的实例，并在每次请求该服务时都返回这个唯一实例。
@@ -337,5 +339,51 @@
             services.Add(ServiceDescriptorFactory.Create(serviceType, implementationType, lifetime));
             return services;
         }
+
+        #endregion
+
+        #region Configuration
+
+        /// <summary>
+        /// 配置指定类型的服务
+        /// </summary>
+        /// <typeparam name="T">要配置的服务类型</typeparam>
+        /// <param name="services">服务集合</param>
+        /// <param name="action">用于配置服务的操作</param>
+        /// <returns>配置后的服务集合</returns>
+        /// <exception cref="ArgumentNullException">当 services 或 action 为 null 时抛出</exception>
+        /// <exception cref="InvalidOperationException">当要配置的服务不是单例模式时抛出</exception>
+        /// <exception cref="NullReferenceException">当要配置的服务还未创建时抛出</exception>
+        public static IServiceCollection Configuration<T>(this IServiceCollection services, Action<T> action) where T : class
+        {
+            if (services == null)
+                throw new ArgumentNullException(nameof(services));
+
+            if (action == null)
+                throw new ArgumentNullException(nameof(action));
+
+            Type serviceType = typeof(T);
+            T value = default;
+            for (var i = 0; i < services.Count; i++)
+            {
+                if (services[i].ServiceType == serviceType)
+                {
+                    if (services[i].Lifetime != ServiceLifetime.Singleton)
+                        throw new InvalidOperationException(string.Format("要配置的文件不是全局唯一:{0}", serviceType.Name));
+
+                    value = (T)services[i].ImplementationInstance;
+                    break;
+                }
+            }
+
+            if (value == null)
+                throw new NullReferenceException(string.Format("要配置的文件还未创建:{0}", serviceType.Name));
+
+            action.Invoke(value);
+
+            return services;
+        }
+
+        #endregion
     }
 }

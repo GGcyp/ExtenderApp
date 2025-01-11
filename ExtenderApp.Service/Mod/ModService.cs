@@ -35,14 +35,16 @@ namespace ExtenderApp.Service
         /// Json文件接口
         /// </summary>
         private IJsonParser _jsonParser;
+        private IBinaryFormatterStore _store;
 
-        public ModService(ModStore mods, IPathService pathProvider, IJsonParser parser, IScopeExecutor executor)
+        public ModService(ModStore mods, IPathService pathProvider, IJsonParser parser, IScopeExecutor executor, IBinaryFormatterStore store)
         {
             _modStore = mods;
             _scopeExecutor = executor;
             _pathProvider = pathProvider;
             _jsonParser = parser;
             _modTransform = new();
+            _store = store;
 
             LoadModInfo(_pathProvider.ModsPath);
         }
@@ -103,8 +105,12 @@ namespace ExtenderApp.Service
             var startAssembly = LoadAssembly(loadContext, dllPath);
 
             _modTransform.Details = details;
-            details.StartupType = _scopeExecutor.LoadScope<ModEntityStartup>(startAssembly, _modTransform.AddServiceToModeScope)?.StartType;
+            var modStartup = _scopeExecutor.LoadScope<ModEntityStartup>(startAssembly, _modTransform.AddServiceToModeScope);
 
+            if (modStartup == null)
+                throw new InvalidOperationException(string.Format("未找到这个模组的启动项：{0}", details.Title));
+            details.StartupType = modStartup.StartType;
+            modStartup.ConfigureBinaryFormatterStore(_store);
 
 
             //添加模组依赖库

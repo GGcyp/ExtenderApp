@@ -12,7 +12,7 @@ namespace ExtenderApp.Common.File.Binary.Formatter
     {
         private readonly CollectionHelpers<TList> _helpers;
 
-        public InterfaceListFormatter(IBinaryFormatter<T> formatter, ExtenderBinaryWriterConvert binaryWriterConvert, ExtenderBinaryReaderConvert binaryReaderConvert, BinaryOptions options) : base(formatter, binaryWriterConvert, binaryReaderConvert, options)
+        public InterfaceListFormatter(IBinaryFormatterResolver resolver, ExtenderBinaryWriterConvert binaryWriterConvert, ExtenderBinaryReaderConvert binaryReaderConvert, BinaryOptions options) : base(resolver, binaryWriterConvert, binaryReaderConvert, options)
         {
             _helpers = new CollectionHelpers<TList>();
         }

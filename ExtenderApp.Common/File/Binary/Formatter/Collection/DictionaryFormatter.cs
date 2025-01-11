@@ -8,7 +8,7 @@ namespace ExtenderApp.Common.File.Binary.Formatter
     /// </summary>
     /// <typeparam name="TKey">字典键的类型。</typeparam>
     /// <typeparam name="TValue">字典值的类型。</typeparam>
-    public class DictionaryFormatter<TKey, TValue> : InterfaceDictionaryFormatter<TKey, TValue, Dictionary<TKey, TValue>>
+    public class DictionaryFormatter<TKey, TValue> : InterfaceDictionaryFormatter<TKey, TValue, Dictionary<TKey, TValue>> where TKey : notnull
     {
         public DictionaryFormatter(IBinaryFormatterResolver resolver, ExtenderBinaryWriterConvert binaryWriterConvert, ExtenderBinaryReaderConvert binaryReaderConvert, BinaryOptions options) : base(resolver, binaryWriterConvert, binaryReaderConvert, options)
         {

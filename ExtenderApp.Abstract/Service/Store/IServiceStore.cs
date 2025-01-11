@@ -40,5 +40,10 @@
         /// </summary>
         /// <returns>返回本地数据服务接口。</returns>
         ILocalDataService LocalDataService { get; }
+
+        /// <summary>
+        /// 获取或设置刷新服务。
+        /// </summary>
+        IRefreshService RefreshService { get; }
     }
 }

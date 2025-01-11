@@ -8,7 +8,7 @@ namespace ExtenderApp.Service
     {
         public ModDetails ModDetails { get; }
 
-        public ScopeServiceStore(ModDetails modDetails, IDispatcherService dispatcherService, INavigationService navigationService, ITemporarilyService temporarilyStore, ILogingService logingService, INetWorkService netWorkService, IModService modService, ILocalDataService localDataService) : base(dispatcherService, navigationService, temporarilyStore, logingService, netWorkService, modService, localDataService)
+        public ScopeServiceStore(ModDetails modDetails, IDispatcherService dispatcherService, INavigationService navigationService, ITemporarilyService temporarilyStore, ILogingService logingService, INetWorkService netWorkService, IModService modService, ILocalDataService localDataService, IRefreshService refreshService) : base(dispatcherService, navigationService, temporarilyStore, logingService, netWorkService, modService, localDataService, refreshService)
         {
             ModDetails = modDetails;
         }

@@ -8,15 +8,17 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="PropertyChanged.Fody" Version="4.1.0" />
+    <Compile Update="View\MediaMainView.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="View\PlaybackView.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
   </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\AppHost.Builder\AppHost.Builder.csproj" />
-    <ProjectReference Include="..\AppHost.Common\AppHost.Common.csproj" />
-    <ProjectReference Include="..\ExtenderApp.ViewModels\ExtenderApp.ViewModels.csproj" />
-    <ProjectReference Include="..\ExtenderApp.Views\ExtenderApp.Views.csproj" />
-  </ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="PropertyChanged.Fody" Version="4.1.0" />
+	</ItemGroup>
 
 	<Target Name="CopyFilesAfterBuild" AfterTargets="PostBuildEvent">
 		<!-- 收集要复制的动态库文件（.dll） -->
@@ -30,7 +32,8 @@
 		<ItemGroup>
 			<TargetFolder Include="E:\WPF_Project\ExtenderApp\ExtenderApp\bin\Debug\net8.0-windows\mods" />
 		</ItemGroup>
-		<!-- 通过环境变量获取当前用户名（Windows 系统下常用的 USERNAME 环境变量） --><!--
+		<!-- 通过环境变量获取当前用户名（Windows 系统下常用的 USERNAME 环境变量） -->
+		<!--
 		<PropertyGroup>
 			<CurrentUserName>$([System.Environment]::GetEnvironmentVariable('USERNAME'))</CurrentUserName>
 		</PropertyGroup>
@@ -49,10 +52,19 @@
 		<Copy SourceFiles="@(DllFiles)" DestinationFolder="%(TargetFolder.Identity)\$(ProjectName)" SkipUnchangedFiles="true" />
 		<Copy SourceFiles="@(JsonFiles)" DestinationFolder="%(TargetFolder.Identity)\$(ProjectName)" SkipUnchangedFiles="true" />
 
-		<!--NuGet包的动态库复制--><!--
+		<!--NuGet包的动态库复制-->
+		<!--
 		<MakeDir Directories="%(TargetFolder.Identity)\$(ProjectName)\pack" Condition="Exists('%(TargetFolder.Identity)\$(ProjectName)\pack')" />
 		<Copy SourceFiles="@(NuGetDllFiles)" DestinationFolder="%(TargetFolder.Identity)\$(ProjectName)\pack" SkipUnchangedFiles="true" />-->
 	</Target>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\AppHost.Builder\AppHost.Builder.csproj" />
+	  <ProjectReference Include="..\AppHost.Common\AppHost.Common.csproj" />
+	  <ProjectReference Include="..\ExtenderApp.Service\ExtenderApp.Service.csproj" />
+	  <ProjectReference Include="..\ExtenderApp.ViewModels\ExtenderApp.ViewModels.csproj" />
+	  <ProjectReference Include="..\ExtenderApp.Views\ExtenderApp.Views.csproj" />
+	</ItemGroup>
 	
   <ItemGroup>
     <None Update="init.json">

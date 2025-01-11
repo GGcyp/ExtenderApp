@@ -22,7 +22,7 @@ namespace ExtenderApp.Services
         {
             lock (_store)
             {
-                switch(type)
+                switch (type)
                 {
                     case RefreshType.Update:
                         _store.AddUpdate(action);
@@ -36,7 +36,7 @@ namespace ExtenderApp.Services
 
         public void RemoveAction(Action action, RefreshType type)
         {
-            lock ( _store)
+            lock (_store)
             {
                 switch (type)
                 {
