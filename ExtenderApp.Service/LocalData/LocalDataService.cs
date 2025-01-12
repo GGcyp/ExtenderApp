@@ -56,7 +56,7 @@ namespace ExtenderApp.Service
                 }
 
                 data = localData;
-                return localData is null;
+                return localData is not null;
             }
             catch (Exception ex)
             {

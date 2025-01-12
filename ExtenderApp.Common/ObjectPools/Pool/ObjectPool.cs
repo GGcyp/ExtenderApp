@@ -38,6 +38,16 @@ namespace ExtenderApp.Common.ObjectPools
             = new ConcurrentDictionary<Type, IObjectPool>();
 
         /// <summary>
+        /// 创建一个默认的对象池。
+        /// </summary>
+        /// <typeparam name="T">对象池中存储的对象的类型，必须是一个引用类型且拥有一个无参构造函数。</typeparam>
+        /// <returns>返回创建的对象池。</returns>
+        public static ObjectPool<T> CreateDefault<T>() where T : class, new()
+        {
+            return Create<T>();
+        }
+
+        /// <summary>
         /// 创建一个<see cref="ObjectPool{T}"/>实例。
         /// </summary>
         /// <typeparam name="T"></typeparam>

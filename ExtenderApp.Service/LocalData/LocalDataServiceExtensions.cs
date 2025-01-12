@@ -17,7 +17,7 @@ namespace ExtenderApp.Service
         /// <param name="data">输出参数，用于接收获取到的数据。</param>
         /// <returns>如果成功获取数据，则返回 true；否则返回 false。</returns>
         /// <exception cref="ArgumentNullException">如果 details 参数为 null，则抛出 ArgumentNullException 异常。</exception>
-        public static bool GetData<T>(this ILocalDataService service, ModDetails details, out LocalData<T>? data)
+        public static bool LoadData<T>(this ILocalDataService service, ModDetails details, out LocalData<T>? data)
         {
             if (details is null)
                 throw new ArgumentNullException(nameof(details));
@@ -34,7 +34,7 @@ namespace ExtenderApp.Service
         /// <param name="data">要保存的数据。</param>
         /// <returns>如果数据保存成功，则返回 true；否则返回 false。</returns>
         /// <exception cref="ArgumentNullException">如果 details 参数为 null，则抛出 ArgumentNullException 异常。</exception>
-        public static bool SetData<T>(this ILocalDataService service, ModDetails details, T? data)
+        public static bool SaveData<T>(this ILocalDataService service, ModDetails details, T? data)
         {
             if (details is null)
                 throw new ArgumentNullException(nameof(details));

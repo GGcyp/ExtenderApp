@@ -45,6 +45,14 @@ namespace ExtenderApp.ViewModels
             _viewModelName = GetType().Name;
         }
 
+        /// <summary>
+        /// 关闭资源或连接。
+        /// </summary>
+        public virtual void Close()
+        {
+
+        }
+
         #region Navigate
 
         /// <summary>
@@ -291,10 +299,10 @@ namespace ExtenderApp.ViewModels
         /// <typeparam name="T">数据类型</typeparam>
         /// <param name="data">输出参数，用于存储获取的数据</param>
         /// <returns>如果成功获取到数据则返回true，否则返回false</returns>
-        protected bool GetData<T>(out T? data, Action<LocalData<T>> checkAction = null)
+        protected bool LoadLocalData<T>(out T? data, Action<LocalData<T>> checkAction = null)
         {
             data = default;
-            if (!_serviceStore.LocalDataService.GetData(GetCurrentModDetails(), out LocalData<T> localData))
+            if (!_serviceStore.LocalDataService.LoadData(GetCurrentModDetails(), out LocalData<T> localData))
                 return false;
 
             data = localData.Data;
@@ -308,9 +316,9 @@ namespace ExtenderApp.ViewModels
         /// <typeparam name="T">数据类型</typeparam>
         /// <param name="data">要设置的数据</param>
         /// <returns>如果成功设置数据则返回true，否则返回false</returns>
-        protected bool SetData<T>(T? data)
+        protected bool SaveLocalData<T>(T? data)
         {
-            return _serviceStore.LocalDataService.SetData(GetCurrentModDetails(), data);
+            return _serviceStore.LocalDataService.SaveData(GetCurrentModDetails(), data);
         }
 
 
@@ -360,6 +368,70 @@ namespace ExtenderApp.ViewModels
                 Error("视图导航出现了问题！", ex);
             }
             return view;
+        }
+    }
+
+    /// <summary>
+    /// 泛型扩展应用程序视图模型基类，继承自<see cref="ExtenderAppViewModel{TView}"/>
+    /// </summary>
+    /// <typeparam name="TView">视图接口</typeparam>
+    /// <typeparam name="TModle">模型类型</typeparam>
+    public abstract class ExtenderAppViewModel<TView, TModle> : ExtenderAppViewModel<TView> where TView : IView where TModle : class, new()
+    {
+        /// <summary>
+        /// 模型实例
+        /// </summary>
+        private TModle _model;
+
+        /// <summary>
+        /// 获取模型实例
+        /// </summary>
+        protected TModle? Model
+        {
+            get
+            {
+                if (_model is null)
+                {
+                    LoadModel();
+                    if (_model is null)
+                    {
+                        _model = new TModle();
+                        SaveModel();
+                    }
+                }
+                return _model;
+            }
+        }
+
+        /// <summary>
+        /// 初始化<see cref="ExtenderAppViewModel{TView, TModle}"/>的新实例
+        /// </summary>
+        /// <param name="serviceStore">服务存储</param>
+        protected ExtenderAppViewModel(IServiceStore serviceStore) : base(serviceStore)
+        {
+        }
+
+        /// <summary>
+        /// 获取本地数据并赋值给模型
+        /// </summary>
+        /// <returns>是否成功获取数据</returns>
+        protected bool LoadModel()
+        {
+            return LoadLocalData(out _model);
+        }
+
+        /// <summary>
+        /// 将模型数据保存到本地
+        /// </summary>
+        /// <returns>是否成功保存数据</returns>
+        protected bool SaveModel()
+        {
+            return SaveLocalData(_model);
+        }
+
+        public override void Close()
+        {
+            SaveModel();
         }
     }
 }

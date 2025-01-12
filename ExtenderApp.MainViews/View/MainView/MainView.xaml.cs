@@ -32,7 +32,6 @@ namespace ExtenderApp.MainViews
             _viewModel.InjectView(this);
         }
 
-
         public void ShowView(IView view)
         {
             navigationControl.Content = view;

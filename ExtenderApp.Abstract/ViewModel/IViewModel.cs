@@ -5,13 +5,12 @@ namespace ExtenderApp.Abstract
     /// <summary>
     /// 视图模型接口
     /// </summary>
-    public interface IViewModel 
+    public interface IViewModel
     {
-        ///// <summary>
-        ///// 向视图容器中注入视图
-        ///// </summary>
-        ///// <param name="view">需要注入的视图</param>
-        //public void InjectView(IView view);
+        /// <summary>
+        /// 关闭资源。
+        /// </summary>
+        void Close();
     }
 
     /// <summary>

@@ -22,10 +22,10 @@
             <!-- 视频列表区域 -->
             <Border Grid.Column="1" >
                 <!--<ScrollViewer >-->
-                <ListBox x:Name="videoListBox"  ItemsSource="{Binding Videos}">
+                <ListBox x:Name="videoListBox" Background="Black" ItemsSource="{Binding Videos}">
                     <ListBox.ItemTemplate>
                         <DataTemplate>
-                            <TextBlock Text="{Binding VideoTitle}" MouseLeftButtonDown="VideoListClik"/>
+                            <TextBlock Text="{Binding VideoTitle}" Background="White" MouseLeftButtonDown="VideoListClik"/>
                         </DataTemplate>
                     </ListBox.ItemTemplate>
                 </ListBox>
@@ -38,6 +38,9 @@
                 <Button Content="暂停" Command="{Binding PauseCommand}"/>
                 <Button Content="停止" Command="{Binding StopCommand}"/>
                 <Button Content="快进10秒" Command="{Binding FastForwardCommand}"/>
+                <Slider Minimum="0" Maximum="1" Value="{Binding Path=Volume, Mode=TwoWay}"/>
+                <Button Content="打开" Click="OpenGrid_Click"/>
+                <Button Content="关闭" Click="CloseGrid_Click"/>
             </StackPanel>
         </Grid>
     </Grid>

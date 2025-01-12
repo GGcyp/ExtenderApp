@@ -7,10 +7,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.135" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\AppHost.Builder\AppHost.Builder.csproj" />
     <ProjectReference Include="..\ExtenderApp.Abstract\ExtenderApp.Abstract.csproj" />
     <ProjectReference Include="..\ExtenderApp.Common\ExtenderApp.Common.csproj" />

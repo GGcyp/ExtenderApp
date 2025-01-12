@@ -90,7 +90,11 @@ namespace ExtenderApp.Media
 
         public static bool operator ==(VideoInfo left, VideoInfo right)
         {
-            return left.VideoPath==right.VideoPath;
+            if (left is null || right is null)
+            {
+                return false;
+            }
+            return left.VideoPath == right.VideoPath;
         }
 
         public static bool operator !=(VideoInfo left, VideoInfo right)

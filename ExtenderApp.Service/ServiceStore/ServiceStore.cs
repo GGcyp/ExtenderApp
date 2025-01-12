@@ -21,12 +21,12 @@ namespace ExtenderApp.Services
 
         public ILocalDataService LocalDataService { get; }
 
-        public IRefreshService RefreshService { get; }
+        public IScheduledTaskService ScheduledTaskService { get; }
 
         public ServiceStore(IDispatcherService dispatcherService,
             INavigationService navigationService, ITemporarilyService temporarilyStore,
             ILogingService logingService, INetWorkService netWorkService, IModService modService,
-            ILocalDataService localDataService, IRefreshService refreshService)
+            ILocalDataService localDataService, IScheduledTaskService scheduledTaskService)
         {
             DispatcherService = dispatcherService;
             NavigationService = navigationService;
@@ -35,7 +35,7 @@ namespace ExtenderApp.Services
             NetWorkService = netWorkService;
             ModService = modService;
             LocalDataService = localDataService;
-            RefreshService = refreshService;
+            ScheduledTaskService = scheduledTaskService;
         }
     }
 }

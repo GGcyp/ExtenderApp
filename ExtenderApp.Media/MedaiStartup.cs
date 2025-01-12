@@ -29,6 +29,7 @@ namespace ExtenderApp.Media
         public override void ConfigureBinaryFormatterStore(IBinaryFormatterStore store)
         {
             store.Add<VideoInfo, VideoInfoFormatter>();
+            store.Add<MediaModel, MediaModelFormatter>();
         }
     }
 }

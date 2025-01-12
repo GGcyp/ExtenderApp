@@ -26,21 +26,10 @@ namespace ExtenderApp.Services
             services.AddSingleton<ILogingService, LoggingService>();
             services.AddSingleton<INetWorkService, NetWorkService>();
             services.AddSingleton<IPathService, PathService>();
+            services.AddSingleton<IScheduledTaskService, ScheduledTaskService>();
 
-            AddRefreshService(services);
             AddModService(services);
             AddLocaDataService(services);
-        }
-
-        /// <summary>
-        /// 添加刷新服务到服务集合中。
-        /// </summary>
-        /// <param name="services">服务集合。</param>
-        private void AddRefreshService(IServiceCollection services)
-        {
-            services.AddHosted<RefreshServiceExecutor>();
-            services.AddSingleton<RefreshStore>();
-            services.AddSingleton<IRefreshService, RefreshService>();
         }
 
         /// <summary>

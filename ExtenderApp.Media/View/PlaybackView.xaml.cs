@@ -44,6 +44,9 @@ namespace ExtenderApp.Media
             model.NaturalTimeSpanFunc = NaturalTimeSpan;
             model.SpeedRatioAction = SpeedRatio;
 
+            model.SetVolume = SetVolume;
+            model.GetVolume = GetVolume;
+
             mediaElement.MediaOpened += MediaElement_MediaOpened;
         }
 
@@ -69,6 +72,16 @@ namespace ExtenderApp.Media
             }
         }
 
+        private void SetVolume(double value)
+        {
+            mediaElement.Volume = value;
+        }
+
+        private double GetVolume()
+        {
+            return mediaElement.Volume;
+        }
+
         private void OpenVideo()
         {
             if (_videoModel.CurrentVideoInfo is null)
@@ -77,7 +90,7 @@ namespace ExtenderApp.Media
             }
 
             mediaElement.Source = new Uri(_videoModel.CurrentVideoInfo.VideoPath);
-            mediaElement.Play();
+
             //等他第一次打开视频后，再获取视频信息    
             if (!_videoModel.CurrentVideoInfo.IsConfiguration)
                 _videoModel.CurrentVideoInfo = ConfigurationVideoInfo();
@@ -85,8 +98,7 @@ namespace ExtenderApp.Media
 
         private void MediaElement_MediaOpened(object sender, RoutedEventArgs e)
         {
-            mediaElement.Pause();
-            mediaElement.Position = TimeSpan.Zero;
+            _videoModel.MediaOpened?.Invoke();
         }
 
         /// <summary>

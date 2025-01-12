@@ -71,6 +71,19 @@
         }
 
         /// <summary>
+        /// 将一个服务添加到服务集合中，并注册为单例模式。
+        /// </summary>
+        /// <param name="services">服务集合。</param>
+        /// <param name="serviceType">要注册的服务类型。</param>
+        /// <param name="factory">用于创建服务实例的工厂方法。</param>
+        /// <returns>返回添加服务后的服务集合。</returns>
+        public static IServiceCollection AddSingleton(this IServiceCollection services, Type serviceType, Func<IServiceProvider, object?, object> factory)
+        {
+            services.Add(serviceType, factory, ServiceLifetime.Singleton);
+            return services;
+        }
+
+        /// <summary>
         /// 向 <see cref="IServiceCollection"/> 中注册一个指定类型 <typeparamref name="TService"/> 的单例服务，通过给定的工厂函数 <paramref name="factory"/> 来创建服务实例，并关联一个服务键 <paramref name="serviceKey"/>。
         /// 服务键可用于区分同一服务类型的不同注册情况（例如在有多个不同配置的相同类型服务注册时）。
         /// 工厂函数接收一个 <see cref="IServiceProvider"/> 对象（用于获取其他依赖服务）以及一个可选的对象参数（可能用于配置等情况），并返回服务实例对象。

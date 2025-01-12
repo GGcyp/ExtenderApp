@@ -4,6 +4,7 @@ using ExtenderApp.Abstract;
 using ExtenderApp.Data;
 using System.Text;
 using System.Diagnostics;
+using ExtenderApp.Service;
 
 namespace ExtenderApp.Services
 {
@@ -33,14 +34,19 @@ namespace ExtenderApp.Services
         private readonly StringBuilder _logText;
 
         /// <summary>
+        /// 只读私有变量，表示用于扩展功能的取消令牌。
+        /// </summary>
+        private readonly ExtenderCancellationToken _token;
+
+        /// <summary>
         /// 构造函数，初始化日志服务
         /// </summary>
         /// <param name="service">刷新服务</param>
         /// <param name="environment">主机环境</param>
-        public LoggingService(IRefreshService service, IPathService provider)
+        public LoggingService(IScheduledTaskService taskService, IPathService provider)
         {
             _logQueue = new ConcurrentQueue<LogInfo>();
-            service.AddFixUpdate(FixUpdate);
+
 
             //检查是否存在存放日志文件夹，如不存在则创建
             string logFolderPath = provider.LoggingPath;
@@ -48,6 +54,8 @@ namespace ExtenderApp.Services
             {
                 Directory.CreateDirectory(logFolderPath);
             }
+
+            _token = taskService.StartCycle(o => FixUpdate(),1000, 1000);
 
             _pathProvider = provider;
             _logText = new StringBuilder();
@@ -58,7 +66,11 @@ namespace ExtenderApp.Services
         /// </summary>
         public void FixUpdate()
         {
-            if (_logQueue.Count <= 0) return;
+            if (_logQueue.Count <= 0)
+            {
+                _token.Pause();
+                return;
+            }
 
             WriteAndSave();
         }
@@ -70,6 +82,7 @@ namespace ExtenderApp.Services
         public void Print(LogInfo info)
         {
             _logQueue.Enqueue(info);
+            _token.Resume();
         }
 
         /// <summary>
@@ -107,7 +120,7 @@ namespace ExtenderApp.Services
         /// </summary>
         /// <param name="info">日志信息对象</param>
         /// <returns>包含日志信息的字符串</returns>
-        public string LogInfoToStringBuilder(LogInfo info)
+        private string LogInfoToStringBuilder(LogInfo info)
         {
             _logText.Append($"时间: {info.Time.ToString("yyyy-MM-dd HH:mm:ss")}");
             _logText.Append($"，线程ID: {info.ThreadId}");

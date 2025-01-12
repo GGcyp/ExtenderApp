@@ -1,6 +1,5 @@
 ﻿using AppHost.Builder;
 using AppHost.Extensions.DependencyInjection;
-using ExtenderApp.Common.File;
 
 namespace ExtenderApp.Common
 {
@@ -12,6 +11,7 @@ namespace ExtenderApp.Common
         public override void AddService(IServiceCollection services)
         {
             services.AddFile();
+            services.AddObjectPool();
         }
     }
 }

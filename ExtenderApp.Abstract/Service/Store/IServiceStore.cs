@@ -42,8 +42,11 @@
         ILocalDataService LocalDataService { get; }
 
         /// <summary>
-        /// 获取或设置刷新服务。
+        /// 获取ITimerService服务实例。
         /// </summary>
-        IRefreshService RefreshService { get; }
+        /// <value>
+        /// 返回ITimerService类型的服务实例。
+        /// </value>
+        IScheduledTaskService ScheduledTaskService { get; }
     }
 }

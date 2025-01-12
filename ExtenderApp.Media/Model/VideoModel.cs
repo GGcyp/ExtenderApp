@@ -54,5 +54,20 @@
         /// 获取或设置用于获取当前位置的时间间隔的函数。
         /// </summary>
         public Func<TimeSpan> GetPosition { get; set; }
+
+        /// <summary>
+        /// 设置音量的动作委托。
+        /// </summary>
+        public Action<double> SetVolume { get; set; }
+
+        /// <summary>
+        /// 获取音量的函数委托。
+        /// </summary>
+        public Func<double> GetVolume { get; set; }
+
+        /// <summary>
+        /// 媒体打开视频时触发的事件
+        /// </summary>
+        public Action MediaOpened { get; set; }
     }
 }

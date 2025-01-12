@@ -10,6 +10,7 @@ using System.Windows.Data;
 using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
@@ -76,7 +77,7 @@ namespace ExtenderApp.Media
 
         public override void Exit(ViewInfo newViewInfo)
         {
-            _viewModel.StopCommand.Execute(null);
+            _viewModel.Close();
         }
 
         #endregion
@@ -90,6 +91,20 @@ namespace ExtenderApp.Media
                 // 处理点击事件，例如播放视频
                 _viewModel.OpenVideo(videoInfo);
             }
+        }
+
+        #endregion
+
+        #region 动画控制
+
+        private void OpenGrid_Click(object sender, RoutedEventArgs e)
+        {
+            _viewModel.VideoListWidth = new GridLength(300);
+        }
+
+        private void CloseGrid_Click(object sender, RoutedEventArgs e)
+        {
+            _viewModel.VideoListWidth = new GridLength(0);
         }
 
         #endregion
