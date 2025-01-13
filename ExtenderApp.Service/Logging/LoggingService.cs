@@ -55,7 +55,7 @@ namespace ExtenderApp.Services
                 Directory.CreateDirectory(logFolderPath);
             }
 
-            _token = taskService.StartCycle(o => FixUpdate(),1000, 1000);
+            _token = taskService.StartCycle(o => FixUpdate(), 1000);
 
             _pathProvider = provider;
             _logText = new StringBuilder();
@@ -68,7 +68,7 @@ namespace ExtenderApp.Services
         {
             if (_logQueue.Count <= 0)
             {
-                _token.Pause();
+                //_token.Pause();
                 return;
             }
 
@@ -82,7 +82,7 @@ namespace ExtenderApp.Services
         public void Print(LogInfo info)
         {
             _logQueue.Enqueue(info);
-            _token.Resume();
+            //_token.Resume();
         }
 
         /// <summary>
