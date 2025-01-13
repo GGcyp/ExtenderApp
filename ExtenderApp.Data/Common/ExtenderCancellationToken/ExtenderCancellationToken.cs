@@ -34,6 +34,11 @@
             _source = source;
         }
 
+        public ExtenderCancellationToken()
+        {
+            throw new NotImplementedException();
+        }
+
         /// <summary>
         /// 注册一个回调函数，以便在请求取消时执行。
         /// </summary>
@@ -44,15 +49,6 @@
         }
 
         #region Pause
-
-        /// <summary>
-        /// 暂停指定的毫秒数
-        /// </summary>
-        /// <param name="millisecondsDelay">暂停的毫秒数</param>
-        public void Pause(int millisecondsDelay)
-        {
-            _source.Pause(millisecondsDelay);
-        }
 
         /// <summary>
         /// 暂停指定的毫秒数
@@ -88,15 +84,6 @@
         /// 恢复播放并延迟指定的毫秒数
         /// </summary>
         /// <param name="millisecondsDelay">延迟的毫秒数</param>
-        public void Resume(int millisecondsDelay)
-        {
-            _source.Resume(millisecondsDelay);
-        }
-
-        /// <summary>
-        /// 恢复播放并延迟指定的毫秒数
-        /// </summary>
-        /// <param name="millisecondsDelay">延迟的毫秒数</param>
         public void Resume(long millisecondsDelay)
         {
             _source.Resume(millisecondsDelay);
@@ -122,15 +109,6 @@
         #endregion
 
         #region Stop
-
-        /// <summary>
-        /// 停止播放并延迟指定的毫秒数
-        /// </summary>
-        /// <param name="millisecondsDelay">延迟的毫秒数</param>
-        public void Stop(int millisecondsDelay)
-        {
-            _source.Stop(millisecondsDelay);
-        }
 
         /// <summary>
         /// 停止播放并延迟指定的毫秒数

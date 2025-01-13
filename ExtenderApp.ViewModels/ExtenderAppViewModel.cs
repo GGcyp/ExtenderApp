@@ -323,6 +323,69 @@ namespace ExtenderApp.ViewModels
 
 
         #endregion
+
+        #region ScheduledTask
+
+        /// <summary>
+        /// 启动一个定时任务，该任务在指定的延迟时间后开始执行，并以指定的周期重复执行。
+        /// </summary>
+        /// <param name="callback">任务执行时的回调函数。</param>
+        /// <param name="state">传递给回调函数的状态对象。</param>
+        /// <param name="dueTime">任务开始执行前的延迟时间。</param>
+        /// <param name="period">任务执行的周期。</param>
+        /// <returns>返回用于控制任务的 ExtenderCancellationToken 对象。</returns>
+        protected ExtenderCancellationToken Start(Action<object> callback, object state, TimeSpan dueTime, TimeSpan period)
+        {
+            return _serviceStore.ScheduledTaskService.Start(callback, state, dueTime, period);
+        }
+
+        /// <summary>
+        /// 启动一个循环任务，该任务以指定的周期重复执行。
+        /// </summary>
+        /// <param name="callback">任务执行时的回调函数。</param>
+        /// <param name="period">任务执行的周期。</param>
+        /// <returns>返回用于控制任务的 ExtenderCancellationToken 对象。</returns>
+        protected ExtenderCancellationToken StartCycle(Action<object> callback, TimeSpan period)
+        {
+            return StartCycle(callback, null, period);
+        }
+
+        /// <summary>
+        /// 启动一个循环任务，该任务以指定的周期重复执行。
+        /// </summary>
+        /// <param name="callback">任务执行时的回调函数。</param>
+        /// <param name="state">传递给回调函数的状态对象。</param>
+        /// <param name="period">任务执行的周期。</param>
+        /// <returns>返回用于控制任务的 ExtenderCancellationToken 对象。</returns>
+        protected ExtenderCancellationToken StartCycle(Action<object> callback, object state, TimeSpan period)
+        {
+            return _serviceStore.ScheduledTaskService.StartCycle(callback, state, period);
+        }
+
+        /// <summary>
+        /// 启动一个延迟任务，该任务在指定的延迟时间后开始执行。
+        /// </summary>
+        /// <param name="callback">任务执行时的回调函数。</param>
+        /// <param name="dueTime">任务开始执行前的延迟时间。</param>
+        /// <returns>返回用于控制任务的 ExtenderCancellationToken 对象。</returns>
+        protected ExtenderCancellationToken StartDelay(Action<object> callback, TimeSpan dueTime)
+        {
+            return StartDelay(callback, null, dueTime);
+        }
+
+        /// <summary>
+        /// 启动一个延迟任务，该任务在指定的延迟时间后开始执行。
+        /// </summary>
+        /// <param name="callback">任务执行时的回调函数。</param>
+        /// <param name="state">传递给回调函数的状态对象。</param>
+        /// <param name="dueTime">任务开始执行前的延迟时间。</param>
+        /// <returns>返回用于控制任务的 ExtenderCancellationToken 对象。</returns>
+        protected ExtenderCancellationToken StartDelay(Action<object> callback, object state, TimeSpan dueTime)
+        {
+            return _serviceStore.ScheduledTaskService.StartDelay(callback, state, dueTime);
+        }
+
+        #endregion
     }
 
     public abstract class ExtenderAppViewModel<TView> : ExtenderAppViewModel, IViewModel<TView> where TView : IView

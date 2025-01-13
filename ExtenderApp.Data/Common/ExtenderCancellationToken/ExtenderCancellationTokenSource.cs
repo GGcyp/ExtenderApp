@@ -5,7 +5,7 @@
     /// </summary>
     public abstract class ExtenderCancellationTokenSource : IDisposable
     {
-        private Timer _timer;
+        private Timer? _timer;
         private Timer Timer
         {
             get
@@ -21,12 +21,12 @@
         /// <summary>
         /// 已经暂停
         /// </summary>
-        public bool IsPause { get; protected set; }
+        public bool IsPause { get; private set; }
 
         /// <summary>
         /// 已经停止
         /// </summary>
-        public bool IsStop { get; protected set; }
+        public bool IsStop { get; private set; }
 
         /// <summary>
         /// 获取或设置是否可以操作。
@@ -62,20 +62,16 @@
         {
         }
 
-        #region Pause
-
-        /// <summary>
-        /// 暂停操作，指定暂停时间为毫秒数。
-        /// </summary>
-        /// <param name="millisecondsDelay">暂停时间（毫秒）。</param>
-        public void Pause(int millisecondsDelay)
+        public void Reset()
         {
-            if (IsPause) return;
-
-            Timer.Change(millisecondsDelay, 0);
-            operateAction = ProtectedPause;
-            IsPause = true;
+            IsPause = false;
+            IsStop = false;
+            CanOperate = true;
+            operateAction = null;
+            callback = null;
         }
+
+        #region Pause
 
         /// <summary>
         /// 暂停操作，指定暂停时间为长整型毫秒数。
@@ -83,7 +79,7 @@
         /// <param name="millisecondsDelay">暂停时间（毫秒）。</param>
         public void Pause(long millisecondsDelay)
         {
-            if (IsPause) return;
+            if (!CanPause()) return;
 
             Timer.Change(millisecondsDelay, 0);
             operateAction = ProtectedPause;
@@ -96,7 +92,7 @@
         /// <param name="delay">暂停时间。</param>
         public void Pause(TimeSpan delay)
         {
-            if (IsPause) return;
+            if (!CanPause()) return;
 
             Timer.Change(delay, TimeSpan.Zero);
             operateAction = ProtectedPause;
@@ -108,7 +104,7 @@
         /// </summary>
         public void Pause()
         {
-            if (IsPause) return;
+            if (!CanPause()) return;
 
             ProtectedPause();
             IsPause = true;
@@ -119,22 +115,14 @@
         /// </summary>
         protected abstract void ProtectedPause();
 
+        protected bool CanPause()
+        {
+            return CanOperate && !IsPause;
+        }
+
         #endregion
 
         #region Resume
-
-        /// <summary>
-        /// 恢复操作，指定恢复时间为毫秒数。
-        /// </summary>
-        /// <param name="millisecondsDelay">恢复时间（毫秒）。</param>
-        public void Resume(int millisecondsDelay)
-        {
-            if (IsStop || !IsPause) return;
-
-            Timer.Change(millisecondsDelay, 0);
-            operateAction = ProtectedResume;
-            IsPause = false;
-        }
 
         /// <summary>
         /// 恢复操作，指定恢复时间为长整型毫秒数。
@@ -142,7 +130,7 @@
         /// <param name="millisecondsDelay">恢复时间（毫秒）。</param>
         public void Resume(long millisecondsDelay)
         {
-            if (IsStop || !IsPause) return;
+            if (!CanResume()) return;
 
             Timer.Change(millisecondsDelay, 0);
             operateAction = ProtectedResume;
@@ -155,7 +143,7 @@
         /// <param name="delay">恢复时间。</param>
         public void Resume(TimeSpan delay)
         {
-            if (IsStop || !IsPause) return;
+            if (!CanResume()) return;
 
             Timer.Change(delay, TimeSpan.Zero);
             operateAction = ProtectedResume;
@@ -167,7 +155,7 @@
         /// </summary>
         public void Resume()
         {
-            if (IsStop || !IsPause) return;
+            if (!CanResume()) return;
 
             ProtectedResume();
             IsPause = false;
@@ -178,22 +166,14 @@
         /// </summary>
         protected abstract void ProtectedResume();
 
+        protected bool CanResume()
+        {
+            return CanOperate && IsPause && !IsStop;
+        }
+
         #endregion
 
         #region Stop
-
-        /// <summary>
-        /// 停止操作，指定停止时间为毫秒数。
-        /// </summary>
-        /// <param name="millisecondsDelay">停止时间（毫秒）。</param>
-        public void Stop(int millisecondsDelay)
-        {
-            if (!IsStop) return;
-
-            Timer.Change(millisecondsDelay, 0);
-            operateAction = ProtectedStop;
-            IsStop = true;
-        }
 
         /// <summary>
         /// 停止操作，指定停止时间为长整型毫秒数。
@@ -201,7 +181,7 @@
         /// <param name="millisecondsDelay">停止时间（毫秒）。</param>
         public void Stop(long millisecondsDelay)
         {
-            if (!IsStop) return;
+            if (!CanStop()) return;
 
             Timer.Change(millisecondsDelay, 0);
             operateAction = ProtectedStop;
@@ -214,7 +194,7 @@
         /// <param name="delay">停止时间。</param>
         public void Stop(TimeSpan delay)
         {
-            if (!IsStop) return;
+            if (!CanStop()) return;
 
             Timer.Change(delay, TimeSpan.Zero);
             operateAction = ProtectedStop;
@@ -226,7 +206,7 @@
         /// </summary>
         public void Stop()
         {
-            if (!IsStop) return;
+            if (!CanStop()) return;
 
             ProtectedStop();
             IsStop = true;
@@ -236,6 +216,11 @@
         /// 子类继承的停止方法。
         /// </summary>
         protected abstract void ProtectedStop();
+
+        protected bool CanStop()
+        {
+            return CanOperate && !IsStop;
+        }
 
         #endregion
 
@@ -257,8 +242,6 @@
         /// </summary>
         private void TimerCallback(object? obj)
         {
-            if (!IsStop) return;
-
             operateAction?.Invoke();
             callback?.Invoke();
             operateAction = null;

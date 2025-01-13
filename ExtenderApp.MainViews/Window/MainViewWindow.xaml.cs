@@ -13,7 +13,6 @@ using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 using ExtenderApp.Abstract;
 using ExtenderApp.Views;
-using Newtonsoft.Json.Linq;
 
 namespace ExtenderApp.MainViews
 {
