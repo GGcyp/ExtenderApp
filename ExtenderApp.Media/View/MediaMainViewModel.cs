@@ -1,6 +1,7 @@
 ﻿using System.Collections.ObjectModel;
 using System.Windows;
 using ExtenderApp.Abstract;
+using ExtenderApp.Data;
 using ExtenderApp.Service;
 using ExtenderApp.ViewModels;
 using ExtenderApp.Views;
@@ -133,7 +134,6 @@ namespace ExtenderApp.Media
             InitData();
             VideoListWidth = new GridLength(200);
             JumpTime = 10;
-            _serviceStore.ScheduledTaskService.StartCycle(o => Debug("sdad"), 1000);
         }
 
         /// <summary>
@@ -248,7 +248,7 @@ namespace ExtenderApp.Media
         /// </summary>
         private void Stop()
         {
-            if (RecordWatchingTime) 
+            if (RecordWatchingTime)
                 _videoModel.CurrentVideoInfo.VideoWatchedDuration = Position;
             _videoModel.StopAction.Invoke();
         }

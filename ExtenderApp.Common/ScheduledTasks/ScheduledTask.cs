@@ -66,24 +66,17 @@ namespace ExtenderApp.Common.ScheduledTasks
 
             _timer.Change(dueTime, period);
 
-            IsStop = true;
-            CanOperate = true;
+            Reset();
         }
 
         protected override void ProtectedPause()
         {
-            if (IsStop || IsPause)
-                return;
-
             pauseTime = DateTime.Now;
             _timer.Change(Timeout.Infinite, Timeout.Infinite);
         }
 
         protected override void ProtectedResume()
         {
-            if (IsStop || !IsPause)
-                return;
-
             var elapsedTime = remainingTime - (DateTime.Now - pauseTime);
             remainingTime = elapsedTime <= TimeSpan.Zero ? TimeSpan.Zero : elapsedTime;
             _timer.Change(remainingTime, period);
@@ -91,10 +84,9 @@ namespace ExtenderApp.Common.ScheduledTasks
 
         protected override void ProtectedStop()
         {
-            if (IsStop) return;
-
             _timer.Change(Timeout.Infinite, Timeout.Infinite);
             ReleaseAction?.Invoke(this);
+            Release();
         }
 
         /// <summary>
@@ -104,10 +96,24 @@ namespace ExtenderApp.Common.ScheduledTasks
         /// <remarks>并且回收计时任务</remarks>
         private void TimerCallback(object? obj)
         {
-            IsStop = false;
-            CanOperate = false;
             callback?.Invoke(state);
-            remainingTime = period;
+            remainingTime = TimeSpan.Zero;
+
+            if (period == TimeSpan.Zero && remainingTime == TimeSpan.Zero)
+            {
+                Release();
+            }
+        }
+
+        /// <summary>
+        /// 释放资源并停止操作
+        /// </summary>
+        /// <remarks>
+        /// 将CanOperate属性设置为false，表示不能进行操作，并调用ReleaseAction委托（如果已设置）。
+        /// </remarks>
+        private void Release()
+        {
+            CanOperate = false;
             ReleaseAction?.Invoke(this);
         }
 

@@ -75,6 +75,8 @@ namespace ExtenderApp.Media
             playbackViewControl.Content = view;
         }
 
+        private ExtenderCancellationToken token;
+
         public override void Exit(ViewInfo newViewInfo)
         {
             _viewModel.Close();
@@ -105,6 +107,7 @@ namespace ExtenderApp.Media
         private void CloseGrid_Click(object sender, RoutedEventArgs e)
         {
             _viewModel.VideoListWidth = new GridLength(0);
+
         }
 
         #endregion
