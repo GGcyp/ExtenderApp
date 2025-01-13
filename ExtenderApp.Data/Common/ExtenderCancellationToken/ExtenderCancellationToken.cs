@@ -34,6 +34,11 @@
             _source = source;
         }
 
+        public ExtenderCancellationToken()
+        {
+            throw new NotImplementedException();
+        }
+
         /// <summary>
         /// 注册一个回调函数，以便在请求取消时执行。
         /// </summary>
