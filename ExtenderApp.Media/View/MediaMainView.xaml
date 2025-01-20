@@ -5,43 +5,87 @@
                        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
                        xmlns:local="clr-namespace:ExtenderApp.Media"
                        xmlns:views="clr-namespace:ExtenderApp.Views;assembly=ExtenderApp.Views"
+                       xmlns:themes="clr-namespace:ExtenderApp.Media.Themes"
                        mc:Ignorable="d"
                        d:DataContext="{d:DesignInstance Type=local:MediaMainViewModel}"
                        d:DesignHeight="450" d:DesignWidth="800">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/ExtenderApp.Media;component/Themes/Generic.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
     <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition/>
+            <RowDefinition x:Name="controlGrid" Height="40"/>
+        </Grid.RowDefinitions>
         <Grid>
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition x:Name="videoGrid" Width="{Binding VideoListWidth}"/>
+                <ColumnDefinition/>
+                <ColumnDefinition x:Name="videoListGrid" Width="200"/>
             </Grid.ColumnDefinitions>
             <!--视频播放区-->
-            <!--<MediaElement x:Name="mediaElement"
-            Grid.Row="0"
-            LoadedBehavior="Play" />-->
             <ContentControl x:Name="playbackViewControl"/>
             <!-- 视频列表区域 -->
-            <Border Grid.Column="1" >
-                <!--<ScrollViewer >-->
-                <ListBox x:Name="videoListBox" Background="Black" ItemsSource="{Binding Videos}">
-                    <ListBox.ItemTemplate>
-                        <DataTemplate>
-                            <TextBlock Text="{Binding VideoTitle}" Background="White" MouseLeftButtonDown="VideoListClik"/>
-                        </DataTemplate>
-                    </ListBox.ItemTemplate>
-                </ListBox>
-            </Border>
+            <Grid Grid.Column="1">
+                <ContentControl x:Name="videoListControl"  />
+            </Grid>
+
         </Grid>
-        <Grid Panel.ZIndex="1" Height="20" VerticalAlignment="Bottom" Background="Transparent">
-            <!--视频控制区-->
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                <Button Content="播放" Command="{Binding PlayCommand}"/>
-                <Button Content="暂停" Command="{Binding PauseCommand}"/>
-                <Button Content="停止" Command="{Binding StopCommand}"/>
-                <Button Content="快进10秒" Command="{Binding FastForwardCommand}"/>
-                <Slider Minimum="0" Maximum="1" Value="{Binding Path=Volume, Mode=TwoWay}"/>
-                <Button Content="打开" Click="OpenGrid_Click"/>
-                <Button Content="关闭" Click="CloseGrid_Click"/>
-            </StackPanel>
+        <Grid Grid.Row="1" VerticalAlignment="Bottom" Background="Black">
+            <Grid.RowDefinitions>
+                <RowDefinition/>
+                <RowDefinition/>
+            </Grid.RowDefinitions>
+            <Grid Grid.Row="0">
+                <themes:MediaSlider x:Name="mediaSlider"
+                                    Minimum="0"
+                                    Maximum="{Binding TotalTime.TotalSeconds}"
+                                    Value="{Binding CurrentTime.TotalSeconds, Mode=OneWay}"
+                                    Height="20"
+                                    ThumbSize="18"
+                                    ThumbColor="White"
+                                    TrackBackground="Transparent"
+                                    LeftBackground="LightBlue"
+                                    RightBackground="Gray"/>
+            </Grid>
+            <Grid Grid.Row="1">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="200"/>
+                    <ColumnDefinition/>
+                    <ColumnDefinition/>
+                </Grid.ColumnDefinitions>
+                <!--视频控制区-->
+                <StackPanel Orientation="Horizontal" Margin="35 0 0 0">
+                    <TextBlock Text="{Binding CurrentTime, StringFormat={}{0:hh\\:mm\\:ss}}" Foreground="White" Width="50" />
+                    <TextBlock Text="/" Foreground="White" Width="10"/>
+                    <TextBlock Text="{Binding TotalTime, StringFormat={}{0:hh\\:mm\\:ss}}" Foreground="White"  Width="50"/>
+                </StackPanel>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" >
+                    <Button Content="播放" Command="{Binding PlayCommand}" Width="20" />
+                    <Button Content="暂停" Command="{Binding PauseCommand}" Width="20" />
+                    <Button Content="停止" Command="{Binding StopCommand}" Width="20" />
+                    <Button Content="快进10秒" Command="{Binding FastForwardCommand}" Width="20" />
+                    <Button Click="Grid_Click" Width="20"/>
+                </StackPanel>
+                <themes:MediaSlider x:Name="volumeSlider"
+                                    Grid.Column="2"
+                                    Minimum="0"
+                                    Maximum="1"
+                                    Value="{Binding Path=Volume, Mode=TwoWay}"
+                                    Height="20"
+                                    ThumbSize="18"
+                                    ThumbColor="White"
+                                    TrackBackground="Transparent"
+                                    LeftBackground="LightBlue"
+                                    RightBackground="Gray"
+                                    Orientation="Horizontal"
+                                    TickFrequency="0.01"
+                                    HorizontalAlignment="Stretch"
+                                    VerticalAlignment="Stretch"/>
+            </Grid>
         </Grid>
     </Grid>
 </views:ExtenderAppView>

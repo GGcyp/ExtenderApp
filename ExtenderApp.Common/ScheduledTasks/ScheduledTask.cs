@@ -1,6 +1,6 @@
 ﻿using ExtenderApp.Data;
 
-namespace ExtenderApp.Common.ScheduledTasks
+namespace ExtenderApp.Common
 {
     /// <summary>
     /// 计划任务类，用于管理定时器的启动和回调。
@@ -57,7 +57,7 @@ namespace ExtenderApp.Common.ScheduledTasks
         /// <param name="state">回调方法的状态参数。</param>
         /// <param name="dueTime">启动定时器前的延迟时间。</param>
         /// <param name="period">定时器周期时间。</param>
-        public void Start(Action<object> callback, object state, TimeSpan dueTime, TimeSpan period)
+        public void Start(Action<object> callback, object? state, TimeSpan dueTime, TimeSpan period)
         {
             this.callback = callback;
             this.state = state;
@@ -98,6 +98,8 @@ namespace ExtenderApp.Common.ScheduledTasks
         {
             callback?.Invoke(state);
             remainingTime = TimeSpan.Zero;
+
+            if (ReleaseAction == null) return;
 
             if (period == TimeSpan.Zero && remainingTime == TimeSpan.Zero)
             {

@@ -16,6 +16,8 @@ namespace ExtenderApp.Common.File.Binary.Formatter
         protected readonly ExtenderBinaryReaderConvert _binaryReaderConvert;
         protected readonly BinaryOptions _binaryOptions;
 
+        public virtual T Default => default(T);
+
         /// <summary>
         /// 初始化 <see cref="ExtenderFormatter{T}"/> 类的新实例。
         /// </summary>

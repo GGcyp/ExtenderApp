@@ -30,5 +30,11 @@ namespace ExtenderApp.Abstract
         /// <param name="reader"><see cref="Data.ExtenderBinaryReader"/> 实例，用于读取二进制数据。</param>
         /// <returns>反序列化得到的对象。</returns>
         T Deserialize(ref ExtenderBinaryReader reader);
+
+        /// <summary>
+        /// 获取默认值。
+        /// </summary>
+        /// <value>返回类型T的默认值。</value>
+        T Default { get; }
     }
 }

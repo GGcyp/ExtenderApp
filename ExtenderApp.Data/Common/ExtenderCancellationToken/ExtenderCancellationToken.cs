@@ -3,27 +3,17 @@
     /// <summary>
     /// 表示一个可取消操作的令牌，用于与 <see cref="ExtenderCancellationTokenSource"/> 配合使用。
     /// </summary>
-    public readonly struct ExtenderCancellationToken : IEquatable<ExtenderCancellationToken>
+    public struct ExtenderCancellationToken : IEquatable<ExtenderCancellationToken>
     {
         /// <summary>
         /// 取消令牌的源。
         /// </summary>
-        private readonly ExtenderCancellationTokenSource _source;
-
-        /// <summary>
-        /// 是否已经停止
-        /// </summary>
-        public bool IsStop => _source.IsStop;
-
-        /// <summary>
-        /// 是否已经暂停
-        /// </summary>
-        public bool IsPause => _source.IsPause;
+        private ExtenderCancellationTokenSource source;
 
         /// <summary>
         /// 获取一个值，该值指示是否可以操作。
         /// </summary>
-        public bool CanOperate => _source.CanOperate;
+        public bool CanOperate => source is not null && source.CanOperate;
 
         /// <summary>
         /// 使用指定的 <see cref="ExtenderCancellationTokenSource"/> 初始化 <see cref="ExtenderCancellationToken"/> 实例。
@@ -31,7 +21,7 @@
         /// <param name="source">取消令牌的源。</param>
         internal ExtenderCancellationToken(ExtenderCancellationTokenSource source)
         {
-            _source = source;
+            this.source = source;
         }
 
         public ExtenderCancellationToken()
@@ -45,7 +35,7 @@
         /// <param name="callback">要注册的回调函数。</param>
         public void Register(Action callback)
         {
-            _source.Register(callback);
+            source.Register(callback);
         }
 
         #region Pause
@@ -56,7 +46,9 @@
         /// <param name="millisecondsDelay">暂停的毫秒数</param>
         public void Pause(long millisecondsDelay)
         {
-            _source.Pause(millisecondsDelay);
+            if (!CanOperate) return;
+
+            source.Pause(millisecondsDelay);
         }
 
         /// <summary>
@@ -65,7 +57,9 @@
         /// <param name="delay">暂停的时间间隔</param>
         public void Pause(TimeSpan delay)
         {
-            _source.Pause(delay);
+            if (!CanOperate) return;
+
+            source.Pause(delay);
         }
 
         /// <summary>
@@ -73,7 +67,9 @@
         /// </summary>
         public void Pause()
         {
-            _source.Pause();
+            if (!CanOperate) return;
+
+            source.Pause();
         }
 
         #endregion
@@ -86,7 +82,9 @@
         /// <param name="millisecondsDelay">延迟的毫秒数</param>
         public void Resume(long millisecondsDelay)
         {
-            _source.Resume(millisecondsDelay);
+            if (!CanOperate) return;
+
+            source.Resume(millisecondsDelay);
         }
 
         /// <summary>
@@ -95,7 +93,9 @@
         /// <param name="delay">延迟的时间间隔</param>
         public void Resume(TimeSpan delay)
         {
-            _source.Resume(delay);
+            if (!CanOperate) return;
+
+            source.Resume(delay);
         }
 
         /// <summary>
@@ -103,7 +103,9 @@
         /// </summary>
         public void Resume()
         {
-            _source.Resume();
+            if (!CanOperate) return;
+
+            source.Resume();
         }
 
         #endregion
@@ -116,7 +118,10 @@
         /// <param name="millisecondsDelay">延迟的毫秒数</param>
         public void Stop(long millisecondsDelay)
         {
-            _source.Stop(millisecondsDelay);
+            if (!CanOperate) return;
+
+            source.Stop(millisecondsDelay);
+            source = null;
         }
 
         /// <summary>
@@ -125,7 +130,10 @@
         /// <param name="delay">延迟的时间间隔</param>
         public void Stop(TimeSpan delay)
         {
-            _source.Stop(delay);
+            if (!CanOperate) return;
+
+            source.Stop(delay);
+            source = null;
         }
 
         /// <summary>
@@ -133,7 +141,10 @@
         /// </summary>
         public void Stop()
         {
-            _source.Stop();
+            if (!CanOperate) return;
+
+            source.Stop();
+            source = null;
         }
 
         #endregion
@@ -147,7 +158,7 @@
         /// <returns>如果指定的对象等于当前对象，则为 true；否则为 false。</returns>
         public bool Equals(ExtenderCancellationToken other)
         {
-            return _source == other._source;
+            return source == other.source;
         }
 
         /// <summary>
@@ -188,7 +199,7 @@
         /// <returns>当前对象的哈希代码。</returns>
         public override int GetHashCode()
         {
-            return _source.GetHashCode();
+            return source.GetHashCode();
         }
 
         #endregion

@@ -5,7 +5,7 @@ namespace ExtenderApp.Common.File.Binary.Formatter
     /// <summary>
     /// 二进制格式创建器类
     /// </summary>
-    internal class BinaryFormatCreator
+    internal class BinaryFormatterCreator
     {
         /// <summary>
         /// 类型字典
@@ -16,7 +16,7 @@ namespace ExtenderApp.Common.File.Binary.Formatter
         /// 初始化二进制格式创建器
         /// </summary>
         /// <param name="store">二进制格式化解析器存储</param>
-        public BinaryFormatCreator(IBinaryFormatterStore store)
+        public BinaryFormatterCreator(IBinaryFormatterStore store)
         {
             _store = store;
 

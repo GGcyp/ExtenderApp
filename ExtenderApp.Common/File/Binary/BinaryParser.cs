@@ -72,21 +72,24 @@ namespace ExtenderApp.Common.File
 
         private T? Deserialize<T>(ExtenderBinaryReader reader)
         {
+            if (reader.Remaining == 0) 
+                return _binaryFormatterResolver.GetFormatterWithVerify<T>().Default;
             return _binaryFormatterResolver.GetFormatterWithVerify<T>().Deserialize(ref reader);
         }
-
 
         public T? Deserialize<T>(FileOperate operate, object? options = null)
         {
             //暂时先这么写
             byte[] bytes = GetBytes();
             int length = -1;
+
+            if (!operate.LocalFileInfo.FileInfo.Exists)
+                return Deserialize<T>(ExtenderBinaryReader.Empty);
+
             using (FileStream stream = operate.OpenFile())
             {
                 length = stream.Read(bytes);
             }
-
-            if (length == -1) return default;
 
             ExtenderBinaryReader reader = new ExtenderBinaryReader(new ReadOnlyMemory<byte>(bytes, 0, length));
 

@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using System.Windows.Documents;
 using System.Windows.Input;
@@ -15,8 +16,10 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using ExtenderApp.Abstract;
+using ExtenderApp.Common;
 using ExtenderApp.Data;
 using ExtenderApp.Views;
+using ExtenderApp.Views.Animation;
 
 namespace ExtenderApp.Media
 {
@@ -36,11 +39,18 @@ namespace ExtenderApp.Media
 
             //拖拽视屏文件
             AllowDrop = true;
-            Drop += MedaiMainView_Drop;
-            DragEnter += MedaiMainView_DragEnter;
+            Drop += MediaMainView_Drop;
+            DragEnter += MediaMainView_DragEnter;
+
+            // 监听窗口大小变化事件
+            SizeChanged += MediaMainView_SizeChanged;
+
+            //监听视频进度条更改
+            mediaSlider.ThumbDragCompleted += MediaSlider_DragCompleted;
+            volumeSlider.ThumbDragCompleted += VolumeSlider_ValueChanged;
         }
 
-        private void MedaiMainView_DragEnter(object sender, DragEventArgs e)
+        private void MediaMainView_DragEnter(object sender, DragEventArgs e)
         {
             if (e.Data.GetDataPresent(DataFormats.FileDrop))
             {
@@ -55,7 +65,7 @@ namespace ExtenderApp.Media
             e.Handled = true;
         }
 
-        private void MedaiMainView_Drop(object sender, DragEventArgs e)
+        private void MediaMainView_Drop(object sender, DragEventArgs e)
         {
             if (e.Data.GetDataPresent(DataFormats.FileDrop))
             {
@@ -69,13 +79,33 @@ namespace ExtenderApp.Media
             e.Handled = true;
         }
 
+        private void MediaMainView_SizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            _viewModel.WindowWidth = e.NewSize.Width;
+        }
+
+        private void VolumeSlider_ValueChanged()
+        {
+            _viewModel.UpdateVolume();
+        }
+
+        private void MediaSlider_DragCompleted()
+        {
+            // 更新 ViewModel 中的 CurrentTime 属性
+            _viewModel.UpdateVoideoTime(TimeSpan.FromSeconds(mediaSlider.Value));
+        }
+
         #region 基础操作
+
         public void ShowVideoView(IView view)
         {
             playbackViewControl.Content = view;
         }
 
-        private ExtenderCancellationToken token;
+        public void ShowVideoList(IView view)
+        {
+            videoListControl.Content = view;
+        }
 
         public override void Exit(ViewInfo newViewInfo)
         {
@@ -84,30 +114,26 @@ namespace ExtenderApp.Media
 
         #endregion
 
-        #region 视频列表
-
-        private void VideoListClik(object sender, MouseButtonEventArgs e)
-        {
-            if (sender is TextBlock textBlock && textBlock.DataContext is VideoInfo videoInfo)
-            {
-                // 处理点击事件，例如播放视频
-                _viewModel.OpenVideo(videoInfo);
-            }
-        }
-
-        #endregion
-
         #region 动画控制
 
-        private void OpenGrid_Click(object sender, RoutedEventArgs e)
+        private void Grid_Click(object sender, RoutedEventArgs e)
         {
-            _viewModel.VideoListWidth = new GridLength(300);
+            double width = videoListGrid.Width.Value == 0 ? 200 : 0;
+
+            AnimateGridWidth(width);
         }
 
-        private void CloseGrid_Click(object sender, RoutedEventArgs e)
+        private void AnimateGridWidth(double targetWidth)
         {
-            _viewModel.VideoListWidth = new GridLength(0);
+            var animation = new GridLengthAnimation
+            {
+                From = videoListGrid.Width,
+                To = new GridLength(targetWidth),
+                Duration = TimeSpan.FromSeconds(0.5),
+                EasingFunction = new SineEase { EasingMode = EasingMode.EaseOut }
+            };
 
+            videoListGrid.BeginAnimation(ColumnDefinition.WidthProperty, animation);
         }
 
         #endregion

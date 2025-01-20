@@ -9,6 +9,12 @@ namespace ExtenderApp.Data
     public ref struct ExtenderBinaryReader
     {
         /// <summary>
+        /// 获取一个默认的 ExtenderBinaryReader 实例，表示一个空的 ExtenderBinaryReader。
+        /// </summary>
+        /// <returns>返回一个默认的 ExtenderBinaryReader 实例。</returns>
+        public static ExtenderBinaryReader Empty => default;
+
+        /// <summary>
         /// 私有二进制序列读取器
         /// </summary>
         private File.Binary.SequenceReader<byte> reader;

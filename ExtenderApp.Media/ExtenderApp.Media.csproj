@@ -11,7 +11,7 @@
     <Compile Update="View\MediaMainView.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Update="View\PlaybackView.xaml.cs">
+    <Compile Update="View\VideoView.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
   </ItemGroup>

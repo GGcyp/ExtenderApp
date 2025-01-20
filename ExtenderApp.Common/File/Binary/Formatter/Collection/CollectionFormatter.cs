@@ -16,6 +16,8 @@ namespace ExtenderApp.Common.File.Binary.Formatter
         /// </summary>
         private readonly IBinaryFormatter<T> _formatter;
 
+        public override TCollection Default => Create(0);
+
         /// <summary>
         /// 初始化 CollectionFormatter 实例。
         /// </summary>

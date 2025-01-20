@@ -3,9 +3,29 @@
     <ResourceDictionary.MergedDictionaries>
         <ResourceDictionary Source="/ExtenderApp.Views;component/Styles/Button.xaml" />
         <ResourceDictionary Source="/ExtenderApp.Views;component/Styles/Expander.xaml" />
-        <ResourceDictionary Source="/ExtenderApp.Views;component/Styles/GlobalColor.xaml" />
         <ResourceDictionary Source="/ExtenderApp.Views;component/Styles/RadioButton.xaml" />
         <ResourceDictionary Source="/ExtenderApp.Views;component/Styles/ScrollView.xaml" />
         <ResourceDictionary Source="/ExtenderApp.Views;component/Styles/Svg_Icon.xaml" />
+
+        <!--<ResourceDictionary Source="/ExtenderApp.Views;component/Styles/GlobalColor.xaml" />-->
+        <!--<ResourceDictionary Source="/ExtenderApp.Views;component/Styles/Global/LightTheme.xaml" />-->
+        <ResourceDictionary Source="/ExtenderApp.Views;component/Styles/Global/DarkTheme.xaml" />
     </ResourceDictionary.MergedDictionaries>
+
+    <!-- 定义全局按钮样式 -->
+    <Style TargetType="Button">
+        <Setter Property="Background" Value="{StaticResource PrimaryBrush}" />
+        <Setter Property="Foreground" Value="{StaticResource ForegroundBrush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource SecondaryBrush}" />
+        <Setter Property="Padding" Value="10,5" />
+        <Setter Property="Margin" Value="5" />
+        <Setter Property="FontSize" Value="14" />
+    </Style>
+
+    <!-- 定义全局文本块样式 -->
+    <Style TargetType="TextBlock">
+        <Setter Property="Foreground" Value="{StaticResource ForegroundBrush}" />
+        <Setter Property="FontSize" Value="14" />
+    </Style>
+
 </ResourceDictionary>

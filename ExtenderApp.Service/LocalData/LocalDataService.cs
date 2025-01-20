@@ -1,4 +1,5 @@
-﻿using ExtenderApp.Abstract;
+﻿using System.Reflection;
+using ExtenderApp.Abstract;
 using ExtenderApp.Common;
 using ExtenderApp.Data;
 using ExtenderApp.Services;
@@ -13,8 +14,11 @@ namespace ExtenderApp.Service
         private Dictionary<string, LocalDataInfo> _localDataDict;
         private readonly Version _version;
         private readonly ILogingService _logingService;
+        private ExtenderCancellationToken autosaveTokn;
+        private Type[] methodTypes;
+        private object?[] methodParameters;
 
-        public LocalDataService(IPathService pathService, IBinaryParser parser, IBinaryFormatterStore store, ILogingService logingService)
+        public LocalDataService(IPathService pathService, IBinaryParser parser, IBinaryFormatterStore store, ILogingService logingService, IScheduledTaskService taskService)
         {
             _parser = parser;
             _pathService = pathService;
@@ -22,6 +26,10 @@ namespace ExtenderApp.Service
 
             _localDataDict = new();
             _logingService = logingService;
+            methodTypes = new[] { typeof(LocalDataInfo), null, typeof(object) };
+            methodParameters = new object?[] { null, null, null };
+
+            autosaveTokn = taskService.StartCycle(o => SaveAllData(), TimeSpan.FromMinutes(5));
         }
 
         public bool GetData<T>(string? dataName, out LocalData<T>? data)
@@ -37,12 +45,7 @@ namespace ExtenderApp.Service
                 LocalData<T>? localData = null;
                 if (!_localDataDict.TryGetValue(dataName, out var info))
                 {
-                    info = new LocalDataInfo(Path.Combine(_pathService.DataPath, string.Concat(dataName, ".ext")));
-
-                    if (!info.LocalFileInfo.Exists)
-                    {
-                        return false;
-                    }
+                    info = new LocalDataInfo(Path.Combine(_pathService.DataPath, string.Concat(dataName, ".ext")), CreateSerializeMethodInfo(typeof(LocalData<T>)));
 
                     _localDataDict.Add(dataName, info);
 
@@ -76,7 +79,7 @@ namespace ExtenderApp.Service
                 LocalData<T>? localData = null;
                 if (!_localDataDict.TryGetValue(dataName, out var info))
                 {
-                    info = new LocalDataInfo(Path.Combine(_pathService.DataPath, string.Concat(dataName, ".ext")));
+                    info = new LocalDataInfo(Path.Combine(_pathService.DataPath, string.Concat(dataName, ".ext")), CreateSerializeMethodInfo(typeof(LocalData<T>)));
                     info.LocalData = localData = data;
                     _localDataDict.Add(dataName, info);
                 }
@@ -123,6 +126,29 @@ namespace ExtenderApp.Service
             if (info.LocalData.Version < _version)
             {
                 //更新数据
+            }
+        }
+
+        /// <summary>
+        /// 创建一个序列化方法的信息对象。
+        /// </summary>
+        /// <param name="type">需要序列化的数据类型。</param>
+        /// <returns>返回创建的序列化方法信息对象。</returns>
+        private MethodInfo CreateSerializeMethodInfo(Type type)
+        {
+            return typeof(IFileParser).GetMethod("Serialize")!.MakeGenericMethod(type);
+        }
+
+        /// <summary>
+        /// 保存所有数据。
+        /// </summary>
+        private void SaveAllData()
+        {
+            foreach (var data in _localDataDict.Values)
+            {
+                methodParameters[0] = new FileOperate(data.LocalFileInfo, FileMode.Create, FileAccess.Write); ;
+                methodParameters[1] = data.LocalData;
+                var temp = data.SerializeMethodInfo?.Invoke(_parser, methodParameters);
             }
         }
     }

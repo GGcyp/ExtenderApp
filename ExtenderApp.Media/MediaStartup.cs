@@ -15,15 +15,14 @@ namespace ExtenderApp.Media
         {
             //View
             services.AddTransient<MediaMainView>();
-            services.AddTransient<PlaybackView>();
+            services.AddTransient<VideoView>();
+            services.AddTransient<VideoListView>();
 
 
             //ViewModel
-            services.AddSingleton<MediaMainViewModel>();
-
-
-            //Model
-            services.AddSingleton<VideoModel>();
+            services.AddTransient<MediaMainViewModel>();
+            services.AddTransient<VideoViewModle>();
+            services.AddTransient<VideoListViewModle>();
         }
 
         public override void ConfigureBinaryFormatterStore(IBinaryFormatterStore store)

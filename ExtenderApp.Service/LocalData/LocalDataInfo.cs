@@ -1,21 +1,47 @@
-﻿using ExtenderApp.Data;
+﻿using System.Reflection;
+using ExtenderApp.Data;
 
 namespace ExtenderApp.Service
 {
+    /// <summary>
+    /// 本地数据信息的类
+    /// </summary>
     internal class LocalDataInfo
     {
+        /// <summary>
+        /// 获取本地文件信息
+        /// </summary>
         public LocalFileInfo LocalFileInfo { get; }
 
-        public LocalData? LocalData { get; set; }
+        /// <summary>
+        /// 获取或设置本地数据
+        /// </summary>
+        public LocalData LocalData { get; set; }
 
-        public LocalDataInfo(string filePath) : this(new LocalFileInfo(filePath))
+        /// <summary>
+        /// 获取或设置序列化方法的信息。
+        /// </summary>
+        public MethodInfo SerializeMethodInfo { get; set; }
+
+        /// <summary>
+        /// 初始化 LocalDataInfo 类的新实例
+        /// </summary>
+        /// <param name="filePath">本地文件的路径</param>
+        /// <param name="localDataType">本地数据类型</param>
+        public LocalDataInfo(string filePath, MethodInfo serializeMethodInfo) : this(new LocalFileInfo(filePath), serializeMethodInfo)
         {
 
         }
 
-        public LocalDataInfo(LocalFileInfo localFileInfo)
+        /// <summary>
+        /// 初始化 LocalDataInfo 类的新实例
+        /// </summary>
+        /// <param name="localFileInfo">本地文件信息</param>
+        /// <param name="localDataType">本地数据类型</param>
+        public LocalDataInfo(LocalFileInfo localFileInfo, MethodInfo serializeMethodInfo)
         {
             LocalFileInfo = localFileInfo;
+            SerializeMethodInfo = serializeMethodInfo;
         }
     }
 }

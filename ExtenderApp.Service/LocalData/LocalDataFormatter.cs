@@ -10,6 +10,8 @@ namespace ExtenderApp.Service
         private IBinaryFormatter<T> _binaryFormatter;
         private IBinaryFormatter<Version> _versionFormatter;
 
+        public override LocalData<T> Default => new LocalData<T>(_binaryFormatter.Default, _versionFormatter.Default);
+
         public LocalDataFormatter(IBinaryFormatterResolver resolver, ExtenderBinaryWriterConvert binaryWriterConvert, ExtenderBinaryReaderConvert binaryReaderConvert, BinaryOptions options) : base(binaryWriterConvert, binaryReaderConvert, options)
         {
             _binaryFormatter = resolver.GetFormatter<T>();

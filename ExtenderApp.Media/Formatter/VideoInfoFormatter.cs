@@ -19,6 +19,7 @@ namespace ExtenderApp.Media.Model
         private readonly IBinaryFormatter<bool> _boolFormatter;
         private readonly IBinaryFormatter<List<string>> _stringListFormatter;
         private readonly IBinaryFormatter<double> _doubleFormatter;
+        private readonly IBinaryFormatter<Uri> _uriFormatter;
 
         public VideoInfoFormatter(IBinaryFormatterResolver resolver, ExtenderBinaryWriterConvert binaryWriterConvert, ExtenderBinaryReaderConvert binaryReaderConvert, BinaryOptions options) : base(binaryWriterConvert, binaryReaderConvert, options)
         {
@@ -30,22 +31,22 @@ namespace ExtenderApp.Media.Model
             _boolFormatter = resolver.GetFormatter<bool>();
             _stringListFormatter = resolver.GetFormatter<List<string>>();
             _doubleFormatter = resolver.GetFormatter<double>();
+            _uriFormatter = resolver.GetFormatter<Uri>();
         }
 
         public override VideoInfo Deserialize(ref ExtenderBinaryReader reader)
         {
-            VideoInfo info = new VideoInfo();
+            VideoInfo info = new VideoInfo(_uriFormatter.Deserialize(ref reader));
 
             info.VideoTitle = _stringFormatter.Deserialize(ref reader);
             info.Category = _stringFormatter.Deserialize(ref reader);
-            info.VideoPath = _stringFormatter.Deserialize(ref reader);
 
             info.VideoHeight = _intFormatter.Deserialize(ref reader);
             info.VideoWidth = _intFormatter.Deserialize(ref reader);
             info.PlayCount = _intFormatter.Deserialize(ref reader);
 
             info.TotalVideoDuration = _timeSpanFormatter.Deserialize(ref reader);
-            info.VideoWatchedDuration = _timeSpanFormatter.Deserialize(ref reader);
+            info.VideoWatchedPosition = _timeSpanFormatter.Deserialize(ref reader);
 
             info.IsFavorite = _boolFormatter.Deserialize(ref reader);
 
@@ -57,21 +58,24 @@ namespace ExtenderApp.Media.Model
 
             info.Tags = _stringListFormatter.Deserialize(ref reader);
 
+            if (info.VideoUri.IsFile)
+                info.VideoFileInfo = new LocalFileInfo(info.VideoUri.LocalPath);
+
             return info;
         }
 
         public override void Serialize(ref ExtenderBinaryWriter writer, VideoInfo value)
         {
+            _uriFormatter.Serialize(ref writer, value.VideoUri);
             _stringFormatter.Serialize(ref writer, value.VideoTitle);
             _stringFormatter.Serialize(ref writer, value.Category);
-            _stringFormatter.Serialize(ref writer, value.VideoPath);
 
             _intFormatter.Serialize(ref writer, value.VideoHeight);
             _intFormatter.Serialize(ref writer, value.VideoWidth);
             _intFormatter.Serialize(ref writer, value.PlayCount);
 
             _timeSpanFormatter.Serialize(ref writer, value.TotalVideoDuration);
-            _timeSpanFormatter.Serialize(ref writer, value.VideoWatchedDuration);
+            _timeSpanFormatter.Serialize(ref writer, value.VideoWatchedPosition);
 
             _boolFormatter.Serialize(ref writer, value.IsFavorite);
 

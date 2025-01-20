@@ -30,6 +30,7 @@ namespace ExtenderApp.MainViews
             active = true;
         }
 
+
         public void ShowView(IView view)
         {
             ArgumentNullException.ThrowIfNull(view, "The view null");

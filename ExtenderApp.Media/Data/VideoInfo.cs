@@ -1,4 +1,6 @@
-﻿
+﻿using System.IO;
+using ExtenderApp.Data;
+
 namespace ExtenderApp.Media
 {
     /// <summary>
@@ -9,12 +11,17 @@ namespace ExtenderApp.Media
         /// <summary>
         /// 视频文件的本地存储路径或网络路径（如果支持在线播放等情况）。
         /// </summary>
-        public string VideoPath { get; set; }
+        public Uri VideoUri { get; set; }
+
+        /// <summary>
+        /// 视频文件信息结构体
+        /// </summary>
+        public LocalFileInfo VideoFileInfo { get; set; }
 
         /// <summary>
         /// 视频已观看时长。
         /// </summary>
-        public TimeSpan VideoWatchedDuration { get; set; }
+        public TimeSpan VideoWatchedPosition { get; set; }
 
         /// <summary>
         /// 视频的标题，通常可以从视频文件元数据或者相关播放平台获取（如果有对应接口）。
@@ -77,20 +84,25 @@ namespace ExtenderApp.Media
         /// <value>
         /// 如果配置被启用，则为true；否则为false。
         /// </value>
-        public bool IsConfiguration => string.IsNullOrEmpty(VideoPath) && TotalVideoDuration == TimeSpan.Zero;
+        public bool IsConfiguration => !(VideoUri is null) && TotalVideoDuration != TimeSpan.Zero;
 
-        public VideoInfo() : this(string.Empty)
+        public VideoInfo(Uri videoUri)
         {
-        }
+            VideoUri = videoUri;
+            if (videoUri.IsFile)
+            {
+                VideoFileInfo = new LocalFileInfo(videoUri.LocalPath);
+                VideoTitle = Path.GetFileName(videoUri.LocalPath);
+            }
+            else
+            {
 
-        public VideoInfo(string videoPath)
-        {
-            VideoPath = videoPath;
+            }
         }
 
         public static bool operator ==(VideoInfo left, VideoInfo right)
         {
-            if(left is null)
+            if (left is null)
             {
                 return right is null;
             }
@@ -105,12 +117,12 @@ namespace ExtenderApp.Media
 
         public override bool Equals(object? obj)
         {
-            return obj is VideoInfo info && VideoPath == info.VideoPath;
+            return obj is VideoInfo info && VideoUri == info.VideoUri;
         }
 
         public override int GetHashCode()
         {
-            return VideoPath.GetHashCode();
+            return VideoUri.GetHashCode();
         }
     }
 }

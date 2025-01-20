@@ -386,6 +386,17 @@ namespace ExtenderApp.ViewModels
         }
 
         #endregion
+
+        #region Dispatcher
+
+        protected void DispatcherInvoke(Action callback)
+        {
+            if (callback is null) return;
+
+            _serviceStore.DispatcherService.Invoke(callback);
+        }
+
+        #endregion
     }
 
     public abstract class ExtenderAppViewModel<TView> : ExtenderAppViewModel, IViewModel<TView> where TView : IView
@@ -449,18 +460,13 @@ namespace ExtenderApp.ViewModels
         /// <summary>
         /// 获取模型实例
         /// </summary>
-        protected TModle? Model
+        protected TModle Model
         {
             get
             {
                 if (_model is null)
                 {
                     LoadModel();
-                    if (_model is null)
-                    {
-                        _model = new TModle();
-                        SaveModel();
-                    }
                 }
                 return _model;
             }

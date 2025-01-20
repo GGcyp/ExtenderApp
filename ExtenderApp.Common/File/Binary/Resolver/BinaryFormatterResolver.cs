@@ -15,7 +15,7 @@ namespace ExtenderApp.Common
         private readonly Dictionary<Type, IBinaryFormatter> _formmaterDict;
         private readonly IBinaryFormatterStore _store;
         private readonly ITentativeProvider _serviceProvider;
-        private readonly BinaryFormatCreator _formatCreator;
+        private readonly BinaryFormatterCreator _formatCreator;
 
         /// <summary>
         /// 使用指定的BinaryFormatter解析器仓库创建BinaryFormatter解析器实例

@@ -19,6 +19,8 @@ namespace ExtenderApp.Common.File.Binary.Formatter
             _resolver = resolver;
         }
 
+        public virtual T Default => default;
+
         public abstract T Deserialize(ref ExtenderBinaryReader reader);
 
         public abstract void Serialize(ref ExtenderBinaryWriter writer, T value);
