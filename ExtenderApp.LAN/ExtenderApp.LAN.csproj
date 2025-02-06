@@ -8,17 +8,22 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Update="View\MediaMainView.xaml.cs">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Update="View\VideoView.xaml.cs">
-      <SubType>Code</SubType>
-    </Compile>
+    <PackageReference Include="PropertyChanged.Fody" Version="4.1.0" />
   </ItemGroup>
 
-	<ItemGroup>
-		<PackageReference Include="PropertyChanged.Fody" Version="4.1.0" />
-	</ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\AppHost.Builder\AppHost.Builder.csproj" />
+    <ProjectReference Include="..\ExtenderApp.Common\ExtenderApp.Common.csproj" />
+    <ProjectReference Include="..\ExtenderApp.Service\ExtenderApp.Service.csproj" />
+    <ProjectReference Include="..\ExtenderApp.ViewModels\ExtenderApp.ViewModels.csproj" />
+    <ProjectReference Include="..\ExtenderApp.Views\ExtenderApp.Views.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="init.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
 
 	<Target Name="CopyFilesAfterBuild" AfterTargets="PostBuildEvent">
 		<!-- 收集要复制的动态库文件（.dll） -->
@@ -36,25 +41,6 @@
 		<MakeDir Directories="%(TargetFolder.Identity)\$(ProjectName)" Condition="!Exists('%(TargetFolder.Identity)\$(ProjectName)')" />
 		<Copy SourceFiles="@(DllFiles)" DestinationFolder="%(TargetFolder.Identity)\$(ProjectName)" SkipUnchangedFiles="true" />
 		<Copy SourceFiles="@(JsonFiles)" DestinationFolder="%(TargetFolder.Identity)\$(ProjectName)" SkipUnchangedFiles="true" />
-
-		<!--NuGet包的动态库复制-->
-		<!--
-		<MakeDir Directories="%(TargetFolder.Identity)\$(ProjectName)\pack" Condition="Exists('%(TargetFolder.Identity)\$(ProjectName)\pack')" />
-		<Copy SourceFiles="@(NuGetDllFiles)" DestinationFolder="%(TargetFolder.Identity)\$(ProjectName)\pack" SkipUnchangedFiles="true" />-->
 	</Target>
-
-	<ItemGroup>
-	  <ProjectReference Include="..\AppHost.Builder\AppHost.Builder.csproj" />
-	  <ProjectReference Include="..\AppHost.Common\AppHost.Common.csproj" />
-	  <ProjectReference Include="..\ExtenderApp.Service\ExtenderApp.Service.csproj" />
-	  <ProjectReference Include="..\ExtenderApp.ViewModels\ExtenderApp.ViewModels.csproj" />
-	  <ProjectReference Include="..\ExtenderApp.Views\ExtenderApp.Views.csproj" />
-	</ItemGroup>
-	
-  <ItemGroup>
-    <None Update="init.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>
 
 </Project>

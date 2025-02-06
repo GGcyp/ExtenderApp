@@ -1,10 +1,12 @@
-﻿namespace ExtenderApp.Common.ObjectPools
+﻿using ExtenderApp.Abstract;
+
+namespace ExtenderApp.Common.ObjectPools
 {
     /// <summary>
     /// 默认可以被销毁对象的对象池
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    internal sealed class DisposableObjectPool<T> : DefaultObjectPool<T>, IDisposable where T : class
+    public sealed class DisposableObjectPool<T> : DefaultObjectPool<T>, IDisposable where T : class
     {
         private volatile bool _isDisposed;
 

@@ -79,7 +79,6 @@ namespace ExtenderApp.Common.File.Binary.Formatter
 
                 for (int i = 0; i < value.Length; i++)
                 {
-                    writer.CancellationToken.ThrowIfCancellationRequested();
                     _binaryFormatter.Serialize(ref writer, value[i]);
                 }
             }

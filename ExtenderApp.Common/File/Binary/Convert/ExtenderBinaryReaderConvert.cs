@@ -28,7 +28,6 @@ namespace ExtenderApp.Common.File.Binary
         public void Skip(ref ExtenderBinaryReader reader)
             => ThrowInsufficientBufferUnless(TrySkip(ref reader));
 
-
         /// <summary>
         /// 尝试跳过 ref ExtenderBinaryReader 中的数据。
         /// </summary>

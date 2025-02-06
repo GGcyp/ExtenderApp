@@ -103,9 +103,9 @@ namespace AppHost.Extensions.DependencyInjection
             }
             else
             {
-                //如果是接口或是抽象类者返回空值,因为他们没有注册
-                if (serviceGenericType.IsAbstract)
-                    ThrowInvalidOperation(serviceGenericType.Name);
+                ////如果是接口或是抽象类者返回空值,因为他们没有注册
+                //if (serviceGenericType.IsAbstract)
+                //    ThrowInvalidOperation(serviceGenericType.Name);
 
                 return null;
             }

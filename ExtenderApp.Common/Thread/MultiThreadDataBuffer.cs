@@ -4,7 +4,7 @@ namespace ExtenderApp.Common
 {
     public class MultiThreadDataBuffer<T>
     {
-        private static ObjectPool<MultiThreadDataBuffer<T>> pool = ObjectPool.Create<MultiThreadDataBuffer<T>>();
+        //private static ObjectPool<MultiThreadDataBuffer<T>> pool = ObjectPool.Create<MultiThreadDataBuffer<T>>();
 
         private T item1;
         private Action callback;
@@ -15,7 +15,8 @@ namespace ExtenderApp.Common
             if (runAction is null)
                 throw new ArgumentNullException(nameof(runAction));
 
-            var buffer = pool.Get();
+            //var buffer = pool.Get();
+            var buffer = new MultiThreadDataBuffer<T>();
 
             buffer.runAtcion = runAction;
             buffer.item1 = obj;

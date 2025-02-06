@@ -3,9 +3,10 @@
 namespace ExtenderApp.Data.File
 {
     /// <summary>
-    /// 序列池类，用于管理Sequence<byte>对象的重用。
+    /// 序列池类，用于管理序列对象的创建和回收
     /// </summary>
-    public class SequencePool
+    /// <typeparam name="T">序列中元素的类型</typeparam>
+    public class SequencePool<T>
     {
         /// <summary>
         /// 序列的最小跨度长度。
@@ -20,7 +21,7 @@ namespace ExtenderApp.Data.File
         /// <summary>
         /// 序列池实例。
         /// </summary>
-        private readonly Stack<Sequence<byte>> _pool;
+        private readonly Stack<Sequence<T>> _pool;
 
         /// <summary>
         /// 数组池或内存池实例。
@@ -31,16 +32,18 @@ namespace ExtenderApp.Data.File
         /// 使用默认的最大大小和数组池初始化SequencePool实例。
         /// </summary>
         public SequencePool()
-            : this(Environment.ProcessorCount * 2, ArrayPool<byte>.Create(80 * 1024, 100))
+            : this(Environment.ProcessorCount * 2, ArrayPool<T>.Create(80 * 1024, 100))
         {
         }
 
         /// <summary>
-        /// 使用指定的最大大小初始化SequencePool实例，并使用默认的数组池。
+        /// 初始化 SequencePool 类的新实例。
         /// </summary>
         /// <param name="maxSize">序列池的最大大小。</param>
-        public SequencePool(int maxSize)
-            : this(maxSize, ArrayPool<byte>.Create(80 * 1024, 100))
+        /// <param name="maxArrayLength">数组池中的单个数组的最大长度，默认为 80 * 1024 字节。</param>
+        /// <param name="maxArraysPerBucket">每个桶中的最大数组数量，默认为 100。</param>
+        public SequencePool(int maxSize, int maxArrayLength = 80 * 1024, int maxArraysPerBucket = 100)
+            : this(maxSize, ArrayPool<T>.Create(maxArrayLength, maxArraysPerBucket))
         {
         }
 
@@ -49,7 +52,7 @@ namespace ExtenderApp.Data.File
         /// </summary>
         /// <param name="maxSize">序列池的最大大小。</param>
         /// <param name="arrayPool">数组池实例。</param>
-        public SequencePool(int maxSize, ArrayPool<byte> arrayPool)
+        public SequencePool(int maxSize, ArrayPool<T> arrayPool)
         {
             _maxSize = maxSize;
             _arrayPoolOrMemoryPool = arrayPool;
@@ -61,7 +64,7 @@ namespace ExtenderApp.Data.File
         /// </summary>
         /// <param name="maxSize">序列池的最大大小。</param>
         /// <param name="memoryPool">内存池实例。</param>
-        public SequencePool(int maxSize, MemoryPool<byte> memoryPool)
+        public SequencePool(int maxSize, MemoryPool<T> memoryPool)
         {
             _maxSize = maxSize;
             _arrayPoolOrMemoryPool = memoryPool;
@@ -79,9 +82,9 @@ namespace ExtenderApp.Data.File
                 return new Rental(this, _pool.Pop());
             }
 
-            var sequence = _arrayPoolOrMemoryPool is ArrayPool<byte> arrayPool
-                ? new Sequence<byte>(arrayPool)
-                : new Sequence<byte>((MemoryPool<byte>)_arrayPoolOrMemoryPool);
+            var sequence = _arrayPoolOrMemoryPool is ArrayPool<T> arrayPool
+                ? new Sequence<T>(arrayPool)
+                : new Sequence<T>((MemoryPool<T>)_arrayPoolOrMemoryPool);
 
             sequence.MinimumSpanLength = MinimumSpanLength;
 
@@ -92,10 +95,15 @@ namespace ExtenderApp.Data.File
         /// 释放指定的Sequence<byte>对象。
         /// </summary>
         /// <param name="value">要释放的Sequence<byte>对象。</param>
-        private void Return(Sequence<byte> value)
+        private void Return(Sequence<T> value)
         {
+            if (_pool.Count >= _maxSize)
+            {
+                value.Dispose();
+                return;
+            }
+
             value.Reset();
-            value.MinimumSpanLength = MinimumSpanLength;
             _pool.Push(value);
         }
 
@@ -103,24 +111,24 @@ namespace ExtenderApp.Data.File
         /// <summary>
         /// 表示一个用于管理租用的序列的结构体。
         /// </summary>
-        public struct Rental : IDisposable
+        internal struct Rental : IDisposable
         {
             /// <summary>
             /// 序列池所有者。
             /// </summary>
-            private readonly SequencePool _owner;
+            private readonly SequencePool<T> _owner;
 
             /// <summary>
             /// 获取租用的序列。
             /// </summary>
-            public Sequence<byte> Value { get; }
+            public Sequence<T> Value { get; }
 
             /// <summary>
             /// 初始化 <see cref="Rental"/> 结构体的新实例。
             /// </summary>
             /// <param name="owner">序列池所有者。</param>
             /// <param name="value">要租用的序列。</param>
-            internal Rental(SequencePool owner, Sequence<byte> value)
+            internal Rental(SequencePool<T> owner, Sequence<T> value)
             {
                 _owner = owner;
                 Value = value;

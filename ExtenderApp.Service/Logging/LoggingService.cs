@@ -94,25 +94,38 @@ namespace ExtenderApp.Services
         private void WriteAndSave()
         {
             //因为我认为文件不会很大，所以一天的就放一个文件里。
+            StreamWriter? stream = null;
+            string filepath = string.Empty;
+            DateTime filetime = DateTime.MinValue;
+
             while (_logQueue.Count > 0)
             {
                 _logText.Clear();
                 LogInfo info;
                 if (!_logQueue.TryDequeue(out info)) break;
 
-                var fileTime = info.Time.ToString("yyyyMMdd");
-                var fileName = string.Concat(fileTime, EXTENSION);
-                var filePath = Path.Combine(_pathProvider.LoggingPath, fileName);
-
-                using (StreamWriter stream = File.Exists(filePath) ? File.AppendText(filePath) : File.CreateText(filePath))
+                if (info.Time.Year != filetime.Year && info.Time.Month != filetime.Month && info.Time.Day != filetime.Day)
                 {
-                    string logInfoMessage = LogInfoToStringBuilder(info);
-                    stream.WriteLine(logInfoMessage);
-#if DEBUG
-                    Debug.Print(logInfoMessage);
-#endif
+                    var tempFiletime = info.Time.ToString("yyyyMMdd");
+                    var fileName = string.Concat(tempFiletime, EXTENSION);
+                    filepath = Path.Combine(_pathProvider.LoggingPath, fileName);
+
+                    stream?.Close();
+                    stream?.Dispose();
+                    stream = null;
+
+                    stream = File.Exists(filepath) ? File.AppendText(filepath) : File.CreateText(filepath);
                 }
+
+                string logInfoMessage = LogInfoToStringBuilder(info);
+                stream!.WriteLine(logInfoMessage);
+#if DEBUG
+                Debug.Print(logInfoMessage);
+#endif
             }
+
+            stream?.Close();
+            stream?.Dispose();
         }
 
         /// <summary>

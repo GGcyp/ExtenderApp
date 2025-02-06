@@ -49,7 +49,6 @@ namespace ExtenderApp.Common.File.Binary.Formatter
 
             foreach (T item in value)
             {
-                writer.CancellationToken.ThrowIfCancellationRequested();
                 _formatter.Serialize(ref writer, item);
             }
         }

@@ -1,10 +1,12 @@
-﻿namespace ExtenderApp.Common.ObjectPools
+﻿using ExtenderApp.Abstract;
+
+namespace ExtenderApp.Common.ObjectPools
 {
     /// <summary>
     /// 通用层,基础对象池策略
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public class DefaultPooledObjectPolicy<T> : PooledObjectPolicy<T> where T : notnull,new()
+    public class DefaultPooledObjectPolicy<T> : PooledObjectPolicy<T> where T : notnull, new()
     {
         public override T Create()
         {

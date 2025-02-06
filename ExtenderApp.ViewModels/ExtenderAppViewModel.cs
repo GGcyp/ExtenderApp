@@ -1,6 +1,4 @@
 ﻿using System.ComponentModel;
-using System.Net;
-using System.Net.Sockets;
 using System.Runtime.CompilerServices;
 using ExtenderApp.Abstract;
 using ExtenderApp.Services;
@@ -108,129 +106,6 @@ namespace ExtenderApp.ViewModels
                 Error("视图导航出现了问题！", ex);
             }
             return view;
-        }
-
-        #endregion
-
-        #region NetWork
-
-        /// <summary>
-        /// 异步获取字符串内容
-        /// </summary>
-        /// <param name="uri">目标资源的统一资源标识符（URI）</param>
-        /// <returns>返回字符串内容，如果获取失败则返回null</returns>
-        protected async Task<string> GetStringAsync(string uri)
-        {
-            string result = null;
-            try
-            {
-                result = await _serviceStore.NetWorkService.GetStringAsync(uri);
-            }
-            catch (Exception ex)
-            {
-                Error($"{ex.Message}", ex);
-            }
-            return result;
-        }
-
-        /// <summary>
-        /// 异步获取字符串内容
-        /// </summary>
-        /// <param name="uri">目标资源的统一资源标识符（URI）</param>
-        /// <param name="callback">回调方法，用于处理获取到的字符串</param>
-        protected void GetStringAsync(string uri, Action<string> callback)
-        {
-            try
-            {
-                _serviceStore.NetWorkService.GetStringAsync(uri, callback);
-            }
-            catch (Exception ex)
-            {
-                Error($"{ex.Message}", ex);
-            }
-        }
-
-        /// <summary>
-        /// 异步获取流内容
-        /// </summary>
-        /// <param name="uri">目标资源的统一资源标识符（URI）</param>
-        /// <returns>返回流对象，如果获取失败则返回null</returns>
-        protected async Task<Stream> GetStreamAsync(Uri uri)
-        {
-            Stream result = null;
-            try
-            {
-                result = await _serviceStore.NetWorkService.GetStreamAsync(uri);
-            }
-            catch (Exception ex)
-            {
-                Error($"{ex.Message}", ex);
-            }
-            return result;
-        }
-
-        /// <summary>
-        /// 异步获取流内容
-        /// </summary>
-        /// <param name="uri">目标资源的统一资源标识符（URI）</param>
-        /// <param name="callback">回调方法，用于处理获取到的流</param>
-        protected void GetStreamAsync(Uri uri, Action<Stream> callback)
-        {
-            try
-            {
-                _serviceStore.NetWorkService.GetStreamAsync(uri, callback);
-            }
-            catch (Exception ex)
-            {
-                Error($"{ex.Message}", ex);
-            }
-        }
-
-        /// <summary>
-        /// 通过TCP发送数据到指定IP和端口的异步方法。
-        /// </summary>
-        /// <param name="ip">目标IP地址。</param>
-        /// <param name="port">目标端口号。</param>
-        /// <returns>返回一个包含网络流的Task对象。</returns>
-        /// <exception cref="ArgumentNullException">当传入的IP地址为null或空字符串时抛出此异常。</exception>
-        protected async Task<NetworkStream> TcpSendAsync(string ip, int port)
-        {
-            if (string.IsNullOrEmpty(ip))
-            {
-                throw new ArgumentNullException(nameof(ip));
-            }
-
-            NetworkStream result = null;
-            try
-            {
-                IPEndPoint iPEndPoint = IPEndPoint.Parse(ip);
-                iPEndPoint.Port = port;
-                result = await _serviceStore.NetWorkService.TcpSendAsync(iPEndPoint);
-            }
-            catch (Exception ex)
-            {
-                Error($"{ex.Message}", ex);
-            }
-            return result;
-        }
-
-        /// <summary>
-        /// 异步发送TCP请求
-        /// </summary>
-        /// <param name="iP">目标IP地址和端口</param>
-        /// <returns>返回NetworkStream对象，如果发送失败则返回null</returns>
-        protected async Task<NetworkStream> TcpSendAsync(IPEndPoint ip)
-        {
-            NetworkStream result = null;
-            try
-            {
-                result = await _serviceStore.NetWorkService.TcpSendAsync(ip);
-            }
-            catch (Exception ex)
-            {
-                Error($"{ex.Message}", ex);
-            }
-            return result;
         }
 
         #endregion
@@ -455,7 +330,7 @@ namespace ExtenderApp.ViewModels
         /// <summary>
         /// 模型实例
         /// </summary>
-        private TModle _model;
+        private TModle model;
 
         /// <summary>
         /// 获取模型实例
@@ -464,11 +339,12 @@ namespace ExtenderApp.ViewModels
         {
             get
             {
-                if (_model is null)
+                if (model is null)
                 {
-                    LoadModel();
+                    if (!LoadModel() || model is null)
+                        model = new TModle();
                 }
-                return _model;
+                return model;
             }
         }
 
@@ -486,7 +362,7 @@ namespace ExtenderApp.ViewModels
         /// <returns>是否成功获取数据</returns>
         protected bool LoadModel()
         {
-            return LoadLocalData(out _model);
+            return LoadLocalData(out model);
         }
 
         /// <summary>
@@ -495,7 +371,7 @@ namespace ExtenderApp.ViewModels
         /// <returns>是否成功保存数据</returns>
         protected bool SaveModel()
         {
-            return SaveLocalData(_model);
+            return SaveLocalData(model);
         }
 
         public override void Close()

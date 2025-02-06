@@ -51,6 +51,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExtenderApp.MainViews", "Ex
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExtenderApp.Media", "ExtenderApp.Media\ExtenderApp.Media.csproj", "{0BA2F8B7-9BA5-48A2-A786-13390A51F452}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExtenderApp.LAN", "ExtenderApp.LAN\ExtenderApp.LAN.csproj", "{BBEA66A0-7649-4A65-9134-65CC1DF41717}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -129,6 +131,10 @@ Global
 		{0BA2F8B7-9BA5-48A2-A786-13390A51F452}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0BA2F8B7-9BA5-48A2-A786-13390A51F452}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0BA2F8B7-9BA5-48A2-A786-13390A51F452}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BBEA66A0-7649-4A65-9134-65CC1DF41717}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BBEA66A0-7649-4A65-9134-65CC1DF41717}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BBEA66A0-7649-4A65-9134-65CC1DF41717}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BBEA66A0-7649-4A65-9134-65CC1DF41717}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -152,6 +158,7 @@ Global
 		{3BCFA064-AC20-4567-9CF2-AA50BFD6367A} = {464FDC8D-4380-4125-B384-0A55FE9ADD47}
 		{BAB4469B-2C46-40F9-A383-FBE8B67A8233} = {29595CEA-880F-46CA-B9CF-E770199CE3AA}
 		{0BA2F8B7-9BA5-48A2-A786-13390A51F452} = {464FDC8D-4380-4125-B384-0A55FE9ADD47}
+		{BBEA66A0-7649-4A65-9134-65CC1DF41717} = {464FDC8D-4380-4125-B384-0A55FE9ADD47}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {07F96706-A0E9-4590-819E-3841EC1BB7E5}

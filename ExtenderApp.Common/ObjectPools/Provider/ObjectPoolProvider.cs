@@ -1,4 +1,4 @@
-﻿
+﻿using ExtenderApp.Abstract;
 
 namespace ExtenderApp.Common.ObjectPools
 {

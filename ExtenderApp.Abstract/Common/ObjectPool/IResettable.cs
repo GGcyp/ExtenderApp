@@ -1,4 +1,4 @@
-﻿namespace ExtenderApp.Common.ObjectPools
+﻿namespace ExtenderApp.Abstract
 {
     /// <summary>
     /// 通用层,定义一个可以重置类的接口

@@ -27,6 +27,11 @@ namespace ExtenderApp.Data.File
         private static readonly ReadOnlySequence<T> Empty = new ReadOnlySequence<T>(SequenceSegment.Empty, 0, SequenceSegment.Empty, 0);
 
         /// <summary>
+        /// 序列段对象池。
+        /// </summary>
+        private static readonly Stack<SequenceSegment> SegmentPool = new Stack<SequenceSegment>();
+
+        /// <summary>
         /// 内存池。
         /// </summary>
         private readonly MemoryPool<T>? _memoryPool;
@@ -35,11 +40,6 @@ namespace ExtenderApp.Data.File
         /// 数组池。
         /// </summary>
         private readonly ArrayPool<T>? _arrayPool;
-
-        /// <summary>
-        /// 序列段对象池。
-        /// </summary>
-        private readonly Stack<SequenceSegment> _segmentPool;
 
         /// <summary>
         /// 序列中的第一个段。
@@ -84,11 +84,12 @@ namespace ExtenderApp.Data.File
         /// <param name="memoryPool">内存池。</param>
         public Sequence(MemoryPool<T> memoryPool)
         {
-            if (memoryPool == null) throw new ArgumentNullException(nameof(memoryPool));
+            if (memoryPool == null)
+                throw new ArgumentNullException(nameof(memoryPool));
+
             _memoryPool = memoryPool;
             MinimumSpanLength = 0;
             AutoIncreaseMinimumSpanLength = true;
-            _segmentPool = new();
         }
 
         /// <summary>
@@ -97,22 +98,24 @@ namespace ExtenderApp.Data.File
         /// <param name="arrayPool">数组池。</param>
         public Sequence(ArrayPool<T> arrayPool)
         {
-            if (arrayPool == null) throw new ArgumentNullException(nameof(arrayPool));
+            if (arrayPool == null)
+                throw new ArgumentNullException(nameof(arrayPool));
+
             _arrayPool = arrayPool;
             MinimumSpanLength = 0;
             AutoIncreaseMinimumSpanLength = true;
-            _segmentPool = new();
         }
 
         /// <summary>
-        /// 推进序列的当前位置。
+        /// 推进序列的位置。
         /// </summary>
-        /// <param name="count">要推进的元素数量。</param>
+        /// <param name="count">推进的数量。</param>
         public void Advance(int count)
         {
-            var temp = last;
-            if (temp is null) throw new InvalidOperationException("在获取内存之前不能进行推进操作");
-            temp!.Advance(count);
+            if (last is null)
+                throw new InvalidOperationException("在获取内存之前不能进行推进操作");
+
+            last!.Advance(count);
             ConsiderMinimumSizeIncrease();
         }
 
@@ -158,7 +161,7 @@ namespace ExtenderApp.Data.File
         {
             if (memory.Length > 0)
             {
-                var segment = _segmentPool.Count > 0 ? _segmentPool.Pop() : new SequenceSegment();
+                var segment = SegmentPool.Count > 0 ? SegmentPool.Pop() : new SequenceSegment();
                 segment.AssignForeign(memory);
                 Append(segment);
             }
@@ -171,39 +174,66 @@ namespace ExtenderApp.Data.File
         /// <returns>具有指定大小可用内存的段。</returns>
         private SequenceSegment GetSegment(int sizeHint)
         {
-            if (sizeHint < 0) throw new ArgumentOutOfRangeException(nameof(sizeHint));
-            int? minBufferSize = null;
+            if (sizeHint < 0)
+                throw new ArgumentOutOfRangeException(nameof(sizeHint));
+
             if (sizeHint == 0)
+                return last!;
+
+            int minBufferSize = -1;
+            if (last == null || last.WritableBytes < sizeHint)
             {
-                if (last == null || last.WritableBytes == 0)
-                {
-                    minBufferSize = -1;
-                }
+                minBufferSize = System.Math.Max(MinimumSpanLength, sizeHint);
+            }
+
+            minBufferSize = minBufferSize == -1 ? DefaultLengthFromArrayPool : minBufferSize;
+            var segment = SegmentPool.Count > 0 ? SegmentPool.Pop() : new SequenceSegment();
+            if (_arrayPool != null)
+            {
+                segment.Assign(_arrayPool.Rent(minBufferSize));
             }
             else
             {
-                if (last == null || last.WritableBytes < sizeHint)
-                {
-                    minBufferSize = System.Math.Max(MinimumSpanLength, sizeHint);
-                }
+                segment.Assign(_memoryPool!.Rent(minBufferSize));
             }
 
-            if (minBufferSize.HasValue)
-            {
-                var segment = _segmentPool.Count > 0 ? _segmentPool.Pop() : new SequenceSegment();
-                if (_arrayPool != null)
-                {
-                    segment.Assign(_arrayPool.Rent(minBufferSize.Value == -1 ? DefaultLengthFromArrayPool : minBufferSize.Value));
-                }
-                else
-                {
-                    segment.Assign(_memoryPool!.Rent(minBufferSize.Value));
-                }
+            Append(segment);
 
-                Append(segment);
-            }
+            return segment;
 
-            return last!;
+            //原先设计
+            //int? minBufferSize = null;
+            //if (sizeHint == 0)
+            //{
+            //    if (last == null || last.WritableBytes == 0)
+            //    {
+            //        minBufferSize = -1;
+            //    }
+            //}
+            //else
+            //{
+            //    if (last == null || last.WritableBytes < sizeHint)
+            //    {
+            //        minBufferSize = System.Math.Max(MinimumSpanLength, sizeHint);
+            //    }
+            //}
+
+            //if (minBufferSize.HasValue)
+            //{
+            //    var segment = SegmentPool.Count > 0 ? SegmentPool.Pop() : new SequenceSegment();
+            //    if (_arrayPool != null)
+            //    {
+            //        segment.Assign(_arrayPool.Rent(minBufferSize.Value == -1 ? DefaultLengthFromArrayPool : minBufferSize.Value));
+            //    }
+            //    else
+            //    {
+            //        segment.Assign(_memoryPool!.Rent(minBufferSize.Value));
+            //    }
+
+            //    Append(segment);
+            //}
+
+            //return last!;
         }
 
         /// <summary>
@@ -222,26 +252,26 @@ namespace ExtenderApp.Data.File
             if (last.Length > 0)
             {
                 last.SetNext(segment);
+                last = segment;
+                return;
+            }
+
+
+            var current = first;
+            if (first != last)
+            {
+                while (current!.Next != last)
+                {
+                    current = current.Next;
+                }
             }
             else
             {
-                var current = first;
-                if (first != last)
-                {
-                    while (current!.Next != last)
-                    {
-                        current = current.Next;
-                    }
-                }
-                else
-                {
-                    first = segment;
-                }
-
-                current!.SetNext(segment);
-                RecycleAndGetNext(last);
+                first = segment;
             }
 
+            current!.SetNext(segment);
+            RecycleAndGetNext(last);
             last = segment;
         }
 
@@ -255,7 +285,7 @@ namespace ExtenderApp.Data.File
             var recycledSegment = segment;
             var nextSegment = segment.Next;
             recycledSegment.ResetMemory(_arrayPool);
-            _segmentPool.Push(nextSegment!);
+            SegmentPool.Push(nextSegment!);
             return nextSegment;
         }
 
@@ -378,7 +408,7 @@ namespace ExtenderApp.Data.File
             /// <param name="array">数组。</param>
             internal void Assign(T[] array)
             {
-                array = array;
+                this.array = array;
                 Memory = array;
             }
 
@@ -437,7 +467,9 @@ namespace ExtenderApp.Data.File
             /// <param name="count">要移动的数量。</param>
             internal void Advance(int count)
             {
-                if (count >= 0 && End + count <= Memory.Length) throw new ArgumentOutOfRangeException(nameof(count));
+                if (count < 0 || End + count >= Memory.Length)
+                    throw new ArgumentOutOfRangeException(nameof(count), "count 必须是非负数，且移动后的结束索引不能超过内存长度。");
+
                 End += count;
             }
 

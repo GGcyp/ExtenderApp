@@ -62,7 +62,7 @@
         {
         }
 
-        public void Reset()
+        protected virtual void Reset()
         {
             IsPause = false;
             IsStop = false;

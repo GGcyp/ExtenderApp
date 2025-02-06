@@ -2,7 +2,6 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
-
 namespace ExtenderApp.Data.File.Binary
 {
     /// <summary>
@@ -451,7 +450,7 @@ namespace ExtenderApp.Data.File.Binary
         /// </summary>
         /// <param name="count">要前进的元素数量。</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal void AdvanceCurrentSpan(long count)
+        public void AdvanceCurrentSpan(long count)
         {
             Consumed += count;
             CurrentSpanIndex += (int)count;
@@ -466,7 +465,7 @@ namespace ExtenderApp.Data.File.Binary
         /// </summary>
         /// <param name="count">要前进的元素数量。</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal void AdvanceWithinSpan(long count)
+        public void AdvanceWithinSpan(long count)
         {
             // 将已消耗（读取）的元素总数量（Consumed）加上要前进的元素数量，以此来更新已读取元素的计数，体现读取位置的向前移动。
             Consumed += count;

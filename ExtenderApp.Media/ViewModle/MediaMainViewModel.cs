@@ -1,4 +1,7 @@
-﻿using ExtenderApp.Abstract;
+﻿using System.Net.Http;
+using ExtenderApp.Abstract;
+using ExtenderApp.Common;
+using ExtenderApp.Common.NetWorks;
 using ExtenderApp.Data;
 using ExtenderApp.ViewModels;
 using ExtenderApp.Views;

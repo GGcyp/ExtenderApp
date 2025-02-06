@@ -1,11 +1,9 @@
 ﻿using AppHost.Builder;
 using AppHost.Extensions.DependencyInjection;
-using AppHost.Extensions.Hosting;
 using ExtenderApp.Abstract;
 using ExtenderApp.Common.File;
 using ExtenderApp.Data;
 using ExtenderApp.Service;
-using ExtenderApp.Services.NetWork;
 
 namespace ExtenderApp.Services
 {
@@ -24,7 +22,6 @@ namespace ExtenderApp.Services
             services.AddSingleton<INavigationService, NavigationService>();
             services.AddSingleton<ITemporarilyService, TemporarilyService>();
             services.AddSingleton<ILogingService, LoggingService>();
-            services.AddSingleton<INetWorkService, NetWorkService>();
             services.AddSingleton<IPathService, PathService>();
             services.AddSingleton<IScheduledTaskService, ScheduledTaskService>();
 

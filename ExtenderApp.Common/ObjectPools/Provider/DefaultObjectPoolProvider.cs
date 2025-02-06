@@ -1,4 +1,6 @@
-﻿namespace ExtenderApp.Common.ObjectPools
+﻿using ExtenderApp.Abstract;
+
+namespace ExtenderApp.Common.ObjectPools
 {
     /// <summary>
     /// 通用层,默认对象池提供器。

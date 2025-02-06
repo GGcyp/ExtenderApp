@@ -1,4 +1,5 @@
 ﻿using System.Collections.Concurrent;
+using ExtenderApp.Abstract;
 
 namespace ExtenderApp.Common.ObjectPools
 {

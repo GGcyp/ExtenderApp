@@ -1,0 +1,6 @@
+{
+  "ModTitle": "LAN",
+  "ModDescription": "局域网内传输数据的小实验",
+  "ModVersion": "0.0.1",
+  "ModStartupDll": "ExtenderApp.LAN.dll"
+}

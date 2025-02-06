@@ -9,13 +9,13 @@ namespace ExtenderApp.ViewModels
 
         public DtoPool()
         {
-            pool = ObjectPool.Create<TDto>();
+            //pool = ObjectPool.Create<TDto>();
         }
 
         private void Expansion()
         {
             if (pool is not null) return;
-            pool = ObjectPool.Create<TDto>();
+            //pool = ObjectPool.Create<TDto>();
         }
 
         /// <summary>

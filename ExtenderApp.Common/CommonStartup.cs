@@ -1,5 +1,6 @@
 ﻿using AppHost.Builder;
 using AppHost.Extensions.DependencyInjection;
+using ExtenderApp.Common.NetWorks;
 
 namespace ExtenderApp.Common
 {

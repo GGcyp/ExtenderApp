@@ -13,7 +13,7 @@
         /// <summary>
         /// 获取一个值，该值指示是否可以操作。
         /// </summary>
-        public bool CanOperate => source is not null && source.CanOperate;
+        public bool CanOperate => source is not null;
 
         /// <summary>
         /// 使用指定的 <see cref="ExtenderCancellationTokenSource"/> 初始化 <see cref="ExtenderCancellationToken"/> 实例。
