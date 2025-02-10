@@ -1,7 +1,7 @@
 ﻿using ExtenderApp.Data;
 using ExtenderApp.Data.File;
 
-namespace ExtenderApp.Common.File.Binary
+namespace ExtenderApp.Common.Files.Binary
 {
     public partial class BinaryConvert
     {

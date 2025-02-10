@@ -6,6 +6,12 @@
     public struct FileOperate : IEquatable<FileOperate>
     {
         /// <summary>
+        /// 获取一个空的FileOperate实例
+        /// </summary>
+        /// <returns>返回一个空的FileOperate实例</returns>
+        public static FileOperate Empty = new FileOperate();
+
+        /// <summary>
         /// 文件访问权限
         /// </summary>
         public FileAccess FileAccess { get; private set; }
@@ -30,8 +36,8 @@
         /// <exception cref="FileNotFoundException">当文件已存在时抛出。</exception>
         public FileOperate(string filePath, FileMode fileMode = FileMode.Open, FileAccess fileAccess = FileAccess.Read)
         {
-            if (Path.IsPathFullyQualified(filePath))
-                throw new ArgumentNullException(nameof(filePath));
+            //if (!System.IO.File.Exists(filePath))
+            //    throw new ArgumentNullException(nameof(filePath));
 
 
             FileAccess = fileAccess;
@@ -92,20 +98,14 @@
             return result;
         }
 
-        /// <summary>
-        /// 异步打开文件并执行指定的操作。
-        /// </summary>
-        /// <param name="action">要执行的操作，该操作需要一个FileStream参数。</param>
-        public void OpenFileAsync(Action<FileStream> action)
-        {
-            //var buffer = MultiThreadDataBuffer<Action<FileStream>>.Create(OpenFile, action);
-            //buffer.Run();
-            throw new NotImplementedException();
-        }
-
         public bool Equals(FileOperate other)
         {
             return LocalFileInfo.Equals(other.LocalFileInfo);
+        }
+
+        public override int GetHashCode()
+        {
+            return LocalFileInfo.GetHashCode();
         }
     }
 }

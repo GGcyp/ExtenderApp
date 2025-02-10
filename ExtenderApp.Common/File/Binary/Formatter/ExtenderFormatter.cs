@@ -1,7 +1,7 @@
 ﻿using ExtenderApp.Abstract;
 using ExtenderApp.Data;
 
-namespace ExtenderApp.Common.File.Binary.Formatter
+namespace ExtenderApp.Common.Files.Binary.Formatter
 {
     /// <summary>
     /// 表示一个抽象类，实现了 <see cref="IBinaryFormatter{T}"/> 接口，用于序列化和反序列化对象。
@@ -15,6 +15,8 @@ namespace ExtenderApp.Common.File.Binary.Formatter
         protected readonly ExtenderBinaryWriterConvert _binaryWriterConvert;
         protected readonly ExtenderBinaryReaderConvert _binaryReaderConvert;
         protected readonly BinaryOptions _binaryOptions;
+
+        public abstract int Count { get; }
 
         public virtual T Default => default(T);
 
@@ -51,6 +53,19 @@ namespace ExtenderApp.Common.File.Binary.Formatter
             }
 
             reader.Depth++;
+        }
+
+        public virtual int GetCount(T value)
+        {
+            if (typeof(T).IsClass)
+            {
+                if (value == null)
+                {
+                    return 1;
+                }
+            }
+
+            return Count;
         }
     }
 }

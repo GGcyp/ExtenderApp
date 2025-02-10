@@ -1,5 +1,5 @@
-﻿using ExtenderApp.Common.File.Binary.Formatter;
-using ExtenderApp.Common.File.Binary;
+﻿using ExtenderApp.Common.Files.Binary.Formatter;
+using ExtenderApp.Common.Files.Binary;
 using ExtenderApp.Data;
 using ExtenderApp.Abstract;
 
@@ -9,54 +9,56 @@ namespace ExtenderApp.Media.Model
     /// VideoInfoFormatter 类是一个扩展格式化器，用于格式化 VideoInfo 对象。
     /// </summary>
     /// <typeparam name="VideoInfo">表示要格式化的 VideoInfo 类型。</typeparam>
-    internal class VideoInfoFormatter : ExtenderFormatter<VideoInfo>
+    internal class VideoInfoFormatter : ResolverFormatter<VideoInfo>
     {
-        private readonly IBinaryFormatter<string> _stringFormatter;
-        private readonly IBinaryFormatter<TimeSpan> _timeSpanFormatter;
-        private readonly IBinaryFormatter<int> _intFormatter;
-        private readonly IBinaryFormatter<long> _longFormatter;
-        private readonly IBinaryFormatter<DateTime> _dateTimeFormatter;
-        private readonly IBinaryFormatter<bool> _boolFormatter;
-        private readonly IBinaryFormatter<List<string>> _stringListFormatter;
-        private readonly IBinaryFormatter<double> _doubleFormatter;
-        private readonly IBinaryFormatter<Uri> _uriFormatter;
+        private readonly IBinaryFormatter<string> _string;
+        private readonly IBinaryFormatter<TimeSpan> _timeSpan;
+        private readonly IBinaryFormatter<int> _int;
+        private readonly IBinaryFormatter<long> _long;
+        private readonly IBinaryFormatter<DateTime> _dateTime;
+        private readonly IBinaryFormatter<bool> _bool;
+        private readonly IBinaryFormatter<List<string>> _stringList;
+        private readonly IBinaryFormatter<double> _double;
+        private readonly IBinaryFormatter<Uri> _uri;
 
-        public VideoInfoFormatter(IBinaryFormatterResolver resolver, ExtenderBinaryWriterConvert binaryWriterConvert, ExtenderBinaryReaderConvert binaryReaderConvert, BinaryOptions options) : base(binaryWriterConvert, binaryReaderConvert, options)
+        public override int Count => _string.Count * 2 + _int.Count * 3 + _timeSpan.Count * 2 + _bool.Count + _double.Count + _long.Count + _dateTime.Count + _stringList.Count;
+
+        public VideoInfoFormatter(IBinaryFormatterResolver resolver) : base(resolver)
         {
-            _stringFormatter = resolver.GetFormatter<string>();
-            _timeSpanFormatter = resolver.GetFormatter<TimeSpan>();
-            _intFormatter = resolver.GetFormatter<int>();
-            _longFormatter = resolver.GetFormatter<long>();
-            _dateTimeFormatter = resolver.GetFormatter<DateTime>();
-            _boolFormatter = resolver.GetFormatter<bool>();
-            _stringListFormatter = resolver.GetFormatter<List<string>>();
-            _doubleFormatter = resolver.GetFormatter<double>();
-            _uriFormatter = resolver.GetFormatter<Uri>();
+            _string = GetFormatter<string>();
+            _timeSpan = GetFormatter<TimeSpan>();
+            _int = GetFormatter<int>();
+            _long = GetFormatter<long>();
+            _dateTime = GetFormatter<DateTime>();
+            _bool = GetFormatter<bool>();
+            _stringList = GetFormatter<List<string>>();
+            _double = GetFormatter<double>();
+            _uri = GetFormatter<Uri>();
         }
 
         public override VideoInfo Deserialize(ref ExtenderBinaryReader reader)
         {
-            VideoInfo info = new VideoInfo(_uriFormatter.Deserialize(ref reader));
+            VideoInfo info = new VideoInfo(_uri.Deserialize(ref reader));
 
-            info.VideoTitle = _stringFormatter.Deserialize(ref reader);
-            info.Category = _stringFormatter.Deserialize(ref reader);
+            info.VideoTitle = _string.Deserialize(ref reader);
+            info.Category = _string.Deserialize(ref reader);
 
-            info.VideoHeight = _intFormatter.Deserialize(ref reader);
-            info.VideoWidth = _intFormatter.Deserialize(ref reader);
-            info.PlayCount = _intFormatter.Deserialize(ref reader);
+            info.VideoHeight = _int.Deserialize(ref reader);
+            info.VideoWidth = _int.Deserialize(ref reader);
+            info.PlayCount = _int.Deserialize(ref reader);
 
-            info.TotalVideoDuration = _timeSpanFormatter.Deserialize(ref reader);
-            info.VideoWatchedPosition = _timeSpanFormatter.Deserialize(ref reader);
+            info.TotalVideoDuration = _timeSpan.Deserialize(ref reader);
+            info.VideoWatchedPosition = _timeSpan.Deserialize(ref reader);
 
-            info.IsFavorite = _boolFormatter.Deserialize(ref reader);
+            info.IsFavorite = _bool.Deserialize(ref reader);
 
-            info.Rating = _doubleFormatter.Deserialize(ref reader);
+            info.Rating = _double.Deserialize(ref reader);
 
-            info.FileSize = _longFormatter.Deserialize(ref reader);
+            info.FileSize = _long.Deserialize(ref reader);
 
-            info.CreationTime = _dateTimeFormatter.Deserialize(ref reader);
+            info.CreationTime = _dateTime.Deserialize(ref reader);
 
-            info.Tags = _stringListFormatter.Deserialize(ref reader);
+            info.Tags = _stringList.Deserialize(ref reader);
 
             if (info.VideoUri.IsFile)
                 info.VideoFileInfo = new LocalFileInfo(info.VideoUri.LocalPath);
@@ -66,26 +68,39 @@ namespace ExtenderApp.Media.Model
 
         public override void Serialize(ref ExtenderBinaryWriter writer, VideoInfo value)
         {
-            _uriFormatter.Serialize(ref writer, value.VideoUri);
-            _stringFormatter.Serialize(ref writer, value.VideoTitle);
-            _stringFormatter.Serialize(ref writer, value.Category);
+            _uri.Serialize(ref writer, value.VideoUri);
+            _string.Serialize(ref writer, value.VideoTitle);
+            _string.Serialize(ref writer, value.Category);
 
-            _intFormatter.Serialize(ref writer, value.VideoHeight);
-            _intFormatter.Serialize(ref writer, value.VideoWidth);
-            _intFormatter.Serialize(ref writer, value.PlayCount);
+            _int.Serialize(ref writer, value.VideoHeight);
+            _int.Serialize(ref writer, value.VideoWidth);
+            _int.Serialize(ref writer, value.PlayCount);
 
-            _timeSpanFormatter.Serialize(ref writer, value.TotalVideoDuration);
-            _timeSpanFormatter.Serialize(ref writer, value.VideoWatchedPosition);
+            _timeSpan.Serialize(ref writer, value.TotalVideoDuration);
+            _timeSpan.Serialize(ref writer, value.VideoWatchedPosition);
 
-            _boolFormatter.Serialize(ref writer, value.IsFavorite);
+            _bool.Serialize(ref writer, value.IsFavorite);
 
-            _doubleFormatter.Serialize(ref writer, value.Rating);
+            _double.Serialize(ref writer, value.Rating);
 
-            _longFormatter.Serialize(ref writer, value.FileSize);
+            _long.Serialize(ref writer, value.FileSize);
 
-            _dateTimeFormatter.Serialize(ref writer, value.CreationTime);
+            _dateTime.Serialize(ref writer, value.CreationTime);
 
-            _stringListFormatter.Serialize(ref writer, value.Tags);
+            _stringList.Serialize(ref writer, value.Tags);
+        }
+
+        public override int GetCount(VideoInfo value)
+        {
+            if(value is null)
+            {
+                return 1;
+            }
+
+            var result = _int.Count * 3 + _timeSpan.Count * 2 + _bool.Count + _double.Count + _long.Count + _dateTime.Count;
+            result += _string.GetCount(value.VideoTitle) + _string.GetCount(value.Category);
+            result += _stringList.GetCount(value.Tags);
+            return result;
         }
     }
 }

@@ -1,15 +1,18 @@
 ﻿using ExtenderApp.Data;
 
-namespace ExtenderApp.Common.File.Binary.Formatter
+namespace ExtenderApp.Common.Files.Binary.Formatter
 {
     /// <summary>
     /// Int32Formatter 类，继承自 ExtenderFormatter<Int32> 类，用于格式化 Int32 类型的数据。
     /// </summary>
     internal sealed class Int32Formatter : ExtenderFormatter<Int32>
     {
+        public override int Count => 5;
+
         public Int32Formatter(ExtenderBinaryWriterConvert binaryWriterConvert, ExtenderBinaryReaderConvert binaryReaderConvert, BinaryOptions options) : base(binaryWriterConvert, binaryReaderConvert, options)
         {
         }
+
 
         public override int Deserialize(ref ExtenderBinaryReader reader)
         {

@@ -1,11 +1,11 @@
 ﻿using AppHost.Extensions.DependencyInjection;
 using ExtenderApp.Abstract;
-using ExtenderApp.Common.File.Binary.Formatter;
-using ExtenderApp.Common.File.Binary.Formatter.Struct;
+using ExtenderApp.Common.Files.Binary.Formatter;
+using ExtenderApp.Common.Files.Binary.Formatter.Struct;
 using ExtenderApp.Data;
 
 
-namespace ExtenderApp.Common.File.Binary
+namespace ExtenderApp.Common.Files.Binary
 {
     /// <summary>
     /// 提供二进制解析器扩展方法的静态内部类。

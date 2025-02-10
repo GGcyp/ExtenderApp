@@ -30,10 +30,11 @@
         /// </summary>
         string PackFolderName { get; }
 
-
         /// <summary>
-        /// 数据文件扩展名
+        /// 根据文件夹名称，在根目录下创建新的文件夹路径
         /// </summary>
-        string JsonFileExtension { get; }
+        /// <param name="folderName">要创建的文件夹名称</param>
+        /// <returns>返回新创建的文件夹路径</returns>
+        string CreateFolderPathForAppRootFolder(string folferName);
     }
 }

@@ -1,7 +1,7 @@
 ﻿using System.Text;
 using System.Xml;
 
-namespace ExtenderApp.Common.File
+namespace ExtenderApp.Common.Files
 {
     /// <summary>
     /// xml文件解析器，默认使用流式读取XML

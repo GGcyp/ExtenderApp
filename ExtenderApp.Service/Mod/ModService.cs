@@ -49,11 +49,21 @@ namespace ExtenderApp.Service
             LoadModInfo(_pathProvider.ModsPath);
         }
 
+        /// <summary>
+        /// 判断给定的 ModeInfo 是否存在于 ModStore 中。
+        /// </summary>
+        /// <param name="info">要判断的 ModeInfo 对象。</param>
+        /// <returns>如果 ModeInfo 存在于 ModStore 中，则返回 true；否则返回 false。</returns>
         private bool Contains(ModeInfo info)
         {
             return GetModDetails(info.ModStartupDll) is not null;
         }
 
+        /// <summary>
+        /// 根据给定的启动 DLL 名称获取 ModDetails 对象。
+        /// </summary>
+        /// <param name="modStartDLLName">启动 DLL 的名称。</param>
+        /// <returns>如果找到匹配的 ModDetails 对象，则返回该对象；否则返回 null。</returns>
         public ModDetails? GetModDetails(string modStartDLLName)
         {
             if (string.IsNullOrEmpty(modStartDLLName)) return null;
@@ -78,8 +88,7 @@ namespace ExtenderApp.Service
                 //解析模组的信息
                 ModeInfo info = _jsonParser.Deserialize<ModeInfo>(new FileOperate(fileInfo));
 
-                if (string.IsNullOrEmpty(info.ModStartupDll)
-                    || Contains(info)) continue;
+                if (Contains(info)) continue;
 
                 //加载模组主程序集
                 ModDetails details = new ModDetails(info);

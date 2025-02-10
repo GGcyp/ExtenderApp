@@ -1,7 +1,9 @@
 ﻿using AppHost.Extensions.DependencyInjection;
 using ExtenderApp.Abstract;
-using ExtenderApp.Common.File;
-using ExtenderApp.Common.File.Binary;
+using ExtenderApp.Common.File.Splitter;
+using ExtenderApp.Common.Files;
+using ExtenderApp.Common.Files.Binary;
+using ExtenderApp.Common.Files.Splitter;
 using ExtenderApp.Data;
 
 namespace ExtenderApp.Common
@@ -24,6 +26,9 @@ namespace ExtenderApp.Common
             //Binary
             services.AddBinary();
 
+            //Splitter
+            services.ConfigurationFileSplitter();
+
             return services;
         }
 
@@ -36,6 +41,7 @@ namespace ExtenderApp.Common
         {
             services.AddSingleton<IJsonParser, JsonParser>();
             services.AddSingleton<IBinaryParser, BinaryParser>();
+            services.AddSingleton<ISplitterParser, SplitterParser>();
             return services;
         }
 

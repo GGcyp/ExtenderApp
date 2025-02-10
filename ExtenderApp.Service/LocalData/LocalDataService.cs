@@ -7,18 +7,52 @@ using ExtenderApp.Services;
 
 namespace ExtenderApp.Service
 {
+    /// <summary>
+    /// 本地数据服务类，实现了ILocalDataService接口。
+    /// </summary>
     internal class LocalDataService : ILocalDataService
     {
+        /// <summary>
+        /// 二进制解析器接口，用于解析二进制数据。
+        /// </summary>
         private readonly IBinaryParser _parser;
+
+        /// <summary>
+        /// 路径服务接口，用于处理文件路径相关操作。
+        /// </summary>
         private readonly IPathService _pathService;
-        private Dictionary<string, LocalDataInfo> _localDataDict;
+
+        /// <summary>
+        /// 存储本地数据信息的字典。
+        /// </summary>
+        private readonly Dictionary<string, LocalDataInfo> _localDataDict;
+
+        /// <summary>
+        /// 当前版本信息。
+        /// </summary>
         private readonly Version _version;
+
+        /// <summary>
+        /// 日志服务接口，用于记录日志信息。
+        /// </summary>
         private readonly ILogingService _logingService;
+
+        /// <summary>
+        /// 自动保存任务的取消令牌。
+        /// </summary>
         private ExtenderCancellationToken autosaveTokn;
-        private Type[] methodTypes;
+
+        /// <summary>
+        /// 方法参数数组。
+        /// </summary>
         private object?[] methodParameters;
 
-        public LocalDataService(IPathService pathService, IBinaryParser parser, IBinaryFormatterStore store, ILogingService logingService, IScheduledTaskService taskService)
+        /// <summary>
+        /// 序列化方法的信息。
+        /// </summary>
+        private MethodInfo serializeMethod;
+
+        public LocalDataService(IPathService pathService, ISplitterParser splitter, IBinaryParser parser, IBinaryFormatterStore store, ILogingService logingService, IScheduledTaskService taskService)
         {
             _parser = parser;
             _pathService = pathService;
@@ -26,46 +60,69 @@ namespace ExtenderApp.Service
 
             _localDataDict = new();
             _logingService = logingService;
-            methodTypes = new[] { typeof(LocalDataInfo), null, typeof(object) };
-            methodParameters = new object?[] { null, null, null };
 
             autosaveTokn = taskService.StartCycle(o => SaveAllData(), TimeSpan.FromMinutes(5));
+
+            //获取函数信息
+            methodParameters = new object?[3];
+            var methods = typeof(IFileParser).GetMethods();
+            for (int i = 0; i < methods.Length; i++)
+            {
+                var method = methods[i];
+                if (method.Name == "Serialize" && method.IsGenericMethodDefinition)
+                {
+                    //var parameters = method.GetParameters();
+                    //if (parameters.Length == 3 &&
+                    //    parameters[0].ParameterType == typeof(ExpectLocalFileInfo) &&
+                    //    parameters[1].ParameterType.IsGenericParameter &&
+                    //    parameters[2].ParameterType == typeof(object))
+                    //{
+                    //    return method.MakeGenericMethod(type);
+                    //}
+                    var parameters = method.GetParameters();
+                    if (parameters[0].ParameterType == typeof(ExpectLocalFileInfo))
+                    {
+                        serializeMethod = method;
+                        break;
+                    }
+                }
+            }
         }
 
         public bool GetData<T>(string? dataName, out LocalData<T>? data)
         {
             data = default;
-            try
+            //try
+            //{
+            if (string.IsNullOrEmpty(dataName))
             {
-                if (string.IsNullOrEmpty(dataName))
-                {
-                    throw new ArgumentNullException("获取本地数据名字不能为空");
-                }
-
-                LocalData<T>? localData = null;
-                if (!_localDataDict.TryGetValue(dataName, out var info))
-                {
-                    info = new LocalDataInfo(Path.Combine(_pathService.DataPath, string.Concat(dataName, ".ext")), CreateSerializeMethodInfo(typeof(LocalData<T>)));
-
-                    _localDataDict.Add(dataName, info);
-
-                    info.LocalData = localData = _parser.Deserialize<LocalData<T>>(info.LocalFileInfo);
-                    //如果版本不一致则更新
-                    VersionCheck(info);
-                }
-                else
-                {
-                    localData = info.LocalData as LocalData<T>;
-                }
-
-                data = localData;
-                return localData is not null;
+                throw new ArgumentNullException("获取本地数据名字不能为空");
             }
-            catch (Exception ex)
+
+            LocalData<T>? localData = null;
+            if (!_localDataDict.TryGetValue(dataName, out var info))
             {
-                _logingService.Error("读取本地数据出现错误", nameof(ILocalDataService), ex);
-                return false;
+                info = new LocalDataInfo(_pathService.DataPath, dataName, CreateSerializeMethodInfo(typeof(LocalData<T>)));
+
+                _localDataDict.Add(dataName, info);
+
+                info.LocalData = localData = _parser.Deserialize<LocalData<T>>(info.FileInfo);
+                //如果版本不一致则更新
+                VersionCheck(info);
             }
+            else
+            {
+                localData = info.LocalData as LocalData<T>;
+            }
+
+            data = localData;
+            return localData is not null;
+            //}
+            //catch (Exception ex)
+            //{
+            //    _logingService.Error("读取本地数据出现错误", nameof(ILocalDataService), ex);
+            //    return false;
+            //}
         }
 
         public bool SetData<T>(string? dataName, LocalData<T>? data)
@@ -79,7 +136,7 @@ namespace ExtenderApp.Service
                 LocalData<T>? localData = null;
                 if (!_localDataDict.TryGetValue(dataName, out var info))
                 {
-                    info = new LocalDataInfo(Path.Combine(_pathService.DataPath, string.Concat(dataName, ".ext")), CreateSerializeMethodInfo(typeof(LocalData<T>)));
+                    info = new LocalDataInfo(_pathService.DataPath, dataName, CreateSerializeMethodInfo(typeof(LocalData<T>)));
                     info.LocalData = localData = data;
                     _localDataDict.Add(dataName, info);
                 }
@@ -88,7 +145,7 @@ namespace ExtenderApp.Service
                     localData = info.LocalData as LocalData<T>;
                 }
 
-                _parser.Serialize(info.LocalFileInfo, localData);
+                _parser.Serialize(info.FileInfo, localData);
                 return true;
             }
             catch (Exception ex)
@@ -136,7 +193,7 @@ namespace ExtenderApp.Service
         /// <returns>返回创建的序列化方法信息对象。</returns>
         private MethodInfo CreateSerializeMethodInfo(Type type)
         {
-            return typeof(IFileParser).GetMethod("Serialize")!.MakeGenericMethod(type);
+            return serializeMethod.MakeGenericMethod(type);
         }
 
         /// <summary>
@@ -146,7 +203,7 @@ namespace ExtenderApp.Service
         {
             foreach (var data in _localDataDict.Values)
             {
-                methodParameters[0] = new FileOperate(data.LocalFileInfo, FileMode.Create, FileAccess.Write); ;
+                methodParameters[0] = data.FileInfo;
                 methodParameters[1] = data.LocalData;
                 var temp = data.SerializeMethodInfo?.Invoke(_parser, methodParameters);
             }

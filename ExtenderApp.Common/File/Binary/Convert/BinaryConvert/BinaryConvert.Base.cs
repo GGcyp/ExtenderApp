@@ -2,7 +2,7 @@
 using ExtenderApp.Data;
 using ExtenderApp.Data.File;
 
-namespace ExtenderApp.Common.File.Binary
+namespace ExtenderApp.Common.Files.Binary
 {
     public partial class BinaryConvert
     {
@@ -14,13 +14,12 @@ namespace ExtenderApp.Common.File.Binary
         private BinaryRang BinaryRang => BinaryOptions.BinaryRang;
         private DateTimeConstants DateTimeConstants => BinaryOptions.DateTimeConstants;
         private BinaryConvertDecoders Decoders { get; }
-        public Encoding UTF8 { get; }
+        public Encoding UTF8 => BinaryOptions.UTF8;
 
         public BinaryConvert(BinaryOptions options)
         {
             BinaryOptions = options;
             Decoders = new BinaryConvertDecoders(this, options);
-            UTF8 = new UTF8Encoding(false);
         }
 
         ///// <summary>

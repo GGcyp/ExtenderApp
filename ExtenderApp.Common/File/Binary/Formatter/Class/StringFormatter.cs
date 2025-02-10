@@ -1,6 +1,6 @@
 ﻿using ExtenderApp.Data;
 
-namespace ExtenderApp.Common.File.Binary.Formatter
+namespace ExtenderApp.Common.Files.Binary.Formatter
 {
     /// <summary>
     /// 字符串格式化器类
@@ -14,13 +14,24 @@ namespace ExtenderApp.Common.File.Binary.Formatter
         {
         }
 
+        public override int Count => 5;
+
+        public override int GetCount(string value)
+        {
+            var result = Count;
+            if (string.IsNullOrEmpty(value))
+            {
+                return 1;
+            }
+            return _binaryOptions.UTF8.GetMaxByteCount(value.Length) + Count;
+        }
+
         public override string Deserialize(ref ExtenderBinaryReader reader)
         {
             if (_binaryReaderConvert.TryReadNil(ref reader))
             {
                 return string.Empty;
             }
-
 
             _binaryReaderConvert.TryReadStringSpan(ref reader, out ReadOnlySpan<byte> bytes);
             return _binaryReaderConvert.UTF8ToString(bytes);

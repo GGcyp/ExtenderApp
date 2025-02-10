@@ -1,7 +1,7 @@
 ﻿using ExtenderApp.Abstract;
 using ExtenderApp.Data;
 
-namespace ExtenderApp.Common.File.Binary.Formatter
+namespace ExtenderApp.Common.Files.Binary.Formatter
 {
     /// <summary>
     /// 一个抽象类，继承自 <see cref="ExtenderFormatter{IDictionary{TKey, TValue}?}"/>，用于格式化键值对集合。
@@ -12,6 +12,8 @@ namespace ExtenderApp.Common.File.Binary.Formatter
     {
         private readonly IBinaryFormatter<TKey> _keyFormatter;
         private readonly IBinaryFormatter<TValue> _valueFormatter;
+
+        public override int Count => 5;
 
         public InterfaceDictionaryFormatter(IBinaryFormatterResolver resolver, ExtenderBinaryWriterConvert binaryWriterConvert, ExtenderBinaryReaderConvert binaryReaderConvert, BinaryOptions options) : base(binaryWriterConvert, binaryReaderConvert, options)
         {
@@ -52,6 +54,18 @@ namespace ExtenderApp.Common.File.Binary.Formatter
                 _keyFormatter.Serialize(ref writer, kvp.Key);
                 _valueFormatter.Serialize(ref writer, kvp.Value);
             }
+        }
+
+        public override int GetCount(TDictionary value)
+        {
+            if (value == null)
+            {
+                return 1;
+            }
+
+            var result = Count;
+            result += (_keyFormatter.Count + _valueFormatter.Count) * value.Count;
+            return result;
         }
 
         protected abstract TDictionary Create(int count);

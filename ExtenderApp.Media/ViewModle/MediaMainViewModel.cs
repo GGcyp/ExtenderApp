@@ -1,7 +1,4 @@
-﻿using System.Net.Http;
-using ExtenderApp.Abstract;
-using ExtenderApp.Common;
-using ExtenderApp.Common.NetWorks;
+﻿using ExtenderApp.Abstract;
 using ExtenderApp.Data;
 using ExtenderApp.ViewModels;
 using ExtenderApp.Views;
@@ -176,6 +173,7 @@ namespace ExtenderApp.Media
             CurrentTime = TimeSpan.Zero;
             TotalTime = TimeSpan.Zero;
             Volume = Model.Volume;
+            RecordWatchingTime = true;
 
             if (VideoNotExist)
                 CheckVideoPath();

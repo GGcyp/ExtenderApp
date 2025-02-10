@@ -28,6 +28,12 @@ namespace ExtenderApp.Media
         /// </summary>
         public bool VideoNotExist {  get; set; }
 
+        public MediaModel()
+        {
+            VideoInfos = new ObservableCollection<VideoInfo>();
+            Volume = 0;
+        }
+
         #region 视频列表操作相关属性和方法
 
         /// <summary>

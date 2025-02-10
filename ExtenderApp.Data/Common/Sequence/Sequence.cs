@@ -174,66 +174,66 @@ namespace ExtenderApp.Data.File
         /// <returns>具有指定大小可用内存的段。</returns>
         private SequenceSegment GetSegment(int sizeHint)
         {
-            if (sizeHint < 0)
-                throw new ArgumentOutOfRangeException(nameof(sizeHint));
+            //if (sizeHint < 0)
+            //    throw new ArgumentOutOfRangeException(nameof(sizeHint));
 
-            if (sizeHint == 0)
-                return last!;
-
-            int minBufferSize = -1;
-            if (last == null || last.WritableBytes < sizeHint)
-            {
-                minBufferSize = System.Math.Max(MinimumSpanLength, sizeHint);
-            }
-
-            minBufferSize = minBufferSize == -1 ? DefaultLengthFromArrayPool : minBufferSize;
-            var segment = SegmentPool.Count > 0 ? SegmentPool.Pop() : new SequenceSegment();
-            if (_arrayPool != null)
-            {
-                segment.Assign(_arrayPool.Rent(minBufferSize));
-            }
-            else
-            {
-                segment.Assign(_memoryPool!.Rent(minBufferSize));
-            }
-
-            Append(segment);
-
-            return segment;
-
-            //原先设计
-            //int? minBufferSize = null;
             //if (sizeHint == 0)
+            //    return last!;
+
+            //int minBufferSize = -1;
+            //if (last == null || last.WritableBytes < sizeHint)
             //{
-            //    if (last == null || last.WritableBytes == 0)
-            //    {
-            //        minBufferSize = -1;
-            //    }
+            //    minBufferSize = System.Math.Max(MinimumSpanLength, sizeHint);
+            //}
+
+            //minBufferSize = minBufferSize == -1 ? DefaultLengthFromArrayPool : minBufferSize;
+            //var segment = SegmentPool.Count > 0 ? SegmentPool.Pop() : new SequenceSegment();
+            //if (_arrayPool != null)
+            //{
+            //    segment.Assign(_arrayPool.Rent(minBufferSize));
             //}
             //else
             //{
-            //    if (last == null || last.WritableBytes < sizeHint)
-            //    {
-            //        minBufferSize = System.Math.Max(MinimumSpanLength, sizeHint);
-            //    }
+            //    segment.Assign(_memoryPool!.Rent(minBufferSize));
             //}
 
-            //if (minBufferSize.HasValue)
-            //{
-            //    var segment = SegmentPool.Count > 0 ? SegmentPool.Pop() : new SequenceSegment();
-            //    if (_arrayPool != null)
-            //    {
-            //        segment.Assign(_arrayPool.Rent(minBufferSize.Value == -1 ? DefaultLengthFromArrayPool : minBufferSize.Value));
-            //    }
-            //    else
-            //    {
-            //        segment.Assign(_memoryPool!.Rent(minBufferSize.Value));
-            //    }
+            //Append(segment);
 
-            //    Append(segment);
-            //}
+            //return segment;
 
-            //return last!;
+            //原先设计
+            int? minBufferSize = null;
+            if (sizeHint == 0)
+            {
+                if (last == null || last.WritableBytes == 0)
+                {
+                    minBufferSize = -1;
+                }
+            }
+            else
+            {
+                if (last == null || last.WritableBytes < sizeHint)
+                {
+                    minBufferSize = System.Math.Max(MinimumSpanLength, sizeHint);
+                }
+            }
+
+            if (minBufferSize.HasValue)
+            {
+                var segment = SegmentPool.Count > 0 ? SegmentPool.Pop() : new SequenceSegment();
+                if (_arrayPool != null)
+                {
+                    segment.Assign(_arrayPool.Rent(minBufferSize.Value == -1 ? DefaultLengthFromArrayPool : minBufferSize.Value));
+                }
+                else
+                {
+                    segment.Assign(_memoryPool!.Rent(minBufferSize.Value));
+                }
+
+                Append(segment);
+            }
+
+            return last!;
         }
 
         /// <summary>
@@ -285,7 +285,7 @@ namespace ExtenderApp.Data.File
             var recycledSegment = segment;
             var nextSegment = segment.Next;
             recycledSegment.ResetMemory(_arrayPool);
-            SegmentPool.Push(nextSegment!);
+            SegmentPool.Push(recycledSegment);
             return nextSegment;
         }
 

@@ -2,7 +2,7 @@
 using ExtenderApp.Data;
 using System.Text.Json;
 
-namespace ExtenderApp.Common.File
+namespace ExtenderApp.Common.Files
 {
     internal class JsonParser : IJsonParser
     {
@@ -18,6 +18,8 @@ namespace ExtenderApp.Common.File
                 Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
             };
         }
+
+        #region Deserialize
 
         public T? Deserialize<T>(FileOperate operate, object? options = null)
         {
@@ -36,6 +38,11 @@ namespace ExtenderApp.Common.File
             return JsonSerializer.Deserialize<T>(json, jsonOptions);
         }
 
+        public T? Deserialize<T>(ExpectLocalFileInfo info, object? options = null)
+        {
+            return Deserialize<T>(info.CreateFileOperate(FileExtensions.JsonFileExtensions), options);
+        }
+
         public async ValueTask<T?> DeserializeAsync<T>(FileOperate operate, object? options = null)
         {
             var jsonOptions = options as JsonSerializerOptions ?? _jsonSerializerOptions;
@@ -46,6 +53,15 @@ namespace ExtenderApp.Common.File
             }
             return result;
         }
+
+        public ValueTask<T?> DeserializeAsync<T>(ExpectLocalFileInfo info, object? options = null)
+        {
+            return DeserializeAsync<T>(info.CreateFileOperate(FileExtensions.JsonFileExtensions), options);
+        }
+
+        #endregion
+
+        #region Serialize
 
         public string Serialize<T>(T value, object? options = null)
         {
@@ -73,7 +89,12 @@ namespace ExtenderApp.Common.File
             }
         }
 
-        public async ValueTask<bool> SerializeAsync<T>(T value, FileOperate operate, object? options = null)
+        public bool Serialize<T>(ExpectLocalFileInfo info, T value, object? options = null)
+        {
+            return Serialize(info.CreatLocalFileInfo(FileExtensions.JsonFileExtensions).CreateFileOperate(), value, options);
+        }
+
+        public async ValueTask<bool> SerializeAsync<T>(FileOperate operate, T value, object? options = null)
         {
             try
             {
@@ -89,5 +110,12 @@ namespace ExtenderApp.Common.File
                 throw;
             }
         }
+
+        public ValueTask<bool> SerializeAsync<T>(ExpectLocalFileInfo info, T value, object? options = null)
+        {
+            return SerializeAsync(info.CreateFileOperate(FileExtensions.JsonFileExtensions), value, options);
+        }
+
+        #endregion
     }
 }

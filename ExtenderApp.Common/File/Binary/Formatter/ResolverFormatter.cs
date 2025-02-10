@@ -1,7 +1,7 @@
 ﻿using ExtenderApp.Abstract;
 using ExtenderApp.Data;
 
-namespace ExtenderApp.Common.File.Binary.Formatter
+namespace ExtenderApp.Common.Files.Binary.Formatter
 {
     /// <summary>
     /// 解析格式化器基类，用于处理二进制格式化操作。
@@ -14,12 +14,14 @@ namespace ExtenderApp.Common.File.Binary.Formatter
         /// </summary>
         private readonly IBinaryFormatterResolver _resolver;
 
+        public virtual T Default => default;
+
+        public abstract int Count { get; }
+
         protected ResolverFormatter(IBinaryFormatterResolver resolver)
         {
             _resolver = resolver;
         }
-
-        public virtual T Default => default;
 
         public abstract T Deserialize(ref ExtenderBinaryReader reader);
 
@@ -33,6 +35,11 @@ namespace ExtenderApp.Common.File.Binary.Formatter
         protected IBinaryFormatter<TValue> GetFormatter<TValue>()
         {
             return _resolver.GetFormatterWithVerify<TValue>();
+        }
+
+        public virtual int GetCount(T value)
+        {
+            return Count;
         }
     }
 }

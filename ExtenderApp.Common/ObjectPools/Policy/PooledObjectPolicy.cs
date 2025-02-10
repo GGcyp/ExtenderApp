@@ -9,6 +9,11 @@ namespace ExtenderApp.Common.ObjectPools
     public abstract class PooledObjectPolicy<T> : IPooledObjectPolicy<T> where T : notnull
     {
         /// <summary>
+        /// 释放对象的操作委托。
+        /// </summary>
+        protected Action<T> ReleaseAction => o => Release(o);
+
+        /// <summary>
         /// 创建一个新的对象实例。
         /// </summary>
         /// <returns>返回新创建的对象实例。</returns>

@@ -1,7 +1,7 @@
 ﻿using ExtenderApp.Abstract;
 using ExtenderApp.Data;
 
-namespace ExtenderApp.Common.File.Binary.Formatter
+namespace ExtenderApp.Common.Files.Binary.Formatter
 {
     /// <summary>
     /// 用于数组格式化的扩展格式化器
@@ -25,6 +25,8 @@ namespace ExtenderApp.Common.File.Binary.Formatter
         {
             _binaryFormatter = resolver.GetFormatter<T>();
         }
+
+        public override int Count => 5;
 
         /// <summary>
         /// 反序列化数组
@@ -82,6 +84,18 @@ namespace ExtenderApp.Common.File.Binary.Formatter
                     _binaryFormatter.Serialize(ref writer, value[i]);
                 }
             }
+        }
+
+        public override int GetCount(T[] value)
+        {
+            if (value == null)
+            {
+                return 1;
+            }
+
+            var result = Count;
+            result += value.Length * _binaryFormatter.Count;
+            return result;
         }
     }
 }

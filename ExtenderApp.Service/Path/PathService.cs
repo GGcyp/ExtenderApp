@@ -1,13 +1,15 @@
 ﻿using AppHost.Extensions.Hosting;
 using ExtenderApp.Abstract;
 
-namespace ExtenderApp.Common.File
+namespace ExtenderApp.Common.Files
 {
     /// <summary>
     /// 路径提供者类，实现了INAMEProvider接口
     /// </summary>
     internal class PathService : IPathService
     {
+        private readonly IHostEnvironment _environment;
+
         #region PathName
 
         /// <summary>
@@ -37,21 +39,14 @@ namespace ExtenderApp.Common.File
 
         #endregion
 
-        #region FileExtension
-
-        /// <summary>
-        /// 数据文件扩展名
-        /// </summary>
-        private const string JSONFILEEXTENSION = ".json";
-
-        #endregion
-
         public PathService(IHostEnvironment environment)
         {
-            LoggingPath = ChekAndCreateFolder(environment, LOOGINGNAME);
-            LibPath = ChekAndCreateFolder(environment, LIBNAME);
-            ModsPath = ChekAndCreateFolder(environment, MODSNAME);
-            DataPath = ChekAndCreateFolder(environment, DATANAME);
+            _environment = environment;
+
+            LoggingPath = ChekAndCreateFolder(LOOGINGNAME);
+            LibPath = ChekAndCreateFolder(LIBNAME);
+            ModsPath = ChekAndCreateFolder(MODSNAME);
+            DataPath = ChekAndCreateFolder(DATANAME);
 
             PackFolderName = PACKNAME;
         }
@@ -62,9 +57,9 @@ namespace ExtenderApp.Common.File
         /// <param name="environment">主机环境</param>
         /// <param name="name">文件夹名称</param>
         /// <returns>文件夹路径</returns>
-        private string ChekAndCreateFolder(IHostEnvironment environment, string name)
+        private string ChekAndCreateFolder(string name)
         {
-            string path = Path.Combine(environment.ContentRootPath, name);
+            string path = Path.Combine(_environment.ContentRootPath, name);
 
             if (!Directory.Exists(path))
             {
@@ -72,6 +67,11 @@ namespace ExtenderApp.Common.File
             }
 
             return path;
+        }
+
+        public string CreateFolderPathForAppRootFolder(string folferName)
+        {
+            return ChekAndCreateFolder(folferName);
         }
 
         public string LoggingPath { get; }
@@ -83,7 +83,5 @@ namespace ExtenderApp.Common.File
         public string DataPath { get; }
 
         public string PackFolderName { get; }
-
-        public string JsonFileExtension => JSONFILEEXTENSION;
     }
 }

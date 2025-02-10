@@ -4,7 +4,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using ExtenderApp.Data;
 
-namespace ExtenderApp.Common.File.Binary
+namespace ExtenderApp.Common.Files.Binary
 {
     /// <summary>
     /// 二进制写入器转换类。
@@ -398,7 +398,7 @@ namespace ExtenderApp.Common.File.Binary
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe void Write(ref ExtenderBinaryWriter writer, string? value)
         {
-            if (value == null)
+            if (string.IsNullOrEmpty(value))
             {
                 WriteNil(ref writer);
                 return;

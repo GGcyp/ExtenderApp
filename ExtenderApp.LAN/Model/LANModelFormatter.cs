@@ -1,11 +1,13 @@
 ﻿using ExtenderApp.Abstract;
-using ExtenderApp.Common.File.Binary.Formatter;
+using ExtenderApp.Common.Files.Binary.Formatter;
 using ExtenderApp.Data;
 
 namespace ExtenderApp.LAN
 {
     internal class LANModelFormatter : ResolverFormatter<LANModel>
     {
+        public override int Count => throw new NotImplementedException();
+
         public LANModelFormatter(IBinaryFormatterResolver resolver) : base(resolver)
         {
         }

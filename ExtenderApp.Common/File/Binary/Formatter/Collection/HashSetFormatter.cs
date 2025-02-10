@@ -1,7 +1,7 @@
 ﻿using ExtenderApp.Abstract;
 using ExtenderApp.Data;
 
-namespace ExtenderApp.Common.File.Binary.Formatter
+namespace ExtenderApp.Common.Files.Binary.Formatter
 {
     /// <summary>
     /// 表示一个内部类 HashSetFormatter，它是 CollectionFormatter 的泛型子类，用于格式化 HashSet<T> 集合。

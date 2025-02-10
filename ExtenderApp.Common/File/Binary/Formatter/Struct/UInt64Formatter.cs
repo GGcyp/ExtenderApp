@@ -1,12 +1,14 @@
 ﻿using ExtenderApp.Data;
 
-namespace ExtenderApp.Common.File.Binary.Formatter
+namespace ExtenderApp.Common.Files.Binary.Formatter
 {
     /// <summary>
     /// UInt64Formatter 类，继承自 ExtenderFormatter<UInt64> 类，用于格式化 UInt64 类型的数据。
     /// </summary>
     internal sealed class UInt64Formatter : ExtenderFormatter<UInt64>
     {
+        public override int Count => 9;
+
         public UInt64Formatter(ExtenderBinaryWriterConvert binaryWriterConvert, ExtenderBinaryReaderConvert binaryReaderConvert, BinaryOptions options) : base(binaryWriterConvert, binaryReaderConvert, options)
         {
         }

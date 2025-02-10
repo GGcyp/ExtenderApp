@@ -1,12 +1,14 @@
 ﻿using ExtenderApp.Data;
 
-namespace ExtenderApp.Common.File.Binary.Formatter
+namespace ExtenderApp.Common.Files.Binary.Formatter
 {
     /// <summary>
     /// Int16Formatter 类，继承自 ExtenderFormatter<Int16> 类，用于格式化 Int16 类型的数据。
     /// </summary>
     internal sealed class Int16Formatter : ExtenderFormatter<Int16>
     {
+        public override int Count => 3;
+
         public Int16Formatter(ExtenderBinaryWriterConvert binaryWriterConvert, ExtenderBinaryReaderConvert binaryReaderConvert, BinaryOptions options) : base(binaryWriterConvert, binaryReaderConvert, options)
         {
         }

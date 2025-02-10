@@ -1,7 +1,7 @@
 ﻿using ExtenderApp.Abstract;
 using ExtenderApp.Data;
 
-namespace ExtenderApp.Common.File.Binary.Formatter
+namespace ExtenderApp.Common.Files.Binary.Formatter
 {
     /// <summary>
     /// 一个内部密封类，继承自 <see cref="ExtenderFormatter{List<T>}"/>，用于格式化 List<T> 类型的对象。

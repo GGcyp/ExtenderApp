@@ -1,7 +1,7 @@
 ﻿using ExtenderApp.Abstract;
 using ExtenderApp.Data;
 
-namespace ExtenderApp.Common.File.Binary.Formatter
+namespace ExtenderApp.Common.Files.Binary.Formatter
 {
     /// <summary>
     /// 一个抽象类，用于将集合类型的数据序列化和反序列化。
@@ -17,6 +17,8 @@ namespace ExtenderApp.Common.File.Binary.Formatter
         private readonly IBinaryFormatter<T> _formatter;
 
         public override TCollection Default => Create(0);
+
+        public override int Count => 5;
 
         /// <summary>
         /// 初始化 CollectionFormatter 实例。
@@ -82,6 +84,18 @@ namespace ExtenderApp.Common.File.Binary.Formatter
                 reader.Depth--;
             }
 
+            return result;
+        }
+
+        public override int GetCount(TCollection value)
+        {
+            if (value == null)
+            {
+                return 1;
+            }
+
+            var result = Count;
+            result += value.Count() * _formatter.Count;
             return result;
         }
 

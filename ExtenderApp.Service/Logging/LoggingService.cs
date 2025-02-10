@@ -5,6 +5,7 @@ using ExtenderApp.Data;
 using System.Text;
 using System.Diagnostics;
 using ExtenderApp.Service;
+using ExtenderApp.Common;
 
 namespace ExtenderApp.Services
 {
@@ -13,11 +14,6 @@ namespace ExtenderApp.Services
     /// </summary>
     internal class LoggingService : ILogingService
     {
-        /// <summary>
-        /// 日志文件扩展名
-        /// </summary>
-        private const string EXTENSION = ".log";
-
         /// <summary>
         /// 日志队列
         /// </summary>
@@ -107,7 +103,7 @@ namespace ExtenderApp.Services
                 if (info.Time.Year != filetime.Year && info.Time.Month != filetime.Month && info.Time.Day != filetime.Day)
                 {
                     var tempFiletime = info.Time.ToString("yyyyMMdd");
-                    var fileName = string.Concat(tempFiletime, EXTENSION);
+                    var fileName = string.Concat(tempFiletime, FileExtensions.LogFileExtensions);
                     filepath = Path.Combine(_pathProvider.LoggingPath, fileName);
 
                     stream?.Close();

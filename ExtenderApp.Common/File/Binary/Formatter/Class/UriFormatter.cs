@@ -1,39 +1,60 @@
-﻿using ExtenderApp.Data;
+﻿using ExtenderApp.Abstract;
+using ExtenderApp.Data;
 
-namespace ExtenderApp.Common.File.Binary.Formatter
+namespace ExtenderApp.Common.Files.Binary.Formatter
 {
     /// <summary>
-    /// UriFormatter 类，继承自 ExtenderFormatter<Uri> 类。
+    /// UriFormatter 类，继承自 ResolverFormatter<Uri> 类。
     /// 用于格式化 Uri 类型的对象。
     /// </summary>
-    internal class UriFormatter : ExtenderFormatter<Uri>
+    internal class UriFormatter : ResolverFormatter<Uri>
     {
-        public UriFormatter(ExtenderBinaryWriterConvert binaryWriterConvert, ExtenderBinaryReaderConvert binaryReaderConvert, BinaryOptions options) : base(binaryWriterConvert, binaryReaderConvert, options)
+        private readonly IBinaryFormatter<string> _formatter;
+
+        public UriFormatter(IBinaryFormatterResolver resolver) : base(resolver)
         {
+            _formatter = GetFormatter<string>();
         }
+
+        public override int Count => _formatter.Count;
 
         public override Uri Deserialize(ref ExtenderBinaryReader reader)
         {
-            if(_binaryReaderConvert.TryReadNil(ref reader))
-            {
-                return null;
-            }
+            //if(_binaryReaderConvert.TryReadNil(ref reader))
+            //{
+            //    return null;
+            //}
 
-            _binaryReaderConvert.TryReadStringSpan(ref reader, out ReadOnlySpan<byte> bytes);
-            var value = _binaryReaderConvert.UTF8ToString(bytes);
-            return new Uri(value);
+            //_binaryReaderConvert.TryReadStringSpan(ref reader, out ReadOnlySpan<byte> bytes);
+            //var value = _binaryReaderConvert.UTF8ToString(bytes);
+            //return new Uri(value);
+
+            var result = _formatter.Deserialize(ref reader);
+            return new Uri(result);
         }
 
         public override void Serialize(ref ExtenderBinaryWriter writer, Uri value)
         {
+            //if(value == null)
+            //{
+            //    _binaryWriterConvert.WriteNil(ref writer);
+            //}
+            //else
+            //{
+            //    _binaryWriterConvert.Write(ref writer, value.ToString());
+            //}
+
+            _formatter.Serialize(ref writer, value.ToString());
+        }
+
+        public override int GetCount(Uri value)
+        {
             if(value == null)
             {
-                _binaryWriterConvert.WriteNil(ref writer);
+                return 1;
             }
-            else
-            {
-                _binaryWriterConvert.Write(ref writer, value.ToString());
-            }
+
+            return _formatter.GetCount(value.ToString());
         }
     }
 }

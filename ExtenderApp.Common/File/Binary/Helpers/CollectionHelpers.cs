@@ -1,6 +1,6 @@
 ﻿using System.Linq.Expressions;
 
-namespace ExtenderApp.Common.File.Binary
+namespace ExtenderApp.Common.Files.Binary
 {
     /// <summary>
     /// 集合辅助类，用于创建指定类型的集合。

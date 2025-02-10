@@ -1,4 +1,5 @@
-﻿using ExtenderApp.Data.File;
+﻿using System.Text;
+using ExtenderApp.Data.File;
 
 namespace ExtenderApp.Data
 {
@@ -28,6 +29,14 @@ namespace ExtenderApp.Data
         public int MaximumObjectGraphDepth { get; private set; }
 
         /// <summary>
+        /// 获取UTF-8编码对象。
+        /// </summary>
+        /// <value>
+        /// 表示UTF-8编码的<see cref="Encoding"/>对象。
+        /// </value>
+        public Encoding UTF8 { get; }
+
+        /// <summary>
         /// 二进制选项类的构造函数
         /// </summary>
         public BinaryOptions()
@@ -36,6 +45,7 @@ namespace ExtenderApp.Data
             BinaryRang = new BinaryRang();
             DateTimeConstants = new DateTimeConstants();
             MaximumObjectGraphDepth = 500;
+            UTF8 = new UTF8Encoding(false);
         }
     }
 }

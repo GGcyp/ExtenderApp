@@ -1,7 +1,7 @@
 ﻿using AppHost.Builder;
 using AppHost.Extensions.DependencyInjection;
 using ExtenderApp.Abstract;
-using ExtenderApp.Common.File;
+using ExtenderApp.Common.Files;
 using ExtenderApp.Data;
 using ExtenderApp.Service;
 

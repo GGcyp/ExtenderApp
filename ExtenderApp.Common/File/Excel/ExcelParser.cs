@@ -1,6 +1,6 @@
 ﻿using ExtenderApp.Data;
 
-namespace ExtenderApp.Common.File
+namespace ExtenderApp.Common.Files
 {
     internal class ExcelParser
     {

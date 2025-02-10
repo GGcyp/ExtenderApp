@@ -1,7 +1,7 @@
 ﻿using ExtenderApp.Abstract;
 using ExtenderApp.Data;
 
-namespace ExtenderApp.Common.File.Binary.Formatter
+namespace ExtenderApp.Common.Files.Binary.Formatter
 {
     /// <summary>
     /// 静态可空格式化器类，用于处理可空的结构体类型的序列化和反序列化。
@@ -13,6 +13,8 @@ namespace ExtenderApp.Common.File.Binary.Formatter
         /// 底层格式化器，用于处理非可空结构体类型的序列化和反序列化。
         /// </summary>
         private readonly IBinaryFormatter<T> _formatter;
+
+        public override int Count => _formatter.Count;
 
         /// <summary>
         /// 初始化 StaticNullableFormatter 类的新实例。

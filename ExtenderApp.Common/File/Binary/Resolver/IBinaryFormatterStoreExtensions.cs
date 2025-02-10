@@ -1,5 +1,5 @@
 ﻿using ExtenderApp.Abstract;
-using ExtenderApp.Common.File.Binary.Formatter;
+using ExtenderApp.Common.Files.Binary.Formatter;
 
 namespace ExtenderApp.Common
 {

@@ -1,30 +1,27 @@
 ﻿using ExtenderApp.Abstract;
-using ExtenderApp.Common.File.Binary;
-using ExtenderApp.Common.File.Binary.Formatter;
+using ExtenderApp.Common.Files.Binary;
+using ExtenderApp.Common.Files.Binary.Formatter;
 using ExtenderApp.Data;
 
 namespace ExtenderApp.Service
 {
-    internal class LocalDataFormatter<T> : ExtenderFormatter<LocalData<T>>
+    internal class LocalDataFormatter<T> : ResolverFormatter<LocalData<T>>
     {
         private IBinaryFormatter<T> _binaryFormatter;
         private IBinaryFormatter<Version> _versionFormatter;
 
         public override LocalData<T> Default => new LocalData<T>(_binaryFormatter.Default, _versionFormatter.Default);
 
-        public LocalDataFormatter(IBinaryFormatterResolver resolver, ExtenderBinaryWriterConvert binaryWriterConvert, ExtenderBinaryReaderConvert binaryReaderConvert, BinaryOptions options) : base(binaryWriterConvert, binaryReaderConvert, options)
+        public override int Count => _binaryFormatter.Count + _versionFormatter.Count;
+
+        public LocalDataFormatter(IBinaryFormatterResolver resolver) : base(resolver)
         {
-            _binaryFormatter = resolver.GetFormatter<T>();
-            _versionFormatter = resolver.GetFormatter<Version>();
+            _binaryFormatter = GetFormatter<T>();
+            _versionFormatter = GetFormatter<Version>();
         }
 
         public override LocalData<T> Deserialize(ref ExtenderBinaryReader reader)
         {
-            //if (_binaryReaderConvert.TryReadNil(ref reader))
-            //{
-            //    return null;
-            //}
-
             var version = _versionFormatter.Deserialize(ref reader);
 
             var data = _binaryFormatter.Deserialize(ref reader);
@@ -34,15 +31,19 @@ namespace ExtenderApp.Service
 
         public override void Serialize(ref ExtenderBinaryWriter writer, LocalData<T> value)
         {
-            if (value == null)
-            {
-                _binaryWriterConvert.WriteNil(ref writer);
-                return;
-            }
-
             _versionFormatter.Serialize(ref writer, value.Version);
 
             _binaryFormatter.Serialize(ref writer, value.Data);
+        }
+
+        public override int GetCount(LocalData<T> value)
+        {
+            if (value == null)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
+
+            return _versionFormatter.GetCount(value.Version) + _binaryFormatter.GetCount(value.Data);
         }
     }
 }

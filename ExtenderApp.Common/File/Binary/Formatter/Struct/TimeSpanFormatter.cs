@@ -1,9 +1,11 @@
 ﻿using ExtenderApp.Data;
 
-namespace ExtenderApp.Common.File.Binary.Formatter.Struct
+namespace ExtenderApp.Common.Files.Binary.Formatter.Struct
 {
     internal class TimeSpanFormatter : ExtenderFormatter<TimeSpan>
     {
+        public override int Count => 9;
+
         public TimeSpanFormatter(ExtenderBinaryWriterConvert binaryWriterConvert, ExtenderBinaryReaderConvert binaryReaderConvert, BinaryOptions options) : base(binaryWriterConvert, binaryReaderConvert, options)
         {
         }

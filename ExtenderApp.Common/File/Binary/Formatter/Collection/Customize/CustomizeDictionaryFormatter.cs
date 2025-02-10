@@ -1,7 +1,7 @@
 ﻿using ExtenderApp.Abstract;
 using ExtenderApp.Data;
 
-namespace ExtenderApp.Common.File.Binary.Formatter
+namespace ExtenderApp.Common.Files.Binary.Formatter
 {
     internal class CustomizeDictionaryFormatter<TKey, TValue, TDictionary> : InterfaceDictionaryFormatter<TKey, TValue, TDictionary> where TDictionary : IDictionary<TKey, TValue>, new()
     {

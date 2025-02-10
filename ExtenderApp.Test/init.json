@@ -1,0 +1,6 @@
+{
+  "ModTitle": "Test",
+  "ModDescription": "测试专用模组",
+  "ModVersion": "0.0.0.1",
+  "ModStartupDll": "ExtenderApp.Test.dll"
+}

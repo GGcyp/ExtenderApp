@@ -63,6 +63,7 @@ namespace ExtenderApp.Data
         public ModDetails(ModeInfo modeInfo) : this()
         {
             this.modeInfo = modeInfo;
+            Version = string.IsNullOrEmpty(modeInfo.ModVersion) ? null : new Version(modeInfo.ModVersion);
         }
 
         public ModDetails()

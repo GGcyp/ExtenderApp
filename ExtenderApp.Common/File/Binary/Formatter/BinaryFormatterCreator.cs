@@ -1,6 +1,6 @@
 ﻿using ExtenderApp.Abstract;
 
-namespace ExtenderApp.Common.File.Binary.Formatter
+namespace ExtenderApp.Common.Files.Binary.Formatter
 {
     /// <summary>
     /// 二进制格式创建器类
@@ -56,14 +56,19 @@ namespace ExtenderApp.Common.File.Binary.Formatter
                 return CreatGenericCollection(type);
             }
 
-
             Type genericType = type.BaseType;
             while (genericType != null && !genericType.IsGenericType)
             {
                 genericType = genericType.BaseType;
             }
-            if (genericType == null) return null;
-            return CreatCollection(genericType, type);
+            if (genericType != null)
+            {
+                return CreatCollection(genericType, type);
+            }
+
+            //return typeof(DefaultObjectFormatter<>).MakeGenericType(type);
+
+            return null;
         }
 
         /// <summary>

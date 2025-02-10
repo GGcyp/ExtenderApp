@@ -111,7 +111,7 @@ namespace ExtenderApp.Data.File
         /// <summary>
         /// 表示一个用于管理租用的序列的结构体。
         /// </summary>
-        internal struct Rental : IDisposable
+        public struct Rental : IDisposable
         {
             /// <summary>
             /// 序列池所有者。

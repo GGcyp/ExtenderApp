@@ -11,12 +11,12 @@ namespace ExtenderApp.Service
         /// <summary>
         /// 获取本地文件信息
         /// </summary>
-        public LocalFileInfo LocalFileInfo { get; }
+        public ExpectLocalFileInfo FileInfo { get; }
 
         /// <summary>
         /// 获取或设置本地数据
         /// </summary>
-        public LocalData LocalData { get; set; }
+        public LocalData? LocalData { get; set; }
 
         /// <summary>
         /// 获取或设置序列化方法的信息。
@@ -28,7 +28,7 @@ namespace ExtenderApp.Service
         /// </summary>
         /// <param name="filePath">本地文件的路径</param>
         /// <param name="localDataType">本地数据类型</param>
-        public LocalDataInfo(string filePath, MethodInfo serializeMethodInfo) : this(new LocalFileInfo(filePath), serializeMethodInfo)
+        public LocalDataInfo(string folderPath, string fileName, MethodInfo serializeMethodInfo) : this(new ExpectLocalFileInfo(folderPath, fileName), serializeMethodInfo)
         {
 
         }
@@ -38,9 +38,9 @@ namespace ExtenderApp.Service
         /// </summary>
         /// <param name="localFileInfo">本地文件信息</param>
         /// <param name="localDataType">本地数据类型</param>
-        public LocalDataInfo(LocalFileInfo localFileInfo, MethodInfo serializeMethodInfo)
+        public LocalDataInfo(ExpectLocalFileInfo fileInfo, MethodInfo serializeMethodInfo)
         {
-            LocalFileInfo = localFileInfo;
+            FileInfo = fileInfo;
             SerializeMethodInfo = serializeMethodInfo;
         }
     }

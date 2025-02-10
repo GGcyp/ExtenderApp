@@ -1,6 +1,6 @@
 ﻿using System.Collections.ObjectModel;
 using ExtenderApp.Abstract;
-using ExtenderApp.Common.File.Binary.Formatter;
+using ExtenderApp.Common.Files.Binary.Formatter;
 using ExtenderApp.Data;
 
 namespace ExtenderApp.Media
@@ -12,6 +12,8 @@ namespace ExtenderApp.Media
         private readonly IBinaryFormatter<ObservableCollection<VideoInfo>> _videoInfoFormatter;
 
         public override MediaModel Default => new MediaModel() { VideoInfos = _videoInfoFormatter.Default };
+
+        public override int Count => _boolFormatter.Count * 2 + _doubleFormatter.Count + _videoInfoFormatter.Count;
 
         public MediaModelFormatter(IBinaryFormatterResolver resolver) : base(resolver)
         {
@@ -35,14 +37,23 @@ namespace ExtenderApp.Media
         {
             if (value == null)
             {
-                _boolFormatter.Serialize(ref writer, false);
-                return;
+                throw new ArgumentNullException(nameof(value));
             }
 
             _boolFormatter.Serialize(ref writer, value.VideoNotExist);
             _boolFormatter.Serialize(ref writer, value.RecordWatchingTime);
             _doubleFormatter.Serialize(ref writer, value.Volume);
             _videoInfoFormatter.Serialize(ref writer, value.VideoInfos);
+        }
+
+        public override int GetCount(MediaModel value)
+        {
+            if (value == null)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
+
+            return _boolFormatter.Count * 2 + _doubleFormatter.Count + _videoInfoFormatter.GetCount(value.VideoInfos);
         }
     }
 }

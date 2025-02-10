@@ -279,7 +279,7 @@ namespace ExtenderApp.ViewModels
         /// <summary>
         /// 视图接口实例
         /// </summary>
-        protected TView? View { get; set; }
+        protected TView View { get; set; }
 
         public ExtenderAppViewModel(IServiceStore serviceStore) : base(serviceStore)
         {

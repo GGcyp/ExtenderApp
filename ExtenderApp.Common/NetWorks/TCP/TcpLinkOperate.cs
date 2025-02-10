@@ -1,7 +1,6 @@
-﻿using System.Net.Sockets;
-using System.Text;
-using ExtenderApp.Common.NetWorks;
-using ExtenderApp.Common.ObjectPools;
+﻿using System.Buffers;
+using System.Net.Sockets;
+using ExtenderApp.Abstract;
 
 namespace ExtenderApp.Common
 {
@@ -10,6 +9,55 @@ namespace ExtenderApp.Common
     /// </summary>
     public class TcpLinkOperate : IDisposable
     {
+        private class BuffersRent
+        {
+            private readonly Action<byte[]> _callback;
+            private readonly NetworkStream _stream;
+            /// <summary>
+            /// 字节数组池，用于缓存字节数组以提高性能。
+            /// </summary>
+            private readonly ArrayPool<byte> _bufferPool;
+            /// <summary>
+            /// 当前连接的TCP信息。
+            /// </summary>
+            public readonly TcpLinkInfo _currentInfo;
+
+            /// <summary>
+            /// 异步回调方法，用于处理接收到的数据。
+            /// </summary>
+            private AsyncCallback receiveCallback;
+            public BuffersRent(Action<byte[]> action, NetworkStream stream, TcpLinkInfo currentInfo)
+            {
+                _callback = action;
+                _stream = stream;
+                _bufferPool = ArrayPool<byte>.Shared;
+                _currentInfo = currentInfo;
+                receiveCallback = new AsyncCallback(ReceiveCallback);
+            }
+
+            /// <summary>
+            /// 接收数据的回调函数。
+            /// </summary>
+            /// <param name="ar">异步操作的结果。</param>
+            private void ReceiveCallback(IAsyncResult ar)
+            {
+                int bytesRead = _stream!.EndRead(ar);
+                if (bytesRead <= 0) return;
+
+                byte[] buffer = _bufferPool.Rent(_currentInfo.ReceiveBufferSize);
+                _stream.BeginRead(buffer, 0, buffer.Length, receiveCallback, buffer);
+                //if (bytesRead > 0)
+                //{
+                //    callback?.Invoke(buffer);
+                //}
+            }
+        }
+
+        /// <summary>
+        /// 当前连接的TCP信息。
+        /// </summary>
+        public TcpLinkInfo CurrentInfo { get; private set; }
+
         /// <summary>
         /// TCP客户端对象。
         /// </summary>
@@ -20,25 +68,6 @@ namespace ExtenderApp.Common
         /// </summary>
         private NetworkStream? stream;
 
-        /// <summary>
-        /// 回调函数，用于处理接收到的数据。
-        /// </summary>
-        private Action<byte[]>? callback;
-
-        /// <summary>
-        /// 数据缓冲区。
-        /// </summary>
-        private byte[] buffer;
-
-        /// <summary>
-        /// 异步回调方法，用于处理接收到的数据。
-        /// </summary>
-        private AsyncCallback receiveCallback;
-
-        /// <summary>
-        /// 当前连接的TCP信息。
-        /// </summary>
-        public TcpLinkInfo CurrentInfo { get; private set; }
 
         /// <summary>
         /// 构造函数，初始化TCP客户端对象和网络流对象。
@@ -47,7 +76,6 @@ namespace ExtenderApp.Common
         internal TcpLinkOperate()
         {
             _client = new TcpClient();
-            receiveCallback = new AsyncCallback(ReceiveCallback);
         }
 
         #region Connect
@@ -95,25 +123,13 @@ namespace ExtenderApp.Common
             if (stream == null)
                 throw new InvalidOperationException("还未连接");
 
-            this.callback = callback;
-            stream.BeginRead(buffer, 0, buffer.Length, receiveCallback, buffer);
-        }
-
-        /// <summary>
-        /// 接收数据的回调函数。
-        /// </summary>
-        /// <param name="ar">异步操作的结果。</param>
-        private void ReceiveCallback(IAsyncResult ar)
-        {
-            int bytesRead = stream!.EndRead(ar);
-            if (bytesRead > 0)
-            {
-                callback?.Invoke(buffer);
-            }
-            stream.BeginRead(buffer, 0, buffer.Length, receiveCallback, buffer);
+            //this.callback = callback;
+            //stream.BeginRead(buffer, 0, buffer.Length, receiveCallback, buffer);
         }
 
         #endregion
+
+        #region Send
 
         /// <summary>
         /// 同步发送数据。
@@ -140,6 +156,8 @@ namespace ExtenderApp.Common
             stream.WriteAsync(send);
         }
 
+        #endregion
+
         /// <summary>
         /// 设置TCP客户端的配置信息。
         /// </summary>
@@ -150,10 +168,10 @@ namespace ExtenderApp.Common
             {
                 _client.ReceiveBufferSize = linkInfo.ReceiveBufferSize;
 
-                if (buffer is null)
-                    buffer = new byte[linkInfo.ReceiveBufferSize];
-                else
-                    buffer = buffer.Length < linkInfo.ReceiveBufferSize ? new byte[linkInfo.ReceiveBufferSize] : buffer;
+                //if (buffer is null)
+                //    buffer = new byte[linkInfo.ReceiveBufferSize];
+                //else
+                //    buffer = buffer.Length < linkInfo.ReceiveBufferSize ? new byte[linkInfo.ReceiveBufferSize] : buffer;
             }
 
             if (_client.SendBufferSize < linkInfo.SendBufferSize)

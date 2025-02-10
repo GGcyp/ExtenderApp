@@ -2,7 +2,7 @@
 using System.Text;
 using ExtenderApp.Data;
 
-namespace ExtenderApp.Common.File.Binary
+namespace ExtenderApp.Common.Files.Binary
 {
     /// <summary>
     /// BinaryConvert 类的一部分，提供二进制数据转换功能。

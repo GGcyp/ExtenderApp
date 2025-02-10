@@ -8,7 +8,12 @@ namespace ExtenderApp.Abstract
     /// </summary>
     public interface IBinaryFormatter
     {
-
+        /// <summary>
+        /// 获取当前类型默认字节数量，用于序列化和反序列化。
+        /// 如果是Collection类型，返回的头元素中字节的数量。
+        /// </summary>
+        /// <returns>字节数量</returns>
+        int Count { get; }
     }
 
     /// <summary>
@@ -18,10 +23,11 @@ namespace ExtenderApp.Abstract
     public interface IBinaryFormatter<T> : IBinaryFormatter
     {
         /// <summary>
-        /// 将指定对象序列化为二进制数据并写入到 <see cref="Data.ExtenderBinaryWriter"/> 中。
+        /// 将指定值序列化到指定的二进制写入器中。
         /// </summary>
-        /// <param name="writer"><see cref="Data.ExtenderBinaryWriter"/> 实例，用于写入二进制数据。</param>
-        /// <param name="value">需要序列化的对象。</param>
+        /// <param name="writer">要写入数据的二进制写入器。</param>
+        /// <param name="value">要序列化的值。</param>
+        /// <returns>序列化后的字节数。</returns>
         void Serialize(ref ExtenderBinaryWriter writer, T value);
 
         /// <summary>
@@ -36,5 +42,13 @@ namespace ExtenderApp.Abstract
         /// </summary>
         /// <value>返回类型T的默认值。</value>
         T Default { get; }
+
+        /// <summary>
+        /// 获取需要转换类型需要的字节数量。
+        /// 如果引用类型为null，返回1。
+        /// </summary>
+        /// <param name="value">要获取字节数量的值。</param>
+        /// <returns>返回所需字节数。</returns>
+        int GetCount(T value);
     }
 }

@@ -43,5 +43,13 @@
         /// 返回ITimerService类型的服务实例。
         /// </value>
         IScheduledTaskService ScheduledTaskService { get; }
+
+        /// <summary>
+        /// 获取路径服务接口。
+        /// </summary>
+        /// <value>
+        /// 返回实现IPathService接口的对象。
+        /// </value>
+        IPathService PathService { get; }
     }
 }

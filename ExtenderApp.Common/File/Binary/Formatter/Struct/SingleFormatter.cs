@@ -1,6 +1,6 @@
 ﻿using ExtenderApp.Data;
 
-namespace ExtenderApp.Common.File.Binary.Formatter
+namespace ExtenderApp.Common.Files.Binary.Formatter
 {
     /// <summary>
     /// 浮点数格式化器类
@@ -10,6 +10,8 @@ namespace ExtenderApp.Common.File.Binary.Formatter
     /// </remarks>
     internal class SingleFormatter : ExtenderFormatter<Single>
     {
+        public override int Count => 5;
+
         public SingleFormatter(ExtenderBinaryWriterConvert binaryWriterConvert, ExtenderBinaryReaderConvert binaryReaderConvert, BinaryOptions options) : base(binaryWriterConvert, binaryReaderConvert, options)
         {
         }
