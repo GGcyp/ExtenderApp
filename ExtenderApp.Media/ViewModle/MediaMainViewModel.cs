@@ -1,4 +1,5 @@
 ﻿using ExtenderApp.Abstract;
+using ExtenderApp.Common;
 using ExtenderApp.Data;
 using ExtenderApp.ViewModels;
 using ExtenderApp.Views;
@@ -37,9 +38,9 @@ namespace ExtenderApp.Media
         private bool isPlaying;
 
         /// <summary>
-        /// 扩展的取消令牌，用于管理当前时间的更新。
+        /// 一个只读字段，存储一个ScheduledTask对象。
         /// </summary>
-        private ExtenderCancellationToken currentTimeToken;
+        private readonly ScheduledTask _task;
 
         #endregion
 
@@ -150,6 +151,8 @@ namespace ExtenderApp.Media
         {
             InitVideoCommand();
             InitData();
+
+            _task = new ScheduledTask();
         }
 
         /// <summary>
@@ -290,7 +293,7 @@ namespace ExtenderApp.Media
             Model.PlayAction.Invoke();
             isPlaying = true;
 
-            currentTimeToken.Resume();
+            _task.Resume();
         }
 
         /// <summary>
@@ -305,7 +308,7 @@ namespace ExtenderApp.Media
                 Model.CurrentVideoInfo.VideoWatchedPosition = Position;
 
             isPlaying = false;
-            currentTimeToken.Pause();
+            _task.Pause();
             SaveModel();
         }
 
@@ -322,7 +325,7 @@ namespace ExtenderApp.Media
             Model.StopAction.Invoke();
             Model.CurrentVideoInfo = null;
             isPlaying = false;
-            currentTimeToken.Stop();
+            _task.Stop();
             SaveModel();
         }
 
@@ -347,7 +350,7 @@ namespace ExtenderApp.Media
             {
                 TotalTime = Model.NaturalDurationFunc.Invoke().TimeSpan;
                 CurrentTime = Model.RecordWatchingTime ? Model.CurrentVideoInfo.VideoWatchedPosition : new TimeSpan(0, 0, 0);
-                currentTimeToken = StartCycle(o =>
+                _task.StartCycle(o =>
                 {
                     DispatcherInvoke(() =>
                     {

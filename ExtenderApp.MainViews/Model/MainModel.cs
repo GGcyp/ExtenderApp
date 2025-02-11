@@ -10,7 +10,7 @@ namespace ExtenderApp.MainViews
         public IMainView CurrentMainView { get; set; }
         public Action ToHomeAction { get; set; }
         public Action ToRunAction { get; set; }
-        public ModDetails CurrentModDetails { get; set; }
+        public PluginDetails CurrentModDetails { get; set; }
 
         public MainModel(IMainWindow mainWindow)
         {

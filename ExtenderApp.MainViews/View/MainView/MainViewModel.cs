@@ -29,7 +29,7 @@ namespace ExtenderApp.MainViews
 
             _mainModel.CurrentMainView = View;
             if (View.GetType() == typeof(MainView))
-                View.ShowView(NavigateTo<ModView>());
+                View.ShowView(NavigateTo<PluginView>());
         }
 
         /// <summary>

@@ -1,6 +1,6 @@
 ﻿using System.Collections.ObjectModel;
 using ExtenderApp.Abstract;
-using ExtenderApp.Common.Files.Binary.Formatter;
+using ExtenderApp.Common.IO.Binary.Formatter;
 using ExtenderApp.Data;
 
 namespace ExtenderApp.Media

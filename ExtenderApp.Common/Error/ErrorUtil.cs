@@ -1,5 +1,7 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics;
+using System.IO;
+using ExtenderApp.Data;
 
 
 namespace ExtenderApp.Common.Error
@@ -23,6 +25,18 @@ namespace ExtenderApp.Common.Error
         {
             if (condition) return;
 
+            throw new ArgumentOutOfRangeException(parameterName, message);
+        }
+
+        /// <summary>
+        /// 抛出一个<see cref="ArgumentOutOfRangeException"/>异常，表示传入的参数超出了有效范围。
+        /// </summary>
+        /// <param name="parameterName">导致异常的参数名称。</param>
+        /// <param name="message">异常的详细信息，可以为null。</param>
+        /// <exception cref="ArgumentOutOfRangeException">当参数超出了有效范围时抛出。</exception>
+        [DebuggerStepThrough]
+        public static void ArgumentOutOfRange(string parameterName, string? message = null)
+        {
             throw new ArgumentOutOfRangeException(parameterName, message);
         }
 
@@ -229,11 +243,12 @@ namespace ExtenderApp.Common.Error
         /// 如果值为null，则抛出<see cref="InvalidOperationException"/>异常，并附带指定的消息。
         /// </remarks>
         [DebuggerStepThrough]
-        internal static void Operation<T>(this T value, string message) where T : class
+        public static void Operation<T>(this T value, string message) where T : class
         {
             if (value is not null) return;
 
-            throw new InvalidOperationException(message);
+            //throw new InvalidOperationException(message);
+            Operation(message);
         }
 
         /// <summary>
@@ -243,11 +258,72 @@ namespace ExtenderApp.Common.Error
         /// <param name="message">操作失败时抛出的异常信息。</param>
         /// <exception cref="InvalidOperationException">当 <paramref name="condition"/> 为 false 时抛出。</exception>
         [DebuggerStepThrough]
-        internal static void Operation(this bool condition, string message)
+        public static void Operation(this bool condition, string message)
         {
             if (condition) return;
 
-            throw new InvalidOperationException(message);
+            //throw new InvalidOperationException(message);
+            Operation(message);
+        }
+
+        /// <summary>
+        /// 当条件为假时，执行一个操作。
+        /// </summary>
+        /// <param name="condition">判断条件。</param>
+        /// <param name="message">要传递的消息。</param>
+        /// <param name="args">要传递的参数列表。</param>
+        [DebuggerStepThrough]
+        public static void Operation(this bool condition, string message, params object[] args)
+        {
+            if (condition) return;
+
+            Operation(message, args);
+        }
+
+        /// <summary>
+        /// 抛出一个异常，包含指定格式的消息和参数。
+        /// </summary>
+        /// <param name="message">包含占位符的格式化字符串。</param>
+        /// <param name="args">与消息中的占位符对应的参数。</param>
+        /// <exception cref="InvalidOperationException">如果调用此方法，则始终抛出此异常。</exception>
+        [DebuggerStepThrough]
+        public static void Operation(string message, params object[] args)
+        {
+            throw new InvalidOperationException(string.Format(message, args));
+        }
+
+        #endregion
+
+        #region FileNotFoundException
+
+        /// <summary>
+        /// 抛出文件未找到的异常。
+        /// </summary>
+        /// <param name="message">异常消息。</param>
+        /// <exception cref="FileNotFoundException">当文件未找到时抛出此异常。</exception>
+        public static void FileNotFound(string message)
+        {
+            throw new FileNotFoundException(message);
+        }
+
+        /// <summary>
+        /// 当文件未找到时抛出异常。
+        /// </summary>
+        /// <param name="folderPath">文件所在的文件夹路径。</param>
+        /// <param name="fileName">文件名。</param>
+        /// <exception cref="FileNotFoundException">当文件未找到时抛出。</exception>
+        public static void FileNotFound(string folderPath, string fileName)
+        {
+            FileNotFound(string.Format("未发现文件，路径：{0}，名字：{1}", folderPath, fileName));
+        }
+
+        /// <summary>
+        /// 当指定的本地文件不存在时，调用此方法来处理。
+        /// </summary>
+        /// <param name="fileInfo">包含文件信息的对象。</param>
+        public static void FileNotFound(this ExpectLocalFileInfo fileInfo)
+        {
+            FileNotFound(fileInfo.FolderPath, fileInfo.FileName);
         }
 
         #endregion

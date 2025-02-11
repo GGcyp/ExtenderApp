@@ -1,10 +1,8 @@
 ﻿using System.Collections.Concurrent;
-using AppHost.Extensions.Hosting;
 using ExtenderApp.Abstract;
 using ExtenderApp.Data;
 using System.Text;
 using System.Diagnostics;
-using ExtenderApp.Service;
 using ExtenderApp.Common;
 
 namespace ExtenderApp.Services
@@ -32,14 +30,14 @@ namespace ExtenderApp.Services
         /// <summary>
         /// 只读私有变量，表示用于扩展功能的取消令牌。
         /// </summary>
-        private readonly ExtenderCancellationToken _token;
+        private readonly ScheduledTask _task;
 
         /// <summary>
         /// 构造函数，初始化日志服务
         /// </summary>
         /// <param name="service">刷新服务</param>
         /// <param name="environment">主机环境</param>
-        public LoggingService(IScheduledTaskService taskService, IPathService provider)
+        public LoggingService(IPathService provider)
         {
             _logQueue = new ConcurrentQueue<LogInfo>();
 
@@ -51,7 +49,8 @@ namespace ExtenderApp.Services
                 Directory.CreateDirectory(logFolderPath);
             }
 
-            _token = taskService.StartCycle(o => FixUpdate(), 1000);
+            _task = new();
+            _task.StartCycle(o => FixUpdate(), 1000);
 
             _pathProvider = provider;
             _logText = new StringBuilder();

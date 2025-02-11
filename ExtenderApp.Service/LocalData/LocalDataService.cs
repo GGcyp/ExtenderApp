@@ -40,7 +40,7 @@ namespace ExtenderApp.Service
         /// <summary>
         /// 自动保存任务的取消令牌。
         /// </summary>
-        private ExtenderCancellationToken autosaveTokn;
+        private ScheduledTask autosaveTokn;
 
         /// <summary>
         /// 方法参数数组。
@@ -52,7 +52,7 @@ namespace ExtenderApp.Service
         /// </summary>
         private MethodInfo serializeMethod;
 
-        public LocalDataService(IPathService pathService, ISplitterParser splitter, IBinaryParser parser, IBinaryFormatterStore store, ILogingService logingService, IScheduledTaskService taskService)
+        public LocalDataService(IPathService pathService, ISplitterParser splitter, IBinaryParser parser, IBinaryFormatterStore store, ILogingService logingService)
         {
             _parser = parser;
             _pathService = pathService;
@@ -61,7 +61,8 @@ namespace ExtenderApp.Service
             _localDataDict = new();
             _logingService = logingService;
 
-            autosaveTokn = taskService.StartCycle(o => SaveAllData(), TimeSpan.FromMinutes(5));
+            autosaveTokn = new ScheduledTask();
+            autosaveTokn.StartCycle(o => SaveAllData(), TimeSpan.FromMinutes(5));
 
             //获取函数信息
             methodParameters = new object?[3];

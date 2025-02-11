@@ -1,5 +1,5 @@
-﻿using ExtenderApp.Common.Files.Binary.Formatter;
-using ExtenderApp.Common.Files.Binary;
+﻿using ExtenderApp.Common.IO.Binary.Formatter;
+using ExtenderApp.Common.IO.Binary;
 using ExtenderApp.Data;
 using ExtenderApp.Abstract;
 

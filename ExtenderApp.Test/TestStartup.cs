@@ -4,7 +4,7 @@ using ExtenderApp.Services;
 
 namespace ExtenderApp.Test
 {
-    internal class TestStartup : ModEntityStartup
+    internal class TestStartup : PluginEntityStartup
     {
         public override Type StartType => typeof(TestMainView);
 

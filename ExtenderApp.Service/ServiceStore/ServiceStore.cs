@@ -15,18 +15,16 @@ namespace ExtenderApp.Services
 
         public ILogingService LogingService { get; }
 
-        public IModService ModService { get; }
+        public IPluginService ModService { get; }
 
         public ILocalDataService LocalDataService { get; }
-
-        public IScheduledTaskService ScheduledTaskService { get; }
 
         public IPathService PathService { get; }
 
         public ServiceStore(IDispatcherService dispatcherService,
             INavigationService navigationService, ITemporarilyService temporarilyStore,
-            ILogingService logingService, IModService modService,
-            ILocalDataService localDataService, IScheduledTaskService scheduledTaskService, IPathService pathService)
+            ILogingService logingService, IPluginService modService,
+            ILocalDataService localDataService, IPathService pathService)
         {
             DispatcherService = dispatcherService;
             NavigationService = navigationService;
@@ -34,7 +32,6 @@ namespace ExtenderApp.Services
             LogingService = logingService;
             ModService = modService;
             LocalDataService = localDataService;
-            ScheduledTaskService = scheduledTaskService;
             PathService = pathService;
         }
     }

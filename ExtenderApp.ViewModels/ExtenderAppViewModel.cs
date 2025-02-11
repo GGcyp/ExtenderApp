@@ -5,6 +5,7 @@ using ExtenderApp.Services;
 using ExtenderApp.Data;
 using ExtenderApp.Common.Error;
 using ExtenderApp.Service;
+using ExtenderApp.Common;
 
 namespace ExtenderApp.ViewModels
 {
@@ -76,12 +77,12 @@ namespace ExtenderApp.ViewModels
             return (TView)NavigateTo(typeof(TView), scope);
         }
 
-        protected TView NavigateTo<TView>(ModDetails modDetails) where TView : class, IView
+        protected TView NavigateTo<TView>(PluginDetails modDetails) where TView : class, IView
         {
             return NavigateTo<TView>(modDetails.ModScope);
         }
 
-        protected IView NavigateTo(ModDetails modDetails)
+        protected IView NavigateTo(PluginDetails modDetails)
         {
             modDetails.ArgumentNull(nameof(modDetails));
             modDetails.StartupType.ArgumentObjectNull(nameof(modDetails));
@@ -157,7 +158,7 @@ namespace ExtenderApp.ViewModels
         /// 获取当前模块的详细信息。
         /// </summary>
         /// <returns>当前模块的详细信息，如果无法获取则返回null。</returns>
-        protected ModDetails? GetCurrentModDetails()
+        protected PluginDetails? GetCurrentModDetails()
         {
             if (_serviceStore is IModServiceStore service)
                 return service.ModDetails;
@@ -209,9 +210,11 @@ namespace ExtenderApp.ViewModels
         /// <param name="dueTime">任务开始执行前的延迟时间。</param>
         /// <param name="period">任务执行的周期。</param>
         /// <returns>返回用于控制任务的 ExtenderCancellationToken 对象。</returns>
-        protected ExtenderCancellationToken Start(Action<object> callback, object state, TimeSpan dueTime, TimeSpan period)
+        protected ScheduledTask Start(Action<object> callback, object state, TimeSpan dueTime, TimeSpan period)
         {
-            return _serviceStore.ScheduledTaskService.Start(callback, state, dueTime, period);
+            ScheduledTask task = new ScheduledTask();
+            task.Start(callback, state, dueTime, period);
+            return task;
         }
 
         /// <summary>
@@ -220,7 +223,7 @@ namespace ExtenderApp.ViewModels
         /// <param name="callback">任务执行时的回调函数。</param>
         /// <param name="period">任务执行的周期。</param>
         /// <returns>返回用于控制任务的 ExtenderCancellationToken 对象。</returns>
-        protected ExtenderCancellationToken StartCycle(Action<object> callback, TimeSpan period)
+        protected ScheduledTask StartCycle(Action<object> callback, TimeSpan period)
         {
             return StartCycle(callback, null, period);
         }
@@ -232,9 +235,11 @@ namespace ExtenderApp.ViewModels
         /// <param name="state">传递给回调函数的状态对象。</param>
         /// <param name="period">任务执行的周期。</param>
         /// <returns>返回用于控制任务的 ExtenderCancellationToken 对象。</returns>
-        protected ExtenderCancellationToken StartCycle(Action<object> callback, object state, TimeSpan period)
+        protected ScheduledTask StartCycle(Action<object> callback, object state, TimeSpan period)
         {
-            return _serviceStore.ScheduledTaskService.StartCycle(callback, state, period);
+            ScheduledTask task = new ScheduledTask();
+            task.StartCycle(callback, state,  period);
+            return task;
         }
 
         /// <summary>
@@ -243,7 +248,7 @@ namespace ExtenderApp.ViewModels
         /// <param name="callback">任务执行时的回调函数。</param>
         /// <param name="dueTime">任务开始执行前的延迟时间。</param>
         /// <returns>返回用于控制任务的 ExtenderCancellationToken 对象。</returns>
-        protected ExtenderCancellationToken StartDelay(Action<object> callback, TimeSpan dueTime)
+        protected ScheduledTask StartDelay(Action<object> callback, TimeSpan dueTime)
         {
             return StartDelay(callback, null, dueTime);
         }
@@ -255,9 +260,11 @@ namespace ExtenderApp.ViewModels
         /// <param name="state">传递给回调函数的状态对象。</param>
         /// <param name="dueTime">任务开始执行前的延迟时间。</param>
         /// <returns>返回用于控制任务的 ExtenderCancellationToken 对象。</returns>
-        protected ExtenderCancellationToken StartDelay(Action<object> callback, object state, TimeSpan dueTime)
+        protected ScheduledTask StartDelay(Action<object> callback, object state, TimeSpan dueTime)
         {
-            return _serviceStore.ScheduledTaskService.StartDelay(callback, state, dueTime);
+            ScheduledTask task = new ScheduledTask();
+            task.StartDelay(callback, state, dueTime);
+            return task;
         }
 
         #endregion

@@ -11,6 +11,6 @@ namespace ExtenderApp.Abstract
         /// 获取当前范围服务的模块详细信息。
         /// </summary>
         /// <value>返回当前范围服务的模块详细信息。</value>
-        public ModDetails ModDetails { get; }
+        public PluginDetails ModDetails { get; }
     }
 }

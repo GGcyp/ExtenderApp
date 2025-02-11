@@ -7,7 +7,7 @@ using ExtenderApp.Media.Model;
 
 namespace ExtenderApp.Media
 {
-    internal class MedaiStartup : ModEntityStartup
+    internal class MedaiStartup : PluginEntityStartup
     {
         public override Type StartType => typeof(MediaMainView);
 

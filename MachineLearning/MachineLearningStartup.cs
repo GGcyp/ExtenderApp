@@ -4,7 +4,7 @@ using ExtenderApp.Services;
 
 namespace ExtenderApp.ML
 {
-    internal class MachineLearningStartup : ModEntityStartup
+    internal class MachineLearningStartup : PluginEntityStartup
     {
         public override Type StartType => typeof(MachineLearningMainView);
 

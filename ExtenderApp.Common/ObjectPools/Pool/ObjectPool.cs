@@ -6,7 +6,7 @@ namespace ExtenderApp.Common.ObjectPools
     /// <summary>
     /// 一个对象池基类。
     /// </summary>
-    public abstract class ObjectPool<T> : IObjectPool<T> where T : class
+    public abstract class ObjectPool<T> :  IObjectPool<T> where T : class
     {
         /// <summary>
         /// 对象池中还有多少对象
@@ -26,7 +26,8 @@ namespace ExtenderApp.Common.ObjectPools
 
         public void Release(object obj)
         {
-            if (obj == null) throw new ArgumentNullException(nameof(obj));
+            if (obj == null) 
+                throw new ArgumentNullException(nameof(obj));
 
             if (obj is not T result)
                 throw new InvalidOperationException(string.Format("回收类型不正确：{0}", obj.GetType().FullName));

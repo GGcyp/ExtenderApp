@@ -1,7 +1,7 @@
 ﻿using AppHost.Builder;
 using AppHost.Extensions.DependencyInjection;
 using ExtenderApp.Abstract;
-using ExtenderApp.Common.Files;
+using ExtenderApp.Common.IO;
 using ExtenderApp.Data;
 using ExtenderApp.Service;
 
@@ -23,7 +23,6 @@ namespace ExtenderApp.Services
             services.AddSingleton<ITemporarilyService, TemporarilyService>();
             services.AddSingleton<ILogingService, LoggingService>();
             services.AddSingleton<IPathService, PathService>();
-            services.AddSingleton<IScheduledTaskService, ScheduledTaskService>();
 
             AddModService(services);
             AddLocaDataService(services);
@@ -35,8 +34,8 @@ namespace ExtenderApp.Services
         /// <param name="services">服务集合。</param>
         private void AddModService(IServiceCollection services)
         {
-            services.AddSingleton<IModService, ModService>();
-            services.AddSingleton<ModStore>();
+            services.AddSingleton<IPluginService, PluginService>();
+            services.AddSingleton<PluginStore>();
         }
 
         /// <summary>

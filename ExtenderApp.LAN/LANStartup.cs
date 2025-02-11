@@ -5,7 +5,7 @@ using ExtenderApp.Common;
 
 namespace ExtenderApp.LAN
 {
-    internal class LANStartup : ModEntityStartup
+    internal class LANStartup : PluginEntityStartup
     {
         public override Type StartType => typeof(LANMainView);
 

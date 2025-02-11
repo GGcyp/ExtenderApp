@@ -9,9 +9,9 @@ namespace ExtenderApp.Service
     /// </summary>
     internal class ScopeServiceStore : ServiceStore, IModServiceStore
     {
-        public ModDetails ModDetails { get; }
+        public PluginDetails ModDetails { get; }
 
-        public ScopeServiceStore(ModDetails modDetails, IDispatcherService dispatcherService, INavigationService navigationService, ITemporarilyService temporarilyStore, ILogingService logingService, IModService modService, ILocalDataService localDataService, IScheduledTaskService scheduledTaskService, IPathService pathService) : base(dispatcherService, navigationService, temporarilyStore, logingService, modService, localDataService, scheduledTaskService, pathService)
+        public ScopeServiceStore(PluginDetails modDetails, IDispatcherService dispatcherService, INavigationService navigationService, ITemporarilyService temporarilyStore, ILogingService logingService, IPluginService modService, ILocalDataService localDataService, IPathService pathService) : base(dispatcherService, navigationService, temporarilyStore, logingService, modService, localDataService, pathService)
         {
             ModDetails = modDetails;
         }

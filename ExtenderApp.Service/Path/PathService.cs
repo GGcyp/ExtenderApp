@@ -1,7 +1,7 @@
 ﻿using AppHost.Extensions.Hosting;
 using ExtenderApp.Abstract;
 
-namespace ExtenderApp.Common.Files
+namespace ExtenderApp.Common.IO
 {
     /// <summary>
     /// 路径提供者类，实现了INAMEProvider接口

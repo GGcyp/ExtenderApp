@@ -28,21 +28,13 @@
         /// <summary>
         /// 获取模组服务
         /// </summary>
-        IModService ModService { get; }
+        IPluginService ModService { get; }
 
         /// <summary>
         /// 获取本地数据服务接口。
         /// </summary>
         /// <returns>返回本地数据服务接口。</returns>
         ILocalDataService LocalDataService { get; }
-
-        /// <summary>
-        /// 获取ITimerService服务实例。
-        /// </summary>
-        /// <value>
-        /// 返回ITimerService类型的服务实例。
-        /// </value>
-        IScheduledTaskService ScheduledTaskService { get; }
 
         /// <summary>
         /// 获取路径服务接口。

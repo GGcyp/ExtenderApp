@@ -13,8 +13,8 @@ namespace ExtenderApp.MainViews
 
             AddMainView(services);
 
-            services.AddTransient<ModView>();
-            services.AddTransient<ModViewModle>();
+            services.AddTransient<PluginView>();
+            services.AddTransient<PluginViewModle>();
         }
 
         private void AddMainView(IServiceCollection services)
