@@ -1,116 +1,342 @@
-﻿using ExtenderApp.Abstract;
-using ExtenderApp.Common.IO.StreamOperates;
+﻿using System.Buffers;
+using ExtenderApp.Abstract;
+using ExtenderApp.Common.Error;
 using ExtenderApp.Data;
+using ExtenderApp.Common.ObjectPools;
+using ExtenderApp.Common.ConcurrentOperates;
+using ExtenderApp.Common.DataBuffers;
+using ExtenderApp.Common.IO.FileParsers;
 
 namespace ExtenderApp.Common.IO.Splitter
 {
     /// <summary>
     /// 分割器解析器类
     /// </summary>
-    internal class SplitterParser : ISplitterParser
+    internal class SplitterParser : FileParser<SplitterStreamOperatePolicy, SplitterStreamOperateData>, ISplitterParser
     {
         /// <summary>
         /// 二进制解析器接口
         /// </summary>
         private readonly IBinaryParser _binaryParser;
 
-        private readonly StreamOperatePool _pool;
+        /// <summary>
+        /// 用于管理SplitterWriteOperation对象的对象池。
+        /// </summary>
+        private readonly ObjectPool<SplitterWriteOperation> _writeOperationPool;
+
+        /// <summary>
+        /// 用于管理SplitterReadOperation对象的对象池。
+        /// </summary>
+        private readonly ObjectPool<SplitterReadOperation> _readOperationPool;
 
         /// <summary>
         /// 信息扩展
         /// </summary>
         private readonly string infoExtensions;
 
-        public SplitterParser(IBinaryParser parser, StreamOperatePool pool)
+        protected override SplitterStreamOperatePolicy Policy { get; }
+
+        public SplitterParser(IBinaryParser parser, FileStore store) : base(store)
         {
             _binaryParser = parser;
             infoExtensions = FileExtensions.BinaryFileExtensions;
-            _pool = pool;
+            _readOperationPool = ObjectPool.Create(new ConcurrentOperationPoolPolicy<SplitterReadOperation>(a => new SplitterReadOperation(a)));
+            _writeOperationPool = ObjectPool.Create(new ConcurrentOperationPoolPolicy<SplitterWriteOperation>(a => new SplitterWriteOperation(a)));
+            Policy = new SplitterStreamOperatePolicy(parser);
         }
 
-        #region 无法这么使用
+        #region Read
 
-        public T? Deserialize<T>(ExpectLocalFileInfo info, object? options = null)
+        public override T? Read<T>(ExpectLocalFileInfo info, IConcurrentOperate fileOperate = null, object? options = null) where T : default
         {
-            throw new NotImplementedException();
+            if (info.IsEmpty)
+            {
+                ErrorUtil.ArgumentNull(nameof(info));
+            }
+
+            return Read<T>(info.CreateWriteOperate(FileExtensions.SplitterFileExtensions), fileOperate, options);
         }
 
-        public T? Deserialize<T>(FileOperateInfo operate, object? options = null)
+        public override T? Read<T>(FileOperateInfo info, IConcurrentOperate fileOperate = null, object? options = null) where T : default
         {
-            throw new NotImplementedException();
+            info.ThrowFileNotFound();
+
+            var splitterOperate = GetFileSplitterOperate(info, fileOperate);
+            var operation = _readOperationPool.Get();
+
+            if (options is SplitterInfo splitterInfo)
+            {
+                splitterOperate.Data.SplitterInfo = splitterInfo;
+            }
+            else
+            {
+                splitterInfo = splitterOperate.Data.SplitterInfo;
+            }
+
+            //operation.Set(splitterInfo.GetLastChunkIndex(), splitterInfo);
+            operation.Set(1, splitterInfo);
+            splitterOperate.ExecuteOperation(operation);
+            T result = _binaryParser.Deserialize<T>(operation.ReadBytes);
+            ArrayPool<byte>.Shared.Return(operation.ReadBytes);
+            operation.Release();
+            return result;
         }
 
-        public ValueTask<T?> DeserializeAsync<T>(ExpectLocalFileInfo info, object? options = null)
+        public override void ReadAsync<T>(ExpectLocalFileInfo info, Action<T>? callback, IConcurrentOperate fileOperate = null, object? options = null)
         {
-            throw new NotImplementedException();
+            if (info.IsEmpty)
+            {
+                ErrorUtil.ArgumentNull(nameof(info));
+            }
+
+            ReadAsync(info.CreateWriteOperate(FileExtensions.SplitterFileExtensions), callback, fileOperate, options); ;
         }
 
-        public ValueTask<T?> DeserializeAsync<T>(FileOperateInfo operate, object? options = null)
+        public override void ReadAsync<T>(FileOperateInfo info, Action<T>? callback, IConcurrentOperate fileOperate = null, object? options = null)
         {
-            throw new NotImplementedException();
-        }
+            info.ThrowFileNotFound();
 
-        public bool Serialize<T>(ExpectLocalFileInfo info, T value, object? options = null)
-        {
-            throw new NotImplementedException();
-        }
+            var splitterOperate = GetFileSplitterOperate(info, fileOperate);
+            var operation = _readOperationPool.Get();
 
-        public bool Serialize<T>(FileOperateInfo operate, T value, object? options = null)
-        {
-            throw new NotImplementedException();
-        }
+            var buffer = DataBuffer<IBinaryParser, Delegate>.GetDataBuffer();
+            buffer.Item1 = _binaryParser;
+            buffer.Item2 = callback;
+            var action = buffer.Process<byte[]>((d, b) =>
+            {
+                var binary = d.Item1;
+                var callback = d.Item2 as Action<T>;
 
-        public ValueTask<bool> SerializeAsync<T>(ExpectLocalFileInfo info, T value, object? options = null)
-        {
-            throw new NotImplementedException();
-        }
+                var temp = binary.Deserialize<T>(b);
+                callback?.Invoke(temp);
+                d.Release();
+            });
 
-        public ValueTask<bool> SerializeAsync<T>(FileOperateInfo operate, T value, object? options = null)
-        {
-            throw new NotImplementedException();
+            if (options is SplitterInfo splitterInfo)
+            {
+                splitterOperate.Data.SplitterInfo = splitterInfo;
+            }
+            else
+            {
+                splitterInfo = splitterOperate.Data.SplitterInfo;
+            }
+
+            operation.Set(splitterInfo.GetLastChunkIndex(), action, splitterInfo);
+            splitterOperate.QueueOperation(operation);
         }
 
         #endregion
 
-        public void Write(ExpectLocalFileInfo info, byte[] bytes, uint chunkIndex)
+        #region Write
+
+        public override void Write<T>(ExpectLocalFileInfo info, T value, IConcurrentOperate fileOperate = null, object? options = null)
         {
-            var operate = GetFileSplitterOperate(info);
-            //var operation = _factory.GetWriteOperation(operate);
-            //operation.Set(bytes, chunkIndex);
-            //operate.Set(operation);
+            if (info.IsEmpty)
+            {
+                ErrorUtil.ArgumentNull(nameof(info));
+            }
+
+            Write(info.CreateWriteOperate(FileExtensions.SplitterFileExtensions), value, fileOperate, options);
         }
 
-        public void Write<T>(ExpectLocalFileInfo info, T value, uint chunkIndex)
+        public override void Write<T>(FileOperateInfo info, T value, IConcurrentOperate fileOperate = null, object? options = null)
         {
-            var operate = GetFileSplitterOperate(info);
+            info.ThrowFileNotFound();
+
+            var splitterOperate = GetFileSplitterOperate(info, fileOperate);
+            var operation = _writeOperationPool.Get();
+
+            if (options is SplitterInfo splitterInfo)
+            {
+                splitterOperate.Data.SplitterInfo = splitterInfo;
+            }
+            else
+            {
+                splitterInfo = splitterOperate.Data.SplitterInfo;
+            }
 
             var bytes = _binaryParser.Serialize(value);
 
-            //if (bytes.Length > operate.SplitterInfo.MaxChunkSize)
-            //{
-            //    throw new ArgumentOutOfRangeException(nameof(value), "数据长度超出最大块大小");
-            //}
+            if (bytes.Length > splitterInfo.MaxChunkSize)
+            {
+                ErrorUtil.ArgumentOutOfRange(nameof(bytes), "数据长度超出最大块大小");
+            }
 
-            //var operation = _factory.GetWriteOperation(operate);
-            //operation.Set(bytes, chunkIndex);
-            //operate.Set(operation);
+            operation.Set(bytes, splitterInfo.GetPosition(splitterInfo.Progress), bytes.Length, splitterInfo);
+            splitterOperate.ExecuteOperation(operation);
+            operation.Release();
         }
+
+        public override void WriteAsync<T>(ExpectLocalFileInfo info, T value, Action? callback = null, IConcurrentOperate fileOperate = null, object? options = null)
+        {
+            WriteAsync(info.CreateWriteOperate(FileExtensions.SplitterFileExtensions), value, callback, fileOperate, options);
+        }
+
+        public override void WriteAsync<T>(FileOperateInfo info, T value, Action? callback = null, IConcurrentOperate fileOperate = null, object? options = null)
+        {
+            info.ThrowFileNotFound();
+
+            var splitterOperate = GetFileSplitterOperate(info, fileOperate);
+            var operation = _writeOperationPool.Get();
+
+            if (options is SplitterInfo splitterInfo)
+            {
+                splitterOperate.Data.SplitterInfo = splitterInfo;
+            }
+            else
+            {
+                splitterInfo = splitterOperate.Data.SplitterInfo;
+            }
+
+            var bytes = _binaryParser.Serialize(value);
+
+            if (bytes.Length > splitterInfo.MaxChunkSize)
+            {
+                ErrorUtil.ArgumentOutOfRange(nameof(bytes), "数据长度超出最大块大小");
+            }
+
+            operation.Set(bytes, splitterInfo.GetPosition(splitterInfo.Progress), bytes.Length, splitterInfo, callback);
+            splitterOperate.QueueOperation(operation);
+        }
+
+        public void Write(ExpectLocalFileInfo info, byte[] bytes, uint chunkIndex, SplitterInfo? splitterInfo = null, IConcurrentOperate fileOperate = null)
+        {
+            var operate = GetFileSplitterOperate(info, fileOperate);
+            var operation = _writeOperationPool.Get();
+
+            if (splitterInfo == null)
+            {
+                splitterInfo = operate.Data.SplitterInfo;
+            }
+            else
+            {
+                operate.Data.SplitterInfo = splitterInfo;
+            }
+
+            if (chunkIndex < 0)
+            {
+                chunkIndex = splitterInfo.Progress;
+            }
+
+            if (chunkIndex >= splitterInfo.ChunkCount)
+            {
+                ErrorUtil.ArgumentOutOfRange(nameof(chunkIndex), string.Format("块索引超出范围:{0}", chunkIndex.ToString()));
+            }
+
+            if (bytes.Length > splitterInfo.MaxChunkSize)
+            {
+                ErrorUtil.ArgumentOutOfRange(nameof(bytes), "数据长度超出最大块大小");
+            }
+
+            operation.Set(bytes, splitterInfo.GetPosition(chunkIndex), bytes.Length, splitterInfo);
+            operate.ExecuteOperation(operation);
+        }
+
+        public void Write<T>(ExpectLocalFileInfo info, T value, uint chunkIndex, SplitterInfo? splitterInfo = null, IConcurrentOperate fileOperate = null)
+        {
+            var bytes = _binaryParser.Serialize(value);
+            Write(info, bytes, chunkIndex, splitterInfo);
+            ArrayPool<byte>.Shared.Return(bytes);
+        }
+
+        public void WriteAsync<T>(ExpectLocalFileInfo info, T value, Action<byte[]>? callback = null, object? options = null, IConcurrentOperate fileOperate = null)
+        {
+            WriteAsync(info.CreateWriteOperate(FileExtensions.SplitterFileExtensions), value, callback, options, fileOperate);
+        }
+
+        public void WriteAsync<T>(FileOperateInfo info, T value, Action<byte[]>? callback = null, object? options = null, IConcurrentOperate fileOperate = null)
+        {
+            info.ThrowFileNotFound();
+
+            var splitterOperate = GetFileSplitterOperate(info, fileOperate);
+            var operation = _writeOperationPool.Get();
+
+            if (options is SplitterInfo splitterInfo)
+            {
+                splitterOperate.Data.SplitterInfo = splitterInfo;
+            }
+            else
+            {
+                splitterInfo = splitterOperate.Data.SplitterInfo;
+            }
+
+            var bytes = _binaryParser.Serialize(value);
+
+            if (bytes.Length > splitterInfo.MaxChunkSize)
+            {
+                ErrorUtil.ArgumentOutOfRange(nameof(bytes), "数据长度超出最大块大小");
+            }
+
+            operation.Set(bytes, splitterInfo.GetPosition(splitterInfo.Progress), bytes.Length, splitterInfo, callback);
+            splitterOperate.QueueOperation(operation);
+        }
+
+        public void WriteAsync(ExpectLocalFileInfo info, byte[] bytes, uint chunkIndex, SplitterInfo? splitterInfo = null, IConcurrentOperate fileOperate = null)
+        {
+            var operate = GetFileSplitterOperate(info, fileOperate);
+            var operation = _writeOperationPool.Get();
+
+            if (splitterInfo == null)
+            {
+                splitterInfo = operate.Data.SplitterInfo;
+            }
+            else
+            {
+                operate.Data.SplitterInfo = splitterInfo;
+            }
+
+            if (chunkIndex < 0)
+            {
+                chunkIndex = splitterInfo.Progress;
+            }
+
+            if (chunkIndex >= splitterInfo.ChunkCount)
+            {
+                ErrorUtil.ArgumentOutOfRange(nameof(chunkIndex), string.Format("块索引超出范围:{0}", chunkIndex.ToString()));
+            }
+
+            if (bytes.Length > splitterInfo.MaxChunkSize)
+            {
+                ErrorUtil.ArgumentOutOfRange(nameof(bytes), "数据长度超出最大块大小");
+            }
+
+            operation.Set(bytes, splitterInfo.GetPosition(chunkIndex), bytes.Length, splitterInfo);
+            operate.QueueOperation(operation);
+        }
+
+        public void WriteAsync<T>(ExpectLocalFileInfo info, T value, uint chunkIndex, SplitterInfo? splitterInfo = null, IConcurrentOperate fileOperate = null)
+        {
+            var bytes = _binaryParser.Serialize(value);
+            WriteAsync(info, bytes, chunkIndex, splitterInfo, fileOperate);
+        }
+
+        #endregion
 
         public void Creat(ExpectLocalFileInfo fileInfo, SplitterInfo info)
         {
-            var infoFile = fileInfo.CreatLocalFileInfo(infoExtensions);
-            if (!infoFile.Exists)
-            {
-                _binaryParser.Serialize(fileInfo, info);
-                infoFile.UpdateFileInfo();
-            }
+            var infoFile = fileInfo.CreateWriteOperate(infoExtensions);
+            _binaryParser.Write(infoFile, info);
         }
 
-        private SplitterStreamOperate GetFileSplitterOperate(ExpectLocalFileInfo fileInfo)
+        /// <summary>
+        /// 根据本地文件信息获取文件分割操作实例
+        /// </summary>
+        /// <param name="fileInfo">本地文件信息</param>
+        /// <returns>文件分割操作实例</returns>
+        private IConcurrentOperate<FileStream, SplitterStreamOperateData> GetFileSplitterOperate(ExpectLocalFileInfo fileInfo, object? fileOperate)
         {
-            var splitterFile = fileInfo.CreateWriteOperate(FileExtensions.SplitterFileExtensions);
-            var operate = _pool.GetOperate<SplitterStreamOperate>(splitterFile);
-            operate.OpenFile(_binaryParser, fileInfo);
+            return GetFileSplitterOperate(fileInfo.CreateWriteOperate(FileExtensions.SplitterFileExtensions), fileOperate);
+        }
+
+        /// <summary>
+        /// 根据文件操作信息获取文件分割操作实例
+        /// </summary>
+        /// <param name="operateInfo">文件操作信息</param>
+        /// <returns>文件分割操作实例</returns>
+        private IConcurrentOperate<FileStream, SplitterStreamOperateData> GetFileSplitterOperate(FileOperateInfo operateInfo, object? fileOperate)
+        {
+            var operate = GetOperate(operateInfo, fileOperate);
+            operate.Data.OpenFile(operateInfo.LocalFileInfo.CreateExpectLocalFileInfo());
             return operate;
         }
     }

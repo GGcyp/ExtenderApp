@@ -1,7 +1,7 @@
 ﻿using ExtenderApp.Abstract;
 using ExtenderApp.Data;
 
-namespace ExtenderApp.Common.IO.Binary.Formatter
+namespace ExtenderApp.Common.IO.Binaries.Formatter
 {
     /// <summary>
     /// UriFormatter 类，继承自 ResolverFormatter<Uri> 类。

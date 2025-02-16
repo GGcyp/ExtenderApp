@@ -32,7 +32,7 @@ namespace ExtenderApp.Common.ObjectPools
         /// <summary>
         /// 存储对象池中对象的并发队列。
         /// </summary>
-        private protected readonly ConcurrentQueue<T> _items = new();
+        private protected readonly ConcurrentQueue<T> _items;
 
         /// <summary>
         /// 存储快速获取的对象。
@@ -62,7 +62,9 @@ namespace ExtenderApp.Common.ObjectPools
         {
             _createFunc = policy.Create;
             _releaseFunc = policy.Release;
+            policy.InjectReleaseAction(Release);
             _maxCapacity = maximumRetained - 1;  // -1 to account for _fastItem
+            _items = new();
         }
 
         /// <summary>

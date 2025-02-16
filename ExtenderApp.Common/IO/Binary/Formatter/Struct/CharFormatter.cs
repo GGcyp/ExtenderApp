@@ -1,6 +1,6 @@
 ﻿using ExtenderApp.Data;
 
-namespace ExtenderApp.Common.IO.Binary.Formatter
+namespace ExtenderApp.Common.IO.Binaries.Formatter
 {
     /// <summary>
     /// CharFormatter 类是一个内部类，继承自 ExtenderFormatter<char>，用于格式化字符类型的数据。

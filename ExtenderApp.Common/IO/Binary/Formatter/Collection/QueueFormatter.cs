@@ -1,7 +1,7 @@
 ﻿using ExtenderApp.Abstract;
 using ExtenderApp.Data;
 
-namespace ExtenderApp.Common.IO.Binary.Formatter
+namespace ExtenderApp.Common.IO.Binaries.Formatter
 {
     /// <summary>
     /// 队列格式化器类，继承自<see cref="CollectionFormatter{T, Queue{T}}" />。

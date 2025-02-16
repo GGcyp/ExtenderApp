@@ -467,7 +467,7 @@ namespace ExtenderApp.Data.File
             /// <param name="count">要移动的数量。</param>
             internal void Advance(int count)
             {
-                if (count < 0 || End + count >= Memory.Length)
+                if (count < 0 || End + count > Memory.Length)
                     throw new ArgumentOutOfRangeException(nameof(count), "count 必须是非负数，且移动后的结束索引不能超过内存长度。");
 
                 End += count;

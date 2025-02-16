@@ -28,7 +28,7 @@ namespace ExtenderApp.Abstract
     /// 泛型对象池接口
     /// </summary>
     /// <typeparam name="T">对象的类型</typeparam>
-    public interface IObjectPool<T> : IObjectPool where T : class
+    public interface IObjectPool<T> where T : class
     {
         /// <summary>
         /// 从池中获取一个对象（如果有），否则创建一个对象。
@@ -42,6 +42,4 @@ namespace ExtenderApp.Abstract
         /// <param name="obj">要返回的对象</param>
         void Release(T obj);
     }
-
-
 }

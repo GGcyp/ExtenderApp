@@ -1,6 +1,6 @@
 ﻿using ExtenderApp.Data;
 
-namespace ExtenderApp.Common.IO.Binary.Formatter.Struct
+namespace ExtenderApp.Common.IO.Binaries.Formatter.Struct
 {
     internal class TimeSpanFormatter : ExtenderFormatter<TimeSpan>
     {

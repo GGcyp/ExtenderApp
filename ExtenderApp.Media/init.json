@@ -1,6 +1,6 @@
 {
-  "ModTitle": "Media",
-  "ModDescription": "一个简单的视频组件",
-  "ModVersion": "0.0.0.1",
-  "ModStartupDll": "ExtenderApp.Media.dll"
+  "PluginTitle": "Media",
+  "PluginDescription": "一个简单的视频组件",
+  "PluginVersion": "0.0.0.1",
+  "PluginStartupDll": "ExtenderApp.Media.dll"
 }

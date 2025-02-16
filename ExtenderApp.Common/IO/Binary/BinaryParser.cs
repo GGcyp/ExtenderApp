@@ -1,18 +1,20 @@
-﻿using System;
-using System.Buffers;
-using System.Diagnostics.CodeAnalysis;
-using System.Threading;
+﻿using System.Buffers;
 using ExtenderApp.Abstract;
+using ExtenderApp.Common.ConcurrentOperates;
+using ExtenderApp.Common.DataBuffers;
+using ExtenderApp.Common.Error;
+using ExtenderApp.Common.IO.FileParsers;
+using ExtenderApp.Common.ObjectPools;
 using ExtenderApp.Data;
 using ExtenderApp.Data.File;
 
 
-namespace ExtenderApp.Common.IO
+namespace ExtenderApp.Common.IO.Binaries
 {
     /// <summary>
     /// 二进制解析器类
     /// </summary>
-    public class BinaryParser : IBinaryParser
+    internal class BinaryParser : FileParser, IBinaryParser
     {
         /// <summary>
         /// 最大字节数组长度
@@ -42,12 +44,150 @@ namespace ExtenderApp.Common.IO
         /// </summary>
         private readonly ArrayPool<byte> _arrayPool;
 
-        public BinaryParser(IBinaryFormatterResolver binaryFormatterResolver)
+        private readonly ObjectPool<WriteOperation> _writeOperationPool;
+        private readonly ObjectPool<BinaryReadOperation> _readOperationPool;
+
+        public BinaryParser(IBinaryFormatterResolver binaryFormatterResolver, FileStore store) : base(store)
         {
             _resolver = binaryFormatterResolver;
             _arrayPool = ArrayPool<byte>.Shared;
             _sequencePool = new(Environment.ProcessorCount * 2, _arrayPool);
+            _writeOperationPool = ObjectPool.Create(new ConcurrentOperationPoolPolicy<WriteOperation>(o => new WriteOperation(o)));
+            _readOperationPool = ObjectPool.Create(new ConcurrentOperationPoolPolicy<BinaryReadOperation>(o => new BinaryReadOperation(o)));
         }
+
+        #region Write
+
+        public override void Write<T>(ExpectLocalFileInfo info, T value, IConcurrentOperate fileOperate = null, object? options = null)
+        {
+            if (info.IsEmpty)
+            {
+                ErrorUtil.ArgumentNull(nameof(info));
+            }
+
+            Write(info.CreateFileOperate(FileExtensions.BinaryFileExtensions, FileMode.OpenOrCreate, FileAccess.ReadWrite), value, fileOperate, options);
+        }
+
+        public override void Write<T>(FileOperateInfo info, T value, IConcurrentOperate fileOperate = null, object? options = null)
+        {
+            byte[] bytes = Serialize(value);
+
+            var operate = GetOperate(info, fileOperate);
+            var operation = _writeOperationPool.Get();
+            operation.Set(bytes, null);
+            operate.ExecuteOperation(operation);
+            operation.Release();
+            ArrayPool<byte>.Shared.Return(bytes);
+        }
+
+        public override void WriteAsync<T>(ExpectLocalFileInfo info, T value, Action? callback = null, IConcurrentOperate fileOperate = null, object? options = null)
+        {
+            if (info.IsEmpty)
+            {
+                ErrorUtil.ArgumentNull(nameof(info));
+            }
+
+            var fileOperateInfo = info.CreateFileOperate(FileExtensions.BinaryFileExtensions, FileMode.OpenOrCreate, FileAccess.ReadWrite);
+            WriteAsync(fileOperateInfo, value, callback, fileOperate, options);
+        }
+
+        public override void WriteAsync<T>(FileOperateInfo info, T value, Action? callback = null, IConcurrentOperate fileOperate = null, object? options = null)
+        {
+            byte[] bytes = Serialize(value);
+
+            var operate = GetOperate(info, fileOperate);
+            var operation = _writeOperationPool.Get();
+            operation.Set(bytes, b =>
+            {
+                callback?.Invoke();
+                ArrayPool<byte>.Shared.Return(b);
+            });
+            operate.QueueOperation(operation);
+        }
+
+        #endregion
+
+        #region Read
+
+        public override T? Read<T>(ExpectLocalFileInfo info, IConcurrentOperate fileOperate = null, object? options = null) where T : default
+        {
+            if (info.IsEmpty)
+            {
+                ErrorUtil.ArgumentNull(nameof(info));
+            }
+
+            return Read<T>(info.CreateFileOperate(FileExtensions.BinaryFileExtensions), fileOperate, options);
+        }
+
+        public override T? Read<T>(FileOperateInfo info, IConcurrentOperate fileOperate = null, object? options = null) where T : default
+        {
+            if (!info.LocalFileInfo.Exists)
+            {
+                var formatter = _resolver.GetFormatter<T>();
+                if (formatter == null)
+                    return default;
+
+                return formatter.Default;
+            }
+
+            var operate = GetOperate(info, fileOperate);
+            var operation = _readOperationPool.Get();
+            operation.Set(s =>
+            {
+                var dataBuffer = DataBuffer<T>.GetDataBuffer();
+                dataBuffer.Item = Deserialize<T>(s);
+                return dataBuffer;
+            });
+
+            operate.ExecuteOperation(operation);
+            var dataBuffer = operation.Data as DataBuffer<T>;
+            var result = dataBuffer.Item;
+            dataBuffer.Release();
+            operation.Release();
+            return result;
+            //var stream = operate.OpenFile();
+            //T? result = Deserialize<T>(stream, options);
+            //stream.Dispose();
+            //return result;
+        }
+
+        public override void ReadAsync<T>(ExpectLocalFileInfo info, Action<T>? callback, IConcurrentOperate fileOperate = null, object? options = null)
+        {
+            if (info.IsEmpty)
+            {
+                ErrorUtil.ArgumentNull(nameof(info));
+            }
+
+            var operate = info.CreateFileOperate(FileExtensions.BinaryFileExtensions);
+            ReadAsync(operate, callback, fileOperate, options);
+            //var stream = operate.OpenFile();
+            //T? result = await DeserializeAsync<T>(stream);
+            //stream.Dispose();
+            //callback?.Invoke(result);
+        }
+
+        public override void ReadAsync<T>(FileOperateInfo info, Action<T>? callback, IConcurrentOperate fileOperate = null, object? options = null)
+        {
+            //T? result = await DeserializeAsync<T>(operate.OpenFile());
+            //callback?.Invoke(result);
+            var operate = GetOperate(info, fileOperate);
+            var operation = _readOperationPool.Get();
+            var dataBuffer = DataBuffer<Delegate>.GetDataBuffer();
+            operation.Data = dataBuffer;
+
+            operation.Set((s, d) =>
+            {
+                var dataBuffer = d as DataBuffer<Delegate>;
+                T result = Deserialize<T>(s);
+                var callback = dataBuffer.Item as Action<T>;
+                callback?.Invoke(result);
+                dataBuffer.Release();
+            });
+
+            operate.QueueOperation(operation);
+        }
+
+        #endregion
 
         #region Serialize
 
@@ -75,16 +215,7 @@ namespace ExtenderApp.Common.IO
             }
         }
 
-        public bool Serialize<T>(FileOperateInfo operate, T value, object? options = null)
-        {
-            using (FileStream stream = operate.OpenFile())
-            {
-                Serialize(stream, value, options);
-            }
-            return true;
-        }
-
-        public bool Serialize<T>(Stream stream, T value, object? options = null)
+        public void Serialize<T>(Stream stream, T value, object? options = null)
         {
             var rent = _sequencePool.Rent();
             var writer = new ExtenderBinaryWriter(rent.Value);
@@ -98,39 +229,6 @@ namespace ExtenderApp.Common.IO
                 stream.Write(sharedBuffer, 0, sharedBuffer.Length);
             }
             rent.Dispose();
-            return true;
-        }
-
-        public bool Serialize<T>(ExpectLocalFileInfo info, T value, object? options = null)
-        {
-            return Serialize(info.CreateFileOperate(FileExtensions.BinaryFileExtensions, FileMode.OpenOrCreate, FileAccess.ReadWrite), value, options);
-        }
-
-        public async ValueTask<bool> SerializeAsync<T>(ExpectLocalFileInfo info, T value, object? options = null)
-        {
-            var fileOperate = info.CreateFileOperate(FileExtensions.BinaryFileExtensions, FileMode.OpenOrCreate, FileAccess.ReadWrite);
-
-
-            byte[] bytes = Serialize(value);
-
-            using (FileStream stream = fileOperate.OpenFile())
-            {
-                await stream.WriteAsync(bytes, 0, bytes.Length);
-            }
-
-            return true;
-        }
-
-        public async ValueTask<bool> SerializeAsync<T>(FileOperateInfo operate, T value, object? options = null)
-        {
-            byte[] bytes = Serialize(value);
-
-            using (FileStream stream = operate.OpenFile())
-            {
-                await stream.WriteAsync(bytes, 0, bytes.Length);
-            }
-
-            return true;
         }
 
         #endregion
@@ -167,24 +265,6 @@ namespace ExtenderApp.Common.IO
             return _resolver.GetFormatterWithVerify<T>().Deserialize(ref reader);
         }
 
-        public T? Deserialize<T>(FileOperateInfo operate, object? options = null)
-        {
-            if (!operate.LocalFileInfo.Exists)
-            {
-                //throw new InvalidOperationException(string.Format("文件不存在: {0}", operate.LocalFileInfo.FilePath));
-                var formatter = _resolver.GetFormatter<T>();
-                if (formatter == null)
-                    return default;
-
-                return formatter.Default;
-            }
-
-            var stream = operate.OpenFile();
-            T? result = Deserialize<T>(stream, options);
-            stream.Dispose();
-            return result;
-        }
-
         public T? Deserialize<T>(Stream stream, object? options = null)
         {
             if (TryDeserializeFromMemoryStream<T>(stream, out var result))
@@ -206,29 +286,6 @@ namespace ExtenderApp.Common.IO
             result = DeserializeFromSequenceAndRewindStreamIfPossible<T>(stream, sequence);
 
             rent.Dispose();
-            return result;
-        }
-
-        public T? Deserialize<T>(ExpectLocalFileInfo info, object? options = null)
-        {
-            return Deserialize<T>(info.CreateFileOperate(FileExtensions.BinaryFileExtensions), options);
-        }
-
-        public async ValueTask<T?> DeserializeAsync<T>(ExpectLocalFileInfo info, object? options = null)
-        {
-            var operate = info.CreateFileOperate(FileExtensions.BinaryFileExtensions);
-
-            var stream = operate.OpenFile();
-            T? result = await DeserializeAsync<T>(stream);
-            stream.Dispose();
-
-            return result;
-        }
-
-        public async ValueTask<T?> DeserializeAsync<T>(FileOperateInfo operate, object? options = null)
-        {
-            T? result = await DeserializeAsync<T>(operate.OpenFile());
-
             return result;
         }
 
@@ -293,7 +350,6 @@ namespace ExtenderApp.Common.IO
             result = default;
             return false;
         }
-
 
         #endregion
 

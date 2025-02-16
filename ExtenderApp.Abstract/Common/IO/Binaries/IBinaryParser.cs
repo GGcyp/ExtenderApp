@@ -27,7 +27,6 @@ namespace ExtenderApp.Abstract
         /// <returns>反序列化后的对象，如果流为空或格式不正确则返回null。</returns>
         T? Deserialize<T>(Stream stream, object? options = null);
 
-
         /// <summary>
         /// 将指定类型的对象序列化为字节数组。
         /// </summary>
@@ -44,7 +43,7 @@ namespace ExtenderApp.Abstract
         /// <param name="value">要序列化的对象。</param>
         /// <param name="options">序列化选项，可以为null。</param>
         /// <returns>如果序列化成功，则返回true；否则返回false。</returns>
-        bool Serialize<T>(Stream stream, T value, object? options = null);
+        void Serialize<T>(Stream stream, T value, object? options = null);
 
         /// <summary>
         /// 获取指定类型对象中的元素数量。

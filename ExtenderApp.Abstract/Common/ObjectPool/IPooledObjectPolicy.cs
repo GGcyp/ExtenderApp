@@ -19,5 +19,11 @@ namespace ExtenderApp.Abstract
         /// <param name="obj"></param>
         /// <returns></returns>
         bool Release(T obj);
+
+        /// <summary>
+        /// 注入发布动作
+        /// </summary>
+        /// <param name="action">要注入的发布动作</param>
+        void InjectReleaseAction(Action<T> action);
     }
 }

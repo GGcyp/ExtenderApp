@@ -8,7 +8,7 @@ namespace ExtenderApp.Common
     /// </summary>
     public struct TcpLinkInfo : IEquatable<TcpLinkInfo>
     {
-        public const int DefaultBufferSize = 1024;
+        public const int DefaultBufferSize = 10240;
 
         public static TcpLinkInfo Empty = new TcpLinkInfo();
 

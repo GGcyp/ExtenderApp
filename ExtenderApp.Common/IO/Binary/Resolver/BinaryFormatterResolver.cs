@@ -1,6 +1,6 @@
 ﻿using AppHost.Extensions.DependencyInjection;
 using ExtenderApp.Abstract;
-using ExtenderApp.Common.IO.Binary.Formatter;
+using ExtenderApp.Common.IO.Binaries.Formatter;
 
 namespace ExtenderApp.Common
 {

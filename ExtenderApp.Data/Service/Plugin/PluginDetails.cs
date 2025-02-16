@@ -28,11 +28,6 @@ namespace ExtenderApp.Data
         public Version? Version { get; }
 
         /// <summary>
-        /// 获取插件版本信息
-        /// </summary>
-        public string? VersionInformation => pluginInfo.PluginVersionInformation;
-
-        /// <summary>
         /// 获取插件启动DLL文件路径
         /// </summary>
         public string? StartupDll => pluginInfo.PluginStartupDll;

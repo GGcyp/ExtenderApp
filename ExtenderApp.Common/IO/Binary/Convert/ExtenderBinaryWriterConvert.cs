@@ -4,7 +4,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using ExtenderApp.Data;
 
-namespace ExtenderApp.Common.IO.Binary
+namespace ExtenderApp.Common.IO.Binaries
 {
     /// <summary>
     /// 二进制写入器转换类。

@@ -1,7 +1,7 @@
 ﻿using ExtenderApp.Abstract;
 using ExtenderApp.Data;
 
-namespace ExtenderApp.Common.IO.Binary.Formatter.Collection
+namespace ExtenderApp.Common.IO.Binaries.Formatter.Collection
 {
     /// <summary>
     /// InterfaceCollectionFormatter 类是对 CollectionFormatter 类的一个扩展，用于处理实现了 ICollection<T> 接口的集合类型。

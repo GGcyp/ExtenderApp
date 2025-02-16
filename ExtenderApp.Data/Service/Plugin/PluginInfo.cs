@@ -23,11 +23,6 @@ namespace ExtenderApp.Data
         public string? PluginVersion { get; set; }
 
         /// <summary>
-        /// 获取或设置插件版本的详细信息。
-        /// </summary>
-        public string? PluginVersionInformation { get; set; }
-
-        /// <summary>
         /// 获取或设置插件启动的DLL文件路径。
         /// </summary>
         public string? PluginStartupDll { get; set; }

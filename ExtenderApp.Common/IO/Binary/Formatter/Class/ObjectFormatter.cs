@@ -3,11 +3,11 @@ using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.Serialization;
 using ExtenderApp.Abstract;
-using ExtenderApp.Common.IO.Binary;
-using ExtenderApp.Common.IO.Binary.Formatter;
+using ExtenderApp.Common.IO.Binaries;
+using ExtenderApp.Common.IO.Binaries.Formatter;
 using ExtenderApp.Data;
 
-namespace ExtenderApp.Common.IO.Binary.Formatter.Class
+namespace ExtenderApp.Common.IO.Binaries.Formatter.Class
 {
     /// <summary>
     /// 内部类 ObjectFormatter，继承自 ExtenderFormatter<object> 类。

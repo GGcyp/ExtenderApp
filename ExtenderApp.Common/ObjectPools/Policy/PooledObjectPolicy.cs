@@ -11,13 +11,22 @@ namespace ExtenderApp.Common.ObjectPools
         /// <summary>
         /// 释放对象的操作委托。
         /// </summary>
-        protected Action<T> ReleaseAction => o => Release(o);
+        protected Action<T> releaseAction;
 
         /// <summary>
         /// 创建一个新的对象实例。
         /// </summary>
         /// <returns>返回新创建的对象实例。</returns>
         public abstract T Create();
+
+        /// <summary>
+        /// 注入发布操作。
+        /// </summary>
+        /// <param name="action">待注入的发布操作，该操作接受一个泛型参数 T。</param>
+        public void InjectReleaseAction(Action<T> action)
+        {
+            releaseAction = action;
+        }
 
         /// <summary>
         /// 释放一个对象实例。

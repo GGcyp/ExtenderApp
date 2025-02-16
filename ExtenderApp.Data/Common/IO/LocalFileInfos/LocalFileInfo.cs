@@ -150,7 +150,7 @@ namespace ExtenderApp.Data
         /// <returns>返回一个新的ExpectLocalFileInfo对象。</returns>
         public ExpectLocalFileInfo CreateExpectLocalFileInfo()
         {
-            return new ExpectLocalFileInfo(DirectoryName, FileName);
+            return new ExpectLocalFileInfo(DirectoryName, FileNameWithoutExtension);
         }
 
         /// <summary>
@@ -163,7 +163,7 @@ namespace ExtenderApp.Data
 
         public bool Equals(LocalFileInfo other)
         {
-            return FileInfo.Equals(other.FileInfo);
+            return FilePath.Equals(other.FilePath);
         }
 
         public override int GetHashCode()

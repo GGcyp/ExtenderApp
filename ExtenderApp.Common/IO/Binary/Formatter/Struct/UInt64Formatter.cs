@@ -1,6 +1,6 @@
 ﻿using ExtenderApp.Data;
 
-namespace ExtenderApp.Common.IO.Binary.Formatter
+namespace ExtenderApp.Common.IO.Binaries.Formatter
 {
     /// <summary>
     /// UInt64Formatter 类，继承自 ExtenderFormatter<UInt64> 类，用于格式化 UInt64 类型的数据。

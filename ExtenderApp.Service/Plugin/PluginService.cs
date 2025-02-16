@@ -105,7 +105,7 @@ namespace ExtenderApp.Service
                 if (!fileInfo.Exists) continue;
 
                 //解析模组的信息
-                PluginInfo info = _jsonParser.Deserialize<PluginInfo>(new FileOperateInfo(fileInfo));
+                PluginInfo info = _jsonParser.Read<PluginInfo>(new FileOperateInfo(fileInfo));
 
                 if (Contains(info)) continue;
 

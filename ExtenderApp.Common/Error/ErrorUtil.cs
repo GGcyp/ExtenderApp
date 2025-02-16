@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.IO;
 using ExtenderApp.Data;
+using System.Runtime.CompilerServices;
 
 
 namespace ExtenderApp.Common.Error
@@ -52,18 +53,37 @@ namespace ExtenderApp.Common.Error
         /// <param name="parameterName">参数名称</param>
         /// <exception cref="ArgumentNullException">如果对象为空，则抛出此异常</exception>
         [DebuggerStepThrough]
-        public static T ArgumentNull<T>([NotNull] this T value, string parameterName) where T : class
+        public static T ArgumentNull<T>([NotNull] this T value, [CallerMemberName] string parameterName = " ") where T : class
         {
             if (value != null) return value;
 
             throw new ArgumentNullException(parameterName);
         }
 
+        /// <summary>
+        /// 检查传入的对象是否为null。
+        /// 如果对象不为null，则直接返回该对象；如果为null，则抛出ArgumentNullException异常。
+        /// </summary>
+        /// <param name="value">要检查的对象。</param>
+        /// <param name="parameterName">参数的名称。</param>
+        /// <returns>如果不为null，则返回传入的对象。</returns>
+        /// <exception cref="ArgumentNullException">当传入的对象为null时抛出。</exception>
         [DebuggerStepThrough]
         public static object ArgumentObjectNull([NotNull] this object value, string parameterName)
         {
             if (value != null) return value;
 
+            throw new ArgumentNullException(parameterName);
+        }
+
+        /// <summary>
+        /// 抛出ArgumentNullException异常。
+        /// </summary>
+        /// <param name="parameterName">参数的名称。</param>
+        /// <exception cref="ArgumentNullException">始终抛出ArgumentNullException异常。</exception>
+        [DebuggerStepThrough]
+        public static void ArgumentNull(string parameterName)
+        {
             throw new ArgumentNullException(parameterName);
         }
 

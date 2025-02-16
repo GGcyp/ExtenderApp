@@ -1,7 +1,7 @@
 ﻿using ExtenderApp.Abstract;
 using ExtenderApp.Data;
 
-namespace ExtenderApp.Common.IO.Binary.Formatter
+namespace ExtenderApp.Common.IO.Binaries.Formatter
 {
     /// <summary>
     /// 一个抽象类，继承自 <see cref="ExtenderFormatter{IDictionary{TKey, TValue}?}"/>，用于格式化键值对集合。

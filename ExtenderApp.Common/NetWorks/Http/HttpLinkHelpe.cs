@@ -56,13 +56,13 @@ namespace ExtenderApp.Common.NetWorks
         /// HttpRequestMessagePoolPolicy 类实现了 IPooledObjectPolicy<HttpRequestMessage> 接口，
         /// 用于创建和释放 HttpRequestMessage 对象。
         /// </summary>
-        private class HttpRequestMessagePoolPolicy : IPooledObjectPolicy<HttpRequestMessage>
+        private class HttpRequestMessagePoolPolicy : PooledObjectPolicy<HttpRequestMessage>
         {
             /// <summary>
             /// 创建一个新的 HttpRequestMessage 实例。
             /// </summary>
             /// <returns>返回新创建的 HttpRequestMessage 实例。</returns>
-            public HttpRequestMessage Create()
+            public override HttpRequestMessage Create()
             {
                 return new HttpRequestMessage();
             }
@@ -72,7 +72,7 @@ namespace ExtenderApp.Common.NetWorks
             /// </summary>
             /// <param name="obj">要释放的 HttpRequestMessage 对象。</param>
             /// <returns>如果对象成功释放，则返回 true；否则返回 false。</returns>
-            public bool Release(HttpRequestMessage obj)
+            public override bool Release(HttpRequestMessage obj)
             {
                 obj.Content = null;
                 obj.Headers.Clear();

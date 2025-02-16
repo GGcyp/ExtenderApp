@@ -27,6 +27,12 @@
         public LocalFileInfo LocalFileInfo { get; private set; }
 
         /// <summary>
+        /// 判断当前对象是否为空
+        /// </summary>
+        /// <returns>如果当前对象为空，则返回 true；否则返回 false</returns>
+        public bool IsEmpty => LocalFileInfo.IsEmpty;
+
+        /// <summary>
         /// 初始化 FileOperateInfo 类的新实例。
         /// </summary>
         /// <param name="filePath">文件的路径。</param>
@@ -96,6 +102,33 @@
                 result = func(stream);
             }
             return result;
+        }
+
+        /// <summary>
+        /// 抛出异常，如果 LocalFileInfo 为空。
+        /// </summary>
+        /// <exception cref="ArgumentNullException">当 LocalFileInfo 为空时抛出。</exception>
+        public void ThrowIsEmpty()
+        {
+            if (!LocalFileInfo.IsEmpty)
+                return;
+
+            throw new ArgumentNullException(LocalFileInfo.FilePath);
+        }
+
+        /// <summary>
+        /// 抛出异常，如果 LocalFileInfo 为空或文件不存在。
+        /// </summary>
+        /// <exception cref="ArgumentNullException">当 LocalFileInfo 为空时抛出。</exception>
+        /// <exception cref="FileNotFoundException">当 LocalFileInfo 指向的文件不存在时抛出。</exception>
+        public void ThrowFileNotFound()
+        {
+            ThrowIsEmpty();
+
+            if (LocalFileInfo.Exists)
+                return;
+
+            throw new FileNotFoundException(LocalFileInfo.FilePath);
         }
 
         public bool Equals(FileOperateInfo other)

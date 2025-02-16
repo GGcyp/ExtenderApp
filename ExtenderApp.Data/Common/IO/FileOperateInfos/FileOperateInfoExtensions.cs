@@ -46,10 +46,10 @@ namespace ExtenderApp.Data
                 throw new ArgumentNullException(nameof(localFileInfo));
             }
 
-            if (localFileInfo.Exists)
-            {
-                throw new InvalidOperationException("目标文件已存在");
-            }
+            //if (localFileInfo.Exists)
+            //{
+            //    throw new InvalidOperationException("目标文件已存在");
+            //}
 
             operate.Move(localFileInfo.FilePath);
         }
@@ -66,6 +66,11 @@ namespace ExtenderApp.Data
             if (string.IsNullOrEmpty(targetPath))
             {
                 throw new ArgumentNullException(nameof(targetPath));
+            }
+
+            if (System.IO.File.Exists(targetPath))
+            {
+                throw new InvalidOperationException();
             }
 
             System.IO.File.Move(operate.LocalFileInfo.FilePath, targetPath);

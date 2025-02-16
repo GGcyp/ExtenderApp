@@ -4,7 +4,7 @@ using System.Buffers;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
-namespace ExtenderApp.Common.IO.Binary
+namespace ExtenderApp.Common.IO.Binaries
 {
     public class ExtenderBinaryReaderConvert
     {

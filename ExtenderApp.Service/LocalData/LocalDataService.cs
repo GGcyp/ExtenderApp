@@ -50,7 +50,7 @@ namespace ExtenderApp.Service
         /// <summary>
         /// 序列化方法的信息。
         /// </summary>
-        private MethodInfo serializeMethod;
+        private MethodInfo writeMethod;
 
         public LocalDataService(IPathService pathService, ISplitterParser splitter, IBinaryParser parser, IBinaryFormatterStore store, ILogingService logingService)
         {
@@ -70,7 +70,7 @@ namespace ExtenderApp.Service
             for (int i = 0; i < methods.Length; i++)
             {
                 var method = methods[i];
-                if (method.Name == "Serialize" && method.IsGenericMethodDefinition)
+                if (method.Name == "Write" && method.IsGenericMethodDefinition)
                 {
                     //var parameters = method.GetParameters();
                     //if (parameters.Length == 3 &&
@@ -83,7 +83,7 @@ namespace ExtenderApp.Service
                     var parameters = method.GetParameters();
                     if (parameters[0].ParameterType == typeof(ExpectLocalFileInfo))
                     {
-                        serializeMethod = method;
+                        writeMethod = method;
                         break;
                     }
                 }
@@ -93,37 +93,37 @@ namespace ExtenderApp.Service
         public bool GetData<T>(string? dataName, out LocalData<T>? data)
         {
             data = default;
-            //try
-            //{
-            if (string.IsNullOrEmpty(dataName))
+            try
             {
-                throw new ArgumentNullException("获取本地数据名字不能为空");
-            }
+                if (string.IsNullOrEmpty(dataName))
+                {
+                    throw new ArgumentNullException("获取本地数据名字不能为空");
+                }
 
-            LocalData<T>? localData = null;
-            if (!_localDataDict.TryGetValue(dataName, out var info))
+                LocalData<T>? localData = null;
+                if (!_localDataDict.TryGetValue(dataName, out var info))
+                {
+                    info = new LocalDataInfo(_pathService.DataPath, dataName, CreateSerializeMethodInfo(typeof(LocalData<T>)));
+
+                    _localDataDict.Add(dataName, info);
+
+                    info.LocalData = localData = _parser.Read<LocalData<T>>(info.FileInfo);
+                    //如果版本不一致则更新
+                    VersionCheck(info);
+                }
+                else
+                {
+                    localData = info.LocalData as LocalData<T>;
+                }
+
+                data = localData;
+                return localData is not null;
+            }
+            catch (Exception ex)
             {
-                info = new LocalDataInfo(_pathService.DataPath, dataName, CreateSerializeMethodInfo(typeof(LocalData<T>)));
-
-                _localDataDict.Add(dataName, info);
-
-                info.LocalData = localData = _parser.Deserialize<LocalData<T>>(info.FileInfo);
-                //如果版本不一致则更新
-                VersionCheck(info);
+                _logingService.Error("读取本地数据出现错误", nameof(ILocalDataService), ex);
+                return false;
             }
-            else
-            {
-                localData = info.LocalData as LocalData<T>;
-            }
-
-            data = localData;
-            return localData is not null;
-            //}
-            //catch (Exception ex)
-            //{
-            //    _logingService.Error("读取本地数据出现错误", nameof(ILocalDataService), ex);
-            //    return false;
-            //}
         }
 
         public bool SetData<T>(string? dataName, LocalData<T>? data)
@@ -146,7 +146,7 @@ namespace ExtenderApp.Service
                     localData = info.LocalData as LocalData<T>;
                 }
 
-                _parser.Serialize(info.FileInfo, localData);
+                _parser.Write(info.FileInfo, localData);
                 return true;
             }
             catch (Exception ex)
@@ -194,7 +194,7 @@ namespace ExtenderApp.Service
         /// <returns>返回创建的序列化方法信息对象。</returns>
         private MethodInfo CreateSerializeMethodInfo(Type type)
         {
-            return serializeMethod.MakeGenericMethod(type);
+            return writeMethod.MakeGenericMethod(type);
         }
 
         /// <summary>

@@ -6,7 +6,7 @@ namespace ExtenderApp.Common.ObjectPools
     /// <summary>
     /// 一个对象池基类。
     /// </summary>
-    public abstract class ObjectPool<T> :  IObjectPool<T> where T : class
+    public abstract class ObjectPool<T> : IObjectPool<T>, IObjectPool where T : class
     {
         /// <summary>
         /// 对象池中还有多少对象
@@ -26,7 +26,7 @@ namespace ExtenderApp.Common.ObjectPools
 
         public void Release(object obj)
         {
-            if (obj == null) 
+            if (obj == null)
                 throw new ArgumentNullException(nameof(obj));
 
             if (obj is not T result)
@@ -73,10 +73,19 @@ namespace ExtenderApp.Common.ObjectPools
             {
                 return (ObjectPool<T>)pool;
             }
-            var provider = objectPoolProvider ?? DefaultObjectPoolProvider.Default;
-            var objPool = provider.Create(policy, maximumRetained);
-            _poolDict.TryAdd(poolType, objPool);
-            return objPool;
+
+            lock (_poolDict)
+            {
+                if (_poolDict.TryGetValue(poolType, out pool))
+                {
+                    return (ObjectPool<T>)pool;
+                }
+
+                var provider = objectPoolProvider ?? DefaultObjectPoolProvider.Default;
+                var objPool = provider.Create(policy, maximumRetained);
+                _poolDict.TryAdd(poolType, objPool);
+                return objPool;
+            }
         }
     }
 }
