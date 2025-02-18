@@ -1,4 +1,5 @@
 ﻿using System.Collections.Concurrent;
+using System.IO.MemoryMappedFiles;
 using ExtenderApp.Abstract;
 using ExtenderApp.Common.Error;
 using ExtenderApp.Data;
@@ -16,11 +17,6 @@ namespace ExtenderApp.Common.IO
         private readonly ConcurrentDictionary<FileOperateInfo, IConcurrentOperate> _operateDict;
 
         /// <summary>
-        /// 用于取消操作的取消令牌源。
-        /// </summary>
-        private readonly CancellationTokenSource _cancellationTokenSource;
-
-        /// <summary>
         /// 一个私有的 ScheduledTask 对象。
         /// </summary>
         private readonly ScheduledTask _task;
@@ -34,39 +30,39 @@ namespace ExtenderApp.Common.IO
         public FileStore()
         {
             _operateDict = new();
-            _cancellationTokenSource = new();
             _operateList = new();
             _task = new();
             _task.StartCycle(o => ReleaseOperate(), TimeSpan.FromSeconds(60));
         }
 
         /// <summary>
-        /// 获取并发操作对象
+        /// 获取指定文件的并发操作对象。
         /// </summary>
-        /// <typeparam name="T">并发操作数据的类型，必须是FileStreamConcurrentOperateData的子类</typeparam>
-        /// <param name="info">文件操作信息</param>
-        /// <param name="data">并发操作数据，默认为null</param>
-        /// <param name="createFunc">用于创建并发操作对象的函数，默认为null</param>
-        /// <returns>并发操作对象</returns>
-        /// <exception cref="ArgumentNullException">如果data或createFunc为null，则抛出此异常</exception>
-        public IConcurrentOperate<FileStream, T>? GetOperate<T>(FileOperateInfo info, Func<IConcurrentOperate<FileStream, T>> createFunc) where T : FileStreamConcurrentOperateData
+        /// <typeparam name="T">并发操作数据的类型。</typeparam>
+        /// <param name="info">文件操作信息。</param>
+        /// <param name="createFunc">创建并发操作对象的函数。</param>
+        /// <param name="fileLength">文件的长度。</param>
+        /// <returns>并发操作对象，如果对象已存在则返回null。</returns>
+        /// <remarks>
+        /// T必须继承自<see cref="FileConcurrentOperateData"/>。
+        /// </remarks>
+        public IConcurrentOperate<MemoryMappedViewAccessor, T>? GetOperate<T>(FileOperateInfo info, Func<FileOperateInfo, long, IConcurrentOperate<MemoryMappedViewAccessor, T>> createFunc, long fileLength) where T : FileConcurrentOperateData
         {
             if (_operateDict.TryGetValue(info, out var operate))
             {
-                return operate as IConcurrentOperate<FileStream, T>;
+                return operate as IConcurrentOperate<MemoryMappedViewAccessor, T>;
             }
 
             lock (_operateDict)
             {
                 if (_operateDict.TryGetValue(info, out operate))
                 {
-                    return operate as IConcurrentOperate<FileStream, T>;
+                    return operate as IConcurrentOperate<MemoryMappedViewAccessor, T>;
                 }
 
                 createFunc.ArgumentNull();
 
-                var result = createFunc?.Invoke();
-                result.Data.OpenFile(info, _cancellationTokenSource.Token, ReleaseOperate);
+                var result = createFunc?.Invoke(info, fileLength);
                 _operateDict.TryAdd(info, result);
                 _task.Resume();
                 return result;
@@ -123,8 +119,6 @@ namespace ExtenderApp.Common.IO
         protected override void Dispose(bool disposing)
         {
             if (IsDisposed) return;
-            _cancellationTokenSource.Cancel();
-            _cancellationTokenSource.Dispose();
             foreach (var operate in _operateDict.Values)
             {
                 operate.Dispose();

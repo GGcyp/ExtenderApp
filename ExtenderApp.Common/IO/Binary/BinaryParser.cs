@@ -19,7 +19,7 @@ namespace ExtenderApp.Common.IO.Binaries
         /// <summary>
         /// 最大字节数组长度
         /// </summary>
-        private const int MaxByteArrayLenght = 65536;
+        private const int MaxByteArrayLength = 65536;
 
         /// <summary>
         /// 建议的连续内存大小。
@@ -70,9 +70,9 @@ namespace ExtenderApp.Common.IO.Binaries
 
         public override void Write<T>(FileOperateInfo info, T value, IConcurrentOperate fileOperate = null, object? options = null)
         {
-            byte[] bytes = Serialize(value);
+            byte[] bytes = SerializeForArrayPool(value);
 
-            var operate = GetOperate(info, fileOperate);
+            var operate = GetOperate(info, fileOperate, bytes.LongLength);
             var operation = _writeOperationPool.Get();
             operation.Set(bytes, null);
             operate.ExecuteOperation(operation);
@@ -93,9 +93,9 @@ namespace ExtenderApp.Common.IO.Binaries
 
         public override void WriteAsync<T>(FileOperateInfo info, T value, Action? callback = null, IConcurrentOperate fileOperate = null, object? options = null)
         {
-            byte[] bytes = Serialize(value);
+            byte[] bytes = SerializeForArrayPool(value);
 
-            var operate = GetOperate(info, fileOperate);
+            var operate = GetOperate(info, fileOperate, bytes.LongLength);
             var operation = _writeOperationPool.Get();
             operation.Set(bytes, b =>
             {
@@ -132,10 +132,18 @@ namespace ExtenderApp.Common.IO.Binaries
 
             var operate = GetOperate(info, fileOperate);
             var operation = _readOperationPool.Get();
-            operation.Set(s =>
+            operation.Set((m, p, l) =>
             {
                 var dataBuffer = DataBuffer<T>.GetDataBuffer();
-                dataBuffer.Item = Deserialize<T>(s);
+                var bytes = ArrayPool<byte>.Shared.Rent((int)l);
+
+                for (long i = p; i < l; i++)
+                {
+                    bytes[i] = m.ReadByte(i);
+                }
+
+                dataBuffer.Item = Deserialize<T>(bytes);
+                ArrayPool<byte>.Shared.Return(bytes);
                 return dataBuffer;
             });
 
@@ -175,12 +183,20 @@ namespace ExtenderApp.Common.IO.Binaries
             var dataBuffer = DataBuffer<Delegate>.GetDataBuffer();
             operation.Data = dataBuffer;
 
-            operation.Set((s, d) =>
+            operation.Set((m, p, l, d) =>
             {
                 var dataBuffer = d as DataBuffer<Delegate>;
-                T result = Deserialize<T>(s);
+                var bytes = ArrayPool<byte>.Shared.Rent((int)l);
+
+                for (long i = p; i < l; i++)
+                {
+                    bytes[i] = m.ReadByte(i);
+                }
+
+                T result = Deserialize<T>(bytes);
                 var callback = dataBuffer.Item as Action<T>;
                 callback?.Invoke(result);
+                ArrayPool<byte>.Shared.Return(bytes);
                 dataBuffer.Release();
             });
 
@@ -193,7 +209,7 @@ namespace ExtenderApp.Common.IO.Binaries
 
         public byte[] Serialize<T>(T value)
         {
-            byte[] bytes = _arrayPool.Rent(MaxByteArrayLenght);
+            byte[] bytes = _arrayPool.Rent(MaxByteArrayLength);
             var writer = new ExtenderBinaryWriter(_sequencePool, bytes);
             Serialize(ref writer, value);
 
@@ -229,6 +245,23 @@ namespace ExtenderApp.Common.IO.Binaries
                 stream.Write(sharedBuffer, 0, sharedBuffer.Length);
             }
             rent.Dispose();
+        }
+
+        /// <summary>
+        /// 将指定对象序列化为字节数组，并存储在 ArrayPool 中。
+        /// </summary>
+        /// <typeparam name="T">要序列化的对象的类型。</typeparam>
+        /// <param name="value">要序列化的对象。</param>
+        /// <returns>包含序列化数据的字节数组。</returns>
+        public byte[] SerializeForArrayPool<T>(T value)
+        {
+            var length = System.Math.Min(GetCount(value), MaxByteArrayLength);
+            byte[] bytes = _arrayPool.Rent(length);
+            var writer = new ExtenderBinaryWriter(_sequencePool, bytes);
+            Serialize(ref writer, value);
+
+            writer.Commit();
+            return bytes;
         }
 
         #endregion

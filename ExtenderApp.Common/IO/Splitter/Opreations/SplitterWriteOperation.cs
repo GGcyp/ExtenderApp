@@ -1,4 +1,6 @@
 ﻿using System;
+using System.IO;
+using System.IO.MemoryMappedFiles;
 using ExtenderApp.Abstract;
 using ExtenderApp.Data;
 
@@ -7,7 +9,7 @@ namespace ExtenderApp.Common.IO.Splitter
     /// <summary>
     /// 表示一个分割写入操作，继承自StreamOperation类。
     /// </summary>
-    internal class SplitterWriteOperation : FileStreamOperation
+    internal class SplitterWriteOperation : FileOperation
     {
         /// <summary>
         /// 要写入的字节数组。
@@ -35,9 +37,9 @@ namespace ExtenderApp.Common.IO.Splitter
         private SplitterInfo splitterInfo;
 
         /// <summary>
-        /// 操作完成后的回调方法。
+        /// 操作完成后字节数组的回调方法。
         /// </summary>
-        private Action<byte[]>? callbackHasByteArray;
+        private Action<byte[]>? callbackByteArray;
 
         /// <summary>
         /// 回调委托
@@ -50,7 +52,7 @@ namespace ExtenderApp.Common.IO.Splitter
             writePosition = 0;
             writeLength = 0;
             splitterInfo = SplitterInfo.Empty;
-            callbackHasByteArray = null;
+            callbackByteArray = null;
         }
 
         /// <summary>
@@ -127,7 +129,7 @@ namespace ExtenderApp.Common.IO.Splitter
             writePosition = position;
             writeLength = length;
             splitterInfo = info;
-            callbackHasByteArray = action;
+            callbackByteArray = action;
             writeChunkIndex = splitterInfo.GetChunkIndex(writePosition);
         }
 
@@ -149,17 +151,18 @@ namespace ExtenderApp.Common.IO.Splitter
             writeChunkIndex = splitterInfo.GetChunkIndex(writePosition);
         }
 
-        /// <summary>
-        /// 在指定的流中执行写入操作。
-        /// </summary>
-        /// <param name="stream">要写入的流。</param>
-        public override void Execute(FileStream stream)
+        public override void Execute(MemoryMappedViewAccessor item)
         {
-            stream.Seek(writePosition, SeekOrigin.Begin);
-            stream.Write(writeBytes, 0, writeLength);
+            //stream.Seek(writePosition, SeekOrigin.Begin);
+            //stream.Write(writeBytes, 0, writeLength);
             //splitterInfo.AddChunk(writePosition / splitterInfo.MaxChunkSize);
+
+            for (long i = writePosition; i < writeLength; i++)
+            {
+                item.Write(i, writeBytes[i]);
+            }
             splitterInfo.AddChunk(writeChunkIndex);
-            callbackHasByteArray?.Invoke(writeBytes);
+            callbackByteArray?.Invoke(writeBytes);
             callback?.Invoke();
         }
 
@@ -173,7 +176,7 @@ namespace ExtenderApp.Common.IO.Splitter
             writePosition = 0;
             writeLength = 0;
             splitterInfo = SplitterInfo.Empty;
-            callbackHasByteArray = null;
+            callbackByteArray = null;
             return true;
         }
     }

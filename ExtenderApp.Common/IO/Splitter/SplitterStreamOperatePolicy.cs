@@ -1,4 +1,5 @@
-﻿using ExtenderApp.Abstract;
+﻿using System.IO.MemoryMappedFiles;
+using ExtenderApp.Abstract;
 using ExtenderApp.Data;
 
 
@@ -13,39 +14,45 @@ namespace ExtenderApp.Common.IO.Splitter
             _binaryParser = binaryParser;
         }
 
-        public override FileStream Create(SplitterStreamOperateData data)
+        //public override FileStream Create(SplitterStreamOperateData data)
+        //{
+        //    data.SplitterInfo = _binaryParser.Read<SplitterInfo>(data.SplitterInfoFileInfo);
+        //    return base.Create(data);
+        //}
+
+        public override MemoryMappedViewAccessor Create(SplitterStreamOperateData data)
         {
             data.SplitterInfo = _binaryParser.Read<SplitterInfo>(data.SplitterInfoFileInfo);
-            return base.Create(data);
-        }
 
-        public override void BeforeExecute(FileStream operate, SplitterStreamOperateData data)
-        {
-            operate.SetLength(data.SplitterInfo.Length);
-        }
-
-        /// <summary>
-        /// 执行后的操作
-        /// </summary>
-        /// <param name="item">文件流</param>
-        public override void AfterExecute(FileStream operate, SplitterStreamOperateData data)
-        {
-            if (data.SplitterInfo.IsComplete)
+            if (data.SplitterInfo == null)
             {
-                var info = data.SplitterInfoFileInfo;
-                var operateInfo = data.OperateInfo;
-                data.ReleaseFileOperateInfo(operateInfo);
-
-                var fileinfoOperate = info.CreateFileOperate(SplitterStreamOperateData.SplitterInfoExtensions);
-                data.ReleaseFileOperateInfo(fileinfoOperate);
-
-                operateInfo.Move(operateInfo.LocalFileInfo.ChangeFileExtension(data.SplitterInfo.TargetExtensions));
-                fileinfoOperate.Delete();
+                throw new FileNotFoundException(data.OperateInfo.LocalFileInfo.FilePath);
             }
-            else
-            {
-                _binaryParser.Write(data.SplitterInfoFileInfo, data.SplitterInfo);
-            }
+            return MemoryMappedFile.CreateFromFile(data.OperateInfo.OpenFile(), data.OperateInfo.LocalFileInfo.FileName, data.SplitterInfo.Length, MemoryMappedFileAccess.ReadWrite, HandleInheritability.Inheritable, true).CreateViewAccessor();
         }
+
+        ///// <summary>
+        ///// 执行后的操作
+        ///// </summary>
+        ///// <param name="item">文件流</param>
+        //public override void AfterExecute(FileStream operate, SplitterStreamOperateData data)
+        //{
+        //    if (data.SplitterInfo.IsComplete)
+        //    {
+        //        var info = data.SplitterInfoFileInfo;
+        //        var operateInfo = data.OperateInfo;
+        //        data.ReleaseFileOperateInfo(operateInfo);
+
+        //        var fileinfoOperate = info.CreateFileOperate(SplitterStreamOperateData.SplitterInfoExtensions);
+        //        data.ReleaseFileOperateInfo(fileinfoOperate);
+
+        //        operateInfo.Move(operateInfo.LocalFileInfo.ChangeFileExtension(data.SplitterInfo.TargetExtensions));
+        //        fileinfoOperate.Delete();
+        //    }
+        //    else
+        //    {
+        //        _binaryParser.Write(data.SplitterInfoFileInfo, data.SplitterInfo);
+        //    }
+        //}
     }
 }

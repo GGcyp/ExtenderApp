@@ -98,6 +98,16 @@ namespace ExtenderApp.Common.ConcurrentOperates
             Operate = policy.Create(Data);
         }
 
+        public void SetPolicyAndData(IConcurrentOperatePolicy<TOperate, TData> policy, TData data)
+        {
+            policy.ArgumentObjectNull(typeof(TPolicy).FullName);
+            data.ArgumentObjectNull(typeof(TData).FullName);
+
+            this.policy = (TPolicy)policy;
+            Data = data;
+            Operate = policy.Create(Data);
+        }
+
         /// <summary>
         /// 将操作加入队列
         /// </summary>

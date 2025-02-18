@@ -119,7 +119,5 @@ namespace ExtenderApp.Common
         }
 
         #endregion
-
-
     }
 }

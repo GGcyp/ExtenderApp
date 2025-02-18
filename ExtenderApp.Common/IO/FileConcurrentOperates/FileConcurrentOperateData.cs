@@ -6,7 +6,7 @@ namespace ExtenderApp.Common.IO
     /// <summary>
     /// 表示文件流并发操作的数据类。
     /// </summary>
-    public class FileStreamConcurrentOperateData : ConcurrentOperateData
+    public class FileConcurrentOperateData : ConcurrentOperateData
     {
         /// <summary>
         /// 获取或设置文件操作信息。
@@ -19,21 +19,28 @@ namespace ExtenderApp.Common.IO
         public LocalFileInfo LocalFileInformation => OperateInfo.LocalFileInfo;
 
         /// <summary>
+        /// 获取或设置文件长度（以字节为单位）。
+        /// </summary>
+        public long FileLength { get; private set; }
+
+        /// <summary>
         /// 文件操作信息释放委托。
         /// </summary>
         private Action<FileOperateInfo> releaseFileOperateInfo;
 
         /// <summary>
-        /// 打开文件。
+        /// 打开文件的方法
         /// </summary>
-        /// <param name="info">文件操作信息。</param>
-        /// <param name="token">取消令牌。</param>
-        /// <param name="action">文件操作信息释放委托。</param>
-        public void OpenFile(FileOperateInfo info, CancellationToken token, Action<FileOperateInfo> action)
+        /// <param name="info">文件操作信息</param>
+        /// <param name="fileLength">文件长度</param>
+        /// <param name="token">取消令牌</param>
+        /// <param name="action">文件操作完成后的回调</param>
+        public void OpenFile(FileOperateInfo info, long fileLength, CancellationToken token, Action<FileOperateInfo> action)
         {
             this.OperateInfo = info;
             releaseFileOperateInfo = action;
             Token = token;
+            FileLength = fileLength;
         }
 
         /// <summary>

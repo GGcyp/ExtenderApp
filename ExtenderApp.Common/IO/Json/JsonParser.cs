@@ -121,39 +121,20 @@ namespace ExtenderApp.Common.IO
             }
         }
 
-        public ValueTask<bool> WriteAsync<T>(ExpectLocalFileInfo info, T value, object? options = null)
-        {
-            return WriteAsync(info.CreateFileOperate(FileExtensions.JsonFileExtensions), value, options);
-        }
-
-        public void ReadAsync<T>(ExpectLocalFileInfo info, Action<T> callback, object? options = null)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void ReadAsync<T>(FileOperateInfo operate, Action<T> callback, object? options = null)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void WriteAsync<T>(ExpectLocalFileInfo info, T value, Action? callback = null, object? options = null)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void WriteAsync<T>(FileOperateInfo operate, T value, Action? callback = null, object? options = null)
-        {
-            throw new NotImplementedException();
-        }
-
         public override T? Read<T>(ExpectLocalFileInfo info, IConcurrentOperate fileOperate = null, object? options = null) where T : default
         {
-            throw new NotImplementedException();
+            return Read<T>(info.CreateWriteOperate(FileExtensions.JsonFileExtensions), fileOperate, options);
         }
 
         public override T? Read<T>(FileOperateInfo info, IConcurrentOperate fileOperate = null, object? options = null) where T : default
         {
-            throw new NotImplementedException();
+            var jsonOptions = options as JsonSerializerOptions ?? _jsonSerializerOptions;
+            T? result = default;
+            using (FileStream stream = info.OpenFile())
+            {
+                result = JsonSerializer.Deserialize<T>(stream, jsonOptions);
+            }
+            return result;
         }
 
         public override void ReadAsync<T>(ExpectLocalFileInfo info, Action<T>? callback, IConcurrentOperate fileOperate = null, object? options = null)

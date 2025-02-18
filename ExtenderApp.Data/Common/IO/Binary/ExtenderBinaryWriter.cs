@@ -72,7 +72,7 @@ namespace ExtenderApp.Data
         {
             _buffered = 0;
             BytesCommitted = 0;
-            if (sequencePool is null) 
+            if (sequencePool is null)
                 throw new ArgumentNullException(nameof(sequencePool));
 
             SequencePool = sequencePool;

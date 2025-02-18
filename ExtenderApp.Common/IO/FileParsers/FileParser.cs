@@ -1,4 +1,5 @@
-﻿using ExtenderApp.Abstract;
+﻿using System.IO.MemoryMappedFiles;
+using ExtenderApp.Abstract;
 using ExtenderApp.Common.ConcurrentOperates;
 using ExtenderApp.Common.ObjectPools;
 using ExtenderApp.Data;
@@ -9,9 +10,9 @@ namespace ExtenderApp.Common.IO.FileParsers
     /// 文件解析器基类，用于处理文件解析。
     /// </summary>
     /// <typeparam name="FileStreamConcurrentOperateData">文件流并发操作数据类型</typeparam>
-    public abstract class FileParser : FileParser<FileStreamConcurrentOperatePolicy, FileStreamConcurrentOperateData>
+    public abstract class FileParser : FileParser<FileConcurrentOperatePolicy, FileConcurrentOperateData>
     {
-        protected override FileStreamConcurrentOperatePolicy Policy { get; }
+        protected override FileConcurrentOperatePolicy Policy { get; }
 
         /// <summary>
         /// 初始化 FileParser 类的新实例。
@@ -19,7 +20,7 @@ namespace ExtenderApp.Common.IO.FileParsers
         /// <param name="store">文件存储对象</param>
         protected FileParser(FileStore store) : base(store)
         {
-            Policy = new FileStreamConcurrentOperatePolicy();
+            Policy = new FileConcurrentOperatePolicy();
         }
 
     }
@@ -28,19 +29,39 @@ namespace ExtenderApp.Common.IO.FileParsers
     /// 文件解析抽象类
     /// </summary>
     public abstract class FileParser<TPolicy, TData> : DisposableObject, IFileParser
-        where TPolicy : class, IConcurrentOperatePolicy<FileStream, TData>
-        where TData : FileStreamConcurrentOperateData
+        where TPolicy : class, IConcurrentOperatePolicy<MemoryMappedViewAccessor, TData>
+        where TData : FileConcurrentOperateData
     {
         /// <summary>
         /// 文件存储的实例
         /// </summary>
         protected readonly FileStore _store;
 
+        /// <summary>
+        /// 用于取消操作的取消令牌源。
+        /// </summary>
+        private readonly CancellationTokenSource _cancellationTokenSource;
+
+        /// <summary>
+        /// 获取策略对象属性，该属性为抽象属性，必须由派生类实现。
+        /// </summary>
+        /// <returns>返回策略对象</returns>
         protected abstract TPolicy Policy { get; }
 
+        /// <summary>
+        /// FileParser 类的受保护构造函数。
+        /// </summary>
+        /// <param name="store">文件存储对象</param>
         protected FileParser(FileStore store)
         {
+            /// <summary>
+            /// 初始化文件存储对象
+            /// </summary>
             _store = store;
+            /// <summary>
+            /// 初始化取消令牌源
+            /// </summary>
+            _cancellationTokenSource = new CancellationTokenSource();
         }
 
         #region Read
@@ -135,13 +156,21 @@ namespace ExtenderApp.Common.IO.FileParsers
 
         #region GetOperate
 
-        protected IConcurrentOperate<FileStream, TData> GetOperate(FileOperateInfo info, object? fileOperate)
-        {
-            if (!(fileOperate != null && fileOperate is IConcurrentOperate<FileStream, TData> operate))
-            {
 
-                operate = _store.GetOperate(info, ConcurrentOperate<TPolicy, FileStream, TData>.Get);
-                operate.Start(Policy);
+        /// <summary>
+        /// 获取指定文件的并发操作实例。
+        /// </summary>
+        /// <param name="info">文件操作信息。</param>
+        /// <param name="fileOperate">文件操作实例，可以为null。</param>
+        /// <param name="fileLength">文件长度，默认为-1表示自动计算。</param>
+        /// <returns>返回一个实现了IConcurrentOperate<MemoryMappedViewAccessor, TData>接口的文件操作实例。</returns>
+        /// <exception cref="InvalidOperationException">当无法找到文件处理类时抛出。</exception>
+        protected IConcurrentOperate<MemoryMappedViewAccessor, TData> GetOperate(FileOperateInfo info, object? fileOperate, long fileLength = 0)
+        {
+            if (!(fileOperate != null && fileOperate is IConcurrentOperate<MemoryMappedViewAccessor, TData> operate))
+            {
+                var data = Policy.GetData();
+                operate = _store.GetOperate(info, CreateOperate, fileLength);
                 if (operate == null)
                 {
                     throw new InvalidOperationException(string.Format("查找文件处理类出问题了：{0}", info.LocalFileInfo));
@@ -150,6 +179,26 @@ namespace ExtenderApp.Common.IO.FileParsers
             return operate;
         }
 
+        /// <summary>
+        /// 创建一个并发操作对象。
+        /// </summary>
+        /// <returns>返回一个并发操作对象。</returns>
+        private IConcurrentOperate<MemoryMappedViewAccessor, TData> CreateOperate(FileOperateInfo info, long fileLength)
+        {
+            var result = ConcurrentOperate<TPolicy, MemoryMappedViewAccessor, TData>.Get();
+            var data = Policy.GetData();
+            data.OpenFile(info, fileLength, _cancellationTokenSource.Token, _store.ReleaseOperate);
+            result.SetPolicyAndData(Policy, data);
+            return result;
+        }
+
         #endregion
+
+        protected override void Dispose(bool disposing)
+        {
+            _cancellationTokenSource.Cancel();
+            _cancellationTokenSource.Dispose();
+            base.Dispose(disposing);
+        }
     }
 }

@@ -14,7 +14,6 @@ namespace ExtenderApp.Test
             //splitter.Creat(fileInfo, info);
             //var s = binary.GetCount(Guid.NewGuid());
             //byte[] bytes = binary.Serialize("ssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss");
-            //var info = CreatTestExpectLocalFileInfo("test");
             //var totalMegabytes = Utility.MegabytesToBytes(20);
             //var chunkSize = Utility.MegabytesToBytes(1);
 
@@ -31,6 +30,13 @@ namespace ExtenderApp.Test
             //    splitter.Write(info, bytes, i);
             //}
             //result = splitter.Read<string>(info);
+            var info = CreatTestExpectLocalFileInfo("test");
+            binary.Write(info, 50);
+            var temp = binary.Read<int>(info);
+            binary.Write(info, "sssssss");
+            var temp1 = binary.Read<string>(info);
+            binary.Write(info, string.Empty);
+            temp1 = binary.Read<string>(info);
         }
 
 

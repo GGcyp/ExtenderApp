@@ -37,10 +37,11 @@ namespace ExtenderApp.Abstract
         TData Data { get; }
 
         /// <summary>
-        /// 开始执行并发操作策略。
+        /// 设置操作策略和数据
         /// </summary>
-        /// <param name="policy">并发操作策略实例，其中TOperate表示操作类型，TData表示数据类型。</param>
-        void Start(IConcurrentOperatePolicy<TOperate, TData> policy);
+        /// <param name="policy">操作策略接口，用于定义并发操作的策略</param>
+        /// <param name="data">要设置的数据</param>
+        void SetPolicyAndData(IConcurrentOperatePolicy<TOperate, TData> policy, TData data);
 
         /// <summary>
         /// 执行一个并发操作。

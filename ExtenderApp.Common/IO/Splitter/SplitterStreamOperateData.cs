@@ -1,12 +1,11 @@
-﻿using ExtenderApp.Abstract;
-using ExtenderApp.Data;
+﻿using ExtenderApp.Data;
 
 namespace ExtenderApp.Common.IO.Splitter
 {
     /// <summary>
     /// 分割流操作数据类
     /// </summary>
-    internal class SplitterStreamOperateData : FileStreamConcurrentOperateData
+    internal class SplitterStreamOperateData : FileConcurrentOperateData
     {
         /// <summary>
         /// 分割器信息文件扩展名，默认为二进制文件扩展名

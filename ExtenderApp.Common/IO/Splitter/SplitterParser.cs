@@ -6,6 +6,7 @@ using ExtenderApp.Common.ObjectPools;
 using ExtenderApp.Common.ConcurrentOperates;
 using ExtenderApp.Common.DataBuffers;
 using ExtenderApp.Common.IO.FileParsers;
+using System.IO.MemoryMappedFiles;
 
 namespace ExtenderApp.Common.IO.Splitter
 {
@@ -323,7 +324,7 @@ namespace ExtenderApp.Common.IO.Splitter
         /// </summary>
         /// <param name="fileInfo">本地文件信息</param>
         /// <returns>文件分割操作实例</returns>
-        private IConcurrentOperate<FileStream, SplitterStreamOperateData> GetFileSplitterOperate(ExpectLocalFileInfo fileInfo, object? fileOperate)
+        private IConcurrentOperate<MemoryMappedViewAccessor, SplitterStreamOperateData> GetFileSplitterOperate(ExpectLocalFileInfo fileInfo, object? fileOperate)
         {
             return GetFileSplitterOperate(fileInfo.CreateWriteOperate(FileExtensions.SplitterFileExtensions), fileOperate);
         }
@@ -333,7 +334,7 @@ namespace ExtenderApp.Common.IO.Splitter
         /// </summary>
         /// <param name="operateInfo">文件操作信息</param>
         /// <returns>文件分割操作实例</returns>
-        private IConcurrentOperate<FileStream, SplitterStreamOperateData> GetFileSplitterOperate(FileOperateInfo operateInfo, object? fileOperate)
+        private IConcurrentOperate<MemoryMappedViewAccessor, SplitterStreamOperateData> GetFileSplitterOperate(FileOperateInfo operateInfo, object? fileOperate)
         {
             var operate = GetOperate(operateInfo, fileOperate);
             operate.Data.OpenFile(operateInfo.LocalFileInfo.CreateExpectLocalFileInfo());

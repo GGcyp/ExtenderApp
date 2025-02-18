@@ -1,4 +1,6 @@
 ﻿using System.Buffers;
+using System.IO;
+using System.IO.MemoryMappedFiles;
 using ExtenderApp.Abstract;
 using ExtenderApp.Common.Error;
 
@@ -7,7 +9,7 @@ namespace ExtenderApp.Common.IO.Splitter
     /// <summary>
     /// 读取操作类，继承自 StreamOperation 类。
     /// </summary>
-    internal class ReadOperation : FileStreamOperation
+    internal class ReadOperation : FileOperation
     {
         /// <summary>
         /// 读取操作完成后的回调函数。
@@ -17,7 +19,7 @@ namespace ExtenderApp.Common.IO.Splitter
         /// <summary>
         /// 读取的起始位置。
         /// </summary>
-        private int readPosition;
+        private long readPosition;
 
         /// <summary>
         /// 读取的长度。
@@ -29,6 +31,10 @@ namespace ExtenderApp.Common.IO.Splitter
         /// </summary>
         public byte[] ReadBytes { get; private set; }
 
+        /// <summary>
+        /// 初始化ReadOperation实例。
+        /// </summary>
+        /// <param name="releaseAction">释放操作时的回调动作。</param>
         public ReadOperation(Action<IConcurrentOperation> releaseAction) : base(releaseAction)
         {
             this.calback = null;
@@ -40,10 +46,10 @@ namespace ExtenderApp.Common.IO.Splitter
         /// <summary>
         /// 执行读取操作。
         /// </summary>
-        /// <param name="stream">要读取的流。</param>
-        public override void Execute(FileStream stream)
+        /// <param name="item">内存映射视图访问器。</param>
+        public override void Execute(MemoryMappedViewAccessor item)
         {
-            if (readPosition > stream.Length || readPosition + readLength > stream.Length)
+            if (readPosition < 0 || readLength < 0 || readPosition > item.Capacity || readPosition + readLength > item.Capacity)
             {
                 ErrorUtil.ArgumentOutOfRange(nameof(ReadOperation));
             }
@@ -52,7 +58,7 @@ namespace ExtenderApp.Common.IO.Splitter
             byte[] readBytes;
             if (ReadBytes == null)
             {
-                readLength = readLength == -1 ? (int)stream.Length : readLength;
+                readLength = readLength == -1 ? (int)item.Capacity : readLength;
                 readBytes = pool.Rent(readLength);
             }
             else
@@ -60,17 +66,13 @@ namespace ExtenderApp.Common.IO.Splitter
                 readBytes = ReadBytes;
             }
 
-            try
+            for (long i = readPosition; i < readLength; i++)
             {
-                stream.Seek(readPosition, SeekOrigin.Begin);
-                stream.Read(readBytes, readPosition, readLength);
-                ReadBytes = new ArraySegment<byte>(readBytes, 0, readLength).ToArray();
-                calback?.Invoke(ReadBytes);
+                readBytes[i] = item.ReadByte(i);
             }
-            finally
-            {
-                pool.Return(readBytes);
-            }
+            ReadBytes = new ArraySegment<byte>(readBytes, 0, readLength).ToArray();
+            calback?.Invoke(ReadBytes);
+            pool.Return(readBytes);
         }
 
         /// <summary>
@@ -93,7 +95,7 @@ namespace ExtenderApp.Common.IO.Splitter
         /// <param name="position">读取的起始位置。</param>
         /// <param name="length">读取的长度。</param>
         /// <param name="action">回调函数。</param>
-        public void Set(int position, int length, Action<byte[]> action)
+        public void Set(long position, int length, Action<byte[]> action)
         {
             if (position < 0 || length < 0)
                 throw new ArgumentOutOfRangeException(nameof(position));
@@ -112,7 +114,7 @@ namespace ExtenderApp.Common.IO.Splitter
         /// <param name="position">读取的起始位置。</param>
         /// <param name="length">读取的长度。</param>
         /// <param name="bytes">要读取的字节数组。</param>
-        public void Set(int position, int length, byte[] bytes)
+        public void Set(long position, int length, byte[] bytes)
         {
             if (position < 0 || length < 0)
                 throw new ArgumentOutOfRangeException(nameof(position));
@@ -131,7 +133,7 @@ namespace ExtenderApp.Common.IO.Splitter
         /// <param name="position">读取起始位置</param>
         /// <param name="length">读取长度</param>
         /// <exception cref="ArgumentOutOfRangeException">如果 position 或 length 小于 0，则抛出此异常</exception>
-        public void Set(int position, int length)
+        public void Set(long position, int length)
         {
             if (position < 0 || length < 0)
                 throw new ArgumentOutOfRangeException(nameof(position));

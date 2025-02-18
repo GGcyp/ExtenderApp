@@ -1,11 +1,13 @@
 ﻿using System.Buffers;
+using System.IO;
+using System.IO.MemoryMappedFiles;
 using ExtenderApp.Abstract;
 using ExtenderApp.Common.Error;
 using ExtenderApp.Data;
 
 namespace ExtenderApp.Common.IO.Splitter
 {
-    internal class SplitterReadOperation : FileStreamOperation
+    internal class SplitterReadOperation : FileOperation
     {
         /// <summary>
         /// 读取操作完成后的回调函数。
@@ -47,9 +49,9 @@ namespace ExtenderApp.Common.IO.Splitter
             splitterInfo = SplitterInfo.Empty;
         }
 
-        public override void Execute(FileStream stream)
+        public override void Execute(MemoryMappedViewAccessor item)
         {
-            if (readPosition < 0 || readLength < 0 || readPosition + readLength > stream.Length)
+            if (readPosition < 0 || readLength < 0 || readPosition + readLength > item.Capacity || readPosition > item.Capacity)
             {
                 ErrorUtil.ArgumentOutOfRange(nameof(ReadOperation));
             }
@@ -58,7 +60,7 @@ namespace ExtenderApp.Common.IO.Splitter
             byte[] readBytes;
             if (ReadBytes == null)
             {
-                readLength = readLength == -1 ? (int)stream.Length : readLength;
+                readLength = readLength == -1 ? (int)item.Capacity : readLength;
                 readBytes = pool.Rent(readLength);
             }
             else
@@ -68,8 +70,11 @@ namespace ExtenderApp.Common.IO.Splitter
 
             try
             {
-                stream.Seek(readPosition, SeekOrigin.Begin);
-                stream.Read(readBytes, 0, readLength);
+                for (long i = readPosition; i < readLength; i++)
+                {
+                    readBytes[i] = item.ReadByte(i);
+                }
+
                 ReadBytes = new ArraySegment<byte>(readBytes, 0, readLength).ToArray();
                 calback?.Invoke(ReadBytes);
                 splitterInfo.RemoveChunk(readChunkIndex);
@@ -110,7 +115,7 @@ namespace ExtenderApp.Common.IO.Splitter
         /// <param name="splitterInfo">分隔符信息。</param>
         /// <exception cref="ArgumentOutOfRangeException">如果 <paramref name="position"/> 或 <paramref name="length"/> 小于 0，则抛出此异常。</exception>
         /// <exception cref="ArgumentNullException">如果 <paramref name="action"/> 为 null，则抛出此异常。</exception>
-        public void Set(int position, int length, Action<byte[]> action, SplitterInfo splitterInfo)
+        public void Set(long position, int length, Action<byte[]> action, SplitterInfo splitterInfo)
         {
             if (position < 0 || length < 0)
                 throw new ArgumentOutOfRangeException(nameof(position));

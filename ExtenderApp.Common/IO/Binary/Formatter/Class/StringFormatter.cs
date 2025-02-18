@@ -18,10 +18,9 @@ namespace ExtenderApp.Common.IO.Binaries.Formatter
 
         public override int GetCount(string value)
         {
-            var result = Count;
             if (string.IsNullOrEmpty(value))
             {
-                return 1;
+                return Count;
             }
             return _binaryOptions.UTF8.GetMaxByteCount(value.Length) + Count;
         }
