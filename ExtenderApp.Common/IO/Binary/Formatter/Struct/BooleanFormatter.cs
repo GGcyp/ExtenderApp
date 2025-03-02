@@ -7,7 +7,7 @@ namespace ExtenderApp.Common.IO.Binaries.Formatter
     /// </summary>
     internal sealed class BooleanFormatter : ExtenderFormatter<Boolean>
     {
-        public override int Count => 1;
+        public override int Length => 1;
 
         public BooleanFormatter(ExtenderBinaryWriterConvert binaryWriterConvert, ExtenderBinaryReaderConvert binaryReaderConvert, BinaryOptions options) : base(binaryWriterConvert, binaryReaderConvert, options)
         {

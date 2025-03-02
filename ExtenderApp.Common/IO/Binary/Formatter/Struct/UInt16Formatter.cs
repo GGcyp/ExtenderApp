@@ -7,7 +7,7 @@ namespace ExtenderApp.Common.IO.Binaries.Formatter
     /// </summary>
     internal sealed class UInt16Formatter : ExtenderFormatter<UInt16>
     {
-        public override int Count => 3;
+        public override int Length => 3;
 
         public UInt16Formatter(ExtenderBinaryWriterConvert binaryWriterConvert, ExtenderBinaryReaderConvert binaryReaderConvert, BinaryOptions options) : base(binaryWriterConvert, binaryReaderConvert, options)
         {

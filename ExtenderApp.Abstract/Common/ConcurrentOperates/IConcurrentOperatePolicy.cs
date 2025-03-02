@@ -10,11 +10,6 @@ namespace ExtenderApp.Abstract
     public interface IConcurrentOperatePolicy<TOperate, TData> : IDisposable
     {
         /// <summary>
-        /// 获取取消令牌，用于控制并发操作的取消。
-        /// </summary>
-        CancellationToken Token { get; }
-
-        /// <summary>
         /// 创建一个操作对象。
         /// </summary>
         /// <param name="data">用于创建操作对象的数据。</param>

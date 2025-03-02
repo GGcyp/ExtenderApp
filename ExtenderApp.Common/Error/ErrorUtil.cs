@@ -338,12 +338,33 @@ namespace ExtenderApp.Common.Error
         }
 
         /// <summary>
-        /// 当指定的本地文件不存在时，调用此方法来处理。
+        /// 文件未找到处理
         /// </summary>
-        /// <param name="fileInfo">包含文件信息的对象。</param>
+        /// <param name="fileInfo">本地文件信息</param>
+        /// <exception cref="ArgumentNullException">当文件路径为空时抛出</exception>
         public static void FileNotFound(this ExpectLocalFileInfo fileInfo)
         {
+            if (fileInfo.IsEmpty)
+                ArgumentNull("未知文件路径");
+
             FileNotFound(fileInfo.FolderPath, fileInfo.FileName);
+        }
+
+        /// <summary>
+        /// 当文件未找到时抛出异常。
+        /// </summary>
+        /// <param name="fileInfo">本地文件信息对象。</param>
+        /// <exception cref="ArgumentNullException">当文件路径为空时抛出。</exception>
+        /// <exception cref="FileNotFoundException">当文件未找到时抛出。</exception>
+        public static void FileNotFound(this LocalFileInfo fileInfo)
+        {
+            if (fileInfo.IsEmpty)
+                ArgumentNull("未知文件路径");
+
+            if (fileInfo.FileInfo.Exists)
+                return;
+
+            FileNotFound(fileInfo.FilePath);
         }
 
         #endregion

@@ -1,4 +1,6 @@
-﻿namespace AppHost.Extensions.DependencyInjection
+﻿using System.Reflection;
+
+namespace AppHost.Extensions.DependencyInjection
 {
     /// <summary>
     /// 这个静态类提供了一系列用于扩展 <see cref="IServiceCollection"/> 接口的扩展方法，
@@ -377,6 +379,7 @@
 
             Type serviceType = typeof(T);
             T value = default;
+            ConstructorInfo constructorInfo;
             for (var i = 0; i < services.Count; i++)
             {
                 if (services[i].ServiceType == serviceType)
@@ -385,15 +388,32 @@
                         throw new InvalidOperationException(string.Format("要配置的文件不是全局唯一:{0}", serviceType.Name));
 
                     value = (T)services[i].ImplementationInstance;
-                    break;
+
+                    if (value == null)
+                    {
+                        var type = services[i].ImplementationType;
+                        constructorInfo = type.GetConstructors().First(c => c.GetParameters().Length == 0);
+
+                        if (constructorInfo == null)
+                            throw new NullReferenceException(string.Format("要配置的类需要手动创建:{0}", serviceType.Name));
+
+                        value = (T)constructorInfo.Invoke(null);
+                    }
+                    action.Invoke(value);
+                    return services;
                 }
             }
 
-            if (value == null)
-                throw new NullReferenceException(string.Format("要配置的文件还未创建:{0}", serviceType.Name));
+            if (serviceType.IsAbstract)
+                throw new KeyNotFoundException(string.Format("还未创建配置类：{0}", serviceType.Name));
 
+            constructorInfo = serviceType.GetConstructors().First(c => c.GetParameters().Length == 0);
+
+            if (constructorInfo == null)
+                throw new NullReferenceException(string.Format("要配置的类需要手动创建:{0}", serviceType.Name));
+
+            value = (T)constructorInfo.Invoke(null);
             action.Invoke(value);
-
             return services;
         }
 

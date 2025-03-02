@@ -16,7 +16,7 @@ namespace ExtenderApp.Common.IO.Binaries.Formatter
 
         public virtual T Default => default;
 
-        public abstract int Count { get; }
+        public abstract int Length { get; }
 
         protected ResolverFormatter(IBinaryFormatterResolver resolver)
         {
@@ -37,9 +37,9 @@ namespace ExtenderApp.Common.IO.Binaries.Formatter
             return _resolver.GetFormatterWithVerify<TValue>();
         }
 
-        public virtual int GetCount(T value)
+        public virtual long GetLength(T value)
         {
-            return Count;
+            return Length;
         }
     }
 }

@@ -4,7 +4,7 @@ namespace ExtenderApp.Common.IO.Binaries.Formatter.Struct
 {
     internal class TimeSpanFormatter : ExtenderFormatter<TimeSpan>
     {
-        public override int Count => 9;
+        public override int Length => 9;
 
         public TimeSpanFormatter(ExtenderBinaryWriterConvert binaryWriterConvert, ExtenderBinaryReaderConvert binaryReaderConvert, BinaryOptions options) : base(binaryWriterConvert, binaryReaderConvert, options)
         {

@@ -2,18 +2,18 @@
 
 namespace ExtenderApp.Common
 {
-    public abstract class ConcurrentOperation : DisposableObject, IConcurrentOperation
+    public abstract class ConcurrentOperation : DisposableObject, IConcurrentOperation, ISelfReset
     {
-        private readonly Action<IConcurrentOperation> releaseAction;
-
-        public ConcurrentOperation(Action<IConcurrentOperation> releaseAction)
-        {
-            this.releaseAction = releaseAction;
-        }
+        private Action<object> releaseAction;
 
         public void Release()
         {
             releaseAction?.Invoke(this);
+        }
+
+        public void SetReset(Action<object> action)
+        {
+            releaseAction = action;
         }
 
         public abstract bool TryReset();
@@ -25,10 +25,6 @@ namespace ExtenderApp.Common
     /// <typeparam name="T">并发操作处理的数据类型。</typeparam>
     public abstract class ConcurrentOperation<T> : ConcurrentOperation, IConcurrentOperation<T> where T : class
     {
-        protected ConcurrentOperation(Action<IConcurrentOperation> releaseAction) : base(releaseAction)
-        {
-        }
-
         /// <summary>
         /// 执行并发操作。
         /// </summary>

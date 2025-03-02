@@ -46,7 +46,7 @@ namespace ExtenderApp.Common.IO.Splitter
         /// </summary>
         private Action? callback;
 
-        public SplitterWriteOperation(Action<IConcurrentOperation> releaseAction) : base(releaseAction)
+        public SplitterWriteOperation()
         {
             writeBytes = Array.Empty<byte>();
             writePosition = 0;

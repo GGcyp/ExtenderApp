@@ -14,14 +14,14 @@ namespace ExtenderApp.Common.IO
         /// <summary>
         /// 文件操作字典，用于存储文件操作信息。
         /// </summary>
-        private readonly ConcurrentDictionary<FileOperateInfo, IConcurrentOperate> _operateDict;
+        private readonly ConcurrentDictionary<int, IConcurrentOperate> _operateDict;
 
         /// <summary>
         /// 一个私有的 ScheduledTask 对象。
         /// </summary>
         private readonly ScheduledTask _task;
 
-        private readonly List<FileOperateInfo> _operateList;
+        private readonly List<int> _operateList;
 
         /// <summary>
         /// 初始化 FileStorage 类的新实例。
@@ -44,18 +44,19 @@ namespace ExtenderApp.Common.IO
         /// <param name="fileLength">文件的长度。</param>
         /// <returns>并发操作对象，如果对象已存在则返回null。</returns>
         /// <remarks>
-        /// T必须继承自<see cref="FileConcurrentOperateData"/>。
+        /// T必须继承自<see cref="FileOperateData"/>。
         /// </remarks>
-        public IConcurrentOperate<MemoryMappedViewAccessor, T>? GetOperate<T>(FileOperateInfo info, Func<FileOperateInfo, long, IConcurrentOperate<MemoryMappedViewAccessor, T>> createFunc, long fileLength) where T : FileConcurrentOperateData
+        public IConcurrentOperate<MemoryMappedViewAccessor, T>? GetOperate<T>(FileOperateInfo info, Func<FileOperateInfo, long, IConcurrentOperate<MemoryMappedViewAccessor, T>> createFunc, long fileLength) where T : FileOperateData
         {
-            if (_operateDict.TryGetValue(info, out var operate))
+            var id = info.GetHashCode();
+            if (_operateDict.TryGetValue(id, out var operate))
             {
                 return operate as IConcurrentOperate<MemoryMappedViewAccessor, T>;
             }
 
             lock (_operateDict)
             {
-                if (_operateDict.TryGetValue(info, out operate))
+                if (_operateDict.TryGetValue(id, out operate))
                 {
                     return operate as IConcurrentOperate<MemoryMappedViewAccessor, T>;
                 }
@@ -63,7 +64,7 @@ namespace ExtenderApp.Common.IO
                 createFunc.ArgumentNull();
 
                 var result = createFunc?.Invoke(info, fileLength);
-                _operateDict.TryAdd(info, result);
+                _operateDict.TryAdd(id, result);
                 _task.Resume();
                 return result;
             }
@@ -75,7 +76,20 @@ namespace ExtenderApp.Common.IO
         /// <param name="info">文件操作信息。</param>
         public void ReleaseOperate(FileOperateInfo info)
         {
-            if (!_operateDict.TryRemove(info, out var operate))
+            ReleaseOperate(info.GetHashCode());
+        }
+
+        /// <summary>
+        /// 释放操作资源
+        /// </summary>
+        /// <param name="id">操作的唯一标识符</param>
+        /// <remarks>
+        /// 该方法尝试从操作字典中移除指定ID的操作，并调用该操作的Release方法释放资源。
+        /// 如果指定的ID不存在于操作字典中，则直接返回，不进行任何操作。
+        /// </remarks>
+        public void ReleaseOperate(int id)
+        {
+            if (!_operateDict.TryRemove(id, out var operate))
             {
                 return;
             }
@@ -110,6 +124,15 @@ namespace ExtenderApp.Common.IO
 
             if (_operateDict.Count <= 0)
                 _task.Pause();
+        }
+
+        /// <summary>
+        /// 删除本地文件信息
+        /// </summary>
+        /// <param name="info">本地文件信息对象</param>
+        public void Delete(LocalFileInfo info)
+        {
+            ReleaseOperate(info.GetHashCode());
         }
 
         /// <summary>

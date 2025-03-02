@@ -47,15 +47,6 @@ namespace ExtenderApp.Common.IO.Binaries
         /// </summary>
         public DataBuffer? Data { get; set; }
 
-        /// <summary>
-        /// 初始化BinaryReadOperation类的新实例。
-        /// </summary>
-        /// <param name="releaseAction">释放操作的动作，类型为Action<IConcurrentOperation>。</param>
-        public BinaryReadOperation(Action<IConcurrentOperation> releaseAction) : base(releaseAction)
-        {
-            processFunc = null;
-        }
-
         ///// <summary>
         ///// 执行文件流操作。
         ///// </summary>
@@ -70,8 +61,10 @@ namespace ExtenderApp.Common.IO.Binaries
         public override void Execute(MemoryMappedViewAccessor item)
         {
             readLength = readLength == -1 ? item.Capacity : readLength;
-            Data = processFunc?.Invoke(item, readPosition, readLength);
             processAction?.Invoke(item, readPosition, readLength, Data);
+
+            if (processFunc != null)
+                Data = processFunc?.Invoke(item, readPosition, readLength);
         }
 
         /// <summary>
@@ -110,9 +103,9 @@ namespace ExtenderApp.Common.IO.Binaries
         /// 设置处理动作，默认位置为0。
         /// </summary>
         /// <param name="action">处理动作，用于处理MemoryMappedViewAccessor和DataBuffer对象。</param>
-        public void Set(Action<MemoryMappedViewAccessor, long, long, DataBuffer?> action)
+        public void Set(Action<MemoryMappedViewAccessor, long, long, DataBuffer?> action, DataBuffer? dataBuffer = null)
         {
-            Set(action, 0);
+            Set(action, 0, dataBuffer);
         }
 
         /// <summary>
@@ -120,22 +113,24 @@ namespace ExtenderApp.Common.IO.Binaries
         /// </summary>
         /// <param name="action">处理动作，用于处理MemoryMappedViewAccessor和DataBuffer对象。</param>
         /// <param name="position">读取位置。</param>
-        public void Set(Action<MemoryMappedViewAccessor, long, long, DataBuffer?> action, long position)
+        public void Set(Action<MemoryMappedViewAccessor, long, long, DataBuffer?> action, long position, DataBuffer? dataBuffer = null)
         {
-            Set(action, position, -1);
+            Set(action, position, -1, dataBuffer);
         }
 
         /// <summary>
-        /// 设置操作函数和数据读取位置及长度
+        /// 设置操作参数
         /// </summary>
-        /// <param name="action">操作函数，接收一个 MemoryMappedViewAccessor 对象，一个 long 类型的偏移量和一个 DataBuffer? 类型的缓冲区</param>
-        /// <param name="position">数据读取的起始位置</param>
-        /// <param name="lenght">数据读取的长度</param>
-        public void Set(Action<MemoryMappedViewAccessor, long, long, DataBuffer?> action, long position, int lenght)
+        /// <param name="action">对MemoryMappedViewAccessor进行操作的动作</param>
+        /// <param name="position">操作开始的位置</param>
+        /// <param name="lenght">操作的长度</param>
+        /// <param name="dataBuffer">操作所需的数据缓冲区，可为null</param>
+        public void Set(Action<MemoryMappedViewAccessor, long, long, DataBuffer?> action, long position, long lenght, DataBuffer? dataBuffer = null)
         {
             processAction = action;
             readPosition = position;
             readLength = lenght;
+            Data = dataBuffer;
         }
 
         /// <summary>

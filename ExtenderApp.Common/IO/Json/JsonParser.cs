@@ -168,5 +168,16 @@ namespace ExtenderApp.Common.IO
         }
 
         #endregion
+
+        #region Delete
+
+        public override void Delete(ExpectLocalFileInfo info)
+        {
+            var jsonFileInfo = info.CreatLocalFileInfo(FileExtensions.JsonFileExtensions);
+            _store.Delete(jsonFileInfo);
+            jsonFileInfo.Delete();
+        }
+
+        #endregion
     }
 }

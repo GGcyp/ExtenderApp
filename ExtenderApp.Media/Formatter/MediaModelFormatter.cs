@@ -13,7 +13,7 @@ namespace ExtenderApp.Media
 
         public override MediaModel Default => new MediaModel() { VideoInfos = _videoInfoFormatter.Default };
 
-        public override int Count => _boolFormatter.Count * 2 + _doubleFormatter.Count + _videoInfoFormatter.Count;
+        public override int Length => _boolFormatter.Length * 2 + _doubleFormatter.Length + _videoInfoFormatter.Length;
 
         public MediaModelFormatter(IBinaryFormatterResolver resolver) : base(resolver)
         {
@@ -46,14 +46,14 @@ namespace ExtenderApp.Media
             _videoInfoFormatter.Serialize(ref writer, value.VideoInfos);
         }
 
-        public override int GetCount(MediaModel value)
+        public override long GetLength(MediaModel value)
         {
             if (value == null)
             {
                 throw new ArgumentNullException(nameof(value));
             }
 
-            return _boolFormatter.Count * 2 + _doubleFormatter.Count + _videoInfoFormatter.GetCount(value.VideoInfos);
+            return _boolFormatter.Length * 2 + _doubleFormatter.Length + _videoInfoFormatter.GetLength(value.VideoInfos);
         }
     }
 }

@@ -10,14 +10,14 @@ namespace ExtenderApp.Common.IO.Binaries.Formatter
         private static MethodInfo deserializeMethod = typeof(IBinaryFormatter<>).GetMethod("Deserialize", BindingFlags.Instance | BindingFlags.NonPublic)!;
         private static MethodInfo getMethod = typeof(ResolverFormatter<>).GetMethod("GetFormatter", BindingFlags.Instance | BindingFlags.NonPublic)!;
 
-        public override int Count
+        public override int Length
         {
             get
             {
                 int count = 0;
                 for (int i = 0; i < _formatters.Count; i++)
                 {
-                    count += _formatters[i].Item1.Count;
+                    count += _formatters[i].Item1.Length;
                 }
                 return count;
             }

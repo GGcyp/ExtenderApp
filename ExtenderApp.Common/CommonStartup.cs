@@ -1,6 +1,7 @@
 ﻿using AppHost.Builder;
 using AppHost.Extensions.DependencyInjection;
 using ExtenderApp.Common.NetWorks;
+using ExtenderApp.Common.SHA;
 
 namespace ExtenderApp.Common
 {
@@ -13,6 +14,8 @@ namespace ExtenderApp.Common
         {
             services.AddFile();
             services.AddObjectPool();
+            services.AddLinkOperate();
+            services.AddSHA();
         }
     }
 }

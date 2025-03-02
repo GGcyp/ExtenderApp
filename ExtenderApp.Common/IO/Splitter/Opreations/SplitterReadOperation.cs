@@ -1,7 +1,5 @@
 ﻿using System.Buffers;
-using System.IO;
 using System.IO.MemoryMappedFiles;
-using ExtenderApp.Abstract;
 using ExtenderApp.Common.Error;
 using ExtenderApp.Data;
 
@@ -39,7 +37,7 @@ namespace ExtenderApp.Common.IO.Splitter
         /// </summary>
         private SplitterInfo splitterInfo;
 
-        public SplitterReadOperation(Action<IConcurrentOperation> releaseAction) : base(releaseAction)
+        public SplitterReadOperation()
         {
             calback = null;
             readPosition = 0;
@@ -56,33 +54,11 @@ namespace ExtenderApp.Common.IO.Splitter
                 ErrorUtil.ArgumentOutOfRange(nameof(ReadOperation));
             }
 
-            var pool = ArrayPool<byte>.Shared;
-            byte[] readBytes;
-            if (ReadBytes == null)
+            for (long i = readPosition; i < readLength; i++)
             {
-                readLength = readLength == -1 ? (int)item.Capacity : readLength;
-                readBytes = pool.Rent(readLength);
+                ReadBytes[i] = item.ReadByte(i);
             }
-            else
-            {
-                readBytes = ReadBytes;
-            }
-
-            try
-            {
-                for (long i = readPosition; i < readLength; i++)
-                {
-                    readBytes[i] = item.ReadByte(i);
-                }
-
-                ReadBytes = new ArraySegment<byte>(readBytes, 0, readLength).ToArray();
-                calback?.Invoke(ReadBytes);
-                splitterInfo.RemoveChunk(readChunkIndex);
-            }
-            finally
-            {
-                pool.Return(readBytes);
-            }
+            calback?.Invoke(ReadBytes);
         }
 
         /// <summary>
@@ -91,7 +67,7 @@ namespace ExtenderApp.Common.IO.Splitter
         /// <param name="action">处理字节数组的操作。</param>
         /// <param name="splitterInfo">分隔符信息。</param>
         /// <exception cref="ArgumentNullException">如果 <paramref name="action"/> 为 null，则抛出此异常。</exception>
-        public void Set(Action<byte[]> action, SplitterInfo splitterInfo)
+        public void Set(Action<byte[]> action, SplitterInfo splitterInfo, byte[]? bytes = null)
         {
             if (action == null)
                 throw new ArgumentNullException(nameof(action));
@@ -101,6 +77,7 @@ namespace ExtenderApp.Common.IO.Splitter
 
             readPosition = splitterInfo.GetLastChunkIndexPosition();
             readLength = splitterInfo.MaxChunkSize;
+            ReadBytes = bytes ?? new byte[readLength];
             calback = action;
             this.splitterInfo = splitterInfo;
             readChunkIndex = splitterInfo.GetLastChunkIndex();
@@ -115,7 +92,7 @@ namespace ExtenderApp.Common.IO.Splitter
         /// <param name="splitterInfo">分隔符信息。</param>
         /// <exception cref="ArgumentOutOfRangeException">如果 <paramref name="position"/> 或 <paramref name="length"/> 小于 0，则抛出此异常。</exception>
         /// <exception cref="ArgumentNullException">如果 <paramref name="action"/> 为 null，则抛出此异常。</exception>
-        public void Set(long position, int length, Action<byte[]> action, SplitterInfo splitterInfo)
+        public void Set(long position, int length, Action<byte[]> action, SplitterInfo splitterInfo, byte[]? bytes = null)
         {
             if (position < 0 || length < 0)
                 throw new ArgumentOutOfRangeException(nameof(position));
@@ -128,6 +105,7 @@ namespace ExtenderApp.Common.IO.Splitter
 
             readPosition = position;
             readLength = length;
+            ReadBytes = bytes ?? new byte[readLength];
             calback = action;
             this.splitterInfo = splitterInfo;
             readChunkIndex = splitterInfo.GetChunkIndex(position);
@@ -140,7 +118,7 @@ namespace ExtenderApp.Common.IO.Splitter
         /// <param name="splitterInfo">分块信息对象</param>
         /// <exception cref="ArgumentNullException">如果splitterInfo为null，则抛出此异常</exception>
         /// <exception cref="ArgumentOutOfRangeException">如果chunkIndex小于0或大于splitterInfo.ChunkCount，则抛出此异常</exception>
-        public void Set(uint chunkIndex, SplitterInfo splitterInfo)
+        public void Set(uint chunkIndex, SplitterInfo splitterInfo, byte[]? bytes = null)
         {
             if (splitterInfo == null)
                 throw new ArgumentNullException(nameof(splitterInfo));
@@ -150,6 +128,7 @@ namespace ExtenderApp.Common.IO.Splitter
 
             readPosition = splitterInfo.GetPosition(chunkIndex);
             readLength = splitterInfo.MaxChunkSize;
+            ReadBytes = bytes ?? new byte[readLength];
             this.splitterInfo = splitterInfo;
             readChunkIndex = chunkIndex;
         }
@@ -162,7 +141,7 @@ namespace ExtenderApp.Common.IO.Splitter
         /// <param name="splitterInfo">分块信息对象</param>
         /// <exception cref="ArgumentNullException">如果splitterInfo为null，则抛出此异常</exception>
         /// <exception cref="ArgumentOutOfRangeException">如果chunkIndex小于0或大于splitterInfo.ChunkCount，则抛出此异常</exception>
-        public void Set(uint chunkIndex, Action<byte[]> callback, SplitterInfo splitterInfo)
+        public void Set(uint chunkIndex, Action<byte[]> callback, SplitterInfo splitterInfo, byte[]? bytes = null)
         {
             if (splitterInfo == null)
                 throw new ArgumentNullException(nameof(splitterInfo));
@@ -172,6 +151,7 @@ namespace ExtenderApp.Common.IO.Splitter
 
             readPosition = splitterInfo.GetPosition(chunkIndex);
             readLength = splitterInfo.MaxChunkSize;
+            ReadBytes = bytes ?? new byte[readLength];
             this.splitterInfo = splitterInfo;
             this.calback = callback;
             readChunkIndex = chunkIndex;
@@ -182,7 +162,7 @@ namespace ExtenderApp.Common.IO.Splitter
             readPosition = 0;
             readLength = 0;
             calback = null;
-            ReadBytes = null;
+            ReadBytes = Array.Empty<byte>();
             splitterInfo = null;
             return true;
         }

@@ -14,15 +14,15 @@ namespace ExtenderApp.Common.IO.Binaries.Formatter
         {
         }
 
-        public override int Count => 5;
+        public override int Length => 5;
 
-        public override int GetCount(string value)
+        public override long GetLength(string value)
         {
             if (string.IsNullOrEmpty(value))
             {
-                return Count;
+                return Length;
             }
-            return _binaryOptions.UTF8.GetMaxByteCount(value.Length) + Count;
+            return _binaryOptions.UTF8.GetMaxByteCount(value.Length) + Length;
         }
 
         public override string Deserialize(ref ExtenderBinaryReader reader)

@@ -7,7 +7,7 @@ namespace ExtenderApp.Common.IO.Binaries.Formatter
     {
         private readonly IBinaryFormatter<string> _formatter;
 
-        public override int Count => throw new NotImplementedException();
+        public override int Length => throw new NotImplementedException();
 
         public GuidFormatter(IBinaryFormatterResolver resolver) : base(resolver)
         {
@@ -42,9 +42,9 @@ namespace ExtenderApp.Common.IO.Binaries.Formatter
             _formatter.Serialize(ref writer, value.ToString());
         }
 
-        public override int GetCount(Guid value)
+        public override long GetLength(Guid value)
         {
-            return _formatter.GetCount(value.ToString());
+            return _formatter.GetLength(value.ToString());
         }
     }
 }

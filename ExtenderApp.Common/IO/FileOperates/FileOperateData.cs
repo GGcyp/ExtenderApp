@@ -6,7 +6,7 @@ namespace ExtenderApp.Common.IO
     /// <summary>
     /// 表示文件流并发操作的数据类。
     /// </summary>
-    public class FileConcurrentOperateData : ConcurrentOperateData
+    public class FileOperateData : ConcurrentOperateData
     {
         /// <summary>
         /// 获取或设置文件操作信息。

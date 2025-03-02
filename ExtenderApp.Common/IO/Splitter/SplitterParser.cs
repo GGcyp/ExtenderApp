@@ -7,6 +7,7 @@ using ExtenderApp.Common.ConcurrentOperates;
 using ExtenderApp.Common.DataBuffers;
 using ExtenderApp.Common.IO.FileParsers;
 using System.IO.MemoryMappedFiles;
+using ExtenderApp.Common.ObjectPools.Policy;
 
 namespace ExtenderApp.Common.IO.Splitter
 {
@@ -41,8 +42,8 @@ namespace ExtenderApp.Common.IO.Splitter
         {
             _binaryParser = parser;
             infoExtensions = FileExtensions.BinaryFileExtensions;
-            _readOperationPool = ObjectPool.Create(new ConcurrentOperationPoolPolicy<SplitterReadOperation>(a => new SplitterReadOperation(a)));
-            _writeOperationPool = ObjectPool.Create(new ConcurrentOperationPoolPolicy<SplitterWriteOperation>(a => new SplitterWriteOperation(a)));
+            _readOperationPool = ObjectPool.Create(new SelfResetPooledObjectPolicy<SplitterReadOperation>());
+            _writeOperationPool = ObjectPool.Create(new SelfResetPooledObjectPolicy<SplitterWriteOperation>());
             Policy = new SplitterStreamOperatePolicy(parser);
         }
 
@@ -74,8 +75,8 @@ namespace ExtenderApp.Common.IO.Splitter
                 splitterInfo = splitterOperate.Data.SplitterInfo;
             }
 
-            //operation.Set(splitterInfo.GetLastChunkIndex(), splitterInfo);
-            operation.Set(1, splitterInfo);
+            var array = ArrayPool<byte>.Shared.Rent(splitterInfo.MaxChunkSize);
+            operation.Set(splitterInfo.GetLastChunkIndex(), splitterInfo, array);
             splitterOperate.ExecuteOperation(operation);
             T result = _binaryParser.Deserialize<T>(operation.ReadBytes);
             ArrayPool<byte>.Shared.Return(operation.ReadBytes);
@@ -103,7 +104,7 @@ namespace ExtenderApp.Common.IO.Splitter
             var buffer = DataBuffer<IBinaryParser, Delegate>.GetDataBuffer();
             buffer.Item1 = _binaryParser;
             buffer.Item2 = callback;
-            var action = buffer.Process<byte[]>((d, b) =>
+            var action = buffer.SetProcessAction<byte[]>((d, b) =>
             {
                 var binary = d.Item1;
                 var callback = d.Item2 as Action<T>;
@@ -124,6 +125,34 @@ namespace ExtenderApp.Common.IO.Splitter
 
             operation.Set(splitterInfo.GetLastChunkIndex(), action, splitterInfo);
             splitterOperate.QueueOperation(operation);
+        }
+
+        public byte[] Read(ExpectLocalFileInfo info, uint chunkIndex, SplitterInfo splitterInfo, IConcurrentOperate? fileOperate = null, byte[]? bytes = null)
+        {
+            if (info.IsEmpty)
+            {
+                ErrorUtil.ArgumentNull(nameof(info));
+            }
+
+            return Read(info.CreateWriteOperate(FileExtensions.SplitterFileExtensions), chunkIndex, splitterInfo, fileOperate, bytes);
+        }
+
+        public byte[] Read(FileOperateInfo info, uint chunkIndex, SplitterInfo splitterInfo, IConcurrentOperate? fileOperate = null, byte[]? bytes = null)
+        {
+            if (info.IsEmpty)
+            {
+                ErrorUtil.ArgumentNull(nameof(info));
+            }
+
+            splitterInfo.ArgumentNull(nameof(splitterInfo));
+
+            var operate = GetOperate(info, fileOperate);
+            var operation = _readOperationPool.Get();
+            operation.Set(chunkIndex, splitterInfo, bytes);
+            operate.ExecuteOperation(operation);
+            var result = operation.ReadBytes;
+            operation.Release();
+            return result;
         }
 
         #endregion
@@ -313,18 +342,61 @@ namespace ExtenderApp.Common.IO.Splitter
 
         #endregion
 
-        public void Creat(ExpectLocalFileInfo fileInfo, SplitterInfo info)
+        #region Create
+
+        public void Create(ExpectLocalFileInfo fileInfo, SplitterInfo info)
         {
             var infoFile = fileInfo.CreateWriteOperate(infoExtensions);
             _binaryParser.Write(infoFile, info);
         }
+
+        public SplitterInfo Create(LocalFileInfo info, int maxLength, bool createLoaderChunks = true)
+        {
+            ErrorUtil.FileNotFound(info);
+
+            //LocalFileInfo splitterInfoFileInfo = info.ChangeFileExtension(infoExtensions);
+            //SplitterInfo splitterInfo;
+            //if (splitterInfoFileInfo.Exists)
+            //{
+            //    splitterInfo = _binaryParser.Read<SplitterInfo>(info.CreateExpectLocalFileInfo());
+            //}
+            //else
+            //{
+            //    long length = info.FileInfo.Length;
+            //    uint chunkCount = (uint)(length / maxLength);
+            //    splitterInfo = new SplitterInfo(length, chunkCount, 0, maxLength, info.Extension);
+            //    _binaryParser.Write(info.CreateExpectLocalFileInfo(), splitterInfo);
+            //}
+
+            long length = info.FileInfo.Length;
+            uint chunkCount = (uint)(length / maxLength);
+            SplitterInfo splitterInfo = new SplitterInfo(length, chunkCount, 0, maxLength, info.Extension, createLoaderChunks ? new byte[chunkCount] : null);
+            return splitterInfo;
+        }
+
+        #endregion
+
+        #region Delet
+
+        public override void Delete(ExpectLocalFileInfo info)
+        {
+            var splitterFileInfo = info.CreatLocalFileInfo(FileExtensions.SplitterFileExtensions);
+            _store.Delete(splitterFileInfo);
+            splitterFileInfo.Delete();
+
+            var splitterInfoFileInfo = info.CreatLocalFileInfo(infoExtensions);
+            _store.Delete(splitterInfoFileInfo);
+            splitterInfoFileInfo.Delete();
+        }
+
+        #endregion
 
         /// <summary>
         /// 根据本地文件信息获取文件分割操作实例
         /// </summary>
         /// <param name="fileInfo">本地文件信息</param>
         /// <returns>文件分割操作实例</returns>
-        private IConcurrentOperate<MemoryMappedViewAccessor, SplitterStreamOperateData> GetFileSplitterOperate(ExpectLocalFileInfo fileInfo, object? fileOperate)
+        private IConcurrentOperate<MemoryMappedViewAccessor, SplitterStreamOperateData> GetFileSplitterOperate(ExpectLocalFileInfo fileInfo, IConcurrentOperate? fileOperate)
         {
             return GetFileSplitterOperate(fileInfo.CreateWriteOperate(FileExtensions.SplitterFileExtensions), fileOperate);
         }
@@ -334,7 +406,7 @@ namespace ExtenderApp.Common.IO.Splitter
         /// </summary>
         /// <param name="operateInfo">文件操作信息</param>
         /// <returns>文件分割操作实例</returns>
-        private IConcurrentOperate<MemoryMappedViewAccessor, SplitterStreamOperateData> GetFileSplitterOperate(FileOperateInfo operateInfo, object? fileOperate)
+        private IConcurrentOperate<MemoryMappedViewAccessor, SplitterStreamOperateData> GetFileSplitterOperate(FileOperateInfo operateInfo, IConcurrentOperate? fileOperate)
         {
             var operate = GetOperate(operateInfo, fileOperate);
             operate.Data.OpenFile(operateInfo.LocalFileInfo.CreateExpectLocalFileInfo());

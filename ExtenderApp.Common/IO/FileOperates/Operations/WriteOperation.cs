@@ -21,16 +21,12 @@ namespace ExtenderApp.Common.IO
         /// <summary>
         /// 写入的长度
         /// </summary>
-        private int writeLength;
+        private long writeLength;
 
         /// <summary>
         /// 写位置变量，用于记录当前写入的位置。
         /// </summary>
         private long writePosition;
-
-        public WriteOperation(Action<IConcurrentOperation> releaseAction) : base(releaseAction)
-        {
-        }
 
         /// <summary>
         /// 设置字节数组，并可选地提供一个回调函数。
@@ -48,7 +44,7 @@ namespace ExtenderApp.Common.IO
         /// <param name="bytes">要设置的字节数组</param>
         /// <param name="callback">回调函数，可选参数</param>
         /// <param name="lenght">写入长度</param>
-        public void Set(byte[] bytes, int lenght, Action<byte[]>? callback)
+        public void Set(byte[] bytes, long lenght, Action<byte[]>? callback)
         {
             Set(bytes, 0, lenght, callback);
         }
@@ -60,7 +56,7 @@ namespace ExtenderApp.Common.IO
         /// <param name="position">写入开始的位置</param>
         /// <param name="lenght">要写入的字节长度</param>
         /// <param name="callback">操作完成后的回调函数，参数为写入的字节数组</param>
-        public void Set(byte[] bytes, long position, int lenght, Action<byte[]>? callback)
+        public void Set(byte[] bytes, long position, long lenght, Action<byte[]>? callback)
         {
             writeBytes = bytes;
             this.callback = callback;

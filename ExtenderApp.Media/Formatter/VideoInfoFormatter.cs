@@ -21,7 +21,7 @@ namespace ExtenderApp.Media.Model
         private readonly IBinaryFormatter<double> _double;
         private readonly IBinaryFormatter<Uri> _uri;
 
-        public override int Count => _string.Count * 2 + _int.Count * 3 + _timeSpan.Count * 2 + _bool.Count + _double.Count + _long.Count + _dateTime.Count + _stringList.Count;
+        public override int Length => _string.Length * 2 + _int.Length * 3 + _timeSpan.Length * 2 + _bool.Length + _double.Length + _long.Length + _dateTime.Length + _stringList.Length;
 
         public VideoInfoFormatter(IBinaryFormatterResolver resolver) : base(resolver)
         {
@@ -90,16 +90,16 @@ namespace ExtenderApp.Media.Model
             _stringList.Serialize(ref writer, value.Tags);
         }
 
-        public override int GetCount(VideoInfo value)
+        public override long GetLength(VideoInfo value)
         {
             if(value is null)
             {
                 return 1;
             }
 
-            var result = _int.Count * 3 + _timeSpan.Count * 2 + _bool.Count + _double.Count + _long.Count + _dateTime.Count;
-            result += _string.GetCount(value.VideoTitle) + _string.GetCount(value.Category);
-            result += _stringList.GetCount(value.Tags);
+            long result = _int.Length * 3 + _timeSpan.Length * 2 + _bool.Length + _double.Length + _long.Length + _dateTime.Length;
+            result += _string.GetLength(value.VideoTitle) + _string.GetLength(value.Category);
+            result += _stringList.GetLength(value.Tags);
             return result;
         }
     }

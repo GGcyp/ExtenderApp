@@ -241,6 +241,15 @@ namespace ExtenderApp.Data
         }
 
         /// <summary>
+        /// 刷新并清空当前对象
+        /// </summary>
+        public void Flush()
+        {
+            Commit();
+            Rental.Dispose();
+        }
+
+        /// <summary>
         /// 将数据写入多缓冲区。
         /// </summary>
         /// <param name="source">数据</param>

@@ -30,7 +30,7 @@ namespace ExtenderApp.Service
         /// 获取二进制格式化器中的对象数量
         /// </summary>
         /// <returns>返回二进制格式化器中的对象数量</returns>
-        public override int Count => _binaryFormatter.Count + _versionFormatter.Count;
+        public override int Length => _binaryFormatter.Length + _versionFormatter.Length;
 
         /// <summary>
         /// 初始化本地数据格式化器对象
@@ -70,14 +70,14 @@ namespace ExtenderApp.Service
         /// </summary>
         /// <param name="value">本地数据对象</param>
         /// <returns>返回本地数据对象在二进制格式化器中的对象数量</returns>
-        public override int GetCount(LocalData<T> value)
+        public override long GetLength(LocalData<T> value)
         {
             if (value == null)
             {
                 throw new ArgumentNullException(nameof(value));
             }
 
-            return _versionFormatter.GetCount(value.Version) + _binaryFormatter.GetCount(value.Data);
+            return _versionFormatter.GetLength(value.Version) + _binaryFormatter.GetLength(value.Data);
         }
     }
 }

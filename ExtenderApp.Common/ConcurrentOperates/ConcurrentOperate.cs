@@ -52,7 +52,7 @@ namespace ExtenderApp.Common.ConcurrentOperates
         /// 创建一个默认的对象池，用于管理ConcurrentOperate<TPolicy, TOperate, TData>对象的创建和重用。
         /// </summary>
         /// <returns>返回创建好的对象池。</returns>
-        private readonly static ObjectPool<ConcurrentOperate<TPolicy, TOperate, TData>> _pool = 
+        private readonly static ObjectPool<ConcurrentOperate<TPolicy, TOperate, TData>> _pool =
             ObjectPool.CreateDefaultPool<ConcurrentOperate<TPolicy, TOperate, TData>>();
 
         /// <summary>
@@ -75,7 +75,7 @@ namespace ExtenderApp.Common.ConcurrentOperates
         /// <summary>
         /// 并发操作策略
         /// </summary>
-        public TPolicy policy;
+        public TPolicy Policy { get; protected set; }
 
         /// <summary>
         /// 并发操作数据
@@ -89,23 +89,13 @@ namespace ExtenderApp.Common.ConcurrentOperates
 
         public int Count => throw new NotImplementedException();
 
-        public void Start(IConcurrentOperatePolicy<TOperate, TData> policy)
+        public void Start(IConcurrentOperatePolicy<TOperate, TData> policy, TData? data = null, TOperate? operate = null)
         {
             policy.ArgumentObjectNull(typeof(TPolicy).FullName);
 
-            this.policy = (TPolicy)policy;
-            Data = policy.GetData();
-            Operate = policy.Create(Data);
-        }
-
-        public void SetPolicyAndData(IConcurrentOperatePolicy<TOperate, TData> policy, TData data)
-        {
-            policy.ArgumentObjectNull(typeof(TPolicy).FullName);
-            data.ArgumentObjectNull(typeof(TData).FullName);
-
-            this.policy = (TPolicy)policy;
-            Data = data;
-            Operate = policy.Create(Data);
+            this.Policy = (TPolicy)policy;
+            Data = data ?? policy.GetData();
+            Operate = operate ?? policy.Create(Data);
         }
 
         /// <summary>
@@ -145,15 +135,6 @@ namespace ExtenderApp.Common.ConcurrentOperates
             {
                 QueueOperation(operation);
             }
-
-            lock (_queue)
-            {
-                if (!isExecuting)
-                {
-                    isExecuting = true;
-                    Task.Run(Run);
-                }
-            }
         }
 
         /// <summary>
@@ -166,12 +147,12 @@ namespace ExtenderApp.Common.ConcurrentOperates
             Data.Token.ThrowIfCancellationRequested();
             operation.ArgumentNull(nameof(operation));
 
-            policy.BeforeExecute(Operate, Data);
+            Policy.BeforeExecute(Operate, Data);
             lock (Operate)
             {
                 operation.Execute(Operate);
             }
-            policy.AfterExecute(Operate, Data);
+            Policy.AfterExecute(Operate, Data);
         }
 
         /// <summary>
@@ -184,10 +165,15 @@ namespace ExtenderApp.Common.ConcurrentOperates
             Data.Token.ThrowIfCancellationRequested();
             operations.ArgumentNull(nameof(operations));
 
+            Policy.BeforeExecute(Operate, Data);
             foreach (var operation in operations)
             {
-                ExecuteOperation(operation);
+                lock (Operate)
+                {
+                    operation.Execute(Operate);
+                }
             }
+            Policy.AfterExecute(Operate, Data);
         }
 
         /// <summary>
@@ -202,9 +188,9 @@ namespace ExtenderApp.Common.ConcurrentOperates
                     return;
                 }
 
-                policy.BeforeExecute(Operate, Data);
+                Policy.BeforeExecute(Operate, Data);
                 Execute();
-                policy.AfterExecute(Operate, Data);
+                Policy.AfterExecute(Operate, Data);
             }
             finally
             {
@@ -278,7 +264,7 @@ namespace ExtenderApp.Common.ConcurrentOperates
         {
             Operate.Dispose();
             Operate = null;
-            policy.ReleaseData(Data);
+            Policy.ReleaseData(Data);
             Data = null;
             return true;
         }

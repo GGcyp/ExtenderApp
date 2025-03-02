@@ -26,7 +26,7 @@ namespace ExtenderApp.Common.IO.Binaries.Formatter
             _binaryFormatter = resolver.GetFormatter<T>();
         }
 
-        public override int Count => 5;
+        public override int Length => 5;
 
         /// <summary>
         /// 反序列化数组
@@ -86,15 +86,15 @@ namespace ExtenderApp.Common.IO.Binaries.Formatter
             }
         }
 
-        public override int GetCount(T[] value)
+        public override long GetLength(T[] value)
         {
             if (value == null)
             {
                 return 1;
             }
 
-            var result = Count;
-            result += value.Length * _binaryFormatter.Count;
+            var result = Length;
+            result += value.Length * _binaryFormatter.Length;
             return result;
         }
     }

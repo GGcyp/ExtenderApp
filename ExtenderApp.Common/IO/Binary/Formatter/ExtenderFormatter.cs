@@ -16,7 +16,7 @@ namespace ExtenderApp.Common.IO.Binaries.Formatter
         protected readonly ExtenderBinaryReaderConvert _binaryReaderConvert;
         protected readonly BinaryOptions _binaryOptions;
 
-        public abstract int Count { get; }
+        public abstract int Length { get; }
 
         public virtual T Default => default(T);
 
@@ -45,6 +45,11 @@ namespace ExtenderApp.Common.IO.Binaries.Formatter
         /// <returns>反序列化后的对象。</returns>
         public abstract T Deserialize(ref ExtenderBinaryReader reader);
 
+        /// <summary>
+        /// 深度步进函数
+        /// </summary>
+        /// <param name="reader">二进制读取器引用</param>
+        /// <exception cref="InsufficientExecutionStackException">如果对象深度超过最大深度，则抛出此异常</exception>
         protected void DepthStep(ref ExtenderBinaryReader reader)
         {
             if (reader.Depth >= _binaryOptions.MaximumObjectGraphDepth)
@@ -55,7 +60,7 @@ namespace ExtenderApp.Common.IO.Binaries.Formatter
             reader.Depth++;
         }
 
-        public virtual int GetCount(T value)
+        public virtual long GetLength(T value)
         {
             if (typeof(T).IsClass)
             {
@@ -65,7 +70,7 @@ namespace ExtenderApp.Common.IO.Binaries.Formatter
                 }
             }
 
-            return Count;
+            return Length;
         }
     }
 }

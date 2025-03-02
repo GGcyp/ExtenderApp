@@ -39,9 +39,10 @@ namespace ExtenderApp.Abstract
         /// <summary>
         /// 设置操作策略和数据
         /// </summary>
-        /// <param name="policy">操作策略接口，用于定义并发操作的策略</param>
-        /// <param name="data">要设置的数据</param>
-        void SetPolicyAndData(IConcurrentOperatePolicy<TOperate, TData> policy, TData data);
+        /// <param name="policy">操作策略接口，用于定义并发操作的策略。</param>
+        /// <param name="data">要设置的数据，可以为null。</param>
+        /// <param name="operate">并发操作对象，可以为null。</param>
+        void Start(IConcurrentOperatePolicy<TOperate, TData> policy, TData? data = null, TOperate? operate = null);
 
         /// <summary>
         /// 执行一个并发操作。

@@ -41,19 +41,27 @@ namespace ExtenderApp.Common
             var resultType = typeof(T);
             if (!_formmaterDict.TryGetValue(resultType, out var formatter))
             {
-                if (!_store.TryGetValue(resultType, out var formatterType))
+                lock (_formmaterDict)
                 {
-                    formatterType = _formatCreator.CreatFormatter(resultType);
-                    if (formatterType is null)
+                    if (_formmaterDict.TryGetValue(resultType, out formatter))
+                    {
+                        return (IBinaryFormatter<T>)formatter;
+                    }
+
+                    if (!_store.TryGetValue(resultType, out var formatterType))
+                    {
+                        formatterType = _formatCreator.CreatFormatter(resultType);
+                        if (formatterType is null)
+                            throw new ArgumentNullException(resultType.FullName);
+                    }
+
+
+                    formatter = _serviceProvider.GetService(formatterType!) as IBinaryFormatter;
+                    if (formatter == null)
                         throw new ArgumentNullException(resultType.FullName);
+
+                    _formmaterDict.Add(resultType, formatter);
                 }
-
-
-                formatter = _serviceProvider.GetService(formatterType!) as IBinaryFormatter;
-                if (formatter == null)
-                    throw new ArgumentNullException(resultType.FullName);
-
-                _formmaterDict.Add(resultType, formatter);
             }
 
 

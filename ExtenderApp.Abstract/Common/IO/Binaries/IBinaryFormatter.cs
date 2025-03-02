@@ -13,7 +13,7 @@ namespace ExtenderApp.Abstract
         /// 如果是Collection类型，返回的头元素中字节的数量。
         /// </summary>
         /// <returns>字节数量</returns>
-        int Count { get; }
+        int Length { get; }
     }
 
     /// <summary>
@@ -49,6 +49,6 @@ namespace ExtenderApp.Abstract
         /// </summary>
         /// <param name="value">要获取字节数量的值。</param>
         /// <returns>返回所需字节数。</returns>
-        int GetCount(T value);
+        long GetLength(T value);
     }
 }

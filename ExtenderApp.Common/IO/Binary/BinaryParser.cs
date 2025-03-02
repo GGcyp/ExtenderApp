@@ -5,6 +5,7 @@ using ExtenderApp.Common.DataBuffers;
 using ExtenderApp.Common.Error;
 using ExtenderApp.Common.IO.FileParsers;
 using ExtenderApp.Common.ObjectPools;
+using ExtenderApp.Common.ObjectPools.Policy;
 using ExtenderApp.Data;
 using ExtenderApp.Data.File;
 
@@ -39,22 +40,25 @@ namespace ExtenderApp.Common.IO.Binaries
         /// </summary>
         private readonly SequencePool<byte> _sequencePool;
 
-        /// <summary>
-        /// 字节数组池
-        /// </summary>
-        private readonly ArrayPool<byte> _arrayPool;
-
         private readonly ObjectPool<WriteOperation> _writeOperationPool;
         private readonly ObjectPool<BinaryReadOperation> _readOperationPool;
 
         public BinaryParser(IBinaryFormatterResolver binaryFormatterResolver, FileStore store) : base(store)
         {
             _resolver = binaryFormatterResolver;
-            _arrayPool = ArrayPool<byte>.Shared;
-            _sequencePool = new(Environment.ProcessorCount * 2, _arrayPool);
-            _writeOperationPool = ObjectPool.Create(new ConcurrentOperationPoolPolicy<WriteOperation>(o => new WriteOperation(o)));
-            _readOperationPool = ObjectPool.Create(new ConcurrentOperationPoolPolicy<BinaryReadOperation>(o => new BinaryReadOperation(o)));
+            _sequencePool = new(Environment.ProcessorCount * 2, ArrayPool<byte>.Shared);
+            _writeOperationPool = ObjectPool.Create(new SelfResetPooledObjectPolicy<WriteOperation>());
+            _readOperationPool = ObjectPool.Create(new SelfResetPooledObjectPolicy<BinaryReadOperation>());
         }
+
+        #region Get
+
+        public IBinaryFormatter<T> GetFormatter<T>()
+        {
+            return _resolver.GetFormatterWithVerify<T>();
+        }
+
+        #endregion
 
         #region Write
 
@@ -70,11 +74,11 @@ namespace ExtenderApp.Common.IO.Binaries
 
         public override void Write<T>(FileOperateInfo info, T value, IConcurrentOperate fileOperate = null, object? options = null)
         {
-            byte[] bytes = SerializeForArrayPool(value);
+            byte[] bytes = SerializeForArrayPool(value, out long length);
 
-            var operate = GetOperate(info, fileOperate, bytes.LongLength);
+            var operate = GetOperate(info, fileOperate, length);
             var operation = _writeOperationPool.Get();
-            operation.Set(bytes, null);
+            operation.Set(bytes, length, null);
             operate.ExecuteOperation(operation);
             operation.Release();
             ArrayPool<byte>.Shared.Return(bytes);
@@ -93,11 +97,11 @@ namespace ExtenderApp.Common.IO.Binaries
 
         public override void WriteAsync<T>(FileOperateInfo info, T value, Action? callback = null, IConcurrentOperate fileOperate = null, object? options = null)
         {
-            byte[] bytes = SerializeForArrayPool(value);
+            byte[] bytes = SerializeForArrayPool(value, out long length);
 
-            var operate = GetOperate(info, fileOperate, bytes.LongLength);
+            var operate = GetOperate(info, fileOperate, length);
             var operation = _writeOperationPool.Get();
-            operation.Set(bytes, b =>
+            operation.Set(bytes, length, b =>
             {
                 callback?.Invoke();
                 ArrayPool<byte>.Shared.Return(b);
@@ -116,7 +120,7 @@ namespace ExtenderApp.Common.IO.Binaries
                 ErrorUtil.ArgumentNull(nameof(info));
             }
 
-            return Read<T>(info.CreateFileOperate(FileExtensions.BinaryFileExtensions), fileOperate, options);
+            return Read<T>(info.CreateWriteOperate(FileExtensions.BinaryFileExtensions), fileOperate, options);
         }
 
         public override T? Read<T>(FileOperateInfo info, IConcurrentOperate fileOperate = null, object? options = null) where T : default
@@ -203,18 +207,96 @@ namespace ExtenderApp.Common.IO.Binaries
             operate.QueueOperation(operation);
         }
 
+        public byte[] Read(ExpectLocalFileInfo info, long position, long length, IConcurrentOperate? fileOperate = null, byte[]? bytes = null)
+        {
+            if (info.IsEmpty)
+            {
+                ErrorUtil.ArgumentNull(nameof(info));
+            }
+
+            return Read(info.CreateWriteOperate(FileExtensions.BinaryFileExtensions), position, length, fileOperate, bytes);
+        }
+
+        public byte[] Read(FileOperateInfo info, long position, long length, IConcurrentOperate? fileOperate = null, byte[]? bytes = null)
+        {
+            if (info.IsEmpty)
+            {
+                ErrorUtil.ArgumentNull(nameof(info));
+            }
+
+            var operate = GetOperate(info, fileOperate);
+            var operation = _readOperationPool.Get();
+            var buffer = DataBuffer<byte[]>.GetDataBuffer();
+
+            if (bytes == null || bytes.Length < length)
+            {
+                //throw new ArgumentOutOfRangeException(nameof(bytes));
+                bytes = new byte[length];
+            }
+            buffer.Item = bytes;
+
+            operation.Set((m, p, l, d) =>
+            {
+                var buffer = d as DataBuffer<byte[]>;
+                for (long i = p; i < l; i++)
+                {
+                    buffer.Item[i] = m.ReadByte(i);
+                }
+            }, position, length, buffer);
+            operate.ExecuteOperation(operation);
+            var result = buffer.Item;
+            operation.Release();
+            buffer.Release();
+            return result;
+        }
+
         #endregion
 
         #region Serialize
 
+        public void Serialize<T>(T value, byte[] bytes, out int length)
+        {
+            Serialize(value, bytes, out long longLength);
+            length = (int)longLength;
+        }
+
+        public void Serialize<T>(T value, byte[] bytes, out long length)
+        {
+            bytes.ArgumentNull(nameof(bytes));
+
+            length = GetLength(value);
+            if (bytes.LongLength < length)
+            {
+                throw new ArgumentOutOfRangeException(nameof(length));
+            }
+
+            var writer = new ExtenderBinaryWriter(_sequencePool, bytes);
+            Serialize(ref writer, value);
+            writer.Flush();
+        }
+
+        public void Serialize<T>(T value, byte[] bytes)
+        {
+            bytes.ArgumentNull(nameof(bytes));
+
+            var result = SerializeForArrayPool(value, out long length);
+            if (bytes.LongLength < length)
+            {
+                throw new ArgumentOutOfRangeException(nameof(length));
+            }
+
+            result.CopyTo(bytes, 0);
+            ArrayPool<byte>.Shared.Return(result);
+        }
+
         public byte[] Serialize<T>(T value)
         {
-            byte[] bytes = _arrayPool.Rent(MaxByteArrayLength);
+            byte[] bytes = ArrayPool<byte>.Shared.Rent(MaxByteArrayLength);
             var writer = new ExtenderBinaryWriter(_sequencePool, bytes);
             Serialize(ref writer, value);
 
             var result = writer.FlushAndGetArray();
-            _arrayPool.Return(bytes);
+            ArrayPool<byte>.Shared.Return(bytes);
             return result;
         }
 
@@ -253,14 +335,21 @@ namespace ExtenderApp.Common.IO.Binaries
         /// <typeparam name="T">要序列化的对象的类型。</typeparam>
         /// <param name="value">要序列化的对象。</param>
         /// <returns>包含序列化数据的字节数组。</returns>
-        public byte[] SerializeForArrayPool<T>(T value)
+        public byte[] SerializeForArrayPool<T>(T value, out long length)
         {
-            var length = System.Math.Min(GetCount(value), MaxByteArrayLength);
-            byte[] bytes = _arrayPool.Rent(length);
+            length = GetLength(value);
+            byte[] bytes = ArrayPool<byte>.Shared.Rent((int)length);
             var writer = new ExtenderBinaryWriter(_sequencePool, bytes);
             Serialize(ref writer, value);
 
-            writer.Commit();
+            writer.Flush();
+            return bytes;
+        }
+
+        public byte[] SerializeForArrayPool<T>(T value, out int length)
+        {
+            var bytes = SerializeForArrayPool(value, out long longLength);
+            length = (int)longLength;
             return bytes;
         }
 
@@ -386,11 +475,27 @@ namespace ExtenderApp.Common.IO.Binaries
 
         #endregion
 
+        #region Delete
+
+        public override void Delete(ExpectLocalFileInfo info)
+        {
+            var binaryFileInfo = info.CreatLocalFileInfo(FileExtensions.BinaryFileExtensions);
+            _store.Delete(binaryFileInfo);
+            binaryFileInfo.Delete();
+        }
+
+        #endregion
+
         #region Count
 
-        public int GetCount<T>(T value)
+        public long GetLength<T>(T value)
         {
-            return _resolver.GetFormatterWithVerify<T>().GetCount(value);
+            return _resolver.GetFormatterWithVerify<T>().GetLength(value);
+        }
+
+        public long GetDefaulLength<T>()
+        {
+            return _resolver.GetFormatterWithVerify<T>().Length;
         }
 
         #endregion

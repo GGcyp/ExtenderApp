@@ -16,7 +16,7 @@ namespace ExtenderApp.Common.IO.Binaries.Formatter
             _formatter = GetFormatter<string>();
         }
 
-        public override int Count => _formatter.Count;
+        public override int Length => _formatter.Length;
 
         public override Version Deserialize(ref ExtenderBinaryReader reader)
         {
@@ -43,9 +43,9 @@ namespace ExtenderApp.Common.IO.Binaries.Formatter
             _formatter.Serialize(ref writer, value == null ? string.Empty : value.ToString());
         }
 
-        public override int GetCount(Version value)
+        public override long GetLength(Version value)
         {
-            return _formatter.GetCount(value == null ? string.Empty : value.ToString());
+            return _formatter.GetLength(value == null ? string.Empty : value.ToString());
         }
     }
 }

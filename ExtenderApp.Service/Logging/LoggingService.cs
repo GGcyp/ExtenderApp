@@ -99,7 +99,7 @@ namespace ExtenderApp.Services
                 LogInfo info;
                 if (!_logQueue.TryDequeue(out info)) break;
 
-                if (info.Time.Year != filetime.Year && info.Time.Month != filetime.Month && info.Time.Day != filetime.Day)
+                if (info.Time.Year != filetime.Year || info.Time.Month != filetime.Month || info.Time.Day != filetime.Day)
                 {
                     var tempFiletime = info.Time.ToString("yyyyMMdd");
                     var fileName = string.Concat(tempFiletime, FileExtensions.LogFileExtensions);

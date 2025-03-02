@@ -14,7 +14,7 @@ namespace ExtenderApp.Common.IO.Binaries.Formatter
         /// </summary>
         private readonly IBinaryFormatter<T> _formatter;
 
-        public override int Count => _formatter.Count;
+        public override int Length => _formatter.Length;
 
         /// <summary>
         /// 初始化 StaticNullableFormatter 类的新实例。

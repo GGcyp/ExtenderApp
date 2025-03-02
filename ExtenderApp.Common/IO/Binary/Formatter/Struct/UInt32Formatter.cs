@@ -7,7 +7,7 @@ namespace ExtenderApp.Common.IO.Binaries.Formatter
     /// </summary>
     internal sealed class UInt32Formatter : ExtenderFormatter<UInt32>
     {
-        public override int Count => 5;
+        public override int Length => 5;
 
         public UInt32Formatter(ExtenderBinaryWriterConvert binaryWriterConvert, ExtenderBinaryReaderConvert binaryReaderConvert, BinaryOptions options) : base(binaryWriterConvert, binaryReaderConvert, options)
         {

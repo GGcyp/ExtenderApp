@@ -6,7 +6,7 @@ namespace ExtenderApp.LAN
 {
     internal class LANModelFormatter : ResolverFormatter<LANModel>
     {
-        public override int Count => throw new NotImplementedException();
+        public override int Length => throw new NotImplementedException();
 
         public LANModelFormatter(IBinaryFormatterResolver resolver) : base(resolver)
         {

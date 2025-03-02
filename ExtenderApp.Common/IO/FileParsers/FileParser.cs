@@ -1,7 +1,6 @@
 ﻿using System.IO.MemoryMappedFiles;
 using ExtenderApp.Abstract;
 using ExtenderApp.Common.ConcurrentOperates;
-using ExtenderApp.Common.ObjectPools;
 using ExtenderApp.Data;
 
 namespace ExtenderApp.Common.IO.FileParsers
@@ -10,9 +9,9 @@ namespace ExtenderApp.Common.IO.FileParsers
     /// 文件解析器基类，用于处理文件解析。
     /// </summary>
     /// <typeparam name="FileStreamConcurrentOperateData">文件流并发操作数据类型</typeparam>
-    public abstract class FileParser : FileParser<FileConcurrentOperatePolicy, FileConcurrentOperateData>
+    public abstract class FileParser : FileParser<FileOperatePolicy, FileOperateData>
     {
-        protected override FileConcurrentOperatePolicy Policy { get; }
+        protected override FileOperatePolicy Policy { get; }
 
         /// <summary>
         /// 初始化 FileParser 类的新实例。
@@ -20,7 +19,7 @@ namespace ExtenderApp.Common.IO.FileParsers
         /// <param name="store">文件存储对象</param>
         protected FileParser(FileStore store) : base(store)
         {
-            Policy = new FileConcurrentOperatePolicy();
+            Policy = new FileOperatePolicy();
         }
 
     }
@@ -30,7 +29,7 @@ namespace ExtenderApp.Common.IO.FileParsers
     /// </summary>
     public abstract class FileParser<TPolicy, TData> : DisposableObject, IFileParser
         where TPolicy : class, IConcurrentOperatePolicy<MemoryMappedViewAccessor, TData>
-        where TData : FileConcurrentOperateData
+        where TData : FileOperateData
     {
         /// <summary>
         /// 文件存储的实例
@@ -156,6 +155,10 @@ namespace ExtenderApp.Common.IO.FileParsers
 
         #region GetOperate
 
+        public IConcurrentOperate? GetOperate(FileOperateInfo info)
+        {
+            return GetOperate(info, null);
+        }
 
         /// <summary>
         /// 获取指定文件的并发操作实例。
@@ -165,7 +168,7 @@ namespace ExtenderApp.Common.IO.FileParsers
         /// <param name="fileLength">文件长度，默认为-1表示自动计算。</param>
         /// <returns>返回一个实现了IConcurrentOperate<MemoryMappedViewAccessor, TData>接口的文件操作实例。</returns>
         /// <exception cref="InvalidOperationException">当无法找到文件处理类时抛出。</exception>
-        protected IConcurrentOperate<MemoryMappedViewAccessor, TData> GetOperate(FileOperateInfo info, object? fileOperate, long fileLength = 0)
+        protected IConcurrentOperate<MemoryMappedViewAccessor, TData> GetOperate(FileOperateInfo info, IConcurrentOperate? fileOperate, long fileLength = 0)
         {
             if (!(fileOperate != null && fileOperate is IConcurrentOperate<MemoryMappedViewAccessor, TData> operate))
             {
@@ -188,11 +191,21 @@ namespace ExtenderApp.Common.IO.FileParsers
             var result = ConcurrentOperate<TPolicy, MemoryMappedViewAccessor, TData>.Get();
             var data = Policy.GetData();
             data.OpenFile(info, fileLength, _cancellationTokenSource.Token, _store.ReleaseOperate);
-            result.SetPolicyAndData(Policy, data);
+            result.Start(Policy, data);
             return result;
         }
 
         #endregion
+
+        #region Delete
+
+        /// <summary>
+        /// 删除本地文件
+        /// </summary>
+        /// <param name="info">包含要删除文件信息的ExpectLocalFileInfo对象</param>
+        public abstract void Delete(ExpectLocalFileInfo info);
+
+        #endregion  
 
         protected override void Dispose(bool disposing)
         {

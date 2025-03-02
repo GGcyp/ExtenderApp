@@ -35,7 +35,7 @@ namespace ExtenderApp.Common.IO.Splitter
         /// 初始化ReadOperation实例。
         /// </summary>
         /// <param name="releaseAction">释放操作时的回调动作。</param>
-        public ReadOperation(Action<IConcurrentOperation> releaseAction) : base(releaseAction)
+        public ReadOperation()
         {
             this.calback = null;
             this.readPosition = 0;

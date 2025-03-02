@@ -8,6 +8,19 @@ namespace ExtenderApp.Abstract
     public interface IFileParser
     {
         /// <summary>
+        /// 删除本地文件。
+        /// </summary>
+        /// <param name="info">待删除文件的信息。</param>
+        void Delete(ExpectLocalFileInfo info);
+
+        /// <summary>
+        /// 根据文件操作信息获取并发操作对象。
+        /// </summary>
+        /// <param name="info">文件操作信息对象。</param>
+        /// <returns>并发操作对象，如果获取失败则返回null。</returns>
+        IConcurrentOperate? GetOperate(FileOperateInfo info);
+
+        /// <summary>
         /// 同步读取文件内容，返回指定类型的数据
         /// </summary>
         /// <typeparam name="T">返回的数据类型</typeparam>

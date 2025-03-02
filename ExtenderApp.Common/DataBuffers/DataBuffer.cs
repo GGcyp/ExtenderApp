@@ -13,6 +13,13 @@ namespace ExtenderApp.Common.DataBuffers
         /// </summary>
         /// <returns>如果重置成功返回true，否则返回false。</returns>
         public abstract bool TryReset();
+
+        /// <summary>
+        /// 处理泛型变量
+        /// </summary>
+        /// <typeparam name="TResult">泛型类型参数</typeparam>
+        /// <param name="varule">泛型变量</param>
+        public abstract void Process<TResult>(TResult varule);
     }
 
     /// <summary>
@@ -24,19 +31,19 @@ namespace ExtenderApp.Common.DataBuffers
         /// <summary>
         /// 数据缓冲区对象池。
         /// </summary>
-        private static ObjectPool<DataBuffer<T>> pool = ObjectPool.CreateDefaultPool<DataBuffer<T>>();
+        private readonly static ObjectPool<DataBuffer<T>> _pool = ObjectPool.CreateDefaultPool<DataBuffer<T>>();
 
         /// <summary>
         /// 从对象池中获取一个DataBuffer<T>实例。
         /// </summary>
         /// <returns>返回从对象池中获取的DataBuffer<T>实例。</returns>
-        public static DataBuffer<T> GetDataBuffer() => pool.Get();
+        public static DataBuffer<T> GetDataBuffer() => _pool.Get();
 
         /// <summary>
         /// 将DataBuffer<T>实例释放回对象池。
         /// </summary>
         /// <param name="item">要释放的DataBuffer<T>实例。</param>
-        public static void ReleaseDataBuffer(DataBuffer<T> item) => pool.Release(item);
+        public static void ReleaseDataBuffer(DataBuffer<T> item) => _pool.Release(item);
 
         /// <summary>
         /// 获取或设置缓冲区存储的数据项。
@@ -54,18 +61,13 @@ namespace ExtenderApp.Common.DataBuffers
         /// <typeparam name="TResult">处理动作返回值的类型。</typeparam>
         /// <param name="action">处理动作委托，接受DataBuffer<T>和TResult类型参数。</param>
         /// <returns>处理动作委托。</returns>
-        public Action<TResult> Process<TResult>(Action<DataBuffer<T>, TResult> action)
+        public Action<TResult> SetProcessAction<TResult>(Action<DataBuffer<T>, TResult> action)
         {
             processAction = action;
             return Process;
         }
 
-        /// <summary>
-        /// 执行处理动作。
-        /// </summary>
-        /// <typeparam name="TResult">处理动作返回值的类型。</typeparam>
-        /// <param name="varule">处理动作所需的参数。</param>
-        private void Process<TResult>(TResult varule)
+        public override void Process<TResult>(TResult varule)
         {
             var callback = processAction as Action<DataBuffer<T>, TResult>;
             callback?.Invoke(this, varule);
@@ -136,20 +138,92 @@ namespace ExtenderApp.Common.DataBuffers
         /// <typeparam name="TResult">处理动作返回值的类型</typeparam>
         /// <param name="action">处理动作，包含两个参数：DataBuffer<T1, T2>类型的数据缓冲区和处理结果的返回值TResult</param>
         /// <returns>返回Process方法，以便链式调用</returns>
-        public Action<TResult> Process<TResult>(Action<DataBuffer<T1, T2>, TResult> action)
+        public Action<TResult> SetProcessAction<TResult>(Action<DataBuffer<T1, T2>, TResult> action)
         {
             processAction = action;
             return Process;
         }
 
-        /// <summary>
-        /// 执行处理动作
-        /// </summary>
-        /// <typeparam name="TResult">处理动作返回值的类型</typeparam>
-        /// <param name="varule">处理动作需要的参数</param>
-        private void Process<TResult>(TResult varule)
+        public override void Process<TResult>(TResult varule)
         {
             var callback = processAction as Action<DataBuffer<T1, T2>, TResult>;
+            callback?.Invoke(this, varule);
+        }
+
+        /// <summary>
+        /// 释放当前实例到对象池。
+        /// </summary>
+        public void Release()
+        {
+            ReleaseDataBuffer(this);
+        }
+
+        /// <summary>
+        /// 尝试重置当前实例。
+        /// </summary>
+        /// <returns>如果重置成功，则返回 true；否则返回 false。</returns>
+        public override bool TryReset()
+        {
+            Item1 = default;
+            Item2 = default;
+            return true;
+        }
+    }
+
+    public class DataBuffer<T1, T2, T3> : DataBuffer
+    {
+        /// <summary>
+        /// 数据缓冲区对象池。
+        /// </summary>
+        private static ObjectPool<DataBuffer<T1, T2, T3>> pool = ObjectPool.CreateDefaultPool<DataBuffer<T1, T2, T3>>();
+
+        /// <summary>
+        /// 从对象池中获取一个新的 <see cref="DataBuffer{T1, T2}"/> 实例。
+        /// </summary>
+        /// <returns>返回一个新的 <see cref="DataBuffer{T1, T2}"/> 实例。</returns>
+        public static DataBuffer<T1, T2, T3> GetDataBuffer() => pool.Get();
+
+        /// <summary>
+        /// 将 <see cref="DataBuffer{T1, T2}"/> 实例释放回对象池。
+        /// </summary>
+        /// <param name="item">要释放的 <see cref="DataBuffer{T1, T2}"/> 实例。</param>
+        public static void ReleaseDataBuffer(DataBuffer<T1, T2, T3> item) => pool.Release(item);
+
+        /// <summary>
+        /// 第一个泛型参数的数据项。
+        /// </summary>
+        public T1 Item1 { get; set; }
+
+        /// <summary>
+        /// 第二个泛型参数的数据项。
+        /// </summary>
+        public T2 Item2 { get; set; }
+
+        /// <summary>
+        /// 第三个泛型参数的数据项。
+        /// </summary>
+        public T3 Item3 { get; set; }
+
+        /// <summary>
+        /// 私有委托，用于存储处理动作
+        /// </summary>
+        private Delegate processAction;
+
+        /// <summary>
+        /// 设置处理动作
+        /// </summary>
+        /// <typeparam name="TResult">处理动作返回值的类型</typeparam>
+        /// <param name="action">处理动作，包含两个参数：DataBuffer<T1, T2>类型的数据缓冲区和处理结果的返回值TResult</param>
+        /// <returns>返回Process方法，以便链式调用</returns>
+        public Action<TResult> SetProcessAction<TResult>(Action<DataBuffer<T1, T2, T3>, TResult> action)
+        {
+            processAction = action;
+            return Process;
+        }
+
+        public override void Process<TResult>(TResult varule)
+        {
+            var callback = processAction as Action<DataBuffer<T1, T2, T3>, TResult>;
             callback?.Invoke(this, varule);
         }
 

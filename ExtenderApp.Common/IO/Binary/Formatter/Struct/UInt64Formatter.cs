@@ -7,7 +7,7 @@ namespace ExtenderApp.Common.IO.Binaries.Formatter
     /// </summary>
     internal sealed class UInt64Formatter : ExtenderFormatter<UInt64>
     {
-        public override int Count => 9;
+        public override int Length => 9;
 
         public UInt64Formatter(ExtenderBinaryWriterConvert binaryWriterConvert, ExtenderBinaryReaderConvert binaryReaderConvert, BinaryOptions options) : base(binaryWriterConvert, binaryReaderConvert, options)
         {

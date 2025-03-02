@@ -56,7 +56,7 @@ namespace ExtenderApp.Common.IO.Binaries.Formatter
         private EnumSerialize serializer;
         private EnumDeserialize deserializer;
 
-        public override int Count { get; }
+        public override int Length { get; }
 
         public EnumFormatter(IBinaryFormatterResolver resolver) : base(resolver)
         {
@@ -65,28 +65,28 @@ namespace ExtenderApp.Common.IO.Binaries.Formatter
             switch (Type.GetTypeCode(type))
             {
                 case TypeCode.Byte:
-                    Count = CreateEnumSerialize(GetFormatter<byte>());
+                    Length = CreateEnumSerialize(GetFormatter<byte>());
                     break;
                 case TypeCode.Int16:
-                    Count = CreateEnumSerialize(GetFormatter<Int16>());
+                    Length = CreateEnumSerialize(GetFormatter<Int16>());
                     break;
                 case TypeCode.Int32:
-                    Count = CreateEnumSerialize(GetFormatter<Int32>());
+                    Length = CreateEnumSerialize(GetFormatter<Int32>());
                     break;
                 case TypeCode.Int64:
-                    Count = CreateEnumSerialize(GetFormatter<Int64>());
+                    Length = CreateEnumSerialize(GetFormatter<Int64>());
                     break;
                 case TypeCode.SByte:
-                    Count = CreateEnumSerialize(GetFormatter<SByte>());
+                    Length = CreateEnumSerialize(GetFormatter<SByte>());
                     break;
                 case TypeCode.UInt16:
-                    Count = CreateEnumSerialize(GetFormatter<UInt16>());
+                    Length = CreateEnumSerialize(GetFormatter<UInt16>());
                     break;
                 case TypeCode.UInt32:
-                    Count = CreateEnumSerialize(GetFormatter<UInt32>());
+                    Length = CreateEnumSerialize(GetFormatter<UInt32>());
                     break;
                 case TypeCode.UInt64:
-                    Count = CreateEnumSerialize(GetFormatter<UInt64>());
+                    Length = CreateEnumSerialize(GetFormatter<UInt64>());
                     break;
                 default:
                     throw new NotSupportedException(string.Format("这个枚举未找到转换类型{0}", type.FullName));
@@ -97,7 +97,7 @@ namespace ExtenderApp.Common.IO.Binaries.Formatter
         {
             serializer = (ref ExtenderBinaryWriter writer, ref T value) => formatter.Serialize(ref writer, Unsafe.As<T, TType>(ref value));
             deserializer = (ref ExtenderBinaryReader reader) => { var v = formatter.Deserialize(ref reader); return Unsafe.As<TType, T>(ref v); };
-            return formatter.Count;
+            return formatter.Length;
         }
 
         public override T Deserialize(ref ExtenderBinaryReader reader)

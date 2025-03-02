@@ -35,14 +35,14 @@ namespace ExtenderApp.Common.ObjectPools
         private protected readonly ConcurrentQueue<T> _items;
 
         /// <summary>
-        /// 存储快速获取的对象。
-        /// </summary>
-        private protected T? _fastItem;
-
-        /// <summary>
         /// 获取当前对象池中的对象数量。
         /// </summary>
         public override int Count => numItems;
+
+        /// <summary>
+        /// 缓存的快速访问对象。
+        /// </summary>
+        protected T _fastItem;
 
         /// <summary>
         /// 使用指定的对象池策略初始化DefaultObjectPool对象。
@@ -117,6 +117,7 @@ namespace ExtenderApp.Common.ObjectPools
                     _items.Enqueue(obj);
                     return true;
                 }
+
 
                 Interlocked.Decrement(ref numItems);
                 return false;

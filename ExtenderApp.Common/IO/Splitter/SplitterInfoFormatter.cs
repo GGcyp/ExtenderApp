@@ -33,7 +33,7 @@ namespace ExtenderApp.Common.IO.Splitter
         /// 用于反序列化 string 类型的格式化器
         /// </summary>
         private readonly IBinaryFormatter<string> _string;
-        public override int Count => _uint.Count * 2 + _long.Count + _int.Count + _string.Count + _bytes.Count;
+        public override int Length => _uint.Length * 2 + _long.Length + _int.Length + _string.Length + _bytes.Length;
 
         /// <summary>
         /// 初始化 FileSplitterInfoFormatter 实例
@@ -80,16 +80,16 @@ namespace ExtenderApp.Common.IO.Splitter
             _bytes.Serialize(ref writer, value.LoadedChunks);
         }
 
-        public override int GetCount(SplitterInfo value)
+        public override long GetLength(SplitterInfo value)
         {
             if (value == null)
             {
-                return _uint.Count * 2 + _long.Count + _int.Count + 1 + 1;
+                return _uint.Length * 2 + _long.Length + _int.Length + 1 + 1;
             }
 
-            var result = _uint.Count * 2 + _long.Count + _int.Count;
-            result += _string.GetCount(value.TargetExtensions);
-            result += _bytes.GetCount(value.LoadedChunks);
+            long result = _uint.Length * 2 + _long.Length + _int.Length;
+            result += _string.GetLength(value.TargetExtensions);
+            result += _bytes.GetLength(value.LoadedChunks);
             return result;
         }
     }

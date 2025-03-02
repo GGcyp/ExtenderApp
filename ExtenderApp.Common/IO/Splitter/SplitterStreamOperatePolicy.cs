@@ -22,7 +22,7 @@ namespace ExtenderApp.Common.IO.Splitter
 
         public override MemoryMappedViewAccessor Create(SplitterStreamOperateData data)
         {
-            data.SplitterInfo = _binaryParser.Read<SplitterInfo>(data.SplitterInfoFileInfo);
+            data.SplitterInfo = data.SplitterInfo ?? _binaryParser.Read<SplitterInfo>(data.SplitterInfoFileInfo);
 
             if (data.SplitterInfo == null)
             {

@@ -1,6 +1,6 @@
 ﻿using AppHost.Extensions.DependencyInjection;
 using ExtenderApp.Abstract;
-using ExtenderApp.Common.IO.Splitter;
+using ExtenderApp.Common.NetWorks;
 using ExtenderApp.Data;
 
 namespace ExtenderApp.Common.IO.Splitter
@@ -22,6 +22,12 @@ namespace ExtenderApp.Common.IO.Splitter
             services.Configuration<IBinaryFormatterStore>(s =>
             {
                 s.Add<SplitterInfo, SplitterInfoFormatter>();
+                s.Add<SplitterDto, SplitterDtoFormatter>();
+            });
+
+            services.Configuration<LinkTypeStore>(s =>
+            {
+                s.Add<SplitterInfo>();
             });
 
             return services;
