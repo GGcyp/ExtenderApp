@@ -1,256 +1,292 @@
 ﻿namespace ExtenderApp.Data
 {
     /// <summary>
-    /// 扩展的取消令牌源类
+    /// 增强型取消令牌源（线程安全版本）
     /// </summary>
     public abstract class ExtenderCancellationTokenSource : IDisposable
     {
+        #region 线程安全字段
+
+        /// <summary>
+        /// 同步锁对象，用于线程同步
+        /// </summary>
+        private readonly object _syncRoot = new object();
+
+        /// <summary>
+        /// 定时器对象，用于执行定时任务
+        /// </summary>
         private Timer? _timer;
-        private Timer Timer
+
+        /// <summary>
+        /// 标记对象是否已被释放
+        /// </summary>
+        private volatile int _disposed;
+
+        #endregion
+
+        #region 状态属性（原子操作）
+
+        /// <summary>
+        /// 标识当前操作是否被暂停。
+        /// </summary>
+        private volatile bool _isPaused;
+
+        /// <summary>
+        /// 标识当前操作是否已停止。
+        /// </summary>
+        private volatile bool _isStopped;
+
+        /// <summary>
+        /// 标识当前操作是否可以进行。
+        /// </summary>
+        private volatile bool _canOperate = true;
+
+        /// <summary>
+        /// 获取当前操作是否被暂停。
+        /// </summary>
+        public bool IsPaused => _isPaused;
+
+        /// <summary>
+        /// 获取当前操作是否已停止。
+        /// </summary>
+        public bool IsStopped => _isStopped;
+
+        /// <summary>
+        /// 获取当前操作是否可以进行。
+        /// </summary>
+        public bool CanOperate => _canOperate;
+
+        #endregion
+
+        #region 事件回调
+
+        /// <summary>
+        /// 定义一个私有事件，该事件触发时执行的委托。
+        /// </summary>
+        private event Action? Callback;
+
+        /// <summary>
+        /// 定义一个私有变量，用于存储计划执行的委托。
+        /// </summary>
+        private Action? _scheduledAction;
+
+        #endregion
+
+        #region 定时器管理（线程安全）
+
+        /// <summary>
+        /// 获取一个安全的计时器对象。
+        /// </summary>
+        /// <returns>返回一个Timer对象，确保线程安全。</returns>
+        private Timer SafeTimer
         {
             get
             {
                 if (_timer == null)
                 {
-                    _timer = new Timer(TimerCallback);
+                    lock (_syncRoot)
+                    {
+                        _timer ??= new Timer(TimerCallback, null, Timeout.Infinite, Timeout.Infinite);
+                    }
                 }
                 return _timer;
             }
         }
 
-        /// <summary>
-        /// 已经暂停
-        /// </summary>
-        public bool IsPause { get; private set; }
+        #endregion
+
+        #region 核心操作方法
 
         /// <summary>
-        /// 已经停止
+        /// 在对象可操作的情况下执行给定的操作。
         /// </summary>
-        public bool IsStop { get; private set; }
-
-        /// <summary>
-        /// 获取或设置是否可以操作。
-        /// </summary>
-        /// <value>
-        /// 如果可以操作，则为 true；否则为 false。
-        /// </value>
-        public bool CanOperate { get; protected set; }
-
-        /// <summary>
-        /// 获取或设置操作行为。
-        /// </summary>
-        /// <value>
-        /// 操作行为。如果为 null，则表示没有设置操作行为。
-        /// </value>
-        private Action? operateAction;
-
-        /// <summary>
-        /// 停止操作的回调方法。
-        /// </summary>
-        private Action? callback;
-
-        /// <summary>
-        /// 获取当前实例的扩展取消令牌。
-        /// </summary>
-        /// <returns>扩展取消令牌。</returns>
-        public ExtenderCancellationToken Token => new ExtenderCancellationToken(this);
-
-        /// <summary>
-        /// ExtenderCancellationTokenSource 的构造函数。
-        /// </summary>
-        public ExtenderCancellationTokenSource()
+        /// <param name="action">要执行的操作。</param>
+        /// <returns>如果对象可操作且操作成功执行，则返回true；否则返回false。</returns>
+        protected bool ExecuteIfOperable(Action action)
         {
-        }
+            lock (_syncRoot)
+            {
+                if (!_canOperate || _disposed == 1) return false;
 
-        protected virtual void Reset()
-        {
-            IsPause = false;
-            IsStop = false;
-            CanOperate = true;
-            operateAction = null;
-            callback = null;
-        }
-
-        #region Pause
-
-        /// <summary>
-        /// 暂停操作，指定暂停时间为长整型毫秒数。
-        /// </summary>
-        /// <param name="millisecondsDelay">暂停时间（毫秒）。</param>
-        public void Pause(long millisecondsDelay)
-        {
-            if (!CanPause()) return;
-
-            Timer.Change(millisecondsDelay, 0);
-            operateAction = ProtectedPause;
-            IsPause = true;
+                action();
+                return true;
+            }
         }
 
         /// <summary>
-        /// 暂停操作，指定暂停时间为 TimeSpan。
+        /// 在指定的延迟后计划执行给定的操作。
         /// </summary>
-        /// <param name="delay">暂停时间。</param>
-        public void Pause(TimeSpan delay)
+        /// <param name="delay">延迟时间。</param>
+        /// <param name="operation">要执行的操作。</param>
+        /// <exception cref="ArgumentOutOfRangeException">如果延迟时间小于TimeSpan.Zero，则抛出此异常。</exception>
+        protected void ScheduleOperation(TimeSpan delay, Action operation)
         {
-            if (!CanPause()) return;
+            if (delay < TimeSpan.Zero)
+                throw new ArgumentOutOfRangeException(nameof(delay));
 
-            Timer.Change(delay, TimeSpan.Zero);
-            operateAction = ProtectedPause;
-            IsPause = true;
-        }
-
-        /// <summary>
-        /// 暂停操作的抽象方法。
-        /// </summary>
-        public void Pause()
-        {
-            if (!CanPause()) return;
-
-            ProtectedPause();
-            IsPause = true;
-        }
-
-        /// <summary>
-        /// 子类继承的暂停方法。
-        /// </summary>
-        protected abstract void ProtectedPause();
-
-        protected bool CanPause()
-        {
-            return CanOperate && !IsPause;
+            ExecuteIfOperable(() =>
+            {
+                _scheduledAction = operation;
+                SafeTimer.Change(delay, Timeout.InfiniteTimeSpan);
+            });
         }
 
         #endregion
 
-        #region Resume
+        #region 抽象方法
 
         /// <summary>
-        /// 恢复操作，指定恢复时间为长整型毫秒数。
+        /// 暂停核心操作。
         /// </summary>
-        /// <param name="millisecondsDelay">恢复时间（毫秒）。</param>
-        public void Resume(long millisecondsDelay)
-        {
-            if (!CanResume()) return;
-
-            Timer.Change(millisecondsDelay, 0);
-            operateAction = ProtectedResume;
-            IsPause = false;
-        }
+        protected abstract void CorePause();
 
         /// <summary>
-        /// 恢复操作，指定恢复时间为 TimeSpan。
+        /// 恢复核心操作。
         /// </summary>
-        /// <param name="delay">恢复时间。</param>
-        public void Resume(TimeSpan delay)
-        {
-            if (!CanResume()) return;
-
-            Timer.Change(delay, TimeSpan.Zero);
-            operateAction = ProtectedResume;
-            IsPause = false;
-        }
+        protected abstract void CoreResume();
 
         /// <summary>
-        /// 恢复操作的抽象方法。
+        /// 停止核心操作。
         /// </summary>
-        public void Resume()
-        {
-            if (!CanResume()) return;
-
-            ProtectedResume();
-            IsPause = false;
-        }
-
-        /// <summary>
-        /// 子类继承的恢复方法。
-        /// </summary>
-        protected abstract void ProtectedResume();
-
-        protected bool CanResume()
-        {
-            return CanOperate && IsPause && !IsStop;
-        }
+        protected abstract void CoreStop();
 
         #endregion
 
-        #region Stop
+        #region 公共方法（线程安全）
 
         /// <summary>
-        /// 停止操作，指定停止时间为长整型毫秒数。
+        /// 暂停当前操作。
         /// </summary>
-        /// <param name="millisecondsDelay">停止时间（毫秒）。</param>
-        public void Stop(long millisecondsDelay)
+        public void Pause() => ScheduleOperation(TimeSpan.Zero, () =>
         {
-            if (!CanStop()) return;
-
-            Timer.Change(millisecondsDelay, 0);
-            operateAction = ProtectedStop;
-            IsStop = true;
-        }
+            ExecuteIfOperable(() =>
+            {
+                CorePause();
+                _isPaused = true;
+            });
+        });
 
         /// <summary>
-        /// 停止操作，指定停止时间为 TimeSpan。
+        /// 恢复当前操作。
         /// </summary>
-        /// <param name="delay">停止时间。</param>
-        public void Stop(TimeSpan delay)
+        public void Resume() => ScheduleOperation(TimeSpan.Zero, () =>
         {
-            if (!CanStop()) return;
+            ExecuteIfOperable(() =>
+            {
+                if (!_isPaused) return;
 
-            Timer.Change(delay, TimeSpan.Zero);
-            operateAction = ProtectedStop;
-            IsStop = true;
-        }
+                CoreResume();
+                _isPaused = false;
+            });
+        });
 
         /// <summary>
-        /// 停止操作的抽象方法。
+        /// 停止当前操作。
         /// </summary>
-        public void Stop()
+        public void Stop() => ScheduleOperation(TimeSpan.Zero, () =>
         {
-            if (!CanStop()) return;
-
-            ProtectedStop();
-            IsStop = true;
-        }
+            ExecuteIfOperable(() =>
+            {
+                CoreStop();
+                _isStopped = true;
+                _canOperate = false;
+            });
+        });
 
         /// <summary>
-        /// 子类继承的停止方法。
+        /// 暂停操作，延迟指定的时间后执行。
         /// </summary>
-        protected abstract void ProtectedStop();
-
-        protected bool CanStop()
+        /// <param name="delay">延迟的时间间隔。</param>
+        public void Pause(TimeSpan delay) => ScheduleOperation(delay, () =>
         {
-            return CanOperate && !IsStop;
-        }
+            ExecuteIfOperable(() =>
+            {
+                CorePause();
+                _isPaused = true;
+            });
+        });
+
+        /// <summary>
+        /// 恢复操作，延迟指定的时间后执行。
+        /// </summary>
+        /// <param name="delay">延迟的时间间隔。</param>
+        public void Resume(TimeSpan delay) => ScheduleOperation(delay, () =>
+        {
+            ExecuteIfOperable(() =>
+            {
+                if (!_isPaused) return;
+
+                CoreResume();
+                _isPaused = false;
+            });
+        });
+
+        /// <summary>
+        /// 停止操作，延迟指定的时间后执行。
+        /// </summary>
+        /// <param name="delay">延迟的时间间隔。</param>
+        public void Stop(TimeSpan delay) => ScheduleOperation(delay, () =>
+        {
+            ExecuteIfOperable(() =>
+            {
+                CoreStop();
+                _isStopped = true;
+                _canOperate = false;
+            });
+        });
 
         #endregion
 
-        #region Register
+        #region 回调与资源释放
 
         /// <summary>
-        /// 注册一个回调函数，以便在请求取消时执行。
+        /// 定时器回调函数，用于执行预定的操作并触发注册的回调。
         /// </summary>
-        /// <param name="callback">回调函数</param>
-        public void Register(Action callback)
+        /// <param name="state">定时器状态对象。</param>
+        private void TimerCallback(object? state)
         {
-            this.callback += callback;
+            Action? actionToExecute = null;
+            lock (_syncRoot)
+            {
+                actionToExecute = _scheduledAction;
+                _scheduledAction = null;
+            }
+
+            actionToExecute?.Invoke();
+            Callback?.Invoke();
+        }
+
+        /// <summary>
+        /// 注册回调函数。
+        /// </summary>
+        /// <param name="callback">要注册的回调方法。</param>
+        /// <exception cref="ArgumentNullException">如果<paramref name="callback"/>为null，则抛出此异常。</exception>
+        public void RegisterCallback(Action callback)
+        {
+            if (callback == null) throw new ArgumentNullException(nameof(callback));
+
+            lock (_syncRoot)
+            {
+                Callback += callback;
+            }
+        }
+
+        /// <summary>
+        /// 释放此实例使用的资源。
+        /// </summary>
+        public void Dispose()
+        {
+            if (Interlocked.Exchange(ref _disposed, 1) != 0) return;
+
+            lock (_syncRoot)
+            {
+                _timer?.Dispose();
+                Callback = null;
+                _scheduledAction = null;
+                _canOperate = false;
+            }
         }
 
         #endregion
-
-        /// <summary>
-        /// 定时器回调方法，调用用户指定的回调方法并传递状态参数。
-        /// </summary>
-        private void TimerCallback(object? obj)
-        {
-            operateAction?.Invoke();
-            callback?.Invoke();
-            operateAction = null;
-        }
-
-        public virtual void Dispose()
-        {
-            operateAction = null;
-            callback = null;
-        }
     }
 }

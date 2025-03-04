@@ -1,8 +1,11 @@
-﻿using AppHost.Extensions.DependencyInjection;
+﻿using System.Buffers;
+using System.Reflection;
+using AppHost.Extensions.DependencyInjection;
 using ExtenderApp.Abstract;
 using ExtenderApp.Common.IO.Binaries.Formatter;
 using ExtenderApp.Common.IO.Binaries.Formatter.Struct;
 using ExtenderApp.Data;
+using ExtenderApp.Data.File;
 
 
 namespace ExtenderApp.Common.IO.Binaries
@@ -12,6 +15,8 @@ namespace ExtenderApp.Common.IO.Binaries
     /// </summary>
     internal static class BinaryParserExtensions
     {
+        private static readonly MethodInfo _getFormatterMethodInfo = typeof(IBinaryFormatterResolver).GetMethod("GetFormatter");
+
         /// <summary>
         /// 为服务集合添加二进制格式化器。
         /// </summary>
@@ -24,6 +29,19 @@ namespace ExtenderApp.Common.IO.Binaries
             services.AddSingleton<BinaryOptions>();
             services.AddSingleton<ExtenderBinaryReaderConvert>();
             services.AddSingleton<ExtenderBinaryWriterConvert>();
+            services.AddSingleton(new SequencePool<byte>(Environment.ProcessorCount * 2, ArrayPool<byte>.Shared));
+
+            services.AddSingleton(typeof(IBinaryFormatter<>), (p, o) =>
+            {
+                Type[] types = o as Type[];
+                Type type = types[0];
+
+                IBinaryFormatterResolver resolver = p.GetRequiredService<IBinaryFormatterResolver>();
+
+                MethodInfo method = _getFormatterMethodInfo.MakeGenericMethod(type);
+                var result = method.Invoke(resolver, null);
+                return result;
+            });
 
             services.AddBinaryFormatter();
 

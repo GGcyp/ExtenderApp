@@ -1,6 +1,5 @@
 ﻿using AppHost.Extensions.DependencyInjection;
 using ExtenderApp.Abstract;
-using ExtenderApp.Common.NetWorks.Send;
 using ExtenderApp.Data;
 
 namespace ExtenderApp.Common.NetWorks
@@ -8,7 +7,7 @@ namespace ExtenderApp.Common.NetWorks
     /// <summary>
     /// 提供与链接操作相关的扩展方法。
     /// </summary>
-    internal static class LinkOperateExtensions
+    internal static class LinkerExtensions
     {
         /// <summary>
         /// 向服务集合中添加链接操作相关服务。
@@ -16,12 +15,11 @@ namespace ExtenderApp.Common.NetWorks
         /// <param name="services">服务集合。</param>
         public static IServiceCollection AddLinkOperate(this IServiceCollection services)
         {
+            services.AddTcpLinkOperate();
             services.Configuration<IBinaryFormatterStore>(s =>
             {
-                s.AddFormatter(typeof(NetworkPacket), typeof(NetworkPacketFormatter));
+                s.Add<LinkerDto, LinkerDtoFormatter>();
             });
-
-            services.AddTcpLinkOperate();
 
             return services;
         }

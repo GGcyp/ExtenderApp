@@ -5,14 +5,17 @@ using ExtenderApp.Common;
 using System.Net.Sockets;
 using System.Net;
 using System.Security.Cryptography;
+using ExtenderApp.Data.File;
+using ExtenderApp.Common.NetWorks;
 
 namespace ExtenderApp.Test
 {
     public class TestMainViewModel : ExtenderAppViewModel
     {
         private readonly IBinaryParser _binaryParser;
+        private readonly SequencePool<byte> _sequencePool;
 
-        public TestMainViewModel(TcpLink operate, IBinaryParser binaryParser, IServiceStore serviceStore) : base(serviceStore)
+        public TestMainViewModel(TcpLinker operate, IBinaryParser binaryParser, SequencePool<byte> sequencePool, IServiceStore serviceStore) : base(serviceStore)
         {
             //var fileInfo = CreatTestExpectLocalFileInfo(string.Format("测试{0}", DateTime.Now.ToString()));
             //var info = new FileSplitterInfo(2048, 2, 0, 1024, FileExtensions.TextFileExtensions);
@@ -45,21 +48,41 @@ namespace ExtenderApp.Test
             //binary.Write(info, new byte[5000]);
             //var temp2 = binary.Read<byte[]>(info);
             _binaryParser = binaryParser;
+            _sequencePool = sequencePool;
             Task.Run(Listener);
+            operate.Start();
             operate.Connect("127.0.0.1", 5520);
             byte[] b = new byte[Utility.KilobytesToBytes(12)];
-            for (int i = 0; i < 1000; i++)
-            {
-                operate.Send(b);
-            }
+            //for (int i = 0; i < 10; i++)
+            //{
+            //    operate.Send(b);
+            //    //operate.Send("b");
+            //}
+            Send(operate);
+            //operate.Heartbeat.ChangeSendHearbeatInterval(20);
+            //operate.Close();
         }
 
+        private async void Send(TcpLinker tcpLinker)
+        {
+            await Task.Delay(1000);
+            tcpLinker.Send("s");
+            tcpLinker.Send("发送完成，关闭链接");
+            tcpLinker.Heartbeat.ReceiveHeartbeatEvent += Heartbeat_ReceiveHeartbeatEvent;
+            tcpLinker.Heartbeat.SendHeartbeat();
+        }
 
         private async void Listener()
         {
-            TcpListener listener = new TcpListener(new IPEndPoint(IPAddress.Parse("127.0.0.1"), 5520));
-            listener.Start();
-            var client = listener.AcceptTcpClient();
+            //TcpListener listener = new TcpListener(new IPEndPoint(IPAddress.Parse("127.0.0.1"), 5520));
+            //listener.Start();
+            //var client = listener.AcceptTcpClient();
+
+            TcpListenerLinker tcpListener = new TcpListenerLinker(_binaryParser, _sequencePool);
+            tcpListener.Bind(new IPEndPoint(IPAddress.Parse("127.0.0.1"), 5520));
+            tcpListener.Listen();
+            TcpLinker link = tcpListener.Accept();
+            link.Start();
             Debug("收到");
             //var stream = client.GetStream();
             //byte[] bytes = new byte[1024];
@@ -67,14 +90,26 @@ namespace ExtenderApp.Test
             //var temp = _binaryParser.Deserialize<NetworkPacket>(bytes);
             //var name = _binaryParser.Deserialize<string>(temp.Bytes);
             //Debug(temp.TypeCode.ToString() + name);
-            var link = new TcpLink(_binaryParser, SHA256.Create(), client.Client);
             link.Register<byte[]>(Networ);
+            link.Register<string>(Networ);
+            link.Heartbeat.ChangeSendHearbeatInterval(0);
+            link.Heartbeat.ReceiveHeartbeatEvent += Heartbeat_ReceiveHeartbeatEvent;
+        }
+
+        private void Heartbeat_ReceiveHeartbeatEvent(Common.NetWorks.HearbeatResult obj)
+        {
+            Debug(obj.HeartbeatType.ToString());
         }
 
         private void Networ(byte[] bytes)
         {
             //Debug(s);
             Debug("收到");
+        }
+
+        private void Networ(string s)
+        {
+            Debug(s);
         }
 
         private ExpectLocalFileInfo CreatTestExpectLocalFileInfo(string fileName)

@@ -67,24 +67,11 @@ namespace ExtenderApp.Common
         /// <param name="info">文件信息</param>
         /// <param name="value">要写入的值</param>
         /// <param name="fileOperate">文件操作接口</param>
+        /// <param name="options">选项</param>
         /// <typeparam name="T">值的类型</typeparam>
         public static void Write<T>(this IFileParser parser, LocalFileInfo info, T value, IConcurrentOperate fileOperate)
         {
-            parser.Write(info, value, fileOperate, null);
-        }
-
-        /// <summary>
-        /// 使用文件解析器将值写入文件
-        /// </summary>
-        /// <param name="parser">文件解析器</param>
-        /// <param name="info">文件信息</param>
-        /// <param name="value">要写入的值</param>
-        /// <param name="fileOperate">文件操作接口</param>
-        /// <param name="options">选项</param>
-        /// <typeparam name="T">值的类型</typeparam>
-        public static void Write<T>(this IFileParser parser, LocalFileInfo info, T value, IConcurrentOperate fileOperate, object options)
-        {
-            parser.Write(new FileOperateInfo(info, FileMode.OpenOrCreate, FileAccess.ReadWrite), value, fileOperate, options);
+            parser.Write(new FileOperateInfo(info, FileMode.OpenOrCreate, FileAccess.ReadWrite), value, fileOperate);
         }
 
         #endregion
@@ -97,25 +84,12 @@ namespace ExtenderApp.Common
         /// <param name="parser">文件解析器</param>
         /// <param name="info">文件信息</param>
         /// <param name="fileOperate">文件操作接口</param>
+        /// <param name="options">选项</param>
         /// <returns>读取到的值</returns>
         /// <typeparam name="T">值的类型</typeparam>
         public static T? Read<T>(this IFileParser parser, LocalFileInfo info, IConcurrentOperate fileOperate)
         {
-            return parser.Read<T>(info, fileOperate, null);
-        }
-
-        /// <summary>
-        /// 使用文件解析器从文件中读取值
-        /// </summary>
-        /// <param name="parser">文件解析器</param>
-        /// <param name="info">文件信息</param>
-        /// <param name="fileOperate">文件操作接口</param>
-        /// <param name="options">选项</param>
-        /// <returns>读取到的值</returns>
-        /// <typeparam name="T">值的类型</typeparam>
-        public static T? Read<T>(this IFileParser parser, LocalFileInfo info, IConcurrentOperate fileOperate, object options)
-        {
-            return parser.Read<T>(new FileOperateInfo(info, FileMode.Open, FileAccess.Read), fileOperate, options);
+            return parser.Read<T>(new FileOperateInfo(info, FileMode.Open, FileAccess.Read), fileOperate);
         }
 
         #endregion

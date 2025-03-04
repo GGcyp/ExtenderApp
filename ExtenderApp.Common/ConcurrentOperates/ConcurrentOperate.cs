@@ -18,12 +18,12 @@ namespace ExtenderApp.Common.ConcurrentOperates
         /// <summary>
         /// 指示是否正在执行操作。
         /// </summary>
-        protected bool isExecuting;
+        protected volatile int _isExecuting;
 
         /// <summary>
         /// 获取一个值，指示是否正在执行操作或操作计数是否小于等于0。
         /// </summary>
-        public bool IsExecuting => isExecuting || operationCount <= 0;
+        public bool IsExecuting => Interlocked.CompareExchange(ref _isExecuting, 1, 0) == 0 || operationCount > 0;
 
         public abstract void Release();
 
@@ -48,6 +48,8 @@ namespace ExtenderApp.Common.ConcurrentOperates
         where TOperate : class, IDisposable
         where TData : ConcurrentOperateData
     {
+        #region Pool
+
         /// <summary>
         /// 创建一个默认的对象池，用于管理ConcurrentOperate<TPolicy, TOperate, TData>对象的创建和重用。
         /// </summary>
@@ -66,6 +68,26 @@ namespace ExtenderApp.Common.ConcurrentOperates
         /// </summary>
         /// <param name="obj">要释放回对象池的IConcurrentOperate<TOperate, TData>对象。</param>
         public void Release(IConcurrentOperate<TOperate, TData> obj) => _pool.Release(obj);
+
+        /// <summary>
+        /// 获取一个泛型类型的实例，该类型必须实现IConcurrentOperate接口。
+        /// </summary>
+        /// <typeparam name="T">泛型类型，必须实现IConcurrentOperate接口</typeparam>
+        /// <returns>泛型类型的实例</returns>
+        public static T Get<T>() where T : class, IConcurrentOperate<TOperate, TData>
+            => (T)Get();
+
+        /// <summary>
+        /// 释放一个泛型类型的实例，该类型必须实现IConcurrentOperate接口。
+        /// </summary>
+        /// <typeparam name="T">泛型类型，必须实现IConcurrentOperate接口</typeparam>
+        /// <param name="obj">需要释放的实例</param>
+        public void Release<T>(T obj) where T : class, IConcurrentOperate<TOperate, TData>
+            => Release(obj);
+
+
+
+        #endregion
 
         /// <summary>
         /// 操作队列
@@ -87,15 +109,29 @@ namespace ExtenderApp.Common.ConcurrentOperates
         /// </summary>
         public TOperate Operate { get; private set; }
 
-        public int Count => throw new NotImplementedException();
+        /// <summary>
+        /// 获取队列中的元素数量。
+        /// </summary>
+        /// <returns>返回队列中的元素数量。</returns>
+        public int Count => _queue.Count;
 
-        public void Start(IConcurrentOperatePolicy<TOperate, TData> policy, TData? data = null, TOperate? operate = null)
+        /// <summary>
+        /// 获取或设置是否可以操作。
+        /// </summary>
+        /// <value>如果可以操作，则返回 true；否则返回 false。</value>
+        public bool CanOperate { get; protected set; }
+
+        public void Start(IConcurrentOperatePolicy<TOperate, TData>? policy = null, TData? data = null, TOperate? operate = null)
         {
-            policy.ArgumentObjectNull(typeof(TPolicy).FullName);
+            //policy.ArgumentObjectNull(typeof(TPolicy).FullName);
+            Policy.ArgumentObjectNull(typeof(TPolicy).FullName);
 
-            this.Policy = (TPolicy)policy;
-            Data = data ?? policy.GetData();
-            Operate = operate ?? policy.Create(Data);
+            if (policy != null)
+                this.Policy = (TPolicy)policy;
+
+            Data = Data ?? data ?? Policy.GetData();
+            Operate = Operate ?? operate ?? Policy.Create(Data);
+            CanOperate = true;
         }
 
         /// <summary>
@@ -104,6 +140,9 @@ namespace ExtenderApp.Common.ConcurrentOperates
         /// <param name="operation">并发操作</param>
         public void QueueOperation(IConcurrentOperation<TOperate> operation)
         {
+            if (!CanOperate)
+                return;
+
             ThrowNull();
             Data.Token.ThrowIfCancellationRequested();
             operation.ArgumentNull(typeof(TData).FullName);
@@ -111,13 +150,18 @@ namespace ExtenderApp.Common.ConcurrentOperates
             _queue.Enqueue(operation);
             Interlocked.Increment(ref operationCount);
 
-            lock (_queue)
+            //lock (_queue)
+            //{
+            //    if (!isExecuting)
+            //    {
+            //        isExecuting = true;
+            //        Task.Run(Run);
+            //    }
+            //}
+
+            if (Interlocked.CompareExchange(ref _isExecuting, 1, 0) == 0)
             {
-                if (!isExecuting)
-                {
-                    isExecuting = true;
-                    Task.Run(Run);
-                }
+                ThreadPool.UnsafeQueueUserWorkItem(_ => Run(), null);
             }
         }
 
@@ -127,13 +171,22 @@ namespace ExtenderApp.Common.ConcurrentOperates
         /// <param name="operations">并发操作集合</param>
         public void QueueOperation(IEnumerable<IConcurrentOperation<TOperate>> operations)
         {
+            if (!CanOperate)
+                return;
+
             ThrowNull();
             Data.Token.ThrowIfCancellationRequested();
             operations.ArgumentNull(nameof(operations));
 
             foreach (var operation in operations)
             {
-                QueueOperation(operation);
+                _queue.Enqueue(operation);
+                Interlocked.Increment(ref operationCount);
+            }
+
+            if (Interlocked.CompareExchange(ref _isExecuting, 1, 0) == 0)
+            {
+                ThreadPool.UnsafeQueueUserWorkItem(_ => Run(), null);
             }
         }
 
@@ -143,6 +196,9 @@ namespace ExtenderApp.Common.ConcurrentOperates
         /// <param name="operation">并发操作</param>
         public void ExecuteOperation(IConcurrentOperation<TOperate> operation)
         {
+            if (!CanOperate)
+                return;
+
             ThrowNull();
             Data.Token.ThrowIfCancellationRequested();
             operation.ArgumentNull(nameof(operation));
@@ -161,6 +217,9 @@ namespace ExtenderApp.Common.ConcurrentOperates
         /// <param name="operations">并发操作集合</param>
         public void ExecuteOperation(IEnumerable<IConcurrentOperation<TOperate>> operations)
         {
+            if (!CanOperate)
+                return;
+
             ThrowNull();
             Data.Token.ThrowIfCancellationRequested();
             operations.ArgumentNull(nameof(operations));
@@ -196,14 +255,19 @@ namespace ExtenderApp.Common.ConcurrentOperates
             {
                 lock (_queue)
                 {
-                    if (operationCount > 0)
+                    //if (operationCount > 0)
+                    //{
+                    //    Task.Run(Run);
+                    //    isExecuting = true;
+                    //}
+                    //else
+                    //{
+                    //    isExecuting = false;
+                    //}
+                    if (operationCount > 0 && Interlocked.CompareExchange(ref _isExecuting, 1, 0) != 0)
                     {
-                        Task.Run(Run);
-                        isExecuting = true;
-                    }
-                    else
-                    {
-                        isExecuting = false;
+                        //Task.Run(Run);
+                        ThreadPool.UnsafeQueueUserWorkItem(_ => Run(), null);
                     }
                 }
             }
@@ -231,6 +295,7 @@ namespace ExtenderApp.Common.ConcurrentOperates
                 }
                 operation.Release();
             }
+            Interlocked.Exchange(ref _isExecuting, 0);
         }
 
         /// <summary>
@@ -266,6 +331,7 @@ namespace ExtenderApp.Common.ConcurrentOperates
             Operate = null;
             Policy.ReleaseData(Data);
             Data = null;
+            CanOperate = false;
             return true;
         }
 

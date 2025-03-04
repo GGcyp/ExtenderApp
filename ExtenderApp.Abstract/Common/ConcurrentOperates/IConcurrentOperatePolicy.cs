@@ -10,36 +10,36 @@ namespace ExtenderApp.Abstract
     public interface IConcurrentOperatePolicy<TOperate, TData> : IDisposable
     {
         /// <summary>
-        /// 创建一个操作对象。
+        /// 根据传入的数据创建一个操作对象。
         /// </summary>
-        /// <param name="data">用于创建操作对象的数据。</param>
+        /// <param name="data">需要处理的数据。</param>
         /// <returns>创建的操作对象。</returns>
         TOperate Create(TData data);
 
         /// <summary>
-        /// 在并发操作执行前执行的钩子方法。
+        /// 在操作执行之前执行的操作。
         /// </summary>
-        /// <param name="operate">并发操作实例。</param>
-        /// <param name="data">并发操作需要处理的数据。</param>
-        void BeforeExecute(TOperate operate, TData data);
+        /// <param name="operation">即将执行的操作对象</param>
+        /// <param name="data">操作所需的数据</param>
+        void BeforeExecute(TOperate operation, TData data);
 
         /// <summary>
-        /// 在并发操作执行后执行的钩子方法。
+        /// 在操作执行之后执行的操作。
         /// </summary>
-        /// <param name="operate">并发操作实例。</param>
-        /// <param name="data">并发操作处理后的数据。</param>
-        void AfterExecute(TOperate operate, TData data);
-
-        /// <summary>
-        /// 释放数据
-        /// </summary>
-        /// <param name="data">要释放的数据</param>
-        void ReleaseData(TData data);
+        /// <param name="operation">已执行的操作对象</param>
+        /// <param name="data">操作所需的数据</param>
+        void AfterExecute(TOperate operation, TData data);
 
         /// <summary>
         /// 获取数据。
         /// </summary>
         /// <returns>返回类型为TData的数据。</returns>
         TData GetData();
+
+        /// <summary>
+        /// 释放数据对象资源。
+        /// </summary>
+        /// <param name="data">要释放的数据对象</param>
+        void ReleaseData(TData data);
     }
 }

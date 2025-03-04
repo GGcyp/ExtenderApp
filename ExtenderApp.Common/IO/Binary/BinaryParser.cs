@@ -43,10 +43,10 @@ namespace ExtenderApp.Common.IO.Binaries
         private readonly ObjectPool<WriteOperation> _writeOperationPool;
         private readonly ObjectPool<BinaryReadOperation> _readOperationPool;
 
-        public BinaryParser(IBinaryFormatterResolver binaryFormatterResolver, FileStore store) : base(store)
+        public BinaryParser(IBinaryFormatterResolver binaryFormatterResolver, SequencePool<byte> sequencePool, FileStore store) : base(store)
         {
             _resolver = binaryFormatterResolver;
-            _sequencePool = new(Environment.ProcessorCount * 2, ArrayPool<byte>.Shared);
+            _sequencePool = sequencePool;
             _writeOperationPool = ObjectPool.Create(new SelfResetPooledObjectPolicy<WriteOperation>());
             _readOperationPool = ObjectPool.Create(new SelfResetPooledObjectPolicy<BinaryReadOperation>());
         }
@@ -62,17 +62,17 @@ namespace ExtenderApp.Common.IO.Binaries
 
         #region Write
 
-        public override void Write<T>(ExpectLocalFileInfo info, T value, IConcurrentOperate fileOperate = null, object? options = null)
+        public override void Write<T>(ExpectLocalFileInfo info, T value, IConcurrentOperate fileOperate = null)
         {
             if (info.IsEmpty)
             {
                 ErrorUtil.ArgumentNull(nameof(info));
             }
 
-            Write(info.CreateFileOperate(FileExtensions.BinaryFileExtensions, FileMode.OpenOrCreate, FileAccess.ReadWrite), value, fileOperate, options);
+            Write(info.CreateFileOperate(FileExtensions.BinaryFileExtensions, FileMode.OpenOrCreate, FileAccess.ReadWrite), value, fileOperate);
         }
 
-        public override void Write<T>(FileOperateInfo info, T value, IConcurrentOperate fileOperate = null, object? options = null)
+        public override void Write<T>(FileOperateInfo info, T value, IConcurrentOperate fileOperate = null)
         {
             byte[] bytes = SerializeForArrayPool(value, out long length);
 
@@ -84,7 +84,7 @@ namespace ExtenderApp.Common.IO.Binaries
             ArrayPool<byte>.Shared.Return(bytes);
         }
 
-        public override void WriteAsync<T>(ExpectLocalFileInfo info, T value, Action? callback = null, IConcurrentOperate fileOperate = null, object? options = null)
+        public override void WriteAsync<T>(ExpectLocalFileInfo info, T value, Action? callback = null, IConcurrentOperate fileOperate = null)
         {
             if (info.IsEmpty)
             {
@@ -92,10 +92,10 @@ namespace ExtenderApp.Common.IO.Binaries
             }
 
             var fileOperateInfo = info.CreateFileOperate(FileExtensions.BinaryFileExtensions, FileMode.OpenOrCreate, FileAccess.ReadWrite);
-            WriteAsync(fileOperateInfo, value, callback, fileOperate, options);
+            WriteAsync(fileOperateInfo, value, callback, fileOperate);
         }
 
-        public override void WriteAsync<T>(FileOperateInfo info, T value, Action? callback = null, IConcurrentOperate fileOperate = null, object? options = null)
+        public override void WriteAsync<T>(FileOperateInfo info, T value, Action? callback = null, IConcurrentOperate fileOperate = null)
         {
             byte[] bytes = SerializeForArrayPool(value, out long length);
 
@@ -113,17 +113,17 @@ namespace ExtenderApp.Common.IO.Binaries
 
         #region Read
 
-        public override T? Read<T>(ExpectLocalFileInfo info, IConcurrentOperate fileOperate = null, object? options = null) where T : default
+        public override T? Read<T>(ExpectLocalFileInfo info, IConcurrentOperate fileOperate = null) where T : default
         {
             if (info.IsEmpty)
             {
                 ErrorUtil.ArgumentNull(nameof(info));
             }
 
-            return Read<T>(info.CreateWriteOperate(FileExtensions.BinaryFileExtensions), fileOperate, options);
+            return Read<T>(info.CreateWriteOperate(FileExtensions.BinaryFileExtensions), fileOperate);
         }
 
-        public override T? Read<T>(FileOperateInfo info, IConcurrentOperate fileOperate = null, object? options = null) where T : default
+        public override T? Read<T>(FileOperateInfo info, IConcurrentOperate fileOperate = null) where T : default
         {
             if (!info.LocalFileInfo.Exists)
             {
@@ -163,7 +163,7 @@ namespace ExtenderApp.Common.IO.Binaries
             //return result;
         }
 
-        public override void ReadAsync<T>(ExpectLocalFileInfo info, Action<T>? callback, IConcurrentOperate fileOperate = null, object? options = null)
+        public override void ReadAsync<T>(ExpectLocalFileInfo info, Action<T>? callback, IConcurrentOperate fileOperate = null)
         {
             if (info.IsEmpty)
             {
@@ -171,14 +171,14 @@ namespace ExtenderApp.Common.IO.Binaries
             }
 
             var operate = info.CreateFileOperate(FileExtensions.BinaryFileExtensions);
-            ReadAsync(operate, callback, fileOperate, options);
+            ReadAsync(operate, callback, fileOperate);
             //var stream = operate.OpenFile();
             //T? result = await DeserializeAsync<T>(stream);
             //stream.Dispose();
             //callback?.Invoke(result);
         }
 
-        public override void ReadAsync<T>(FileOperateInfo info, Action<T>? callback, IConcurrentOperate fileOperate = null, object? options = null)
+        public override void ReadAsync<T>(FileOperateInfo info, Action<T>? callback, IConcurrentOperate fileOperate = null)
         {
             //T? result = await DeserializeAsync<T>(operate.OpenFile());
             //callback?.Invoke(result);
@@ -313,7 +313,7 @@ namespace ExtenderApp.Common.IO.Binaries
             }
         }
 
-        public void Serialize<T>(Stream stream, T value, object? options = null)
+        public void Serialize<T>(Stream stream, T value)
         {
             var rent = _sequencePool.Rent();
             var writer = new ExtenderBinaryWriter(rent.Value);
@@ -387,7 +387,7 @@ namespace ExtenderApp.Common.IO.Binaries
             return _resolver.GetFormatterWithVerify<T>().Deserialize(ref reader);
         }
 
-        public T? Deserialize<T>(Stream stream, object? options = null)
+        public T? Deserialize<T>(Stream stream)
         {
             if (TryDeserializeFromMemoryStream<T>(stream, out var result))
             {
@@ -411,7 +411,7 @@ namespace ExtenderApp.Common.IO.Binaries
             return result;
         }
 
-        public async Task<T?> DeserializeAsync<T>(Stream stream, object? options = null)
+        public async Task<T?> DeserializeAsync<T>(Stream stream)
         {
             if (TryDeserializeFromMemoryStream<T>(stream, out var result))
             {

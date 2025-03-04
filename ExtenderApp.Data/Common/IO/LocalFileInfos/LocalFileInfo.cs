@@ -114,6 +114,15 @@ namespace ExtenderApp.Data
         }
 
         /// <summary>
+        /// 创建一个写入操作的信息对象。
+        /// </summary>
+        /// <returns>返回创建的FileOperateInfo对象。</returns>
+        public FileOperateInfo CreateWriteOperate()
+        {
+            return CreateFileOperate(FileMode.OpenOrCreate, FileAccess.ReadWrite);
+        }
+
+        /// <summary>
         /// 修改文件的扩展名
         /// </summary>
         /// <param name="newExtension">新的文件扩展名</param>

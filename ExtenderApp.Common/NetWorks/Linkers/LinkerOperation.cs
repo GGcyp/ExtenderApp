@@ -3,12 +3,12 @@
 
 namespace ExtenderApp.Common.NetWorks.LinkOperates
 {
-    public class LinkOperation : ConcurrentOperation<Socket>
+    public class LinkerOperation : ConcurrentOperation<Socket>
     {
         private readonly SocketAsyncEventArgs _socketAsyncEventArgs;
         private bool isSendAsync;
 
-        public LinkOperation()
+        public LinkerOperation()
         {
             _socketAsyncEventArgs = new SocketAsyncEventArgs();
             _socketAsyncEventArgs.Completed += Completed;

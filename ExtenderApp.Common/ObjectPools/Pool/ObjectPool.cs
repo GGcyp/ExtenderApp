@@ -1,5 +1,6 @@
 ﻿using System.Collections.Concurrent;
 using ExtenderApp.Abstract;
+using ExtenderApp.Common.Error;
 
 namespace ExtenderApp.Common.ObjectPools
 {
@@ -60,13 +61,24 @@ namespace ExtenderApp.Common.ObjectPools
         }
 
         /// <summary>
-        /// 创建一个<see cref="ObjectPool{T}"/>实例。
+        /// 创建一个对象池
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="policy"></param>
-        /// <returns><see cref="ObjectPool{T}"/></returns>
-        public static ObjectPool<T> Create<T>(IPooledObjectPolicy<T> policy, ObjectPoolProvider? objectPoolProvider = null, int maximumRetained = -1) where T : class
+        /// <typeparam name="T">对象池中的对象类型</typeparam>
+        /// <param name="policy">对象的创建和重置策略</param>
+        /// <param name="objectPoolProvider">对象池提供者，默认为null</param>
+        /// <param name="maximumRetained">对象池中最大保留对象数，-1表示无限制</param>
+        /// <param name="canReuse">是否可以重用对象池，默认为true</param>
+        /// <returns>返回创建的对象池</returns>
+        public static ObjectPool<T> Create<T>(IPooledObjectPolicy<T> policy, ObjectPoolProvider? objectPoolProvider = null, int maximumRetained = -1, bool canReuse = true) where T : class
         {
+            policy.ArgumentNull(nameof(policy));
+
+            if (!canReuse)
+            {
+                var result = (objectPoolProvider ?? DefaultObjectPoolProvider.Default).Create(policy, maximumRetained);
+                return result;
+            }
+
             //暂时
             Type poolType = typeof(T);
             if (_poolDict.TryGetValue(poolType, out var pool))

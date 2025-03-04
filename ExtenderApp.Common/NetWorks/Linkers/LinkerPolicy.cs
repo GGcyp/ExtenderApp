@@ -8,7 +8,7 @@ namespace ExtenderApp.Common.NetWorks
     /// <summary>
     /// 默认链接策略
     /// </summary>
-    public abstract class LinkOperatePolicy : LinkOperatePolicy<LinkOperateData>
+    public abstract class LinkerPolicy : LinkOperatePolicy<LinkerData>
     {
 
     }
@@ -19,7 +19,7 @@ namespace ExtenderApp.Common.NetWorks
     /// </summary>
     /// <typeparam name="TData">泛型参数，必须继承自 LinkOperateData 类并且具有无参构造函数。</typeparam>
     public abstract class LinkOperatePolicy<TData> : ConcurrentOperatePolicy<Socket, TData>
-        where TData : LinkOperateData
+        where TData : LinkerData
     {
         /// <summary>
         /// 根据提供的数据创建一个新的 Socket 对象。
@@ -28,9 +28,19 @@ namespace ExtenderApp.Common.NetWorks
         /// <returns>返回创建的新 Socket 对象。</returns>
         public override Socket Create(TData data)
         {
-            var result = data.Socket ?? new Socket(data.AddressFamily, data.SocketType, data.ProtocolType);
-            result.NoDelay = false;
+            var result = new Socket(data.AddressFamily, data.SocketType, data.ProtocolType);
+            result.NoDelay = true;
             return result;
+            //return new Socket(data.AddressFamily, data.SocketType, data.ProtocolType);
+        }
+
+        public override void AfterExecute(Socket operate, TData data)
+        {
+            if (data.IsClose)
+            {
+                operate.Close();
+                data.CloseCallback?.Invoke();
+            }
         }
     }
 }

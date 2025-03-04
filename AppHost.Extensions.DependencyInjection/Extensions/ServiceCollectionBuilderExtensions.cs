@@ -4,6 +4,8 @@ namespace AppHost.Extensions.DependencyInjection
 {
     public static class ServiceCollectionBuilderExtensions
     {
+        private static readonly object[] _objects = new object[1];
+
         /// <summary>
         /// 用<see cref="IServiceCollection"/>创建一个服务提供器<see cref="ServiceProvider"/>
         /// </summary>
@@ -37,7 +39,6 @@ namespace AppHost.Extensions.DependencyInjection
                 if (types is null) return default;
 
                 Type elementType = types[0];
-                object[] objects = new object[1];
 
                 // 使用反射创建 List<T> 的类型
                 Type listType = typeof(List<>).MakeGenericType(elementType);
@@ -54,8 +55,8 @@ namespace AppHost.Extensions.DependencyInjection
                 {
                     if (elementType.IsAssignableFrom(item.ServiceType))
                     {
-                        objects[0] = p.GetRequiredService(item.ServiceType);
-                        addMethod!.Invoke(listInstance, objects);
+                        _objects[0] = p.GetRequiredService(item.ServiceType);
+                        addMethod!.Invoke(listInstance, _objects);
                     }
                 }
 
@@ -86,17 +87,15 @@ namespace AppHost.Extensions.DependencyInjection
                 //向 List<T> 添加元素（使用反射调用 Add 方法）
                 MethodInfo addMethod = listType.GetMethod("Add");
 
-
                 var collection = p.GetRequiredService<IServiceCollection>();
-                object[] objects = new object[1];
 
 
                 foreach (var item in collection)
                 {
                     if (elementType.IsAssignableFrom(item.ServiceType))
                     {
-                        objects[0] = p.GetRequiredService(item.ServiceType);
-                        addMethod!.Invoke(listInstance, objects);
+                        _objects[0] = p.GetRequiredService(item.ServiceType);
+                        addMethod!.Invoke(listInstance, _objects);
                     }
                 }
 

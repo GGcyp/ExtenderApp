@@ -1,7 +1,7 @@
 ﻿using System.Net.Sockets;
-using System.Security.Cryptography;
 using ExtenderApp.Abstract;
 using ExtenderApp.Common.NetWorks;
+using ExtenderApp.Data.File;
 
 namespace ExtenderApp.Common
 {
@@ -204,18 +204,13 @@ namespace ExtenderApp.Common
     //    }
     //}
 
-    public class TcpLink : LinkOperate<TcpLinkPolicy, TcpLinkData>
+    public class TcpLinker : Linker<TcpLinkerPolicy, TcpLinkerData>
     {
-        private readonly static TcpLinkPolicy tcpLinkPolicy = new TcpLinkPolicy();
+        private readonly static TcpLinkerPolicy tcpLinkPolicy = new TcpLinkerPolicy();
 
-        public TcpLink(IBinaryParser binaryParser, SHA256 sha256) : base(tcpLinkPolicy, binaryParser, sha256, null)
+        public TcpLinker(IBinaryParser binaryParser, SequencePool<byte> sequencePool) : base( binaryParser, sequencePool)
         {
-
-        }
-
-        public TcpLink(IBinaryParser binaryParser, SHA256 sha256, Socket? socket) : base(tcpLinkPolicy, binaryParser, sha256, socket)
-        {
-
+            Policy = tcpLinkPolicy;
         }
     }
 }

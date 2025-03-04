@@ -13,7 +13,7 @@ namespace ExtenderApp.Abstract
         /// <param name="type">目标对象的类型。</param>
         /// <param name="options">可选的反序列化选项。</param>
         /// <returns>反序列化后的对象，如果反序列化失败则返回 null。</returns>
-        T? Deserialize<T>(string json, object? options = null);
+        T? Deserialize<T>(string json);
 
         /// <summary>
         /// 将给定的对象序列化为 JSON 字符串。
@@ -21,6 +21,6 @@ namespace ExtenderApp.Abstract
         /// <param name="value">要序列化的对象。</param>
         /// <param name="options">可选的序列化选项。</param>
         /// <returns>序列化后的 JSON 字符串。</returns>
-        string Serialize<T>(T value, object? options = null);
+        string Serialize<T>(T value);
     }
 }

@@ -45,7 +45,7 @@ namespace ExtenderApp.Common
         public static double BytesToMegabytes(long bytes)
         {
             // 1 兆字节等于 1024 * 1024 字节
-            return (double)bytes / (1024 * 1024);
+            return System.Math.Round((double)bytes / (1024 * 1024), 2);
         }
 
         /// <summary>
@@ -56,7 +56,8 @@ namespace ExtenderApp.Common
         public static double BytesToGigabytes(long bytes)
         {
             // 1 千兆字节等于 1024 * 1024 * 1024 字节
-            return (double)bytes / (1024 * 1024 * 1024);
+            //return (double)bytes / (1024 * 1024 * 1024);
+            return System.Math.Round((double)bytes / (1024 * 1024 * 1024), 2);
         }
 
         /// <summary>
@@ -67,7 +68,8 @@ namespace ExtenderApp.Common
         public static double BytesToKilobytes(long bytes)
         {
             // 1 千字节等于 1024 字节
-            return (double)bytes / 1024;
+            //return (double)bytes / 1024;
+            return System.Math.Round((double)bytes / 1024, 2);
         }
     }
 }

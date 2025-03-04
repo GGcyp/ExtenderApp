@@ -49,30 +49,31 @@ namespace ExtenderApp.Common.IO.Splitter
 
         #region Read
 
-        public override T? Read<T>(ExpectLocalFileInfo info, IConcurrentOperate fileOperate = null, object? options = null) where T : default
+        public override T? Read<T>(ExpectLocalFileInfo info, IConcurrentOperate fileOperate = null) where T : default
         {
             if (info.IsEmpty)
             {
                 ErrorUtil.ArgumentNull(nameof(info));
             }
 
-            return Read<T>(info.CreateWriteOperate(FileExtensions.SplitterFileExtensions), fileOperate, options);
+            return Read<T>(info.CreateWriteOperate(FileExtensions.SplitterFileExtensions), fileOperate);
         }
 
-        public override T? Read<T>(FileOperateInfo info, IConcurrentOperate fileOperate = null, object? options = null) where T : default
+        public override T? Read<T>(FileOperateInfo info, IConcurrentOperate fileOperate = null) where T : default
         {
             info.ThrowFileNotFound();
 
             var splitterOperate = GetFileSplitterOperate(info, fileOperate);
             var operation = _readOperationPool.Get();
 
-            if (options is SplitterInfo splitterInfo)
+            SplitterInfo? splitterInfo = splitterOperate.Data.SplitterInfo;
+            if (splitterInfo == null)
             {
+                splitterInfo = _binaryParser.Read<SplitterInfo>(info.LocalFileInfo.ChangeFileExtension(infoExtensions).CreateWriteOperate());
+                if (splitterInfo == null)
+                    throw new FileNotFoundException(info.LocalFileInfo.FilePath);
+
                 splitterOperate.Data.SplitterInfo = splitterInfo;
-            }
-            else
-            {
-                splitterInfo = splitterOperate.Data.SplitterInfo;
             }
 
             var array = ArrayPool<byte>.Shared.Rent(splitterInfo.MaxChunkSize);
@@ -84,17 +85,17 @@ namespace ExtenderApp.Common.IO.Splitter
             return result;
         }
 
-        public override void ReadAsync<T>(ExpectLocalFileInfo info, Action<T>? callback, IConcurrentOperate fileOperate = null, object? options = null)
+        public override void ReadAsync<T>(ExpectLocalFileInfo info, Action<T>? callback, IConcurrentOperate fileOperate = null)
         {
             if (info.IsEmpty)
             {
                 ErrorUtil.ArgumentNull(nameof(info));
             }
 
-            ReadAsync(info.CreateWriteOperate(FileExtensions.SplitterFileExtensions), callback, fileOperate, options); ;
+            ReadAsync(info.CreateWriteOperate(FileExtensions.SplitterFileExtensions), callback, fileOperate); ;
         }
 
-        public override void ReadAsync<T>(FileOperateInfo info, Action<T>? callback, IConcurrentOperate fileOperate = null, object? options = null)
+        public override void ReadAsync<T>(FileOperateInfo info, Action<T>? callback, IConcurrentOperate fileOperate = null)
         {
             info.ThrowFileNotFound();
 
@@ -114,13 +115,15 @@ namespace ExtenderApp.Common.IO.Splitter
                 d.Release();
             });
 
-            if (options is SplitterInfo splitterInfo)
+
+            SplitterInfo? splitterInfo = splitterOperate.Data.SplitterInfo;
+            if (splitterInfo == null)
             {
+                splitterInfo = _binaryParser.Read<SplitterInfo>(info.LocalFileInfo.ChangeFileExtension(infoExtensions).CreateWriteOperate());
+                if (splitterInfo == null)
+                    throw new FileNotFoundException(info.LocalFileInfo.FilePath);
+
                 splitterOperate.Data.SplitterInfo = splitterInfo;
-            }
-            else
-            {
-                splitterInfo = splitterOperate.Data.SplitterInfo;
             }
 
             operation.Set(splitterInfo.GetLastChunkIndex(), action, splitterInfo);
@@ -159,30 +162,31 @@ namespace ExtenderApp.Common.IO.Splitter
 
         #region Write
 
-        public override void Write<T>(ExpectLocalFileInfo info, T value, IConcurrentOperate fileOperate = null, object? options = null)
+        public override void Write<T>(ExpectLocalFileInfo info, T value, IConcurrentOperate fileOperate = null)
         {
             if (info.IsEmpty)
             {
                 ErrorUtil.ArgumentNull(nameof(info));
             }
 
-            Write(info.CreateWriteOperate(FileExtensions.SplitterFileExtensions), value, fileOperate, options);
+            Write(info.CreateWriteOperate(FileExtensions.SplitterFileExtensions), value, fileOperate);
         }
 
-        public override void Write<T>(FileOperateInfo info, T value, IConcurrentOperate fileOperate = null, object? options = null)
+        public override void Write<T>(FileOperateInfo info, T value, IConcurrentOperate fileOperate = null)
         {
             info.ThrowFileNotFound();
 
             var splitterOperate = GetFileSplitterOperate(info, fileOperate);
             var operation = _writeOperationPool.Get();
 
-            if (options is SplitterInfo splitterInfo)
+            SplitterInfo? splitterInfo = splitterOperate.Data.SplitterInfo;
+            if (splitterInfo == null)
             {
+                splitterInfo = _binaryParser.Read<SplitterInfo>(info.LocalFileInfo.ChangeFileExtension(infoExtensions).CreateWriteOperate());
+                if (splitterInfo == null)
+                    throw new FileNotFoundException(info.LocalFileInfo.FilePath);
+
                 splitterOperate.Data.SplitterInfo = splitterInfo;
-            }
-            else
-            {
-                splitterInfo = splitterOperate.Data.SplitterInfo;
             }
 
             var bytes = _binaryParser.Serialize(value);
@@ -197,25 +201,26 @@ namespace ExtenderApp.Common.IO.Splitter
             operation.Release();
         }
 
-        public override void WriteAsync<T>(ExpectLocalFileInfo info, T value, Action? callback = null, IConcurrentOperate fileOperate = null, object? options = null)
+        public override void WriteAsync<T>(ExpectLocalFileInfo info, T value, Action? callback = null, IConcurrentOperate fileOperate = null)
         {
-            WriteAsync(info.CreateWriteOperate(FileExtensions.SplitterFileExtensions), value, callback, fileOperate, options);
+            WriteAsync(info.CreateWriteOperate(FileExtensions.SplitterFileExtensions), value, callback, fileOperate);
         }
 
-        public override void WriteAsync<T>(FileOperateInfo info, T value, Action? callback = null, IConcurrentOperate fileOperate = null, object? options = null)
+        public override void WriteAsync<T>(FileOperateInfo info, T value, Action? callback = null, IConcurrentOperate fileOperate = null)
         {
             info.ThrowFileNotFound();
 
             var splitterOperate = GetFileSplitterOperate(info, fileOperate);
             var operation = _writeOperationPool.Get();
 
-            if (options is SplitterInfo splitterInfo)
+            SplitterInfo? splitterInfo = splitterOperate.Data.SplitterInfo;
+            if (splitterInfo == null)
             {
+                splitterInfo = _binaryParser.Read<SplitterInfo>(info.LocalFileInfo.ChangeFileExtension(infoExtensions).CreateWriteOperate());
+                if (splitterInfo == null)
+                    throw new FileNotFoundException(info.LocalFileInfo.FilePath);
+
                 splitterOperate.Data.SplitterInfo = splitterInfo;
-            }
-            else
-            {
-                splitterInfo = splitterOperate.Data.SplitterInfo;
             }
 
             var bytes = _binaryParser.Serialize(value);
@@ -269,25 +274,26 @@ namespace ExtenderApp.Common.IO.Splitter
             ArrayPool<byte>.Shared.Return(bytes);
         }
 
-        public void WriteAsync<T>(ExpectLocalFileInfo info, T value, Action<byte[]>? callback = null, object? options = null, IConcurrentOperate fileOperate = null)
+        public void WriteAsync<T>(ExpectLocalFileInfo info, T value, Action<byte[]>? callback = null, IConcurrentOperate fileOperate = null)
         {
-            WriteAsync(info.CreateWriteOperate(FileExtensions.SplitterFileExtensions), value, callback, options, fileOperate);
+            WriteAsync(info.CreateWriteOperate(FileExtensions.SplitterFileExtensions), value, callback, fileOperate);
         }
 
-        public void WriteAsync<T>(FileOperateInfo info, T value, Action<byte[]>? callback = null, object? options = null, IConcurrentOperate fileOperate = null)
+        public void WriteAsync<T>(FileOperateInfo info, T value, Action<byte[]>? callback = null, IConcurrentOperate fileOperate = null)
         {
             info.ThrowFileNotFound();
 
             var splitterOperate = GetFileSplitterOperate(info, fileOperate);
             var operation = _writeOperationPool.Get();
 
-            if (options is SplitterInfo splitterInfo)
+            SplitterInfo? splitterInfo = splitterOperate.Data.SplitterInfo;
+            if (splitterInfo == null)
             {
+                splitterInfo = _binaryParser.Read<SplitterInfo>(info.LocalFileInfo.ChangeFileExtension(infoExtensions).CreateWriteOperate());
+                if (splitterInfo == null)
+                    throw new FileNotFoundException(info.LocalFileInfo.FilePath);
+
                 splitterOperate.Data.SplitterInfo = splitterInfo;
-            }
-            else
-            {
-                splitterInfo = splitterOperate.Data.SplitterInfo;
             }
 
             var bytes = _binaryParser.Serialize(value);

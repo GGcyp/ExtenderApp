@@ -24,9 +24,8 @@ namespace ExtenderApp.Abstract
         /// </summary>
         /// <typeparam name="T">要反序列化的目标类型。</typeparam>
         /// <param name="stream">包含要反序列化数据的流。</param>
-        /// <param name="options">反序列化选项对象，可以为null。</param>
         /// <returns>反序列化后的对象，如果流为空或格式不正确则返回null。</returns>
-        T? Deserialize<T>(Stream stream, object? options = null);
+        T? Deserialize<T>(Stream stream);
 
         /// <summary>
         /// 将指定类型的对象序列化为字节数组。
@@ -50,9 +49,8 @@ namespace ExtenderApp.Abstract
         /// <typeparam name="T">要序列化的对象的类型。</typeparam>
         /// <param name="stream">要写入数据的流。</param>
         /// <param name="value">要序列化的对象。</param>
-        /// <param name="options">序列化选项，可以为null。</param>
         /// <returns>如果序列化成功，则返回true；否则返回false。</returns>
-        void Serialize<T>(Stream stream, T value, object? options = null);
+        void Serialize<T>(Stream stream, T value);
 
         /// <summary>
         /// 将对象序列化为字节数组。

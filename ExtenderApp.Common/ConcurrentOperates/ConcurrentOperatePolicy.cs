@@ -13,8 +13,6 @@ namespace ExtenderApp.Common.ConcurrentOperates
         where TOperate : class
         where TData : ConcurrentOperateData
     {
-        //private static readonly ObjectPool<TData> _pool = ObjectPool.CreateDefaultPool<TData>();
-
         public virtual void AfterExecute(TOperate operate, TData data)
         {
 
@@ -26,16 +24,6 @@ namespace ExtenderApp.Common.ConcurrentOperates
         }
 
         public abstract TOperate Create(TData data);
-
-        //public virtual void ReleaseData(TData data)
-        //{
-        //    _pool.Release(data);
-        //}
-
-        //public virtual TData GetData()
-        //{
-        //    return _pool.Get();
-        //}
 
         public abstract void ReleaseData(TData data);
 

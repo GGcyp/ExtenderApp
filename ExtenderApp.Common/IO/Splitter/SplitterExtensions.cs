@@ -25,11 +25,6 @@ namespace ExtenderApp.Common.IO.Splitter
                 s.Add<SplitterDto, SplitterDtoFormatter>();
             });
 
-            services.Configuration<LinkTypeStore>(s =>
-            {
-                s.Add<SplitterInfo>();
-            });
-
             return services;
         }
     }

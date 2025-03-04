@@ -23,11 +23,12 @@ namespace ExtenderApp.Common.IO
 
         #region Write
 
-        public bool Write<T>(FileOperateInfo operate, T value, object? options = null)
+        public bool Write<T>(FileOperateInfo operate, T value)
         {
             try
             {
-                var jsonOptions = options as JsonSerializerOptions ?? _jsonSerializerOptions;
+                //var jsonOptions = options as JsonSerializerOptions ?? _jsonSerializerOptions;
+                var jsonOptions = _jsonSerializerOptions;
 
                 using (FileStream stream = operate.OpenFile())
                 {
@@ -42,9 +43,9 @@ namespace ExtenderApp.Common.IO
             }
         }
 
-        public bool Write<T>(ExpectLocalFileInfo info, T value, object? options = null)
+        public bool Write<T>(ExpectLocalFileInfo info, T value)
         {
-            return Write(info.CreatLocalFileInfo(FileExtensions.JsonFileExtensions).CreateFileOperate(), value, options);
+            return Write(info.CreatLocalFileInfo(FileExtensions.JsonFileExtensions).CreateFileOperate(), value);
         }
 
         #endregion
@@ -55,9 +56,10 @@ namespace ExtenderApp.Common.IO
 
         #region Deserialize
 
-        public T? Read<T>(FileOperateInfo operate, object? options = null)
+        public T? Read<T>(FileOperateInfo operate)
         {
-            var jsonOptions = options as JsonSerializerOptions ?? _jsonSerializerOptions;
+            //var jsonOptions = options as JsonSerializerOptions ?? _jsonSerializerOptions;
+            var jsonOptions = _jsonSerializerOptions;
             T? result = default;
             using (FileStream stream = operate.OpenFile())
             {
@@ -66,20 +68,22 @@ namespace ExtenderApp.Common.IO
             return result;
         }
 
-        public T? Deserialize<T>(string json, object? options = null)
+        public T? Deserialize<T>(string json)
         {
-            var jsonOptions = options as JsonSerializerOptions ?? _jsonSerializerOptions;
+            //var jsonOptions = options as JsonSerializerOptions ?? _jsonSerializerOptions;
+            var jsonOptions = _jsonSerializerOptions;
             return JsonSerializer.Deserialize<T>(json, jsonOptions);
         }
 
-        public T? Read<T>(ExpectLocalFileInfo info, object? options = null)
+        public T? Read<T>(ExpectLocalFileInfo info)
         {
-            return Read<T>(info.CreateFileOperate(FileExtensions.JsonFileExtensions), options);
+            return Read<T>(info.CreateFileOperate(FileExtensions.JsonFileExtensions));
         }
 
-        public async ValueTask<T?> ReadAsync<T>(FileOperateInfo operate, object? options = null)
+        public async ValueTask<T?> ReadAsync<T>(FileOperateInfo operate)
         {
-            var jsonOptions = options as JsonSerializerOptions ?? _jsonSerializerOptions;
+            //var jsonOptions = options as JsonSerializerOptions ?? _jsonSerializerOptions;
+            var jsonOptions = _jsonSerializerOptions;
             T? result = default;
             using (FileStream stream = operate.OpenFile())
             {
@@ -88,27 +92,29 @@ namespace ExtenderApp.Common.IO
             return result;
         }
 
-        public ValueTask<T?> ReadAsync<T>(ExpectLocalFileInfo info, object? options = null)
+        public ValueTask<T?> ReadAsync<T>(ExpectLocalFileInfo info)
         {
-            return ReadAsync<T>(info.CreateFileOperate(FileExtensions.JsonFileExtensions), options);
+            return ReadAsync<T>(info.CreateFileOperate(FileExtensions.JsonFileExtensions));
         }
 
         #endregion
 
         #region Serialize
 
-        public string Serialize<T>(T value, object? options = null)
+        public string Serialize<T>(T value)
         {
-            var jsonOptions = options as JsonSerializerOptions ?? _jsonSerializerOptions;
+            //var jsonOptions = options as JsonSerializerOptions ?? _jsonSerializerOptions;
+            var jsonOptions = _jsonSerializerOptions;
 
             return JsonSerializer.Serialize(value, jsonOptions);
         }
 
-        public async ValueTask<bool> WriteAsync<T>(FileOperateInfo operate, T value, object? options = null)
+        public async ValueTask<bool> WriteAsync<T>(FileOperateInfo operate, T value)
         {
             try
             {
-                var jsonOptions = options as JsonSerializerOptions ?? _jsonSerializerOptions;
+                //var jsonOptions = options as JsonSerializerOptions ?? _jsonSerializerOptions;
+                var jsonOptions = _jsonSerializerOptions;
                 using (FileStream stream = operate.OpenFile())
                 {
                     await JsonSerializer.SerializeAsync(stream, value, jsonOptions);
@@ -121,14 +127,15 @@ namespace ExtenderApp.Common.IO
             }
         }
 
-        public override T? Read<T>(ExpectLocalFileInfo info, IConcurrentOperate fileOperate = null, object? options = null) where T : default
+        public override T? Read<T>(ExpectLocalFileInfo info, IConcurrentOperate fileOperate = null) where T : default
         {
-            return Read<T>(info.CreateWriteOperate(FileExtensions.JsonFileExtensions), fileOperate, options);
+            return Read<T>(info.CreateWriteOperate(FileExtensions.JsonFileExtensions), fileOperate);
         }
 
-        public override T? Read<T>(FileOperateInfo info, IConcurrentOperate fileOperate = null, object? options = null) where T : default
+        public override T? Read<T>(FileOperateInfo info, IConcurrentOperate fileOperate = null) where T : default
         {
-            var jsonOptions = options as JsonSerializerOptions ?? _jsonSerializerOptions;
+            //var jsonOptions = options as JsonSerializerOptions ?? _jsonSerializerOptions;
+            var jsonOptions = _jsonSerializerOptions;
             T? result = default;
             using (FileStream stream = info.OpenFile())
             {
@@ -137,32 +144,32 @@ namespace ExtenderApp.Common.IO
             return result;
         }
 
-        public override void ReadAsync<T>(ExpectLocalFileInfo info, Action<T>? callback, IConcurrentOperate fileOperate = null, object? options = null)
+        public override void ReadAsync<T>(ExpectLocalFileInfo info, Action<T>? callback, IConcurrentOperate fileOperate = null)
         {
             throw new NotImplementedException();
         }
 
-        public override void ReadAsync<T>(FileOperateInfo info, Action<T>? callback, IConcurrentOperate fileOperate = null, object? options = null)
+        public override void ReadAsync<T>(FileOperateInfo info, Action<T>? callback, IConcurrentOperate fileOperate = null)
         {
             throw new NotImplementedException();
         }
 
-        public override void Write<T>(ExpectLocalFileInfo info, T value, IConcurrentOperate fileOperate = null, object? options = null)
+        public override void Write<T>(ExpectLocalFileInfo info, T value, IConcurrentOperate fileOperate = null)
         {
             throw new NotImplementedException();
         }
 
-        public override void Write<T>(FileOperateInfo info, T value, IConcurrentOperate fileOperate = null, object? options = null)
+        public override void Write<T>(FileOperateInfo info, T value, IConcurrentOperate fileOperate = null)
         {
             throw new NotImplementedException();
         }
 
-        public override void WriteAsync<T>(ExpectLocalFileInfo info, T value, Action? callback = null, IConcurrentOperate fileOperate = null, object? options = null)
+        public override void WriteAsync<T>(ExpectLocalFileInfo info, T value, Action? callback = null, IConcurrentOperate fileOperate = null)
         {
             throw new NotImplementedException();
         }
 
-        public override void WriteAsync<T>(FileOperateInfo info, T value, Action? callback = null, IConcurrentOperate fileOperate = null, object? options = null)
+        public override void WriteAsync<T>(FileOperateInfo info, T value, Action? callback = null, IConcurrentOperate fileOperate = null)
         {
             throw new NotImplementedException();
         }

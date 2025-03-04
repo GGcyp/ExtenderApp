@@ -18,7 +18,6 @@ namespace ExtenderApp.Common.ConcurrentOperates
         /// <returns>返回true表示重置成功，false表示重置失败</returns>
         public virtual bool TryReset()
         {
-            Token = new CancellationToken(false);
             Token = default;
             return true;
         }

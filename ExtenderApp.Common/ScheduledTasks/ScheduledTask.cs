@@ -3,127 +3,172 @@
 namespace ExtenderApp.Common
 {
     /// <summary>
-    /// 计划任务类，用于管理定时器的启动和回调。
+    /// 增强型计划任务（支持精确时间补偿）
     /// </summary>
-    public class ScheduledTask : ExtenderCancellationTokenSource
+    public sealed class ScheduledTask : ExtenderCancellationTokenSource
     {
-        /// <summary>
-        /// 定时器实例。
-        /// </summary>
-        private readonly Timer _timer;
+        #region 内部状态
 
         /// <summary>
-        /// 获取或设置释放任务时执行的操作。
+        /// 执行定时器
         /// </summary>
-        public Action<ScheduledTask>? ReleaseAction { get; set; }
+        private readonly Timer _executionTimer;
 
         /// <summary>
-        /// 回调方法。
+        /// 周期时间
         /// </summary>
-        private Action<object>? callback;
+        private TimeSpan _period;
 
         /// <summary>
-        /// 回调方法的状态参数。
+        /// 剩余等待时间
         /// </summary>
-        private object? state;
+        private TimeSpan _remainingDueTime;
 
         /// <summary>
-        /// 时间周期
+        /// 上次暂停时间
         /// </summary>
-        private TimeSpan period;
+        private DateTime _lastPauseTime;
 
         /// <summary>
-        /// 剩余时间
+        /// 用户回调
         /// </summary>
-        private TimeSpan remainingTime;
+        private Action<object?> userCallback;
 
         /// <summary>
-        /// 暂停时间
+        /// 状态对象
         /// </summary>
-        private DateTime pauseTime;
+        private object? _state;
+        #endregion
 
-        /// <summary>
-        /// 初始化TimerData实例，并创建一个新的定时器实例。
-        /// </summary>
         public ScheduledTask()
         {
-            _timer = new Timer(TimerCallback);
+            _executionTimer = new Timer(ExecuteCallback, null, Timeout.Infinite, Timeout.Infinite);
+        }
+
+        #region 任务控制
+
+        /// <summary>
+        /// 启动一个带有延迟和周期的定时器，当定时器触发时执行指定的回调方法。
+        /// </summary>
+        /// <param name="callback">当定时器触发时要执行的回调方法。</param>
+        /// <param name="dueTime">定时器触发前的延迟时间（毫秒）。</param>
+        /// <param name="period">定时器触发的周期时间（毫秒）。</param>
+        public void Start(Action callback, int dueTime, int period)
+        {
+            Start(o => callback?.Invoke(), null, TimeSpan.FromMilliseconds(dueTime), TimeSpan.FromMilliseconds(period));
         }
 
         /// <summary>
-        /// 启动定时器，使用指定的回调方法、状态参数、延迟时间和周期时间（以毫秒为单位）。
+        /// 启动一个定时任务
         /// </summary>
-        /// <param name="callback">回调方法。</param>
-        /// <param name="state">回调方法的状态参数。</param>
-        /// <param name="dueTime">启动定时器前的延迟时间。</param>
-        /// <param name="period">定时器周期时间。</param>
-        public void Start(Action<object> callback, object? state, TimeSpan dueTime, TimeSpan period)
+        /// <param name="callback">定时任务执行完毕后调用的回调函数</param>
+        /// <param name="dueTime">定时任务首次执行的延迟时间</param>
+        /// <param name="period">定时任务后续执行的间隔时间</param>
+        public void Start(Action callback, TimeSpan dueTime, TimeSpan period)
         {
-            this.callback = callback;
-            this.state = state;
-            this.period = period;
-            remainingTime = dueTime;
-
-            _timer.Change(dueTime, period);
-
-            Reset();
-        }
-
-        protected override void ProtectedPause()
-        {
-            pauseTime = DateTime.Now;
-            _timer.Change(Timeout.Infinite, Timeout.Infinite);
-        }
-
-        protected override void ProtectedResume()
-        {
-            var elapsedTime = remainingTime - (DateTime.Now - pauseTime);
-            remainingTime = elapsedTime <= TimeSpan.Zero ? TimeSpan.Zero : elapsedTime;
-            _timer.Change(remainingTime, period);
-        }
-
-        protected override void ProtectedStop()
-        {
-            _timer.Change(Timeout.Infinite, Timeout.Infinite);
-            ReleaseAction?.Invoke(this);
-            Release();
+            Start(o => callback?.Invoke(), null, dueTime, period);
         }
 
         /// <summary>
-        /// 定时器回调方法，调用用户指定的回调方法并传递状态参数。
+        /// 启动任务，设置任务首次执行延迟时间和执行周期
         /// </summary>
-        /// <param name="obj">定时器对象。</param>
-        /// <remarks>并且回收计时任务</remarks>
-        private void TimerCallback(object? obj)
+        /// <param name="dueTime">首次执行延迟时间</param>
+        /// <param name="period">执行周期</param>
+        /// <exception cref="ArgumentOutOfRangeException">当dueTime或period小于TimeSpan.Zero时抛出</exception>
+        public void Start(Action<object?> callback, object? state, TimeSpan dueTime, TimeSpan period)
         {
-            callback?.Invoke(state);
-            remainingTime = TimeSpan.Zero;
+            if (dueTime < TimeSpan.Zero || period < TimeSpan.Zero)
+                throw new ArgumentOutOfRangeException();
 
-            if (ReleaseAction == null) return;
+            userCallback = callback ?? throw new ArgumentNullException(nameof(callback));
+            _state = state;
 
-            if (period == TimeSpan.Zero && remainingTime == TimeSpan.Zero)
+            ExecuteIfOperable(() =>
             {
-                Release();
+                _period = period;
+                _remainingDueTime = dueTime;
+                ScheduleNextExecution(dueTime);
+            });
+        }
+
+        /// <summary>
+        /// 安排下一次执行
+        /// </summary>
+        /// <param name="delay">延迟时间</param>
+        private void ScheduleNextExecution(TimeSpan delay)
+        {
+            _executionTimer.Change(delay, _period == TimeSpan.Zero ?
+                Timeout.InfiniteTimeSpan : _period);
+        }
+
+        #endregion
+
+        #region 核心操作实现
+
+        /// <summary>
+        /// 暂停任务
+        /// </summary>
+        protected override void CorePause()
+        {
+            _executionTimer.Change(Timeout.Infinite, Timeout.Infinite);
+            _lastPauseTime = DateTime.UtcNow;
+        }
+
+        /// <summary>
+        /// 恢复任务
+        /// </summary>
+        protected override void CoreResume()
+        {
+            var pausedDuration = DateTime.UtcNow - _lastPauseTime;
+            var newDueTime = _remainingDueTime - pausedDuration;
+
+            if (newDueTime < TimeSpan.Zero)
+                newDueTime = TimeSpan.Zero;
+
+            ScheduleNextExecution(newDueTime);
+        }
+
+        /// <summary>
+        /// 停止任务
+        /// </summary>
+        protected override void CoreStop()
+        {
+            _executionTimer.Dispose();
+            _state = null;
+        }
+
+        #endregion
+
+        #region 回调执行
+
+        /// <summary>
+        /// 执行回调
+        /// </summary>
+        /// <param name="state">回调状态</param>
+        private void ExecuteCallback(object? state)
+        {
+            try
+            {
+                userCallback(_state);
+            }
+            finally
+            {
+                if (_period != TimeSpan.Zero)
+                {
+                    _remainingDueTime = _period;
+                }
             }
         }
 
+        #endregion
+
         /// <summary>
-        /// 释放资源并停止操作
+        /// 释放资源
         /// </summary>
-        /// <remarks>
-        /// 将CanOperate属性设置为false，表示不能进行操作，并调用ReleaseAction委托（如果已设置）。
-        /// </remarks>
-        private void Release()
+        public new void Dispose()
         {
-            CanOperate = false;
-            ReleaseAction?.Invoke(this);
+            base.Dispose();
+            _executionTimer.Dispose();
         }
-
-        public override void Dispose()
-        {
-            callback = null;
-            state = null;
-        }
-
     }
 }

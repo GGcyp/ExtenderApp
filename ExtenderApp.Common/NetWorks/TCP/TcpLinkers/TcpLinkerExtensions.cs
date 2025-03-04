@@ -6,11 +6,11 @@ namespace ExtenderApp.Common
     /// <summary>
     /// TcpLinkOperate 的扩展方法类。
     /// </summary>
-    public static class TcpLinkExtensions
+    public static class TcpLinkerExtensions
     {
         public static IServiceCollection AddTcpLinkOperate(this IServiceCollection services)
         {
-            services.AddTransient<TcpLink>();
+            services.AddTransient<TcpLinker>();
             return services;
         }
 
