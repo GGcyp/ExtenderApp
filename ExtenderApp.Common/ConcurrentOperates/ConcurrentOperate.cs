@@ -102,12 +102,12 @@ namespace ExtenderApp.Common.ConcurrentOperates
         /// <summary>
         /// 并发操作数据
         /// </summary>
-        public TData Data { get; private set; }
+        public TData Data { get; protected set; }
 
         /// <summary>
         /// 并发操作对象
         /// </summary>
-        public TOperate Operate { get; private set; }
+        public TOperate Operate { get; protected set; }
 
         /// <summary>
         /// 获取队列中的元素数量。
@@ -121,6 +121,12 @@ namespace ExtenderApp.Common.ConcurrentOperates
         /// <value>如果可以操作，则返回 true；否则返回 false。</value>
         public bool CanOperate { get; protected set; }
 
+        /// <summary>
+        /// 启动方法
+        /// </summary>
+        /// <param name="policy">并发操作策略，可以为null</param>
+        /// <param name="data">操作数据，可以为null</param>
+        /// <param name="operate">操作类型，可以为null</param>
         public void Start(IConcurrentOperatePolicy<TOperate, TData>? policy = null, TData? data = null, TOperate? operate = null)
         {
             //policy.ArgumentObjectNull(typeof(TPolicy).FullName);
@@ -132,6 +138,16 @@ namespace ExtenderApp.Common.ConcurrentOperates
             Data = Data ?? data ?? Policy.GetData();
             Operate = Operate ?? operate ?? Policy.Create(Data);
             CanOperate = true;
+
+            ProtectedStart();
+        }
+
+        /// <summary>
+        /// 受保护的启动方法
+        /// </summary>
+        protected virtual void ProtectedStart()
+        {
+
         }
 
         /// <summary>

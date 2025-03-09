@@ -1,6 +1,6 @@
 ﻿using AppHost.Extensions.DependencyInjection;
 using ExtenderApp.Abstract;
-using ExtenderApp.Data;
+using ExtenderApp.Common.NetWorks.Linkers.SendDtos;
 
 namespace ExtenderApp.Common.NetWorks
 {
@@ -19,6 +19,7 @@ namespace ExtenderApp.Common.NetWorks
             services.Configuration<IBinaryFormatterStore>(s =>
             {
                 s.Add<LinkerDto, LinkerDtoFormatter>();
+                s.Add<SendHead, SendHeadFormatter>();
             });
 
             return services;

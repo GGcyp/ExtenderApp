@@ -7,6 +7,7 @@ using System.Net;
 using System.Security.Cryptography;
 using ExtenderApp.Data.File;
 using ExtenderApp.Common.NetWorks;
+using System.Text;
 
 namespace ExtenderApp.Test
 {
@@ -14,8 +15,9 @@ namespace ExtenderApp.Test
     {
         private readonly IBinaryParser _binaryParser;
         private readonly SequencePool<byte> _sequencePool;
+        private readonly StringBuilder _sb;
 
-        public TestMainViewModel(TcpLinker operate, IBinaryParser binaryParser, SequencePool<byte> sequencePool, IServiceStore serviceStore) : base(serviceStore)
+        public TestMainViewModel(TcpLinker tcpLinker, IBinaryParser binaryParser, SequencePool<byte> sequencePool, IServiceStore serviceStore) : base(serviceStore)
         {
             //var fileInfo = CreatTestExpectLocalFileInfo(string.Format("测试{0}", DateTime.Now.ToString()));
             //var info = new FileSplitterInfo(2048, 2, 0, 1024, FileExtensions.TextFileExtensions);
@@ -50,28 +52,67 @@ namespace ExtenderApp.Test
             _binaryParser = binaryParser;
             _sequencePool = sequencePool;
             Task.Run(Listener);
-            operate.Start();
-            operate.Connect("127.0.0.1", 5520);
-            byte[] b = new byte[Utility.KilobytesToBytes(12)];
+            tcpLinker.Start();
+            tcpLinker.Connect("127.0.0.1", 5520);
+            //byte[] b = new byte[Utility.KilobytesToBytes(12)];
             //for (int i = 0; i < 10; i++)
             //{
             //    operate.Send(b);
             //    //operate.Send("b");
             //}
-            Send(operate);
+
+            //tcpLinker.Set(new LinkerDto() { NeedHeartbeat = true });
+
+            _sb = new StringBuilder();
+            tcpLinker.Recorder.OnFlowRecorder += o =>
+            {
+                _sb.Append("每秒发送");
+                _sb.Append(Utility.BytesToMegabytes(o.SendBytesPerSecond).ToString());
+                _sb.AppendLine();
+                _sb.Append("总发送");
+                _sb.Append(Utility.BytesToMegabytes(o.SendByteCount).ToString());
+                _sb.AppendLine();
+                //_sb.Append(Utility.BytesToMegabytes(o.ReceiveByteCount).ToString());
+                //_sb.AppendLine();
+                //_sb.Append(Utility.BytesToMegabytes(o.ReceiveBytesPerSecond).ToString());
+                //_sb.AppendLine();
+
+                Debug(_sb.ToString());
+                _sb.Clear();
+            };
+            Task.Run(() => { TestSend(tcpLinker); });
+
             //operate.Heartbeat.ChangeSendHearbeatInterval(20);
             //operate.Close();
         }
 
-        private async void Send(TcpLinker tcpLinker)
+        private async void TestSend(TcpLinker tcpLinker)
         {
             await Task.Delay(1000);
             tcpLinker.Send("s");
             tcpLinker.Send("发送完成，关闭链接");
+
+            tcpLinker.Set(new LinkerDto() { NeedHeartbeat = true });
             tcpLinker.Heartbeat.ReceiveHeartbeatEvent += Heartbeat_ReceiveHeartbeatEvent;
             tcpLinker.Heartbeat.SendHeartbeat();
+            tcpLinker.Heartbeat.ChangeSendHearbeatInterval(1000);
+
+            //byte[] bytes = new byte[Utility.MegabytesToBytes(10)];
+
+            Task.Run(async () =>
+            {
+                for (int i = 0; i < 1000; i++)
+                {
+                    for (int j = 0; j < 100000; j++)
+                    {
+                        tcpLinker.Send("ssssssssssssssssssssssssssss");
+                    }
+                    await Task.Delay(1000);
+                }
+            });
         }
 
+        private StringBuilder Builder;
         private async void Listener()
         {
             //TcpListener listener = new TcpListener(new IPEndPoint(IPAddress.Parse("127.0.0.1"), 5520));
@@ -83,7 +124,6 @@ namespace ExtenderApp.Test
             tcpListener.Listen();
             TcpLinker link = tcpListener.Accept();
             link.Start();
-            Debug("收到");
             //var stream = client.GetStream();
             //byte[] bytes = new byte[1024];
             //await stream.ReadAsync(bytes);
@@ -92,8 +132,24 @@ namespace ExtenderApp.Test
             //Debug(temp.TypeCode.ToString() + name);
             link.Register<byte[]>(Networ);
             link.Register<string>(Networ);
-            link.Heartbeat.ChangeSendHearbeatInterval(0);
-            link.Heartbeat.ReceiveHeartbeatEvent += Heartbeat_ReceiveHeartbeatEvent;
+            Builder = new StringBuilder();
+            link.Recorder.OnFlowRecorder += o =>
+            {
+                Builder.AppendLine();
+                Builder.Append("每秒接受");
+                Builder.Append(Utility.BytesToMegabytes(o.ReceiveBytesPerSecond).ToString());
+                Builder.AppendLine();
+                Builder.Append("总接受");
+                Builder.Append(Utility.BytesToMegabytes(o.ReceiveByteCount).ToString());
+                Builder.AppendLine();
+
+                Debug(Builder.ToString());
+                Builder.Clear();
+            };
+            link.OnReceive += Networ;
+            //link.Register<LinkerDto>(i => Debug("接受"));
+            //link.Heartbeat.ChangeSendHearbeatInterval(0);
+            //link.Heartbeat.ReceiveHeartbeatEvent += Heartbeat_ReceiveHeartbeatEvent;
         }
 
         private void Heartbeat_ReceiveHeartbeatEvent(Common.NetWorks.HearbeatResult obj)
@@ -104,12 +160,17 @@ namespace ExtenderApp.Test
         private void Networ(byte[] bytes)
         {
             //Debug(s);
-            Debug("收到");
+            //Debug("收到");
         }
 
         private void Networ(string s)
         {
-            Debug(s);
+            //Debug(s);
+        }
+
+        private void Networ(ArraySegment<byte> bytes)
+        {
+            Debug("接受");
         }
 
         private ExpectLocalFileInfo CreatTestExpectLocalFileInfo(string fileName)

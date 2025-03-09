@@ -18,18 +18,19 @@ namespace ExtenderApp.Common.NetWorks
         where TPolicy : LinkOperatePolicy<TData>
         where TData : LinkerData
     {
-        private const int HeadLength = 4;
         private const int MaxSendLength = 4096;
         private const int DefalutReceiveLegth = 32 * 1024;
 
         private static ObjectPool<LinkerOperation> _pool =
             ObjectPool.Create(new SelfResetPooledObjectPolicy<LinkerOperation>());
 
-        private readonly IBinaryFormatter<int> _intFormatter;
+        private readonly IBinaryFormatter<SendHead> _sendHeadFormatter;
         private readonly SequencePool<byte> _sequencePool;
         private readonly IBinaryParser _binaryParser;
         private readonly AsyncCallback _receiveCallbcak;
         private readonly ConcurrentDictionary<int, DataBuffer<IBinaryFormatter, Delegate>> _registerDicts;
+
+        public FlowRecorder Recorder { get; }
 
         #region Lazy
 
@@ -41,12 +42,14 @@ namespace ExtenderApp.Common.NetWorks
         #region Event
 
         public event Action<ArraySegment<byte>>? OnReceive;
-        public event Action<Linker<TPolicy, TData>, LinkerDto>? OnReceiveLinkerDto;
+        public event Action<ILinker, LinkerDto>? OnReceiveLinkerDto;
+        public event Action<ILinker>? OnClose;
 
         #endregion
 
         private byte[] receiveBuffer;
         private LinkerDto linkerDto;
+        private int remaingLength;
 
         public bool NeedHeartBeat => linkerDto.NeedHeartbeat;
         public bool Connected => Operate.Connected;
@@ -58,11 +61,21 @@ namespace ExtenderApp.Common.NetWorks
             _registerDicts = new();
             _binaryParser = binaryParser;
             _receiveCallbcak = new AsyncCallback(ReceiveCallbcak);
-            _intFormatter = _binaryParser.GetFormatter<int>();
+            _sendHeadFormatter = _binaryParser.GetFormatter<SendHead>();
             _sequencePool = sequencePool;
+            Recorder = new();
 
             receiveBuffer = ArrayPool<byte>.Shared.Rent(DefalutReceiveLegth);
+        }
+
+        protected override void ProtectedStart()
+        {
             Register<LinkerDto>(ReceiveLinkerDto);
+
+            if (_heartbeatLazy.IsValueCreated)
+            {
+                Heartbeat.Start();
+            }
         }
 
         #region Connect
@@ -135,10 +148,20 @@ namespace ExtenderApp.Common.NetWorks
             int typeCode = Utility.GetSimpleConsistentHash(typeName);
             if (_registerDicts.TryGetValue(typeCode, out var buffer))
             {
-                //throw new InvalidOperationException(string.Format("不可以重复注册：{0}", type.Name));
-                var action = buffer.Item2 as Action<T>;
-                action += callback;
+                //if (buffer.Item2 is Action<T> action)
+                //{
+                //    action += callback;
+                //    buffer.Item2 = action; // 更新 buffer.Item2
+                //}
+                //else
+                //{
+                //    throw new InvalidOperationException($"注册的委托类型不匹配：{type.Name}");
+                //}
+
+                //只接受最后一个回调函数
+                buffer.Item2 = callback;
                 return;
+                //throw new Exception(string.Format("不允许重复注册:{0}", typeName));
             }
 
             buffer = DataBuffer<IBinaryFormatter, Delegate>.GetDataBuffer();
@@ -163,46 +186,44 @@ namespace ExtenderApp.Common.NetWorks
         public void Send<T>(T value)
         {
             var valueBytes = _binaryParser.SerializeForArrayPool(value, out int length);
+
+            int startIndex = _sendHeadFormatter.Length;
+            int totalLength = startIndex + length;
+
             Type type = typeof(T);
             string typeName = type.FullName ?? type.Name;
-
             int typeCode = Utility.GetSimpleConsistentHash(typeName);
-            int stratIndex = _intFormatter.Length + HeadLength;
-            int totalLength = stratIndex + length;
             var sendBytes = ArrayPool<byte>.Shared.Rent(totalLength);
 
+            SendHead sendHead = new SendHead(true, typeCode, length);
             ExtenderBinaryWriter writer = new ExtenderBinaryWriter(_sequencePool, sendBytes);
-            _intFormatter.Serialize(ref writer, typeCode);
-            WriteSendHead(sendBytes);
-            for (int i = stratIndex; i < totalLength; i++)
+            _sendHeadFormatter.Serialize(ref writer, sendHead);
+            for (int i = 0; i < length; i++)
             {
-                sendBytes[i] = valueBytes[i - stratIndex];
+                sendBytes[i + startIndex] = valueBytes[i];
             }
 
+            //检测发送数据大于4KB，需要分包发送
+
             var operation = _pool.Get();
-            operation.Set(sendBytes, 0, totalLength);
+            operation.Set(sendBytes, 0, totalLength, Recorder.RecordSend);
             ExecuteOperation(operation);
             ArrayPool<byte>.Shared.Return(valueBytes);
             ArrayPool<byte>.Shared.Return(sendBytes);
             operation.Release();
         }
 
-        private void WriteSendHead(byte[] bytes)
+        public void SendSource(byte[] bytes)
         {
-            for (int i = _intFormatter.Length - 1; i >= 0; i--)
-            {
-                bytes[i + HeadLength] = bytes[i];
-            }
+            SendSource(bytes, 0, bytes.Length);
+        }
 
-            //四位字节的数据头，标识是体系内的数据
-            //buffer[0] = 11;
-            //buffer[1] = 22;
-            //buffer[2] = 33;
-            //buffer[3] = 44;
-            for (int i = 0; i < HeadLength; i++)
-            {
-                bytes[i] = (byte)((i + 1) * 11);
-            }
+        public void SendSource(byte[] bytes, int offset, int count)
+        {
+            var operation = _pool.Get();
+            operation.Set(bytes, offset, count, Recorder.RecordSend);
+            ExecuteOperation(operation);
+            operation.Release();
         }
 
         #endregion
@@ -214,46 +235,111 @@ namespace ExtenderApp.Common.NetWorks
             try
             {
                 int bytesRead = Operate.EndReceive(ar);
-                if (bytesRead <= 0) return;
-
-                if (!CheckHead(receiveBuffer))
+                if (bytesRead <= 0)
                 {
-                    OnReceive?.Invoke(new ArraySegment<byte>(receiveBuffer, 0, bytesRead));
+                    Operate.BeginReceive(receiveBuffer, remaingLength, receiveBuffer.Length, SocketFlags.None, _receiveCallbcak, null);
                     return;
                 }
 
-                ExtenderBinaryReader reader = new ExtenderBinaryReader(new ArraySegment<byte>(receiveBuffer, HeadLength, bytesRead));
-                int typeCode = _intFormatter.Deserialize(ref reader);
+                //记录接收数据长度
+                Recorder.RecordReceive(bytesRead);
 
-                if (!_registerDicts.TryGetValue(typeCode, out var buffer))
+                int receiveCount = remaingLength + bytesRead;
+                int difference = receiveCount;
+                if (receiveCount <= Utility.HEAD_LENGTH)
                 {
-                    //没有找到已经注册的类型
-                    OnReceive?.Invoke(new ArraySegment<byte>(receiveBuffer, HeadLength, bytesRead));
+                    remaingLength = receiveCount;
+                    Operate.BeginReceive(receiveBuffer, remaingLength, receiveBuffer.Length - remaingLength, SocketFlags.None, _receiveCallbcak, null);
+                    return;
                 }
-                else
+
+                //检查是否有数据头部信息
+                if (!Utility.FindHead(receiveBuffer, out var startIndex, receiveCount))
                 {
-                    int startIndex = _intFormatter.Length + HeadLength;
-                    buffer.Process(new ArraySegment<byte>(receiveBuffer, startIndex, bytesRead - startIndex));
+                    OnReceive?.Invoke(new ArraySegment<byte>(receiveBuffer, 0, remaingLength + bytesRead));
+                    remaingLength = 0;
+                    Operate.BeginReceive(receiveBuffer, 0, receiveBuffer.Length, SocketFlags.None, _receiveCallbcak, null);
+                    return;
                 }
+                else if (startIndex != 0)
+                {
+                    //如果不是从0开始，可能是直接传输的数据
+                    OnReceive?.Invoke(new ArraySegment<byte>(receiveBuffer, 0, startIndex));
+
+                    difference -= startIndex;
+
+                    //将数据头开始往前移动
+                    for (int i = 0; i < difference; i++)
+                    {
+                        receiveBuffer[i] = receiveBuffer[startIndex + i];
+                    }
+                }
+
+                ExtenderBinaryReader reader = new ExtenderBinaryReader(new ArraySegment<byte>(receiveBuffer, 0, difference));
+                var sendHead = _sendHeadFormatter.Deserialize(ref reader);
+                PrivateReceive(sendHead, difference);
 
                 // 继续接收数据
-                Operate.BeginReceive(receiveBuffer, 0, receiveBuffer.Length, SocketFlags.None, _receiveCallbcak, null);
+                Operate.BeginReceive(receiveBuffer, remaingLength, receiveBuffer.Length - remaingLength, SocketFlags.None, _receiveCallbcak, null);
             }
             catch (Exception ex)
             {
-                throw;
+                throw ex;
             }
         }
 
-        private bool CheckHead(byte[] bytes)
+        private void PrivateReceive(SendHead sendHead, int receiveCount)
         {
-            for (int i = 0; i < HeadLength; i++)
+            int sendHeadLength = _sendHeadFormatter.Length;
+            int sendLength = sendHead.Length;
+
+            //如果小于头部长度，说明数据不完整
+            if (receiveCount < sendLength + sendHeadLength)
             {
-                int code = bytes[i] - (i + 1) * 11;
-                if (code != 0)
-                    return false;
+                remaingLength = receiveCount;
+                return;
             }
-            return true;
+
+            if (!_registerDicts.TryGetValue(sendHead.TypeCode, out var buffer))
+            {
+                //没有找到已经注册的类型
+                OnReceive?.Invoke(new ArraySegment<byte>(receiveBuffer, sendHeadLength, sendLength));
+            }
+            else
+            {
+                buffer.Process(new ArraySegment<byte>(receiveBuffer, sendHeadLength, sendLength));
+            }
+
+            //检查是否有多余的数据,如果有，将多余的数据往前移动
+            int difference = receiveCount - sendHeadLength - sendLength;
+            if (difference <= 0)
+            {
+                remaingLength = 0;
+                return;
+            }
+
+            int length = sendHeadLength + sendLength;
+            for (int i = 0; i < difference; i++)
+            {
+                receiveBuffer[i] = receiveBuffer[length + i];
+            }
+
+            if (difference <= sendHeadLength)
+            {
+                remaingLength = difference;
+                return;
+            }
+
+            //检查是否有数据头部信息
+            if (!Utility.FindHead(receiveBuffer, out var startIndex, difference))
+            {
+                remaingLength = difference;
+                return;
+            }
+
+            ExtenderBinaryReader reader = new ExtenderBinaryReader(new ArraySegment<byte>(receiveBuffer, 0, difference));
+            sendHead = _sendHeadFormatter.Deserialize(ref reader);
+            PrivateReceive(sendHead, difference);
         }
 
         private void ReceiveLinkerDto(LinkerDto dto)
@@ -261,13 +347,10 @@ namespace ExtenderApp.Common.NetWorks
             //是否需要心跳机制
             if (dto.NeedHeartbeat)
             {
+                Heartbeat.Start();
                 Heartbeat.ChangeSendHearbeatInterval(0);
-                //Heartbeat.ChangeTimeoutThreshold();
-                //Heartbeat.TimeoutActionEvent += t =>
-                //{
-                //    Close();
-                //};
             }
+
 
             linkerDto = dto;
             OnReceiveLinkerDto?.Invoke(this, dto);
@@ -281,6 +364,9 @@ namespace ExtenderApp.Common.NetWorks
         {
             if (!Connected)
                 throw new Exception("还未连接到目标主机，请先连接");
+
+            if (dto.NeedHeartbeat)
+                Heartbeat.Start();
 
             linkerDto = dto;
             Send(dto);
@@ -296,7 +382,8 @@ namespace ExtenderApp.Common.NetWorks
             //if (!socket.Connected)
             //    throw new Exception("当前socket还未连接，无法加入");
 
-            Start(Policy, operate: socket);
+            //Start(Policy, operate: socket);
+            Operate = socket;
 
             Operate.BeginReceive(receiveBuffer, 0, receiveBuffer.Length, SocketFlags.None, _receiveCallbcak, null);
         }

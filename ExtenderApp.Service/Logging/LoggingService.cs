@@ -109,7 +109,14 @@ namespace ExtenderApp.Services
                     stream?.Dispose();
                     stream = null;
 
-                    stream = File.Exists(filepath) ? File.AppendText(filepath) : File.CreateText(filepath);
+                    try
+                    {
+                        stream = File.Exists(filepath) ? File.AppendText(filepath) : File.CreateText(filepath);
+                    }
+                    catch (Exception ex)
+                    {
+                        throw;
+                    }
                 }
 
                 string logInfoMessage = LogInfoToStringBuilder(info);

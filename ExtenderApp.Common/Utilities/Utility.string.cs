@@ -1,14 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿
 
 namespace ExtenderApp.Common
 {
     public static partial class Utility
     {
-        private const int prime = 31;
+        private const int PRIME = 31;
 
         /// <summary>
         /// 获取输入字符串的简单一致性哈希值。
@@ -20,7 +16,7 @@ namespace ExtenderApp.Common
             int hash = 0;
             foreach (char c in input)
             {
-                hash = (hash * prime) + c;
+                hash = (hash * PRIME) + c;
                 hash &= 0x7FFFFFFF; // 保持正值
             }
             return hash;

@@ -124,7 +124,10 @@ namespace ExtenderApp.Common.NetWorks
             _timeoutTimer = new(CheckTimeout, null, TimeoutThreshold, 1000);
             timeoutThreshold = TimeoutThreshold;
             heartbeatInterval = HeartbeatInterval;
+        }
 
+        public void Start()
+        {
             _linker.Register<HeartbeatType>(ProcessReceivedData);
         }
 

@@ -29,7 +29,6 @@ namespace ExtenderApp.Common.NetWorks
         public override Socket Create(TData data)
         {
             var result = new Socket(data.AddressFamily, data.SocketType, data.ProtocolType);
-            result.NoDelay = true;
             return result;
             //return new Socket(data.AddressFamily, data.SocketType, data.ProtocolType);
         }

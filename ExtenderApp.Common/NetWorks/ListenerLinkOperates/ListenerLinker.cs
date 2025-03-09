@@ -95,7 +95,6 @@ namespace ExtenderApp.Common.NetWorks
             ThrowNotBound();
 
             var clientSocket = _listenerSocket.Accept();
-            clientSocket.NoDelay = true;
             return CreateOperate(clientSocket);
         }
 
@@ -113,7 +112,6 @@ namespace ExtenderApp.Common.NetWorks
 
             // 结束接受连接请求并获取新的Socket
             Socket handler = _listenerSocket.EndAccept(ar);
-            handler.NoDelay = true;
             callback?.Invoke(CreateOperate(handler));
 
             // 继续监听下一个连接请求

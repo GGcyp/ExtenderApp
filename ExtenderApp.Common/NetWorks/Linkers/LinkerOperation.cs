@@ -7,6 +7,8 @@ namespace ExtenderApp.Common.NetWorks.LinkOperates
     {
         private readonly SocketAsyncEventArgs _socketAsyncEventArgs;
         private bool isSendAsync;
+        private Action<long>? sendCountCallback;
+        private long sendPacketsCount;
 
         public LinkerOperation()
         {
@@ -14,14 +16,18 @@ namespace ExtenderApp.Common.NetWorks.LinkOperates
             _socketAsyncEventArgs.Completed += Completed;
         }
 
-        public void Set(byte[] bytes, int offset, int count)
+        public void Set(byte[] bytes, int offset, int count, Action<long>? sendCountCallback = null)
         {
             _socketAsyncEventArgs.SetBuffer(bytes, offset, count);
+            this.sendCountCallback = sendCountCallback;
+            sendPacketsCount = count;
         }
 
-        public void Set(Memory<byte> memory)
+        public void Set(Memory<byte> memory, Action<long>? sendCountCallback = null)
         {
             _socketAsyncEventArgs.SetBuffer(memory);
+            this.sendCountCallback = sendCountCallback;
+            sendPacketsCount = memory.Length;
         }
 
         private void Completed(object? sender, SocketAsyncEventArgs e)
@@ -36,6 +42,7 @@ namespace ExtenderApp.Common.NetWorks.LinkOperates
         public override void Execute(Socket item)
         {
             isSendAsync = item.SendAsync(_socketAsyncEventArgs);
+            sendCountCallback?.Invoke(sendPacketsCount);
         }
 
         public override bool TryReset()
