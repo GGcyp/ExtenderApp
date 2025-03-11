@@ -20,6 +20,8 @@ namespace ExtenderApp.Common.NetWorks
             {
                 s.Add<LinkerDto, LinkerDtoFormatter>();
                 s.Add<SendHead, SendHeadFormatter>();
+                s.Add<PacketSegmentDto, PacketSegmentDtoFromatter>();
+                s.Add<PacketSegmentHead, PacketSegmentHeadFromatter>();
             });
 
             return services;

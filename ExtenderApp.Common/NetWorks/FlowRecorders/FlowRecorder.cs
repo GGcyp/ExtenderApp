@@ -71,7 +71,7 @@ namespace ExtenderApp.Common.NetWorks
         /// 记录发送的字节数。
         /// </summary>
         /// <param name="byteCount">发送的字节数。</param>
-        public void RecordSend(long byteCount)
+        public void RecordSend(int byteCount)
         {
             if (byteCount < 0)
                 throw new ArgumentOutOfRangeException(nameof(byteCount), "字节数不能为负数。");

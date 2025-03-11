@@ -4,6 +4,7 @@ using AppHost.Extensions.DependencyInjection;
 using ExtenderApp.Abstract;
 using ExtenderApp.Common.IO.Binaries.Formatter;
 using ExtenderApp.Common.IO.Binaries.Formatter.Struct;
+using ExtenderApp.Common.IO.Binary.Formatter.Collection;
 using ExtenderApp.Data;
 using ExtenderApp.Data.File;
 
@@ -66,7 +67,6 @@ namespace ExtenderApp.Common.IO.Binaries
             store.AddStructFormatter<uint, UInt32Formatter>();
             store.AddStructFormatter<ulong, UInt64Formatter>();
             store.AddStructFormatter<bool, BooleanFormatter>();
-            store.AddStructFormatter<byte, ByteFormatter>();
             store.AddStructFormatter<sbyte, SByteFormatter>();
             store.AddStructFormatter<double, DoubleFormatter>();
             store.AddStructFormatter<float, SingleFormatter>();
@@ -76,7 +76,24 @@ namespace ExtenderApp.Common.IO.Binaries
             store.AddClassFormatter<Version, VersionFoematter>();
             store.AddClassFormatter<Uri, UriFormatter>();
 
+            store.AddByteArrayFormatter();
+
             return services.AddSingleton<IBinaryFormatterStore>(store);
+        }
+
+        /// <summary>
+        /// 为指定的 <see cref="IBinaryFormatterStore"/> 实例添加字节数组格式化器。
+        /// </summary>
+        /// <param name="store">需要添加格式化器的 <see cref="IBinaryFormatterStore"/> 实例。</param>
+        private static void AddByteArrayFormatter(this IBinaryFormatterStore store)
+        {
+            store.Add<byte, ByteFormatter>();
+            store.AddNullableFormatter<byte>();
+            store.Add<byte[], ByteArrayFormatter>();
+            store.AddListFormatter<byte>();
+            store.AddLinkedListFormatter<byte>();
+            store.AddQueueFormatter<byte>();
+            store.AddStackFormatter<byte>();
         }
     }
 }

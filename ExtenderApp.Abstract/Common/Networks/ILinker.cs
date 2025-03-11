@@ -50,6 +50,14 @@ namespace ExtenderApp.Abstract
         void Send<T>(T value);
 
         /// <summary>
+        /// 异步发送数据
+        /// </summary>
+        /// <typeparam name="T">发送的数据类型</typeparam>
+        /// <param name="value">要发送的数据</param>
+        /// <exception cref="Exception">如果当前连接已经关闭、正在关闭中或还未连接，则抛出异常</exception>
+        void SendAsync<T>(T value);
+
+        /// <summary>
         /// 关闭连接
         /// </summary>
         void Close();

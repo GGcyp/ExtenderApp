@@ -113,6 +113,21 @@ namespace ExtenderApp.Common.IO.Binaries
             throw new FileNotFoundException(string.Format("没有找到这个二进制所代表的意思：{0}", code));
         }
 
+        private bool TrySkip(ref ExtenderBinaryReader reader, int count)
+        {
+            for (int i = 0; i < count; i++)
+            {
+                if (!TrySkip(ref reader))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        #endregion
+
         #region Array
 
         private bool TrySkipNextArray(ref ExtenderBinaryReader reader)
@@ -379,23 +394,13 @@ namespace ExtenderApp.Common.IO.Binaries
 
         #endregion
 
-        private bool TrySkip(ref ExtenderBinaryReader reader, int count)
-        {
-            for (int i = 0; i < count; i++)
-            {
-                if (!TrySkip(ref reader))
-                {
-                    return false;
-                }
-            }
-
-            return true;
-        }
-
-        #endregion
-
         #region Read
 
+        /// <summary>
+        /// 读取Nil值。
+        /// </summary>
+        /// <param name="reader">二进制读取器。</param>
+        /// <returns>如果读取到Nil值，则返回true；否则返回false。</returns>
         public bool ReadNil(ref ExtenderBinaryReader reader)
         {
             ThrowInsufficientBufferUnless(reader.TryRead(out var code));
@@ -403,6 +408,11 @@ namespace ExtenderApp.Common.IO.Binaries
             return code == binaryCode.Nil;
         }
 
+        /// <summary>
+        /// 尝试读取Nil值。
+        /// </summary>
+        /// <param name="reader">二进制读取器。</param>
+        /// <returns>如果成功读取到Nil值，则返回true；否则返回false。</returns>
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool TryReadNil(ref ExtenderBinaryReader reader)
@@ -415,6 +425,13 @@ namespace ExtenderApp.Common.IO.Binaries
             return false;
         }
 
+        /// <summary>
+        /// 读取指定长度的原始数据。
+        /// </summary>
+        /// <param name="reader">二进制读取器。</param>
+        /// <param name="length">要读取的长度。</param>
+        /// <returns>读取到的原始数据。</returns>
+        /// <exception cref="ArgumentOutOfRangeException">当读取的数据不足指定长度时抛出。</exception>
         public ReadOnlySequence<byte> ReadRaw(ref ExtenderBinaryReader reader, long length)
         {
             try
@@ -429,6 +446,11 @@ namespace ExtenderApp.Common.IO.Binaries
             }
         }
 
+        /// <summary>
+        /// 读取剩余的原始数据。
+        /// </summary>
+        /// <param name="reader">二进制读取器。</param>
+        /// <returns>读取到的原始数据。</returns>
         public ReadOnlySequence<byte> ReadRaw(ref ExtenderBinaryReader reader)
         {
             SequencePosition initialPosition = reader.Position;
@@ -436,6 +458,12 @@ namespace ExtenderApp.Common.IO.Binaries
             return reader.Sequence.Slice(initialPosition, reader.Position);
         }
 
+        /// <summary>
+        /// 读取数组头部信息。
+        /// </summary>
+        /// <param name="reader">二进制读取器。</param>
+        /// <returns>数组的长度。</returns>
+        /// <exception cref="ArgumentOutOfRangeException">当剩余数据不足以表示数组长度或数组元素时抛出。</exception>
         public int ReadArrayHeader(ref ExtenderBinaryReader reader)
         {
             ThrowInsufficientBufferUnless(TryReadArrayHeader(ref reader, out int count));
@@ -448,6 +476,12 @@ namespace ExtenderApp.Common.IO.Binaries
             return count;
         }
 
+        /// <summary>
+        /// 尝试读取数组头部信息。
+        /// </summary>
+        /// <param name="reader">二进制读取器。</param>
+        /// <param name="count">数组的长度。</param>
+        /// <returns>如果成功读取到数组头部信息，则返回true；否则返回false。</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool TryReadArrayHeader(ref ExtenderBinaryReader reader, out int count)
         {
@@ -491,7 +525,12 @@ namespace ExtenderApp.Common.IO.Binaries
             }
         }
 
-
+        /// <summary>
+        /// 读取映射头部信息。
+        /// </summary>
+        /// <param name="reader">二进制读取器。</param>
+        /// <returns>映射中的键值对数量。</returns>
+        /// <exception cref="ArgumentOutOfRangeException">当剩余数据不足以表示映射长度或映射元素时抛出。</exception>
         public int ReadMapHeader(ref ExtenderBinaryReader reader)
         {
             ThrowInsufficientBufferUnless(TryReadMapHeader(ref reader, out int count));
@@ -504,7 +543,12 @@ namespace ExtenderApp.Common.IO.Binaries
             return count;
         }
 
-
+        /// <summary>
+        /// 尝试读取映射头部信息。
+        /// </summary>
+        /// <param name="reader">二进制读取器。</param>
+        /// <param name="count">映射中的键值对数量。</param>
+        /// <returns>如果成功读取到映射头部信息，则返回true；否则返回false。</returns>
         public bool TryReadMapHeader(ref ExtenderBinaryReader reader, out int count)
         {
             DecodeResult readResult = _binaryConvert.TryReadMapHeader(reader.UnreadSpan, out uint uintCount, out int tokenSize);
@@ -547,6 +591,12 @@ namespace ExtenderApp.Common.IO.Binaries
             }
         }
 
+        /// <summary>
+        /// 读取布尔值。
+        /// </summary>
+        /// <param name="reader">二进制读取器。</param>
+        /// <returns>读取到的布尔值。</returns>
+        /// <exception cref="ArgumentOutOfRangeException">当读取到的代码不是True或False时抛出。</exception>
         public bool ReadBoolean(ref ExtenderBinaryReader reader)
         {
             ThrowInsufficientBufferUnless(reader.TryRead(out byte code));
@@ -563,8 +613,19 @@ namespace ExtenderApp.Common.IO.Binaries
             throw ThrowInvalidCode(code);
         }
 
+        /// <summary>
+        /// 读取字符。
+        /// </summary>
+        /// <param name="reader">二进制读取器。</param>
+        /// <returns>读取到的字符。</returns>
         public char ReadChar(ref ExtenderBinaryReader reader) => (char)ReadUInt16(ref reader);
 
+        /// <summary>
+        /// 读取单精度浮点数。
+        /// </summary>
+        /// <param name="reader">二进制读取器。</param>
+        /// <returns>读取到的单精度浮点数。</returns>
+        /// <exception cref="ArgumentOutOfRangeException">当读取到的数据不足以表示单精度浮点数时抛出。</exception>
         public unsafe float ReadSingle(ref ExtenderBinaryReader reader)
         {
             DecodeResult readResult = _binaryConvert.TryReadSingle(reader.UnreadSpan, out float value, out int tokenSize);
@@ -604,6 +665,12 @@ namespace ExtenderApp.Common.IO.Binaries
             }
         }
 
+        /// <summary>
+        /// 读取双精度浮点数。
+        /// </summary>
+        /// <param name="reader">二进制读取器。</param>
+        /// <returns>读取到的双精度浮点数。</returns>
+        /// <exception cref="ArgumentOutOfRangeException">当读取到的数据不足以表示双精度浮点数时抛出。</exception>
         public unsafe double ReadDouble(ref ExtenderBinaryReader reader)
         {
             DecodeResult readResult = _binaryConvert.TryReadDouble(reader.UnreadSpan, out double value, out int tokenSize);
@@ -643,6 +710,12 @@ namespace ExtenderApp.Common.IO.Binaries
             }
         }
 
+        /// <summary>
+        /// 读取日期时间。
+        /// </summary>
+        /// <param name="reader">二进制读取器。</param>
+        /// <returns>读取到的日期时间。</returns>
+        /// <exception cref="ArgumentOutOfRangeException">当读取到的数据不足以表示日期时间时抛出。</exception>
         public DateTime ReadDateTime(ref ExtenderBinaryReader reader)
         {
             DecodeResult readResult = _binaryConvert.TryReadDateTime(reader.UnreadSpan, out DateTime value, out int tokenSize);
@@ -682,6 +755,13 @@ namespace ExtenderApp.Common.IO.Binaries
             }
         }
 
+        /// <summary>
+        /// 读取带有扩展头的日期时间。
+        /// </summary>
+        /// <param name="reader">二进制读取器。</param>
+        /// <param name="header">扩展头。</param>
+        /// <returns>读取到的日期时间。</returns>
+        /// <exception cref="ArgumentOutOfRangeException">当读取到的数据不足以表示日期时间时抛出。</exception>
         public DateTime ReadDateTime(ref ExtenderBinaryReader reader, ExtensionHeader header)
         {
             DecodeResult readResult = _binaryConvert.TryReadDateTime(reader.UnreadSpan, header, out DateTime value, out int tokenSize);

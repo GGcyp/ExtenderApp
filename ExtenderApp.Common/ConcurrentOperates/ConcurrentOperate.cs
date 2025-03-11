@@ -23,7 +23,7 @@ namespace ExtenderApp.Common.ConcurrentOperates
         /// <summary>
         /// 获取一个值，指示是否正在执行操作或操作计数是否小于等于0。
         /// </summary>
-        public bool IsExecuting => Interlocked.CompareExchange(ref _isExecuting, 1, 0) == 0 || operationCount > 0;
+        public bool IsExecuting => Interlocked.CompareExchange(ref _isExecuting, 1, 0) == 0;
 
         public abstract void Release();
 

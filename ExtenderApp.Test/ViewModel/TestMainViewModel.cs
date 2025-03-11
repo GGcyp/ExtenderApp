@@ -66,19 +66,20 @@ namespace ExtenderApp.Test
             _sb = new StringBuilder();
             tcpLinker.Recorder.OnFlowRecorder += o =>
             {
-                _sb.Append("每秒发送");
-                _sb.Append(Utility.BytesToMegabytes(o.SendBytesPerSecond).ToString());
-                _sb.AppendLine();
-                _sb.Append("总发送");
-                _sb.Append(Utility.BytesToMegabytes(o.SendByteCount).ToString());
-                _sb.AppendLine();
+                //_sb.AppendLine();
+                //_sb.Append("每秒发送");
+                //_sb.Append(Utility.BytesToMegabytes(o.SendBytesPerSecond).ToString());
+                //_sb.AppendLine();
+                //_sb.Append("总发送");
+                //_sb.Append(Utility.BytesToMegabytes(o.SendByteCount).ToString());
+                //_sb.AppendLine();
                 //_sb.Append(Utility.BytesToMegabytes(o.ReceiveByteCount).ToString());
                 //_sb.AppendLine();
                 //_sb.Append(Utility.BytesToMegabytes(o.ReceiveBytesPerSecond).ToString());
                 //_sb.AppendLine();
 
-                Debug(_sb.ToString());
-                _sb.Clear();
+                //Debug(_sb.ToString());
+                //_sb.Clear();
             };
             Task.Run(() => { TestSend(tcpLinker); });
 
@@ -89,27 +90,28 @@ namespace ExtenderApp.Test
         private async void TestSend(TcpLinker tcpLinker)
         {
             await Task.Delay(1000);
-            tcpLinker.Send("s");
-            tcpLinker.Send("发送完成，关闭链接");
+            //tcpLinker.Send("s");
+            //tcpLinker.Send("发送完成，关闭链接");
 
-            tcpLinker.Set(new LinkerDto() { NeedHeartbeat = true });
-            tcpLinker.Heartbeat.ReceiveHeartbeatEvent += Heartbeat_ReceiveHeartbeatEvent;
-            tcpLinker.Heartbeat.SendHeartbeat();
-            tcpLinker.Heartbeat.ChangeSendHearbeatInterval(1000);
+            //tcpLinker.Set(new LinkerDto() { NeedHeartbeat = true });
+            //tcpLinker.Heartbeat.ReceiveHeartbeatEvent += Heartbeat_ReceiveHeartbeatEvent;
+            //tcpLinker.Heartbeat.SendHeartbeat();
+            //tcpLinker.Heartbeat.ChangeSendHearbeatInterval(1000);
 
             //byte[] bytes = new byte[Utility.MegabytesToBytes(10)];
 
-            Task.Run(async () =>
-            {
-                for (int i = 0; i < 1000; i++)
-                {
-                    for (int j = 0; j < 100000; j++)
-                    {
-                        tcpLinker.Send("ssssssssssssssssssssssssssss");
-                    }
-                    await Task.Delay(1000);
-                }
-            });
+            //Task.Run(async () =>
+            //{
+            //    for (int i = 0; i < 1000; i++)
+            //    {
+            //        for (int j = 0; j < 100000; j++)
+            //        {
+            //            tcpLinker.Send("ssssssssssssssssssssssssssss");
+            //        }
+            //        //await Task.Delay(10000);
+            //    }
+            //});
+            tcpLinker.Send(new byte[Utility.KilobytesToBytes(200)]);
         }
 
         private StringBuilder Builder;
@@ -135,16 +137,16 @@ namespace ExtenderApp.Test
             Builder = new StringBuilder();
             link.Recorder.OnFlowRecorder += o =>
             {
-                Builder.AppendLine();
-                Builder.Append("每秒接受");
-                Builder.Append(Utility.BytesToMegabytes(o.ReceiveBytesPerSecond).ToString());
-                Builder.AppendLine();
-                Builder.Append("总接受");
-                Builder.Append(Utility.BytesToMegabytes(o.ReceiveByteCount).ToString());
-                Builder.AppendLine();
+                //Builder.AppendLine();
+                //Builder.Append("每秒接受");
+                //Builder.Append(Utility.BytesToMegabytes(o.ReceiveBytesPerSecond).ToString());
+                //Builder.AppendLine();
+                //Builder.Append("总接受");
+                //Builder.Append(Utility.BytesToMegabytes(o.ReceiveByteCount).ToString());
+                //Builder.AppendLine();
 
-                Debug(Builder.ToString());
-                Builder.Clear();
+                //Debug(Builder.ToString());
+                //Builder.Clear();
             };
             link.OnReceive += Networ;
             //link.Register<LinkerDto>(i => Debug("接受"));
@@ -160,7 +162,7 @@ namespace ExtenderApp.Test
         private void Networ(byte[] bytes)
         {
             //Debug(s);
-            //Debug("收到");
+            Debug("收到" + bytes.Length.ToString());
         }
 
         private void Networ(string s)
@@ -168,7 +170,7 @@ namespace ExtenderApp.Test
             //Debug(s);
         }
 
-        private void Networ(ArraySegment<byte> bytes)
+        private void Networ(ReadOnlyMemory<byte> bytes)
         {
             Debug("接受");
         }

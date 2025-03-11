@@ -62,6 +62,51 @@ namespace ExtenderApp.Common
         }
 
         /// <summary>
+        /// 在给定的字节数组中查找头部标识。
+        /// </summary>
+        /// <param name="data">要搜索的字节数组。</param>
+        /// <param name="startIndex">找到头部标识的起始索引。</param>
+        /// <param name="count">要搜索的字节数。如果为-1，则搜索整个数组。</param>
+        /// <returns>如果找到头部标识，则返回true；否则返回false。</returns>
+        public static bool FindHead(ArraySegment<byte> data, out int startIndex, int count = -1)
+        {
+            count = count == -1 ? data.Count : count;
+            if (count < HEAD_LENGTH)
+            {
+                startIndex = 0;
+                return false;
+            }
+
+            if (count == HEAD_LENGTH)
+            {
+                startIndex = 0;
+                return true;
+            }
+
+            for (int i = 0; i < count - 4; i++)
+            {
+                bool hasHead = true;
+                for (int j = 0; j < HEAD_LENGTH; j++)
+                {
+                    int code = GetHeadCode(j + 1);
+                    if (data[i + j] != code)
+                    {
+                        hasHead = false;
+                    }
+                }
+
+                if (hasHead)
+                {
+                    startIndex = i;
+                    return true;
+                }
+            }
+
+            startIndex = 0;
+            return false;
+        }
+
+        /// <summary>
         /// 将头部信息写入字节数组
         /// </summary>
         /// <param name="bytes">要写入的字节数组</param>
