@@ -1,8 +1,8 @@
 ﻿using AppHost.Extensions.DependencyInjection;
 using ExtenderApp.Abstract;
-using ExtenderApp.Common.NetWorks.Linkers.SendDtos;
+using ExtenderApp.Common.Networks.Linkers.SendDtos;
 
-namespace ExtenderApp.Common.NetWorks
+namespace ExtenderApp.Common.Networks
 {
     /// <summary>
     /// 提供与链接操作相关的扩展方法。

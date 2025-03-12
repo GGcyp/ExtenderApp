@@ -1,7 +1,7 @@
 ﻿using System.Net.Sockets;
 
 
-namespace ExtenderApp.Common.NetWorks.LinkOperates
+namespace ExtenderApp.Common.Networks.LinkOperates
 {
     public class LinkerOperation : ConcurrentOperation<Socket>
     {
@@ -10,23 +10,23 @@ namespace ExtenderApp.Common.NetWorks.LinkOperates
         private Action<int>? sendCountCallback;
         private int sendPacketsCount;
 
-        public byte[] SendBytes;
-        private Action<LinkerOperation>? sendBytesCallbcak;
+        private byte[] sendBytes;
+        private Action<byte[]>? sendBytesCallbcak;
 
         public LinkerOperation()
         {
             _socketAsyncEventArgs = new SocketAsyncEventArgs();
             _socketAsyncEventArgs.Completed += Completed;
-            SendBytes = Array.Empty<byte>();
+            sendBytes = Array.Empty<byte>();
         }
 
-        public void Set(byte[] bytes, int offset, int count, Action<int>? sendCountCallback, Action<LinkerOperation> sendBytesCallbcak = null)
+        public void Set(byte[] bytes, int offset, int count, Action<int>? sendCountCallback, Action<byte[]>? sendBytesCallbcak = null)
         {
             _socketAsyncEventArgs.SetBuffer(bytes, offset, count);
             this.sendCountCallback = sendCountCallback;
             sendPacketsCount = count;
             this.sendBytesCallbcak = sendBytesCallbcak;
-            SendBytes = bytes;
+            sendBytes = bytes;
         }
 
         public void Set(Memory<byte> memory, Action<int>? sendCountCallback)
@@ -49,7 +49,7 @@ namespace ExtenderApp.Common.NetWorks.LinkOperates
         {
             isSendAsync = item.SendAsync(_socketAsyncEventArgs);
             sendCountCallback?.Invoke(sendPacketsCount);
-            sendBytesCallbcak?.Invoke(this);
+            sendBytesCallbcak?.Invoke(sendBytes);
         }
 
         public override bool TryReset()
@@ -57,7 +57,7 @@ namespace ExtenderApp.Common.NetWorks.LinkOperates
             if (isSendAsync)
                 return false;
 
-            SendBytes = Array.Empty<byte>();
+            sendBytes = Array.Empty<byte>();
             sendBytesCallbcak = null;
             sendCountCallback = null;
             return true;

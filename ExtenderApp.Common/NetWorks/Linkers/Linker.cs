@@ -1,19 +1,18 @@
 ﻿using System.Buffers;
 using System.Collections.Concurrent;
-using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
 using ExtenderApp.Abstract;
 using ExtenderApp.Common.ConcurrentOperates;
 using ExtenderApp.Common.DataBuffers;
 using ExtenderApp.Common.Error;
-using ExtenderApp.Common.NetWorks.LinkOperates;
+using ExtenderApp.Common.Networks.LinkOperates;
 using ExtenderApp.Common.ObjectPools;
 using ExtenderApp.Common.ObjectPools.Policy;
 using ExtenderApp.Data;
 using ExtenderApp.Data.File;
 
-namespace ExtenderApp.Common.NetWorks
+namespace ExtenderApp.Common.Networks
 {
     /// <summary>
     /// 抽象基类 Linker，继承自 ConcurrentOperate 类，实现了 ILinker 接口。
@@ -180,7 +179,7 @@ namespace ExtenderApp.Common.NetWorks
             _binaryParser = binaryParser;
             _sendHeadFormatter = _binaryParser.GetFormatter<SendHead>();
             _sequencePool = sequencePool;
-            _packetSegmenter = new PacketSegmenter(this, MAX_SEND_LENGTH - _sendHeadFormatter.Length - 5 * 2, RegisterTypeCallback);
+            _packetSegmenter = new PacketSegmenter(this, MAX_SEND_LENGTH - _sendHeadFormatter.Length - (int)_binaryParser.GetDefaulLength<PacketSegmentDto>(), RegisterTypeCallback);
 
             _heartbeatLazy = new(() => new Heartbeat(this), true);
             _receiveQueueBytesLazy = new(() => new ConcurrentQueue<(byte[], int)>(), true);
@@ -444,17 +443,17 @@ namespace ExtenderApp.Common.NetWorks
                 throw new Exception("当前连接还未连接");
 
             var valueBytes = _binaryParser.SerializeForArrayPool(value, out int valueLength);
-
             int typeCode = Utility.GetSimpleConsistentHash<T>();
+            int headLength = _sendHeadFormatter.Length;
 
             //检测发送数据大于4KB，需要分包发送
-            if (valueLength > MAX_SEND_LENGTH)
+            if (valueLength + headLength > MAX_SEND_LENGTH)
             {
                 _packetSegmenter.SendBigPacket(typeCode, valueBytes, valueLength);
                 return;
             }
 
-            GetDataBytes(value, out var sendBytes, out var totalLength, out typeCode);
+            GetSendBytes(value, typeCode, out var sendBytes, out var totalLength);
 
             var operation = _pool.Get();
             operation.Set(sendBytes, 0, totalLength, Recorder.RecordSend);
@@ -478,44 +477,39 @@ namespace ExtenderApp.Common.NetWorks
             if (!Connected)
                 throw new Exception("当前连接还未连接");
 
-            GetDataBytes(value, out var sendBytes, out var totalLength, out var typeCode);
+            var valueBytes = _binaryParser.SerializeForArrayPool(value, out int valueLength);
+            int typeCode = Utility.GetSimpleConsistentHash<T>();
+            int headLength = _sendHeadFormatter.Length;
 
             //检测发送数据大于4KB，需要分包发送
+            if (valueLength + headLength > MAX_SEND_LENGTH)
+            {
+                _packetSegmenter.SendBigPacketAsync(typeCode, valueBytes, valueLength);
+                return;
+            }
+
+            GetSendBytes(value, typeCode, out var sendBytes, out var totalLength);
 
             var operation = _pool.Get();
-            operation.Set(sendBytes, 0, totalLength, Recorder.RecordSend, p =>
-            {
-                ArrayPool<byte>.Shared.Return(p.SendBytes);
-                p.Release();
-            });
+            operation.Set(sendBytes, 0, totalLength, Recorder.RecordSend, b => ArrayPool<byte>.Shared.Return(b));
             QueueOperation(operation);
         }
 
-
         /// <summary>
-        /// 将给定值转换为字节数组，并返回相关参数。
+        /// 将值转换为字节数组并准备发送
         /// </summary>
         /// <typeparam name="T">值的类型</typeparam>
-        /// <param name="value">要转换的值</param>
-        /// <param name="sendBytes">转换后的字节数组</param>
-        /// <param name="totalLength">总长度</param>
+        /// <param name="value">需要转换的值</param>
         /// <param name="typeCode">类型代码</param>
-        /// <param name="valueLength">值的长度</param>
-        /// <remarks>
-        /// 该方法首先使用二进制解析器将给定值序列化为字节数组，然后根据发送头部格式化器计算总长度，
-        /// 并为发送头部创建新的实例。接着，使用扩展二进制写入器将发送头部序列化到字节数组中，并将值的字节数组
-        /// 复制到正确的位置。最后，释放值的字节数组占用的内存。
-        /// </remarks>
-        private void GetDataBytes<T>(T value, out byte[] sendBytes, out int totalLength, out int typeCode)
+        /// <param name="sendBytes">用于发送的字节数组</param>
+        /// <param name="totalLength">总长度</param>
+        private void GetSendBytes<T>(T value, int typeCode, out byte[] sendBytes, out int totalLength)
         {
             var valueBytes = _binaryParser.SerializeForArrayPool(value, out int valueLength);
 
             int startIndex = _sendHeadFormatter.Length;
             totalLength = startIndex + valueLength;
 
-            Type type = typeof(T);
-            string typeName = type.FullName ?? type.Name;
-            typeCode = Utility.GetSimpleConsistentHash(typeName);
             sendBytes = ArrayPool<byte>.Shared.Rent(totalLength);
 
             SendHead sendHead = new SendHead(true, typeCode, valueLength);
@@ -550,6 +544,24 @@ namespace ExtenderApp.Common.NetWorks
             operation.Set(bytes, offset, count, Recorder.RecordSend);
             ExecuteOperation(operation);
             operation.Release();
+        }
+
+        public void SendSourceAsync(byte[] bytes)
+        {
+            SendSourceAsync(bytes, 0, bytes.Length);
+        }
+
+        /// <summary>
+        /// 发送原始字节数据
+        /// </summary>
+        /// <param name="bytes">要发送的字节数据</param>
+        /// <param name="offset">要发送的数据的起始位置</param>
+        /// <param name="count">要发送的数据的长度</param>
+        public void SendSourceAsync(byte[] bytes, int offset, int count)
+        {
+            var operation = _pool.Get();
+            operation.Set(bytes, offset, count, Recorder.RecordSend, b => ArrayPool<byte>.Shared.Return(b));
+            QueueOperation(operation);
         }
 
         #endregion
@@ -838,60 +850,6 @@ namespace ExtenderApp.Common.NetWorks
         }
 
         #endregion
-
-        ///// <summary>
-        ///// 发送文件
-        ///// </summary>
-        ///// <param name="info">文件信息</param>
-        //public void SendFile(LocalFileInfo info, int datalength)
-        //{
-        //    //ThrowNotConnected();
-
-        //    //检查大小，小的文件直接传输，大的文件需要分块传输
-        //    var splitterInfo = _splitterParser.Create(info, datalength, false);
-        //    NetworkPacket<SplitterInfo> sendData = new NetworkPacket<SplitterInfo>(splitterInfo);
-        //    var readBytes = _binaryParser.SerializeForArrayPool(sendData, out int length);
-        //    LinkOperation sendOperation = _pool.Get();
-        //    sendOperation.Set(readBytes, 0, length);
-        //    ExecuteOperation(sendOperation);
-        //    sendOperation.Release();
-
-        //    var fileOperateInfo = info.CreateFileOperate(fileAccess: FileAccess.ReadWrite);
-        //    var fileOperate = _binaryParser.GetOperate(fileOperateInfo);
-
-        //    sendOperation = _pool.Get();
-        //    if (readBytes.Length < datalength)
-        //    {
-        //        ArrayPool<byte>.Shared.Return(readBytes);
-        //        readBytes = ArrayPool<byte>.Shared.Rent(datalength);
-        //    }
-
-        //    byte[] sendBytes = ArrayPool<byte>.Shared.Rent((int)(_binaryParser.GetDefaulLength<SplitterDto>() + datalength));
-        //    for (uint i = 0; i < splitterInfo.ChunkCount; i++)
-        //    {
-        //        readBytes = _binaryParser.Read(fileOperateInfo, i * datalength, datalength, fileOperate, readBytes);
-        //        _binaryParser.Serialize(new SplitterDto(i, readBytes), sendBytes, out int sendLength);
-        //        int sendChunkCount = datalength / MaxSendLegth;
-
-        //        for (int j = 0; j < sendChunkCount; j++)
-        //        {
-        //            sendOperation.Set(sendBytes, j * MaxSendLegth, MaxSendLegth);
-        //            ExecuteOperation(sendOperation);
-        //        }
-
-        //        int alreadySendLength = sendChunkCount * MaxSendLegth;
-        //        if (alreadySendLength < sendLength)
-        //        {
-        //            sendOperation.Set(sendBytes, alreadySendLength, sendLength - alreadySendLength);
-        //            ExecuteOperation(sendOperation);
-        //        }
-        //    }
-
-        //    ArrayPool<byte>.Shared.Return(readBytes);
-        //    ArrayPool<byte>.Shared.Return(sendBytes);
-        //    sendOperation.Release();
-        //    fileOperate.Release();
-        //}
 
         public override bool TryReset()
         {

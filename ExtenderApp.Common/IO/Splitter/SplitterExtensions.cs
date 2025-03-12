@@ -1,6 +1,6 @@
 ﻿using AppHost.Extensions.DependencyInjection;
 using ExtenderApp.Abstract;
-using ExtenderApp.Common.NetWorks;
+using ExtenderApp.Common.Networks;
 using ExtenderApp.Data;
 
 namespace ExtenderApp.Common.IO.Splitter

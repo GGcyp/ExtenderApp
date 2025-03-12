@@ -123,12 +123,14 @@
         /// <exception cref="FileNotFoundException">当 LocalFileInfo 指向的文件不存在时抛出。</exception>
         public void ThrowFileNotFound()
         {
-            ThrowIsEmpty();
+            //ThrowIsEmpty();
 
-            if (LocalFileInfo.Exists)
-                return;
+            //if (LocalFileInfo.Exists)
+            //    return;
 
-            throw new FileNotFoundException(LocalFileInfo.FilePath);
+            //throw new FileNotFoundException(LocalFileInfo.FilePath);
+
+            LocalFileInfo.ThrowFileNotFound();
         }
 
         public bool Equals(FileOperateInfo other)

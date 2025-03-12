@@ -296,14 +296,10 @@ namespace ExtenderApp.Common.ConcurrentOperates
         {
             ThrowNull();
 
-            while (_queue.Count > 0 && !Data.Token.IsCancellationRequested && !IsDisposed)
+            while (_queue.TryDequeue(out var operation) &&
+                !Data.Token.IsCancellationRequested &&
+                !IsDisposed)
             {
-                if (!_queue.TryDequeue(out var operation))
-                {
-                    ErrorUtil.Operation("在取出文件处理操作时出现错误");
-                    break;
-                }
-
                 lock (Operate)
                 {
                     operation.Execute(Operate);

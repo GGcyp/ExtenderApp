@@ -1,5 +1,5 @@
 ﻿
-namespace ExtenderApp.Common.NetWorks
+namespace ExtenderApp.Common.Networks
 {
     /// <summary>
     /// 表示链接数据传输对象（DTO）的结构体。

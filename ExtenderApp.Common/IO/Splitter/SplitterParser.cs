@@ -3,7 +3,6 @@ using ExtenderApp.Abstract;
 using ExtenderApp.Common.Error;
 using ExtenderApp.Data;
 using ExtenderApp.Common.ObjectPools;
-using ExtenderApp.Common.ConcurrentOperates;
 using ExtenderApp.Common.DataBuffers;
 using ExtenderApp.Common.IO.FileParsers;
 using System.IO.MemoryMappedFiles;
@@ -16,6 +15,8 @@ namespace ExtenderApp.Common.IO.Splitter
     /// </summary>
     internal class SplitterParser : FileParser<SplitterStreamOperatePolicy, SplitterStreamOperateData>, ISplitterParser
     {
+        private const int DefaultMaxChunkSize = 1024 * 1024;
+
         /// <summary>
         /// 二进制解析器接口
         /// </summary>
@@ -149,6 +150,7 @@ namespace ExtenderApp.Common.IO.Splitter
 
             splitterInfo.ArgumentNull(nameof(splitterInfo));
 
+            bytes ??= ArrayPool<byte>.Shared.Rent(splitterInfo.MaxChunkSize);
             var operate = GetOperate(info, fileOperate);
             var operation = _readOperationPool.Get();
             operation.Set(chunkIndex, splitterInfo, bytes);
@@ -352,13 +354,22 @@ namespace ExtenderApp.Common.IO.Splitter
 
         public void Create(ExpectLocalFileInfo fileInfo, SplitterInfo info)
         {
+            info.ArgumentNull(nameof(info));
+
             var infoFile = fileInfo.CreateWriteOperate(infoExtensions);
             _binaryParser.Write(infoFile, info);
         }
 
+        public SplitterInfo Create(LocalFileInfo fileInfo, bool createLoaderChunks = true)
+        {
+            var info = Create(fileInfo, DefaultMaxChunkSize, createLoaderChunks);
+            return info;
+        }
+
         public SplitterInfo Create(LocalFileInfo info, int maxLength, bool createLoaderChunks = true)
         {
-            ErrorUtil.FileNotFound(info);
+            //ErrorUtil.FileNotFound(info);
+            info.FileNotFound();
 
             //LocalFileInfo splitterInfoFileInfo = info.ChangeFileExtension(infoExtensions);
             //SplitterInfo splitterInfo;
@@ -378,6 +389,50 @@ namespace ExtenderApp.Common.IO.Splitter
             uint chunkCount = (uint)(length / maxLength);
             SplitterInfo splitterInfo = new SplitterInfo(length, chunkCount, 0, maxLength, info.Extension, createLoaderChunks ? new byte[chunkCount] : null);
             return splitterInfo;
+        }
+
+        #endregion
+
+        #region  Get
+
+        public SplitterInfo? GetSplitterInfo(ExpectLocalFileInfo fileInfo)
+        {
+            var infoFile = fileInfo.CreateWriteOperate(infoExtensions);
+            infoFile.ThrowFileNotFound();
+            return _binaryParser.Read<SplitterInfo>(infoFile);
+        }
+
+        public SplitterInfo? GetSplitterInfo(LocalFileInfo fileInfo)
+        {
+            if (fileInfo.Extension != infoExtensions)
+            {
+                fileInfo = fileInfo.ChangeFileExtension(infoExtensions);
+            }
+
+            fileInfo.ThrowFileNotFound();
+
+            var infoFile = fileInfo.CreateWriteOperate();
+            return _binaryParser.Read<SplitterInfo>(infoFile);
+        }
+
+        public SplitterDto GetSplitterDto(LocalFileInfo fileInfo, uint chunkIndex, SplitterInfo? info = null, IConcurrentOperate? fileOperate = null)
+        {
+            if (info == null)
+            {
+                info = GetSplitterInfo(fileInfo);
+
+                info.ArgumentNull(nameof(info));
+            }
+
+            if (chunkIndex >= info.ChunkCount)
+            {
+                ErrorUtil.ArgumentOutOfRange(nameof(chunkIndex), "块索引超出范围");
+            }
+
+            int length = info.MaxChunkSize;
+            var valueBytes = Read(fileInfo.CreateWriteOperate(), chunkIndex, info, fileOperate);
+
+            return new SplitterDto(chunkIndex, valueBytes, length);
         }
 
         #endregion

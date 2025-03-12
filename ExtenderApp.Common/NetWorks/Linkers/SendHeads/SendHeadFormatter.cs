@@ -2,7 +2,7 @@
 using ExtenderApp.Common.IO.Binaries.Formatter;
 using ExtenderApp.Data;
 
-namespace ExtenderApp.Common.NetWorks.Linkers.SendDtos
+namespace ExtenderApp.Common.Networks.Linkers.SendDtos
 {
     internal class SendHeadFormatter : ResolverFormatter<SendHead>
     {

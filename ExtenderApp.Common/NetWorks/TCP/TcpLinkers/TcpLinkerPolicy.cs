@@ -1,7 +1,7 @@
 ﻿using System.Net.Sockets;
 using ExtenderApp.Common.ObjectPools;
 
-namespace ExtenderApp.Common.NetWorks
+namespace ExtenderApp.Common.Networks
 {
     public class TcpLinkerPolicy : LinkOperatePolicy<TcpLinkerData>
     {

@@ -3,7 +3,7 @@ using ExtenderApp.Abstract;
 using ExtenderApp.Common.ObjectPools;
 using ExtenderApp.Data.File;
 
-namespace ExtenderApp.Common.NetWorks
+namespace ExtenderApp.Common.Networks
 {
     public class TcpListenerLinker : ListenerLinker<TcpLinker>
     {

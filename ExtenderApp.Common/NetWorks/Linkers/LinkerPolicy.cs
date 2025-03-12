@@ -1,9 +1,9 @@
 ﻿using System.Net.Sockets;
 using ExtenderApp.Common.ConcurrentOperates;
-using ExtenderApp.Common.NetWorks.LinkOperates;
+using ExtenderApp.Common.Networks.LinkOperates;
 using ExtenderApp.Data;
 
-namespace ExtenderApp.Common.NetWorks
+namespace ExtenderApp.Common.Networks
 {
     /// <summary>
     /// 默认链接策略

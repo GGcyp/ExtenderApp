@@ -2,7 +2,7 @@
 using ExtenderApp.Common.ObjectPools;
 using System.Diagnostics.CodeAnalysis;
 
-namespace ExtenderApp.Common.NetWorks
+namespace ExtenderApp.Common.Networks
 {
     public static class Http_httpClient
     {

@@ -25,6 +25,38 @@ namespace ExtenderApp.Abstract
         SplitterInfo Create(LocalFileInfo info, int maxLength, bool createLoaderChunks = true);
 
         /// <summary>
+        /// 创建一个新的SplitterInfo对象。
+        /// </summary>
+        /// <param name="fileInfo">包含本地文件信息的LocalFileInfo对象。</param>
+        /// <param name="createLoaderChunks">是否创建加载器块，默认值为true。</param>
+        /// <returns>返回一个SplitterInfo对象。</returns>
+        SplitterInfo Create(LocalFileInfo fileInfo, bool createLoaderChunks = true);
+
+        /// <summary>
+        /// 根据ExpectLocalFileInfo对象获取SplitterInfo信息。
+        /// </summary>
+        /// <param name="fileInfo">包含本地文件信息的ExpectLocalFileInfo对象。</param>
+        /// <returns>返回一个SplitterInfo对象。</returns>
+        SplitterInfo? GetSplitterInfo(ExpectLocalFileInfo fileInfo);
+
+        /// <summary>
+        /// 根据LocalFileInfo对象获取SplitterInfo信息。
+        /// </summary>
+        /// <param name="fileInfo">包含本地文件信息的LocalFileInfo对象。</param>
+        /// <returns>返回一个SplitterInfo对象。</returns>
+        SplitterInfo? GetSplitterInfo(LocalFileInfo fileInfo);
+
+        /// <summary>
+        /// 获取SplitterDto对象
+        /// </summary>
+        /// <param name="fileInfo">本地文件信息</param>
+        /// <param name="chunkIndex">分块索引</param>
+        /// <param name="info">Splitter信息（可选）</param>
+        /// <param name="fileOperate">文件操作接口（可选）</param>
+        /// <returns>SplitterDto对象</returns>
+        SplitterDto GetSplitterDto(LocalFileInfo fileInfo, uint chunkIndex, SplitterInfo? info = null, IConcurrentOperate? fileOperate = null);
+
+        /// <summary>
         /// 从文件中读取数据块。
         /// </summary>
         /// <param name="info">文件操作信息对象。</param>
@@ -33,6 +65,7 @@ namespace ExtenderApp.Abstract
         /// <param name="fileOperate">并发操作接口，可选。</param>
         /// <param name="bytes">可选的字节数组，如果提供则优先使用。</param>
         /// <returns>读取到的字节数组。</returns>
+        /// <remarks>读取到的数据数组为ArrayPool中拿出来的，需要重新返回去</remarks>
         byte[] Read(FileOperateInfo info, uint chunkIndex, SplitterInfo splitterInfo, IConcurrentOperate? fileOperate = null, byte[]? bytes = null);
 
         /// <summary>
@@ -44,6 +77,7 @@ namespace ExtenderApp.Abstract
         /// <param name="fileOperate">并发操作接口，可选。</param>
         /// <param name="bytes">可选的字节数组，如果提供则优先使用。</param>
         /// <returns>读取到的字节数组。</returns>
+        /// <remarks>读取到的数据数组为ArrayPool中拿出来的，需要重新返回去</remarks>
         byte[] Read(ExpectLocalFileInfo info, uint chunkIndex, SplitterInfo splitterInfo, IConcurrentOperate? fileOperate = null, byte[]? bytes = null);
 
         /// <summary>

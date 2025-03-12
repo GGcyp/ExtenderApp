@@ -58,6 +58,20 @@ namespace ExtenderApp.Abstract
         void SendAsync<T>(T value);
 
         /// <summary>
+        /// 发送源数据
+        /// </summary>
+        /// <param name="bytes">源数据字节数组</param>
+        void SendSource(byte[] bytes);
+
+        /// <summary>
+        /// 发送源数据
+        /// </summary>
+        /// <param name="bytes">源数据字节数组</param>
+        /// <param name="offset">开始发送的字节位置</param>
+        /// <param name="count">发送的字节数</param>
+        void SendSource(byte[] bytes, int offset, int count);
+
+        /// <summary>
         /// 关闭连接
         /// </summary>
         void Close();

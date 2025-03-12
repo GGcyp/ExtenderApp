@@ -1,6 +1,6 @@
 ﻿using ExtenderApp.Abstract;
 
-namespace ExtenderApp.Common.NetWorks
+namespace ExtenderApp.Common.Networks
 {
     /// <summary>
     /// 表示心跳检测结果的结构体

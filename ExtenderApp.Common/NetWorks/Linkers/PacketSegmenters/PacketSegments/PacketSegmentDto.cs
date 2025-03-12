@@ -1,7 +1,7 @@
 ﻿
 using System;
 
-namespace ExtenderApp.Common.NetWorks
+namespace ExtenderApp.Common.Networks
 {
     /// <summary>
     /// 数据包分段传输对象

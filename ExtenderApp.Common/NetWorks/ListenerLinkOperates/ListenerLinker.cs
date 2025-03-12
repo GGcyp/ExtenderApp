@@ -4,7 +4,7 @@ using ExtenderApp.Abstract;
 using ExtenderApp.Common.ObjectPools;
 using ExtenderApp.Data.File;
 
-namespace ExtenderApp.Common.NetWorks
+namespace ExtenderApp.Common.Networks
 {
     /// <summary>
     /// LinkPoolPolicy 类，继承自 PooledObjectPolicy 类，用于管理实现了 ILinker 接口的对象池。

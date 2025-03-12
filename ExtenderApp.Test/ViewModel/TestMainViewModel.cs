@@ -6,7 +6,7 @@ using System.Net.Sockets;
 using System.Net;
 using System.Security.Cryptography;
 using ExtenderApp.Data.File;
-using ExtenderApp.Common.NetWorks;
+using ExtenderApp.Common.Networks;
 using System.Text;
 
 namespace ExtenderApp.Test
@@ -15,8 +15,6 @@ namespace ExtenderApp.Test
     {
         private readonly IBinaryParser _binaryParser;
         private readonly SequencePool<byte> _sequencePool;
-        private readonly StringBuilder _sb;
-
         public TestMainViewModel(TcpLinker tcpLinker, IBinaryParser binaryParser, SequencePool<byte> sequencePool, IServiceStore serviceStore) : base(serviceStore)
         {
             //var fileInfo = CreatTestExpectLocalFileInfo(string.Format("测试{0}", DateTime.Now.ToString()));
@@ -63,7 +61,7 @@ namespace ExtenderApp.Test
 
             //tcpLinker.Set(new LinkerDto() { NeedHeartbeat = true });
 
-            _sb = new StringBuilder();
+            //_sb = new StringBuilder();
             tcpLinker.Recorder.OnFlowRecorder += o =>
             {
                 //_sb.AppendLine();
@@ -111,10 +109,13 @@ namespace ExtenderApp.Test
             //        //await Task.Delay(10000);
             //    }
             //});
-            tcpLinker.Send(new byte[Utility.KilobytesToBytes(200)]);
+            //var send = new byte[Utility.MegabytesToBytes(10)];
+            //send[0] = 1;
+            //tcpLinker.Send(send);
+            //send[0] = 2;
+            //tcpLinker.SendAsync(send);
         }
 
-        private StringBuilder Builder;
         private async void Listener()
         {
             //TcpListener listener = new TcpListener(new IPEndPoint(IPAddress.Parse("127.0.0.1"), 5520));
@@ -134,7 +135,6 @@ namespace ExtenderApp.Test
             //Debug(temp.TypeCode.ToString() + name);
             link.Register<byte[]>(Networ);
             link.Register<string>(Networ);
-            Builder = new StringBuilder();
             link.Recorder.OnFlowRecorder += o =>
             {
                 //Builder.AppendLine();
@@ -154,7 +154,7 @@ namespace ExtenderApp.Test
             //link.Heartbeat.ReceiveHeartbeatEvent += Heartbeat_ReceiveHeartbeatEvent;
         }
 
-        private void Heartbeat_ReceiveHeartbeatEvent(Common.NetWorks.HearbeatResult obj)
+        private void Heartbeat_ReceiveHeartbeatEvent(Common.Networks.HearbeatResult obj)
         {
             Debug(obj.HeartbeatType.ToString());
         }

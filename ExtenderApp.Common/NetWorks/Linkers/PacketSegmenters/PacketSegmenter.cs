@@ -2,7 +2,7 @@
 using System.Runtime.InteropServices;
 using ExtenderApp.Abstract;
 
-namespace ExtenderApp.Common.NetWorks
+namespace ExtenderApp.Common.Networks
 {
     /// <summary>
     /// 处理大数据包的分块和重组。
@@ -16,7 +16,6 @@ namespace ExtenderApp.Common.NetWorks
         private int typeCode; // 当前数据包类型码
         private int packetCount; // 数据包数量
         private int receivedCount; // 已接收的数据包数量
-        private int totalLength; // 数据包总长度
         private int maxSegmenterLength; // 每个分块的最大大小
 
         public PacketSegmenter(ILinker linker, int maxSegmenterLength, Action<int, byte[], int, int> callback)
@@ -61,6 +60,34 @@ namespace ExtenderApp.Common.NetWorks
             return true;
         }
 
+        public bool SendBigPacketAsync(int typeCode, byte[] bytes, int length)
+        {
+            if (length < maxSegmenterLength)
+            {
+                return false;
+            }
+
+            int count = length / maxSegmenterLength + (length % maxSegmenterLength > 0 ? 1 : 0);
+            PacketSegmentHead head = new PacketSegmentHead(length, typeCode, count);
+            _linker.SendAsync(head);
+
+            for (int i = 0; i < count - 1; i++)
+            {
+                PacketSegmentDto segmentDto = new PacketSegmentDto(i, maxSegmenterLength, new ReadOnlyMemory<byte>(bytes, i * maxSegmenterLength, maxSegmenterLength));
+                _linker.SendAsync(segmentDto);
+            }
+
+            int endIndex = count - 1;
+            if (endIndex > 0)
+            {
+                int segmentLength = length % maxSegmenterLength;
+                PacketSegmentDto segmentDto = new PacketSegmentDto(endIndex, segmentLength, new ReadOnlyMemory<byte>(bytes, endIndex * maxSegmenterLength, segmentLength));
+                _linker.SendAsync(segmentDto);
+            }
+
+            return true;
+        }
+
         private void ReceivePacketSegmentHead(PacketSegmentHead segmentHead)
         {
             if (buffer != null)
@@ -69,7 +96,6 @@ namespace ExtenderApp.Common.NetWorks
             buffer = ArrayPool<byte>.Shared.Rent(segmentHead.Length);
             typeCode = segmentHead.TypeCode;
             packetCount = segmentHead.Count;
-            totalLength = segmentHead.Length;
         }
 
         private void ReceivePacketSegmentDto(PacketSegmentDto segmentDto)

@@ -3,7 +3,7 @@ using ExtenderApp.Abstract;
 using ExtenderApp.Common.IO.Binaries.Formatter;
 using ExtenderApp.Data;
 
-namespace ExtenderApp.Common.NetWorks
+namespace ExtenderApp.Common.Networks
 {
     internal class PacketSegmentHeadFromatter : ResolverFormatter<PacketSegmentHead>
     {

@@ -1,4 +1,4 @@
-﻿namespace ExtenderApp.Common.NetWorks
+﻿namespace ExtenderApp.Common.Networks
 {
     public enum HeartbeatType
     {

@@ -1,35 +1,46 @@
-﻿namespace ExtenderApp.Data
+﻿using System.Buffers;
+
+namespace ExtenderApp.Data
 {
     /// <summary>
-    /// 数据分片传输对象
+    /// 表示一个可分割的数据传输对象，实现了IDisposable接口以便释放资源。
     /// </summary>
-    public struct SplitterDto
+    public struct SplitterDto : IDisposable
     {
         /// <summary>
-        /// 分片文件名字
+        /// 获取数据块的索引。
         /// </summary>
-        public string FileName { get; set; }
+        public uint ChunkIndex { get; }
 
         /// <summary>
-        /// 分片索引
+        /// 获取字节数组。
         /// </summary>
-        public uint ChunkIndex { get; set; }
+        public byte[] Bytes { get; }
 
         /// <summary>
-        /// 数据内容
+        /// 获取字节数组的长度。
         /// </summary>
-        public byte[] Bytes { get; set; }
+        public int Length { get; }
 
         /// <summary>
-        /// 初始化 SplitterDto 对象
+        /// 初始化 SplitterDto 实例。
         /// </summary>
-        /// <param name="chunkIndex">分片索引</param>
-        /// <param name="data">数据内容</param>
-        public SplitterDto(string fileName, uint chunkIndex, byte[] data)
+        /// <param name="chunkIndex">数据块的索引。</param>
+        /// <param name="data">包含数据的字节数组。</param>
+        /// <param name="length">字节数组的长度。</param>
+        public SplitterDto(uint chunkIndex, byte[] data, int length)
         {
-            FileName = fileName;
             ChunkIndex = chunkIndex;
             Bytes = data;
+            Length = length;
+        }
+
+        /// <summary>
+        /// 释放由 SplitterDto 使用的资源。
+        /// </summary>
+        public void Dispose()
+        {
+            ArrayPool<byte>.Shared.Return(Bytes);
         }
     }
 }

@@ -1,6 +1,6 @@
 ﻿using AppHost.Builder;
 using AppHost.Extensions.DependencyInjection;
-using ExtenderApp.Common.NetWorks;
+using ExtenderApp.Common.Networks;
 using ExtenderApp.Common.SHA;
 
 namespace ExtenderApp.Common

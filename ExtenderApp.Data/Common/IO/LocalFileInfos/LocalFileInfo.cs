@@ -110,7 +110,7 @@ namespace ExtenderApp.Data
         /// <returns>返回一个新的 FileOperate 实例。</returns>
         public FileOperateInfo CreateFileOperate(FileMode fileMode = FileMode.Open, FileAccess fileAccess = FileAccess.Read)
         {
-            return new FileOperateInfo(FilePath, fileMode, fileAccess);
+            return new FileOperateInfo(this, fileMode, fileAccess);
         }
 
         /// <summary>
@@ -168,6 +168,16 @@ namespace ExtenderApp.Data
         public void UpdateFileInfo()
         {
             FileInfo.Refresh();
+        }
+
+        /// <summary>
+        /// 如果文件不存在，则抛出异常。
+        /// </summary>
+        /// <exception cref="FileNotFoundException">如果文件不存在，则抛出此异常。</exception>
+        public void ThrowFileNotFound()
+        {
+            if (!Exists)
+                throw new FileNotFoundException("文件不存在", FilePath);
         }
 
         public bool Equals(LocalFileInfo other)

@@ -2,7 +2,7 @@
 
 using System.Net.Sockets;
 
-namespace ExtenderApp.Common.NetWorks
+namespace ExtenderApp.Common.Networks
 {
     /// <summary>
     /// TCP链接数据类

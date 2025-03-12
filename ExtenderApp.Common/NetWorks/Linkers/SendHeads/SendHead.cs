@@ -1,6 +1,6 @@
 ﻿
 
-namespace ExtenderApp.Common.NetWorks
+namespace ExtenderApp.Common.Networks
 {
     /// <summary>
     /// 发送头部信息结构体

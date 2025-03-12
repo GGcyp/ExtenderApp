@@ -1,6 +1,6 @@
 ﻿
 
-namespace ExtenderApp.Common.NetWorks
+namespace ExtenderApp.Common.Networks
 {
     /// <summary>
     /// 数据包段头结构体

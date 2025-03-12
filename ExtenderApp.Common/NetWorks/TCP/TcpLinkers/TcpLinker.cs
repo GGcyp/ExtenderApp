@@ -1,6 +1,6 @@
 ﻿using System.Net.Sockets;
 using ExtenderApp.Abstract;
-using ExtenderApp.Common.NetWorks;
+using ExtenderApp.Common.Networks;
 using ExtenderApp.Data.File;
 
 namespace ExtenderApp.Common

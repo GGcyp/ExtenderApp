@@ -2,7 +2,7 @@
 using ExtenderApp.Common.ConcurrentOperates;
 using ExtenderApp.Common.ObjectPools;
 
-namespace ExtenderApp.Common.NetWorks
+namespace ExtenderApp.Common.Networks
 {
     /// <summary>
     /// 链接操作数据类，继承自ConcurrentOperateData类

@@ -1,5 +1,5 @@
 ﻿
-namespace ExtenderApp.Common.NetWorks
+namespace ExtenderApp.Common.Networks
 {
     /// <summary>
     /// 流量记录器类，用于记录每秒发送和接收的字节数。
