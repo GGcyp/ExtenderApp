@@ -9,7 +9,7 @@ namespace ExtenderApp.Common.Networks
     /// </summary>
     public class TcpLinkerData : LinkerData
     {
-        public TcpLinkerData(AddressFamily addressFamily, SocketType socketType, ProtocolType protocolType) : base(addressFamily, socketType, protocolType)
+        public TcpLinkerData() : base(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp)
         {
         }
     }

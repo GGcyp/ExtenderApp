@@ -10,7 +10,7 @@ namespace ExtenderApp.Common.Networks
     {
         private readonly IBinaryFormatter<int> _int;
 
-        public override int Length => _int.Length * 3 + 5;
+        public override int Length => _int.Length * 3;
 
         public PacketSegmentDtoFromatter(IBinaryFormatterResolver resolver, ExtenderBinaryWriterConvert binaryWriterConvert, ExtenderBinaryReaderConvert binaryReaderConvert, BinaryOptions options) : base(binaryWriterConvert, binaryReaderConvert, options)
         {

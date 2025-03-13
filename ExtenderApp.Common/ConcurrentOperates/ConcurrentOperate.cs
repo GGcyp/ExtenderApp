@@ -50,12 +50,14 @@ namespace ExtenderApp.Common.ConcurrentOperates
     {
         #region Pool
 
+        private static Lazy<ObjectPool<ConcurrentOperate<TPolicy, TOperate, TData>>> _poolLazy =
+            new(() => ObjectPool.CreateDefaultPool<ConcurrentOperate<TPolicy, TOperate, TData>>());
+
         /// <summary>
         /// 创建一个默认的对象池，用于管理ConcurrentOperate<TPolicy, TOperate, TData>对象的创建和重用。
         /// </summary>
         /// <returns>返回创建好的对象池。</returns>
-        private readonly static ObjectPool<ConcurrentOperate<TPolicy, TOperate, TData>> _pool =
-            ObjectPool.CreateDefaultPool<ConcurrentOperate<TPolicy, TOperate, TData>>();
+        private static ObjectPool<ConcurrentOperate<TPolicy, TOperate, TData>> _pool => _poolLazy.Value;
 
         /// <summary>
         /// 从对象池中获取一个IConcurrentOperate<TOperate, TData>对象。
@@ -84,8 +86,6 @@ namespace ExtenderApp.Common.ConcurrentOperates
         /// <param name="obj">需要释放的实例</param>
         public void Release<T>(T obj) where T : class, IConcurrentOperate<TOperate, TData>
             => Release(obj);
-
-
 
         #endregion
 

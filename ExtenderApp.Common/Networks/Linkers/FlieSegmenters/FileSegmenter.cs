@@ -8,22 +8,27 @@ namespace ExtenderApp.Common.Networks
         public const int DefaultChunkSize = 1024 * 1024;
 
         private readonly ISplitterParser _splitterParser;
-        private ILinker linker;
+        private readonly ILinker _linker;
 
-        public FileSegmenter(ISplitterParser splitterParser)
+        private ExpectLocalFileInfo crruentFileInfo;
+        private IConcurrentOperate fileOperate;
+
+        public FileSegmenter(ILinker linker, ISplitterParser splitterParser)
         {
+            _linker = linker;
             _splitterParser = splitterParser;
         }
 
-        #region Set
-
-        public void Set(ILinker linker)
+        public void Start()
         {
-            this.linker = linker;
+            _linker.Register<SplitterDto>(ReceiveSplitterDto);
         }
 
-        #endregion
-
+        private void ReceiveSplitterDto(SplitterDto splitterDto)
+        {
+            _splitterParser.Write(crruentFileInfo, splitterDto.Bytes, splitterDto.ChunkIndex, fileOperate: fileOperate);
+            splitterDto.Dispose();
+        }
 
         public void SendFile(LocalFileInfo info, int chukSize = DefaultChunkSize)
         {
@@ -36,7 +41,8 @@ namespace ExtenderApp.Common.Networks
             {
                 //小文件直接传输
                 var splitterDto = _splitterParser.GetSplitterDto(info, 0, splitterInfo);
-                linker.Send(splitterDto);
+                _linker.Send(splitterDto);
+                splitterDto.Dispose();
                 return;
             }
 
@@ -45,7 +51,8 @@ namespace ExtenderApp.Common.Networks
             for (uint i = 0; i < splitterInfo.ChunkCount; i++)
             {
                 var splitterDto = _splitterParser.GetSplitterDto(info, i, splitterInfo, fileOperate);
-                linker.Send(splitterDto);
+                _linker.Send(splitterDto);
+                splitterDto.Dispose();
             }
         }
     }

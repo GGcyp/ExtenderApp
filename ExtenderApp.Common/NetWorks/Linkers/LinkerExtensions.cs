@@ -13,9 +13,10 @@ namespace ExtenderApp.Common.Networks
         /// 向服务集合中添加链接操作相关服务。
         /// </summary>
         /// <param name="services">服务集合。</param>
-        public static IServiceCollection AddLinkOperate(this IServiceCollection services)
+        public static IServiceCollection AddLinker(this IServiceCollection services)
         {
             services.AddTcpLinkOperate();
+            services.AddSingleton<ILinkerFactory, LinkerFactory>();
             services.Configuration<IBinaryFormatterStore>(s =>
             {
                 s.Add<LinkerDto, LinkerDtoFormatter>();

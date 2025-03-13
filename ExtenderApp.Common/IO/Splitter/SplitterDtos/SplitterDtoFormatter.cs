@@ -1,29 +1,39 @@
-﻿using ExtenderApp.Abstract;
+﻿using System.Buffers;
+using ExtenderApp.Abstract;
+using ExtenderApp.Common.IO.Binaries;
 using ExtenderApp.Common.IO.Binaries.Formatter;
 using ExtenderApp.Data;
 
 namespace ExtenderApp.Common.IO.Splitter
 {
-    internal class SplitterDtoFormatter : ResolverFormatter<SplitterDto>
+    internal class SplitterDtoFormatter : ExtenderFormatter<SplitterDto>
     {
         private readonly IBinaryFormatter<uint> _uint;
-        private readonly IBinaryFormatter<byte[]> _bytes;
         private readonly IBinaryFormatter<int> _int;
 
-        public override int Length => _uint.Length + _bytes.Length + _int.Length;
+        public override int Length => _uint.Length + _int.Length * 2;
 
-        public SplitterDtoFormatter(IBinaryFormatterResolver resolver) : base(resolver)
+        public SplitterDtoFormatter(IBinaryFormatterResolver resolver, ExtenderBinaryWriterConvert binaryWriterConvert, ExtenderBinaryReaderConvert binaryReaderConvert, BinaryOptions options) : base(binaryWriterConvert, binaryReaderConvert, options)
         {
-            _uint = GetFormatter<uint>();
-            _bytes = GetFormatter<byte[]>();
-            _int = GetFormatter<int>();
+            _uint = resolver.GetFormatter<uint>();
+            _int = resolver.GetFormatter<int>();
         }
 
         public override SplitterDto Deserialize(ref ExtenderBinaryReader reader)
         {
             var index = _uint.Deserialize(ref reader);
             var length = _int.Deserialize(ref reader);
-            var bytes = _bytes.Deserialize(ref reader);
+            var lengthBytes = _int.Deserialize(ref reader);
+            var bytesSequence = _binaryReaderConvert.ReadRaw(ref reader, lengthBytes);
+
+            var bytes = ArrayPool<byte>.Shared.Rent(lengthBytes);
+            int bytesIndex = 0;
+            foreach (var segment in bytesSequence)
+            {
+                segment.Span.CopyTo(bytes.AsSpan(bytesIndex));
+                bytesIndex += segment.Length;
+            }
+
             return new SplitterDto(index, bytes, length);
         }
 
@@ -31,12 +41,13 @@ namespace ExtenderApp.Common.IO.Splitter
         {
             _uint.Serialize(ref writer, value.ChunkIndex);
             _int.Serialize(ref writer, value.Length);
-            _bytes.Serialize(ref writer, value.Bytes);
+            _int.Serialize(ref writer, value.Bytes.Length);
+            _binaryWriterConvert.WriteRaw(ref writer, value.Bytes.AsSpan(0, value.Length));
         }
 
         public override long GetLength(SplitterDto value)
         {
-            return Length + _bytes.GetLength(value.Bytes);
+            return Length + 5 + value.Length;
         }
     }
 }

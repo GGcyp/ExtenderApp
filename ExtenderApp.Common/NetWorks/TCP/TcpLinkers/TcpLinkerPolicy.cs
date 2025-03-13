@@ -5,8 +5,7 @@ namespace ExtenderApp.Common.Networks
 {
     public class TcpLinkerPolicy : LinkOperatePolicy<TcpLinkerData>
     {
-        private static readonly ObjectPool<TcpLinkerData> _pool
-            = ObjectPool.Create(new FactoryPooledObjectPolicy<TcpLinkerData>(() => new TcpLinkerData(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp)));
+        private static readonly ObjectPool<TcpLinkerData> _pool = ObjectPool.CreateDefaultPool<TcpLinkerData>();
 
         public override TcpLinkerData GetData()
         {

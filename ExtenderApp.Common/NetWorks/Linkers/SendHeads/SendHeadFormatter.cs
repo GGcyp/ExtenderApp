@@ -33,7 +33,8 @@ namespace ExtenderApp.Common.Networks.Linkers.SendDtos
 
         public override void Serialize(ref ExtenderBinaryWriter writer, SendHead value)
         {
-            if (!value.HasSendHead) return;
+            //if (!value.HasSendHead) 
+            //    return;
 
             Utility.WriteSendHead(writer.GetSpan(Utility.HEAD_LENGTH));
             writer.Advance(Utility.HEAD_LENGTH);

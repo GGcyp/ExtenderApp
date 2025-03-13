@@ -5,7 +5,7 @@ namespace ExtenderApp.Common.Networks
     /// <summary>
     /// 发送头部信息结构体
     /// </summary>
-    internal struct SendHead
+    public struct SendHead
     {
         /// <summary>
         /// 是否包含发送头部信息

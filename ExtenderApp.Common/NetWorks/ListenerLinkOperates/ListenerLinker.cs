@@ -6,54 +6,7 @@ using ExtenderApp.Data.File;
 
 namespace ExtenderApp.Common.Networks
 {
-    /// <summary>
-    /// LinkPoolPolicy 类，继承自 PooledObjectPolicy 类，用于管理实现了 ILinker 接口的对象池。
-    /// </summary>
-    /// <typeparam name="T">泛型参数，表示实现了 ILinker 接口的类型。</typeparam>
-    public class LinkPoolPolicy<T> : PooledObjectPolicy<T> where T : ILinker
-    {
-        /// <summary>
-        /// 二进制解析器。
-        /// </summary>
-        private readonly IBinaryParser _binaryParser;
-
-        /// <summary>
-        /// 字节序列池。
-        /// </summary>
-        private readonly SequencePool<byte> _sequencePool;
-
-        /// <summary>
-        /// 创建对象的委托。
-        /// </summary>
-        private readonly Func<IBinaryParser, SequencePool<byte>, T> _createFunc;
-
-        public LinkPoolPolicy(IBinaryParser binaryParser, SequencePool<byte> sequencePool, Func<IBinaryParser, SequencePool<byte>, T> createFunc)
-        {
-            _binaryParser = binaryParser;
-            _sequencePool = sequencePool;
-            _createFunc = createFunc;
-        }
-
-        /// <summary>
-        /// 重写 Create 方法，用于创建新的对象。
-        /// </summary>
-        /// <returns>返回新创建的对象。</returns>
-        public override T Create()
-        {
-            return _createFunc.Invoke(_binaryParser, _sequencePool);
-        }
-
-        /// <summary>
-        /// 重写 Release 方法，用于释放对象。
-        /// </summary>
-        /// <param name="obj">要释放的对象。</param>
-        /// <returns>如果对象成功重置则返回 true，否则返回 false。</returns>
-        public override bool Release(T obj)
-        {
-            return obj.TryReset();
-        }
-    }
-    public abstract class ListenerLinker<T>
+    public abstract class ListenerLinker
     {
         private readonly Socket _listenerSocket;
         private readonly AsyncCallback _acceptCallback;
@@ -98,7 +51,7 @@ namespace ExtenderApp.Common.Networks
             return CreateOperate(clientSocket);
         }
 
-        public void BeginAccept(Action<T> callback)
+        public void BeginAccept(Action<ILinker> callback)
         {
             ThrowNotBound();
 
@@ -108,7 +61,7 @@ namespace ExtenderApp.Common.Networks
         private void AcceptCallback(IAsyncResult ar)
         {
             // 获取监听Socket
-            Action<T> callback = (Action<T>)ar.AsyncState!;
+            Action<ILinker> callback = (Action<ILinker>)ar.AsyncState!;
 
             // 结束接受连接请求并获取新的Socket
             Socket handler = _listenerSocket.EndAccept(ar);
@@ -124,6 +77,6 @@ namespace ExtenderApp.Common.Networks
                 throw new Exception("还未绑定本地接口");
         }
 
-        protected abstract T CreateOperate(Socket clientSocket);
+        protected abstract ILinker CreateOperate(Socket clientSocket);
     }
 }

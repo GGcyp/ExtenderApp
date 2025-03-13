@@ -1,4 +1,5 @@
 ﻿using System.Net;
+using System.Net.Sockets;
 
 namespace ExtenderApp.Abstract
 {
@@ -75,5 +76,6 @@ namespace ExtenderApp.Abstract
         /// 关闭连接
         /// </summary>
         void Close();
+        void Set(Socket socket);
     }
 }

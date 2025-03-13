@@ -2,13 +2,11 @@
 using ExtenderApp.Abstract;
 using ExtenderApp.ViewModels;
 using ExtenderApp.Common;
-using System.Net.Sockets;
 using System.Net;
-using System.Security.Cryptography;
 using ExtenderApp.Data.File;
 using ExtenderApp.Common.Networks;
+using System.Diagnostics;
 using System.Text;
-
 namespace ExtenderApp.Test
 {
     public class TestMainViewModel : ExtenderAppViewModel
@@ -109,11 +107,28 @@ namespace ExtenderApp.Test
             //        //await Task.Delay(10000);
             //    }
             //});
-            //var send = new byte[Utility.MegabytesToBytes(10)];
-            //send[0] = 1;
-            //tcpLinker.Send(send);
-            //send[0] = 2;
-            //tcpLinker.SendAsync(send);
+            //var send = new byte[Utility.MegabytesToBytes(1)];
+            //StringBuilder Builder = new StringBuilder();
+            //tcpLinker.Recorder.OnFlowRecorder += o =>
+            //{
+            //    Builder.AppendLine();
+            //    Builder.Append("每秒发送");
+            //    Builder.Append(Utility.BytesToMegabytes(o.SendBytesPerSecond).ToString());
+            //    Builder.AppendLine();
+            //    Builder.Append("总发送");
+            //    Builder.Append(Utility.BytesToMegabytes(o.SendByteCount).ToString());
+            //    Builder.AppendLine();
+            //    Debug(Builder.ToString());
+            //    Builder.Clear();
+            //};
+            //Stopwatch stopwatch = new Stopwatch();
+            //stopwatch.Start();
+            //for (int i = 0; i < 1000; i++)
+            //{
+            //    tcpLinker.Send(send);
+            //}
+            //stopwatch.Stop();
+            //Debug("使用了："+stopwatch.ElapsedMilliseconds.ToString());
         }
 
         private async void Listener()
@@ -162,7 +177,7 @@ namespace ExtenderApp.Test
         private void Networ(byte[] bytes)
         {
             //Debug(s);
-            Debug("收到" + bytes.Length.ToString());
+            //Debug("收到" + bytes.Length.ToString());
         }
 
         private void Networ(string s)

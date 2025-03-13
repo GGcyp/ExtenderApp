@@ -47,18 +47,6 @@ namespace ExtenderApp.Common.Networks
             ProtocolType = protocolType;
         }
 
-        ///// <summary>
-        ///// 使用指定的套接字初始化LinkOperateData实例
-        ///// </summary>
-        ///// <param name="socket">套接字</param>
-        //public LinkerData(Socket socket)
-        //{
-        //    Socket = socket;
-        //    AddressFamily = socket.AddressFamily;
-        //    ProtocolType = socket.ProtocolType;
-        //    SocketType = socket.SocketType;
-        //}
-
         /// <summary>
         /// 尝试重置LinkOperateData实例
         /// </summary>

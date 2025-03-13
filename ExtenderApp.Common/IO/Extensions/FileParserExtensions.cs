@@ -55,6 +55,7 @@ namespace ExtenderApp.Common
         private static IServiceCollection AddFileStore(this IServiceCollection services)
         {
             services.AddSingleton<FileStore>();
+            services.AddSingleton<IFileParserStore, FileParserStore>();
             return services;
         }
 

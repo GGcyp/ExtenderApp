@@ -14,7 +14,7 @@ namespace ExtenderApp.Common
         {
             services.AddFile();
             services.AddObjectPool();
-            services.AddLinkOperate();
+            services.AddLinker();
             services.AddSHA();
         }
     }

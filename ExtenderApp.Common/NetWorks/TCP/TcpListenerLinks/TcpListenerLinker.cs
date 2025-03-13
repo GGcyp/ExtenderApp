@@ -1,25 +1,20 @@
 ﻿using System.Net.Sockets;
 using ExtenderApp.Abstract;
-using ExtenderApp.Common.ObjectPools;
-using ExtenderApp.Data.File;
 
 namespace ExtenderApp.Common.Networks
 {
-    public class TcpListenerLinker : ListenerLinker<TcpLinker>
+    public class TcpListenerLinker : ListenerLinker
     {
-        private readonly ObjectPool<TcpLinker> _linkPool;
+        private readonly ILinkerFactory _linkerFactory;
 
-        public TcpListenerLinker(IBinaryParser binaryParser, SequencePool<byte> sequencePool) : base(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp)
+        public TcpListenerLinker(ILinkerFactory factory) : base(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp)
         {
-            _linkPool = ObjectPool.Create(new LinkPoolPolicy<TcpLinker>(binaryParser, sequencePool, (b, s) =>
-            {
-                return new TcpLinker(binaryParser, sequencePool);
-            }), canReuse: false);
+            _linkerFactory = factory;
         }
 
-        protected override TcpLinker CreateOperate(Socket clientSocket)
+        protected override ILinker CreateOperate(Socket clientSocket)
         {
-            var result = _linkPool.Get();
+            var result = _linkerFactory.CreateLinker(ProtocolType.Tcp);
             result.Set(clientSocket);
             return result;
         }

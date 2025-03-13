@@ -23,11 +23,39 @@ namespace ExtenderApp.Common.Networks
             where TPolicy : LinkOperatePolicy<TData>
             where TData : LinkerData
     {
-        private const int MAX_SEND_LENGTH = 4 * 1024;
-        /// <summary>
-        /// 默认接收长度。
-        /// </summary>
-        private const int DefalutReceiveLegth = 4 * 1024;
+        ///// <summary>
+        ///// 默认发送长度，单位为字节
+        ///// </summary>
+        //private const int DEFALUT_SEND_LENGTH = 4 * 1024;
+
+        ///// <summary>
+        ///// 默认接收长度，单位为字节
+        ///// </summary>
+        //private const int DEFALUT_RECEIVE_LENGTH = 4 * 1024;
+
+        #region 隐藏Pool方法
+
+        public static new IConcurrentOperate<Socket, TData> Get()
+        {
+            throw new NotImplementedException();
+        }
+
+        public static new void Release(IConcurrentOperate<Socket, TData> operate)
+        {
+            throw new NotImplementedException();
+        }
+
+        public new T Get<T>() where T : class
+        {
+            throw new NotImplementedException();
+        }
+
+        public new void Release<T>(T obj) where T : class, IConcurrentOperate<Socket, TData>
+        {
+            throw new NotImplementedException();
+        }
+
+        #endregion
 
         /// <summary>
         /// 对象池，用于创建和重用 LinkerOperation 对象。
@@ -36,19 +64,9 @@ namespace ExtenderApp.Common.Networks
                 ObjectPool.Create(new SelfResetPooledObjectPolicy<LinkerOperation>());
 
         /// <summary>
-        /// 发送头格式化器。
-        /// </summary>
-        private readonly IBinaryFormatter<SendHead> _sendHeadFormatter;
-
-        /// <summary>
         /// 序列号池，用于生成和管理序列号。
         /// </summary>
         private readonly SequencePool<byte> _sequencePool;
-
-        /// <summary>
-        /// 二进制解析器。
-        /// </summary>
-        private readonly IBinaryParser _binaryParser;
 
         /// <summary>
         /// 注册字典，用于存储和检索格式化器和委托。
@@ -56,10 +74,19 @@ namespace ExtenderApp.Common.Networks
         private readonly ConcurrentDictionary<int, DataBuffer<IBinaryFormatter, Delegate>> _registerDicts;
 
         /// <summary>
-        /// 获取延迟初始化的PacketSegmenter实例
+        /// 数据包分段器
         /// </summary>
-        /// <returns>延迟初始化的PacketSegmenter实例</returns>
         private readonly PacketSegmenter _packetSegmenter;
+
+        /// <summary>
+        /// 二进制解析器
+        /// </summary>
+        protected readonly IBinaryParser _binaryParser;
+
+        /// <summary>
+        /// 发送头格式化器
+        /// </summary>
+        protected readonly IBinaryFormatter<SendHead> _sendHeadFormatter;
 
         /// <summary>
         /// 流量记录器。
@@ -128,6 +155,8 @@ namespace ExtenderApp.Common.Networks
 
         #endregion
 
+        #region 内部属性
+
         /// <summary>
         /// LinkerDto 对象。
         /// </summary>
@@ -158,6 +187,8 @@ namespace ExtenderApp.Common.Networks
         /// </summary>
         private volatile int isClosing;
 
+        #endregion
+
         /// <summary>
         /// 是否需要心跳。
         /// </summary>
@@ -167,6 +198,18 @@ namespace ExtenderApp.Common.Networks
         /// 是否已连接。
         /// </summary>
         public bool Connected => Operate.Connected;
+
+        /// <summary>
+        /// 获取数据长度
+        /// </summary>
+        /// <returns>返回数据长度</returns>
+        protected abstract int DataLength { get; }
+
+        /// <summary>
+        /// 获取数据包长度
+        /// </summary>
+        /// <returns>返回数据包长度</returns>
+        protected abstract int PacketLength { get; }
 
         /// <summary>
         /// 初始化 Linker 类的新实例。
@@ -179,7 +222,8 @@ namespace ExtenderApp.Common.Networks
             _binaryParser = binaryParser;
             _sendHeadFormatter = _binaryParser.GetFormatter<SendHead>();
             _sequencePool = sequencePool;
-            _packetSegmenter = new PacketSegmenter(this, MAX_SEND_LENGTH - _sendHeadFormatter.Length - (int)_binaryParser.GetDefaulLength<PacketSegmentDto>(), RegisterTypeCallback);
+            //_packetSegmenter = new PacketSegmenter(this, DEFALUT_SEND_LENGTH - _sendHeadFormatter.Length - (int)_binaryParser.GetDefaulLength<PacketSegmentDto>(), RegisterTypeCallback);
+            _packetSegmenter = new PacketSegmenter(this, () => DataLength, RegisterTypeCallback);
 
             _heartbeatLazy = new(() => new Heartbeat(this), true);
             _receiveQueueBytesLazy = new(() => new ConcurrentQueue<(byte[], int)>(), true);
@@ -189,7 +233,9 @@ namespace ExtenderApp.Common.Networks
             _receiveCallbcak = new AsyncCallback(ReceiveCallbcak);
             _connectCallback = new AsyncCallback(ConnectCallbcak);
 
-            cacheBytes = ArrayPool<byte>.Shared.Rent(DefalutReceiveLegth * 2);
+            //cacheBytes = ArrayPool<byte>.Shared.Rent(DEFALUT_RECEIVE_LENGTH * 2);
+            //cacheBytes = ArrayPool<byte>.Shared.Rent(DataLength * 2);
+            cacheBytes = Array.Empty<byte>();
         }
 
         /// <summary>
@@ -197,6 +243,8 @@ namespace ExtenderApp.Common.Networks
         /// </summary>
         protected override void ProtectedStart()
         {
+            cacheBytes = ArrayPool<byte>.Shared.Rent(PacketLength * 2);
+
             Register<LinkerDto>(ReceiveLinkerDto);
 
             if (_heartbeatLazy.IsValueCreated)
@@ -446,14 +494,15 @@ namespace ExtenderApp.Common.Networks
             int typeCode = Utility.GetSimpleConsistentHash<T>();
             int headLength = _sendHeadFormatter.Length;
 
-            //检测发送数据大于4KB，需要分包发送
-            if (valueLength + headLength > MAX_SEND_LENGTH)
+            //检测发送数据大于数据段的长度，需要分包发送
+            if (valueLength + headLength > PacketLength)
             {
                 _packetSegmenter.SendBigPacket(typeCode, valueBytes, valueLength);
+                ArrayPool<byte>.Shared.Return(valueBytes);
                 return;
             }
 
-            GetSendBytes(value, typeCode, out var sendBytes, out var totalLength);
+            GetSendBytes(valueBytes, valueLength, typeCode, out var sendBytes, out var totalLength);
 
             var operation = _pool.Get();
             operation.Set(sendBytes, 0, totalLength, Recorder.RecordSend);
@@ -481,14 +530,15 @@ namespace ExtenderApp.Common.Networks
             int typeCode = Utility.GetSimpleConsistentHash<T>();
             int headLength = _sendHeadFormatter.Length;
 
-            //检测发送数据大于4KB，需要分包发送
-            if (valueLength + headLength > MAX_SEND_LENGTH)
+            //检测发送数据大于数据段的长度，需要分包发送
+            if (valueLength + headLength > PacketLength)
             {
                 _packetSegmenter.SendBigPacketAsync(typeCode, valueBytes, valueLength);
+                ArrayPool<byte>.Shared.Return(valueBytes);
                 return;
             }
 
-            GetSendBytes(value, typeCode, out var sendBytes, out var totalLength);
+            GetSendBytes(valueBytes, valueLength, typeCode, out var sendBytes, out var totalLength);
 
             var operation = _pool.Get();
             operation.Set(sendBytes, 0, totalLength, Recorder.RecordSend, b => ArrayPool<byte>.Shared.Return(b));
@@ -496,17 +546,15 @@ namespace ExtenderApp.Common.Networks
         }
 
         /// <summary>
-        /// 将值转换为字节数组并准备发送
+        /// 获取发送字节数组
         /// </summary>
-        /// <typeparam name="T">值的类型</typeparam>
-        /// <param name="value">需要转换的值</param>
-        /// <param name="typeCode">类型代码</param>
-        /// <param name="sendBytes">用于发送的字节数组</param>
+        /// <param name="valueBytes">输入值字节数组</param>
+        /// <param name="valueLength">输入值字节数组长度</param>
+        /// <param name="typeCode">类型码</param>
+        /// <param name="sendBytes">输出发送字节数组</param>
         /// <param name="totalLength">总长度</param>
-        private void GetSendBytes<T>(T value, int typeCode, out byte[] sendBytes, out int totalLength)
+        private void GetSendBytes(byte[] valueBytes, int valueLength, int typeCode, out byte[] sendBytes, out int totalLength)
         {
-            var valueBytes = _binaryParser.SerializeForArrayPool(value, out int valueLength);
-
             int startIndex = _sendHeadFormatter.Length;
             totalLength = startIndex + valueLength;
 
@@ -582,6 +630,7 @@ namespace ExtenderApp.Common.Networks
                 {
                     //Operate.BeginReceive(receiveBuffer, 0, receiveBuffer.Length, SocketFlags.None, _receiveCallbcak, receiveBuffer);
                     //return;
+                    ArrayPool<byte>.Shared.Return(receiveBuffer);
                     Release();
                     throw new Exception("连接已经断开");
                 }
@@ -609,7 +658,8 @@ namespace ExtenderApp.Common.Networks
         /// </summary>
         private void StartReceive()
         {
-            byte[] newReceiveQueueBytes = ArrayPool<byte>.Shared.Rent(DefalutReceiveLegth);
+            //byte[] newReceiveQueueBytes = ArrayPool<byte>.Shared.Rent(DEFALUT_RECEIVE_LENGTH);
+            byte[] newReceiveQueueBytes = ArrayPool<byte>.Shared.Rent(PacketLength);
             // 继续接收数据
             Operate.BeginReceive(newReceiveQueueBytes, 0, newReceiveQueueBytes.Length, SocketFlags.None, _receiveCallbcak, newReceiveQueueBytes);
         }

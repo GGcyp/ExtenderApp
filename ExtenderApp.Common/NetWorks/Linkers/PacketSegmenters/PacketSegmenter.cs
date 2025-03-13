@@ -5,89 +5,146 @@ using ExtenderApp.Abstract;
 namespace ExtenderApp.Common.Networks
 {
     /// <summary>
-    /// 处理大数据包的分块和重组。
+    /// 数据包分段器类,处理数据包分段
     /// </summary>
     public class PacketSegmenter
     {
-        private readonly ILinker _linker; // 传输层
-        private readonly Action<int, byte[], int, int> _callback; // 数据包接收完毕后的回调
+        /// <summary>
+        /// 传输层接口
+        /// </summary>
+        private readonly ILinker _linker;
 
-        private byte[]? buffer; // 缓冲区
-        private int typeCode; // 当前数据包类型码
-        private int packetCount; // 数据包数量
-        private int receivedCount; // 已接收的数据包数量
-        private int maxSegmenterLength; // 每个分块的最大大小
+        /// <summary>
+        /// 数据包接收完毕后的回调
+        /// </summary>
+        private readonly Action<int, byte[], int, int> _callback;
 
-        public PacketSegmenter(ILinker linker, int maxSegmenterLength, Action<int, byte[], int, int> callback)
+        /// <summary>
+        /// 获取分段长度的函数
+        /// </summary>
+        private readonly Func<int> _getSegmenterLength;
+
+        /// <summary>
+        /// 缓冲区
+        /// </summary>
+        private byte[]? buffer;
+
+        /// <summary>
+        /// 当前数据包类型码
+        /// </summary>
+        private int typeCode;
+
+        /// <summary>
+        /// 数据包数量
+        /// </summary>
+        private int packetCount;
+
+        /// <summary>
+        /// 已接收的数据包数量
+        /// </summary>
+        private int receivedCount;
+
+        /// <summary>
+        /// 分段的长度
+        /// </summary>
+        private int segmenterLength;
+
+        /// <summary>
+        /// 构造函数
+        /// </summary>
+        /// <param name="linker">传输层接口</param>
+        /// <param name="maxSegmenterLength">每个分块的最大大小</param>
+        /// <param name="callback">数据包接收完毕后的回调</param>
+        public PacketSegmenter(ILinker linker, Func<int> getSegmenterLength, Action<int, byte[], int, int> callback)
         {
             _linker = linker;
-            this.maxSegmenterLength = maxSegmenterLength;
             _callback = callback;
+            _getSegmenterLength = getSegmenterLength;
             buffer = null;
         }
 
+        /// <summary>
+        /// 启动数据包分段器
+        /// </summary>
         public void Start()
         {
             _linker.Register<PacketSegmentHead>(ReceivePacketSegmentHead);
             _linker.Register<PacketSegmentDto>(ReceivePacketSegmentDto);
+            segmenterLength = _getSegmenterLength.Invoke();
         }
 
-        public bool SendBigPacket(int typeCode, byte[] bytes, int length)
+        /// <summary>
+        /// 发送大数据包
+        /// </summary>
+        /// <param name="typeCode">数据包类型码</param>
+        /// <param name="bytes">数据包字节数据</param>
+        /// <param name="length">数据包长度</param>
+        /// <returns>发送成功返回true，否则返回false</returns>
+        /// <exception cref="ArgumentException">当分段长度小于等于零时抛出异常</exception>
+        public void SendBigPacket(int typeCode, byte[] bytes, int length)
         {
-            if (length < maxSegmenterLength)
+            if (length < segmenterLength)
             {
-                return false;
+                return;
             }
 
-            int count = length / maxSegmenterLength + (length % maxSegmenterLength > 0 ? 1 : 0);
+            int count = length / segmenterLength + (length % segmenterLength > 0 ? 1 : 0);
             PacketSegmentHead head = new PacketSegmentHead(length, typeCode, count);
             _linker.Send(head);
 
             for (int i = 0; i < count - 1; i++)
             {
-                PacketSegmentDto segmentDto = new PacketSegmentDto(i, maxSegmenterLength, new ReadOnlyMemory<byte>(bytes, i * maxSegmenterLength, maxSegmenterLength));
+                PacketSegmentDto segmentDto = new PacketSegmentDto(i, segmenterLength, new ReadOnlyMemory<byte>(bytes, i * segmenterLength, segmenterLength));
                 _linker.Send(segmentDto);
             }
 
             int endIndex = count - 1;
             if (endIndex > 0)
             {
-                int segmentLength = length % maxSegmenterLength;
-                PacketSegmentDto segmentDto = new PacketSegmentDto(endIndex, segmentLength, new ReadOnlyMemory<byte>(bytes, endIndex * maxSegmenterLength, segmentLength));
+                int segmentLength = length % segmenterLength;
+                PacketSegmentDto segmentDto = new PacketSegmentDto(endIndex, segmentLength, new ReadOnlyMemory<byte>(bytes, endIndex * segmenterLength, segmentLength));
                 _linker.Send(segmentDto);
             }
-
-            return true;
         }
 
-        public bool SendBigPacketAsync(int typeCode, byte[] bytes, int length)
+        /// <summary>
+        /// 异步发送大数据包
+        /// </summary>
+        /// <param name="typeCode">数据包类型码</param>
+        /// <param name="bytes">数据包字节数据</param>
+        /// <param name="length">数据包长度</param>
+        /// <returns>发送成功返回true，否则返回false</returns>
+        /// <exception cref="ArgumentException">当分段长度小于等于零时抛出异常</exception>
+        public void SendBigPacketAsync(int typeCode, byte[] bytes, int length)
         {
-            if (length < maxSegmenterLength)
+            if (length < segmenterLength)
             {
-                return false;
+                return;
             }
 
-            int count = length / maxSegmenterLength + (length % maxSegmenterLength > 0 ? 1 : 0);
+            int count = length / segmenterLength + (length % segmenterLength > 0 ? 1 : 0);
             PacketSegmentHead head = new PacketSegmentHead(length, typeCode, count);
             _linker.SendAsync(head);
 
             for (int i = 0; i < count - 1; i++)
             {
-                PacketSegmentDto segmentDto = new PacketSegmentDto(i, maxSegmenterLength, new ReadOnlyMemory<byte>(bytes, i * maxSegmenterLength, maxSegmenterLength));
+                PacketSegmentDto segmentDto = new PacketSegmentDto(i, segmenterLength, new ReadOnlyMemory<byte>(bytes, i * segmenterLength, segmenterLength));
                 _linker.SendAsync(segmentDto);
             }
 
             int endIndex = count - 1;
             if (endIndex > 0)
             {
-                int segmentLength = length % maxSegmenterLength;
-                PacketSegmentDto segmentDto = new PacketSegmentDto(endIndex, segmentLength, new ReadOnlyMemory<byte>(bytes, endIndex * maxSegmenterLength, segmentLength));
+                int segmentLength = length % segmenterLength;
+                PacketSegmentDto segmentDto = new PacketSegmentDto(endIndex, segmentLength, new ReadOnlyMemory<byte>(bytes, endIndex * segmenterLength, segmentLength));
                 _linker.SendAsync(segmentDto);
             }
-
-            return true;
         }
 
+        /// <summary>
+        /// 接收数据包头
+        /// </summary>
+        /// <param name="segmentHead">数据包头</param>
         private void ReceivePacketSegmentHead(PacketSegmentHead segmentHead)
         {
             if (buffer != null)
@@ -98,9 +155,13 @@ namespace ExtenderApp.Common.Networks
             packetCount = segmentHead.Count;
         }
 
+        /// <summary>
+        /// 接收数据包数据
+        /// </summary>
+        /// <param name="segmentDto">数据包数据对象</param>
         private void ReceivePacketSegmentDto(PacketSegmentDto segmentDto)
         {
-            segmentDto.Data.Span.CopyTo(buffer.AsSpan(segmentDto.SegmentIndex * maxSegmenterLength, segmentDto.Length));
+            segmentDto.Data.Span.CopyTo(buffer.AsSpan(segmentDto.SegmentIndex * segmenterLength, segmentDto.Length));
             //Array.Copy(segmentDto.Data, 0, buffer, segmentDto.SegmentCount * maxSegmenterLength, segmentDto.Length);
             receivedCount++;
             if (MemoryMarshal.TryGetArray(segmentDto.Data, out var segment))

@@ -1,5 +1,4 @@
-﻿using System.Net.Sockets;
-using ExtenderApp.Abstract;
+﻿using ExtenderApp.Abstract;
 using ExtenderApp.Common.Networks;
 using ExtenderApp.Data.File;
 
@@ -206,11 +205,19 @@ namespace ExtenderApp.Common
 
     public class TcpLinker : Linker<TcpLinkerPolicy, TcpLinkerData>
     {
+        private const int DEFALUT_DATA_LENGTH = 4 * 1024;
+
         private readonly static TcpLinkerPolicy tcpLinkPolicy = new TcpLinkerPolicy();
 
-        public TcpLinker(IBinaryParser binaryParser, SequencePool<byte> sequencePool) : base( binaryParser, sequencePool)
+        private int dataLength;
+        protected override int DataLength => dataLength;
+
+        protected override int PacketLength => DEFALUT_DATA_LENGTH;
+
+        public TcpLinker(IBinaryParser binaryParser, SequencePool<byte> sequencePool) : base(binaryParser, sequencePool)
         {
             Policy = tcpLinkPolicy;
+            dataLength = DEFALUT_DATA_LENGTH - _sendHeadFormatter.Length - (int)_binaryParser.GetDefaulLength<PacketSegmentDto>();
         }
     }
 }
