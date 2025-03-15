@@ -4,9 +4,10 @@ using AppHost.Extensions.DependencyInjection;
 using ExtenderApp.Abstract;
 using ExtenderApp.Common.IO.Binaries.Formatter;
 using ExtenderApp.Common.IO.Binaries.Formatter.Struct;
+using ExtenderApp.Common.IO.Binary.Formatter;
 using ExtenderApp.Common.IO.Binary.Formatter.Collection;
 using ExtenderApp.Data;
-using ExtenderApp.Data.File;
+
 
 
 namespace ExtenderApp.Common.IO.Binaries
@@ -31,6 +32,7 @@ namespace ExtenderApp.Common.IO.Binaries
             services.AddSingleton<ExtenderBinaryReaderConvert>();
             services.AddSingleton<ExtenderBinaryWriterConvert>();
             services.AddSingleton(new SequencePool<byte>(Environment.ProcessorCount * 2, ArrayPool<byte>.Shared));
+            services.AddSingleton<DefaultObjectStore>();
 
             services.AddSingleton(typeof(IBinaryFormatter<>), (p, o) =>
             {

@@ -3,17 +3,17 @@ using ExtenderApp.Abstract;
 using ExtenderApp.ViewModels;
 using ExtenderApp.Common;
 using System.Net;
-using ExtenderApp.Data.File;
 using ExtenderApp.Common.Networks;
 using System.Diagnostics;
-using System.Text;
+using System.Buffers;
+
 namespace ExtenderApp.Test
 {
     public class TestMainViewModel : ExtenderAppViewModel
     {
-        private readonly IBinaryParser _binaryParser;
-        private readonly SequencePool<byte> _sequencePool;
-        public TestMainViewModel(TcpLinker tcpLinker, IBinaryParser binaryParser, SequencePool<byte> sequencePool, IServiceStore serviceStore) : base(serviceStore)
+        private readonly ILinkerFactory _linkerFactory;
+
+        public TestMainViewModel(TcpLinker tcpLinker, ILinkerFactory linkerFactory, IServiceStore serviceStore) : base(serviceStore)
         {
             //var fileInfo = CreatTestExpectLocalFileInfo(string.Format("测试{0}", DateTime.Now.ToString()));
             //var info = new FileSplitterInfo(2048, 2, 0, 1024, FileExtensions.TextFileExtensions);
@@ -45,8 +45,9 @@ namespace ExtenderApp.Test
             //temp1 = binary.Read<string>(info);
             //binary.Write(info, new byte[5000]);
             //var temp2 = binary.Read<byte[]>(info);
-            _binaryParser = binaryParser;
-            _sequencePool = sequencePool;
+            //_binaryParser = binaryParser;
+            //_sequencePool = sequencePool;
+            _linkerFactory = linkerFactory;
             Task.Run(Listener);
             tcpLinker.Start();
             tcpLinker.Connect("127.0.0.1", 5520);
@@ -60,27 +61,35 @@ namespace ExtenderApp.Test
             //tcpLinker.Set(new LinkerDto() { NeedHeartbeat = true });
 
             //_sb = new StringBuilder();
-            tcpLinker.Recorder.OnFlowRecorder += o =>
-            {
-                //_sb.AppendLine();
-                //_sb.Append("每秒发送");
-                //_sb.Append(Utility.BytesToMegabytes(o.SendBytesPerSecond).ToString());
-                //_sb.AppendLine();
-                //_sb.Append("总发送");
-                //_sb.Append(Utility.BytesToMegabytes(o.SendByteCount).ToString());
-                //_sb.AppendLine();
-                //_sb.Append(Utility.BytesToMegabytes(o.ReceiveByteCount).ToString());
-                //_sb.AppendLine();
-                //_sb.Append(Utility.BytesToMegabytes(o.ReceiveBytesPerSecond).ToString());
-                //_sb.AppendLine();
+            //tcpLinker.Recorder.OnFlowRecorder += o =>
+            //{
+            //    //_sb.AppendLine();
+            //    //_sb.Append("每秒发送");
+            //    //_sb.Append(Utility.BytesToMegabytes(o.SendBytesPerSecond).ToString());
+            //    //_sb.AppendLine();
+            //    //_sb.Append("总发送");
+            //    //_sb.Append(Utility.BytesToMegabytes(o.SendByteCount).ToString());
+            //    //_sb.AppendLine();
+            //    //_sb.Append(Utility.BytesToMegabytes(o.ReceiveByteCount).ToString());
+            //    //_sb.AppendLine();
+            //    //_sb.Append(Utility.BytesToMegabytes(o.ReceiveBytesPerSecond).ToString());
+            //    //_sb.AppendLine();
 
-                //Debug(_sb.ToString());
-                //_sb.Clear();
-            };
-            Task.Run(() => { TestSend(tcpLinker); });
+            //    //Debug(_sb.ToString());
+            //    //_sb.Clear();
+            //};
+            //Task.Run(() => { TestSend(tcpLinker); });
 
             //operate.Heartbeat.ChangeSendHearbeatInterval(20);
             //operate.Close();
+
+            //Delegate @delegate = () => { Debug("最开始"); };
+            //var action = (@delegate as Action);
+            //action += () => { Debug("第二个"); };
+            //(@delegate as Action).Invoke();
+
+            //Debug("重新");
+            //action.Invoke();
         }
 
         private async void TestSend(TcpLinker tcpLinker)
@@ -107,7 +116,7 @@ namespace ExtenderApp.Test
             //        //await Task.Delay(10000);
             //    }
             //});
-            //var send = new byte[Utility.MegabytesToBytes(1)];
+            var send = new byte[Utility.MegabytesToBytes(1)];
             //StringBuilder Builder = new StringBuilder();
             //tcpLinker.Recorder.OnFlowRecorder += o =>
             //{
@@ -121,14 +130,14 @@ namespace ExtenderApp.Test
             //    Debug(Builder.ToString());
             //    Builder.Clear();
             //};
-            //Stopwatch stopwatch = new Stopwatch();
-            //stopwatch.Start();
-            //for (int i = 0; i < 1000; i++)
-            //{
-            //    tcpLinker.Send(send);
-            //}
-            //stopwatch.Stop();
-            //Debug("使用了："+stopwatch.ElapsedMilliseconds.ToString());
+            Stopwatch stopwatch = new Stopwatch();
+            stopwatch.Start();
+            for (int i = 0; i < 1000; i++)
+            {
+                tcpLinker.Send(send);
+            }
+            stopwatch.Stop();
+            Debug("使用了：" + stopwatch.ElapsedMilliseconds.ToString());
         }
 
         private async void Listener()
@@ -137,10 +146,10 @@ namespace ExtenderApp.Test
             //listener.Start();
             //var client = listener.AcceptTcpClient();
 
-            TcpListenerLinker tcpListener = new TcpListenerLinker(_binaryParser, _sequencePool);
+            TcpListenerLinker tcpListener = new TcpListenerLinker(_linkerFactory);
             tcpListener.Bind(new IPEndPoint(IPAddress.Parse("127.0.0.1"), 5520));
             tcpListener.Listen();
-            TcpLinker link = tcpListener.Accept();
+            TcpLinker link = (TcpLinker)tcpListener.Accept();
             link.Start();
             //var stream = client.GetStream();
             //byte[] bytes = new byte[1024];
@@ -148,7 +157,7 @@ namespace ExtenderApp.Test
             //var temp = _binaryParser.Deserialize<NetworkPacket>(bytes);
             //var name = _binaryParser.Deserialize<string>(temp.Bytes);
             //Debug(temp.TypeCode.ToString() + name);
-            link.Register<byte[]>(Networ);
+            //link.Register<byte[]>(Networ);
             link.Register<string>(Networ);
             link.Recorder.OnFlowRecorder += o =>
             {

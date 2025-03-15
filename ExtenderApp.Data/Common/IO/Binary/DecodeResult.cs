@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ExtenderApp.Data.File
+namespace ExtenderApp.Data
 {
     /// <summary>
     /// 解码结果枚举

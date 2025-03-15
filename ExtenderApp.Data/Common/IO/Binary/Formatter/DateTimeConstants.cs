@@ -1,6 +1,6 @@
 ﻿
 
-namespace ExtenderApp.Data.File
+namespace ExtenderApp.Data
 {
     /// <summary>
     /// 日期时间常量结构体

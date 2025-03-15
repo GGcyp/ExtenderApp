@@ -10,6 +10,7 @@ namespace ExtenderApp.Common.IO.Splitter
     {
         private readonly IBinaryFormatter<uint> _uint;
         private readonly IBinaryFormatter<int> _int;
+        private readonly IBinaryFormatter<string> _string;
 
         public override int Length => _uint.Length + _int.Length * 2;
 
@@ -24,6 +25,7 @@ namespace ExtenderApp.Common.IO.Splitter
             var index = _uint.Deserialize(ref reader);
             var length = _int.Deserialize(ref reader);
             var lengthBytes = _int.Deserialize(ref reader);
+            var md5 = _string.Deserialize(ref reader);
             var bytesSequence = _binaryReaderConvert.ReadRaw(ref reader, lengthBytes);
 
             var bytes = ArrayPool<byte>.Shared.Rent(lengthBytes);
@@ -34,7 +36,7 @@ namespace ExtenderApp.Common.IO.Splitter
                 bytesIndex += segment.Length;
             }
 
-            return new SplitterDto(index, bytes, length);
+            return new SplitterDto(index, bytes, length, md5);
         }
 
         public override void Serialize(ref ExtenderBinaryWriter writer, SplitterDto value)
@@ -42,6 +44,7 @@ namespace ExtenderApp.Common.IO.Splitter
             _uint.Serialize(ref writer, value.ChunkIndex);
             _int.Serialize(ref writer, value.Length);
             _int.Serialize(ref writer, value.Bytes.Length);
+            _string.Serialize(ref writer, value.MD5);
             _binaryWriterConvert.WriteRaw(ref writer, value.Bytes.AsSpan(0, value.Length));
         }
 

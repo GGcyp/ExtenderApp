@@ -250,9 +250,9 @@ namespace ExtenderApp.Common.IO.Splitter
                 operate.Data.SplitterInfo = splitterInfo;
             }
 
-            if (chunkIndex < 0)
+            if (splitterInfo == null)
             {
-                chunkIndex = splitterInfo.Progress;
+                ErrorUtil.ArgumentNull(nameof(splitterInfo));
             }
 
             if (chunkIndex >= splitterInfo.ChunkCount)
@@ -267,6 +267,7 @@ namespace ExtenderApp.Common.IO.Splitter
 
             operation.Set(bytes, splitterInfo.GetPosition(chunkIndex), bytes.Length, splitterInfo);
             operate.ExecuteOperation(operation);
+            operation.Release();
         }
 
         public void Write<T>(ExpectLocalFileInfo info, T value, uint chunkIndex, SplitterInfo? splitterInfo = null, IConcurrentOperate fileOperate = null)
@@ -348,6 +349,42 @@ namespace ExtenderApp.Common.IO.Splitter
             WriteAsync(info, bytes, chunkIndex, splitterInfo, fileOperate);
         }
 
+        public void Write(ExpectLocalFileInfo info, SplitterDto splitterDto, SplitterInfo? splitterInfo = null, IConcurrentOperate fileOperate = null)
+        {
+            var operate = GetFileSplitterOperate(info, fileOperate);
+            var operation = _writeOperationPool.Get();
+
+            if (splitterInfo == null)
+            {
+                splitterInfo = operate.Data.SplitterInfo;
+            }
+            else
+            {
+                operate.Data.SplitterInfo = splitterInfo;
+            }
+
+            if (splitterInfo == null)
+            {
+                ErrorUtil.ArgumentNull(nameof(splitterInfo));
+            }
+
+            uint chunkIndex = splitterDto.ChunkIndex;
+            if (chunkIndex >= splitterInfo.ChunkCount)
+            {
+                ErrorUtil.ArgumentOutOfRange(nameof(chunkIndex), string.Format("块索引超出范围:{0}", chunkIndex.ToString()));
+            }
+
+            var bytes = splitterDto.Bytes;
+            if (bytes.Length > splitterInfo.MaxChunkSize)
+            {
+                ErrorUtil.ArgumentOutOfRange(nameof(bytes), "数据长度超出最大块大小");
+            }
+
+            operation.Set(splitterDto, splitterInfo);
+            operate.ExecuteOperation(operation);
+            operation.Release();
+        }
+
         #endregion
 
         #region Create
@@ -387,7 +424,8 @@ namespace ExtenderApp.Common.IO.Splitter
 
             long length = info.FileInfo.Length;
             uint chunkCount = (uint)(length / maxLength);
-            SplitterInfo splitterInfo = new SplitterInfo(length, chunkCount, 0, maxLength, info.Extension, createLoaderChunks ? new byte[chunkCount] : null);
+            string md5 = GetFileSplitterOperate(info.CreateWriteOperate(), null).GetFileMD5();
+            SplitterInfo splitterInfo = new SplitterInfo(length, chunkCount, 0, maxLength, info.Extension, md5, createLoaderChunks ? new byte[chunkCount] : null);
             return splitterInfo;
         }
 
@@ -432,7 +470,7 @@ namespace ExtenderApp.Common.IO.Splitter
             int length = info.MaxChunkSize;
             var valueBytes = Read(fileInfo.CreateWriteOperate(), chunkIndex, info, fileOperate);
 
-            return new SplitterDto(chunkIndex, valueBytes, length);
+            return new SplitterDto(chunkIndex, valueBytes, length, info.FileMD5);
         }
 
         #endregion

@@ -46,6 +46,11 @@ namespace ExtenderApp.Common.IO.Splitter
         /// </summary>
         private Action? callback;
 
+        /// <summary>
+        /// 分割器数据传输对象
+        /// </summary>
+        private SplitterDto splitterDto;
+
         public SplitterWriteOperation()
         {
             writeBytes = Array.Empty<byte>();
@@ -84,7 +89,7 @@ namespace ExtenderApp.Common.IO.Splitter
         /// <param name="splitterInfo">分隔符信息。</param>
         public void Set(byte[] bytes, int length, SplitterInfo splitterInfo)
         {
-            Set(bytes,length, splitterInfo, null);
+            Set(bytes, length, splitterInfo, null);
         }
 
         /// <summary>
@@ -151,15 +156,31 @@ namespace ExtenderApp.Common.IO.Splitter
             writeChunkIndex = splitterInfo.GetChunkIndex(writePosition);
         }
 
+        /// <summary>
+        /// 设置分片信息
+        /// </summary>
+        /// <param name="splitterDto">分片传输对象</param>
+        /// <param name="info">分片信息</param>
+        public void Set(SplitterDto splitterDto, SplitterInfo info)
+        {
+            this.splitterDto = splitterDto;
+            writePosition = splitterDto.ChunkIndex * info.MaxChunkSize;
+            writeLength = splitterDto.Length;
+            writeChunkIndex = splitterDto.ChunkIndex;
+        }
+
         public override void Execute(MemoryMappedViewAccessor item)
         {
             //stream.Seek(writePosition, SeekOrigin.Begin);
             //stream.Write(writeBytes, 0, writeLength);
             //splitterInfo.AddChunk(writePosition / splitterInfo.MaxChunkSize);
 
+            Span<byte> span = writeBytes == Array.Empty<byte>() ? splitterDto : writeBytes.AsSpan();
+            int index = 0;
             for (long i = writePosition; i < writeLength; i++)
             {
-                item.Write(i, writeBytes[i]);
+                item.Write(i, span[index]);
+                index++;
             }
             splitterInfo.AddChunk(writeChunkIndex);
             callbackByteArray?.Invoke(writeBytes);
@@ -177,6 +198,8 @@ namespace ExtenderApp.Common.IO.Splitter
             writeLength = 0;
             splitterInfo = SplitterInfo.Empty;
             callbackByteArray = null;
+            splitterDto.Dispose();
+            splitterDto = SplitterDto.Empty;
             return true;
         }
     }

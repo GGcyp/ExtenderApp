@@ -1,6 +1,6 @@
 ﻿
 
-namespace ExtenderApp.Data.File
+namespace ExtenderApp.Data
 {
     public struct BinaryCode
     {

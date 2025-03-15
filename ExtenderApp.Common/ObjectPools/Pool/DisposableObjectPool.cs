@@ -1,4 +1,5 @@
-﻿using ExtenderApp.Abstract;
+﻿using System.Diagnostics;
+using ExtenderApp.Abstract;
 
 namespace ExtenderApp.Common.ObjectPools
 {

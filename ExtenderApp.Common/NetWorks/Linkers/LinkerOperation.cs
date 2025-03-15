@@ -62,5 +62,11 @@ namespace ExtenderApp.Common.Networks.LinkOperates
             sendCountCallback = null;
             return true;
         }
+
+        protected override void Dispose(bool disposing)
+        {
+            TryReset();
+            base.Dispose(disposing);
+        }
     }
 }

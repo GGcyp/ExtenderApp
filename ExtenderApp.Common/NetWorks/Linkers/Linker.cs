@@ -10,7 +10,6 @@ using ExtenderApp.Common.Networks.LinkOperates;
 using ExtenderApp.Common.ObjectPools;
 using ExtenderApp.Common.ObjectPools.Policy;
 using ExtenderApp.Data;
-using ExtenderApp.Data.File;
 
 namespace ExtenderApp.Common.Networks
 {
@@ -87,6 +86,14 @@ namespace ExtenderApp.Common.Networks
         /// 发送头格式化器
         /// </summary>
         protected readonly IBinaryFormatter<SendHead> _sendHeadFormatter;
+
+        /// <summary>
+        /// 记录发送动作委托
+        /// </summary>
+        /// <remarks>
+        /// 该委托用于记录发送动作，接受一个整数参数。
+        /// </remarks>
+        private readonly Action<int> _recordSendAction;
 
         /// <summary>
         /// 流量记录器。
@@ -229,6 +236,7 @@ namespace ExtenderApp.Common.Networks
             _receiveQueueBytesLazy = new(() => new ConcurrentQueue<(byte[], int)>(), true);
 
             Recorder = new();
+            _recordSendAction = Recorder.RecordSend;
 
             _receiveCallbcak = new AsyncCallback(ReceiveCallbcak);
             _connectCallback = new AsyncCallback(ConnectCallbcak);
@@ -450,9 +458,15 @@ namespace ExtenderApp.Common.Networks
             int typeCode = Utility.GetSimpleConsistentHash(typeName);
             if (_registerDicts.TryGetValue(typeCode, out var buffer))
             {
-                // 只接受最后一个回调函数
-                buffer.Item2 = callback;
+                var action = buffer.Item2 as Action<T>;
+                action += callback;
+                buffer.Item2 = action;
                 return;
+
+                //之前的代码
+                // 只接受最后一个回调函数
+                //buffer.Item2 = callback;
+                //return;
                 //throw new Exception(string.Format("不允许重复注册:{0}", typeName));
             }
 
@@ -505,7 +519,7 @@ namespace ExtenderApp.Common.Networks
             GetSendBytes(valueBytes, valueLength, typeCode, out var sendBytes, out var totalLength);
 
             var operation = _pool.Get();
-            operation.Set(sendBytes, 0, totalLength, Recorder.RecordSend);
+            operation.Set(sendBytes, 0, totalLength, _recordSendAction);
             ExecuteOperation(operation);
             ArrayPool<byte>.Shared.Return(sendBytes);
             operation.Release();
@@ -541,7 +555,7 @@ namespace ExtenderApp.Common.Networks
             GetSendBytes(valueBytes, valueLength, typeCode, out var sendBytes, out var totalLength);
 
             var operation = _pool.Get();
-            operation.Set(sendBytes, 0, totalLength, Recorder.RecordSend, b => ArrayPool<byte>.Shared.Return(b));
+            operation.Set(sendBytes, 0, totalLength, _recordSendAction, b => ArrayPool<byte>.Shared.Return(b));
             QueueOperation(operation);
         }
 

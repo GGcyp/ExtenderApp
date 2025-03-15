@@ -1,4 +1,5 @@
-﻿using ExtenderApp.Common.ConcurrentOperates;
+﻿using System.IO.MemoryMappedFiles;
+using ExtenderApp.Common.ConcurrentOperates;
 using ExtenderApp.Data;
 
 namespace ExtenderApp.Common.IO
@@ -27,6 +28,16 @@ namespace ExtenderApp.Common.IO
         /// 文件操作信息释放委托。
         /// </summary>
         private Action<FileOperateInfo> releaseFileOperateInfo;
+
+        /// <summary>
+        /// 获取或设置文件流
+        /// </summary>
+        public Stream? FileStream { get; internal set; }
+
+        /// <summary>
+        /// 获取或设置内存映射文件
+        /// </summary>
+        public MemoryMappedFile? FileMemoryMappedFile { get; internal set; }
 
         /// <summary>
         /// 打开文件的方法
@@ -60,6 +71,10 @@ namespace ExtenderApp.Common.IO
         {
             OperateInfo = FileOperateInfo.Empty;
             releaseFileOperateInfo = null;
+            FileStream.Dispose();
+            FileMemoryMappedFile.Dispose();
+            FileStream = null;
+            FileMemoryMappedFile = null;
             return base.TryReset();
         }
     }

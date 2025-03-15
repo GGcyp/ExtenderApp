@@ -3,7 +3,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 
 
-namespace ExtenderApp.Data.File
+namespace ExtenderApp.Data
 {
     /// <summary>
     /// 泛型序列类，实现了IBufferWriter<T>和IDisposable接口。

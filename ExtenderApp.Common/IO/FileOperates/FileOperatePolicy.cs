@@ -16,7 +16,10 @@ namespace ExtenderApp.Common.IO
         public override MemoryMappedViewAccessor Create(T data)
         {
             FileStream fileStream = data.OperateInfo.OpenFile();
-            return MemoryMappedFile.CreateFromFile(fileStream, data.OperateInfo.LocalFileInfo.FileName, data.FileLength, MemoryMappedFileAccess.ReadWrite, HandleInheritability.Inheritable, true).CreateViewAccessor();
+            MemoryMappedFile memoryMappedFile = MemoryMappedFile.CreateFromFile(fileStream, data.OperateInfo.LocalFileInfo.FileName, data.FileLength, MemoryMappedFileAccess.ReadWrite, HandleInheritability.Inheritable, true);
+            data.FileStream = fileStream;
+            data.FileMemoryMappedFile = memoryMappedFile;
+            return memoryMappedFile.CreateViewAccessor();
         }
 
         public override T GetData()

@@ -121,5 +121,6 @@ namespace ExtenderApp.Abstract
         /// <param name="splitterInfo">分割信息（可选）。</param>
         /// <param name="fileOperate">文件操作对象（可选）。</param>
         void WriteAsync<T>(ExpectLocalFileInfo info, T value, uint chunkIndex, SplitterInfo? splitterInfo = null, IConcurrentOperate fileOperate = null);
+        void Write(ExpectLocalFileInfo info, SplitterDto splitterDto, SplitterInfo? splitterInfo = null, IConcurrentOperate fileOperate = null);
     }
 }

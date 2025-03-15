@@ -1,4 +1,4 @@
-﻿namespace ExtenderApp.Data.File
+﻿namespace ExtenderApp.Data
 {
     /// <summary>
     /// 表示二进制范围的结构体。

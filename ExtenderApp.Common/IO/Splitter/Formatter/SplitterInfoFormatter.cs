@@ -33,7 +33,7 @@ namespace ExtenderApp.Common.IO.Splitter
         /// 用于反序列化 string 类型的格式化器
         /// </summary>
         private readonly IBinaryFormatter<string> _string;
-        public override int Length => _uint.Length * 2 + _long.Length + _int.Length + _string.Length + _bytes.Length;
+        public override int Length => _uint.Length * 2 + _long.Length + _int.Length + _string.Length * 2 + _bytes.Length;
 
         /// <summary>
         /// 初始化 FileSplitterInfoFormatter 实例
@@ -60,9 +60,10 @@ namespace ExtenderApp.Common.IO.Splitter
             uint progresst = _uint.Deserialize(ref reader);
             int maxChunkSize = _int.Deserialize(ref reader);
             string targetExtensions = _string.Deserialize(ref reader);
+            string fileMD5HASH = _string.Deserialize(ref reader);
             byte[] bytes = _bytes.Deserialize(ref reader);
 
-            return new SplitterInfo(length, chunkCount, progresst, maxChunkSize, targetExtensions, bytes);
+            return new SplitterInfo(length, chunkCount, progresst, maxChunkSize, targetExtensions, fileMD5HASH, bytes);
         }
 
         /// <summary>
@@ -77,6 +78,7 @@ namespace ExtenderApp.Common.IO.Splitter
             _uint.Serialize(ref writer, value.Progress);
             _int.Serialize(ref writer, value.MaxChunkSize);
             _string.Serialize(ref writer, value.TargetExtensions);
+            _string.Serialize(ref writer, value.FileMD5);
             _bytes.Serialize(ref writer, value.LoadedChunks);
         }
 
@@ -84,11 +86,12 @@ namespace ExtenderApp.Common.IO.Splitter
         {
             if (value == null)
             {
-                return _uint.Length * 2 + _long.Length + _int.Length + 1 + 1;
+                return _uint.Length * 2 + _long.Length + _int.Length + _string.Length * 2 + _bytes.Length;
             }
 
             long result = _uint.Length * 2 + _long.Length + _int.Length;
             result += _string.GetLength(value.TargetExtensions);
+            result += _string.GetLength(value.FileMD5);
             result += _bytes.GetLength(value.LoadedChunks);
             return result;
         }

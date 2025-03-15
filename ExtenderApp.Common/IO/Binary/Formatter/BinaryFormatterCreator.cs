@@ -66,9 +66,9 @@ namespace ExtenderApp.Common.IO.Binaries.Formatter
                 return CreatCollection(genericType, type);
             }
 
-            //return typeof(DefaultObjectFormatter<>).MakeGenericType(type);
+            return typeof(DefaultObjectFormatter<>).MakeGenericType(type);
 
-            return null;
+            //return null;
         }
 
         /// <summary>

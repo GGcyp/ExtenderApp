@@ -1,6 +1,6 @@
 ﻿using System.Buffers;
 
-namespace ExtenderApp.Data.File
+namespace ExtenderApp.Data
 {
     /// <summary>
     /// 序列池类，用于管理序列对象的创建和回收

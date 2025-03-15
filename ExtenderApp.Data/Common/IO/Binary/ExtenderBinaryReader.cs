@@ -17,7 +17,7 @@ namespace ExtenderApp.Data
         /// <summary>
         /// 私有二进制序列读取器
         /// </summary>
-        private File.Binary.SequenceReader<byte> reader;
+        private ExtenderApp.Data.Binary.SequenceReader<byte> reader;
 
         /// <summary>
         /// 获取或设置取消令牌

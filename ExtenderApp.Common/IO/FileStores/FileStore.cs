@@ -38,7 +38,7 @@ namespace ExtenderApp.Common.IO
         /// <summary>
         /// 获取指定文件的并发操作对象。
         /// </summary>
-        /// <typeparam name="T">并发操作数据的类型。</typeparam>
+        /// <typeparam name="TData">并发操作数据的类型。</typeparam>
         /// <param name="info">文件操作信息。</param>
         /// <param name="createFunc">创建并发操作对象的函数。</param>
         /// <param name="fileLength">文件的长度。</param>
@@ -46,19 +46,19 @@ namespace ExtenderApp.Common.IO
         /// <remarks>
         /// T必须继承自<see cref="FileOperateData"/>。
         /// </remarks>
-        public IConcurrentOperate<MemoryMappedViewAccessor, T>? GetOperate<T>(FileOperateInfo info, Func<FileOperateInfo, long, IConcurrentOperate<MemoryMappedViewAccessor, T>> createFunc, long fileLength) where T : FileOperateData
+        public IConcurrentOperate<MemoryMappedViewAccessor, TData>? GetOperate<TData>(FileOperateInfo info, Func<FileOperateInfo, long, IConcurrentOperate<MemoryMappedViewAccessor, TData>> createFunc, long fileLength) where TData : FileOperateData
         {
             var id = info.GetHashCode();
             if (_operateDict.TryGetValue(id, out var operate))
             {
-                return operate as IConcurrentOperate<MemoryMappedViewAccessor, T>;
+                return operate as IConcurrentOperate<MemoryMappedViewAccessor, TData>;
             }
 
             lock (_operateDict)
             {
                 if (_operateDict.TryGetValue(id, out operate))
                 {
-                    return operate as IConcurrentOperate<MemoryMappedViewAccessor, T>;
+                    return operate as IConcurrentOperate<MemoryMappedViewAccessor, TData>;
                 }
 
                 createFunc.ArgumentNull();

@@ -2,7 +2,7 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
-namespace ExtenderApp.Data.File.Binary
+namespace ExtenderApp.Data.Binary
 {
     /// <summary>
     /// 内部引用结构体 <see cref="SequenceReader{T}"/>，用于高效地读取和遍历 <see cref="ReadOnlySequence{T}"/> 或 <see cref="ReadOnlyMemory{T}"/>。

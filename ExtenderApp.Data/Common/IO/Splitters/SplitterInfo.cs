@@ -2,7 +2,7 @@
 namespace ExtenderApp.Data
 {
     /// <summary>
-    /// FileSplitterInfo 结构体，用于表示文件分割信息
+    /// 分割器信息类
     /// </summary>
     public class SplitterInfo
     {
@@ -46,6 +46,11 @@ namespace ExtenderApp.Data
         public string TargetExtensions { get; set; }
 
         /// <summary>
+        /// 获取或设置文件的 MD5 哈希值。
+        /// </summary>
+        public string FileMD5 { get; set; }
+
+        /// <summary>
         /// 检查当前对象是否为空。
         /// </summary>
         /// <returns>如果对象的长度为 -1，块数为 0，进度为 0，最大块大小为 0，则返回 true，否则返回 false。</returns>
@@ -58,28 +63,30 @@ namespace ExtenderApp.Data
         public bool IsComplete => Progress >= ChunkCount;
 
         /// <summary>
-        /// 使用指定的参数初始化 FileSplitterInfo 类的新实例，并初始化 LoadedChunks 属性为新的字节数组。
+        /// 使用指定的参数初始化 SplitterInfo 实例。
         /// </summary>
-        /// <param name="length">文件的总长度</param>
-        /// <param name="chunkCount">文件的总块数</param>
+        /// <param name="length">文件总长度（以字节为单位）</param>
+        /// <param name="chunkCount">文件分块数量</param>
         /// <param name="progress">当前处理进度</param>
-        /// <param name="maxChunkSize">每个块的最大大小</param>
+        /// <param name="maxChunkSize">每个分块的最大大小（以字节为单位）</param>
         /// <param name="targetExtensions">目标文件的扩展名</param>
-        public SplitterInfo(long length, uint chunkCount, uint progress, int maxChunkSize, string targetExtensions) : this(length, chunkCount, progress, maxChunkSize, targetExtensions, new byte[chunkCount])
+        /// <param name="md5HASH">文件的 MD5 哈希值</param>
+        public SplitterInfo(long length, uint chunkCount, uint progress, int maxChunkSize, string targetExtensions, string md5HASH) : this(length, chunkCount, progress, maxChunkSize, targetExtensions, md5HASH, new byte[chunkCount])
         {
 
         }
 
         /// <summary>
-        /// 初始化 FileSplitterInfo 类的新实例。
+        /// 使用指定的参数初始化 SplitterInfo 实例。
         /// </summary>
-        /// <param name="length">文件的总长度</param>
-        /// <param name="chunkCount">文件的总块数</param>
+        /// <param name="length">文件总长度（以字节为单位）</param>
+        /// <param name="chunkCount">文件分块数量</param>
         /// <param name="progress">当前处理进度</param>
-        /// <param name="maxChunkSize">每个块的最大大小</param>
+        /// <param name="maxChunkSize">每个分块的最大大小（以字节为单位）</param>
         /// <param name="targetExtensions">目标文件的扩展名</param>
-        /// <param name="loadedChunks">已加载的块数据</param>
-        public SplitterInfo(long length, uint chunkCount, uint progress, int maxChunkSize, string targetExtensions, byte[] loadedChunks)
+        /// <param name="md5HASH">文件的 MD5 哈希值</param>
+        /// <param name="loadedChunks">已加载的分块数据数组</param>
+        public SplitterInfo(long length, uint chunkCount, uint progress, int maxChunkSize, string targetExtensions, string md5HASH, byte[] loadedChunks)
         {
             Length = length;
             ChunkCount = chunkCount;
@@ -87,6 +94,7 @@ namespace ExtenderApp.Data
             MaxChunkSize = maxChunkSize;
             TargetExtensions = targetExtensions;
             LoadedChunks = loadedChunks;
+            FileMD5 = md5HASH;
         }
 
         /// <summary>
@@ -100,6 +108,7 @@ namespace ExtenderApp.Data
             MaxChunkSize = 0;
             TargetExtensions = string.Empty;
             LoadedChunks = Array.Empty<byte>();
+            FileMD5 = string.Empty;
         }
 
         /// <summary>

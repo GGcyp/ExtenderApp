@@ -2,7 +2,7 @@
 using System.Net.Sockets;
 using ExtenderApp.Abstract;
 using ExtenderApp.Common.ObjectPools;
-using ExtenderApp.Data.File;
+using ExtenderApp.Data;
 
 namespace ExtenderApp.Common.Networks
 {
@@ -10,6 +10,7 @@ namespace ExtenderApp.Common.Networks
     {
         private readonly Socket _listenerSocket;
         private readonly AsyncCallback _acceptCallback;
+        private int _isAccepting;
 
         public EndPoint ListenerPoint => _listenerSocket.LocalEndPoint;
 
@@ -43,9 +44,14 @@ namespace ExtenderApp.Common.Networks
             _listenerSocket.Listen(backlog);
         }
 
-        public T Accept()
+        public ILinker Accept()
         {
             ThrowNotBound();
+
+            if (Interlocked.CompareExchange(ref _isAccepting, 1, 0) != 0)
+            {
+                throw new Exception("已经在接受连接请求");
+            }
 
             var clientSocket = _listenerSocket.Accept();
             return CreateOperate(clientSocket);
@@ -55,6 +61,10 @@ namespace ExtenderApp.Common.Networks
         {
             ThrowNotBound();
 
+            if (Interlocked.CompareExchange(ref _isAccepting, 1, 0) != 0)
+            {
+                throw new Exception("已经在接受连接请求");
+            }
             _listenerSocket.BeginAccept(_acceptCallback, callback);
         }
 
