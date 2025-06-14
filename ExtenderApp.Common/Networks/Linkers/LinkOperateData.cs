@@ -7,7 +7,7 @@ namespace ExtenderApp.Common.Networks
     /// <summary>
     /// 链接操作数据类，继承自ConcurrentOperateData类
     /// </summary>
-    public class LinkerData : ConcurrentOperateData
+    public class LinkOperateData : ConcurrentOperateData
     {
         /// <summary>
         /// 地址族
@@ -34,23 +34,18 @@ namespace ExtenderApp.Common.Networks
         /// </summary>
         public Action? CloseCallback { get; set; }
 
-        /// <summary>
-        /// 使用指定的地址族、套接字类型和协议类型初始化LinkOperateData实例
-        /// </summary>
-        /// <param name="addressFamily">地址族</param>
-        /// <param name="socketType">套接字类型</param>
-        /// <param name="protocolType">协议类型</param>
-        public LinkerData(AddressFamily addressFamily, SocketType socketType, ProtocolType protocolType)
+        public Socket Socket { get; set; }
+
+        public LinkOperateData(AddressFamily addressFamily, SocketType socketType, ProtocolType protocolType)
         {
             AddressFamily = addressFamily;
             SocketType = socketType;
             ProtocolType = protocolType;
+            IsClose = false;
+            CloseCallback = null;
+            Socket = new Socket(AddressFamily, SocketType, ProtocolType);
         }
 
-        /// <summary>
-        /// 尝试重置LinkOperateData实例
-        /// </summary>
-        /// <returns>如果重置成功则返回true，否则返回false</returns>
         public override bool TryReset()
         {
             IsClose = false;

@@ -22,5 +22,14 @@ namespace ExtenderApp.Common.IO.Binaries.Formatter
         {
             _binaryWriterConvert.Write(ref writer, value);
         }
+
+        public override long GetLength(byte value)
+        {
+            if (value < _binaryOptions.BinaryRang.MaxFixPositiveInt)
+            {
+                return 1;
+            }
+            return 2;
+        }
     }
 }

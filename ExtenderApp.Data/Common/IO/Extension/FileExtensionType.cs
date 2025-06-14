@@ -12,7 +12,7 @@
 
         internal SingleExtensionType singleType;
 
-        private MultiExtensionType multiType;
+        internal MultiExtensionType multiType;
 
         /// <summary>
         /// 是否为空
@@ -22,7 +22,7 @@
         /// <summary>
         /// 是否是唯一后缀名
         /// </summary>
-        public bool IsSingExtension => !singleType.IsEmpty;
+        public bool IsSingExtension => multiType.IsEmpty;
 
         /// <summary>
         /// 筛选器，用于指定允许或禁止的扩展名列表
@@ -40,20 +40,30 @@
 
         public bool Equals(FileExtensionType type)
         {
-            //两个中的一个为空时，就直接返回否
-            if (IsEmpty || type.IsEmpty) return false;
+            if (IsEmpty && type.IsEmpty)
+            {
+                return true;
+            }
+            else if ((IsEmpty && !type.IsEmpty) || (!IsEmpty && type.IsEmpty))
+            {
+                return true;
+            }
 
             //两个都为唯一后缀名时
             if (IsSingExtension && type.IsSingExtension)
             {
                 return type.Extension.Equals(Extension);
             }
+            else if (IsSingExtension && type.IsSingExtension)
+            {
+                //其中一个是
+                SingleExtensionType single = IsSingExtension ? singleType : type.singleType;
+                MultiExtensionType multi = IsSingExtension ? type.multiType : multiType;
+                return multi.Contains(single);
+            }
 
-            //当其中有一个是多数后缀时
-            SingleExtensionType single = IsSingExtension ? singleType : type.singleType;
-            MultiExtensionType multi = IsSingExtension ? type.multiType : multiType;
-
-            return multi.Contains(single);
+            ////都是多数后缀时
+            return multiType.Contains(type.multiType);
         }
 
         public static bool operator ==(FileExtensionType left, FileExtensionType right)
@@ -68,20 +78,31 @@
 
         public static FileExtensionType operator +(FileExtensionType left, FileExtensionType right)
         {
-            left.multiType.AddExtension(left);
-
-            if (left.IsSingExtension) left.singleType = SingleExtensionType.Empty;
-
+            if (left.multiType.IsEmpty)
+            {
+                left.multiType = new MultiExtensionType(left.singleType);
+                left.singleType = SingleExtensionType.Empty;
+            }
             left.multiType.AddExtension(right);
-
             return left;
         }
 
         public static FileExtensionType operator -(FileExtensionType left, FileExtensionType right)
         {
-            left.multiType.RemoveExtension(right);
+            if (left.multiType.IsEmpty)
+                return left;
 
-            left.multiType.Clear(out left.singleType);
+            left.multiType.RemoveExtension(right);
+            if (right.multiType.extensionTypes.Count == 0)
+            {
+                left.multiType = new MultiExtensionType();
+            }
+            else if(right.multiType.extensionTypes.Count==1)
+            {
+                SingleExtensionType single = left.multiType.extensionTypes[0];
+                left.multiType = new MultiExtensionType();
+                left.singleType = single;
+            }
 
             return left;
         }

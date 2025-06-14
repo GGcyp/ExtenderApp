@@ -203,8 +203,6 @@ namespace ExtenderApp.Media
             base.InjectView(view);
             View.ShowVideoView(NavigateTo<VideoView>());
             View.ShowVideoList(NavigateTo<VideoListView>());
-
-            Model.SetVolume.Invoke(Model.Volume);
         }
 
         /// <summary>
@@ -287,6 +285,8 @@ namespace ExtenderApp.Media
         private void Play()
         {
             if (isPlaying) return;
+
+            Model.SetVolume.Invoke(Model.Volume);
 
             if (RecordWatchingTime)
                 Position = Model.CurrentVideoInfo.VideoWatchedPosition;

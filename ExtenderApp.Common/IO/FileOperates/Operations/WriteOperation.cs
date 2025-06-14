@@ -1,6 +1,4 @@
-﻿using System.IO.MemoryMappedFiles;
-using ExtenderApp.Abstract;
-
+﻿
 namespace ExtenderApp.Common.IO
 {
     /// <summary>
@@ -11,7 +9,7 @@ namespace ExtenderApp.Common.IO
         /// <summary>
         /// 待写入的字节数组
         /// </summary>
-        private byte[] writeBytes;
+        private byte[]? writeBytes;
 
         /// <summary>
         /// 回调委托，用于处理字节数组
@@ -27,6 +25,11 @@ namespace ExtenderApp.Common.IO
         /// 写位置变量，用于记录当前写入的位置。
         /// </summary>
         private long writePosition;
+
+        /// <summary>
+        /// 表示字节位置的私有变量
+        /// </summary>
+        private long bytesPosition;
 
         /// <summary>
         /// 设置字节数组，并可选地提供一个回调函数。
@@ -58,10 +61,16 @@ namespace ExtenderApp.Common.IO
         /// <param name="callback">操作完成后的回调函数，参数为写入的字节数组</param>
         public void Set(byte[] bytes, long position, long lenght, Action<byte[]>? callback)
         {
+            Set(bytes, position, lenght, 0, callback);
+        }
+
+        public void Set(byte[] bytes, long position, long lenght, long bytesPosition, Action<byte[]>? callback)
+        {
             writeBytes = bytes;
             this.callback = callback;
             writeLength = lenght;
             writePosition = position;
+            this.bytesPosition = bytesPosition;
         }
 
         /// <summary>
@@ -77,11 +86,21 @@ namespace ExtenderApp.Common.IO
             return true;
         }
 
-        public override void Execute(MemoryMappedViewAccessor item)
+        public override void Execute(FileOperateData item)
         {
-            for (long i = writePosition; i < writeLength; i++)
+            if (item.FStream.Length < writePosition + writeLength)
             {
-                item.Write(i, writeBytes[i]);
+                item.ExpandCapacity(writePosition + writeLength);
+            }
+
+            long writeIndex = writePosition;
+            long bytesIndex = bytesPosition;
+            var accessor = item.Accessor;
+            for (long i = 0; i < writeLength; i++)
+            {
+                accessor.Write(writeIndex, writeBytes[bytesIndex]);
+                writeIndex++;
+                bytesIndex++;
             }
             callback?.Invoke(writeBytes);
         }

@@ -101,7 +101,7 @@ namespace ExtenderApp.Common.IO.Splitter
         /// <param name="action">操作完成后的回调方法。</param>
         public void Set(byte[] bytes, int length, SplitterInfo splitterInfo, Action<byte[]>? action)
         {
-            Set(bytes, splitterInfo.GetLastChunkIndexPosition(), length, splitterInfo, action);
+            Set(bytes, splitterInfo.GetLastNotLoadChunkIndexPosition(), length, splitterInfo, action);
         }
 
         /// <summary>
@@ -169,7 +169,7 @@ namespace ExtenderApp.Common.IO.Splitter
             writeChunkIndex = splitterDto.ChunkIndex;
         }
 
-        public override void Execute(MemoryMappedViewAccessor item)
+        public override void Execute(FileOperateData item)
         {
             //stream.Seek(writePosition, SeekOrigin.Begin);
             //stream.Write(writeBytes, 0, writeLength);
@@ -179,10 +179,10 @@ namespace ExtenderApp.Common.IO.Splitter
             int index = 0;
             for (long i = writePosition; i < writeLength; i++)
             {
-                item.Write(i, span[index]);
+                //item.Write(i, span[index]);
                 index++;
             }
-            splitterInfo.AddChunk(writeChunkIndex);
+            splitterInfo.LoadChunk(writeChunkIndex);
             callbackByteArray?.Invoke(writeBytes);
             callback?.Invoke();
         }

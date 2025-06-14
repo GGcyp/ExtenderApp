@@ -128,13 +128,41 @@ namespace ExtenderApp.Data
         }
 
         /// <summary>
+        /// 获取最后一个未加载的块索引
+        /// </summary>
+        /// <param name="startIndex">起始索引，默认为0</param>
+        /// <returns>最后一个未加载的块索引，如果所有块都已加载则返回-1</returns>
+        public int GetLastNotLoadChunkIndex(uint startIndex = 0)
+        {
+            for (uint i = startIndex; i < ChunkCount; i++)
+            {
+                if (LoadedChunks[i] == 0)
+                {
+                    lock (LoadedChunks)
+                    {
+                        if (LoadedChunks[i] == 0)
+                        {
+                            LoadedChunks[i] = 1;
+                        }
+                        else
+                        {
+                            return GetLastNotLoadChunkIndex(i);
+                        }
+                    }
+                    return (int)i;
+                }
+            }
+            return -1;
+        }
+
+        /// <summary>
         /// 获取最后一个块索引位置
         /// </summary>
         /// <returns>返回最后一个块索引位置</returns>
-        public long GetLastChunkIndexPosition()
+        public long GetLastNotLoadChunkIndexPosition()
         {
-            var result = GetLastChunkIndex();
-            return GetPosition(result);
+            var result = GetLastNotLoadChunkIndex();
+            return GetPosition((uint)result);
         }
 
         /// <summary>
@@ -167,7 +195,7 @@ namespace ExtenderApp.Data
         /// </summary>
         /// <param name="index">要添加块的位置。</param>
         /// <exception cref="ArgumentOutOfRangeException">如果块索引超出范围，则抛出此异常。</exception>
-        public void AddChunk(uint index)
+        public void LoadChunk(uint index)
         {
             if (index >= ChunkCount || index < 0)
             {
@@ -176,7 +204,7 @@ namespace ExtenderApp.Data
 
             lock (LoadedChunks)
             {
-                LoadedChunks[index] = 1;
+                LoadedChunks[index] = 2;
                 //progress++;
             }
             Interlocked.Increment(ref progress);

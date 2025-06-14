@@ -13,7 +13,7 @@ namespace ExtenderApp.Test
     {
         private readonly ILinkerFactory _linkerFactory;
 
-        public TestMainViewModel(TcpLinker tcpLinker, ILinkerFactory linkerFactory, IServiceStore serviceStore) : base(serviceStore)
+        public TestMainViewModel(ITcpLinker tcpLinker, ILinkerFactory linkerFactory, IServiceStore serviceStore) : base(serviceStore)
         {
             //var fileInfo = CreatTestExpectLocalFileInfo(string.Format("测试{0}", DateTime.Now.ToString()));
             //var info = new FileSplitterInfo(2048, 2, 0, 1024, FileExtensions.TextFileExtensions);
@@ -51,6 +51,7 @@ namespace ExtenderApp.Test
             Task.Run(Listener);
             tcpLinker.Start();
             tcpLinker.Connect("127.0.0.1", 5520);
+            tcpLinker.Send((byte)200);
             //byte[] b = new byte[Utility.KilobytesToBytes(12)];
             //for (int i = 0; i < 10; i++)
             //{
@@ -92,7 +93,7 @@ namespace ExtenderApp.Test
             //action.Invoke();
         }
 
-        private async void TestSend(TcpLinker tcpLinker)
+        private async void TestSend(ITcpLinker tcpLinker)
         {
             await Task.Delay(1000);
             //tcpLinker.Send("s");

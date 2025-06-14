@@ -1,10 +1,12 @@
 ﻿
+using System.Diagnostics.CodeAnalysis;
+
 namespace ExtenderApp.Data
 {
     /// <summary>
     /// 唯一文件后缀拓展名
     /// </summary>
-    internal struct SingleExtensionType
+    internal struct SingleExtensionType : IEquatable<SingleExtensionType>
     {
         /// <summary>
         /// 文件扩展名
@@ -33,6 +35,27 @@ namespace ExtenderApp.Data
         public SingleExtensionType(string extension)
         {
             Extension = extension;
+        }
+
+        public bool Equals(SingleExtensionType obj)
+        {
+            if (IsEmpty && obj.IsEmpty)
+                return true;
+
+            if ((IsEmpty && !obj.IsEmpty) || (!IsEmpty && obj.IsEmpty))
+                return false;
+
+            return obj.Extension == Extension;
+        }
+
+        public static bool operator ==(SingleExtensionType left, SingleExtensionType right)
+        {
+            return left.Extension == right.Extension;
+        }
+
+        public static bool operator !=(SingleExtensionType left, SingleExtensionType right)
+        {
+            return !(left == right);
         }
 
         public static SingleExtensionType Empty => new SingleExtensionType(string.Empty);

@@ -16,9 +16,11 @@ namespace ExtenderApp.Common.Networks
         public static IServiceCollection AddNetwork(this IServiceCollection services)
         {
             services.AddLinker();
+            services.AddFileSegmenter();
             services.Configuration<IBinaryFormatterStore>(s =>
             {
                 s.Add<ResultDto, ResultDtoFormatter>();
+                s.Add<ErrorDto, ErrorDtoFormatter>();
             });
             return services;
         }

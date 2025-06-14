@@ -1,8 +1,10 @@
 ﻿using System.Buffers;
+using System.IO.MemoryMappedFiles;
 using ExtenderApp.Abstract;
 using ExtenderApp.Common.DataBuffers;
 using ExtenderApp.Common.Error;
 using ExtenderApp.Common.IO.FileParsers;
+using ExtenderApp.Common.IO.Splitter;
 using ExtenderApp.Common.ObjectPools;
 using ExtenderApp.Common.ObjectPools.Policy;
 using ExtenderApp.Data;
@@ -40,14 +42,14 @@ namespace ExtenderApp.Common.IO.Binaries
         private readonly SequencePool<byte> _sequencePool;
 
         private readonly ObjectPool<WriteOperation> _writeOperationPool;
-        private readonly ObjectPool<BinaryReadOperation> _readOperationPool;
+        private readonly ObjectPool<ReadOperation> _readOperationPool;
 
         public BinaryParser(IBinaryFormatterResolver binaryFormatterResolver, SequencePool<byte> sequencePool, FileStore store) : base(store)
         {
             _resolver = binaryFormatterResolver;
             _sequencePool = sequencePool;
             _writeOperationPool = ObjectPool.Create(new SelfResetPooledObjectPolicy<WriteOperation>());
-            _readOperationPool = ObjectPool.Create(new SelfResetPooledObjectPolicy<BinaryReadOperation>());
+            _readOperationPool = ObjectPool.Create(new SelfResetPooledObjectPolicy<ReadOperation>());
         }
 
         #region Get
@@ -59,194 +61,779 @@ namespace ExtenderApp.Common.IO.Binaries
 
         #endregion
 
-        #region Write
+        #region Read
 
-        public override void Write<T>(ExpectLocalFileInfo info, T value, IConcurrentOperate fileOperate = null)
+        public override T? Read<T>(ExpectLocalFileInfo info) where T : default
         {
             if (info.IsEmpty)
             {
                 ErrorUtil.ArgumentNull(nameof(info));
             }
 
-            Write(info.CreateFileOperate(FileExtensions.BinaryFileExtensions, FileMode.OpenOrCreate, FileAccess.ReadWrite), value, fileOperate);
+            return Read<T>(info.CreateWriteOperate(FileExtensions.BinaryFileExtensions));
         }
 
-        public override void Write<T>(FileOperateInfo info, T value, IConcurrentOperate fileOperate = null)
+        public override T? Read<T>(FileOperateInfo info) where T : default
         {
-            byte[] bytes = SerializeForArrayPool(value, out long length);
+            if (info.IsEmpty || !info.LocalFileInfo.Exists || !info.IsRead())
+            {
+                //var formatter = _resolver.GetFormatter<T>();
+                //if (formatter == null)
+                //    return default;
 
-            var operate = GetOperate(info, fileOperate, length);
-            var operation = _writeOperationPool.Get();
-            operation.Set(bytes, length, null);
+                //return formatter.Default;
+                return default;
+            }
+
+            return PrivateRead<T>(GetOperate(info));
+        }
+
+        public override T? Read<T>(IConcurrentOperate fileOperate) where T : default
+        {
+            if (fileOperate is not FileConcurrentOperate operate
+                || !fileOperate.CanOperate)
+            {
+                ErrorUtil.ArgumentNull(nameof(fileOperate));
+                return default;
+            }
+
+            return PrivateRead<T>(operate);
+        }
+
+        public override T? Read<T>(ExpectLocalFileInfo info, long position, long length) where T : default
+        {
+            if (info.IsEmpty)
+            {
+                ErrorUtil.ArgumentNull(nameof(info));
+            }
+
+            return Read<T>(info.CreateWriteOperate(FileExtensions.BinaryFileExtensions), position, length);
+        }
+
+        public override T? Read<T>(FileOperateInfo info, long position, long length) where T : default
+        {
+            if (info.IsEmpty || !info.LocalFileInfo.Exists || !info.IsRead())
+            {
+                //var formatter = _resolver.GetFormatter<T>();
+                //if (formatter == null)
+                //    return default;
+
+                //return formatter.Default;
+                return default;
+            }
+
+            return PrivateRead<T>(GetOperate(info), position, length);
+        }
+
+        public override T? Read<T>(IConcurrentOperate fileOperate, long position, long length) where T : default
+        {
+            if (fileOperate is not FileConcurrentOperate operate
+                || !fileOperate.CanOperate)
+            {
+                ErrorUtil.ArgumentNull(nameof(fileOperate));
+                return default;
+            }
+
+            return PrivateRead<T>(operate, position, length);
+        }
+
+        public byte[]? Read(ExpectLocalFileInfo info, long position, long length)
+        {
+            if (info.IsEmpty)
+            {
+                ErrorUtil.ArgumentNull(nameof(info));
+            }
+
+            return Read(info.CreateWriteOperate(FileExtensions.BinaryFileExtensions), position, length);
+        }
+
+        public byte[]? Read(LocalFileInfo info, long position, long length)
+        {
+            if (info.IsEmpty)
+            {
+                ErrorUtil.ArgumentNull(nameof(info));
+            }
+            return Read(info.CreateWriteOperate(), position, length);
+        }
+
+        public byte[]? Read(FileOperateInfo info, long position, long length)
+        {
+            if (info.IsEmpty || !info.IsRead())
+            {
+                return null;
+            }
+
+            return PrivateRead(GetOperate(info), position, length);
+        }
+
+        public byte[]? Read(IConcurrentOperate? fileOperate, long position, long length)
+        {
+            if (fileOperate is not FileConcurrentOperate operate
+                || !fileOperate.CanOperate)
+            {
+                ErrorUtil.ArgumentNull(nameof(fileOperate));
+                return default;
+            }
+
+            return PrivateRead(operate, position, length);
+        }
+
+        public bool Read(ExpectLocalFileInfo info, long position, long length, byte[] bytes)
+        {
+            if (info.IsEmpty)
+            {
+                ErrorUtil.ArgumentNull(nameof(info));
+                return false;
+            }
+
+            return Read(info.CreateWriteOperate(FileExtensions.BinaryFileExtensions), position, length, bytes);
+        }
+
+        public bool Read(LocalFileInfo info, long position, long length, byte[] bytes)
+        {
+            if (info.IsEmpty)
+            {
+                ErrorUtil.ArgumentNull(nameof(info));
+                return false;
+            }
+            return Read(info.CreateWriteOperate(), position, length, bytes);
+        }
+
+        public bool Read(FileOperateInfo info, long position, long length, byte[] bytes)
+        {
+            if (bytes is null)
+            {
+                ErrorUtil.ArgumentNull(nameof(bytes));
+                return false;
+            }
+            else if (bytes.LongLength < length)
+            {
+                ErrorUtil.ArgumentOutOfRange(nameof(bytes), $"需要覆盖的数组长度小于需要长度");
+                return false;
+            }
+
+            if (info.IsEmpty || !info.IsRead())
+            {
+                ErrorUtil.ArgumentNull(nameof(info));
+                return false;
+            }
+
+            PrivateRead(GetOperate(info), position, length);
+
+            return true;
+        }
+
+        public bool Read(IConcurrentOperate? fileOperate, long position, long length, byte[] bytes)
+        {
+            if (bytes is null)
+            {
+                ErrorUtil.ArgumentNull(nameof(bytes));
+                return false;
+            }
+            else if (bytes.LongLength < length)
+            {
+                ErrorUtil.ArgumentOutOfRange(nameof(bytes), $"需要覆盖的数组长度小于需要长度");
+                return false;
+            }
+
+            if (fileOperate is not FileConcurrentOperate operate
+                || !fileOperate.CanOperate)
+            {
+                ErrorUtil.ArgumentNull(nameof(fileOperate));
+                return false;
+            }
+
+            PrivateRead(operate, position, length);
+            return true;
+        }
+
+        /// <summary>
+        /// 私有方法，用于从指定的并发操作接口中读取指定类型的数据。
+        /// </summary>
+        /// <typeparam name="T">需要读取的数据类型。</typeparam>
+        /// <param name="operate">并发操作接口。</param>
+        /// <param name="position">开始读取的位置。</param>
+        /// <param name="length">需要读取的长度，默认为-1，表示读取到文件末尾。</param>
+        /// <returns>读取到的数据。</returns>
+        private T? PrivateRead<T>(FileConcurrentOperate operate, long position = 0, long length = 0)
+        {
+            var operation = _readOperationPool.Get();
+            operation.Set(position, length);
+
             operate.ExecuteOperation(operation);
+
+            var result = Deserialize<T>(operation.ReslutBytes);
             operation.Release();
-            ArrayPool<byte>.Shared.Return(bytes);
+            return result;
         }
 
-        public override void WriteAsync<T>(ExpectLocalFileInfo info, T value, Action? callback = null, IConcurrentOperate fileOperate = null)
+        /// <summary>
+        /// 私有方法，用于从指定的并发操作接口中读取字节数组数据。
+        /// </summary>
+        /// <param name="operate">并发操作接口。</param>
+        /// <param name="bytes">存储读取数据的字节数组。</param>
+        /// <param name="position">开始读取的位置。</param>
+        /// <param name="length">需要读取的长度，默认为-1，表示读取到文件末尾。</param>
+        /// <returns>读取到的字节数组。</returns>
+        private byte[] PrivateRead(FileConcurrentOperate operate, long position = 0, long length = -1)
+        {
+            var operation = _readOperationPool.Get();
+
+            operation.Set(position, length);
+            operate.ExecuteOperation(operation);
+
+            var result = operation.ReslutBytes.ToArray();
+            operation.Release();
+            return result;
+        }
+
+        #endregion
+
+        #region ReadAsync
+
+        public override void ReadAsync<T>(ExpectLocalFileInfo info, Action<T?> callback) where T : default
         {
             if (info.IsEmpty)
             {
                 ErrorUtil.ArgumentNull(nameof(info));
             }
 
-            var fileOperateInfo = info.CreateFileOperate(FileExtensions.BinaryFileExtensions, FileMode.OpenOrCreate, FileAccess.ReadWrite);
-            WriteAsync(fileOperateInfo, value, callback, fileOperate);
+            ReadAsync(info.CreateWriteOperate(FileExtensions.BinaryFileExtensions), callback);
         }
 
-        public override void WriteAsync<T>(FileOperateInfo info, T value, Action? callback = null, IConcurrentOperate fileOperate = null)
+        public override void ReadAsync<T>(FileOperateInfo info, Action<T?> callback) where T : default
         {
-            byte[] bytes = SerializeForArrayPool(value, out long length);
-
-            var operate = GetOperate(info, fileOperate, length);
-            var operation = _writeOperationPool.Get();
-            operation.Set(bytes, length, b =>
+            if (info.IsEmpty || !info.IsRead())
             {
-                callback?.Invoke();
-                ArrayPool<byte>.Shared.Return(b);
+                ErrorUtil.ArgumentNull(nameof(info));
+            }
+
+            var operate = GetOperate(info);
+            PrivateReadAsync(operate, callback);
+        }
+
+        public override void ReadAsync<T>(IConcurrentOperate fileOperate, Action<T?> callback) where T : default
+        {
+            if (fileOperate is not FileConcurrentOperate operate
+                || !fileOperate.CanOperate)
+            {
+                ErrorUtil.ArgumentNull(nameof(fileOperate));
+                return;
+            }
+            PrivateReadAsync(operate, callback);
+        }
+
+        public override void ReadAsync<T>(ExpectLocalFileInfo info, long position, long length, Action<T?> callback) where T : default
+        {
+            if (info.IsEmpty)
+            {
+                ErrorUtil.ArgumentNull(nameof(info));
+            }
+            ReadAsync(info.CreateWriteOperate(FileExtensions.BinaryFileExtensions), position, length, callback);
+        }
+
+        public override void ReadAsync<T>(FileOperateInfo info, long position, long length, Action<T?> callback) where T : default
+        {
+            if (info.IsEmpty || !info.IsRead())
+            {
+                ErrorUtil.ArgumentNull(nameof(info));
+            }
+
+            PrivateReadAsync(GetOperate(info), callback, position, length);
+        }
+
+        public override void ReadAsync<T>(IConcurrentOperate fileOperate, long position, long length, Action<T?> callback) where T : default
+        {
+            if (fileOperate is not FileConcurrentOperate operate
+                || !fileOperate.CanOperate)
+            {
+                ErrorUtil.ArgumentNull(nameof(fileOperate));
+                return;
+            }
+            PrivateReadAsync(operate, callback, position, length);
+        }
+
+        public void ReadAsync(ExpectLocalFileInfo info, long position, long length, Action<byte[]?> callback)
+        {
+            if (info.IsEmpty)
+            {
+                ErrorUtil.ArgumentNull(nameof(info));
+            }
+
+            ReadAsync(info.CreateWriteOperate(FileExtensions.BinaryFileExtensions), position, length, callback);
+        }
+
+        public void ReadAsync(LocalFileInfo info, long position, long length, Action<byte[]?> callback)
+        {
+            if (info.IsEmpty)
+            {
+                ErrorUtil.ArgumentNull(nameof(info));
+            }
+
+            ReadAsync(info.CreateWriteOperate(), position, length, callback);
+        }
+
+        public void ReadAsync(FileOperateInfo info, long position, long length, Action<byte[]?> callback)
+        {
+            if (info.IsEmpty || !info.IsRead())
+            {
+                ErrorUtil.ArgumentNull(nameof(info));
+            }
+
+            PrivateReadAsync(GetOperate(info), callback, position, length);
+        }
+
+        public void ReadAsync(IConcurrentOperate? fileOperate, long position, long length, Action<byte[]?> callback)
+        {
+            if (fileOperate is not FileConcurrentOperate operate
+                || !fileOperate.CanOperate)
+            {
+                ErrorUtil.ArgumentNull(nameof(fileOperate));
+                return;
+            }
+
+            PrivateReadAsync(operate, callback, null, position, length);
+        }
+
+        public void ReadAsync(ExpectLocalFileInfo info, long position, long length, byte[] bytes, Action<bool> callback)
+        {
+            if (info.IsEmpty)
+            {
+                ErrorUtil.ArgumentNull(nameof(info));
+            }
+            ReadAsync(info.CreateWriteOperate(FileExtensions.BinaryFileExtensions), position, length, bytes, callback);
+        }
+
+        public void ReadAsync(LocalFileInfo info, long position, long length, byte[] bytes, Action<bool> callback)
+        {
+            if (info.IsEmpty)
+            {
+                ErrorUtil.ArgumentNull(nameof(info));
+            }
+            ReadAsync(info.CreateWriteOperate(), position, length, bytes, callback);
+        }
+
+        public void ReadAsync(FileOperateInfo info, long position, long length, byte[] bytes, Action<bool> callback)
+        {
+            if (info.IsEmpty)
+            {
+                ErrorUtil.ArgumentNull(nameof(info));
+            }
+
+            PrivateReadAsync(GetOperate(info), callback, bytes, position, length);
+        }
+
+        public void ReadAsync(IConcurrentOperate? fileOperate, long position, long length, byte[] bytes, Action<bool> callback)
+        {
+            if (fileOperate is not FileConcurrentOperate operate
+                || !fileOperate.CanOperate)
+            {
+                ErrorUtil.ArgumentNull(nameof(fileOperate));
+                return;
+            }
+
+            PrivateReadAsync(operate, callback, bytes, position, length);
+        }
+
+        /// <summary>
+        /// 异步读取数据，将数据反序列化为泛型类型T，并调用回调函数处理结果。
+        /// </summary>
+        /// <typeparam name="T">要反序列化的类型</typeparam>
+        /// <param name="operate">并发操作接口</param>
+        /// <param name="callback">处理结果的回调函数</param>
+        /// <param name="position">开始读取的位置</param>
+        /// <param name="length">要读取的长度</param>
+        private void PrivateReadAsync<T>(FileConcurrentOperate operate, Action<T?> callback, long position = 0, long length = -1)
+        {
+            var operation = _readOperationPool.Get();
+            DataBuffer<T> dataBuffer = DataBuffer<T>.GetDataBuffer();
+            dataBuffer.SetProcessAction<byte[]>((d, b) =>
+            {
+                d.Item = Deserialize<T>(b);
             });
+
+            operation.Set(position, length, dataBuffer);
+
+            operate.QueueOperation(operation);
+        }
+
+        /// <summary>
+        /// 异步读取数据到字节数组，并调用回调函数处理结果。
+        /// </summary>
+        /// <param name="operate">并发操作接口</param>
+        /// <param name="callback">处理结果的回调函数</param>
+        /// <param name="bytes">存储读取数据的字节数组</param>
+        /// <param name="position">开始读取的位置</param>
+        /// <param name="length">要读取的长度</param>
+        private void PrivateReadAsync(FileConcurrentOperate operate, Action<byte[]?> callback, byte[]? bytes, long position = 0, long length = -1)
+        {
+            var operation = _readOperationPool.Get();
+
+            operation.Set(position, length, callback);
+
+            operate.QueueOperation(operation);
+        }
+
+        /// <summary>
+        /// 异步读取数据到字节数组，并调用回调函数表示读取完成。
+        /// </summary>
+        /// <param name="operate">并发操作接口</param>
+        /// <param name="callback">表示读取完成的回调函数</param>
+        /// <param name="bytes">存储读取数据的字节数组</param>
+        /// <param name="position">开始读取的位置</param>
+        /// <param name="length">要读取的长度</param>
+        private void PrivateReadAsync(FileConcurrentOperate operate, Action<bool> callback, byte[] bytes, long position = 0, long length = -1)
+        {
+            var operation = _readOperationPool.Get();
+
+            operation.Set(position, length, bytes);
+
             operate.QueueOperation(operation);
         }
 
         #endregion
 
-        #region Read
+        #region Write
 
-        public override T? Read<T>(ExpectLocalFileInfo info, IConcurrentOperate fileOperate = null) where T : default
+        public override void Write<T>(ExpectLocalFileInfo info, T value)
         {
             if (info.IsEmpty)
             {
                 ErrorUtil.ArgumentNull(nameof(info));
             }
-
-            return Read<T>(info.CreateWriteOperate(FileExtensions.BinaryFileExtensions), fileOperate);
+            Write(info.CreateWriteOperate(FileExtensions.BinaryFileExtensions), value);
         }
 
-        public override T? Read<T>(FileOperateInfo info, IConcurrentOperate fileOperate = null) where T : default
+        public override void Write<T>(FileOperateInfo info, T value)
         {
-            if (!info.LocalFileInfo.Exists)
+            if (info.IsEmpty || !info.IsWrite())
             {
-                var formatter = _resolver.GetFormatter<T>();
-                if (formatter == null)
-                    return default;
+                ErrorUtil.ArgumentNull(nameof(info));
+            }
+            PrivateWrite(GetOperate(info), value);
+        }
 
-                return formatter.Default;
+        public override void Write<T>(IConcurrentOperate fileOperate, T value)
+        {
+            if (fileOperate is not FileConcurrentOperate operate
+                || !fileOperate.CanOperate)
+            {
+                ErrorUtil.ArgumentNull(nameof(fileOperate));
+                return;
+            }
+            PrivateWrite(operate, value);
+        }
+
+        public override void Write<T>(ExpectLocalFileInfo info, T value, long position)
+        {
+            if (info.IsEmpty)
+            {
+                ErrorUtil.ArgumentNull(nameof(info));
+            }
+            Write(info.CreateWriteOperate(FileExtensions.BinaryFileExtensions), value, position);
+        }
+
+        public override void Write<T>(FileOperateInfo info, T value, long position)
+        {
+            if (!info.IsEmpty || !info.IsWrite())
+            {
+                ErrorUtil.ArgumentNull(nameof(info));
+            }
+            PrivateWrite(GetOperate(info), value, position);
+        }
+
+        public override void Write<T>(IConcurrentOperate fileOperate, T value, long position)
+        {
+            if (fileOperate is not FileConcurrentOperate operate
+                || !fileOperate.CanOperate)
+            {
+                ErrorUtil.ArgumentNull(nameof(fileOperate));
+                return;
+            }
+            PrivateWrite(operate, value, position);
+        }
+
+        public void Write(ExpectLocalFileInfo info, byte[] bytes, long filePosition)
+        {
+            if (info.IsEmpty)
+            {
+                ErrorUtil.ArgumentNull(nameof(info));
+            }
+            Write(info.CreateWriteOperate(FileExtensions.BinaryFileExtensions), bytes, filePosition);
+        }
+
+        public void Write(LocalFileInfo info, byte[] bytes, long filePosition)
+        {
+            if (info.IsEmpty)
+            {
+                ErrorUtil.ArgumentNull(nameof(info));
+            }
+            Write(info.CreateWriteOperate(), bytes, filePosition);
+        }
+
+        public void Write(FileOperateInfo info, byte[] bytes, long filePosition)
+        {
+            if (info.IsEmpty || !info.IsWrite())
+            {
+                ErrorUtil.ArgumentNull(nameof(info));
+            }
+            PrivateWrite(GetOperate(info), bytes, filePosition);
+        }
+
+        public void Write(IConcurrentOperate? fileOperate, byte[] bytes, long filePosition)
+        {
+            if (fileOperate is not FileConcurrentOperate operate
+                || !fileOperate.CanOperate)
+            {
+                ErrorUtil.ArgumentNull(nameof(fileOperate));
+                return;
+            }
+            PrivateWrite(operate, bytes, filePosition);
+        }
+
+        public void Write(ExpectLocalFileInfo info, byte[] bytes, long filePosition, int bytesPosition, int bytesLength)
+        {
+            if (info.IsEmpty)
+            {
+                ErrorUtil.ArgumentNull(nameof(info));
+            }
+            Write(info.CreateWriteOperate(FileExtensions.BinaryFileExtensions), bytes, filePosition, bytesPosition, bytesLength);
+        }
+
+        public void Write(LocalFileInfo info, byte[] bytes, long filePosition, int bytesPosition, int bytesLength)
+        {
+            if (info.IsEmpty)
+            {
+                ErrorUtil.ArgumentNull(nameof(info));
+            }
+            Write(info.CreateWriteOperate(), bytes, filePosition, bytesPosition, bytesLength);
+        }
+
+        public void Write(FileOperateInfo info, byte[] bytes, long filePosition, int bytesPosition, int bytesLength)
+        {
+            if (info.IsEmpty || !info.IsWrite())
+            {
+                ErrorUtil.ArgumentNull(nameof(info));
             }
 
-            var operate = GetOperate(info, fileOperate);
-            var operation = _readOperationPool.Get();
-            operation.Set((m, p, l) =>
+            PrivateWrite(GetOperate(info), bytes, filePosition, bytesPosition, bytesLength);
+        }
+
+        public void Write(IConcurrentOperate? fileOperate, byte[] bytes, long filePosition, int bytesPosition, int bytesLength)
+        {
+            if (fileOperate is not FileConcurrentOperate operate
+                || !fileOperate.CanOperate)
             {
-                var dataBuffer = DataBuffer<T>.GetDataBuffer();
-                var bytes = ArrayPool<byte>.Shared.Rent((int)l);
+                ErrorUtil.ArgumentNull(nameof(fileOperate));
+                return;
+            }
+            PrivateWrite(operate, bytes, filePosition, bytesPosition, bytesLength);
+        }
 
-                for (long i = p; i < l; i++)
-                {
-                    bytes[i] = m.ReadByte(i);
-                }
+        private void PrivateWrite<T>(FileConcurrentOperate operate, T value, long filePosition = 0)
+        {
+            var bytes = SerializeForArrayPool(value, out long length);
+            PrivateWrite(operate, bytes, filePosition, 0, length);
+            ArrayPool<byte>.Shared.Return(bytes);
+        }
 
-                dataBuffer.Item = Deserialize<T>(bytes);
-                ArrayPool<byte>.Shared.Return(bytes);
-                return dataBuffer;
-            });
+        private void PrivateWrite(FileConcurrentOperate operate, byte[] bytes, long filePosition = 0, long bytesPosition = 0, long length = -1)
+        {
+            if (bytes is null)
+            {
+                ErrorUtil.ArgumentNull(nameof(bytes));
+                return;
+            }
 
+            if (length < 0)
+            {
+                length = bytes.LongLength - bytesPosition;
+            }
+            else if (bytes.LongLength < bytesPosition + length)
+            {
+                ErrorUtil.ArgumentOutOfRange(nameof(bytes), $"需要覆盖的数组长度小于需要长度");
+            }
+
+            var operation = _writeOperationPool.Get();
+            operation.Set(bytes, filePosition, length, bytesPosition, null);
             operate.ExecuteOperation(operation);
-            var dataBuffer = operation.Data as DataBuffer<T>;
-            var result = dataBuffer.Item;
-            dataBuffer.Release();
+
             operation.Release();
-            return result;
-            //var stream = operate.OpenFile();
-            //T? result = Deserialize<T>(stream, options);
-            //stream.Dispose();
-            //return result;
         }
 
-        public override void ReadAsync<T>(ExpectLocalFileInfo info, Action<T>? callback, IConcurrentOperate fileOperate = null)
+        #endregion
+
+        #region WriteAsync
+
+        public override void WriteAsync<T>(ExpectLocalFileInfo info, T value, Action? callback = null)
         {
             if (info.IsEmpty)
             {
                 ErrorUtil.ArgumentNull(nameof(info));
             }
-
-            var operate = info.CreateFileOperate(FileExtensions.BinaryFileExtensions);
-            ReadAsync(operate, callback, fileOperate);
-            //var stream = operate.OpenFile();
-            //T? result = await DeserializeAsync<T>(stream);
-            //stream.Dispose();
-            //callback?.Invoke(result);
+            WriteAsync(info.CreateWriteOperate(FileExtensions.BinaryFileExtensions), value, callback);
         }
 
-        public override void ReadAsync<T>(FileOperateInfo info, Action<T>? callback, IConcurrentOperate fileOperate = null)
+        public override void WriteAsync<T>(FileOperateInfo info, T value, Action? callback = null)
         {
-            //T? result = await DeserializeAsync<T>(operate.OpenFile());
-            //callback?.Invoke(result);
-            var operate = GetOperate(info, fileOperate);
-            var operation = _readOperationPool.Get();
-            var dataBuffer = DataBuffer<Delegate>.GetDataBuffer();
-            operation.Data = dataBuffer;
-
-            operation.Set((m, p, l, d) =>
+            if (info.IsEmpty || !info.IsWrite())
             {
-                var dataBuffer = d as DataBuffer<Delegate>;
-                var bytes = ArrayPool<byte>.Shared.Rent((int)l);
+                ErrorUtil.ArgumentNull(nameof(info));
+            }
 
-                for (long i = p; i < l; i++)
-                {
-                    bytes[i] = m.ReadByte(i);
-                }
+            PrivateWriteAsync(GetOperate(info), value, 0, callback);
+        }
 
-                T result = Deserialize<T>(bytes);
-                var callback = dataBuffer.Item as Action<T>;
-                callback?.Invoke(result);
+        public override void WriteAsync<T>(IConcurrentOperate fileOperate, T value, Action? callback = null)
+        {
+            if (fileOperate is not FileConcurrentOperate operate
+                || !fileOperate.CanOperate)
+            {
+                ErrorUtil.ArgumentNull(nameof(fileOperate));
+                return;
+            }
+
+            PrivateWriteAsync(operate, value, 0, callback);
+        }
+
+        public override void WriteAsync<T>(ExpectLocalFileInfo info, T value, long position, Action? callback = null)
+        {
+            if (info.IsEmpty)
+            {
+                ErrorUtil.ArgumentNull(nameof(info));
+            }
+            WriteAsync(info.CreateWriteOperate(FileExtensions.BinaryFileExtensions), value, position, callback);
+        }
+
+        public override void WriteAsync<T>(FileOperateInfo info, T value, long position, Action? callback = null)
+        {
+            if (info.IsEmpty || !info.IsWrite())
+            {
+                ErrorUtil.ArgumentNull(nameof(info));
+            }
+            PrivateWriteAsync(GetOperate(info), value, position, callback);
+        }
+
+        public override void WriteAsync<T>(IConcurrentOperate fileOperate, T value, long position, Action? callback = null)
+        {
+            if (fileOperate is not FileConcurrentOperate operate
+                || !fileOperate.CanOperate)
+            {
+                ErrorUtil.ArgumentNull(nameof(fileOperate));
+                return;
+            }
+            PrivateWriteAsync(operate, value, position, callback);
+        }
+
+        public void WriteAsync(ExpectLocalFileInfo info, byte[] bytes, long filePosition, int bytesPosition, int bytesLength, Action<byte[]>? callback = null)
+        {
+            if (info.IsEmpty)
+            {
+                ErrorUtil.ArgumentNull(nameof(info));
+            }
+            WriteAsync(info.CreateWriteOperate(FileExtensions.BinaryFileExtensions), bytes, filePosition, bytesPosition, bytesLength, callback);
+        }
+
+        public void WriteAsync(LocalFileInfo info, byte[] bytes, long filePosition, int bytesPosition, int bytesLength, Action<byte[]>? callback = null)
+        {
+            if (info.IsEmpty)
+            {
+                ErrorUtil.ArgumentNull(nameof(info));
+            }
+            WriteAsync(info.CreateWriteOperate(), bytes, filePosition, bytesPosition, bytesLength, callback);
+        }
+
+        public void WriteAsync(FileOperateInfo info, byte[] bytes, long filePosition, int bytesPosition, int bytesLength, Action<byte[]>? callback = null)
+        {
+            if (info.IsEmpty || !info.IsWrite())
+            {
+                ErrorUtil.ArgumentNull(nameof(info));
+            }
+            PrivateWriteAsync(GetOperate(info), bytes, filePosition, bytesPosition, bytesLength, callback);
+        }
+
+        public void WriteAsync(IConcurrentOperate? fileOperate, byte[] bytes, long filePosition, int bytesPosition, int bytesLength, Action<byte[]>? callback = null)
+        {
+            if (fileOperate is not FileConcurrentOperate operate
+                || !fileOperate.CanOperate)
+            {
+                ErrorUtil.ArgumentNull(nameof(fileOperate));
+                return;
+            }
+            PrivateWriteAsync(operate, bytes, filePosition, bytesPosition, bytesLength, callback);
+        }
+
+
+        public void WriteAsync(ExpectLocalFileInfo info, byte[] bytes, long filePosition, Action<byte[]>? callback = null)
+        {
+            if (info.IsEmpty)
+            {
+                ErrorUtil.ArgumentNull(nameof(info));
+            }
+            WriteAsync(info.CreateWriteOperate(FileExtensions.BinaryFileExtensions), bytes, filePosition, callback);
+        }
+
+        public void WriteAsync(LocalFileInfo info, byte[] bytes, long filePosition, Action<byte[]>? callback = null)
+        {
+            if (info.IsEmpty)
+            {
+                ErrorUtil.ArgumentNull(nameof(info));
+            }
+            WriteAsync(info.CreateWriteOperate(), bytes, filePosition, callback);
+        }
+
+        public void WriteAsync(FileOperateInfo info, byte[] bytes, long filePosition, Action<byte[]>? callback = null)
+        {
+            if (info.IsEmpty || !info.IsWrite())
+            {
+                ErrorUtil.ArgumentNull(nameof(info));
+            }
+            PrivateWriteAsync(GetOperate(info), bytes, filePosition, 0, -1, callback);
+        }
+
+        public void WriteAsync(IConcurrentOperate? fileOperate, byte[] bytes, long filePosition, Action<byte[]>? callback = null)
+        {
+            if (fileOperate is not FileConcurrentOperate operate
+                || !fileOperate.CanOperate)
+            {
+                ErrorUtil.ArgumentNull(nameof(fileOperate));
+                return;
+            }
+            PrivateWriteAsync(operate, bytes, filePosition, 0, -1, callback);
+        }
+
+        private void PrivateWriteAsync<T>(FileConcurrentOperate operate, T value, long filePosition = 0, Action? callback = null)
+        {
+            Action<byte[]> action = (bytes) =>
+            {
+                callback?.Invoke();
                 ArrayPool<byte>.Shared.Return(bytes);
-                dataBuffer.Release();
-            });
+            };
 
+            var bytes = SerializeForArrayPool(value, out long length);
+            PrivateWriteAsync(operate, bytes, filePosition, 0, length, action);
+        }
+
+        private void PrivateWriteAsync(FileConcurrentOperate operate, byte[] bytes, long filePosition = 0, long bytesPosition = 0, long length = -1, Action<byte[]>? callback = null)
+        {
+            if (bytes is null)
+            {
+                ErrorUtil.ArgumentNull(nameof(bytes));
+                return;
+            }
+
+            if (length < 0)
+            {
+                length = bytes.LongLength - bytesPosition;
+            }
+            else if (bytes.LongLength < bytesPosition + length)
+            {
+                ErrorUtil.ArgumentOutOfRange(nameof(bytes), $"需要覆盖的数组长度小于需要长度");
+            }
+
+            var operation = _writeOperationPool.Get();
+            operation.Set(bytes, filePosition, length, bytesPosition, callback);
             operate.QueueOperation(operation);
-        }
-
-        public byte[] Read(ExpectLocalFileInfo info, long position, long length, IConcurrentOperate? fileOperate = null, byte[]? bytes = null)
-        {
-            if (info.IsEmpty)
-            {
-                ErrorUtil.ArgumentNull(nameof(info));
-            }
-
-            return Read(info.CreateWriteOperate(FileExtensions.BinaryFileExtensions), position, length, fileOperate, bytes);
-        }
-
-        public byte[] Read(FileOperateInfo info, long position, long length, IConcurrentOperate? fileOperate = null, byte[]? bytes = null)
-        {
-            if (info.IsEmpty)
-            {
-                ErrorUtil.ArgumentNull(nameof(info));
-            }
-
-            var operate = GetOperate(info, fileOperate);
-            var operation = _readOperationPool.Get();
-            var buffer = DataBuffer<byte[]>.GetDataBuffer();
-
-            if (bytes == null || bytes.Length < length)
-            {
-                //throw new ArgumentOutOfRangeException(nameof(bytes));
-                bytes = new byte[length];
-            }
-            buffer.Item = bytes;
-
-            operation.Set((m, p, l, d) =>
-            {
-                var buffer = d as DataBuffer<byte[]>;
-                for (long i = p; i < l; i++)
-                {
-                    buffer.Item[i] = m.ReadByte(i);
-                }
-            }, position, length, buffer);
-            operate.ExecuteOperation(operation);
-            var result = buffer.Item;
-            operation.Release();
-            buffer.Release();
-            return result;
         }
 
         #endregion

@@ -3,7 +3,7 @@
 
 namespace ExtenderApp.Common.Networks.LinkOperates
 {
-    public class LinkerOperation : ConcurrentOperation<Socket>
+    public class LinkerOperation : ConcurrentOperation<LinkOperateData>
     {
         private readonly SocketAsyncEventArgs _socketAsyncEventArgs;
         private bool isSendAsync;
@@ -45,9 +45,10 @@ namespace ExtenderApp.Common.Networks.LinkOperates
             Release();
         }
 
-        public override void Execute(Socket item)
+        public override void Execute(LinkOperateData item)
         {
-            isSendAsync = item.SendAsync(_socketAsyncEventArgs);
+            var socket = item.Socket;
+            isSendAsync = socket.SendAsync(_socketAsyncEventArgs);
             sendCountCallback?.Invoke(sendPacketsCount);
             sendBytesCallbcak?.Invoke(sendBytes);
         }

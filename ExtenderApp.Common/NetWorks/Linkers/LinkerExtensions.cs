@@ -15,7 +15,7 @@ namespace ExtenderApp.Common.Networks
         /// <param name="services">服务集合。</param>
         public static IServiceCollection AddLinker(this IServiceCollection services)
         {
-            services.AddTcpLinkOperate();
+            services.AddTcpLinker();
             services.AddSingleton<ILinkerFactory, LinkerFactory>();
             services.Configuration<IBinaryFormatterStore>(s =>
             {

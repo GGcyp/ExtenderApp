@@ -1,6 +1,5 @@
 ﻿using ExtenderApp.Abstract;
 using ExtenderApp.Common.Error;
-using ExtenderApp.Common.ObjectPools;
 using System.Collections.Concurrent;
 
 namespace ExtenderApp.Common.ConcurrentOperates
@@ -25,7 +24,9 @@ namespace ExtenderApp.Common.ConcurrentOperates
         /// </summary>
         public bool IsExecuting => Interlocked.CompareExchange(ref _isExecuting, 1, 0) == 0;
 
-        public abstract void Release();
+        public abstract bool CanOperate { get; protected set; }
+
+        public abstract void Start();
 
         /// <summary>
         /// 尝试重置对象状态。
@@ -37,77 +38,18 @@ namespace ExtenderApp.Common.ConcurrentOperates
         }
     }
 
-    /// <summary>
-    /// 并发操作抽象基类
-    /// </summary>
-    /// <typeparam name="TPolicy">并发操作策略类型，必须实现 IConcurrentOperatePolicy 接口并具备 IDisposable 接口</typeparam>
-    /// <typeparam name="TOperate">并发操作类型，必须实现 IDisposable 接口</typeparam>
-    /// <typeparam name="TData">并发操作数据类型，必须继承自 ConcurrentOperateData 类</typeparam>
-    public class ConcurrentOperate<TPolicy, TOperate, TData> : ConcurrentOperate, IConcurrentOperate<TOperate, TData>
-        where TPolicy : class, IConcurrentOperatePolicy<TOperate, TData>, IDisposable
-        where TOperate : class, IDisposable
-        where TData : ConcurrentOperateData
+
+    public class ConcurrentOperate<TData> : ConcurrentOperate, IConcurrentOperate<TData> where TData : ConcurrentOperateData
     {
-        #region Pool
-
-        private static Lazy<ObjectPool<ConcurrentOperate<TPolicy, TOperate, TData>>> _poolLazy =
-            new(() => ObjectPool.CreateDefaultPool<ConcurrentOperate<TPolicy, TOperate, TData>>());
-
-        /// <summary>
-        /// 创建一个默认的对象池，用于管理ConcurrentOperate<TPolicy, TOperate, TData>对象的创建和重用。
-        /// </summary>
-        /// <returns>返回创建好的对象池。</returns>
-        private static ObjectPool<ConcurrentOperate<TPolicy, TOperate, TData>> _pool => _poolLazy.Value;
-
-        /// <summary>
-        /// 从对象池中获取一个IConcurrentOperate<TOperate, TData>对象。
-        /// </summary>
-        /// <returns>返回从对象池中获取的IConcurrentOperate<TOperate, TData>对象。</returns>
-        public static IConcurrentOperate<TOperate, TData> Get() => _pool.Get();
-
-        /// <summary>
-        /// 将一个IConcurrentOperate<TOperate, TData>对象释放回对象池。
-        /// </summary>
-        /// <param name="obj">要释放回对象池的IConcurrentOperate<TOperate, TData>对象。</param>
-        public void Release(IConcurrentOperate<TOperate, TData> obj) => _pool.Release(obj);
-
-        /// <summary>
-        /// 获取一个泛型类型的实例，该类型必须实现IConcurrentOperate接口。
-        /// </summary>
-        /// <typeparam name="T">泛型类型，必须实现IConcurrentOperate接口</typeparam>
-        /// <returns>泛型类型的实例</returns>
-        public static T Get<T>() where T : class, IConcurrentOperate<TOperate, TData>
-            => (T)Get();
-
-        /// <summary>
-        /// 释放一个泛型类型的实例，该类型必须实现IConcurrentOperate接口。
-        /// </summary>
-        /// <typeparam name="T">泛型类型，必须实现IConcurrentOperate接口</typeparam>
-        /// <param name="obj">需要释放的实例</param>
-        public void Release<T>(T obj) where T : class, IConcurrentOperate<TOperate, TData>
-            => Release(obj);
-
-        #endregion
-
         /// <summary>
         /// 操作队列
         /// </summary>
-        private readonly ConcurrentQueue<IConcurrentOperation<TOperate>> _queue = new();
-
-        /// <summary>
-        /// 并发操作策略
-        /// </summary>
-        public TPolicy Policy { get; protected set; }
-
-        /// <summary>
-        /// 并发操作数据
-        /// </summary>
-        public TData Data { get; protected set; }
+        private readonly ConcurrentQueue<IConcurrentOperation<TData>> _queue = new();
 
         /// <summary>
         /// 并发操作对象
         /// </summary>
-        public TOperate Operate { get; protected set; }
+        public TData Data { get; protected set; }
 
         /// <summary>
         /// 获取队列中的元素数量。
@@ -119,7 +61,7 @@ namespace ExtenderApp.Common.ConcurrentOperates
         /// 获取或设置是否可以操作。
         /// </summary>
         /// <value>如果可以操作，则返回 true；否则返回 false。</value>
-        public bool CanOperate { get; protected set; }
+        public override bool CanOperate { get; protected set; }
 
         /// <summary>
         /// 启动方法
@@ -127,18 +69,20 @@ namespace ExtenderApp.Common.ConcurrentOperates
         /// <param name="policy">并发操作策略，可以为null</param>
         /// <param name="data">操作数据，可以为null</param>
         /// <param name="operate">操作类型，可以为null</param>
-        public void Start(IConcurrentOperatePolicy<TOperate, TData>? policy = null, TData? data = null, TOperate? operate = null)
+        public void Start(TData operate)
         {
-            //policy.ArgumentObjectNull(typeof(TPolicy).FullName);
-            Policy.ArgumentObjectNull(typeof(TPolicy).FullName);
-
-            if (policy != null)
-                this.Policy = (TPolicy)policy;
-
-            Data = Data ?? data ?? Policy.GetData();
-            Operate = Operate ?? operate ?? Policy.Create(Data);
+            Data = operate ?? throw new ArgumentNullException(nameof(operate), "被操作类不能为空");
             CanOperate = true;
 
+            ProtectedStart();
+        }
+
+        public override void Start()
+        {
+            if (Data == null)
+            {
+                throw new InvalidOperationException("并发操作策略或被操作类未设置");
+            }
             ProtectedStart();
         }
 
@@ -154,7 +98,7 @@ namespace ExtenderApp.Common.ConcurrentOperates
         /// 将操作加入队列
         /// </summary>
         /// <param name="operation">并发操作</param>
-        public void QueueOperation(IConcurrentOperation<TOperate> operation)
+        public void QueueOperation(IConcurrentOperation<TData> operation)
         {
             if (!CanOperate)
                 return;
@@ -185,7 +129,7 @@ namespace ExtenderApp.Common.ConcurrentOperates
         /// 将操作集合加入队列
         /// </summary>
         /// <param name="operations">并发操作集合</param>
-        public void QueueOperation(IEnumerable<IConcurrentOperation<TOperate>> operations)
+        public void QueueOperation(IEnumerable<IConcurrentOperation<TData>> operations)
         {
             if (!CanOperate)
                 return;
@@ -210,7 +154,7 @@ namespace ExtenderApp.Common.ConcurrentOperates
         /// 执行单个并发操作
         /// </summary>
         /// <param name="operation">并发操作</param>
-        public void ExecuteOperation(IConcurrentOperation<TOperate> operation)
+        public void ExecuteOperation(IConcurrentOperation<TData> operation)
         {
             if (!CanOperate)
                 return;
@@ -219,19 +163,17 @@ namespace ExtenderApp.Common.ConcurrentOperates
             Data.Token.ThrowIfCancellationRequested();
             operation.ArgumentNull(nameof(operation));
 
-            Policy.BeforeExecute(Operate, Data);
-            lock (Operate)
+            lock (Data)
             {
-                operation.Execute(Operate);
+                operation.Execute(Data);
             }
-            Policy.AfterExecute(Operate, Data);
         }
 
         /// <summary>
         /// 执行并发操作集合
         /// </summary>
         /// <param name="operations">并发操作集合</param>
-        public void ExecuteOperation(IEnumerable<IConcurrentOperation<TOperate>> operations)
+        public void ExecuteOperation(IEnumerable<IConcurrentOperation<TData>> operations)
         {
             if (!CanOperate)
                 return;
@@ -240,15 +182,13 @@ namespace ExtenderApp.Common.ConcurrentOperates
             Data.Token.ThrowIfCancellationRequested();
             operations.ArgumentNull(nameof(operations));
 
-            Policy.BeforeExecute(Operate, Data);
             foreach (var operation in operations)
             {
-                lock (Operate)
+                lock (Data)
                 {
-                    operation.Execute(Operate);
+                    operation.Execute(Data);
                 }
             }
-            Policy.AfterExecute(Operate, Data);
         }
 
         /// <summary>
@@ -262,10 +202,7 @@ namespace ExtenderApp.Common.ConcurrentOperates
                 {
                     return;
                 }
-
-                Policy.BeforeExecute(Operate, Data);
                 Execute();
-                Policy.AfterExecute(Operate, Data);
             }
             finally
             {
@@ -300,9 +237,9 @@ namespace ExtenderApp.Common.ConcurrentOperates
                 !Data.Token.IsCancellationRequested &&
                 !IsDisposed)
             {
-                lock (Operate)
+                lock (Data)
                 {
-                    operation.Execute(Operate);
+                    operation.Execute(Data);
                     Interlocked.Decrement(ref operationCount);
                 }
                 operation.Release();
@@ -316,8 +253,7 @@ namespace ExtenderApp.Common.ConcurrentOperates
         private void ThrowNull()
         {
             ThrowIfDisposed();
-            Operate.ArgumentNull(nameof(Data));
-            Data.ArgumentNull(nameof(Data));
+            Data.ArgumentNull(nameof(ExtenderApp.Data));
         }
 
         /// <summary>
@@ -339,17 +275,9 @@ namespace ExtenderApp.Common.ConcurrentOperates
         /// <returns>是否重置成功</returns>
         public override bool TryReset()
         {
-            Operate.Dispose();
-            Operate = null;
-            Policy.ReleaseData(Data);
             Data = null;
             CanOperate = false;
             return true;
-        }
-
-        public override void Release()
-        {
-            Release(this);
         }
     }
 }

@@ -6,7 +6,7 @@ namespace ExtenderApp.Abstract
     /// 文件分割器接口
     /// 继承自文件解析器接口
     /// </summary>
-    public interface ISplitterParser : IFileParser
+    public interface ISplitterParser 
     {
         /// <summary>
         /// 创建一个分片文件。
@@ -121,6 +121,50 @@ namespace ExtenderApp.Abstract
         /// <param name="splitterInfo">分割信息（可选）。</param>
         /// <param name="fileOperate">文件操作对象（可选）。</param>
         void WriteAsync<T>(ExpectLocalFileInfo info, T value, uint chunkIndex, SplitterInfo? splitterInfo = null, IConcurrentOperate fileOperate = null);
+
+        /// <summary>
+        /// 将文件写入到本地磁盘。
+        /// </summary>
+        /// <param name="info">本地文件信息对象。</param>
+        /// <param name="splitterDto">分片数据传输对象。</param>
+        /// <param name="splitterInfo">分片信息对象，可以为null。</param>
+        /// <param name="fileOperate">并发操作接口，可以为null。</param>
         void Write(ExpectLocalFileInfo info, SplitterDto splitterDto, SplitterInfo? splitterInfo = null, IConcurrentOperate fileOperate = null);
+
+        /// <summary>
+        /// 将字节数组写入到本地磁盘。
+        /// </summary>
+        /// <param name="fileOperate">并发操作接口。</param>
+        /// <param name="bytes">要写入文件的字节数组。</param>
+        /// <param name="chunkIndex">分片的索引。</param>
+        /// <param name="splitterInfo">分片信息对象。</param>
+        void Write(IConcurrentOperate fileOperate, byte[] bytes, uint chunkIndex, SplitterInfo splitterInfo);
+
+        /// <summary>
+        /// 异步地将字节数组写入到本地磁盘。
+        /// </summary>
+        /// <param name="fileOperate">并发操作接口。</param>
+        /// <param name="bytes">要写入文件的字节数组。</param>
+        /// <param name="chunkIndex">分片的索引。</param>
+        /// <param name="splitterInfo">分片信息对象。</param>
+        /// <returns>异步任务。</returns>
+        void WriteAsync(IConcurrentOperate fileOperate, byte[] bytes, uint chunkIndex, SplitterInfo splitterInfo);
+
+        /// <summary>
+        /// 将指定数据写入文件。
+        /// </summary>
+        /// <param name="fileOperate">文件操作接口。</param>
+        /// <param name="splitterInfo">分割器信息。</param>
+        /// <param name="dto">数据传输对象。</param>
+        void Write(IConcurrentOperate fileOperate, SplitterInfo splitterInfo, SplitterDto dto);
+
+        /// <summary>
+        /// 异步将指定数据写入文件。
+        /// </summary>
+        /// <param name="fileOperate">文件操作接口。</param>
+        /// <param name="splitterInfo">分割器信息。</param>
+        /// <param name="dto">数据传输对象。</param>
+        /// <returns>异步操作任务。</returns>
+        void WriteAsync(IConcurrentOperate fileOperate, SplitterInfo splitterInfo, SplitterDto dto);
     }
 }

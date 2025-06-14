@@ -50,6 +50,13 @@ namespace ExtenderApp.Common.Networks
         private int segmenterLength;
 
         /// <summary>
+        /// 判断是否正在发送数据
+        /// </summary>
+        /// <returns>如果正在发送数据，则返回 true；否则返回 false</returns>
+        public bool IsSending => isSending != 0;
+        private volatile int isSending;
+
+        /// <summary>
         /// 构造函数
         /// </summary>
         /// <param name="linker">传输层接口</param>
@@ -88,6 +95,8 @@ namespace ExtenderApp.Common.Networks
                 return;
             }
 
+            Interlocked.Exchange(ref isSending, 1);
+
             int count = length / segmenterLength + (length % segmenterLength > 0 ? 1 : 0);
             PacketSegmentHead head = new PacketSegmentHead(length, typeCode, count);
             _linker.Send(head);
@@ -105,6 +114,7 @@ namespace ExtenderApp.Common.Networks
                 PacketSegmentDto segmentDto = new PacketSegmentDto(endIndex, segmentLength, new ReadOnlyMemory<byte>(bytes, endIndex * segmenterLength, segmentLength));
                 _linker.Send(segmentDto);
             }
+            Interlocked.Exchange(ref isSending, 0);
         }
 
         /// <summary>
@@ -121,7 +131,7 @@ namespace ExtenderApp.Common.Networks
             {
                 return;
             }
-
+            Interlocked.Exchange(ref isSending, 1);
             int count = length / segmenterLength + (length % segmenterLength > 0 ? 1 : 0);
             PacketSegmentHead head = new PacketSegmentHead(length, typeCode, count);
             _linker.SendAsync(head);
@@ -139,6 +149,7 @@ namespace ExtenderApp.Common.Networks
                 PacketSegmentDto segmentDto = new PacketSegmentDto(endIndex, segmentLength, new ReadOnlyMemory<byte>(bytes, endIndex * segmenterLength, segmentLength));
                 _linker.SendAsync(segmentDto);
             }
+            Interlocked.Exchange(ref isSending, 0);
         }
 
         /// <summary>

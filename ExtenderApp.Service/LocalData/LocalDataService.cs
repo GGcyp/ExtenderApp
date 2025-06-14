@@ -1,4 +1,5 @@
-﻿using System.Reflection;
+﻿using System;
+using System.Reflection;
 using ExtenderApp.Abstract;
 using ExtenderApp.Common;
 using ExtenderApp.Data;
@@ -90,11 +91,11 @@ namespace ExtenderApp.Service
             }
         }
 
-        public bool GetData<T>(string? dataName, out LocalData<T>? data)
+        public bool LoadData<T>(string? dataName, out LocalData<T>? data) where T : class
         {
             data = default;
-            try
-            {
+            //try
+            //{
                 if (string.IsNullOrEmpty(dataName))
                 {
                     throw new ArgumentNullException("获取本地数据名字不能为空");
@@ -107,9 +108,17 @@ namespace ExtenderApp.Service
 
                     _localDataDict.Add(dataName, info);
 
-                    info.LocalData = localData = _parser.Read<LocalData<T>>(info.FileInfo);
+                    localData = _parser.Read<LocalData<T>>(info.FileInfo);
+
+                    if (localData is null)
+                    {
+                        //如果读取失败则创建一个新的LocalData对象
+                        localData = new LocalData<T>(Activator.CreateInstance(typeof(T)) as T, _version);
+                    }
+                    info.LocalData = localData;
+
                     //如果版本不一致则更新
-                    VersionCheck(info);
+                    //VersionCheck(info);
                 }
                 else
                 {
@@ -118,18 +127,18 @@ namespace ExtenderApp.Service
 
                 data = localData;
                 return localData is not null;
-            }
-            catch (Exception ex)
-            {
-                _logingService.Error("读取本地数据出现错误", nameof(ILocalDataService), ex);
-                return false;
-            }
+            //}
+            //catch (Exception ex)
+            //{
+            //    _logingService.Error("读取本地数据出现错误", nameof(ILocalDataService), ex);
+            //    return false;
+            //}
         }
 
-        public bool SetData<T>(string? dataName, LocalData<T>? data)
+        public bool SaveData<T>(string? dataName, LocalData<T>? data) where T : class
         {
-            try
-            {
+            //try
+            //{
                 if (string.IsNullOrEmpty(dataName))
                 {
                     throw new ArgumentNullException("保存本地数据名字不能为空");
@@ -148,23 +157,12 @@ namespace ExtenderApp.Service
 
                 _parser.Write(info.FileInfo, localData);
                 return true;
-            }
-            catch (Exception ex)
-            {
-                _logingService.Error("写入本地数据出现错误", nameof(ILocalDataService), ex);
-                return false;
-            }
-        }
-
-        /// <summary>
-        /// 创建一个LocalData对象
-        /// </summary>
-        /// <typeparam name="T">数据类型</typeparam>
-        /// <param name="data">要创建的数据</param>
-        /// <returns>创建的LocalData对象</returns>
-        private LocalData<T> CreateLocalData<T>(T data, Version version)
-        {
-            return new LocalData<T>(data, version);
+            //}
+            //catch (Exception ex)
+            //{
+            //    _logingService.Error("写入本地数据出现错误", nameof(ILocalDataService), ex);
+            //    return false;
+            //}
         }
 
         /// <summary>

@@ -1,5 +1,6 @@
 ﻿using System.Net.Sockets;
 using ExtenderApp.Abstract;
+using ExtenderApp.Common.ObjectPools;
 using ExtenderApp.Data;
 
 namespace ExtenderApp.Common.Networks
@@ -20,6 +21,8 @@ namespace ExtenderApp.Common.Networks
         /// </summary>
         private readonly SequencePool<byte> _sequencePool;
 
+        private readonly ObjectPool<ITcpLinker> _tcpLinkerPool;
+
         /// <summary>
         /// 初始化 LinkerFactory 类的新实例。
         /// </summary>
@@ -29,6 +32,8 @@ namespace ExtenderApp.Common.Networks
         {
             _fileParserStore = fileParserStore;
             _sequencePool = sequencePool;
+
+            _tcpLinkerPool = ObjectPool.Create(new FactoryPooledObjectPolicy<ITcpLinker>(() => new TcpLinker(_fileParserStore.BinaryParser, _sequencePool, _tcpLinkerPool.Release)));
         }
 
         /// <summary>
@@ -41,10 +46,34 @@ namespace ExtenderApp.Common.Networks
         {
             return type switch
             {
-                ProtocolType.Tcp => new TcpLinker(_fileParserStore.BinaryParser, _sequencePool),
+                ProtocolType.Tcp => _tcpLinkerPool.Get(),
                 //ProtocolType.Udp => new UdpLinker(_fileParserStore),
                 _ => throw new System.NotImplementedException()
             };
+        }
+
+        public T GetLinker<T>() where T : ILinker
+        {
+            var resultType = typeof(T);
+            if (resultType == typeof(ITcpLinker))
+            {
+                return (T)_tcpLinkerPool.Get();
+            }
+
+            throw new Exception("未找到可用的连接器");
+        }
+
+        public void ReleaseLinker(ILinker linker)
+        {
+            //_tcpLinkerPool.Release(tcpLinker);
+            switch (linker)
+            {
+                case ITcpLinker tcpLinker:
+                    _tcpLinkerPool.Release(tcpLinker);
+                    return;
+            }
+
+            throw new KeyNotFoundException("未找到可回收的内存池");
         }
     }
 }

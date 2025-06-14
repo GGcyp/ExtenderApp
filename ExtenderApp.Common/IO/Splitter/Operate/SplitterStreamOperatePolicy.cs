@@ -5,7 +5,7 @@ using ExtenderApp.Data;
 
 namespace ExtenderApp.Common.IO.Splitter
 {
-    internal class SplitterStreamOperatePolicy : FileStreamConcurrentOperatePolicy<SplitterStreamOperateData>
+    internal class SplitterStreamOperatePolicy
     {
         private readonly IBinaryParser _binaryParser;
 
@@ -20,16 +20,16 @@ namespace ExtenderApp.Common.IO.Splitter
         //    return base.Create(data);
         //}
 
-        public override MemoryMappedViewAccessor Create(SplitterStreamOperateData data)
-        {
-            data.SplitterInfo = data.SplitterInfo ?? _binaryParser.Read<SplitterInfo>(data.SplitterInfoFileInfo);
+        //public override MemoryMappedViewAccessor Create(SplitterStreamOperateData data)
+        //{
+        //    data.SplitterInfo = data.SplitterInfo ?? _binaryParser.Read<SplitterInfo>(data.SplitterInfoFileInfo);
 
-            if (data.SplitterInfo == null)
-            {
-                throw new FileNotFoundException(data.OperateInfo.LocalFileInfo.FilePath);
-            }
-            return MemoryMappedFile.CreateFromFile(data.OperateInfo.OpenFile(), data.OperateInfo.LocalFileInfo.FileName, data.SplitterInfo.Length, MemoryMappedFileAccess.ReadWrite, HandleInheritability.Inheritable, true).CreateViewAccessor();
-        }
+        //    if (data.SplitterInfo == null)
+        //    {
+        //        throw new FileNotFoundException(data.OperateInfo.LocalFileInfo.FilePath);
+        //    }
+        //    return MemoryMappedFile.CreateFromFile(data.OperateInfo.OpenFile(), data.OperateInfo.LocalFileInfo.FileName, data.SplitterInfo.Length, MemoryMappedFileAccess.ReadWrite, HandleInheritability.Inheritable, true).CreateViewAccessor();
+        //}
 
         ///// <summary>
         ///// 执行后的操作

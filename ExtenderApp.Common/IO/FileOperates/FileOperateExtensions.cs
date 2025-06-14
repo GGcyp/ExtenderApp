@@ -1,6 +1,4 @@
-﻿using System.IO.MemoryMappedFiles;
-using ExtenderApp.Abstract;
-using ExtenderApp.Common.Error;
+﻿using ExtenderApp.Common.Error;
 
 namespace ExtenderApp.Common.IO
 {
@@ -10,18 +8,18 @@ namespace ExtenderApp.Common.IO
     public static class FileOperateExtensions
     {
         /// <summary>
-        /// 获取文件的MD5值
+        /// 获取文件MD5值
         /// </summary>
-        /// <typeparam name="TData">泛型参数，继承自 FileOperateData 类</typeparam>
-        /// <param name="operate">当前对象，实现了 IConcurrentOperate 接口，泛型参数为 MemoryMappedViewAccessor 和 TData</param>
-        /// <returns>返回文件的 MD5 值</returns>
-        /// <exception cref="ArgumentNullException">如果 parser 参数为空，则抛出此异常</exception>
-        public static string GetFileMD5<TData>(this IConcurrentOperate<MemoryMappedViewAccessor, TData> operate)
+        /// <typeparam name="TData">文件操作数据的类型，继承自FileOperateData</typeparam>
+        /// <param name="operate">文件并发操作实例</param>
+        /// <returns>文件的MD5值</returns>
+        /// <exception cref="ArgumentNullException">如果operate为null，则抛出ArgumentNullException异常</exception>
+        public static string GetFileMD5<TData>(this FileConcurrentOperate operate)
             where TData : FileOperateData
         {
             operate.ArgumentNull(nameof(operate));
 
-            return MD5Handle.GetMD5Hash(operate.Data.FileStream);
+            return MD5Handle.GetMD5Hash(operate.Data.FStream);
         }
     }
 }

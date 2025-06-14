@@ -175,7 +175,7 @@ namespace ExtenderApp.ViewModels
         /// <typeparam name="T">数据类型</typeparam>
         /// <param name="data">输出参数，用于存储获取的数据</param>
         /// <returns>如果成功获取到数据则返回true，否则返回false</returns>
-        protected bool LoadLocalData<T>(out T? data, Action<LocalData<T>> checkAction = null)
+        protected bool LoadLocalData<T>(out T? data, Action<LocalData<T>> checkAction = null) where T : class
         {
             data = default;
             if (!_serviceStore.LocalDataService.LoadData(GetCurrentModDetails(), out LocalData<T> localData))
@@ -192,7 +192,7 @@ namespace ExtenderApp.ViewModels
         /// <typeparam name="T">数据类型</typeparam>
         /// <param name="data">要设置的数据</param>
         /// <returns>如果成功设置数据则返回true，否则返回false</returns>
-        protected bool SaveLocalData<T>(T? data)
+        protected bool SaveLocalData<T>(T? data) where T : class
         {
             return _serviceStore.LocalDataService.SaveData(GetCurrentModDetails(), data);
         }
@@ -238,7 +238,7 @@ namespace ExtenderApp.ViewModels
         protected ScheduledTask StartCycle(Action<object> callback, object state, TimeSpan period)
         {
             ScheduledTask task = new ScheduledTask();
-            task.StartCycle(callback, state,  period);
+            task.StartCycle(callback, state, period);
             return task;
         }
 
@@ -361,6 +361,11 @@ namespace ExtenderApp.ViewModels
         /// <param name="serviceStore">服务存储</param>
         protected ExtenderAppViewModel(IServiceStore serviceStore) : base(serviceStore)
         {
+        }
+
+        public virtual void InjectViewModel(TModle model)
+        {
+            this.model = model;
         }
 
         /// <summary>

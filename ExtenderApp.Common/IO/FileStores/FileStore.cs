@@ -2,6 +2,7 @@
 using System.IO.MemoryMappedFiles;
 using ExtenderApp.Abstract;
 using ExtenderApp.Common.Error;
+using ExtenderApp.Common.ObjectPools;
 using ExtenderApp.Data;
 
 namespace ExtenderApp.Common.IO
@@ -14,59 +15,62 @@ namespace ExtenderApp.Common.IO
         /// <summary>
         /// 文件操作字典，用于存储文件操作信息。
         /// </summary>
-        private readonly ConcurrentDictionary<int, IConcurrentOperate> _operateDict;
+        private readonly ConcurrentDictionary<int, FileConcurrentOperate> _operateDict;
 
         /// <summary>
         /// 一个私有的 ScheduledTask 对象。
         /// </summary>
         private readonly ScheduledTask _task;
 
-        private readonly List<int> _operateList;
+        /// <summary>
+        /// 文件操作完成后执行的释放动作。
+        /// </summary>
+        private readonly Action<FileOperateInfo> _releaseAction;
+
+        private readonly ObjectPool<FileOperateData> _pool;
 
         /// <summary>
         /// 初始化 FileStorage 类的新实例。
         /// </summary>
         /// <param name="operatePool">并发操作池实例。</param>
-        public FileStore()
+        public FileStore(ObjectPool<FileOperateData> pool)
         {
             _operateDict = new();
-            _operateList = new();
             _task = new();
             _task.StartCycle(o => ReleaseOperate(), TimeSpan.FromSeconds(60));
+            _releaseAction = ReleaseOperate;
+            _pool = pool ?? throw new ArgumentNullException(nameof(pool), "操作池不能为空。");
         }
 
         /// <summary>
-        /// 获取指定文件的并发操作对象。
+        /// 根据给定的文件操作信息获取文件并发操作实例。
         /// </summary>
-        /// <typeparam name="TData">并发操作数据的类型。</typeparam>
         /// <param name="info">文件操作信息。</param>
-        /// <param name="createFunc">创建并发操作对象的函数。</param>
-        /// <param name="fileLength">文件的长度。</param>
-        /// <returns>并发操作对象，如果对象已存在则返回null。</returns>
-        /// <remarks>
-        /// T必须继承自<see cref="FileOperateData"/>。
-        /// </remarks>
-        public IConcurrentOperate<MemoryMappedViewAccessor, TData>? GetOperate<TData>(FileOperateInfo info, Func<FileOperateInfo, long, IConcurrentOperate<MemoryMappedViewAccessor, TData>> createFunc, long fileLength) where TData : FileOperateData
+        /// <returns>返回文件并发操作实例。</returns>
+        public FileConcurrentOperate GetOperate(FileOperateInfo info)
         {
             var id = info.GetHashCode();
             if (_operateDict.TryGetValue(id, out var operate))
             {
-                return operate as IConcurrentOperate<MemoryMappedViewAccessor, TData>;
+                return operate;
             }
 
             lock (_operateDict)
             {
                 if (_operateDict.TryGetValue(id, out operate))
                 {
-                    return operate as IConcurrentOperate<MemoryMappedViewAccessor, TData>;
+                    return operate;
                 }
 
-                createFunc.ArgumentNull();
+                operate = FileConcurrentOperate.Get();
 
-                var result = createFunc?.Invoke(info, fileLength);
-                _operateDict.TryAdd(id, result);
+                var data = _pool.Get();
+                data.Set(info, _releaseAction);
+                operate.Start(data);
+
+                _operateDict.TryAdd(id, operate);
                 _task.Resume();
-                return result;
+                return operate;
             }
         }
 
@@ -108,19 +112,19 @@ namespace ExtenderApp.Common.IO
             if (_operateDict.Count <= 0)
                 _task.Pause();
 
+            List<int> list = new List<int>(_operateDict.Count);
             foreach (var pair in _operateDict)
             {
                 if (!pair.Value.IsExecuting)
                 {
-                    _operateList.Add(pair.Key);
+                    list.Add(pair.Key);
                 }
             }
 
-            for (int i = 0; i < _operateList.Count; i++)
+            for (int i = 0; i < list.Count; i++)
             {
-                ReleaseOperate(_operateList[i]);
+                ReleaseOperate(list[i]);
             }
-            _operateList.Clear();
 
             if (_operateDict.Count <= 0)
                 _task.Pause();

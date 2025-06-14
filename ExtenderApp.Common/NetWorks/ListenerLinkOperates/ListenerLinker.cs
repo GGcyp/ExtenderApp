@@ -1,8 +1,6 @@
 ﻿using System.Net;
 using System.Net.Sockets;
 using ExtenderApp.Abstract;
-using ExtenderApp.Common.ObjectPools;
-using ExtenderApp.Data;
 
 namespace ExtenderApp.Common.Networks
 {

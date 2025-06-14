@@ -1,0 +1,125 @@
+﻿using ExtenderApp.Abstract;
+using ExtenderApp.Data;
+
+namespace ExtenderApp.Common.IO.FileParsers
+{
+    /// <summary>
+    /// 文件解析器基类，继承自 DisposableObject 类并实现 IFileParser 接口。
+    /// </summary>
+    public abstract class FileParser : DisposableObject, IFileParser
+    {
+        /// <summary>
+        /// 文件存储的实例
+        /// </summary>
+        protected readonly FileStore _store;
+
+        /// <summary>
+        /// 用于取消操作的取消令牌源。
+        /// </summary>
+        private readonly CancellationTokenSource _cancellationTokenSource;
+
+        /// <summary>
+        /// FileParser 类的受保护构造函数。
+        /// </summary>
+        /// <param name="store">文件存储对象</param>
+        protected FileParser(FileStore store)
+        {
+            /// <summary>
+            /// 初始化文件存储对象
+            /// </summary>
+            _store = store;
+            /// <summary>
+            /// 初始化取消令牌源
+            /// </summary>
+            _cancellationTokenSource = new CancellationTokenSource();
+        }
+
+        #region Read
+        public abstract T? Read<T>(ExpectLocalFileInfo info);
+
+        public abstract T? Read<T>(FileOperateInfo info);
+
+        public abstract T? Read<T>(IConcurrentOperate fileOperate);
+
+        public abstract T? Read<T>(ExpectLocalFileInfo info, long position, long length);
+
+        public abstract T? Read<T>(FileOperateInfo info, long position, long length);
+
+        public abstract T? Read<T>(IConcurrentOperate fileOperate, long position, long length);
+
+        #endregion
+
+        #region ReadAsync
+
+        public abstract void ReadAsync<T>(ExpectLocalFileInfo info, Action<T?> callback);
+
+        public abstract void ReadAsync<T>(FileOperateInfo info, Action<T?> callback);
+
+        public abstract void ReadAsync<T>(IConcurrentOperate fileOperate, Action<T?> callback);
+
+        public abstract void ReadAsync<T>(ExpectLocalFileInfo info, long position, long length, Action<T?> callback);
+
+        public abstract void ReadAsync<T>(FileOperateInfo info, long position, long length, Action<T?> callback);
+
+        public abstract void ReadAsync<T>(IConcurrentOperate fileOperate, long position, long length, Action<T?> callback);
+
+        #endregion
+
+        #region Write
+        public abstract void Write<T>(ExpectLocalFileInfo info, T value);
+
+        public abstract void Write<T>(FileOperateInfo info, T value);
+
+        public abstract void Write<T>(IConcurrentOperate fileOperate, T value);
+
+        public abstract void Write<T>(ExpectLocalFileInfo info, T value, long position);
+
+        public abstract void Write<T>(FileOperateInfo info, T value, long position);
+
+        public abstract void Write<T>(IConcurrentOperate fileOperate, T value, long position);
+
+        #endregion
+
+        #region WriteAsync
+
+        public abstract void WriteAsync<T>(ExpectLocalFileInfo info, T value, Action? callback = null);
+
+        public abstract void WriteAsync<T>(FileOperateInfo info, T value, Action? callback = null);
+
+        public abstract void WriteAsync<T>(IConcurrentOperate fileOperate, T value, Action? callback = null);
+
+        public abstract void WriteAsync<T>(ExpectLocalFileInfo info, T value, long position, Action? callback = null);
+
+        public abstract void WriteAsync<T>(FileOperateInfo info, T value, long position, Action? callback = null);
+
+        public abstract void WriteAsync<T>(IConcurrentOperate fileOperate, T value, long position, Action? callback = null);
+
+        #endregion
+
+        #region GetOperate
+
+        public FileConcurrentOperate GetOperate(FileOperateInfo info)
+        {
+            return _store.GetOperate(info);
+        }
+
+        #endregion
+
+        #region Delete
+
+        /// <summary>
+        /// 删除本地文件
+        /// </summary>
+        /// <param name="info">包含要删除文件信息的ExpectLocalFileInfo对象</param>
+        public abstract void Delete(ExpectLocalFileInfo info);
+
+        #endregion  
+
+        protected override void Dispose(bool disposing)
+        {
+            _cancellationTokenSource.Cancel();
+            _cancellationTokenSource.Dispose();
+            base.Dispose(disposing);
+        }
+    }
+}

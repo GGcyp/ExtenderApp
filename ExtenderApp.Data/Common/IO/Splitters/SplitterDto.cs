@@ -30,6 +30,12 @@ namespace ExtenderApp.Data
         public string MD5 { get; set; }
 
         /// <summary>
+        /// 判断字节数组是否为空。
+        /// </summary>
+        /// <returns>如果字节数组为空则返回true，否则返回false。</returns>
+        public bool IsEmpty => Bytes == null || Bytes == Array.Empty<byte>() || Bytes.Length == 0;
+
+        /// <summary>
         /// 初始化 SplitterDto 实例。
         /// </summary>
         /// <param name="chunkIndex">数据块的索引。</param>

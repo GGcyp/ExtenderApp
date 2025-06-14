@@ -15,43 +15,62 @@ namespace ExtenderApp.Common.IO
         public FileOperateInfo OperateInfo;
 
         /// <summary>
-        /// 获取本地文件信息。
-        /// </summary>
-        public LocalFileInfo LocalFileInformation => OperateInfo.LocalFileInfo;
-
-        /// <summary>
-        /// 获取或设置文件长度（以字节为单位）。
-        /// </summary>
-        public long FileLength { get; private set; }
-
-        /// <summary>
         /// 文件操作信息释放委托。
         /// </summary>
         private Action<FileOperateInfo> releaseFileOperateInfo;
 
         /// <summary>
-        /// 获取或设置文件流
+        /// 文件流
         /// </summary>
-        public Stream? FileStream { get; internal set; }
+        public FileStream FStream { get; private set; }
 
         /// <summary>
-        /// 获取或设置内存映射文件
+        /// 内存映射文件
         /// </summary>
-        public MemoryMappedFile? FileMemoryMappedFile { get; internal set; }
+        private MemoryMappedFile _mmf;
 
         /// <summary>
-        /// 打开文件的方法
+        /// 当前容量
         /// </summary>
-        /// <param name="info">文件操作信息</param>
-        /// <param name="fileLength">文件长度</param>
-        /// <param name="token">取消令牌</param>
-        /// <param name="action">文件操作完成后的回调</param>
-        public void OpenFile(FileOperateInfo info, long fileLength, CancellationToken token, Action<FileOperateInfo> action)
+        public long CurrentCapacity { get; private set; }
+
+        /// <summary>
+        /// 内存映射视图访问器
+        /// </summary>
+        public MemoryMappedViewAccessor Accessor { get; private set; }
+
+        /// <summary>
+        /// 内存映射文件访问权限
+        /// </summary>
+        public MemoryMappedFileAccess MMFileAccess { get; set; }
+
+        /// <summary>
+        /// 句柄继承性
+        /// </summary>
+        public HandleInheritability HInheritability { get; set; }
+
+        /// <summary>
+        /// 是否在关闭时保持文件打开
+        /// </summary>
+        public bool LeaveOpen { get; set; }
+
+        /// <summary>
+        /// 设置文件操作信息并创建内存映射。
+        /// </summary>
+        /// <param name="info">文件操作信息。</param>
+        /// <param name="releaseAction">释放文件操作信息的操作。</param>
+        public void Set(FileOperateInfo info, Action<FileOperateInfo> releaseAction)
         {
-            this.OperateInfo = info;
-            releaseFileOperateInfo = action;
-            Token = token;
-            FileLength = fileLength;
+            OperateInfo = info;
+            releaseFileOperateInfo = releaseAction;
+            FStream = OperateInfo.OpenFile();
+            CurrentCapacity = FStream.Length;
+            MMFileAccess = MemoryMappedFileAccess.ReadWrite;
+            HInheritability = HandleInheritability.Inheritable;
+            LeaveOpen = true;
+
+            // 创建内存映射
+            CreateMapped();
         }
 
         /// <summary>
@@ -64,6 +83,53 @@ namespace ExtenderApp.Common.IO
         }
 
         /// <summary>
+        /// 扩展容量
+        /// </summary>
+        /// <param name="newCapacity">新容量</param>
+        public void ExpandCapacity(long newCapacity)
+        {
+            if (newCapacity <= CurrentCapacity) return;
+
+            // 释放现有资源
+            Accessor.Dispose();
+            _mmf.Dispose();
+
+            // 调整文件大小
+            FStream.SetLength(newCapacity);
+            CurrentCapacity = newCapacity;
+
+            // 重新创建内存映射
+            CreateMapped();
+        }
+
+        /// <summary>
+        /// 创建内存映射
+        /// </summary>
+        private void CreateMapped()
+        {
+            if (FStream.Length == 0 && CurrentCapacity == 0)
+            {
+                CurrentCapacity = 1; // 确保至少有一个字节的容量
+                FStream.SetLength(CurrentCapacity);
+            }
+            _mmf = MemoryMappedFile.CreateFromFile(FStream, OperateInfo.LocalFileInfo.FileName, CurrentCapacity, MemoryMappedFileAccess.ReadWrite, HandleInheritability.Inheritable, true);
+            Accessor = _mmf.CreateViewAccessor();
+        }
+
+        /// <summary>
+        /// 释放资源
+        /// </summary>
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing) return;
+
+            Accessor?.Dispose();
+            _mmf?.Dispose();
+            FStream?.Dispose();
+            GC.SuppressFinalize(this);
+        }
+
+        /// <summary>
         /// 尝试重置文件操作信息。
         /// </summary>
         /// <returns>如果重置成功，则返回 true；否则返回 false。</returns>
@@ -71,10 +137,6 @@ namespace ExtenderApp.Common.IO
         {
             OperateInfo = FileOperateInfo.Empty;
             releaseFileOperateInfo = null;
-            FileStream.Dispose();
-            FileMemoryMappedFile.Dispose();
-            FileStream = null;
-            FileMemoryMappedFile = null;
             return base.TryReset();
         }
     }

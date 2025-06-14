@@ -6,7 +6,7 @@ namespace ExtenderApp.Abstract
     /// <summary>
     /// 定义一个用于操作链接的接口
     /// </summary>
-    public interface ILinker : IResettable
+    public interface ILinker : IResettable, IConcurrentOperate
     {
         /// <summary>
         /// 获取当前是否已连接。
@@ -15,6 +15,26 @@ namespace ExtenderApp.Abstract
         /// 如果已连接，则返回 true；否则返回 false。
         /// </value>
         bool Connected { get; }
+
+        /// <summary>
+        /// 当接收到数据时触发的事件。
+        /// </summary>
+        event Action<ReadOnlyMemory<byte>>? OnReceive;
+
+        /// <summary>
+        /// 当连接关闭时触发的事件。
+        /// </summary>
+        event Action<ILinker>? OnClose;
+
+        /// <summary>
+        /// 当连接建立时触发的事件。
+        /// </summary>
+        event Action<ILinker>? OnConnect;
+
+        /// <summary>
+        /// 当发生错误时触发的事件。
+        /// </summary>
+        event Action<int, string> OnErrored;
 
         /// <summary>
         /// 通过主机名和端口号连接到服务器
@@ -42,6 +62,15 @@ namespace ExtenderApp.Abstract
         /// <typeparam name="T">回调函数的参数类型</typeparam>
         /// <param name="callback">回调函数</param>
         void Register<T>(Action<T> callback);
+
+        /// <summary>
+        /// 注册一个类型为T和ILinker的回调函数
+        /// </summary>
+        /// <typeparam name="T">回调函数的参数类型</typeparam>
+        /// <param name="callback">回调函数</param>
+        /// <exception cref="Exception">当当前连接已经关闭时抛出异常</exception>
+        /// <exception cref="Exception">当当前连接正在关闭中时抛出异常</exception>
+        void Register<T>(Action<T, ILinker> callback);
 
         /// <summary>
         /// 发送数据
@@ -76,6 +105,11 @@ namespace ExtenderApp.Abstract
         /// 关闭连接
         /// </summary>
         void Close();
+
+        /// <summary>
+        /// 设置Socket连接
+        /// </summary>
+        /// <param name="socket">要设置的Socket对象</param>
         void Set(Socket socket);
     }
 }

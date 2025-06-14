@@ -6,6 +6,7 @@ using ExtenderApp.Abstract;
 using ExtenderApp.Common.ConcurrentOperates;
 using ExtenderApp.Common.DataBuffers;
 using ExtenderApp.Common.Error;
+using ExtenderApp.Common.IO;
 using ExtenderApp.Common.Networks.LinkOperates;
 using ExtenderApp.Common.ObjectPools;
 using ExtenderApp.Common.ObjectPools.Policy;
@@ -18,9 +19,7 @@ namespace ExtenderApp.Common.Networks
     /// </summary>
     /// <typeparam name="TPolicy">操作策略类型，需要继承自 LinkOperatePolicy 并约束 TData 类型。</typeparam>
     /// <typeparam name="TData">数据类型，需要继承自 LinkerData。</typeparam>
-    public abstract class Linker<TPolicy, TData> : ConcurrentOperate<TPolicy, Socket, TData>, ILinker
-            where TPolicy : LinkOperatePolicy<TData>
-            where TData : LinkerData
+    public abstract class Linker : ConcurrentOperate<LinkOperateData>, ILinker
     {
         ///// <summary>
         ///// 默认发送长度，单位为字节
@@ -31,30 +30,6 @@ namespace ExtenderApp.Common.Networks
         ///// 默认接收长度，单位为字节
         ///// </summary>
         //private const int DEFALUT_RECEIVE_LENGTH = 4 * 1024;
-
-        #region 隐藏Pool方法
-
-        public static new IConcurrentOperate<Socket, TData> Get()
-        {
-            throw new NotImplementedException();
-        }
-
-        public static new void Release(IConcurrentOperate<Socket, TData> operate)
-        {
-            throw new NotImplementedException();
-        }
-
-        public new T Get<T>() where T : class
-        {
-            throw new NotImplementedException();
-        }
-
-        public new void Release<T>(T obj) where T : class, IConcurrentOperate<Socket, TData>
-        {
-            throw new NotImplementedException();
-        }
-
-        #endregion
 
         /// <summary>
         /// 对象池，用于创建和重用 LinkerOperation 对象。
@@ -70,7 +45,7 @@ namespace ExtenderApp.Common.Networks
         /// <summary>
         /// 注册字典，用于存储和检索格式化器和委托。
         /// </summary>
-        private readonly ConcurrentDictionary<int, DataBuffer<IBinaryFormatter, Delegate>> _registerDicts;
+        private readonly ConcurrentDictionary<int, DataBuffer<IBinaryFormatter, Delegate, ILinker>> _registerDicts;
 
         /// <summary>
         /// 数据包分段器
@@ -160,6 +135,14 @@ namespace ExtenderApp.Common.Networks
         /// </summary>
         public event Action<ILinker>? OnClose;
 
+        /// <summary>
+        /// 当发生错误时触发的事件
+        /// </summary>
+        /// <remarks>
+        /// 此事件包含一个委托，该委托有两个参数：第一个参数是整型，表示错误代码；第二个参数是字符串，表示错误信息。
+        /// </remarks>
+        public event Action<int, string> OnErrored;
+
         #endregion
 
         #region 内部属性
@@ -204,7 +187,7 @@ namespace ExtenderApp.Common.Networks
         /// <summary>
         /// 是否已连接。
         /// </summary>
-        public bool Connected => Operate.Connected;
+        public bool Connected => Data.Socket.Connected;
 
         /// <summary>
         /// 获取数据长度
@@ -254,6 +237,7 @@ namespace ExtenderApp.Common.Networks
             cacheBytes = ArrayPool<byte>.Shared.Rent(PacketLength * 2);
 
             Register<LinkerDto>(ReceiveLinkerDto);
+            Register<ErrorDto>(ReceiveErrorDto);
 
             if (_heartbeatLazy.IsValueCreated)
             {
@@ -283,9 +267,9 @@ namespace ExtenderApp.Common.Networks
             if (Interlocked.CompareExchange(ref isClosing, 0, 1) == 1)
                 throw new Exception("当前连接正在关闭中");
 
-            lock (Operate)
+            lock (Data)
             {
-                Operate.Connect(host, port);
+                Data.Socket.Connect(host, port);
                 StartReceive();
                 ConnectProcess();
             }
@@ -310,9 +294,9 @@ namespace ExtenderApp.Common.Networks
             if (Interlocked.CompareExchange(ref isClosing, 0, 1) == 1)
                 throw new Exception("当前连接正在关闭中");
 
-            lock (Operate)
+            lock (Data)
             {
-                Operate.Connect(address, port);
+                Data.Socket.Connect(address, port);
                 StartReceive();
                 ConnectProcess();
             }
@@ -336,9 +320,9 @@ namespace ExtenderApp.Common.Networks
             if (Interlocked.CompareExchange(ref isClosing, 0, 1) == 1)
                 throw new Exception("当前连接正在关闭中");
 
-            lock (Operate)
+            lock (Data)
             {
-                Operate.Connect(point);
+                Data.Socket.Connect(point);
                 StartReceive();
                 ConnectProcess();
             }
@@ -364,7 +348,7 @@ namespace ExtenderApp.Common.Networks
                 throw new Exception("当前连接正在关闭中");
 
             Interlocked.Increment(ref isConnecting);
-            Operate.BeginConnect(host, port, _connectCallback, null);
+            Data.Socket.BeginConnect(host, port, _connectCallback, null);
         }
 
         /// <summary>
@@ -387,7 +371,7 @@ namespace ExtenderApp.Common.Networks
                 throw new Exception("当前连接正在关闭中");
 
             Interlocked.Increment(ref isConnecting);
-            Operate.BeginConnect(address, port, _connectCallback, null);
+            Data.Socket.BeginConnect(address, port, _connectCallback, null);
         }
 
         /// <summary>
@@ -409,7 +393,7 @@ namespace ExtenderApp.Common.Networks
                 throw new Exception("当前连接正在关闭中");
 
             Interlocked.Increment(ref isConnecting);
-            Operate.BeginConnect(point, _connectCallback, null);
+            Data.Socket.BeginConnect(point, _connectCallback, null);
         }
 
         /// <summary>
@@ -439,12 +423,25 @@ namespace ExtenderApp.Common.Networks
         #region Register
 
         /// <summary>
-        /// 注册一个回调方法，当收到指定类型的数据时调用此方法。
+        /// 注册一个类型为T的回调函数
         /// </summary>
-        /// <typeparam name="T">接收数据的类型</typeparam>
-        /// <param name="callback">当接收到指定类型的数据时调用的回调方法</param>
-        /// <exception cref="Exception">如果当前连接已经关闭或正在关闭中，则抛出异常</exception>
+        /// <typeparam name="T">回调函数的参数类型</typeparam>
+        /// <param name="callback">回调函数</param>
+        /// <exception cref="Exception">当当前连接已经关闭时抛出异常</exception>
+        /// <exception cref="Exception">当当前连接正在关闭中时抛出异常</exception>
         public void Register<T>(Action<T> callback)
+        {
+            Register<T>((v, l) => callback.Invoke(v));
+        }
+
+        /// <summary>
+        /// 注册一个类型为T和ILinker的回调函数
+        /// </summary>
+        /// <typeparam name="T">回调函数的参数类型</typeparam>
+        /// <param name="callback">回调函数</param>
+        /// <exception cref="Exception">当当前连接已经关闭时抛出异常</exception>
+        /// <exception cref="Exception">当当前连接正在关闭中时抛出异常</exception>
+        public void Register<T>(Action<T, ILinker> callback)
         {
             if (!CanOperate)
                 throw new Exception("当前连接已经关闭");
@@ -458,7 +455,7 @@ namespace ExtenderApp.Common.Networks
             int typeCode = Utility.GetSimpleConsistentHash(typeName);
             if (_registerDicts.TryGetValue(typeCode, out var buffer))
             {
-                var action = buffer.Item2 as Action<T>;
+                var action = buffer.Item2 as Action<T, ILinker>;
                 action += callback;
                 buffer.Item2 = action;
                 return;
@@ -470,16 +467,17 @@ namespace ExtenderApp.Common.Networks
                 //throw new Exception(string.Format("不允许重复注册:{0}", typeName));
             }
 
-            buffer = DataBuffer<IBinaryFormatter, Delegate>.GetDataBuffer();
+            buffer = DataBuffer<IBinaryFormatter, Delegate, ILinker>.GetDataBuffer();
             buffer.Item1 = _binaryParser.GetFormatter<T>();
             buffer.Item2 = callback;
-            buffer.SetProcessAction<ReadOnlyMemory<byte>>((d, a) =>
+            buffer.Item3 = this;
+            buffer.GetProcessAction<ReadOnlyMemory<byte>>((d, a) =>
             {
                 var formatter = d.Item1 as IBinaryFormatter<T>;
                 var reader = new ExtenderBinaryReader(a);
                 T result = formatter.Deserialize(ref reader);
-                var callback = d.Item2 as Action<T>;
-                callback?.Invoke(result);
+                var callback = d.Item2 as Action<T, ILinker>;
+                callback?.Invoke(result, d.Item3);
             });
 
             _registerDicts.TryAdd(typeCode, buffer);
@@ -503,6 +501,8 @@ namespace ExtenderApp.Common.Networks
                 throw new Exception("当前连接正在关闭中");
             if (!Connected)
                 throw new Exception("当前连接还未连接");
+            if (_packetSegmenter.IsSending)
+                throw new Exception("无法同时发送大数据包");
 
             var valueBytes = _binaryParser.SerializeForArrayPool(value, out int valueLength);
             int typeCode = Utility.GetSimpleConsistentHash<T>();
@@ -539,6 +539,8 @@ namespace ExtenderApp.Common.Networks
                 throw new Exception("当前连接正在关闭中");
             if (!Connected)
                 throw new Exception("当前连接还未连接");
+            if (_packetSegmenter.IsSending)
+                throw new Exception("无法异步发送大数据包");
 
             var valueBytes = _binaryParser.SerializeForArrayPool(value, out int valueLength);
             int typeCode = Utility.GetSimpleConsistentHash<T>();
@@ -603,7 +605,7 @@ namespace ExtenderApp.Common.Networks
         public void SendSource(byte[] bytes, int offset, int count)
         {
             var operation = _pool.Get();
-            operation.Set(bytes, offset, count, Recorder.RecordSend);
+            operation.Set(bytes, offset, count, _recordSendAction);
             ExecuteOperation(operation);
             operation.Release();
         }
@@ -622,7 +624,7 @@ namespace ExtenderApp.Common.Networks
         public void SendSourceAsync(byte[] bytes, int offset, int count)
         {
             var operation = _pool.Get();
-            operation.Set(bytes, offset, count, Recorder.RecordSend, b => ArrayPool<byte>.Shared.Return(b));
+            operation.Set(bytes, offset, count, _recordSendAction, b => ArrayPool<byte>.Shared.Return(b));
             QueueOperation(operation);
         }
 
@@ -639,7 +641,7 @@ namespace ExtenderApp.Common.Networks
             try
             {
                 byte[] receiveBuffer = (byte[])ar.AsyncState!;
-                int bytesRead = Operate.EndReceive(ar);
+                int bytesRead = Data.Socket.EndReceive(ar);
                 if (bytesRead == 0)
                 {
                     //Operate.BeginReceive(receiveBuffer, 0, receiveBuffer.Length, SocketFlags.None, _receiveCallbcak, receiveBuffer);
@@ -675,7 +677,7 @@ namespace ExtenderApp.Common.Networks
             //byte[] newReceiveQueueBytes = ArrayPool<byte>.Shared.Rent(DEFALUT_RECEIVE_LENGTH);
             byte[] newReceiveQueueBytes = ArrayPool<byte>.Shared.Rent(PacketLength);
             // 继续接收数据
-            Operate.BeginReceive(newReceiveQueueBytes, 0, newReceiveQueueBytes.Length, SocketFlags.None, _receiveCallbcak, newReceiveQueueBytes);
+            Data.Socket.BeginReceive(newReceiveQueueBytes, 0, newReceiveQueueBytes.Length, SocketFlags.None, _receiveCallbcak, newReceiveQueueBytes);
         }
 
         /// <summary>
@@ -813,23 +815,6 @@ namespace ExtenderApp.Common.Networks
         }
 
         /// <summary>
-        /// 接收LinkerDto对象
-        /// </summary>
-        /// <param name="dto">LinkerDto对象</param>
-        private void ReceiveLinkerDto(LinkerDto dto)
-        {
-            //是否需要心跳机制
-            if (dto.NeedHeartbeat)
-            {
-                Heartbeat.Start();
-                Heartbeat.ChangeSendHearbeatInterval(0);
-            }
-
-            linkerDto = dto;
-            OnReceiveLinkerDto?.Invoke(this, dto);
-        }
-
-        /// <summary>
         /// 注册类型回调方法
         /// </summary>
         /// <param name="typeCode">类型代码</param>
@@ -847,6 +832,32 @@ namespace ExtenderApp.Common.Networks
             {
                 buffer.Process(new ReadOnlyMemory<byte>(receiveBuffer, startIndex, length));
             }
+        }
+
+        /// <summary>
+        /// 接收LinkerDto对象
+        /// </summary>
+        /// <param name="dto">LinkerDto对象</param>
+        private void ReceiveLinkerDto(LinkerDto dto)
+        {
+            //是否需要心跳机制
+            if (dto.NeedHeartbeat)
+            {
+                Heartbeat.Start();
+                Heartbeat.ChangeSendHearbeatInterval(0);
+            }
+
+            linkerDto = dto;
+            OnReceiveLinkerDto?.Invoke(this, dto);
+        }
+
+        /// <summary>
+        /// 接收错误数据传输对象
+        /// </summary>
+        /// <param name="dto">错误数据传输对象</param>
+        private void ReceiveErrorDto(ErrorDto dto)
+        {
+            OnErrored?.Invoke(dto.StatrCode, dto.Message);
         }
 
         #endregion
@@ -881,14 +892,14 @@ namespace ExtenderApp.Common.Networks
         {
             socket.ArgumentNull(nameof(socket));
 
-            if (Operate != null)
+            if (Data != null)
                 throw new Exception("当前连接已经有socket，无法重新添加");
 
             //if (!socket.Connected)
             //    throw new Exception("当前socket还未连接，无法加入");
 
             //Start(Policy, operate: socket);
-            Operate = socket;
+            //Data = socket;
 
             StartReceive();
         }
@@ -943,5 +954,7 @@ namespace ExtenderApp.Common.Networks
 
             return base.TryReset();
         }
+
+        protected abstract void Release();
     }
 }

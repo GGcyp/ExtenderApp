@@ -1,5 +1,7 @@
-﻿using ExtenderApp.Abstract;
+﻿using System.Security.AccessControl;
+using ExtenderApp.Abstract;
 using ExtenderApp.Common.Networks;
+using ExtenderApp.Common.ObjectPools;
 using ExtenderApp.Data;
 
 namespace ExtenderApp.Common
@@ -203,21 +205,28 @@ namespace ExtenderApp.Common
     //    }
     //}
 
-    public class TcpLinker : Linker<TcpLinkerPolicy, TcpLinkerData>
+    public class TcpLinker : Linker, ITcpLinker
     {
         private const int DEFALUT_DATA_LENGTH = 4 * 1024;
 
-        private readonly static TcpLinkerPolicy tcpLinkPolicy = new TcpLinkerPolicy();
-
         private int dataLength;
+
+        private Action<TcpLinker> releaseAction;
+
         protected override int DataLength => dataLength;
 
         protected override int PacketLength => DEFALUT_DATA_LENGTH;
 
-        public TcpLinker(IBinaryParser binaryParser, SequencePool<byte> sequencePool) : base(binaryParser, sequencePool)
+        public TcpLinker(IBinaryParser binaryParser, SequencePool<byte> sequencePool, Action<TcpLinker> releaseAction) : base(binaryParser, sequencePool)
         {
-            Policy = tcpLinkPolicy;
             dataLength = DEFALUT_DATA_LENGTH - _sendHeadFormatter.Length - (int)_binaryParser.GetDefaulLength<PacketSegmentDto>();
+            Start(new TcpLinkerData());
+            this.releaseAction = releaseAction;
+        }
+
+        protected override void Release()
+        {
+            releaseAction?.Invoke(this);
         }
     }
 }

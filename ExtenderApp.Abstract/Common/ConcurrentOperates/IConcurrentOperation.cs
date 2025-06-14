@@ -13,15 +13,15 @@ namespace ExtenderApp.Abstract
     }
 
     /// <summary>
-    /// 定义一个并发操作接口，用于执行并发操作。
+    /// 表示一个并发操作接口，该接口支持泛型数据参数。
     /// </summary>
-    /// <typeparam name="T">操作对象的类型。</typeparam>
-    public interface IConcurrentOperation<T> : IConcurrentOperation
+    /// <typeparam name="TData">并发操作所需的数据类型。</typeparam>
+    public interface IConcurrentOperation<TData> : IConcurrentOperation
     {
         /// <summary>
         /// 执行并发操作。
         /// </summary>
-        /// <param name="item">要执行操作的对象。</param>
-        void Execute(T item);
+        /// <param name="data">执行操作所需的数据。</param>
+        void Execute(TData data);
     }
 }

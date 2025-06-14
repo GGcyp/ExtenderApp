@@ -15,6 +15,11 @@ namespace ExtenderApp.Common.DataBuffers
         public abstract bool TryReset();
 
         /// <summary>
+        /// 释放资源。
+        /// </summary>
+        public abstract void Release();
+
+        /// <summary>
         /// 处理泛型变量
         /// </summary>
         /// <typeparam name="TResult">泛型类型参数</typeparam>
@@ -56,15 +61,25 @@ namespace ExtenderApp.Common.DataBuffers
         private Delegate processAction;
 
         /// <summary>
-        /// 设置处理动作并返回处理动作委托。
+        /// 获取处理动作。
         /// </summary>
-        /// <typeparam name="TResult">处理动作返回值的类型。</typeparam>
-        /// <param name="action">处理动作委托，接受DataBuffer<T>和TResult类型参数。</param>
-        /// <returns>处理动作委托。</returns>
-        public Action<TResult> SetProcessAction<TResult>(Action<DataBuffer<T>, TResult> action)
+        /// <typeparam name="TResult">返回结果类型。</typeparam>
+        /// <param name="action">处理动作，包含两个参数，DataBuffer<T>类型的数据和TResult类型的返回结果。</param>
+        /// <returns>返回处理动作。</returns>
+        public Action<TResult> GetProcessAction<TResult>(Action<DataBuffer<T>, TResult> action)
         {
             processAction = action;
             return Process;
+        }
+
+        /// <summary>
+        /// 设置处理动作。
+        /// </summary>
+        /// <typeparam name="TResult">返回结果类型。</typeparam>
+        /// <param name="action">处理动作，包含两个参数，DataBuffer<T>类型的数据和TResult类型的返回结果。</param>
+        public void SetProcessAction<TResult>(Action<DataBuffer<T>, TResult> action)
+        {
+            processAction = action;
         }
 
         public override void Process<TResult>(TResult varule)
@@ -76,7 +91,7 @@ namespace ExtenderApp.Common.DataBuffers
         /// <summary>
         /// 释放当前DataBuffer<T>实例，将其放回对象池中。
         /// </summary>
-        public void Release()
+        public override void Release()
         {
             ReleaseDataBuffer(this);
         }
@@ -133,15 +148,25 @@ namespace ExtenderApp.Common.DataBuffers
         private Delegate processAction;
 
         /// <summary>
-        /// 设置处理动作
+        /// 获取处理动作
         /// </summary>
-        /// <typeparam name="TResult">处理动作返回值的类型</typeparam>
-        /// <param name="action">处理动作，包含两个参数：DataBuffer<T1, T2>类型的数据缓冲区和处理结果的返回值TResult</param>
-        /// <returns>返回Process方法，以便链式调用</returns>
-        public Action<TResult> SetProcessAction<TResult>(Action<DataBuffer<T1, T2>, TResult> action)
+        /// <typeparam name="TResult">处理结果类型</typeparam>
+        /// <param name="action">处理动作</param>
+        /// <returns>处理动作</returns>
+        public Action<TResult> GetProcessAction<TResult>(Action<DataBuffer<T1, T2>, TResult> action)
         {
             processAction = action;
             return Process;
+        }
+
+        /// <summary>
+        /// 设置处理动作
+        /// </summary>
+        /// <typeparam name="TResult">处理结果类型</typeparam>
+        /// <param name="action">处理动作</param>
+        public void SetProcessAction<TResult>(Action<DataBuffer<T1, T2>, TResult> action)
+        {
+            processAction = action;
         }
 
         public override void Process<TResult>(TResult varule)
@@ -153,7 +178,7 @@ namespace ExtenderApp.Common.DataBuffers
         /// <summary>
         /// 释放当前实例到对象池。
         /// </summary>
-        public void Release()
+        public override void Release()
         {
             ReleaseDataBuffer(this);
         }
@@ -210,15 +235,25 @@ namespace ExtenderApp.Common.DataBuffers
         private Delegate processAction;
 
         /// <summary>
-        /// 设置处理动作
+        /// 获取处理结果的动作。
         /// </summary>
-        /// <typeparam name="TResult">处理动作返回值的类型</typeparam>
-        /// <param name="action">处理动作，包含两个参数：DataBuffer<T1, T2>类型的数据缓冲区和处理结果的返回值TResult</param>
-        /// <returns>返回Process方法，以便链式调用</returns>
-        public Action<TResult> SetProcessAction<TResult>(Action<DataBuffer<T1, T2, T3>, TResult> action)
+        /// <typeparam name="TResult">处理结果的数据类型。</typeparam>
+        /// <param name="action">处理数据缓冲区和处理结果的动作。</param>
+        /// <returns>处理结果的动作。</returns>
+        public Action<TResult> GetProcessAction<TResult>(Action<DataBuffer<T1, T2, T3>, TResult> action)
         {
             processAction = action;
             return Process;
+        }
+
+        /// <summary>
+        /// 设置处理结果的动作。
+        /// </summary>
+        /// <typeparam name="TResult">处理结果的数据类型。</typeparam>
+        /// <param name="action">处理数据缓冲区和处理结果的动作。</param>
+        public void SetProcessAction<TResult>(Action<DataBuffer<T1, T2, T3>, TResult> action)
+        {
+            processAction = action;
         }
 
         public override void Process<TResult>(TResult varule)
@@ -230,7 +265,7 @@ namespace ExtenderApp.Common.DataBuffers
         /// <summary>
         /// 释放当前实例到对象池。
         /// </summary>
-        public void Release()
+        public override void Release()
         {
             ReleaseDataBuffer(this);
         }

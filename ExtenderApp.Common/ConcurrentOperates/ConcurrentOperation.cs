@@ -6,6 +6,9 @@ namespace ExtenderApp.Common
     {
         private Action<object> releaseAction;
 
+        /// <summary>
+        /// 释放资源
+        /// </summary>
         public void Release()
         {
             releaseAction?.Invoke(this);
@@ -22,13 +25,13 @@ namespace ExtenderApp.Common
     /// <summary>
     /// 一个抽象的并发操作类，用于处理并发操作。
     /// </summary>
-    /// <typeparam name="T">并发操作处理的数据类型。</typeparam>
-    public abstract class ConcurrentOperation<T> : ConcurrentOperation, IConcurrentOperation<T> where T : class
+    /// <typeparam name="TData">并发操作处理的数据类型。</typeparam>
+    public abstract class ConcurrentOperation<TData> : ConcurrentOperation, IConcurrentOperation<TData> where TData : class
     {
         /// <summary>
         /// 执行并发操作。
         /// </summary>
         /// <param name="item">需要处理的数据项。</param>
-        public abstract void Execute(T item);
+        public abstract void Execute(TData item);
     }
 }

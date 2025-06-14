@@ -12,7 +12,7 @@ namespace ExtenderApp.Common
     {
         public override void AddService(IServiceCollection services)
         {
-            services.AddFile();
+            services.AddIO();
             services.AddObjectPool();
             services.AddNetwork();
             services.AddSHA();

@@ -96,5 +96,54 @@ namespace ExtenderApp.Data
         }
 
         #endregion
+
+        #region Check
+
+        /// <summary>
+        /// 判断文件操作信息是否为只读模式。
+        /// </summary>
+        /// <param name="operate">文件操作信息对象。</param>
+        /// <returns>如果文件操作信息为只读模式，则返回 true；否则返回 false。</returns>
+        public static bool IsRead(this FileOperateInfo operate)
+        {
+            if (operate.IsEmpty)
+            {
+                return false;
+            }
+
+            return operate.FileAccess == (FileAccess.ReadWrite | FileAccess.Read);
+        }
+
+        /// <summary>
+        /// 判断文件操作信息是否为只写模式。
+        /// </summary>
+        /// <param name="operate">文件操作信息对象。</param>
+        /// <returns>如果文件操作信息为只写模式，则返回 true；否则返回 false。</returns>
+        public static bool IsWrite(this FileOperateInfo operate)
+        {
+            if (operate.IsEmpty)
+            {
+                return false;
+            }
+
+            return operate.FileAccess == (FileAccess.ReadWrite | FileAccess.Write);
+        }
+
+        /// <summary>
+        /// 判断文件操作信息是否为读写模式。
+        /// </summary>
+        /// <param name="operate">文件操作信息对象。</param>
+        /// <returns>如果文件操作信息为读写模式，则返回 true；否则返回 false。</returns>
+        public static bool IsReadWrite(this FileOperateInfo operate)
+        {
+            if (operate.IsEmpty)
+            {
+                return false;
+            }
+
+            return operate.FileAccess == FileAccess.ReadWrite;
+        }
+
+        #endregion
     }
 }

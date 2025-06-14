@@ -1,11 +1,13 @@
 ﻿using AppHost.Extensions.DependencyInjection;
+using ExtenderApp.Abstract;
 
 namespace ExtenderApp.Common
 {
     public static class TcpLinkerExtensions
     {
-        public static IServiceCollection AddTcpLinkOperate(this IServiceCollection services)
+        public static IServiceCollection AddTcpLinker(this IServiceCollection services)
         {
+            services.AddTransient<ITcpLinker, TcpLinker>();
             services.AddTransient<TcpLinker>();
             return services;
         }

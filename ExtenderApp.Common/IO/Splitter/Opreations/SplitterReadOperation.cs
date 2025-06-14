@@ -47,41 +47,41 @@ namespace ExtenderApp.Common.IO.Splitter
             splitterInfo = SplitterInfo.Empty;
         }
 
-        public override void Execute(MemoryMappedViewAccessor item)
+        public override void Execute(FileOperateData item)
         {
-            if (readPosition < 0 || readLength < 0 || readPosition + readLength > item.Capacity || readPosition > item.Capacity)
-            {
-                ErrorUtil.ArgumentOutOfRange(nameof(ReadOperation));
-            }
+            //if (readPosition < 0 || readLength < 0 || readPosition + readLength > item.Capacity || readPosition > item.Capacity)
+            //{
+            //    ErrorUtil.ArgumentOutOfRange(nameof(SplitterReadOperation));
+            //}
 
             for (long i = readPosition; i < readLength; i++)
             {
-                ReadBytes[i] = item.ReadByte(i);
+                //ReadBytes[i] = item.ReadByte(i);
             }
             calback?.Invoke(ReadBytes);
         }
 
-        /// <summary>
-        /// 设置处理字节数组的操作和分隔符信息。
-        /// </summary>
-        /// <param name="action">处理字节数组的操作。</param>
-        /// <param name="splitterInfo">分隔符信息。</param>
-        /// <exception cref="ArgumentNullException">如果 <paramref name="action"/> 为 null，则抛出此异常。</exception>
-        public void Set(Action<byte[]> action, SplitterInfo splitterInfo, byte[]? bytes = null)
-        {
-            if (action == null)
-                throw new ArgumentNullException(nameof(action));
+        ///// <summary>
+        ///// 设置处理字节数组的操作和分隔符信息。
+        ///// </summary>
+        ///// <param name="action">处理字节数组的操作。</param>
+        ///// <param name="splitterInfo">分隔符信息。</param>
+        ///// <exception cref="ArgumentNullException">如果 <paramref name="action"/> 为 null，则抛出此异常。</exception>
+        //public void Set(Action<byte[]> action, SplitterInfo splitterInfo, byte[]? bytes = null)
+        //{
+        //    if (action == null)
+        //        throw new ArgumentNullException(nameof(action));
 
-            if (splitterInfo == null)
-                throw new ArgumentNullException(nameof(splitterInfo));
+        //    if (splitterInfo == null)
+        //        throw new ArgumentNullException(nameof(splitterInfo));
 
-            readPosition = splitterInfo.GetLastChunkIndexPosition();
-            readLength = splitterInfo.MaxChunkSize;
-            ReadBytes = bytes ?? new byte[readLength];
-            calback = action;
-            this.splitterInfo = splitterInfo;
-            readChunkIndex = splitterInfo.GetLastChunkIndex();
-        }
+        //    readPosition = splitterInfo.GetLastChunkIndexPosition();
+        //    readLength = splitterInfo.MaxChunkSize;
+        //    ReadBytes = bytes ?? new byte[readLength];
+        //    calback = action;
+        //    this.splitterInfo = splitterInfo;
+        //    readChunkIndex = splitterInfo.GetLastChunkIndex();
+        //}
 
         /// <summary>
         /// 设置从指定位置开始读取指定长度的字节数组的处理操作和分隔符信息。

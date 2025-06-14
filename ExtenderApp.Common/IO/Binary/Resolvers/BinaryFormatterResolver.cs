@@ -7,7 +7,7 @@ namespace ExtenderApp.Common
     /// <summary>
     /// 内部类 BinaryFormatterResolver，实现了 IBinaryFormatterResolver 接口。
     /// </summary>
-    internal class BinaryFormatterResolver : IBinaryFormatterResolver
+    internal sealed class BinaryFormatterResolver : IBinaryFormatterResolver
     {
         /// <summary>
         /// 存储BinaryFormatter解析器的仓库

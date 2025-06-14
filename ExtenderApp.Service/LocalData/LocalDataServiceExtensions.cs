@@ -17,12 +17,12 @@ namespace ExtenderApp.Service
         /// <param name="data">输出参数，用于接收获取到的数据。</param>
         /// <returns>如果成功获取数据，则返回 true；否则返回 false。</returns>
         /// <exception cref="ArgumentNullException">如果 details 参数为 null，则抛出 ArgumentNullException 异常。</exception>
-        public static bool LoadData<T>(this ILocalDataService service, PluginDetails details, out LocalData<T>? data)
+        public static bool LoadData<T>(this ILocalDataService service, PluginDetails details, out LocalData<T>? data) where T : class
         {
             if (details is null)
                 throw new ArgumentNullException(nameof(details));
 
-            return service.GetData(details.Title, out data);
+            return service.LoadData(details.Title, out data);
         }
 
         /// <summary>
@@ -34,7 +34,7 @@ namespace ExtenderApp.Service
         /// <param name="data">要保存的数据。</param>
         /// <returns>如果数据保存成功，则返回 true；否则返回 false。</returns>
         /// <exception cref="ArgumentNullException">如果 details 参数为 null，则抛出 ArgumentNullException 异常。</exception>
-        public static bool SaveData<T>(this ILocalDataService service, PluginDetails details, T? data)
+        public static bool SaveData<T>(this ILocalDataService service, PluginDetails details, T? data) where T : class
         {
             if (details is null)
                 throw new ArgumentNullException(nameof(details));
@@ -50,9 +50,9 @@ namespace ExtenderApp.Service
         /// <param name="dataName">数据的名称。</param>
         /// <param name="data">要设置的数据。</param>
         /// <returns>如果设置成功，则返回 true；否则返回 false。</returns>
-        public static bool SetData<T>(this ILocalDataService service, string dataName, T? data)
+        public static bool SetData<T>(this ILocalDataService service, string dataName, T? data) where T : class
         {
-            return service.SetData(dataName, new LocalData<T>(data, null));
+            return service.SaveData(dataName, new LocalData<T>(data, null));
         }
 
         /// <summary>
@@ -64,9 +64,9 @@ namespace ExtenderApp.Service
         /// <param name="data">要设置的数据。</param>
         /// <param name="version">数据的版本。</param>
         /// <returns>如果设置成功，则返回 true；否则返回 false。</returns>
-        public static bool SetData<T>(this ILocalDataService service, string dataName, T? data, Version? version)
+        public static bool SetData<T>(this ILocalDataService service, string dataName, T? data, Version? version) where T : class
         {
-            return service.SetData(dataName, new LocalData<T>(data, version));
+            return service.SaveData(dataName, new LocalData<T>(data, version));
         }
     }
 }

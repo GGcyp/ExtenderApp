@@ -1,7 +1,7 @@
 ﻿namespace ExtenderApp.Data
 {
     /// <summary>
-    /// 表示文件操作信息的结构体，实现了IEquatable<FileOperateInfo>接口
+    /// 文件操作信息结构体。
     /// </summary>
     public struct FileOperateInfo : IEquatable<FileOperateInfo>
     {
