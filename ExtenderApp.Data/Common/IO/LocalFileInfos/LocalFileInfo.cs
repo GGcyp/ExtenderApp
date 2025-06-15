@@ -114,10 +114,10 @@ namespace ExtenderApp.Data
         }
 
         /// <summary>
-        /// 创建一个写入操作的信息对象。
+        /// 创建一个写入读取操作的信息对象。
         /// </summary>
         /// <returns>返回创建的FileOperateInfo对象。</returns>
-        public FileOperateInfo CreateWriteOperate()
+        public FileOperateInfo CreateReadWriteOperate()
         {
             return CreateFileOperate(FileMode.OpenOrCreate, FileAccess.ReadWrite);
         }
@@ -176,6 +176,9 @@ namespace ExtenderApp.Data
         /// <exception cref="FileNotFoundException">如果文件不存在，则抛出此异常。</exception>
         public void ThrowFileNotFound()
         {
+            if (IsEmpty)
+                throw new InvalidOperationException("文件信息为空");
+
             if (!Exists)
                 throw new FileNotFoundException("文件不存在", FilePath);
         }

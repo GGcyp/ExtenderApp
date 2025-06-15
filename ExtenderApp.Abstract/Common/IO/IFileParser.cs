@@ -7,6 +7,17 @@ namespace ExtenderApp.Abstract
     /// </summary>
     public interface IFileParser
     {
+        #region Create
+
+        /// <summary>
+        /// 创建一个空文件。
+        /// </summary>
+        /// <param name="info">本地文件信息。</param>
+        /// <param name="fileLength">文件长度（字节）。</param>
+        public void CreateBlankFile(LocalFileInfo info, long fileLength);
+
+        #endregion
+
         #region Read    
 
         /// <summary>
@@ -239,6 +250,33 @@ namespace ExtenderApp.Abstract
         /// <param name="position">写入的位置。</param>
         /// <param name="callback">写入完成后的回调函数，可以为null。</param>
         void WriteAsync<T>(IConcurrentOperate fileOperate, T value, long position, Action? callback = null);
+
+        #endregion
+
+        #region Get
+
+        /// <summary>
+        /// 根据文件操作信息获取文件操作接口。
+        /// </summary>
+        /// <param name="info">文件操作信息。</param>
+        /// <returns>返回文件操作接口。</returns>
+        IConcurrentOperate GetOperate(FileOperateInfo info);
+
+        #endregion
+
+        #region Delete
+        /// <summary>
+        /// 删除文件。
+        /// </summary>
+        /// <param name="info">要删除的文件信息。</param>
+
+        void Delete(ExpectLocalFileInfo info);
+
+        /// <summary>
+        /// 删除本地文件信息
+        /// </summary>
+        /// <param name="info">本地文件信息</param>
+        void Delete(LocalFileInfo info);
 
         #endregion
     }

@@ -24,8 +24,8 @@ namespace ExtenderApp.Common.Networks
 
         private SplitterInfo currentSplitterInfo;
         private LocalFileInfo currentLocalFileInfo;
-        private IConcurrentOperate currentFileOperate;
-        private ILinker? mainLinker;
+        private FileConcurrentOperate currentFileOperate;
+        private ILinker mainLinker;
         private volatile int isGetFileing;
         private int linkerCount;
         private int linkerCapacity;
@@ -59,10 +59,10 @@ namespace ExtenderApp.Common.Networks
 
         private void ReceiveSplitterDto(SplitterDto splitterDto, ILinker linker)
         {
-            if (!splitterDto.CompliantMD5())
-            {
-                splitterParser.Write(currentFileOperate, currentSplitterInfo, splitterDto);
-            }
+            //if (!splitterDto.CompliantMD5())
+            //{
+            //    splitterParser.Write(currentFileOperate, currentSplitterInfo, splitterDto);
+            //}
 
             currentSplitterInfo.LoadChunk(splitterDto.ChunkIndex);
 
@@ -77,10 +77,10 @@ namespace ExtenderApp.Common.Networks
                 linkerQueue.Enqueue(linker);
             }
 
-            //if (Interlocked.CompareExchange(ref isGetFileing, 1, 0) == 0)
-            //{
-            //    ThreadPool.UnsafeQueueUserWorkItem(_ => GetFileExecute(), null);
-            //}
+            if (Interlocked.CompareExchange(ref isGetFileing, 1, 0) == 0)
+            {
+                ThreadPool.UnsafeQueueUserWorkItem(_ => GetFileExecute(), null);
+            }
         }
 
         private void ReceiveFileTransferRequestDto(FileTransferRequestDto dto)
@@ -103,7 +103,7 @@ namespace ExtenderApp.Common.Networks
                     Message = string.Format("未找到指定文件:{0}", dto.FileHashCode.ToString())
                 });
             }
-            var splitterInfo = splitterParser.Create(localFileInfo, false);
+            var splitterInfo = splitterParser.CreateInfoForFile(localFileInfo, false);
             mainLinker.Send(splitterInfo);
         }
 

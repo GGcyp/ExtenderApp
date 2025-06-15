@@ -1,6 +1,4 @@
-﻿
-
-namespace ExtenderApp.Common
+﻿namespace ExtenderApp.Common
 {
     /// <summary>
     /// 文件扩展名工具类
@@ -8,7 +6,7 @@ namespace ExtenderApp.Common
     public static class FileExtensions
     {
         /// <summary>
-        /// 分隔符文件扩展名
+        /// 分块文件扩展名。
         /// </summary>
         public const string SplitterFileExtensions = ".extbolk";
 

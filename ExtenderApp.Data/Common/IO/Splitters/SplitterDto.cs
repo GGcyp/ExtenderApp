@@ -7,7 +7,7 @@ namespace ExtenderApp.Data
     /// </summary>
     public struct SplitterDto : IDisposable
     {
-        public static SplitterDto Empty => new SplitterDto(0, Array.Empty<byte>(), 0, string.Empty);
+        public static SplitterDto Empty => new SplitterDto(0, Array.Empty<byte>(), 0);
 
         /// <summary>
         /// 获取数据块的索引。
@@ -25,11 +25,6 @@ namespace ExtenderApp.Data
         public int Length { get; }
 
         /// <summary>
-        /// 文件的MD5哈希值。
-        /// </summary>
-        public string MD5 { get; set; }
-
-        /// <summary>
         /// 判断字节数组是否为空。
         /// </summary>
         /// <returns>如果字节数组为空则返回true，否则返回false。</returns>
@@ -42,12 +37,11 @@ namespace ExtenderApp.Data
         /// <param name="data">包含数据的字节数组。</param>
         /// <param name="length">字节数组的长度。</param>
         /// <param name="md5">文件的MD5哈希值。</param>
-        public SplitterDto(uint chunkIndex, byte[] data, int length, string md5)
+        public SplitterDto(uint chunkIndex, byte[] data, int length)
         {
             ChunkIndex = chunkIndex;
             Bytes = data;
             Length = length;
-            MD5 = md5;
         }
 
         /// <summary>

@@ -69,7 +69,7 @@
         /// <param name="info">包含文件信息的 LocalFileInfo 对象。</param>
         public static void Delete(this LocalFileInfo info)
         {
-            if(info.IsEmpty)
+            if (info.IsEmpty)
                 throw new ArgumentNullException(nameof(info));
 
             //System.IO.File.Delete(info.FilePath);

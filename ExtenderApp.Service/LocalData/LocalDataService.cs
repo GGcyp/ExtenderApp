@@ -94,8 +94,8 @@ namespace ExtenderApp.Service
         public bool LoadData<T>(string? dataName, out LocalData<T>? data) where T : class
         {
             data = default;
-            //try
-            //{
+            try
+            {
                 if (string.IsNullOrEmpty(dataName))
                 {
                     throw new ArgumentNullException("获取本地数据名字不能为空");
@@ -127,18 +127,18 @@ namespace ExtenderApp.Service
 
                 data = localData;
                 return localData is not null;
-            //}
-            //catch (Exception ex)
-            //{
-            //    _logingService.Error("读取本地数据出现错误", nameof(ILocalDataService), ex);
-            //    return false;
-            //}
+            }
+            catch (Exception ex)
+            {
+                _logingService.Error("读取本地数据出现错误", nameof(ILocalDataService), ex);
+                return false;
+            }
         }
 
         public bool SaveData<T>(string? dataName, LocalData<T>? data) where T : class
         {
-            //try
-            //{
+            try
+            {
                 if (string.IsNullOrEmpty(dataName))
                 {
                     throw new ArgumentNullException("保存本地数据名字不能为空");
@@ -157,12 +157,12 @@ namespace ExtenderApp.Service
 
                 _parser.Write(info.FileInfo, localData);
                 return true;
-            //}
-            //catch (Exception ex)
-            //{
-            //    _logingService.Error("写入本地数据出现错误", nameof(ILocalDataService), ex);
-            //    return false;
-            //}
+            }
+            catch (Exception ex)
+            {
+                _logingService.Error("写入本地数据出现错误", nameof(ILocalDataService), ex);
+                return false;
+            }
         }
 
         /// <summary>

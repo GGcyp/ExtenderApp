@@ -11,7 +11,7 @@ namespace ExtenderApp.Common.IO.FileParsers
         /// <summary>
         /// 文件存储的实例
         /// </summary>
-        protected readonly FileStore _store;
+        protected readonly FileOperateStore _store;
 
         /// <summary>
         /// 用于取消操作的取消令牌源。
@@ -22,7 +22,7 @@ namespace ExtenderApp.Common.IO.FileParsers
         /// FileParser 类的受保护构造函数。
         /// </summary>
         /// <param name="store">文件存储对象</param>
-        protected FileParser(FileStore store)
+        protected FileParser(FileOperateStore store)
         {
             /// <summary>
             /// 初始化文件存储对象
@@ -33,6 +33,16 @@ namespace ExtenderApp.Common.IO.FileParsers
             /// </summary>
             _cancellationTokenSource = new CancellationTokenSource();
         }
+
+        #region Create
+
+        public void CreateBlankFile(LocalFileInfo info, long fileLength)
+        {
+            var operate = GetOperate(info.CreateReadWriteOperate());
+            operate.Data.ExpandCapacity(fileLength);
+        }
+
+        #endregion
 
         #region Read
         public abstract T? Read<T>(ExpectLocalFileInfo info);
@@ -98,10 +108,17 @@ namespace ExtenderApp.Common.IO.FileParsers
 
         #region GetOperate
 
+        /// <summary>
+        /// 根据给定的文件操作信息获取对应的文件并发操作对象。
+        /// </summary>
+        /// <param name="info">文件操作信息对象。</param>
+        /// <returns>返回对应的文件并发操作对象。</returns>
         public FileConcurrentOperate GetOperate(FileOperateInfo info)
         {
             return _store.GetOperate(info);
         }
+
+        IConcurrentOperate IFileParser.GetOperate(FileOperateInfo info) => GetOperate(info);
 
         #endregion
 
@@ -113,7 +130,13 @@ namespace ExtenderApp.Common.IO.FileParsers
         /// <param name="info">包含要删除文件信息的ExpectLocalFileInfo对象</param>
         public abstract void Delete(ExpectLocalFileInfo info);
 
-        #endregion  
+        public void Delete(LocalFileInfo info)
+        {
+            _store.Delete(info);
+            info.Delete();
+        }
+
+        #endregion
 
         protected override void Dispose(bool disposing)
         {

@@ -55,7 +55,7 @@ namespace ExtenderApp.Common
         /// <returns>返回添加文件存储服务后的服务集合</returns>
         private static IServiceCollection AddFileStore(this IServiceCollection services)
         {
-            services.AddSingleton<FileStore>();
+            services.AddSingleton<FileOperateStore>();
             services.AddSingleton<IFileParserStore, FileParserStore>();
             return services;
         }
@@ -71,12 +71,9 @@ namespace ExtenderApp.Common
         /// <returns>解析后的目标数据类型实例，如果读取失败或文件为空则返回null</returns>
         public static T? Read<T>(this IFileParser parser, LocalFileInfo info)
         {
-            if (info.IsEmpty)
-            {
-                ErrorUtil.ArgumentNull(nameof(info));
-            }
+            info.ThrowFileNotFound();
 
-            return parser.Read<T>(info.CreateWriteOperate());
+            return parser.Read<T>(info.CreateReadWriteOperate());
         }
 
         /// <summary>
@@ -90,12 +87,9 @@ namespace ExtenderApp.Common
         /// <returns>解析后的目标数据类型实例，如果读取失败或文件为空则返回null</returns>
         public static T? Read<T>(this IFileParser parser, LocalFileInfo info, long position, long length)
         {
-            if (info.IsEmpty)
-            {
-                ErrorUtil.ArgumentNull(nameof(info));
-            }
+            info.ThrowFileNotFound();
 
-            return parser.Read<T>(info.CreateWriteOperate());
+            return parser.Read<T>(info.CreateReadWriteOperate());
         }
 
         #endregion
@@ -112,12 +106,9 @@ namespace ExtenderApp.Common
         /// <exception cref="ArgumentNullException">当info为空时抛出</exception>
         public static void ReadAsync<T>(this IFileParser parser, LocalFileInfo info, Action<T?> callback)
         {
-            if (info.IsEmpty)
-            {
-                ErrorUtil.ArgumentNull(nameof(info));
-            }
+            info.ThrowFileNotFound();
 
-            parser.ReadAsync(info.CreateWriteOperate(), callback);
+            parser.ReadAsync(info.CreateReadWriteOperate(), callback);
         }
 
         /// <summary>
@@ -132,12 +123,9 @@ namespace ExtenderApp.Common
         /// <exception cref="ArgumentNullException">当info为空时抛出</exception>
         public static void ReadAsync<T>(this IFileParser parser, LocalFileInfo info, long position, long length, Action<T?> callback)
         {
-            if (info.IsEmpty)
-            {
-                ErrorUtil.ArgumentNull(nameof(info));
-            }
+            info.ThrowFileNotFound();
 
-            parser.ReadAsync(info.CreateWriteOperate(), position, length, callback);
+            parser.ReadAsync(info.CreateReadWriteOperate(), position, length, callback);
         }
 
         #endregion
@@ -154,11 +142,9 @@ namespace ExtenderApp.Common
         /// <exception cref="ArgumentNullException">如果 <paramref name="info"/> 为空，则抛出此异常。</exception>
         public static void Write<T>(this IFileParser parser, LocalFileInfo info, T value)
         {
-            if (info.IsEmpty)
-            {
-                ErrorUtil.ArgumentNull(nameof(info));
-            }
-            parser.Write(info.CreateWriteOperate(), value);
+            info.ThrowFileNotFound();
+
+            parser.Write(info.CreateReadWriteOperate(), value);
         }
 
         /// <summary>
@@ -172,11 +158,61 @@ namespace ExtenderApp.Common
         /// <exception cref="ArgumentNullException">如果 <paramref name="info"/> 为空，则抛出此异常。</exception>
         public static void Write<T>(this IFileParser parser, LocalFileInfo info, T value, long position)
         {
-            if (info.IsEmpty)
-            {
-                ErrorUtil.ArgumentNull(nameof(info));
-            }
-            parser.Write(info.CreateWriteOperate(), value, position);
+            info.ThrowFileNotFound();
+
+            parser.Write(info.CreateReadWriteOperate(), value, position);
+        }
+
+        #endregion
+
+        #region WriteAsync
+
+        /// <summary>
+        /// 以异步方式将值写入文件。
+        /// </summary>
+        /// <typeparam name="T">要写入的值的数据类型。</typeparam>
+        /// <param name="parser">文件解析器实例。</param>
+        /// <param name="info">包含文件信息的LocalFileInfo实例。</param>
+        /// <param name="value">要写入的值。</param>
+        /// <param name="callback">操作完成后的回调函数。</param>
+        public static void WriteAsync<T>(this IFileParser parser, LocalFileInfo info, T value, Action callback = null)
+        {
+            info.ThrowFileNotFound();
+
+            parser.WriteAsync(info.CreateReadWriteOperate(), value, callback);
+        }
+
+
+        /// <summary>
+        /// 以异步方式将值写入文件的指定位置。
+        /// </summary>
+        /// <typeparam name="T">要写入的值的数据类型。</typeparam>
+        /// <param name="parser">文件解析器实例。</param>
+        /// <param name="info">包含文件信息的LocalFileInfo实例。</param>
+        /// <param name="value">要写入的值。</param>
+        /// <param name="position">要写入的起始位置。</param>
+        /// <param name="callback">操作完成后的回调函数。</param>
+        public static void WriteAsync<T>(this IFileParser parser, LocalFileInfo info, T value, long position, Action callback = null)
+        {
+            info.ThrowFileNotFound();
+
+            parser.WriteAsync(info.CreateReadWriteOperate(), value, position, callback);
+        }
+
+        #endregion
+
+        #region Get
+
+        /// <summary>
+        /// 根据给定的文件解析器和文件信息，获取文件的并发操作对象。
+        /// </summary>
+        /// <param name="parser">文件解析器。</param>
+        /// <param name="info">本地文件信息。</param>
+        /// <returns>文件的并发操作对象。</returns>
+        public static IConcurrentOperate GetOperate(this IFileParser parser, LocalFileInfo info)
+        {
+            info.ThrowFileNotFound();
+            return parser.GetOperate(info.CreateReadWriteOperate());
         }
 
         #endregion

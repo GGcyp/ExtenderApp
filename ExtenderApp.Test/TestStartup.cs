@@ -12,7 +12,7 @@ namespace ExtenderApp.Test
         {
             services.AddTransient<TestMainView>();
 
-            services.AddSingleton<TestMainViewModel>();
+            services.AddTransient<TestMainViewModel>();
         }
     }
 }

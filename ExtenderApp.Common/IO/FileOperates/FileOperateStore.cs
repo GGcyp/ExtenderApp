@@ -10,7 +10,7 @@ namespace ExtenderApp.Common.IO
     /// <summary>
     /// 文件存储类，用于管理文件操作的并发处理。
     /// </summary>
-    public class FileStore : DisposableObject
+    public class FileOperateStore : DisposableObject
     {
         /// <summary>
         /// 文件操作字典，用于存储文件操作信息。
@@ -33,7 +33,7 @@ namespace ExtenderApp.Common.IO
         /// 初始化 FileStorage 类的新实例。
         /// </summary>
         /// <param name="operatePool">并发操作池实例。</param>
-        public FileStore(ObjectPool<FileOperateData> pool)
+        public FileOperateStore(ObjectPool<FileOperateData> pool)
         {
             _operateDict = new();
             _task = new();

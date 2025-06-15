@@ -14,7 +14,7 @@ namespace ExtenderApp.Data
         /// <remarks>
         /// 获取或设置已加载的区块数据。可以为null。
         /// </remarks>
-        public readonly byte[] LoadedChunks;
+        public readonly byte[]? LoadedChunks;
 
         /// <summary>
         /// 实际文件长度
@@ -86,7 +86,7 @@ namespace ExtenderApp.Data
         /// <param name="targetExtensions">目标文件的扩展名</param>
         /// <param name="md5HASH">文件的 MD5 哈希值</param>
         /// <param name="loadedChunks">已加载的分块数据数组</param>
-        public SplitterInfo(long length, uint chunkCount, uint progress, int maxChunkSize, string targetExtensions, string md5HASH, byte[] loadedChunks)
+        public SplitterInfo(long length, uint chunkCount, uint progress, int maxChunkSize, string targetExtensions, string md5HASH, byte[]? loadedChunks)
         {
             Length = length;
             ChunkCount = chunkCount;

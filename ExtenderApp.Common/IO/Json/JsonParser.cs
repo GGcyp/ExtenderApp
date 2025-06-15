@@ -9,7 +9,7 @@ namespace ExtenderApp.Common.IO
     {
         private readonly JsonSerializerOptions _jsonSerializerOptions;
 
-        public JsonParser(FileStore store) : base(store)
+        public JsonParser(FileOperateStore store) : base(store)
         {
             _jsonSerializerOptions = new JsonSerializerOptions
             {

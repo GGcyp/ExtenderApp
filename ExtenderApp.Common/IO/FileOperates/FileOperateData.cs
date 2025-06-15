@@ -12,7 +12,7 @@ namespace ExtenderApp.Common.IO
         /// <summary>
         /// 获取或设置文件操作信息。
         /// </summary>
-        public FileOperateInfo OperateInfo;
+        public FileOperateInfo OperateInfo { get; private set; }
 
         /// <summary>
         /// 文件操作信息释放委托。
