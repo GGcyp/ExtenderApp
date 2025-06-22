@@ -3,7 +3,7 @@ using ExtenderApp.Common.Error;
 
 namespace ExtenderApp.Common.ObjectPools
 {
-    public class FactoryPooledObjectPolicy<T> : PooledObjectPolicy<T>
+    public class FactoryPooledObjectPolicy<T> : PooledObjectPolicy<T> where T : notnull
     {
         private readonly Func<T> _factory;
 

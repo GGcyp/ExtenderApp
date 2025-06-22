@@ -9,35 +9,48 @@ namespace ExtenderApp.Common
     {
         private const int PRIME = 31;
 
-        /// <summary>
-        /// 获取给定类型T的简单一致性哈希值。
-        /// </summary>
-        /// <typeparam name="T">要计算一致性哈希值的类型。</typeparam>
-        /// <returns>返回给定类型T的简单一致性哈希值。</returns>
-        public static int GetSimpleConsistentHash<T>()
+        public static void GetSimpleConsistentHash<T>(out int hash)
         {
             Type type = typeof(T);
             string typeName = type.FullName ?? type.Name;
-            return GetSimpleConsistentHash(typeName);
+            GetSimpleConsistentHash(typeName, out hash);
         }
 
-        /// <summary>
-        /// 获取简单的一致性哈希值
-        /// </summary>
-        /// <param name="input">输入字符串</param>
-        /// <returns>一致性哈希值</returns>
-        public static int GetSimpleConsistentHash(string input)
-        {
-            if (string.IsNullOrEmpty(input))
-                return 0;
 
-            int hash = 0;
+        public static void GetSimpleConsistentHash(string input, out int hash)
+        {
+            hash = 0;
+            if (string.IsNullOrEmpty(input))
+                return;
+
+            hash = 0;
             foreach (char c in input)
             {
                 hash = (hash * PRIME) + c;
                 hash &= 0x7FFFFFFF; // 保持正值
             }
-            return hash;
+        }
+
+        public static void GetSimpleConsistentHash<T>(out long hash)
+        {
+            Type type = typeof(T);
+            string typeName = type.FullName ?? type.Name;
+            GetSimpleConsistentHash(typeName, out hash);
+        }
+
+
+        public static void GetSimpleConsistentHash(string input, out long hash)
+        {
+            hash = 0;
+            if (string.IsNullOrEmpty(input))
+                return;
+
+            hash = 0;
+            foreach (char c in input)
+            {
+                hash = (hash * PRIME) + c;
+                hash &= 0x7FFFFFFF; // 保持正值
+            }
         }
     }
 }

@@ -8,17 +8,11 @@ namespace ExtenderApp.Common.ConcurrentOperates
     public class ConcurrentOperateData : DisposableObject, IResettable
     {
         /// <summary>
-        /// 获取或设置取消令牌
-        /// </summary>
-        public CancellationToken Token { get; protected set; }
-
-        /// <summary>
         /// 尝试重置Token
         /// </summary>
         /// <returns>返回true表示重置成功，false表示重置失败</returns>
         public virtual bool TryReset()
         {
-            Token = default;
             return true;
         }
 

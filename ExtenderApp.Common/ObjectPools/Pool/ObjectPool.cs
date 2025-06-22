@@ -47,8 +47,7 @@ namespace ExtenderApp.Common.ObjectPools
     /// </summary>
     public static class ObjectPool
     {
-        private static readonly ConcurrentDictionary<Type, IObjectPool> _poolDict
-            = new ConcurrentDictionary<Type, IObjectPool>();
+        internal static ObjectPoolStore PoolStore { get; } = new();
 
         /// <summary>
         /// 创建一个默认的对象池。
@@ -81,21 +80,21 @@ namespace ExtenderApp.Common.ObjectPools
 
             //暂时
             Type poolType = typeof(T);
-            if (_poolDict.TryGetValue(poolType, out var pool))
+            if (PoolStore.TryGetValue(poolType, out var pool))
             {
                 return (ObjectPool<T>)pool;
             }
 
-            lock (_poolDict)
+            lock (PoolStore)
             {
-                if (_poolDict.TryGetValue(poolType, out pool))
+                if (PoolStore.TryGetValue(poolType, out pool))
                 {
                     return (ObjectPool<T>)pool;
                 }
 
                 var provider = objectPoolProvider ?? DefaultObjectPoolProvider.Default;
                 var objPool = provider.Create(policy, maximumRetained);
-                _poolDict.TryAdd(poolType, objPool);
+                PoolStore.TryAdd(poolType, objPool);
                 return objPool;
             }
         }

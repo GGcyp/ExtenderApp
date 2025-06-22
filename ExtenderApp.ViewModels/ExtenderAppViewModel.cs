@@ -4,7 +4,6 @@ using ExtenderApp.Abstract;
 using ExtenderApp.Services;
 using ExtenderApp.Data;
 using ExtenderApp.Common.Error;
-using ExtenderApp.Service;
 using ExtenderApp.Common;
 
 namespace ExtenderApp.ViewModels
@@ -112,6 +111,43 @@ namespace ExtenderApp.ViewModels
         #endregion
 
         #region Log
+
+        /// <summary>
+        /// 输出信息日志。
+        /// </summary>
+        /// <param name="message">要输出的信息内容。</param>
+        protected void Info(object message)
+        {
+            Info(message?.ToString() ?? string.Empty);
+        }
+
+        /// <summary>
+        /// 输出调试日志。
+        /// </summary>
+        /// <param name="message">要输出的调试内容。</param>
+        protected void Debug(object message)
+        {
+            Debug(message?.ToString() ?? string.Empty);
+        }
+
+        /// <summary>
+        /// 输出错误日志。
+        /// </summary>
+        /// <param name="message">要输出的错误信息内容。</param>
+        /// <param name="exception">异常对象。</param>
+        protected void Error(object message, Exception exception)
+        {
+            Error(message?.ToString() ?? string.Empty, exception);
+        }
+
+        /// <summary>
+        /// 输出警告日志。
+        /// </summary>
+        /// <param name="message">要输出的警告内容。</param>
+        protected void Warning(object message)
+        {
+            Warning(message?.ToString() ?? string.Empty);   
+        }
 
         /// <summary>
         /// 记录信息级别的日志。

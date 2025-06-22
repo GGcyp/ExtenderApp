@@ -24,16 +24,6 @@ namespace ExtenderApp.Common.Networks
         /// </summary>
         public ProtocolType ProtocolType { get; set; }
 
-        /// <summary>
-        /// 是否关闭
-        /// </summary>
-        public bool IsClose { get; set; }
-
-        /// <summary>
-        /// 关闭回调
-        /// </summary>
-        public Action? CloseCallback { get; set; }
-
         public Socket Socket { get; set; }
 
         public LinkOperateData(AddressFamily addressFamily, SocketType socketType, ProtocolType protocolType)
@@ -41,16 +31,7 @@ namespace ExtenderApp.Common.Networks
             AddressFamily = addressFamily;
             SocketType = socketType;
             ProtocolType = protocolType;
-            IsClose = false;
-            CloseCallback = null;
             Socket = new Socket(AddressFamily, SocketType, ProtocolType);
-        }
-
-        public override bool TryReset()
-        {
-            IsClose = false;
-            CloseCallback = null;
-            return base.TryReset();
         }
     }
 }

@@ -8,7 +8,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\AppHost.Extensions.DependencyInjection\AppHost.Extensions.DependencyInjection.csproj" />
-    <ProjectReference Include="..\AppHost.Extensions.Configuration\AppHost.Extensions.Configuration.csproj" />
   </ItemGroup>
 
 </Project>

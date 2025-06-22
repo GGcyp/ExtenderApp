@@ -23,6 +23,7 @@ namespace ExtenderApp.Common.IO.Splitter
             {
                 s.Add<SplitterInfo, SplitterInfoFormatter>();
                 s.Add<SplitterDto, SplitterDtoFormatter>();
+                s.Add<PieceData, PieceDataFormatter>();
             });
 
             return services;

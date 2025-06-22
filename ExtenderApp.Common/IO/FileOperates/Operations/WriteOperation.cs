@@ -9,7 +9,7 @@ namespace ExtenderApp.Common.IO
         /// <summary>
         /// 待写入的字节数组
         /// </summary>
-        private byte[]? writeBytes;
+        private byte[] writeBytes;
 
         /// <summary>
         /// 回调委托，用于处理字节数组
@@ -96,9 +96,10 @@ namespace ExtenderApp.Common.IO
             long writeIndex = writePosition;
             long bytesIndex = bytesPosition;
             var accessor = item.Accessor;
+            var span = writeBytes.AsSpan();
             for (long i = 0; i < writeLength; i++)
             {
-                accessor.Write(writeIndex, writeBytes[bytesIndex]);
+                accessor.Write(writeIndex, span[(int)bytesIndex]);
                 writeIndex++;
                 bytesIndex++;
             }

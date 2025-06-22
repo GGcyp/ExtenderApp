@@ -20,9 +20,24 @@ namespace ExtenderApp.Common.ConcurrentOperates
         protected volatile int _isExecuting;
 
         /// <summary>
-        /// 获取一个值，指示是否正在执行操作或操作计数是否小于等于0。
+        /// 最大并发执行数，可由子类重写
         /// </summary>
-        public bool IsExecuting => Interlocked.CompareExchange(ref _isExecuting, 1, 0) == 0;
+        protected virtual int MaxConcurrency => 10;
+
+        /// <summary>
+        /// 并发信号量，控制最大执行数
+        /// </summary>
+        protected readonly SemaphoreSlim _concurrencySemaphore;
+
+        protected ConcurrentOperate()
+        {
+            _concurrencySemaphore = new SemaphoreSlim(1, MaxConcurrency);
+        }
+
+        /// <summary>
+        /// 获取一个值，指示是否正在执行操作
+        /// </summary>
+        public bool IsExecuting => _isExecuting > 0;
 
         public abstract bool CanOperate { get; protected set; }
 
@@ -34,12 +49,30 @@ namespace ExtenderApp.Common.ConcurrentOperates
         /// <returns>如果重置成功，则返回true；否则返回false。</returns>
         public virtual bool TryReset()
         {
+            operationCount = 0;
+            Interlocked.Exchange(ref _isExecuting, 0);
             return true;
+        }
+
+        /// <summary>
+        /// 释放资源
+        /// </summary>
+        /// <param name="disposing">是否释放托管资源</param>
+        protected override void Dispose(bool disposing)
+        {
+            if (IsDisposed)
+                return;
+
+            _concurrencySemaphore.Dispose();
+            base.Dispose(disposing);
         }
     }
 
-
-    public class ConcurrentOperate<TData> : ConcurrentOperate, IConcurrentOperate<TData> where TData : ConcurrentOperateData
+    /// <summary>
+    /// 泛型并发操作类
+    /// </summary>
+    public class ConcurrentOperate<TData> : ConcurrentOperate, IConcurrentOperate<TData>
+        where TData : ConcurrentOperateData
     {
         /// <summary>
         /// 操作队列
@@ -54,26 +87,35 @@ namespace ExtenderApp.Common.ConcurrentOperates
         /// <summary>
         /// 获取队列中的元素数量。
         /// </summary>
-        /// <returns>返回队列中的元素数量。</returns>
         public int Count => _queue.Count;
 
-        /// <summary>
-        /// 获取或设置是否可以操作。
-        /// </summary>
-        /// <value>如果可以操作，则返回 true；否则返回 false。</value>
         public override bool CanOperate { get; protected set; }
+
+        /// <summary>
+        /// 取消令牌源
+        /// </summary>
+        private readonly CancellationTokenSource _cts = new();
+
+        /// <summary>
+        /// 数据访问锁，使用细粒度锁
+        /// </summary>
+        private readonly object _dataLock = new();
+
+        /// <summary>
+        /// 构造函数
+        /// </summary>
+        public ConcurrentOperate() : base()
+        {
+            CanOperate = false;
+        }
 
         /// <summary>
         /// 启动方法
         /// </summary>
-        /// <param name="policy">并发操作策略，可以为null</param>
-        /// <param name="data">操作数据，可以为null</param>
-        /// <param name="operate">操作类型，可以为null</param>
         public void Start(TData operate)
         {
             Data = operate ?? throw new ArgumentNullException(nameof(operate), "被操作类不能为空");
             CanOperate = true;
-
             ProtectedStart();
         }
 
@@ -84,107 +126,80 @@ namespace ExtenderApp.Common.ConcurrentOperates
                 throw new InvalidOperationException("并发操作策略或被操作类未设置");
             }
             ProtectedStart();
+            CanOperate = true;
         }
 
         /// <summary>
         /// 受保护的启动方法
         /// </summary>
-        protected virtual void ProtectedStart()
-        {
-
-        }
+        protected virtual void ProtectedStart() { }
 
         /// <summary>
-        /// 将操作加入队列
+        /// 将操作加入队列并异步执行
         /// </summary>
-        /// <param name="operation">并发操作</param>
-        public void QueueOperation(IConcurrentOperation<TData> operation)
+        public void ExecuteAsync(IConcurrentOperation<TData> operation)
         {
-            if (!CanOperate)
+            if (!CanOperate || _cts.IsCancellationRequested)
                 return;
 
-            ThrowNull();
-            Data.Token.ThrowIfCancellationRequested();
-            operation.ArgumentNull(typeof(TData).FullName);
+            ValidateOperation(operation);
 
             _queue.Enqueue(operation);
-            Interlocked.Increment(ref operationCount);
+            int count = Interlocked.Increment(ref operationCount);
 
-            //lock (_queue)
-            //{
-            //    if (!isExecuting)
-            //    {
-            //        isExecuting = true;
-            //        Task.Run(Run);
-            //    }
-            //}
-
-            if (Interlocked.CompareExchange(ref _isExecuting, 1, 0) == 0)
+            // 启动处理任务（如果是第一个操作）
+            if (count == 1 && Interlocked.CompareExchange(ref _isExecuting, 1, 0) == 0)
             {
-                ThreadPool.UnsafeQueueUserWorkItem(_ => Run(), null);
+                _ = ProcessQueueAsync();
             }
         }
 
         /// <summary>
-        /// 将操作集合加入队列
+        /// 将操作集合加入队列并异步执行
         /// </summary>
-        /// <param name="operations">并发操作集合</param>
-        public void QueueOperation(IEnumerable<IConcurrentOperation<TData>> operations)
+        public void ExecuteAsync(IEnumerable<IConcurrentOperation<TData>> operations)
         {
-            if (!CanOperate)
+            if (!CanOperate || _cts.IsCancellationRequested)
                 return;
 
-            ThrowNull();
-            Data.Token.ThrowIfCancellationRequested();
-            operations.ArgumentNull(nameof(operations));
+            if (operations == null)
+                throw new ArgumentNullException(nameof(operations));
 
+            bool hasOperations = false;
             foreach (var operation in operations)
             {
+                if (operation == null)
+                    continue;
+
+                ValidateOperation(operation);
                 _queue.Enqueue(operation);
-                Interlocked.Increment(ref operationCount);
+                hasOperations = true;
             }
 
-            if (Interlocked.CompareExchange(ref _isExecuting, 1, 0) == 0)
+            if (!hasOperations)
+                return;
+
+            int count = Interlocked.Add(ref operationCount, 1);
+            if (count == 1 && Interlocked.CompareExchange(ref _isExecuting, 1, 0) == 0)
             {
-                ThreadPool.UnsafeQueueUserWorkItem(_ => Run(), null);
+                _ = ProcessQueueAsync();
             }
         }
 
         /// <summary>
-        /// 执行单个并发操作
+        /// 立即执行单个并发操作
         /// </summary>
-        /// <param name="operation">并发操作</param>
-        public void ExecuteOperation(IConcurrentOperation<TData> operation)
+        public void Execute(IConcurrentOperation<TData> operation)
         {
-            if (!CanOperate)
+            if (!CanOperate || _cts.IsCancellationRequested)
                 return;
 
-            ThrowNull();
-            Data.Token.ThrowIfCancellationRequested();
-            operation.ArgumentNull(nameof(operation));
+            ValidateOperation(operation);
 
-            lock (Data)
+            // 使用细粒度锁保护数据访问
+            lock (_dataLock)
             {
-                operation.Execute(Data);
-            }
-        }
-
-        /// <summary>
-        /// 执行并发操作集合
-        /// </summary>
-        /// <param name="operations">并发操作集合</param>
-        public void ExecuteOperation(IEnumerable<IConcurrentOperation<TData>> operations)
-        {
-            if (!CanOperate)
-                return;
-
-            ThrowNull();
-            Data.Token.ThrowIfCancellationRequested();
-            operations.ArgumentNull(nameof(operations));
-
-            foreach (var operation in operations)
-            {
-                lock (Data)
+                if (!_cts.IsCancellationRequested)
                 {
                     operation.Execute(Data);
                 }
@@ -192,68 +207,124 @@ namespace ExtenderApp.Common.ConcurrentOperates
         }
 
         /// <summary>
-        /// 运行队列中的并发操作
+        /// 立即执行并发操作集合
         /// </summary>
-        private void Run()
+        public void Execute(IEnumerable<IConcurrentOperation<TData>> operations)
         {
-            try
+            if (!CanOperate || _cts.IsCancellationRequested)
+                return;
+
+            if (operations == null)
+                throw new ArgumentNullException(nameof(operations));
+
+            // 使用细粒度锁保护数据访问
+            lock (_dataLock)
             {
-                if (Data.Token.IsCancellationRequested)
-                {
+                if (_cts.IsCancellationRequested)
                     return;
-                }
-                Execute();
-            }
-            finally
-            {
-                lock (_queue)
+
+                foreach (var operation in operations)
                 {
-                    //if (operationCount > 0)
-                    //{
-                    //    Task.Run(Run);
-                    //    isExecuting = true;
-                    //}
-                    //else
-                    //{
-                    //    isExecuting = false;
-                    //}
-                    if (operationCount > 0 && Interlocked.CompareExchange(ref _isExecuting, 1, 0) != 0)
+                    if (operation != null)
                     {
-                        //Task.Run(Run);
-                        ThreadPool.UnsafeQueueUserWorkItem(_ => Run(), null);
+                        operation.Execute(Data);
                     }
                 }
             }
         }
 
         /// <summary>
-        /// 执行队列中的所有操作
+        /// 异步处理队列中的操作
         /// </summary>
-        private void Execute()
+        private async Task ProcessQueueAsync()
         {
-            ThrowNull();
-
-            while (_queue.TryDequeue(out var operation) &&
-                !Data.Token.IsCancellationRequested &&
-                !IsDisposed)
+            try
             {
-                lock (Data)
+                while (true)
                 {
-                    operation.Execute(Data);
-                    Interlocked.Decrement(ref operationCount);
+                    // 等待并发许可
+                    await _concurrencySemaphore.WaitAsync();
+
+                    try
+                    {
+                        // 检查取消请求
+                        if (_cts.IsCancellationRequested)
+                            return;
+
+                        // 尝试获取操作
+                        if (!_queue.TryDequeue(out var operation))
+                            break;
+
+                        // 执行操作并减少计数
+                        await ExecuteOperationAsync(operation);
+                    }
+                    catch (Exception ex)
+                    {
+                        // 记录操作执行异常
+                        Console.WriteLine($"操作执行异常: {ex.Message}");
+                    }
+                    finally
+                    {
+                        // 释放并发许可
+                        _concurrencySemaphore.Release();
+
+                        // 检查是否有新操作需要处理
+                        if (operationCount > 0 && Interlocked.CompareExchange(ref _isExecuting, 1, 0) != 0)
+                        {
+                            // 短暂延迟，避免CPU过度占用
+                            await Task.Delay(10);
+                        }
+                    }
                 }
-                operation.Release();
             }
-            Interlocked.Exchange(ref _isExecuting, 0);
+            finally
+            {
+                // 重置执行状态
+                Interlocked.Exchange(ref _isExecuting, 0);
+            }
         }
 
         /// <summary>
-        /// 抛出空引用异常
+        /// 执行单个操作
         /// </summary>
+        private async Task ExecuteOperationAsync(IConcurrentOperation<TData> operation)
+        {
+            try
+            {
+                // 使用细粒度锁保护数据访问
+                lock (_dataLock)
+                {
+                    if (_cts.IsCancellationRequested)
+                        return;
+
+                    operation.Execute(Data);
+                }
+
+                // 模拟异步操作（可根据实际情况修改）
+                await Task.Yield();
+            }
+            finally
+            {
+                // 减少操作计数并释放资源
+                Interlocked.Decrement(ref operationCount);
+                operation.Release();
+            }
+        }
+
+        private void ValidateOperation(IConcurrentOperation<TData> operation)
+        {
+            if (operation == null)
+                throw new ArgumentNullException(nameof(operation));
+
+            ThrowNull();
+            operation.ArgumentNull(typeof(TData).FullName);
+        }
+
         private void ThrowNull()
         {
             ThrowIfDisposed();
-            Data.ArgumentNull(nameof(ExtenderApp.Data));
+            if (Data == null)
+                throw new InvalidOperationException("Data未初始化");
         }
 
         /// <summary>
@@ -265,19 +336,49 @@ namespace ExtenderApp.Common.ConcurrentOperates
             if (IsDisposed)
                 return;
 
-            TryReset();
-            base.Dispose(disposing);
+            try
+            {
+                // 取消所有操作
+                _cts.Cancel();
+
+                // 清空队列并释放操作
+                while (_queue.TryDequeue(out var operation))
+                {
+                    try { operation.Release(); }
+                    catch { /* 忽略释放异常 */ }
+                }
+
+                // 重置操作计数
+                Interlocked.Exchange(ref operationCount, 0);
+            }
+            finally
+            {
+                base.Dispose(disposing);
+            }
         }
 
         /// <summary>
         /// 重置资源
         /// </summary>
-        /// <returns>是否重置成功</returns>
         public override bool TryReset()
         {
+            // 取消当前操作
+            _cts.Cancel();
+
+            // 清空队列
+            while (_queue.TryDequeue(out var operation))
+            {
+                try { operation.Release(); }
+                catch { /* 忽略释放异常 */ }
+            }
+
+            // 重置状态
+            Interlocked.Exchange(ref operationCount, 0);
+            Interlocked.Exchange(ref _isExecuting, 0);
             Data = null;
             CanOperate = false;
-            return true;
+
+            return base.TryReset();
         }
     }
 }

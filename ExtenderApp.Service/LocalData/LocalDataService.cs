@@ -6,7 +6,7 @@ using ExtenderApp.Data;
 using ExtenderApp.Services;
 
 
-namespace ExtenderApp.Service
+namespace ExtenderApp.Services
 {
     /// <summary>
     /// 本地数据服务类，实现了ILocalDataService接口。

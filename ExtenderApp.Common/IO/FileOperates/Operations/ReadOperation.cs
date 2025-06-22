@@ -81,9 +81,10 @@ namespace ExtenderApp.Common.IO.Splitter
             }
 
             var accessor = item.Accessor;
+            var span = bytes.AsSpan();
             for (long i = readPosition; i < readLength; i++)
             {
-                bytes[i] = accessor.ReadByte(i);
+                span[(int)(i - readPosition)] = accessor.ReadByte(i);
             }
             DataBuffer?.Process(bytes);
             bytesCallback?.Invoke(bytes);

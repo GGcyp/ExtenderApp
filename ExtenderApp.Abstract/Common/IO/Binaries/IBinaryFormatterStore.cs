@@ -1,9 +1,11 @@
-﻿namespace ExtenderApp.Abstract
+﻿using AppHost.Extensions.DependencyInjection;
+
+namespace ExtenderApp.Abstract
 {
     /// <summary>
     /// 表示一个用于存储二进制格式化器的接口。
     /// </summary>
-    public interface IBinaryFormatterStore
+    public interface IBinaryFormatterStore : IConfiguration
     {
         /// <summary>
         /// 向格式化器存储中添加指定类型的格式化器。

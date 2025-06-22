@@ -764,7 +764,7 @@ namespace ExtenderApp.Common.IO.Binaries
 
             fixed (byte* pBytes = bytes)
             {
-                return UTF8.GetString(pBytes, bytes.Length);
+                return BinaryEncoding.GetString(pBytes, bytes.Length);
             }
         }
 
@@ -778,7 +778,7 @@ namespace ExtenderApp.Common.IO.Binaries
         /// <returns>转换后的字符数量。</returns>
         public unsafe int UTF8ToChars(byte* bytes, int byteCount, char* chars, int charCount)
         {
-            return UTF8.GetChars(bytes, byteCount, chars, charCount);
+            return BinaryEncoding.GetChars(bytes, byteCount, chars, charCount);
         }
 
         #endregion

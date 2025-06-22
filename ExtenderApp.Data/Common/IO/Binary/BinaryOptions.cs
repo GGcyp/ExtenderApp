@@ -34,7 +34,7 @@ namespace ExtenderApp.Data
         /// <value>
         /// 表示UTF-8编码的<see cref="Encoding"/>对象。
         /// </value>
-        public Encoding UTF8 { get; }
+        public Encoding BinaryEncoding { get; }
 
         /// <summary>
         /// 二进制选项类的构造函数
@@ -45,7 +45,7 @@ namespace ExtenderApp.Data
             BinaryRang = new BinaryRang();
             DateTimeConstants = new DateTimeConstants();
             MaximumObjectGraphDepth = 500;
-            UTF8 = new UTF8Encoding(false);
+            BinaryEncoding = Encoding.UTF8; // 使用UTF-8编码
         }
     }
 }

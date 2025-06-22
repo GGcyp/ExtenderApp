@@ -69,7 +69,7 @@ namespace ExtenderApp.Common.IO.Binaries
                 ErrorUtil.ArgumentNull(nameof(info));
             }
 
-            return Read<T>(info.CreateWriteOperate(_binaryFileExtensions));
+            return Read<T>(info.CreateReadWriteOperate(_binaryFileExtensions));
         }
 
         public override T? Read<T>(FileOperateInfo info) where T : default
@@ -106,7 +106,7 @@ namespace ExtenderApp.Common.IO.Binaries
                 ErrorUtil.ArgumentNull(nameof(info));
             }
 
-            return Read<T>(info.CreateWriteOperate(_binaryFileExtensions), position, length);
+            return Read<T>(info.CreateReadWriteOperate(_binaryFileExtensions), position, length);
         }
 
         public override T? Read<T>(FileOperateInfo info, long position, long length) where T : default
@@ -143,7 +143,7 @@ namespace ExtenderApp.Common.IO.Binaries
                 ErrorUtil.ArgumentNull(nameof(info));
             }
 
-            return Read(info.CreateWriteOperate(_binaryFileExtensions), position, length);
+            return Read(info.CreateReadWriteOperate(_binaryFileExtensions), position, length);
         }
 
         public byte[]? Read(LocalFileInfo info, long position, long length)
@@ -191,7 +191,7 @@ namespace ExtenderApp.Common.IO.Binaries
                 return false;
             }
 
-            return Read(info.CreateWriteOperate(_binaryFileExtensions), position, length, bytes);
+            return Read(info.CreateReadWriteOperate(_binaryFileExtensions), position, length, bytes);
         }
 
         public bool Read(LocalFileInfo info, long position, long length, byte[] bytes)
@@ -267,8 +267,9 @@ namespace ExtenderApp.Common.IO.Binaries
             if (position + length > operate.Data.CurrentCapacity)
                 ErrorUtil.ArgumentOutOfRange(nameof(length), $"读取长度超出文件长度，文件长度为{operate.Data.CurrentCapacity}，请求读取位置为{position}，请求读取长度为{length}。");
 
+            length = length == -1 ? operate.Data.CurrentCapacity : length;
             operation.Set(position, length);
-            operate.ExecuteOperation(operation);
+            operate.Execute(operation);
 
             var result = Deserialize<T>(operation.ReslutBytes);
             operation.Release();
@@ -290,8 +291,9 @@ namespace ExtenderApp.Common.IO.Binaries
             if (position + length > operate.Data.CurrentCapacity)
                 ErrorUtil.ArgumentOutOfRange(nameof(length), $"读取长度超出文件长度，文件长度为{operate.Data.CurrentCapacity}，请求读取位置为{position}，请求读取长度为{length}。");
 
+            length = length == -1 ? operate.Data.CurrentCapacity : length;
             operation.Set(position, length);
-            operate.ExecuteOperation(operation);
+            operate.Execute(operation);
 
             var result = operation.ReslutBytes.ToArray();
             operation.Release();
@@ -309,7 +311,7 @@ namespace ExtenderApp.Common.IO.Binaries
                 ErrorUtil.ArgumentNull(nameof(info));
             }
 
-            ReadAsync(info.CreateWriteOperate(_binaryFileExtensions), callback);
+            ReadAsync(info.CreateReadWriteOperate(_binaryFileExtensions), callback);
         }
 
         public override void ReadAsync<T>(FileOperateInfo info, Action<T?> callback) where T : default
@@ -340,7 +342,7 @@ namespace ExtenderApp.Common.IO.Binaries
             {
                 ErrorUtil.ArgumentNull(nameof(info));
             }
-            ReadAsync(info.CreateWriteOperate(_binaryFileExtensions), position, length, callback);
+            ReadAsync(info.CreateReadWriteOperate(_binaryFileExtensions), position, length, callback);
         }
 
         public override void ReadAsync<T>(FileOperateInfo info, long position, long length, Action<T?> callback) where T : default
@@ -371,7 +373,7 @@ namespace ExtenderApp.Common.IO.Binaries
                 ErrorUtil.ArgumentNull(nameof(info));
             }
 
-            ReadAsync(info.CreateWriteOperate(_binaryFileExtensions), position, length, callback);
+            ReadAsync(info.CreateReadWriteOperate(_binaryFileExtensions), position, length, callback);
         }
 
         public void ReadAsync(LocalFileInfo info, long position, long length, Action<byte[]?> callback)
@@ -412,7 +414,7 @@ namespace ExtenderApp.Common.IO.Binaries
             {
                 ErrorUtil.ArgumentNull(nameof(info));
             }
-            ReadAsync(info.CreateWriteOperate(_binaryFileExtensions), position, length, bytes, callback);
+            ReadAsync(info.CreateReadWriteOperate(_binaryFileExtensions), position, length, bytes, callback);
         }
 
         public void ReadAsync(LocalFileInfo info, long position, long length, byte[] bytes, Action<bool> callback)
@@ -460,15 +462,17 @@ namespace ExtenderApp.Common.IO.Binaries
                 ErrorUtil.ArgumentOutOfRange(nameof(length), $"读取长度超出文件长度，文件长度为{operate.Data.CurrentCapacity}，请求读取位置为{position}，请求读取长度为{length}。");
 
             var operation = _readOperationPool.Get();
-            DataBuffer<T> dataBuffer = DataBuffer<T>.GetDataBuffer();
-            dataBuffer.SetProcessAction<byte[]>((d, b) =>
+            DataBuffer dataBuffer = DataBuffer.GetDataBuffer();
+            dataBuffer.SetProcessAction<byte[]>(b =>
             {
-                d.Item = Deserialize<T>(b);
+                var reslut = Deserialize<T>(b);
+                callback?.Invoke(reslut);
             });
 
+            length = length == -1 ? operate.Data.CurrentCapacity : length;
             operation.Set(position, length, dataBuffer);
 
-            operate.QueueOperation(operation);
+            operate.ExecuteAsync(operation);
         }
 
         /// <summary>
@@ -486,9 +490,10 @@ namespace ExtenderApp.Common.IO.Binaries
 
             var operation = _readOperationPool.Get();
 
+            length = length == -1 ? operate.Data.CurrentCapacity : length;
             operation.Set(position, length, callback);
 
-            operate.QueueOperation(operation);
+            operate.ExecuteAsync(operation);
         }
 
         /// <summary>
@@ -506,9 +511,10 @@ namespace ExtenderApp.Common.IO.Binaries
 
             var operation = _readOperationPool.Get();
 
+            length = length == -1 ? operate.Data.CurrentCapacity : length;
             operation.Set(position, length, bytes);
 
-            operate.QueueOperation(operation);
+            operate.ExecuteAsync(operation);
         }
 
         #endregion
@@ -521,7 +527,7 @@ namespace ExtenderApp.Common.IO.Binaries
             {
                 ErrorUtil.ArgumentNull(nameof(info));
             }
-            Write(info.CreateWriteOperate(_binaryFileExtensions), value);
+            Write(info.CreateReadWriteOperate(_binaryFileExtensions), value);
         }
 
         public override void Write<T>(FileOperateInfo info, T value)
@@ -550,7 +556,7 @@ namespace ExtenderApp.Common.IO.Binaries
             {
                 ErrorUtil.ArgumentNull(nameof(info));
             }
-            Write(info.CreateWriteOperate(_binaryFileExtensions), value, position);
+            Write(info.CreateReadWriteOperate(_binaryFileExtensions), value, position);
         }
 
         public override void Write<T>(FileOperateInfo info, T value, long position)
@@ -579,7 +585,7 @@ namespace ExtenderApp.Common.IO.Binaries
             {
                 ErrorUtil.ArgumentNull(nameof(info));
             }
-            Write(info.CreateWriteOperate(_binaryFileExtensions), bytes, filePosition);
+            Write(info.CreateReadWriteOperate(_binaryFileExtensions), bytes, filePosition);
         }
 
         public void Write(LocalFileInfo info, byte[] bytes, long filePosition)
@@ -617,7 +623,7 @@ namespace ExtenderApp.Common.IO.Binaries
             {
                 ErrorUtil.ArgumentNull(nameof(info));
             }
-            Write(info.CreateWriteOperate(_binaryFileExtensions), bytes, filePosition, bytesPosition, bytesLength);
+            Write(info.CreateReadWriteOperate(_binaryFileExtensions), bytes, filePosition, bytesPosition, bytesLength);
         }
 
         public void Write(LocalFileInfo info, byte[] bytes, long filePosition, int bytesPosition, int bytesLength)
@@ -676,7 +682,7 @@ namespace ExtenderApp.Common.IO.Binaries
 
             var operation = _writeOperationPool.Get();
             operation.Set(bytes, filePosition, length, bytesPosition, null);
-            operate.ExecuteOperation(operation);
+            operate.Execute(operation);
 
             operation.Release();
         }
@@ -691,7 +697,7 @@ namespace ExtenderApp.Common.IO.Binaries
             {
                 ErrorUtil.ArgumentNull(nameof(info));
             }
-            WriteAsync(info.CreateWriteOperate(_binaryFileExtensions), value, callback);
+            WriteAsync(info.CreateReadWriteOperate(_binaryFileExtensions), value, callback);
         }
 
         public override void WriteAsync<T>(FileOperateInfo info, T value, Action? callback = null)
@@ -722,7 +728,7 @@ namespace ExtenderApp.Common.IO.Binaries
             {
                 ErrorUtil.ArgumentNull(nameof(info));
             }
-            WriteAsync(info.CreateWriteOperate(_binaryFileExtensions), value, position, callback);
+            WriteAsync(info.CreateReadWriteOperate(_binaryFileExtensions), value, position, callback);
         }
 
         public override void WriteAsync<T>(FileOperateInfo info, T value, long position, Action? callback = null)
@@ -751,7 +757,7 @@ namespace ExtenderApp.Common.IO.Binaries
             {
                 ErrorUtil.ArgumentNull(nameof(info));
             }
-            WriteAsync(info.CreateWriteOperate(_binaryFileExtensions), bytes, filePosition, bytesPosition, bytesLength, callback);
+            WriteAsync(info.CreateReadWriteOperate(_binaryFileExtensions), bytes, filePosition, bytesPosition, bytesLength, callback);
         }
 
         public void WriteAsync(LocalFileInfo info, byte[] bytes, long filePosition, int bytesPosition, int bytesLength, Action<byte[]>? callback = null)
@@ -790,7 +796,7 @@ namespace ExtenderApp.Common.IO.Binaries
             {
                 ErrorUtil.ArgumentNull(nameof(info));
             }
-            WriteAsync(info.CreateWriteOperate(_binaryFileExtensions), bytes, filePosition, callback);
+            WriteAsync(info.CreateReadWriteOperate(_binaryFileExtensions), bytes, filePosition, callback);
         }
 
         public void WriteAsync(LocalFileInfo info, byte[] bytes, long filePosition, Action<byte[]>? callback = null)
@@ -853,7 +859,7 @@ namespace ExtenderApp.Common.IO.Binaries
 
             var operation = _writeOperationPool.Get();
             operation.Set(bytes, filePosition, length, bytesPosition, callback);
-            operate.QueueOperation(operation);
+            operate.ExecuteAsync(operation);
         }
 
         #endregion

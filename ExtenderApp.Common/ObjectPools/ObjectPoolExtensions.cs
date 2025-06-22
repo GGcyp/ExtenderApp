@@ -18,6 +18,7 @@ namespace ExtenderApp.Common
         {
             services.AddSingleton(typeof(ObjectPool<>), CreateObjectPool);
             services.AddSingleton(typeof(IObjectPool<>), CreateObjectPool);
+            services.AddSingleton(ObjectPool.PoolStore);
             return services;
         }
 

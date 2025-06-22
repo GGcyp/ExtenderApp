@@ -408,7 +408,7 @@ namespace ExtenderApp.Common.IO.Binaries
             fixed (char* pValue = value)
             fixed (byte* pBuffer = &buffer)
             {
-                int byteCount = _binaryConvert.UTF8.GetBytes(pValue, value.Length, pBuffer + useOffset, bufferSize);
+                int byteCount = _binaryConvert.BinaryEncoding.GetBytes(pValue, value.Length, pBuffer + useOffset, bufferSize);
                 WriteString_PostEncoding(ref writer, pBuffer, useOffset, byteCount);
             }
         }
@@ -474,7 +474,7 @@ namespace ExtenderApp.Common.IO.Binaries
         private ref byte WriteString_PrepareSpan(ref ExtenderBinaryWriter writer, int characterLength, out int bufferSize, out int encodedBytesOffset)
         {
             // 计算缓冲区大小
-            bufferSize = _binaryConvert.UTF8.GetMaxByteCount(characterLength) + 5;
+            bufferSize = _binaryConvert.BinaryEncoding.GetMaxByteCount(characterLength) + 5;
             // 获取缓冲区指针
             ref byte buffer = ref writer.GetPointer(bufferSize);
 

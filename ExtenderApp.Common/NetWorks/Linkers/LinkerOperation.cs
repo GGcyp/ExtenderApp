@@ -7,8 +7,9 @@ namespace ExtenderApp.Common.Networks.LinkOperates
     {
         private readonly SocketAsyncEventArgs _socketAsyncEventArgs;
         private bool isSendAsync;
-        private Action<int>? sendCountCallback;
-        private int sendPacketsCount;
+
+        private int sendTrafficLength;
+        private Action<int>? sendTrafficCallback;
 
         private byte[] sendBytes;
         private Action<byte[]>? sendBytesCallbcak;
@@ -20,11 +21,11 @@ namespace ExtenderApp.Common.Networks.LinkOperates
             sendBytes = Array.Empty<byte>();
         }
 
-        public void Set(byte[] bytes, int offset, int count, Action<int>? sendCountCallback, Action<byte[]>? sendBytesCallbcak = null)
+        public void Set(byte[] bytes, int offset, int length, Action<int>? sendCountCallback, Action<byte[]>? sendBytesCallbcak = null)
         {
-            _socketAsyncEventArgs.SetBuffer(bytes, offset, count);
-            this.sendCountCallback = sendCountCallback;
-            sendPacketsCount = count;
+            _socketAsyncEventArgs.SetBuffer(bytes, offset, length);
+            this.sendTrafficCallback = sendCountCallback;
+            sendTrafficLength = length;
             this.sendBytesCallbcak = sendBytesCallbcak;
             sendBytes = bytes;
         }
@@ -32,8 +33,8 @@ namespace ExtenderApp.Common.Networks.LinkOperates
         public void Set(Memory<byte> memory, Action<int>? sendCountCallback)
         {
             _socketAsyncEventArgs.SetBuffer(memory);
-            this.sendCountCallback = sendCountCallback;
-            sendPacketsCount = memory.Length;
+            this.sendTrafficCallback = sendCountCallback;
+            sendTrafficLength = memory.Length;
         }
 
         private void Completed(object? sender, SocketAsyncEventArgs e)
@@ -42,6 +43,8 @@ namespace ExtenderApp.Common.Networks.LinkOperates
                 return;
 
             isSendAsync = false;
+            sendTrafficCallback?.Invoke(sendTrafficLength);
+            sendBytesCallbcak?.Invoke(sendBytes);
             Release();
         }
 
@@ -49,8 +52,6 @@ namespace ExtenderApp.Common.Networks.LinkOperates
         {
             var socket = item.Socket;
             isSendAsync = socket.SendAsync(_socketAsyncEventArgs);
-            sendCountCallback?.Invoke(sendPacketsCount);
-            sendBytesCallbcak?.Invoke(sendBytes);
         }
 
         public override bool TryReset()
@@ -60,7 +61,7 @@ namespace ExtenderApp.Common.Networks.LinkOperates
 
             sendBytes = Array.Empty<byte>();
             sendBytesCallbcak = null;
-            sendCountCallback = null;
+            sendTrafficCallback = null;
             return true;
         }
 

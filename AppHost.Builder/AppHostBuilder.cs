@@ -1,5 +1,4 @@
 ﻿using AppHost.Builder.Extensions;
-using AppHost.Extensions.Configuration;
 using AppHost.Extensions.DependencyInjection;
 using AppHost.Extensions.Hosting;
 

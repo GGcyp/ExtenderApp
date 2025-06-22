@@ -369,7 +369,7 @@ namespace AppHost.Extensions.DependencyInjection
         /// <exception cref="ArgumentNullException">当 services 或 action 为 null 时抛出</exception>
         /// <exception cref="InvalidOperationException">当要配置的服务不是单例模式时抛出</exception>
         /// <exception cref="NullReferenceException">当要配置的服务还未创建时抛出</exception>
-        public static IServiceCollection Configuration<T>(this IServiceCollection services, Action<T> action) where T : class
+        public static IServiceCollection Configuration<T>(this IServiceCollection services, Action<T> action) where T : IConfiguration
         {
             if (services == null)
                 throw new ArgumentNullException(nameof(services));

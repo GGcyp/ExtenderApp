@@ -1,7 +1,7 @@
 ﻿using System.Reflection;
 using ExtenderApp.Data;
 
-namespace ExtenderApp.Service
+namespace ExtenderApp.Services
 {
     /// <summary>
     /// 本地数据信息的类

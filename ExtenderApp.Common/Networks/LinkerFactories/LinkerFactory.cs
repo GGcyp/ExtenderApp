@@ -1,6 +1,7 @@
 ﻿using System.Net.Sockets;
 using ExtenderApp.Abstract;
 using ExtenderApp.Common.ObjectPools;
+using ExtenderApp.Common.ObjectPools.Policy;
 using ExtenderApp.Data;
 
 namespace ExtenderApp.Common.Networks
@@ -21,7 +22,7 @@ namespace ExtenderApp.Common.Networks
         /// </summary>
         private readonly SequencePool<byte> _sequencePool;
 
-        private readonly ObjectPool<ITcpLinker> _tcpLinkerPool;
+        private readonly ObjectPool<TcpLinker> _tcpLinkerPool;
 
         /// <summary>
         /// 初始化 LinkerFactory 类的新实例。
@@ -33,7 +34,7 @@ namespace ExtenderApp.Common.Networks
             _fileParserStore = fileParserStore;
             _sequencePool = sequencePool;
 
-            _tcpLinkerPool = ObjectPool.Create(new FactoryPooledObjectPolicy<ITcpLinker>(() => new TcpLinker(_fileParserStore.BinaryParser, _sequencePool, _tcpLinkerPool.Release)));
+            _tcpLinkerPool = ObjectPool.Create(new SelfResetPooledObjectPolicy<TcpLinker>());
         }
 
         /// <summary>
@@ -54,11 +55,11 @@ namespace ExtenderApp.Common.Networks
 
         public T GetLinker<T>() where T : ILinker
         {
-            var resultType = typeof(T);
-            if (resultType == typeof(ITcpLinker))
-            {
-                return (T)_tcpLinkerPool.Get();
-            }
+            //var resultType = typeof(T);
+            //if (resultType is ITcpLinker)
+            //{
+            //    return (T)_tcpLinkerPool.Get();
+            //}
 
             throw new Exception("未找到可用的连接器");
         }

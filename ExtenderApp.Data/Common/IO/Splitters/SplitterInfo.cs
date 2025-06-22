@@ -14,12 +14,12 @@ namespace ExtenderApp.Data
         /// <remarks>
         /// 获取或设置已加载的区块数据。可以为null。
         /// </remarks>
-        public readonly byte[]? LoadedChunks;
+        public PieceData pieceData { get; }
 
         /// <summary>
         /// 实际文件长度
         /// </summary>
-        public long Length { get; set; }
+        public int Length { get; set; }
 
         /// <summary>
         /// 分块数量
@@ -48,7 +48,7 @@ namespace ExtenderApp.Data
         /// <summary>
         /// 获取或设置文件的 MD5 哈希值。
         /// </summary>
-        public string FileMD5 { get; set; }
+        public HashValue HashValue { get; set; }
 
         /// <summary>
         /// 检查当前对象是否为空。
@@ -70,8 +70,8 @@ namespace ExtenderApp.Data
         /// <param name="progress">当前处理进度</param>
         /// <param name="maxChunkSize">每个分块的最大大小（以字节为单位）</param>
         /// <param name="targetExtensions">目标文件的扩展名</param>
-        /// <param name="md5HASH">文件的 MD5 哈希值</param>
-        public SplitterInfo(long length, uint chunkCount, uint progress, int maxChunkSize, string targetExtensions, string md5HASH) : this(length, chunkCount, progress, maxChunkSize, targetExtensions, md5HASH, new byte[chunkCount])
+        /// <param name="hashValue">文件的 MD5 哈希值</param>
+        public SplitterInfo(int length, uint chunkCount, uint progress, int maxChunkSize, string targetExtensions, HashValue hashValue) : this(length, chunkCount, progress, maxChunkSize, targetExtensions, hashValue, PieceData.Empty)
         {
 
         }
@@ -84,17 +84,17 @@ namespace ExtenderApp.Data
         /// <param name="progress">当前处理进度</param>
         /// <param name="maxChunkSize">每个分块的最大大小（以字节为单位）</param>
         /// <param name="targetExtensions">目标文件的扩展名</param>
-        /// <param name="md5HASH">文件的 MD5 哈希值</param>
+        /// <param name="hashValue">文件的 MD5 哈希值</param>
         /// <param name="loadedChunks">已加载的分块数据数组</param>
-        public SplitterInfo(long length, uint chunkCount, uint progress, int maxChunkSize, string targetExtensions, string md5HASH, byte[]? loadedChunks)
+        public SplitterInfo(int length, uint chunkCount, uint progress, int maxChunkSize, string targetExtensions, HashValue hashValue, PieceData pieceData)
         {
             Length = length;
             ChunkCount = chunkCount;
             this.progress = progress;
             MaxChunkSize = maxChunkSize;
             TargetExtensions = targetExtensions;
-            LoadedChunks = loadedChunks;
-            FileMD5 = md5HASH;
+            this.pieceData = pieceData;
+            HashValue = hashValue;
         }
 
         /// <summary>
@@ -107,137 +107,19 @@ namespace ExtenderApp.Data
             progress = 0;
             MaxChunkSize = 0;
             TargetExtensions = string.Empty;
-            LoadedChunks = Array.Empty<byte>();
-            FileMD5 = string.Empty;
+            pieceData = PieceData.Empty;
+            HashValue = HashValue.Empty;
         }
 
-        /// <summary>
-        /// 获取最后一个数据块的索引。
-        /// </summary>
-        /// <returns>返回最后一个数据块的索引。</returns>
-        public uint GetLastChunkIndex()
+        public void LoadChunk(SplitterDto dto)
         {
-            for (uint i = 0; i < ChunkCount; i++)
-            {
-                if (LoadedChunks[i] == 0)
-                {
-                    return i;
-                }
-            }
-            return Progress;
+            pieceData.LoadChunk(dto.ChunkIndex);
         }
 
-        /// <summary>
-        /// 获取最后一个未加载的块索引
-        /// </summary>
-        /// <param name="startIndex">起始索引，默认为0</param>
-        /// <returns>最后一个未加载的块索引，如果所有块都已加载则返回-1</returns>
-        public int GetLastNotLoadChunkIndex(uint startIndex = 0)
+
+        public void ULoadChunk(SplitterDto dto)
         {
-            for (uint i = startIndex; i < ChunkCount; i++)
-            {
-                if (LoadedChunks[i] == 0)
-                {
-                    lock (LoadedChunks)
-                    {
-                        if (LoadedChunks[i] == 0)
-                        {
-                            LoadedChunks[i] = 1;
-                        }
-                        else
-                        {
-                            return GetLastNotLoadChunkIndex(i);
-                        }
-                    }
-                    return (int)i;
-                }
-            }
-            return -1;
-        }
-
-        /// <summary>
-        /// 获取最后一个块索引位置
-        /// </summary>
-        /// <returns>返回最后一个块索引位置</returns>
-        public long GetLastNotLoadChunkIndexPosition()
-        {
-            var result = GetLastNotLoadChunkIndex();
-            return GetPosition((uint)result);
-        }
-
-        /// <summary>
-        /// 获取最后一个数据块的大小。
-        /// </summary>
-        /// <returns>返回最后一个数据块的大小。</returns>
-        public int GetLastChunkSize()
-        {
-            return (int)(Length - (ChunkCount - 1) * MaxChunkSize);
-        }
-
-        /// <summary>
-        /// 根据块索引获取位置
-        /// </summary>
-        /// <param name="index">块索引</param>
-        /// <returns>返回对应块的位置</returns>
-        /// <exception cref="ArgumentOutOfRangeException">如果块索引超出范围，则抛出此异常</exception>
-        public long GetPosition(uint index)
-        {
-            if (index >= ChunkCount || index < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index), "块索引超出范围");
-            }
-
-            return (index * MaxChunkSize);
-        }
-
-        /// <summary>
-        /// 向指定位置添加一个块。
-        /// </summary>
-        /// <param name="index">要添加块的位置。</param>
-        /// <exception cref="ArgumentOutOfRangeException">如果块索引超出范围，则抛出此异常。</exception>
-        public void LoadChunk(uint index)
-        {
-            if (index >= ChunkCount || index < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index), "块索引超出范围");
-            }
-
-            lock (LoadedChunks)
-            {
-                LoadedChunks[index] = 2;
-                //progress++;
-            }
-            Interlocked.Increment(ref progress);
-        }
-
-        /// <summary>
-        /// 从指定位置移除一个块。
-        /// </summary>
-        /// <param name="index">要移除块的位置。</param>
-        /// <exception cref="ArgumentOutOfRangeException">如果块索引超出范围，则抛出此异常。</exception>
-        public void RemoveChunk(uint index)
-        {
-            if (index >= ChunkCount || index < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index), "块索引超出范围");
-            }
-
-            lock (LoadedChunks)
-            {
-                LoadedChunks[index] = 0;
-            }
-
-            Interlocked.Decrement(ref progress);
-        }
-
-        /// <summary>
-        /// 获取指定位置所在的块索引
-        /// </summary>
-        /// <param name="position">位置</param>
-        /// <returns>返回指定位置所在的块索引</returns>
-        public uint GetChunkIndex(long position)
-        {
-            return (uint)(position / MaxChunkSize);
+            pieceData.ULoadChunk(dto.ChunkIndex);
         }
 
         public bool Equals(SplitterInfo other)

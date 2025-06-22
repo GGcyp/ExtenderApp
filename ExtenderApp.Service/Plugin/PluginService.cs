@@ -8,7 +8,7 @@ using ExtenderApp.Services;
 using ExtenderApp.Common.Error;
 using ExtenderApp.Common;
 
-namespace ExtenderApp.Service
+namespace ExtenderApp.Services
 {
     /// <summary>
     /// 插件服务类

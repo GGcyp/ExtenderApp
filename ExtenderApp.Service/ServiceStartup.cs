@@ -3,7 +3,7 @@ using AppHost.Extensions.DependencyInjection;
 using ExtenderApp.Abstract;
 using ExtenderApp.Common.IO;
 using ExtenderApp.Data;
-using ExtenderApp.Service;
+using ExtenderApp.Services;
 
 namespace ExtenderApp.Services
 {

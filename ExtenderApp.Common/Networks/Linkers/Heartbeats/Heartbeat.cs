@@ -128,7 +128,7 @@ namespace ExtenderApp.Common.Networks
 
         public void Start()
         {
-            _linker.Register<HeartbeatType>(ProcessReceivedData);
+            //_linker.Register<HeartbeatType>(ProcessReceivedData);
         }
 
         #region Send
@@ -151,7 +151,7 @@ namespace ExtenderApp.Common.Networks
             if (!_linker.Connected || (DateTime.UtcNow - lastReceiveTime).TotalMilliseconds < heartbeatInterval)
                 return;
 
-            _linker.Send(HeartbeatType.Ping);
+            //_linker.Send(HeartbeatType.Ping);
             SendHeartbeatActionEvent?.Invoke(new HearbeatResult(_linker, lastReceiveTime, HeartbeatType.Ping));
         }
 
@@ -166,7 +166,7 @@ namespace ExtenderApp.Common.Networks
         private void ProcessReceivedData(HeartbeatType heartbeatType)
         {
             if (heartbeatType == HeartbeatType.Ping)
-                _linker.Send(HeartbeatType.Pong);
+                //_linker.Send(HeartbeatType.Pong);
 
             ReceiveHeartbeatEvent?.Invoke(new HearbeatResult(_linker, lastReceiveTime, heartbeatType));
             lastReceiveTime = DateTime.UtcNow;

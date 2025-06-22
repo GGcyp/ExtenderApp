@@ -4,27 +4,70 @@ using ExtenderApp.Common.ObjectPools;
 namespace ExtenderApp.Common.DataBuffers
 {
     /// <summary>
-    /// 数据缓冲区基类
+    /// 数据缓冲区类，继承自<see cref="DisposableObject"/>类，实现了<see cref="IResettable"/>接口。
     /// </summary>
-    public abstract class DataBuffer : DisposableObject, IResettable
+    public class DataBuffer : DisposableObject, IResettable
     {
         /// <summary>
-        /// 尝试重置数据缓冲区。
+        /// 一个静态的<see cref="ObjectPool{DataBuffer}"/>对象，用于管理<see cref="DataBuffer"/>对象的池。
         /// </summary>
-        /// <returns>如果重置成功返回true，否则返回false。</returns>
-        public abstract bool TryReset();
+        private readonly static ObjectPool<DataBuffer> _pool = ObjectPool.CreateDefaultPool<DataBuffer>();
 
         /// <summary>
-        /// 释放资源。
+        /// 从对象池中获取一个<see cref="DataBuffer"/>实例。
         /// </summary>
-        public abstract void Release();
+        /// <returns>返回从对象池中获取的<see cref="DataBuffer"/>实例。</returns>
+        public static DataBuffer GetDataBuffer() => _pool.Get();
 
         /// <summary>
-        /// 处理泛型变量
+        /// 将一个<see cref="DataBuffer"/>实例释放回对象池中。
         /// </summary>
-        /// <typeparam name="TResult">泛型类型参数</typeparam>
-        /// <param name="varule">泛型变量</param>
-        public abstract void Process<TResult>(TResult varule);
+        /// <param name="item">要释放回对象池的<see cref="DataBuffer"/>实例。</param>
+        public static void ReleaseDataBuffer(DataBuffer item) => _pool.Release(item);
+
+        /// <summary>
+        /// 一个委托对象，用于存储处理操作。
+        /// </summary>
+        protected Delegate processAction;
+
+        /// <summary>
+        /// 尝试重置<see cref="DataBuffer"/>实例。
+        /// </summary>
+        /// <returns>如果重置成功，则返回true；否则返回false。</returns>
+        public virtual bool TryReset()
+        {
+            processAction = null;
+            return true;
+        }
+
+        /// <summary>
+        /// 释放<see cref="DataBuffer"/>实例。
+        /// </summary>
+        public virtual void Release()
+        {
+            ReleaseDataBuffer(this);
+        }
+
+        /// <summary>
+        /// 设置处理操作。
+        /// </summary>
+        /// <typeparam name="TResult">处理操作的结果类型。</typeparam>
+        /// <param name="action">处理操作。</param>
+        public void SetProcessAction<TResult>(Action<TResult> action)
+        {
+            processAction = action;
+        }
+
+        /// <summary>
+        /// 处理数据。
+        /// </summary>
+        /// <typeparam name="TResult">处理结果的类型。</typeparam>
+        /// <param name="varule">要处理的数据。</param>
+        public virtual void Process<TResult>(TResult varule)
+        {
+            var callback = processAction as Action<TResult>;
+            callback?.Invoke(varule);
+        }
     }
 
     /// <summary>
@@ -53,12 +96,7 @@ namespace ExtenderApp.Common.DataBuffers
         /// <summary>
         /// 获取或设置缓冲区存储的数据项。
         /// </summary>
-        public T Item { get; set; }
-
-        /// <summary>
-        /// 处理操作的委托
-        /// </summary>
-        private Delegate processAction;
+        public T Item1 { get; set; }
 
         /// <summary>
         /// 获取处理动作。
@@ -102,8 +140,7 @@ namespace ExtenderApp.Common.DataBuffers
         /// <returns>如果成功重置则返回true，否则返回false。</returns>
         public override bool TryReset()
         {
-            Item = default;
-            processAction = null;
+            Item1 = default;
             return true;
         }
     }
@@ -141,11 +178,6 @@ namespace ExtenderApp.Common.DataBuffers
         /// 第二个泛型参数的数据项。
         /// </summary>
         public T2 Item2 { get; set; }
-
-        /// <summary>
-        /// 私有委托，用于存储处理动作
-        /// </summary>
-        private Delegate processAction;
 
         /// <summary>
         /// 获取处理动作
@@ -228,11 +260,6 @@ namespace ExtenderApp.Common.DataBuffers
         /// 第三个泛型参数的数据项。
         /// </summary>
         public T3 Item3 { get; set; }
-
-        /// <summary>
-        /// 私有委托，用于存储处理动作
-        /// </summary>
-        private Delegate processAction;
 
         /// <summary>
         /// 获取处理结果的动作。

@@ -2,7 +2,7 @@
 using ExtenderApp.Data;
 using ExtenderApp.Services;
 
-namespace ExtenderApp.Service
+namespace ExtenderApp.Services
 {
     /// <summary>
     /// ScopeServiceStore 类，继承自 ServiceStore 类，实现了 IModServiceStore 接口。

@@ -2,7 +2,7 @@
 using ExtenderApp.Common.IO.Binaries.Formatter;
 using ExtenderApp.Data;
 
-namespace ExtenderApp.Service
+namespace ExtenderApp.Services
 {
     /// <summary>
     /// 本地数据格式化器类，用于序列化和反序列化本地数据

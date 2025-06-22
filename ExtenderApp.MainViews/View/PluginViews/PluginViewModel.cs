@@ -2,7 +2,7 @@
 using System.Collections.Specialized;
 using ExtenderApp.Abstract;
 using ExtenderApp.Data;
-using ExtenderApp.Service;
+using ExtenderApp.Services;
 using ExtenderApp.ViewModels;
 
 namespace ExtenderApp.MainViews

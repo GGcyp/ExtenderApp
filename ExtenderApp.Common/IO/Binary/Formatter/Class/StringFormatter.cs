@@ -22,7 +22,7 @@ namespace ExtenderApp.Common.IO.Binaries.Formatter
             {
                 return Length;
             }
-            return _binaryOptions.UTF8.GetMaxByteCount(value.Length) + Length;
+            return _binaryOptions.BinaryEncoding.GetMaxByteCount(value.Length) + Length;
             //return value.Length + Length;
         }
 

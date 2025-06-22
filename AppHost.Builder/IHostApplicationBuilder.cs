@@ -1,5 +1,4 @@
-﻿using AppHost.Extensions.Configuration;
-using AppHost.Extensions.DependencyInjection;
+﻿using AppHost.Extensions.DependencyInjection;
 using AppHost.Extensions.Hosting;
 
 namespace AppHost.Builder

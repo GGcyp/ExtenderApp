@@ -1,4 +1,5 @@
 ﻿using System.Buffers;
+using System.Security.Cryptography;
 using ExtenderApp.Abstract;
 using ExtenderApp.Common.Error;
 using ExtenderApp.Data;
@@ -19,16 +20,18 @@ namespace ExtenderApp.Common.IO.Splitter
         /// 二进制解析器接口
         /// </summary>
         private readonly IBinaryParser _binaryParser;
+        private readonly IHashProvider _hashProvider;
 
         /// <summary>
         /// 信息扩展
         /// </summary>
         private readonly string infoExtensions;
 
-        public SplitterParser(IBinaryParser parser)
+        public SplitterParser(IBinaryParser parser, IHashProvider hashProvider)
         {
             _binaryParser = parser;
             infoExtensions = FileExtensions.SplitterFileExtensions;
+            _hashProvider = hashProvider;
         }
 
         #region Create
@@ -39,7 +42,7 @@ namespace ExtenderApp.Common.IO.Splitter
             {
                 ErrorUtil.ArgumentNull(nameof(fileInfo), "文件信息不能为空");
             }
-            var infoFile = fileInfo.CreateWriteOperate(infoExtensions);
+            var infoFile = fileInfo.CreateReadWriteOperate(infoExtensions);
             _binaryParser.Write(infoFile, sInfo);
         }
 
@@ -84,8 +87,8 @@ namespace ExtenderApp.Common.IO.Splitter
                 chunkMaxLength = (int)length;
             }
 
-            string md5 = _binaryParser.GetOperate(targtFileInfo).GetFileMD5();
-            return new SplitterInfo(length, chunkCount, 0, chunkMaxLength, targtFileInfo.Extension, md5, createLoadedChunks ? new byte[chunkCount] : null); ;
+            HashValue md5 = _hashProvider.ComputeHash<MD5>(targtFileInfo);
+            return new SplitterInfo((int)length, chunkCount, 0, chunkMaxLength, targtFileInfo.Extension, md5, createLoadedChunks ? new PieceData(new byte[chunkCount]) : PieceData.Empty); ;
         }
 
         #endregion

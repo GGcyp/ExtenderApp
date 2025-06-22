@@ -1,5 +1,5 @@
 ﻿
-namespace AppHost.Extensions.Configuration
+namespace AppHost.Extensions.DependencyInjection
 {
     public interface IConfiguration
     {

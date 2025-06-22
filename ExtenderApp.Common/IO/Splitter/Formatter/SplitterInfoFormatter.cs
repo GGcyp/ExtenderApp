@@ -10,11 +10,6 @@ namespace ExtenderApp.Common.IO.Splitter
     internal class SplitterInfoFormatter : ResolverFormatter<SplitterInfo>
     {
         /// <summary>
-        /// 用于反序列化 long 类型的格式化器
-        /// </summary>
-        private readonly IBinaryFormatter<long> _long;
-
-        /// <summary>
         /// 用于反序列化 uint 类型的格式化器
         /// </summary>
         private readonly IBinaryFormatter<uint> _uint;
@@ -25,15 +20,21 @@ namespace ExtenderApp.Common.IO.Splitter
         private readonly IBinaryFormatter<int> _int;
 
         /// <summary>
-        /// 用于反序列化 byte[] 类型的格式化器
-        /// </summary>
-        private readonly IBinaryFormatter<byte[]> _bytes;
-
-        /// <summary>
         /// 用于反序列化 string 类型的格式化器
         /// </summary>
         private readonly IBinaryFormatter<string> _string;
-        public override int Length => _uint.Length * 2 + _long.Length + _int.Length + _string.Length * 2 + _bytes.Length;
+
+        /// <summary>
+        /// 用于处理哈希值的二进制格式化器
+        /// </summary>
+        private readonly IBinaryFormatter<HashValue> _hash;
+
+        /// <summary>
+        /// 用于序列化和反序列化 PieceData 的二进制格式化器。
+        /// </summary>
+        private readonly IBinaryFormatter<PieceData> _pieceData;
+
+        public override int Length => _uint.Length * 2 + _pieceData.Length + _int.Length * 2 + _string.Length + _hash.Length;
 
         /// <summary>
         /// 初始化 FileSplitterInfoFormatter 实例
@@ -41,11 +42,11 @@ namespace ExtenderApp.Common.IO.Splitter
         /// <param name="resolver">格式化器解析器</param>
         public SplitterInfoFormatter(IBinaryFormatterResolver resolver) : base(resolver)
         {
-            _long = GetFormatter<long>();
             _uint = GetFormatter<uint>();
             _int = GetFormatter<int>();
-            _bytes = GetFormatter<byte[]>();
             _string = GetFormatter<string>();
+            _hash = GetFormatter<HashValue>();
+            _pieceData = GetFormatter<PieceData>();
         }
 
         /// <summary>
@@ -55,15 +56,16 @@ namespace ExtenderApp.Common.IO.Splitter
         /// <returns>反序列化后的 FileSplitterInfo 对象</returns>
         public override SplitterInfo Deserialize(ref ExtenderBinaryReader reader)
         {
-            long length = _long.Deserialize(ref reader);
+            int length = _int.Deserialize(ref reader);
             uint chunkCount = _uint.Deserialize(ref reader);
             uint progresst = _uint.Deserialize(ref reader);
             int maxChunkSize = _int.Deserialize(ref reader);
             string targetExtensions = _string.Deserialize(ref reader);
             string fileMD5HASH = _string.Deserialize(ref reader);
-            byte[] bytes = _bytes.Deserialize(ref reader);
+            PieceData pieceData = _pieceData.Deserialize(ref reader);
+            HashValue fileHashValue = _hash.Deserialize(ref reader);
 
-            return new SplitterInfo(length, chunkCount, progresst, maxChunkSize, targetExtensions, fileMD5HASH, bytes);
+            return new SplitterInfo(length, chunkCount, progresst, maxChunkSize, targetExtensions, fileHashValue, pieceData);
         }
 
         /// <summary>
@@ -73,26 +75,26 @@ namespace ExtenderApp.Common.IO.Splitter
         /// <param name="value">要序列化的 FileSplitterInfo 对象</param>
         public override void Serialize(ref ExtenderBinaryWriter writer, SplitterInfo value)
         {
-            _long.Serialize(ref writer, value.Length);
+            _int.Serialize(ref writer, value.Length);
             _uint.Serialize(ref writer, value.ChunkCount);
             _uint.Serialize(ref writer, value.Progress);
             _int.Serialize(ref writer, value.MaxChunkSize);
             _string.Serialize(ref writer, value.TargetExtensions);
-            _string.Serialize(ref writer, value.FileMD5);
-            _bytes.Serialize(ref writer, value.LoadedChunks);
+            _hash.Serialize(ref writer, value.HashValue);
+            _pieceData.Serialize(ref writer, value.pieceData);
         }
 
         public override long GetLength(SplitterInfo value)
         {
             if (value == null)
             {
-                return _uint.Length * 2 + _long.Length + _int.Length + _string.Length * 2 + _bytes.Length;
+                return _uint.Length * 2 + _int.Length * 2 + _string.Length * 2 + _pieceData.Length;
             }
 
-            long result = _uint.Length * 2 + _long.Length + _int.Length;
+            long result = _uint.Length * 2 + _int.Length * 2;
             result += _string.GetLength(value.TargetExtensions);
-            result += _string.GetLength(value.FileMD5);
-            result += _bytes.GetLength(value.LoadedChunks);
+            result += _hash.GetLength(value.HashValue);
+            result += _pieceData.GetLength(value.pieceData);
             return result;
         }
     }

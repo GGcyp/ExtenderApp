@@ -64,7 +64,7 @@
         /// </summary>
         /// <param name="extension">文件的扩展名。</param>
         /// <returns>返回一个FileOperate对象，用于执行文件写入操作。</returns>
-        public FileOperateInfo CreateWriteOperate(string extension)
+        public FileOperateInfo CreateReadWriteOperate(string extension)
         {
             return CreateFileOperate(extension, FileMode.OpenOrCreate, FileAccess.ReadWrite);
         }

@@ -53,7 +53,7 @@
 	</ItemGroup>
 	<ItemGroup>
 		<ProjectReference Include="..\AppHost.Builder\AppHost.Builder.csproj" />
-		<ProjectReference Include="..\ExtenderApp.Service\ExtenderApp.Service.csproj" />
+		<ProjectReference Include="..\ExtenderApp.Service\ExtenderApp.Services.csproj" />
 		<ProjectReference Include="..\ExtenderApp.ViewModels\ExtenderApp.ViewModels.csproj" />
 		<ProjectReference Include="..\ExtenderApp.Views\ExtenderApp.Views.csproj" />
 	</ItemGroup>

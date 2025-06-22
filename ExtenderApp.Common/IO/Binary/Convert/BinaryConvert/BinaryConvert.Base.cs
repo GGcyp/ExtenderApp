@@ -14,7 +14,7 @@ namespace ExtenderApp.Common.IO.Binaries
         private BinaryRang BinaryRang => BinaryOptions.BinaryRang;
         private DateTimeConstants DateTimeConstants => BinaryOptions.DateTimeConstants;
         private BinaryConvertDecoders Decoders { get; }
-        public Encoding UTF8 => BinaryOptions.UTF8;
+        public Encoding BinaryEncoding => BinaryOptions.BinaryEncoding;
 
         public BinaryConvert(BinaryOptions options)
         {

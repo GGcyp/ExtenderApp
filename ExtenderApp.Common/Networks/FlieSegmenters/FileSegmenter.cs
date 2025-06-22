@@ -44,15 +44,15 @@ namespace ExtenderApp.Common.Networks
         {
             this.mainLinker = mainLinker;
             Set(mainLinker);
-            mainLinker.Register<FileTransferRequestDto>(ReceiveFileTransferRequestDto);
-            mainLinker.Register<FileTransferConfigDto>(ReceiveFileTransferConfigDto);
-            mainLinker.Register<FileSplitterInfoRequestDto>(ReceiveFileSplitterInfoRequestDto);
-            mainLinker.Register<SplitterInfo>(ReceiveSplitterInfo);
+            //mainLinker.Register<FileTransferRequestDto>(ReceiveFileTransferRequestDto);
+            //mainLinker.Register<FileTransferConfigDto>(ReceiveFileTransferConfigDto);
+            //mainLinker.Register<FileSplitterInfoRequestDto>(ReceiveFileSplitterInfoRequestDto);
+            //mainLinker.Register<SplitterInfo>(ReceiveSplitterInfo);
         }
 
         private void Set(ILinker linker)
         {
-            linker.Register<SplitterDto>(ReceiveSplitterDto);
+            //linker.Register<SplitterDto>(ReceiveSplitterDto);
         }
 
         #region Receive
@@ -64,7 +64,7 @@ namespace ExtenderApp.Common.Networks
             //    splitterParser.Write(currentFileOperate, currentSplitterInfo, splitterDto);
             //}
 
-            currentSplitterInfo.LoadChunk(splitterDto.ChunkIndex);
+            currentSplitterInfo.LoadChunk(splitterDto);
 
             splitterParser.WriteAsync(currentFileOperate, currentSplitterInfo, splitterDto);
 
@@ -95,16 +95,16 @@ namespace ExtenderApp.Common.Networks
 
         private void ReceiveFileSplitterInfoRequestDto(FileSplitterInfoRequestDto dto)
         {
-            if (!fileInfoDict.TryGetValue(dto.FileHashCode, out var localFileInfo))
-            {
-                mainLinker.Send(new ErrorDto()
-                {
-                    StatrCode = 404,
-                    Message = string.Format("未找到指定文件:{0}", dto.FileHashCode.ToString())
-                });
-            }
-            var splitterInfo = splitterParser.CreateInfoForFile(localFileInfo, false);
-            mainLinker.Send(splitterInfo);
+            //if (!fileInfoDict.TryGetValue(dto.FileHashCode, out var localFileInfo))
+            //{
+            //    mainLinker.Send(new ErrorDto()
+            //    {
+            //        StatrCode = 404,
+            //        Message = string.Format("未找到指定文件:{0}", dto.FileHashCode.ToString())
+            //    });
+            //}
+            //var splitterInfo = splitterParser.CreateInfoForFile(localFileInfo, false);
+            //mainLinker.Send(splitterInfo);
         }
 
         private void ReceiveSplitterInfo(SplitterInfo splitterInfo)
@@ -124,7 +124,7 @@ namespace ExtenderApp.Common.Networks
             fileInfoDict.TryAdd(info.GetHashCode(), info);
 
             FileTransferRequestDto fileRequestDto = new FileTransferRequestDto(new FileInfoDto[1] { info });
-            mainLinker.SendAsync(fileRequestDto);
+            //mainLinker.SendAsync(fileRequestDto);
         }
 
         public void SendCanGetFilesAsync(IEnumerable<LocalFileInfo> infos)
@@ -142,7 +142,7 @@ namespace ExtenderApp.Common.Networks
             }
 
             FileTransferRequestDto fileRequestDto = new FileTransferRequestDto(sendArray);
-            mainLinker.SendAsync(fileRequestDto);
+            //mainLinker.SendAsync(fileRequestDto);
         }
 
         #endregion

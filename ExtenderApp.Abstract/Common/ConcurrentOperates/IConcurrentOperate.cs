@@ -51,24 +51,24 @@ namespace ExtenderApp.Abstract
         /// 执行一个并发操作。
         /// </summary>
         /// <param name="operation">要执行的并发操作对象。</param>
-        void ExecuteOperation(IConcurrentOperation<TData> operation);
+        void Execute(IConcurrentOperation<TData> operation);
 
         /// <summary>
         /// 执行多个并发操作。
         /// </summary>
         /// <param name="operations">要执行的并发操作对象的集合。</param>
-        void ExecuteOperation(IEnumerable<IConcurrentOperation<TData>> operations);
+        void Execute(IEnumerable<IConcurrentOperation<TData>> operations);
 
         /// <summary>
         /// 将一个并发操作加入队列中。
         /// </summary>
         /// <param name="operation">要加入队列的并发操作对象。</param>
-        void QueueOperation(IConcurrentOperation<TData> operation);
+        void ExecuteAsync(IConcurrentOperation<TData> operation);
 
         /// <summary>
         /// 将多个并发操作加入队列中。
         /// </summary>
         /// <param name="operations">要加入队列的并发操作对象的集合。</param>
-        void QueueOperation(IEnumerable<IConcurrentOperation<TData>> operations);
+        void ExecuteAsync(IEnumerable<IConcurrentOperation<TData>> operations);
     }
 }

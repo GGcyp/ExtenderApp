@@ -1,7 +1,7 @@
-﻿using AppHost.Builder;
+﻿using System.Text;
+using AppHost.Builder;
 using AppHost.Extensions.DependencyInjection;
 using ExtenderApp.Common.Networks;
-using ExtenderApp.Common.SHA;
 
 namespace ExtenderApp.Common
 {
@@ -15,7 +15,7 @@ namespace ExtenderApp.Common
             services.AddIO();
             services.AddObjectPool();
             services.AddNetwork();
-            services.AddSHA();
+            services.AddHash();
         }
     }
 }

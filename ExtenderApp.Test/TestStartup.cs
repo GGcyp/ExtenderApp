@@ -1,5 +1,5 @@
 ﻿using AppHost.Extensions.DependencyInjection;
-using ExtenderApp.Service;
+using ExtenderApp.Services;
 using ExtenderApp.Services;
 
 namespace ExtenderApp.Test

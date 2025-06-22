@@ -27,7 +27,8 @@ namespace ExtenderApp.Common.Networks
 
         public override int GetHashCode()
         {
-            return Utility.GetSimpleConsistentHash(FileName) + (int)FileSize;
+            Utility.GetSimpleConsistentHash(FileName, out int hash);
+            return hash + (int)FileSize;
         }
 
         public static implicit operator FileInfoDto(FileInfo info)
