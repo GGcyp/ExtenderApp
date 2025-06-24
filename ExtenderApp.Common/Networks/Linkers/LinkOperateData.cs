@@ -1,6 +1,5 @@
 ﻿using System.Net.Sockets;
 using ExtenderApp.Common.ConcurrentOperates;
-using ExtenderApp.Common.ObjectPools;
 
 namespace ExtenderApp.Common.Networks
 {
@@ -26,12 +25,12 @@ namespace ExtenderApp.Common.Networks
 
         public Socket Socket { get; set; }
 
-        public LinkOperateData(AddressFamily addressFamily, SocketType socketType, ProtocolType protocolType)
+        public LinkOperateData(AddressFamily addressFamily, SocketType socketType, ProtocolType protocolType, Socket? socket)
         {
             AddressFamily = addressFamily;
             SocketType = socketType;
             ProtocolType = protocolType;
-            Socket = new Socket(AddressFamily, SocketType, ProtocolType);
+            Socket = socket ?? new Socket(AddressFamily, SocketType, ProtocolType);
         }
     }
 }

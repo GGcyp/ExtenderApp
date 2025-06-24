@@ -1,6 +1,6 @@
 ﻿using AppHost.Extensions.DependencyInjection;
 using ExtenderApp.Services;
-using ExtenderApp.Services;
+using ExtenderApp.Common.Networks;
 
 namespace ExtenderApp.Test
 {

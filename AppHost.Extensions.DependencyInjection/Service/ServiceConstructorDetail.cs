@@ -31,12 +31,17 @@ namespace AppHost.Extensions.DependencyInjection
         /// <summary>
         /// 构造所需要的传入参数
         /// </summary>
-        public ServiceConstructorDetail[]? ConstructorDetails { get; }
+        public ServiceConstructorDetail[]? ConstructorDetails { get; private set; }
 
         /// <summary>
         /// 服务描述
         /// </summary>
-        public ServiceDescriptor? ServiceDescriptor { get; }
+        public ServiceDescriptor ServiceDescriptor { get; }
+
+        /// <summary>
+        /// 服务实例对象
+        /// </summary>
+        private object? _serviceInstance;
 
         public ServiceConstructorDetail(ServiceDescriptor serviceDescriptor) : this(null, null, serviceDescriptor)
         {
@@ -114,14 +119,21 @@ namespace AppHost.Extensions.DependencyInjection
                 //如果是单例类，则直接返回单例
                 return ServiceDescriptor.ImplementationInstance;
             }
+            else if (_serviceInstance != null)
+            {
+                //如果是单例类，则直接返回单例
+                return _serviceInstance;
+            }
 
 
             object result = ConstructorDetails == null ? GetDefaultService() : CreateService(provider);
 
-            if (ServiceDescriptor.Lifetime == ServiceLifetime.Singleton)
+            if (ServiceDescriptor.Lifetime == ServiceLifetime.Singleton || ServiceDescriptor.Lifetime == ServiceLifetime.Scoped)
             {
                 //如果是单例则保存
-                ServiceDescriptor.ImplementationInstance = result;
+                //ServiceDescriptor.ImplementationInstance = result;
+                _serviceInstance = result;
+                ConstructorDetails = null; //清除构造参数信息，减少内存占用
             }
 
             return result;
@@ -144,9 +156,9 @@ namespace AppHost.Extensions.DependencyInjection
         /// <returns></returns>
         private object GetServiceForFactory(IServiceProvider provider)
         {
-            if (ServiceDescriptor!.IsKeyedService)
+            if (ServiceDescriptor.IsKeyedService)
             {
-                return ServiceDescriptor!.KeyedImplementationFactory!.Invoke(provider, ServiceDescriptor.ServiceKey);
+                return ServiceDescriptor.KeyedImplementationFactory!.Invoke(provider, ServiceDescriptor.ServiceKey);
             }
             return ServiceDescriptor!.ImplementationFactory!.Invoke(provider);
         }

@@ -70,7 +70,7 @@ namespace ExtenderApp.Common.Networks
 
             if (linkerCount > linkerCapacity)
             {
-                _linkerFactory.ReleaseLinker(linker);
+                //_linkerFactory.ReleaseLinker(linker);
             }
             else
             {

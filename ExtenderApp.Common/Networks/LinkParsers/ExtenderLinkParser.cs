@@ -1,14 +1,19 @@
 ﻿using ExtenderApp.Abstract;
 
-namespace ExtenderApp.Common.Networks.LinkParsers
+namespace ExtenderApp.Common.Networks
 {
-    public class ExtenderLinkParser : LinkParser
+    internal class ExtenderLinkParser : LinkParser
     {
         private readonly IBinaryParser _binaryParser;
 
         public ExtenderLinkParser(IBinaryParser binaryParser)
         {
             _binaryParser = binaryParser ?? throw new ArgumentNullException(nameof(binaryParser));
+        }
+
+        public override void Receive(byte[] bytes, int length)
+        {
+            throw new NotImplementedException();
         }
 
         public override T Deserialize<T>(byte[] bytes)

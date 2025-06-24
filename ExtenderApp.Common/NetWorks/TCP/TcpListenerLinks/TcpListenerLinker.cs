@@ -12,10 +12,9 @@ namespace ExtenderApp.Common.Networks
             _linkerFactory = factory;
         }
 
-        protected override ILinker CreateOperate(Socket clientSocket)
+        protected override ILinker CreateLinker(Socket clientSocket)
         {
-            var result = _linkerFactory.CreateLinker(ProtocolType.Tcp);
-            result.Set(clientSocket);
+            var result = _linkerFactory.CreateLinker<ITcpLinker>(clientSocket);
             return result;
         }
     }

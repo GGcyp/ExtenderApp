@@ -1,4 +1,5 @@
 ﻿
+
 using System.Net.Sockets;
 
 namespace ExtenderApp.Abstract
@@ -9,17 +10,18 @@ namespace ExtenderApp.Abstract
     public interface ILinkerFactory
     {
         /// <summary>
-        /// 根据协议类型创建链接器
+        /// 创建一个类型为 T 的 Linker 对象。
         /// </summary>
-        /// <param name="type">协议类型</param>
-        /// <returns>返回创建的链接器</returns>
-        ILinker CreateLinker(ProtocolType type);
-
+        /// <typeparam name="T">必须实现 ILinker 接口的类型。</typeparam>
+        /// <returns>返回类型为 T 的 Linker 对象。</returns>
+        T CreateLinker<T>() where T : ILinker;
 
         /// <summary>
-        /// 释放连接器实例。
+        /// 创建一个指定类型的连接器实例。
         /// </summary>
-        /// <param name="linker">需要释放的连接器实例。</param>
-        void ReleaseLinker(ILinker linker);
+        /// <typeparam name="T">连接器的类型，必须实现ILinker接口。</typeparam>
+        /// <param name="socket">与连接器关联的Socket对象，可以为null。</param>
+        /// <returns>返回指定类型的连接器实例。</returns>
+        T CreateLinker<T>(Socket? socket) where T : ILinker;
     }
 }

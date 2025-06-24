@@ -1,18 +1,13 @@
 ﻿using System.Buffers;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
 using ExtenderApp.Abstract;
 using ExtenderApp.Common.ConcurrentOperates;
-using ExtenderApp.Common.DataBuffers;
 using ExtenderApp.Common.Error;
-using ExtenderApp.Common.IO;
 using ExtenderApp.Common.Networks.LinkOperates;
 using ExtenderApp.Common.ObjectPools;
 using ExtenderApp.Common.ObjectPools.Policy;
-using ExtenderApp.Data;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace ExtenderApp.Common.Networks
 {
@@ -135,8 +130,6 @@ namespace ExtenderApp.Common.Networks
         /// </summary>
         private volatile int sendPackCount;
 
-        private Action<object> releaseAction;
-
         #endregion
 
         /// <summary>
@@ -155,7 +148,12 @@ namespace ExtenderApp.Common.Networks
         /// </summary>
         /// <param name="binaryParser">二进制解析器。</param>
         /// <param name="sequencePool">序列号池。</param>
-        public Linker()
+        public Linker() : this(null)
+        {
+
+        }
+
+        public Linker(Socket? socket)
         {
             _receiveQueueBytes = new();
 
@@ -166,7 +164,7 @@ namespace ExtenderApp.Common.Networks
 
             cacheBytes = ArrayPool<byte>.Shared.Rent(PacketLength * 2);
 
-            Start(CreateLinkOperateData());
+            Start(CreateLinkOperateData(socket));
         }
 
         #region Connect
@@ -510,23 +508,6 @@ namespace ExtenderApp.Common.Networks
 
         #endregion
 
-        #region Set
-
-        /// <summary>
-        /// 设置连接使用的Socket
-        /// </summary>
-        /// <param name="socket">Socket对象</param>
-        /// <exception cref="Exception">如果当前连接已经有Socket或Socket未连接，将抛出异常</exception>
-        public void Set(Socket socket)
-        {
-            socket.ArgumentNull(nameof(socket));
-
-            Data.Socket = socket;
-            StartReceive();
-        }
-
-        #endregion
-
         #region Close
         public void Close(bool requireFullTransmission = false, bool requireFullDataProcessing = false)
         {
@@ -568,6 +549,7 @@ namespace ExtenderApp.Common.Networks
         }
 
         #endregion
+
         private void CheckState()
         {
             if (!CanOperate)
@@ -612,18 +594,11 @@ namespace ExtenderApp.Common.Networks
             return base.TryReset();
         }
 
-        public void Release()
-        {
-            if (releaseAction == null)
-                throw new InvalidOperationException("Release action is not set.");
-            releaseAction?.Invoke(this);
-        }
-
-        protected abstract LinkOperateData CreateLinkOperateData();
-
-        public void SetReset(Action<object> action)
-        {
-            releaseAction = action ?? throw new ArgumentNullException(nameof(action));
-        }
+        /// <summary>
+        /// 创建一个LinkOperateData对象
+        /// </summary>
+        /// <param name="socket">Socket对象</param>
+        /// <returns>返回创建的LinkOperateData对象</returns>
+        protected abstract LinkOperateData CreateLinkOperateData(Socket? socket);
     }
 }

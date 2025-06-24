@@ -30,6 +30,35 @@ namespace ExtenderApp.Common.Networks
         }
 
         /// <summary>
+        /// 异步发送数据。
+        /// </summary>
+        /// <typeparam name="T">要发送的数据类型。</typeparam>
+        /// <param name="linker">发送数据的链接。</param>
+        /// <param name="value">要发送的数据。</param>
+        /// <exception cref="ObjectDisposedException">如果当前实例已被释放。</exception>
+        /// <exception cref="ArgumentNullException">如果 <paramref name="linker"/> 或 <paramref name="value"/> 为 null。</exception>
+        /// <exception cref="InvalidOperationException">如果 <paramref name="linker"/> 未连接。</exception>
+        public void SendAsync<T>(ILinker linker, T value)
+        {
+            ThrowIfDisposed();
+            if (linker == null)
+                throw new ArgumentNullException(nameof(linker));
+            if (value == null)
+                throw new ArgumentNullException(nameof(value));
+            if (!linker.Connected)
+                throw new InvalidOperationException("链接未连接");
+            Serialize(value, out var bytes, out var start, out var length);
+            linker.SendAsync(bytes, start, length);
+        }
+
+        /// <summary>
+        /// 接收字节数组数据
+        /// </summary>
+        /// <param name="bytes">要接收的字节数组</param>
+        /// <param name="length">要接收的字节数</param>
+        public abstract void Receive(byte[] bytes, int length);
+
+        /// <summary>
         /// 将给定类型的值序列化为字节数组。
         /// </summary>
         /// <typeparam name="T">要序列化的值的类型。</typeparam>

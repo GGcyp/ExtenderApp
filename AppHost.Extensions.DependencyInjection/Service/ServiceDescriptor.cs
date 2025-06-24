@@ -86,7 +86,7 @@ namespace AppHost.Extensions.DependencyInjection
 
         public ServiceDescriptor(Type serviceType, Func<IServiceProvider, object?, object> factoryFunc, object? serviceKey, ServiceLifetime lifetime) : this(serviceType, serviceKey, lifetime)
         {
-            if(serviceKey == null)
+            if (serviceKey == null)
             {
                 Func<IServiceProvider, object> nullKeyedFactory = sp => factoryFunc(sp, null);
                 m_ImplementationFactory = nullKeyedFactory;

@@ -8,21 +8,24 @@ namespace ExtenderApp.Common.Networks
     /// LinkClient 类表示一个与 Linker 服务通信的客户端。
     /// 实现了 IDisposable 接口和 ILinker 接口。
     /// </summary>
-    public class LinkClient : DisposableObject, ILinker
+    public class LinkClient<TLinker, TLinkParser> : DisposableObject, ILinker
+        where TLinker : ILinker
+        where TLinkParser : LinkParser
     {
-        private readonly ILinker _linker;
-        private LinkParser? linkParser;
-        public TrafficRecorder Recorder;
+        private readonly TLinker _linker;
+        private TLinkParser Parser { get; }
+        public TrafficRecorder Recorder { get; }
 
         public bool Connected => _linker.Connected;
 
-        public LinkClient(ILinker linker)
+        public LinkClient(TLinker linker, TLinkParser parser)
         {
             _linker = linker ?? throw new ArgumentNullException(nameof(linker));
+            Parser = parser;
             Recorder = new TrafficRecorder();
             OnSendedTraffic += Recorder.RecordSend;
             OnReceivedTraffic += Recorder.RecordReceive;
-            OnReceive += ProtectedReceive;
+            OnReceive += Parser.Receive;
         }
 
         public event Action<ILinker>? OnClose
@@ -35,6 +38,8 @@ namespace ExtenderApp.Common.Networks
             add => _linker.OnConnect += value;
             remove => _linker.OnConnect -= value;
         }
+        public event Action<LinkClient<TLinker, TLinkParser>>? OnCloseClient;
+        public event Action<LinkClient<TLinker, TLinkParser>>? OnConnectClient;
         public event Action<string> OnErrored
         {
             add => _linker.OnErrored += value;
@@ -70,24 +75,51 @@ namespace ExtenderApp.Common.Networks
 
         public void Connect(string host, int port)
         {
+            _linker.OnConnect += PrivateConnected;
             _linker.Connect(host, port);
+
         }
 
         public void Connect(IPAddress address, int port)
         {
+            _linker.OnConnect += PrivateConnected;
             _linker.Connect(address, port);
         }
+        public void ConnectAsync(string host, int port)
+        {
+            _linker.OnConnect += PrivateConnected;
+            _linker.ConnectAsync(host, port);
+        }
+
+        public void ConnectAsync(IPAddress address, int port)
+        {
+            _linker.OnConnect += PrivateConnected;
+            _linker.ConnectAsync(address, port);
+        }
+
+        public void ConnectAsync(EndPoint point)
+        {
+            _linker.OnConnect += PrivateConnected;
+            _linker.ConnectAsync(point);
+        }
+
+        private void PrivateConnected(ILinker linker)
+        {
+            _linker.OnConnect -= PrivateConnected;
+            OnConnectClient?.Invoke(this);
+        }
+
+
 
         #endregion
 
         #region Send
-
-        public void Send<T>(T value)
+        public void Send<TValue>(TValue value)
         {
             ThrowIfDisposed();
-            if (linkParser == null)
-                throw new InvalidOperationException("LinkParser is not set.");
-            linkParser.Send(_linker, value);
+            if (Parser == null)
+                throw new InvalidOperationException("没有传入链接数据解析器，不能使用此方法");
+            Parser.Send(_linker, value);
         }
 
         public void Send(byte[] data)
@@ -103,6 +135,14 @@ namespace ExtenderApp.Common.Networks
         public void Send(byte[] data, int start, int length)
         {
             _linker.Send(data, start, length);
+        }
+
+        public void SendAsync<TValue>(TValue value)
+        {
+            ThrowIfDisposed();
+            if (Parser == null)
+                throw new InvalidOperationException("没有传入链接数据解析器，不能使用此方法");
+            Parser.SendAsync(_linker, value);
         }
 
         public void SendAsync(Memory<byte> memory)
@@ -122,41 +162,16 @@ namespace ExtenderApp.Common.Networks
 
         #endregion
 
-        #region Receive
-
-        public T Deserialize<T>(byte[] data, int length)
-        {
-            ThrowIfDisposed();
-            if (linkParser == null)
-                throw new InvalidOperationException("LinkParser is not set.");
-            return linkParser.Deserialize<T>(data);
-        }
-
-        protected virtual void ProtectedReceive(byte[] data, int length)
-        {
-
-        }
-
-        #endregion
-
-        public void Set(Socket socket)
-        {
-            _linker.Set(socket);
-        }
-
-        public void SetLinkParser(LinkParser linkParser)
-        {
-            this.linkParser = linkParser ?? throw new ArgumentNullException(nameof(linkParser));
-        }
-
         public void Close(bool requireFullTransmission = false, bool requireFullDataProcessing = false)
         {
             _linker.Close(requireFullTransmission, requireFullDataProcessing);
         }
 
-        public bool TryReset()
+        protected override void Dispose(bool disposing)
         {
-            throw new NotImplementedException();
+            _linker.Dispose();
+
+            base.Dispose(disposing);
         }
     }
 }

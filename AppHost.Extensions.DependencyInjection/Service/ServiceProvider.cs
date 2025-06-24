@@ -17,12 +17,11 @@ namespace AppHost.Extensions.DependencyInjection
         /// <summary>
         /// 并发字典，存储服务构造详情
         /// </summary>
-        private readonly ConcurrentDictionary<Type, ServiceConstructorDetail> _serviceConstructorDetailsDict;
+        protected readonly ConcurrentDictionary<Type, ServiceConstructorDetail> _serviceConstructorDetailsDict;
 
         public ServiceProvider(IServiceCollection services)
         {
             services.AddSingleton<IServiceProvider>(this);
-            //因为目前只有获取，所以先不进行多线程的保护
             _serviceDescriptorDict = services.ToDictionary(sd => sd.ServiceType, sd => sd).ToFrozenDictionary();
             _serviceConstructorDetailsDict = new();
         }

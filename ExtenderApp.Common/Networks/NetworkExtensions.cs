@@ -1,5 +1,6 @@
 ﻿using AppHost.Extensions.DependencyInjection;
 using ExtenderApp.Abstract;
+using ExtenderApp.Common.Networks.LinkClients;
 
 namespace ExtenderApp.Common.Networks
 {
@@ -16,6 +17,7 @@ namespace ExtenderApp.Common.Networks
         public static IServiceCollection AddNetwork(this IServiceCollection services)
         {
             services.AddLinker();
+            services.AddLinkerClient();
             services.AddFileSegmenter();
             services.Configuration<IBinaryFormatterStore>(s =>
             {

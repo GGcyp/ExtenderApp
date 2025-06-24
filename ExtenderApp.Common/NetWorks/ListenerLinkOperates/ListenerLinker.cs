@@ -52,7 +52,7 @@ namespace ExtenderApp.Common.Networks
             }
 
             var clientSocket = _listenerSocket.Accept();
-            return CreateOperate(clientSocket);
+            return CreateLinker(clientSocket);
         }
 
         public void BeginAccept(Action<ILinker> callback)
@@ -73,7 +73,7 @@ namespace ExtenderApp.Common.Networks
 
             // 结束接受连接请求并获取新的Socket
             Socket handler = _listenerSocket.EndAccept(ar);
-            callback?.Invoke(CreateOperate(handler));
+            callback?.Invoke(CreateLinker(handler));
 
             // 继续监听下一个连接请求
             _listenerSocket.BeginAccept(_acceptCallback, callback);
@@ -85,6 +85,6 @@ namespace ExtenderApp.Common.Networks
                 throw new Exception("还未绑定本地接口");
         }
 
-        protected abstract ILinker CreateOperate(Socket clientSocket);
+        protected abstract ILinker CreateLinker(Socket clientSocket);
     }
 }

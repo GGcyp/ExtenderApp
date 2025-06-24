@@ -6,7 +6,7 @@ namespace ExtenderApp.Abstract
     /// <summary>
     /// 定义一个用于操作链接的接口
     /// </summary>
-    public interface ILinker : IResettable, ISelfReset
+    public interface ILinker : IDisposable
     {
         /// <summary>
         /// 获取当前是否已连接。
@@ -83,10 +83,38 @@ namespace ExtenderApp.Abstract
         void Connect(IPAddress address, int port);
 
         /// <summary>
+        /// 异步连接到指定的主机和端口。
+        /// </summary>
+        /// <param name="host">主机名或IP地址。</param>
+        /// <param name="port">端口号。</param>
+        void ConnectAsync(string host, int port);
+
+        /// <summary>
+        /// 异步连接到指定的IP地址和端口。
+        /// </summary>
+        /// <param name="address">IP地址。</param>
+        /// <param name="port">端口号。</param>
+        void ConnectAsync(IPAddress address, int port);
+
+        /// <summary>
+        /// 异步连接到指定的终结点。
+        /// </summary>
+        /// <param name="point">终结点。</param>
+        void ConnectAsync(EndPoint point);
+
+        /// <summary>
         /// 发送数据
         /// </summary>
         /// <param name="data">要发送的数据</param>
-        public void Send(byte[] data);
+        void Send(byte[] data);
+
+        /// <summary>
+        /// 发送数据
+        /// </summary>
+        /// <param name="data">要发送的数据</param>
+        /// <param name="start">数据的起始位置</param>
+        /// <param name="length">要发送的数据长度</param>
+        void Send(byte[] data, int start, int length);
 
         /// <summary>
         /// 发送内存数据
@@ -120,12 +148,5 @@ namespace ExtenderApp.Abstract
         /// <param name="requireFullTransmission">是否要求完整传输。默认为false。</param>
         /// <param name="requireFullDataProcessing">是否要求完整数据处理。默认为false。</param>
         void Close(bool requireFullTransmission = false, bool requireFullDataProcessing = false);
-
-        /// <summary>
-        /// 设置Socket对象
-        /// </summary>
-        /// <param name="socket">要设置的Socket对象</param>
-        void Set(Socket socket);
-        void Send(byte[] data, int start, int length);
     }
 }
