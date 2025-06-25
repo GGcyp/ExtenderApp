@@ -28,6 +28,11 @@ namespace AppHost.Extensions.DependencyInjection
 
         public virtual object? GetService(Type serviceType)
         {
+            if (serviceType == null)
+            {
+                throw new ArgumentNullException(nameof(serviceType), "服务类型不能为空。");
+            }
+
             object? result = null;
             try
             {
@@ -135,6 +140,10 @@ namespace AppHost.Extensions.DependencyInjection
                     detail = new ServiceConstructorDetail(descriptor);
                     _serviceConstructorDetailsDict.TryAdd(serviceType, detail);
                     return detail;
+                }
+                else if (descriptor.ImplementationInstance != null)
+                {
+                    return new ServiceConstructorDetail(descriptor);
                 }
                 else
                 {

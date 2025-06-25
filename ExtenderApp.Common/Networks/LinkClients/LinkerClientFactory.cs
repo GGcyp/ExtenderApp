@@ -14,6 +14,12 @@ namespace ExtenderApp.Common.Networks
             _serviceProvider = provider;
         }
 
+        public LinkClient<TLinker, LinkParser> Create<TLinker>()
+            where TLinker : ILinker
+        {
+            return Create<TLinker, LinkParser>();
+        }
+
         public LinkClient<TLinker, TLinkParser> Create<TLinker, TLinkParser>()
             where TLinker : ILinker
             where TLinkParser : LinkParser

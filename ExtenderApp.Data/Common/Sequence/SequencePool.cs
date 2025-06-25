@@ -113,6 +113,8 @@ namespace ExtenderApp.Data
         /// </summary>
         public struct Rental : IDisposable
         {
+            //public static readonly Rental Empty = new Rental(null, default);
+
             /// <summary>
             /// 序列池所有者。
             /// </summary>

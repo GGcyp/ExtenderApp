@@ -9,7 +9,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
         {
             services.AddScoped<LinkerClientFactory>();
             services.AddSingleton<LinkParser, ExtenderLinkParser>();
-            services.AddTransient(typeof(LinkClient<>), typeof(LinkClient<>));
+            services.AddTransient(typeof(LinkClient<,>), typeof(LinkClient<,>));
 
             return services;
         }

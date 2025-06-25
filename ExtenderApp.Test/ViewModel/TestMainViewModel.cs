@@ -64,7 +64,7 @@ namespace ExtenderApp.Test
         {
             Task.Run(TcpListener);
 
-            var client = _linkerFactory.Create<ITcpLinker>();
+            var client = _linkerFactory.Create<ITcpLinker, LinkParser>();
             //client.SetLinkParser(new ExtenderLinkParser(_binaryParser));
 
 

@@ -36,6 +36,12 @@ namespace ExtenderApp.Data
         /// </summary>
         public long BytesCommitted { get; private set; }
 
+        ///// <summary>
+        ///// 获取只读字节序列。
+        ///// </summary>
+        ///// <returns>返回只读字节序列。</returns>
+        //public ReadOnlySequence<byte> AsReadOnlySequence => Rental.Value.AsReadOnlySequence;
+
         /// <summary>
         /// 序列池。
         /// </summary>
@@ -44,7 +50,7 @@ namespace ExtenderApp.Data
         /// <summary>
         /// 序列池的租赁。
         /// </summary>
-        internal SequencePool<byte>.Rental Rental;
+        public SequencePool<byte>.Rental Rental;
 
         /// <summary>
         /// 使用指定的IBufferWriter<byte>初始化BufferWriter实例。
