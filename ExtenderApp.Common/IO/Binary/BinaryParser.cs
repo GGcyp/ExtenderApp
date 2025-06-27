@@ -884,7 +884,8 @@ namespace ExtenderApp.Common.IO.Binaries
 
             var writer = new ExtenderBinaryWriter(_sequencePool, bytes);
             Serialize(ref writer, value);
-            writer.Flush();
+            //writer.Flush();
+            writer.Dispose();
         }
 
         public void Serialize<T>(T value, byte[] bytes)
@@ -954,7 +955,7 @@ namespace ExtenderApp.Common.IO.Binaries
             var writer = new ExtenderBinaryWriter(_sequencePool, bytes);
             Serialize(ref writer, value);
 
-            writer.Flush();
+            writer.Dispose();
             return bytes;
         }
 

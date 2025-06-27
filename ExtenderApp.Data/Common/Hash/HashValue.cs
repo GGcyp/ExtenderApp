@@ -7,7 +7,7 @@
         /// <summary>
         /// 存储哈希值的字节数组。
         /// </summary>
-        private readonly byte[] _hashBytes;
+        internal readonly byte[] _hashBytes;
 
         /// <summary>
         /// 获取哈希值的字节长度。
@@ -144,6 +144,11 @@
             {
                 throw new ArgumentException("Invalid Base64 string format.", nameof(base64String), ex);
             }
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj is HashValue && Equals((HashValue)obj);
         }
     }
 }

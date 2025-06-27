@@ -578,7 +578,6 @@ namespace ExtenderApp.Common.IO.Binaries
             }
         }
 
-
         public DecodeResult TryReadInt16(ReadOnlySpan<byte> source, out Int16 value, out int tokenSize)
         {
             if (source.Length > 0)
@@ -594,7 +593,6 @@ namespace ExtenderApp.Common.IO.Binaries
                 return DecodeResult.EmptyBuffer;
             }
         }
-
 
         public DecodeResult TryReadInt32(ReadOnlySpan<byte> source, out Int32 value, out int tokenSize)
         {
@@ -612,7 +610,6 @@ namespace ExtenderApp.Common.IO.Binaries
             }
         }
 
-
         public DecodeResult TryReadInt64(ReadOnlySpan<byte> source, out Int64 value, out int tokenSize)
         {
             if (source.Length > 0)
@@ -628,7 +625,6 @@ namespace ExtenderApp.Common.IO.Binaries
                 return DecodeResult.EmptyBuffer;
             }
         }
-
 
         public unsafe DecodeResult TryReadSingle(ReadOnlySpan<byte> source, out Single value, out int tokenSize)
         {

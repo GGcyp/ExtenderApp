@@ -1,22 +1,31 @@
 ﻿using ExtenderApp.Common.Networks;
+using ExtenderApp.Data;
 
 namespace ExtenderApp.Torrent
 {
-    internal class TorrentLinkParser : LinkParser
+    public class TorrentLinkParser : LinkParser<BTMessage>
     {
-        public override T? Deserialize<T>(byte[] bytes) where T : default
+        private readonly BTMessageEncoder encoder;
+
+        public TorrentLinkParser(BTMessageEncoder encoder, SequencePool<byte> sequencePool) : base(sequencePool)
         {
-            throw new NotImplementedException();
+            this.encoder = encoder;
         }
 
-        public override void Receive(byte[] bytes, int length)
+        public override void Serialize<T>(ref ExtenderBinaryWriter writer, T value)
         {
-            throw new NotImplementedException();
+            if (value is not BTMessage message)
+            {
+                throw new ArgumentException("不可以处理非BTMessage类型", nameof(value));
+                return;
+            }
+            encoder.Encode(message, writer);
         }
 
-        public override void Serialize<T>(T value, out byte[] bytes, out int start, out int length)
+        protected override void Receive(ref ExtenderBinaryReader reader)
         {
-            throw new NotImplementedException();
+            var message = encoder.Decode(ref reader);
+            ReceivedMessage(message);
         }
     }
 }

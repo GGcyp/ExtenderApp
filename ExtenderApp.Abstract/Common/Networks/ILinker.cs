@@ -1,5 +1,6 @@
 ﻿using System.Net;
 using System.Net.Sockets;
+using ExtenderApp.Data;
 
 namespace ExtenderApp.Abstract
 {
@@ -36,13 +37,13 @@ namespace ExtenderApp.Abstract
         /// </summary>
         event Action<byte[], int>? OnReceive;
 
-        /// <summary>
-        /// 发送流量事件，当发送流量时触发。
-        /// </summary>
-        /// <remarks>
-        /// 参数表示发送的流量大小（以字节为单位）。
-        /// </remarks>
-        event Action<int>? OnSendingTraffic;
+        ///// <summary>
+        ///// 发送流量事件，当发送流量时触发。
+        ///// </summary>
+        ///// <remarks>
+        ///// 参数表示发送的流量大小（以字节为单位）。
+        ///// </remarks>
+        //event Action<int>? OnSendingTraffic;
 
         /// <summary>
         /// 已发送流量事件，当流量发送完成时触发。
@@ -148,5 +149,7 @@ namespace ExtenderApp.Abstract
         /// <param name="requireFullTransmission">是否要求完整传输。默认为false。</param>
         /// <param name="requireFullDataProcessing">是否要求完整数据处理。默认为false。</param>
         void Close(bool requireFullTransmission = false, bool requireFullDataProcessing = false);
+        void Send(ExtenderBinaryWriter writer);
+        void SendAsync(ExtenderBinaryWriter writer);
     }
 }

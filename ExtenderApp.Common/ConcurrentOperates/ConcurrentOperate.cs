@@ -77,7 +77,7 @@ namespace ExtenderApp.Common.ConcurrentOperates
         /// <summary>
         /// 操作队列
         /// </summary>
-        private readonly ConcurrentQueue<IConcurrentOperation<TData>> _queue = new();
+        protected readonly ConcurrentQueue<IConcurrentOperation<TData>> _concurrentQueue = new();
 
         /// <summary>
         /// 并发操作对象
@@ -87,7 +87,7 @@ namespace ExtenderApp.Common.ConcurrentOperates
         /// <summary>
         /// 获取队列中的元素数量。
         /// </summary>
-        public int Count => _queue.Count;
+        public int Count => _concurrentQueue.Count;
 
         public override bool CanOperate { get; protected set; }
 
@@ -144,7 +144,7 @@ namespace ExtenderApp.Common.ConcurrentOperates
 
             ValidateOperation(operation);
 
-            _queue.Enqueue(operation);
+            _concurrentQueue.Enqueue(operation);
             int count = Interlocked.Increment(ref operationCount);
 
             // 启动处理任务（如果是第一个操作）
@@ -172,7 +172,7 @@ namespace ExtenderApp.Common.ConcurrentOperates
                     continue;
 
                 ValidateOperation(operation);
-                _queue.Enqueue(operation);
+                _concurrentQueue.Enqueue(operation);
                 hasOperations = true;
             }
 
@@ -252,7 +252,7 @@ namespace ExtenderApp.Common.ConcurrentOperates
                             return;
 
                         // 尝试获取操作
-                        if (!_queue.TryDequeue(out var operation))
+                        if (!_concurrentQueue.TryDequeue(out var operation))
                             break;
 
                         // 执行操作并减少计数
@@ -342,7 +342,7 @@ namespace ExtenderApp.Common.ConcurrentOperates
                 _cts.Cancel();
 
                 // 清空队列并释放操作
-                while (_queue.TryDequeue(out var operation))
+                while (_concurrentQueue.TryDequeue(out var operation))
                 {
                     try { operation.Release(); }
                     catch { /* 忽略释放异常 */ }
@@ -366,7 +366,7 @@ namespace ExtenderApp.Common.ConcurrentOperates
             _cts.Cancel();
 
             // 清空队列
-            while (_queue.TryDequeue(out var operation))
+            while (_concurrentQueue.TryDequeue(out var operation))
             {
                 try { operation.Release(); }
                 catch { /* 忽略释放异常 */ }

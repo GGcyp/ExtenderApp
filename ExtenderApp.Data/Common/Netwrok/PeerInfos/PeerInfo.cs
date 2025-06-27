@@ -1,7 +1,6 @@
 ﻿using System.Net;
-using System.Text;
 
-namespace ExtenderApp.Torrent.Models.Peers
+namespace ExtenderApp.Data
 {
     /// <summary>
     /// 表示对等节点信息的结构体。
@@ -22,6 +21,8 @@ namespace ExtenderApp.Torrent.Models.Peers
         /// 获取对等节点的ID。
         /// </summary>
         public PeerId Id { get; }
+
+        public bool IsEmpty => IP == null || Port <= 0 || Id.IsEmpty;
 
         /// <summary>
         /// 初始化 <see cref="PeerInfo"/> 结构体实例。

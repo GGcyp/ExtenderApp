@@ -1,8 +1,6 @@
 ﻿
 
-using System.Security.Cryptography;
-
-namespace ExtenderApp.Torrent
+namespace ExtenderApp.Data
 {
     /// <summary>
     /// 表示对等节点ID的结构体。
@@ -15,7 +13,9 @@ namespace ExtenderApp.Torrent
         /// <summary>
         /// 对等节点ID。
         /// </summary>
-        private readonly string _id;
+        internal string Id { get; }
+
+        public bool IsEmpty => string.IsNullOrEmpty(Id);
 
         /// <summary>
         /// 初始化 <see cref="PeerId"/> 结构体的新实例。
@@ -26,14 +26,14 @@ namespace ExtenderApp.Torrent
         {
             if (string.IsNullOrEmpty(id) || id.Length != 20)
             {
-                throw new ArgumentException("Peer ID must be exactly 20 characters long.", nameof(id));
+                throw new ArgumentException("对等节点ID不能为空或者小于20个字", nameof(id));
             }
-            _id = id;
+            Id = id;
         }
 
         public bool Equals(PeerId other)
         {
-            return string.Equals(_id, other._id);
+            return string.Equals(Id, other.Id);
         }
 
         public static bool operator ==(PeerId left, PeerId right)
@@ -53,7 +53,7 @@ namespace ExtenderApp.Torrent
 
         public override int GetHashCode()
         {
-            return _id.GetHashCode();
+            return Id.GetHashCode();
         }
     }
 }

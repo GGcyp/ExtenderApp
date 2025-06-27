@@ -51,6 +51,9 @@ namespace ExtenderApp.Torrent
         /// 表示“保持活跃”消息（空消息）。
         /// </summary>
         KeepAlive = 10,
-
+        /// <summary>
+        /// 表示“未知”消息。
+        /// </summary>
+        Unknown = 11,
     }
 }

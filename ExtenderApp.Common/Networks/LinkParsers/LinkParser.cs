@@ -1,4 +1,5 @@
 ﻿using ExtenderApp.Abstract;
+using ExtenderApp.Data;
 
 namespace ExtenderApp.Common.Networks
 {
@@ -7,6 +8,13 @@ namespace ExtenderApp.Common.Networks
     /// </summary>
     public abstract class LinkParser : DisposableObject
     {
+        private readonly SequencePool<byte> _sequencePool;
+
+        public LinkParser(SequencePool<byte> sequencePool)
+        {
+            _sequencePool = sequencePool;
+        }
+
         /// <summary>
         /// 发送数据
         /// </summary>
@@ -25,8 +33,11 @@ namespace ExtenderApp.Common.Networks
                 throw new ArgumentNullException(nameof(value));
             if (!linker.Connected)
                 throw new InvalidOperationException("链接未连接");
-            Serialize(value, out var bytes, out var start, out var length);
-            linker.Send(bytes, start, length);
+
+            var rental = _sequencePool.Rent();
+            var writer = new ExtenderBinaryWriter(rental.Value);
+            Serialize(ref writer, value);
+            linker.Send(writer);
         }
 
         /// <summary>
@@ -47,33 +58,60 @@ namespace ExtenderApp.Common.Networks
                 throw new ArgumentNullException(nameof(value));
             if (!linker.Connected)
                 throw new InvalidOperationException("链接未连接");
-            Serialize(value, out var bytes, out var start, out var length);
-            linker.SendAsync(bytes, start, length);
+
+            var rental = _sequencePool.Rent();
+            var writer = new ExtenderBinaryWriter(rental.Value);
+            Serialize(ref writer, value);
+            linker.SendAsync(writer);
+        }
+
+        internal void Receive(byte[] bytes, int length)
+        {
+            var reader = new ExtenderBinaryReader(new ReadOnlyMemory<byte>(bytes, 0, length));
+            Receive(ref reader);
         }
 
         /// <summary>
-        /// 接收字节数组数据
+        /// 接收数据。
         /// </summary>
-        /// <param name="bytes">要接收的字节数组</param>
-        /// <param name="length">要接收的字节数</param>
-        public abstract void Receive(byte[] bytes, int length);
+        /// <param name="reader">用于读取数据的二进制读取器。</param>
+        protected abstract void Receive(ref ExtenderBinaryReader reader);
 
         /// <summary>
-        /// 将给定类型的值序列化为字节数组。
+        /// 将指定类型的值序列化为二进制格式，并写入到指定的二进制写入器中。
         /// </summary>
         /// <typeparam name="T">要序列化的值的类型。</typeparam>
+        /// <param name="writer">二进制写入器，用于写入序列化后的数据。</param>
         /// <param name="value">要序列化的值。</param>
-        /// <param name="bytes">输出参数，存储序列化后的字节数组。</param>
-        /// <param name="start">输出参数，存储序列化后的字节数组中的起始索引。</param>
-        /// <param name="length">输出参数，存储序列化后的字节数组中的长度。</param>
-        public abstract void Serialize<T>(T value, out byte[] bytes, out int start, out int length);
+        public abstract void Serialize<T>(ref ExtenderBinaryWriter writer, T value);
+    }
+
+    /// <summary>
+    /// 泛型链接解析器基类
+    /// </summary>
+    /// <typeparam name="TMessage">消息类型</typeparam>
+    public abstract class LinkParser<TMessage> : LinkParser
+    {
+        /// <summary>
+        /// 消息接收事件
+        /// </summary>
+        public event Action<TMessage>? OnMessageReceived;
 
         /// <summary>
-        /// 从字节数组中反序列化给定类型的值。
+        /// 构造函数
         /// </summary>
-        /// <typeparam name="T">要反序列化的值的类型。</typeparam>
-        /// <param name="bytes">包含序列化数据的字节数组。</param>
-        /// <returns>反序列化后的值，如果反序列化失败则返回null。</returns>
-        public abstract T? Deserialize<T>(byte[] bytes);
+        /// <param name="sequencePool">序列池</param>
+        protected LinkParser(SequencePool<byte> sequencePool) : base(sequencePool)
+        {
+        }
+
+        /// <summary>
+        /// 接收消息并触发事件
+        /// </summary>
+        /// <param name="message">接收到的消息</param>
+        protected void ReceivedMessage(TMessage message)
+        {
+            OnMessageReceived?.Invoke(message);
+        }
     }
 }

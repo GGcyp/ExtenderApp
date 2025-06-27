@@ -1,4 +1,5 @@
 ﻿using ExtenderApp.Abstract;
+using ExtenderApp.Data;
 
 namespace ExtenderApp.Common.Networks
 {
@@ -6,25 +7,19 @@ namespace ExtenderApp.Common.Networks
     {
         private readonly IBinaryParser _binaryParser;
 
-        public ExtenderLinkParser(IBinaryParser binaryParser)
+        public ExtenderLinkParser(IBinaryParser binaryParser, SequencePool<byte> sequencePool) : base(sequencePool)
         {
-            _binaryParser = binaryParser ?? throw new ArgumentNullException(nameof(binaryParser));
+            _binaryParser = binaryParser;
         }
 
-        public override void Receive(byte[] bytes, int length)
+        protected override void Receive(ref ExtenderBinaryReader reader)
         {
-            throw new NotImplementedException();
+
         }
 
-        public override T Deserialize<T>(byte[] bytes)
+        public override void Serialize<T>(ref ExtenderBinaryWriter writer, T value)
         {
-            return _binaryParser.Deserialize<T>(bytes);
-        }
-
-        public override void Serialize<T>(T value, out byte[] bytes, out int start, out int length)
-        {
-            bytes = _binaryParser.SerializeForArrayPool(value, out length);
-            start = 0;
+            _binaryParser.Serialize(ref writer, value);
         }
     }
 }

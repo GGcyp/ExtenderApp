@@ -1,6 +1,7 @@
 ﻿using System.Net;
 using System.Net.Sockets;
 using ExtenderApp.Abstract;
+using ExtenderApp.Data;
 
 namespace ExtenderApp.Common.Networks
 {
@@ -12,8 +13,19 @@ namespace ExtenderApp.Common.Networks
         where TLinker : ILinker
         where TLinkParser : LinkParser
     {
+        /// <summary>
+        /// 私有只读属性，表示TLinker实例。
+        /// </summary>
         private readonly TLinker _linker;
-        private TLinkParser Parser { get; }
+
+        /// <summary>
+        /// 公共属性，表示TLinkParser实例。
+        /// </summary>
+        public TLinkParser Parser { get; }
+
+        /// <summary>
+        /// 公共属性，表示TrafficRecorder实例。
+        /// </summary>
         public TrafficRecorder Recorder { get; }
 
         public bool Connected => _linker.Connected;
@@ -49,11 +61,6 @@ namespace ExtenderApp.Common.Networks
         {
             add => _linker.OnReceive += value;
             remove => _linker.OnReceive -= value;
-        }
-        public event Action<int>? OnSendingTraffic
-        {
-            add => _linker.OnSendingTraffic += value;
-            remove => _linker.OnSendingTraffic -= value;
         }
         public event Action<int>? OnSendedTraffic
         {
@@ -137,6 +144,15 @@ namespace ExtenderApp.Common.Networks
             _linker.Send(data, start, length);
         }
 
+        public void Send(ExtenderBinaryWriter writer)
+        {
+            _linker.Send(writer);
+        }
+
+        public void SendAsync(ExtenderBinaryWriter writer)
+        {
+            _linker.SendAsync(writer);
+        }
         public void SendAsync<TValue>(TValue value)
         {
             ThrowIfDisposed();

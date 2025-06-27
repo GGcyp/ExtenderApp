@@ -6,6 +6,7 @@ using System.Security.Cryptography;
 using System.Net.Sockets;
 using System.Net;
 using ExtenderApp.Common.Networks;
+using System.Buffers.Binary;
 
 namespace ExtenderApp.Test
 {
@@ -18,6 +19,7 @@ namespace ExtenderApp.Test
             //BinaryParserTest(parser);
             //SplitterParserTest(splitterParser, parser);
             //HashTest(hashProvider);
+            //BinaryTest(sequencePool);
             _linkerFactory = linkerClientFactory;
             TcpLinkTest();
         }
@@ -66,7 +68,12 @@ namespace ExtenderApp.Test
 
             var client = _linkerFactory.Create<ITcpLinker, LinkParser>();
             //client.SetLinkParser(new ExtenderLinkParser(_binaryParser));
-
+            ExtenderBinaryWriter writer = new ExtenderBinaryWriter(new SequencePool<byte>(), new byte[8]);
+            var span = writer.GetSpan(8);
+            BinaryPrimitives.WriteInt32BigEndian(span, 12345678);
+            BinaryPrimitives.WriteInt32BigEndian(span.Slice(4), 556665554);
+            writer.Advance(8);
+            writer.Commit();
 
             client.OnConnectClient += (c) =>
             {
@@ -76,12 +83,25 @@ namespace ExtenderApp.Test
             };
             client.ConnectAsync(IPAddress.Loopback, 12345);
             client.SendAsync(new byte[] { 0x01, 0x02, 0x03, 0x04 });
+            client.SendAsync(writer);
         }
 
         private void Linker_OnConnect(ILinker obj)
         {
             Info("链接成功，开始发送数据");
             obj.Send(new byte[] { 0x01, 0x02, 0x03, 0x04 });
+        }
+
+        private void BinaryTest(SequencePool<byte> sequencePool)
+        {
+            byte[] bytes = new byte[10];
+            ExtenderBinaryWriter write = new ExtenderBinaryWriter(sequencePool, bytes);
+            var span = write.GetSpan(4);
+            BinaryPrimitives.WriteInt32BigEndian(span, 11223344);
+            write.Advance(4);
+            ExtenderBinaryReader reader = new ExtenderBinaryReader(bytes);
+            int value = BinaryPrimitives.ReadInt32BigEndian(reader.UnreadSpan);
+            Info(value);
         }
 
         private async void TcpListener()

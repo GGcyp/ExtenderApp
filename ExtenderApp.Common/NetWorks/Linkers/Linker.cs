@@ -8,6 +8,7 @@ using ExtenderApp.Common.Error;
 using ExtenderApp.Common.Networks.LinkOperates;
 using ExtenderApp.Common.ObjectPools;
 using ExtenderApp.Common.ObjectPools.Policy;
+using ExtenderApp.Data;
 
 namespace ExtenderApp.Common.Networks
 {
@@ -35,11 +36,6 @@ namespace ExtenderApp.Common.Networks
         private readonly AsyncCallback _connectCallback;
 
         /// <summary>
-        /// 发送流量时的回调函数，参数为发送的流量大小
-        /// </summary>
-        private readonly Action<int>? _onSendedTraffic;
-
-        /// <summary>
         /// 接收队列字节。
         /// </summary>
         private readonly ConcurrentQueue<(byte[], int)> _receiveQueueBytes;
@@ -50,14 +46,6 @@ namespace ExtenderApp.Common.Networks
         /// 接收数据事件。
         /// </summary>
         public event Action<byte[], int>? OnReceive;
-
-        /// <summary>
-        /// 发送流量事件，当发送流量时触发。
-        /// </summary>
-        /// <remarks>
-        /// 参数表示发送的流量大小（以字节为单位）。
-        /// </remarks>
-        public event Action<int>? OnSendingTraffic;
 
         /// <summary>
         /// 已发送流量事件，当流量发送完成时触发。
@@ -125,11 +113,6 @@ namespace ExtenderApp.Common.Networks
         /// </summary>
         private volatile int isClosing;
 
-        /// <summary>
-        /// 发送包的数量，使用volatile关键字确保多线程访问时变量的可见性和有序性
-        /// </summary>
-        private volatile int sendPackCount;
-
         #endregion
 
         /// <summary>
@@ -159,7 +142,6 @@ namespace ExtenderApp.Common.Networks
 
             _receiveCallbcak = new AsyncCallback(ReceiveCallbcak);
             _connectCallback = new AsyncCallback(ConnectCallbcak);
-            _onSendedTraffic = PrivateOnSendedTraffic;
 
 
             cacheBytes = ArrayPool<byte>.Shared.Rent(PacketLength * 2);
@@ -362,6 +344,15 @@ namespace ExtenderApp.Common.Networks
             PrivateSend(data, start, length);
         }
 
+        public void Send(ExtenderBinaryWriter writer)
+        {
+            CheckState();
+            var operation = _operationPool.Get();
+            operation.Set(writer, OnSendedTraffic);
+
+            Execute(operation);
+        }
+
         public void SendAsync(byte[] data)
         {
             if (data == null)
@@ -382,46 +373,44 @@ namespace ExtenderApp.Common.Networks
             PrivateSendAsync(data, start, length);
         }
 
+        public void SendAsync(ExtenderBinaryWriter writer)
+        {
+            CheckState();
+            var operation = _operationPool.Get();
+            operation.Set(writer, OnSendedTraffic);
+
+            ExecuteAsync(operation);
+        }
+
         private void PrivateSend(byte[] data, int start, int length)
         {
             var operation = _operationPool.Get();
-            operation.Set(data, start, length, _onSendedTraffic);
-            OnSendingTraffic?.Invoke(length);
-            Interlocked.Increment(ref sendPackCount);
+            operation.Set(data, start, length, OnSendedTraffic);
+
             Execute(operation);
         }
 
         private void PrivateSendAsync(byte[] data, int start, int length)
         {
             var operation = _operationPool.Get();
-            operation.Set(data, start, length, _onSendedTraffic);
-            OnSendingTraffic?.Invoke(length);
-            Interlocked.Increment(ref sendPackCount);
+            operation.Set(data, start, length, OnSendedTraffic);
+
             ExecuteAsync(operation);
         }
 
         public void Send(Memory<byte> memory)
         {
             var operation = _operationPool.Get();
-            operation.Set(memory, _onSendedTraffic);
-            OnSendingTraffic?.Invoke(memory.Length);
-            Interlocked.Increment(ref sendPackCount);
+            operation.Set(memory, OnSendedTraffic);
+
             Execute(operation);
         }
 
         public void SendAsync(Memory<byte> memory)
         {
             var operation = _operationPool.Get();
-            operation.Set(memory, _onSendedTraffic);
-            OnSendingTraffic?.Invoke(memory.Length);
-            Interlocked.Increment(ref sendPackCount);
+            operation.Set(memory, OnSendedTraffic);
             ExecuteAsync(operation);
-        }
-
-        private void PrivateOnSendedTraffic(int length)
-        {
-            Interlocked.Decrement(ref sendPackCount);
-            OnSendedTraffic?.Invoke(length);
         }
 
         #endregion
@@ -520,10 +509,10 @@ namespace ExtenderApp.Common.Networks
             if (Interlocked.CompareExchange(ref isClosing, 1, 0) == 1)
                 return;
 
-            if (requireFullTransmission && sendPackCount > 0)
+            if (requireFullTransmission && _concurrentQueue.Count > 0)
             {
                 // 等待所有发送操作完成
-                while (sendPackCount > 0)
+                while (_concurrentQueue.Count > 0)
                 {
                     Task.Delay(10).Wait();
                 }
@@ -550,6 +539,12 @@ namespace ExtenderApp.Common.Networks
 
         #endregion
 
+        /// <summary>
+        /// 检查连接状态。
+        /// </summary>
+        /// <exception cref="Exception">如果连接已经关闭，则抛出异常。</exception>
+        /// <exception cref="Exception">如果连接正在关闭中，则抛出异常。</exception>
+        /// <exception cref="Exception">如果连接还未建立，则抛出异常。</exception>
         private void CheckState()
         {
             if (!CanOperate)
@@ -583,7 +578,7 @@ namespace ExtenderApp.Common.Networks
             _receiveQueueBytes.Clear();
 
             OnReceive = null;
-            OnSendingTraffic = null;
+            //OnSendingTraffic = null;
             OnSendedTraffic = null;
             OnReceiveingTraffic = null;
             OnReceivedTraffic = null;

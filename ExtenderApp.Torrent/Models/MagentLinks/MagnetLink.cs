@@ -7,7 +7,7 @@ namespace ExtenderApp.Torrent
     /// <summary>
     /// 表示磁力链接的类
     /// </summary>
-    internal class MagnetLink
+    public class MagnetLink
     {
         #region 常量定义
 

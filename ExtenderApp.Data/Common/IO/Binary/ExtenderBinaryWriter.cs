@@ -78,10 +78,8 @@ namespace ExtenderApp.Data
         {
             _buffered = 0;
             BytesCommitted = 0;
-            if (sequencePool is null)
-                throw new ArgumentNullException(nameof(sequencePool));
 
-            SequencePool = sequencePool;
+            SequencePool = sequencePool ?? throw new ArgumentNullException(nameof(sequencePool));
             Rental = default;
             Output = default;
 
@@ -246,14 +244,14 @@ namespace ExtenderApp.Data
             }
         }
 
-        /// <summary>
-        /// 刷新并清空当前对象
-        /// </summary>
-        public void Flush()
-        {
-            Commit();
-            Rental.Dispose();
-        }
+        ///// <summary>
+        ///// 刷新并清空当前对象
+        ///// </summary>
+        //public void Flush()
+        //{
+        //    Commit();
+        //    Rental.Dispose();
+        //}
 
         /// <summary>
         /// 将数据写入多缓冲区。
@@ -291,6 +289,22 @@ namespace ExtenderApp.Data
                 _segment.AsSpan(0, _buffered).CopyTo(realSpan);
                 SequencePool = null;
             }
+        }
+
+        public void Dispose()
+        {
+            if (SequencePool != null)
+            {
+                Rental.Dispose();
+            }
+            else if (Output != null)
+            {
+                Output = null;
+            }
+            _segment = default;
+            Span = default;
+            _buffered = 0;
+            BytesCommitted = 0;
         }
     }
 }
