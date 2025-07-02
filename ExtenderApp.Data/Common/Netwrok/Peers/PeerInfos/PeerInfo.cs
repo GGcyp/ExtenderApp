@@ -8,21 +8,29 @@ namespace ExtenderApp.Data
     public readonly struct PeerInfo : IEquatable<PeerInfo>
     {
         /// <summary>
-        /// 获取对等节点的IP地址。
+        /// 获取对等体地址。
         /// </summary>
-        public IPAddress IP { get; }
+        /// <returns>返回对等体地址。</returns>
+        private readonly PeerAddress _peerAddress;
 
         /// <summary>
-        /// 获取对等节点的端口号。
+        /// 获取对等端地址的IP地址。
         /// </summary>
-        public int Port { get; }
+        /// <returns>返回对等端地址的IP地址。</returns>
+        public IPAddress IP => _peerAddress.IP;
+
+        /// <summary>
+        /// 获取对等端地址的端口号。
+        /// </summary>
+        /// <returns>返回对等端地址的端口号。</returns>
+        public int Port => _peerAddress.Port;
 
         /// <summary>
         /// 获取对等节点的ID。
         /// </summary>
         public PeerId Id { get; }
 
-        public bool IsEmpty => IP == null || Port <= 0 || Id.IsEmpty;
+        public bool IsEmpty => _peerAddress.IsEmpty || Id.IsEmpty;
 
         /// <summary>
         /// 初始化 <see cref="PeerInfo"/> 结构体实例。
@@ -30,10 +38,14 @@ namespace ExtenderApp.Data
         /// <param name="ip">对等节点的IP地址。</param>
         /// <param name="port">对等节点的端口号。</param>
         /// <param name="id">对等节点的ID。</param>
-        public PeerInfo(IPAddress ip, int port, PeerId id)
+        public PeerInfo(IPAddress ip, int port, PeerId id) : this(new PeerAddress(ip, port), id)
         {
-            IP = ip;
-            Port = port;
+
+        }
+
+        public PeerInfo(PeerAddress peerAddress, PeerId id)
+        {
+            _peerAddress = peerAddress;
             Id = id;
         }
 

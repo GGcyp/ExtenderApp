@@ -13,7 +13,7 @@ namespace ExtenderApp.Data
         /// <param name="hash">要写入的 HashValue 对象。</param>
         /// <param name="writer">目标 ExtenderBinaryWriter 对象。</param>
         /// <exception cref="ArgumentException">当 hash 为空时抛出异常。</exception>
-        public static void CopyTo(this HashValue hash, ExtenderBinaryWriter writer)
+        public static void CopyTo(this HashValue hash, ref ExtenderBinaryWriter writer)
         {
             if (hash.IsEmpty)
                 throw new ArgumentException("哈希值不能为空", nameof(hash));

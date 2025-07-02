@@ -1,5 +1,6 @@
 ﻿using System.Buffers;
 using System.Collections.Concurrent;
+using System.Drawing;
 using System.Net;
 using System.Net.Sockets;
 using ExtenderApp.Abstract;
@@ -22,13 +23,13 @@ namespace ExtenderApp.Common.Networks
         /// <summary>
         /// 对象池，用于创建和重用 LinkerOperation 对象。
         /// </summary>
-        private static ObjectPool<LinkerOperation> _operationPool =
+        protected static ObjectPool<LinkerOperation> _operationPool =
                 ObjectPool.Create(new SelfResetPooledObjectPolicy<LinkerOperation>());
 
         /// <summary>
         /// 接收回调。
         /// </summary>
-        private readonly AsyncCallback _receiveCallbcak;
+        protected AsyncCallback OnReceiveCallbcak { get; }
 
         /// <summary>
         /// 连接回调。
@@ -46,6 +47,7 @@ namespace ExtenderApp.Common.Networks
         /// 接收数据事件。
         /// </summary>
         public event Action<byte[], int>? OnReceive;
+        protected Action<byte[], int>? OnReceiveCallback => OnReceive;
 
         /// <summary>
         /// 已发送流量事件，当流量发送完成时触发。
@@ -54,6 +56,7 @@ namespace ExtenderApp.Common.Networks
         /// 参数表示已发送的流量大小（以字节为单位）。
         /// </remarks>
         public event Action<int>? OnSendedTraffic;
+        protected Action<int>? OnSendedTrafficCallback => OnSendedTraffic;
 
         /// <summary>
         /// 接收流量事件，当开始接收流量时触发。
@@ -62,6 +65,7 @@ namespace ExtenderApp.Common.Networks
         /// 参数表示开始接收的流量大小（以字节为单位）。
         /// </remarks>
         public event Action<int>? OnReceiveingTraffic;
+        protected Action<int>? OnReceiveingTrafficCallback => OnReceiveingTraffic;
 
         /// <summary>
         /// 已接收流量事件，当流量接收处理完成时触发。
@@ -70,16 +74,19 @@ namespace ExtenderApp.Common.Networks
         /// 参数表示已处理完成的流量大小（以字节为单位）。
         /// </remarks>
         public event Action<int>? OnReceivedTraffic;
+        protected Action<int>? OnReceivedTrafficCallback => OnReceiveingTraffic;
 
         /// <summary>
         /// 连接事件。
         /// </summary>
         public event Action<ILinker>? OnConnect;
+        protected Action<ILinker>? OnConnectCallback => OnConnect;
 
         /// <summary>
         /// 关闭事件。
         /// </summary>
         public event Action<ILinker>? OnClose;
+        protected Action<ILinker>? OnCloseCallback => OnClose;
 
         /// <summary>
         /// 当发生错误时触发的事件
@@ -88,6 +95,7 @@ namespace ExtenderApp.Common.Networks
         /// 事件处理函数接受一个字符串参数，表示错误信息
         /// </remarks>
         public event Action<string>? OnErrored;
+        protected Action<string>? OnErroredCallback => OnErrored;
 
         #endregion
 
@@ -140,7 +148,7 @@ namespace ExtenderApp.Common.Networks
         {
             _receiveQueueBytes = new();
 
-            _receiveCallbcak = new AsyncCallback(ReceiveCallbcak);
+            OnReceiveCallbcak = new AsyncCallback(ReceiveCallbcak);
             _connectCallback = new AsyncCallback(ConnectCallbcak);
 
 
@@ -161,14 +169,7 @@ namespace ExtenderApp.Common.Networks
         /// <exception cref="Exception">当前连接正在关闭中</exception>
         public void Connect(string host, int port)
         {
-            if (!CanOperate)
-                throw new Exception("当前连接已经关闭");
-
-            if (Interlocked.CompareExchange(ref isConnecting, 1, 0) == 1)
-                throw new Exception("当前连接正在连接中");
-
-            if (Interlocked.CompareExchange(ref isClosing, 0, 1) == 1)
-                throw new Exception("当前连接正在关闭中");
+            CheckStateForConnected();
 
             lock (Data)
             {
@@ -186,16 +187,9 @@ namespace ExtenderApp.Common.Networks
         /// <exception cref="Exception">当前连接已经关闭</exception>
         /// <exception cref="Exception">当前连接正在连接中</exception>
         /// <exception cref="Exception">当前连接正在关闭中</exception>
-        public void Connect(IPAddress address, int port)
+        public virtual void Connect(IPAddress address, int port)
         {
-            if (!CanOperate)
-                throw new Exception("当前连接已经关闭");
-
-            if (Interlocked.CompareExchange(ref isConnecting, 1, 0) == 1)
-                throw new Exception("当前连接正在连接中");
-
-            if (Interlocked.CompareExchange(ref isClosing, 0, 1) == 1)
-                throw new Exception("当前连接正在关闭中");
+            CheckStateForConnected();
 
             lock (Data)
             {
@@ -212,20 +206,36 @@ namespace ExtenderApp.Common.Networks
         /// <exception cref="Exception">当前连接已经关闭</exception>
         /// <exception cref="Exception">当前连接正在连接中</exception>
         /// <exception cref="Exception">当前连接正在关闭中</exception>
-        public void Connect(EndPoint point)
+        public virtual void Connect(EndPoint point)
         {
-            if (!CanOperate)
-                throw new Exception("当前连接已经关闭");
-
-            if (Interlocked.CompareExchange(ref isConnecting, 1, 0) == 1)
-                throw new Exception("当前连接正在连接中");
-
-            if (Interlocked.CompareExchange(ref isClosing, 0, 1) == 1)
-                throw new Exception("当前连接正在关闭中");
+            CheckStateForConnected();
 
             lock (Data)
             {
                 Data.Socket.Connect(point);
+                StartReceive();
+                OnConnect?.Invoke(this);
+            }
+        }
+
+        public virtual void Connect(Uri uri)
+        {
+            if (uri == null)
+                throw new ArgumentNullException(nameof(uri));
+            if (uri.Scheme == Uri.UriSchemeHttps)
+                throw new ArgumentException("URI方案暂时处理不了https", nameof(uri));
+            CheckStateForConnected();
+
+            int port = uri.Port;
+            if (port == -1)
+            {
+                port = uri.Scheme == "https" ? 443 : 80;
+            }
+            string host = uri.Host;
+
+            lock (Data)
+            {
+                Data.Socket.Connect(host, port);
                 StartReceive();
                 OnConnect?.Invoke(this);
             }
@@ -241,14 +251,7 @@ namespace ExtenderApp.Common.Networks
         /// <exception cref="Exception">当前连接正在关闭中</exception>
         public void ConnectAsync(string host, int port)
         {
-            if (!CanOperate)
-                throw new Exception("当前连接已经关闭");
-
-            if (Interlocked.CompareExchange(ref isConnecting, 1, 0) == 1)
-                throw new Exception("当前连接正在连接中");
-
-            if (Interlocked.CompareExchange(ref isClosing, 0, 1) == 1)
-                throw new Exception("当前连接正在关闭中");
+            CheckStateForConnected();
 
             Interlocked.Increment(ref isConnecting);
             Data.Socket.BeginConnect(host, port, _connectCallback, null);
@@ -264,14 +267,7 @@ namespace ExtenderApp.Common.Networks
         /// <exception cref="Exception">当前连接正在关闭中</exception>
         public void ConnectAsync(IPAddress address, int port)
         {
-            if (!CanOperate)
-                throw new Exception("当前连接已经关闭");
-
-            if (Interlocked.CompareExchange(ref isConnecting, 1, 0) == 1)
-                throw new Exception("当前连接正在连接中");
-
-            if (Interlocked.CompareExchange(ref isClosing, 0, 1) == 1)
-                throw new Exception("当前连接正在关闭中");
+            CheckStateForConnected();
 
             Interlocked.Increment(ref isConnecting);
             Data.Socket.BeginConnect(address, port, _connectCallback, null);
@@ -284,19 +280,31 @@ namespace ExtenderApp.Common.Networks
         /// <exception cref="Exception">当前连接已经关闭</exception>
         /// <exception cref="Exception">当前连接正在连接中</exception>
         /// <exception cref="Exception">当前连接正在关闭中</exception>
-        public void ConnectAsync(EndPoint point)
+        public virtual void ConnectAsync(EndPoint point)
         {
-            if (!CanOperate)
-                throw new Exception("当前连接已经关闭");
-
-            if (Interlocked.CompareExchange(ref isConnecting, 1, 0) == 1)
-                throw new Exception("当前连接正在连接中");
-
-            if (Interlocked.CompareExchange(ref isClosing, 0, 1) == 1)
-                throw new Exception("当前连接正在关闭中");
+            CheckStateForConnected();
 
             Interlocked.Increment(ref isConnecting);
             Data.Socket.BeginConnect(point, _connectCallback, null);
+        }
+
+        public virtual void ConnectAsync(Uri uri)
+        {
+            if (uri == null)
+                throw new ArgumentNullException(nameof(uri));
+            if (uri.Scheme != Uri.UriSchemeHttp)
+                throw new ArgumentException("URI方案暂时只能处理http", nameof(uri));
+            CheckStateForConnected();
+
+            int port = uri.Port;
+            if (port == -1)
+            {
+                port = uri.Scheme == "https" ? 443 : 80;
+            }
+            string host = uri.Host;
+
+            Interlocked.Increment(ref isConnecting);
+            Data.Socket.BeginConnect(host, port, _connectCallback, null);
         }
 
         /// <summary>
@@ -314,7 +322,7 @@ namespace ExtenderApp.Common.Networks
 
         #region Send
 
-        public void Send(byte[] data)
+        public virtual void Send(byte[] data)
         {
             if (data == null)
                 throw new ArgumentNullException(nameof(data));
@@ -323,7 +331,7 @@ namespace ExtenderApp.Common.Networks
             PrivateSend(data, 0, data.Length);
         }
 
-        public void Send(byte[] data, int start)
+        public virtual void Send(byte[] data, int start)
         {
             if (data == null)
                 throw new ArgumentNullException(nameof(data));
@@ -333,7 +341,7 @@ namespace ExtenderApp.Common.Networks
             PrivateSend(data, start, data.Length - start);
         }
 
-        public void Send(byte[] data, int start, int length)
+        public virtual void Send(byte[] data, int start, int length)
         {
             if (data == null)
                 throw new ArgumentNullException(nameof(data));
@@ -344,7 +352,7 @@ namespace ExtenderApp.Common.Networks
             PrivateSend(data, start, length);
         }
 
-        public void Send(ExtenderBinaryWriter writer)
+        public virtual void SendWriter(ExtenderBinaryWriter writer)
         {
             CheckState();
             var operation = _operationPool.Get();
@@ -353,7 +361,7 @@ namespace ExtenderApp.Common.Networks
             Execute(operation);
         }
 
-        public void SendAsync(byte[] data)
+        public virtual void SendAsync(byte[] data)
         {
             if (data == null)
                 throw new ArgumentNullException(nameof(data));
@@ -362,7 +370,7 @@ namespace ExtenderApp.Common.Networks
             PrivateSendAsync(data, 0, data.Length);
         }
 
-        public void SendAsync(byte[] data, int start, int length)
+        public virtual void SendAsync(byte[] data, int start, int length)
         {
             if (data == null)
                 throw new ArgumentNullException(nameof(data));
@@ -373,7 +381,7 @@ namespace ExtenderApp.Common.Networks
             PrivateSendAsync(data, start, length);
         }
 
-        public void SendAsync(ExtenderBinaryWriter writer)
+        public virtual void SendAsyncWriter(ExtenderBinaryWriter writer)
         {
             CheckState();
             var operation = _operationPool.Get();
@@ -398,7 +406,7 @@ namespace ExtenderApp.Common.Networks
             ExecuteAsync(operation);
         }
 
-        public void Send(Memory<byte> memory)
+        public virtual void Send(Memory<byte> memory)
         {
             var operation = _operationPool.Get();
             operation.Set(memory, OnSendedTraffic);
@@ -406,7 +414,7 @@ namespace ExtenderApp.Common.Networks
             Execute(operation);
         }
 
-        public void SendAsync(Memory<byte> memory)
+        public virtual void SendAsync(Memory<byte> memory)
         {
             var operation = _operationPool.Get();
             operation.Set(memory, OnSendedTraffic);
@@ -420,25 +428,29 @@ namespace ExtenderApp.Common.Networks
         /// <summary>
         /// 开始接收数据
         /// </summary>
-        private void StartReceive()
+        protected virtual void StartReceive()
         {
             //byte[] newReceiveQueueBytes = ArrayPool<byte>.Shared.Rent(DEFALUT_RECEIVE_LENGTH);
             byte[] newReceiveQueueBytes = ArrayPool<byte>.Shared.Rent(PacketLength);
             // 继续接收数据
-            Data.Socket.BeginReceive(newReceiveQueueBytes, 0, newReceiveQueueBytes.Length, SocketFlags.None, _receiveCallbcak, newReceiveQueueBytes);
+            Data.Socket.BeginReceive(newReceiveQueueBytes, 0, newReceiveQueueBytes.Length, SocketFlags.None, ReceiveCallbcak, newReceiveQueueBytes);
+        }
+
+        protected virtual int SocketEndReceive(IAsyncResult ar)
+        {
+            return Data.Socket.EndReceive(ar);
         }
 
         /// <summary>
         /// 异步接收回调方法
         /// </summary>
         /// <param name="ar">异步操作结果</param>
-        private void ReceiveCallbcak(IAsyncResult ar)
+        protected void ReceiveCallbcak(IAsyncResult ar)
         {
             try
             {
+                int bytesRead = SocketEndReceive(ar);
                 byte[] receiveBuffer = (byte[])ar.AsyncState!;
-                int bytesRead = Data.Socket.EndReceive(ar);
-                Interlocked.Decrement(ref isReceiveing);
                 if (bytesRead == 0)
                 {
                     ArrayPool<byte>.Shared.Return(receiveBuffer);
@@ -459,9 +471,9 @@ namespace ExtenderApp.Common.Networks
 
                 StartReceive();
             }
-            catch (Exception ex)
+            catch (SocketException ex)
             {
-                throw ex;
+                throw;
             }
         }
 
@@ -486,7 +498,6 @@ namespace ExtenderApp.Common.Networks
             }
 
             Interlocked.Decrement(ref isReceiveing);
-
             //如果接收队列中还有数据，则继续处理
             if (_receiveQueueBytes.Count > 0 && Interlocked.CompareExchange(ref isReceiveing, 1, 0) == 0)
             {
@@ -551,8 +562,16 @@ namespace ExtenderApp.Common.Networks
                 throw new Exception("当前连接已经关闭");
             if (Interlocked.CompareExchange(ref isClosing, 0, 1) == 1)
                 throw new Exception("当前连接正在关闭中");
-            if (!Connected)
+            if (!Connected && Data.ProtocolType != ProtocolType.Udp)
                 throw new Exception("当前连接还未连接");
+        }
+
+        private void CheckStateForConnected()
+        {
+            if (!CanOperate)
+                throw new Exception("当前连接已经关闭");
+            if (Interlocked.CompareExchange(ref isClosing, 0, 1) == 1)
+                throw new Exception("当前连接正在关闭中");
         }
 
         public override bool TryReset()

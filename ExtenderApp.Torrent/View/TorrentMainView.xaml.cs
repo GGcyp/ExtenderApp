@@ -21,9 +21,12 @@ namespace ExtenderApp.Torrent
     /// </summary>
     public partial class TorrentMainView : ExtenderAppView
     {
-        public TorrentMainView()
+        public TorrentMainViewModel ViewModel => DataContext as TorrentMainViewModel;
+
+        public TorrentMainView(TorrentMainViewModel viewModel)
         {
             InitializeComponent();
+            DataContext = ViewModel;
         }
     }
 }

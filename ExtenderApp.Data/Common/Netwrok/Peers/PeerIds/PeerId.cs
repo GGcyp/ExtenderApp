@@ -10,6 +10,16 @@ namespace ExtenderApp.Data
     /// </remarks>
     public struct PeerId : IEquatable<PeerId>
     {
+        public const string CLITNET_PREFIX = "-EX0001-";
+
+        public static PeerId CreateId()
+        {
+            char[] buffer = new char[20];
+            //我只需要guid前12位字符
+            string id = CLITNET_PREFIX + Guid.NewGuid().ToString("N").Substring(0, 12);
+            return new PeerId(id);
+        }
+
         /// <summary>
         /// 对等节点ID。
         /// </summary>
@@ -54,6 +64,11 @@ namespace ExtenderApp.Data
         public override int GetHashCode()
         {
             return Id.GetHashCode();
+        }
+
+        public override string ToString()
+        {
+            return Id;
         }
     }
 }

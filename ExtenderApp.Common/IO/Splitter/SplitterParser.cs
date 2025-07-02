@@ -16,10 +16,7 @@ namespace ExtenderApp.Common.IO.Splitter
         /// </summary>
         private const int DefaultMaxChunkSize = 1024 * 1024;
 
-        /// <summary>
-        /// 二进制解析器接口
-        /// </summary>
-        private readonly IBinaryParser _binaryParser;
+        private readonly IFileOperateProvider _provider;
         private readonly IHashProvider _hashProvider;
 
         /// <summary>
@@ -27,11 +24,11 @@ namespace ExtenderApp.Common.IO.Splitter
         /// </summary>
         private readonly string infoExtensions;
 
-        public SplitterParser(IBinaryParser parser, IHashProvider hashProvider)
+        public SplitterParser(IFileOperateProvider provider,IHashProvider hashProvider)
         {
-            _binaryParser = parser;
             infoExtensions = FileExtensions.SplitterFileExtensions;
             _hashProvider = hashProvider;
+            _provider = provider;
         }
 
         #region Create
@@ -43,7 +40,7 @@ namespace ExtenderApp.Common.IO.Splitter
                 ErrorUtil.ArgumentNull(nameof(fileInfo), "文件信息不能为空");
             }
             var infoFile = fileInfo.CreateReadWriteOperate(infoExtensions);
-            _binaryParser.Write(infoFile, sInfo);
+            //_provider.GetOperate(fileInfo);
         }
 
         public void CreateInfoFile(LocalFileInfo fileInfo, SplitterInfo sInfo)
@@ -53,10 +50,10 @@ namespace ExtenderApp.Common.IO.Splitter
                 ErrorUtil.ArgumentNull(nameof(fileInfo), "文件信息不能为空");
             }
             var infoFile = fileInfo.ChangeFileExtension(infoExtensions);
-            _binaryParser.Write(infoFile, sInfo);
+            //_binaryParser.Write(infoFile, sInfo);
         }
 
-        public void CreateInfoFile(IConcurrentOperate operate, SplitterInfo sInfo)
+        public void CreateInfoFile(IFileOperate operate, SplitterInfo sInfo)
         {
             if (operate is not FileConcurrentOperate fileOperate)
             {
@@ -65,7 +62,7 @@ namespace ExtenderApp.Common.IO.Splitter
             }
 
             var infoFile = fileOperate.Data.OperateInfo.LocalFileInfo.ChangeFileExtension(infoExtensions);
-            _binaryParser.Write(infoFile, sInfo);
+            //_binaryParser.Write(infoFile, sInfo);
         }
 
         public SplitterInfo CreateInfoForFile(LocalFileInfo targtFileInfo, bool createLoaderChunks = false)
@@ -113,10 +110,11 @@ namespace ExtenderApp.Common.IO.Splitter
 
             fileInfo.ThrowFileNotFound();
 
-            return _binaryParser.Read<SplitterInfo>(fileInfo);
+            //return _binaryParser.Read<SplitterInfo>(fileInfo);
+            return null;
         }
 
-        public SplitterDto ReadDot(IConcurrentOperate fileOperate, uint chunkIndex, SplitterInfo sinfo)
+        public SplitterDto ReadDot(IFileOperate fileOperate, uint chunkIndex, SplitterInfo sinfo)
         {
             fileOperate.ArgumentNull(nameof(fileOperate));
             if (chunkIndex > sinfo.ChunkCount)
@@ -127,7 +125,7 @@ namespace ExtenderApp.Common.IO.Splitter
             int length = sinfo.MaxChunkSize;
             var bytes = ArrayPool<byte>.Shared.Rent(length);
             var position = sinfo.MaxChunkSize * chunkIndex;
-            _binaryParser.Read(fileOperate, position, length, bytes);
+            //_binaryParser.Read(fileOperate, position, length, bytes);
 
             return new SplitterDto((uint)sinfo.MaxChunkSize, bytes, length);
         }
@@ -143,7 +141,7 @@ namespace ExtenderApp.Common.IO.Splitter
             int length = sinfo.MaxChunkSize;
             var bytes = ArrayPool<byte>.Shared.Rent(length);
             var position = sinfo.MaxChunkSize * chunkIndex;
-            _binaryParser.Read(fileInfo, position, length, bytes);
+            //_binaryParser.Read(fileInfo, position, length, bytes);
 
             return new SplitterDto((uint)sinfo.MaxChunkSize, bytes, length);
         }
@@ -158,10 +156,11 @@ namespace ExtenderApp.Common.IO.Splitter
 
             long position = sinfo.MaxChunkSize * (sinfo.ChunkCount - 1);
             long length = sinfo.ChunkCount > chunkIndex ? sinfo.MaxChunkSize : (int)(sinfo.Length - position);
-            return _binaryParser.Read(fileInfo, position, length);
+            //return _binaryParser.Read(fileInfo, position, length);
+            return null;
         }
 
-        public byte[]? Read(IConcurrentOperate operate, uint chunkIndex, SplitterInfo sinfo)
+        public byte[]? Read(IFileOperate operate, uint chunkIndex, SplitterInfo sinfo)
         {
             sinfo.ArgumentNull(nameof(sinfo));
             if (chunkIndex > sinfo.ChunkCount)
@@ -171,7 +170,8 @@ namespace ExtenderApp.Common.IO.Splitter
 
             long position = sinfo.MaxChunkSize * (sinfo.ChunkCount - 1);
             long length = sinfo.ChunkCount > chunkIndex ? sinfo.MaxChunkSize : (int)(sinfo.Length - position);
-            return _binaryParser.Read(operate, position, length);
+            //return _binaryParser.Read(operate, position, length);
+            return null;
         }
 
         public void Read(LocalFileInfo fileInfo, uint chunkIndex, SplitterInfo sinfo, byte[] bytes)
@@ -184,10 +184,10 @@ namespace ExtenderApp.Common.IO.Splitter
 
             long position = sinfo.MaxChunkSize * (sinfo.ChunkCount - 1);
             long length = sinfo.ChunkCount > chunkIndex ? sinfo.MaxChunkSize : (int)(sinfo.Length - position);
-            _binaryParser.Read(fileInfo, position, length, bytes);
+            //_binaryParser.Read(fileInfo, position, length, bytes);
         }
 
-        public void Read(IConcurrentOperate operate, uint chunkIndex, SplitterInfo sinfo, byte[] bytes)
+        public void Read(IFileOperate operate, uint chunkIndex, SplitterInfo sinfo, byte[] bytes)
         {
             sinfo.ArgumentNull(nameof(sinfo));
             if (chunkIndex > sinfo.ChunkCount)
@@ -197,7 +197,7 @@ namespace ExtenderApp.Common.IO.Splitter
 
             long position = sinfo.MaxChunkSize * (sinfo.ChunkCount - 1);
             long length = sinfo.ChunkCount > chunkIndex ? sinfo.MaxChunkSize : (int)(sinfo.Length - position);
-            _binaryParser.Read(operate, position, length, bytes);
+            //_binaryParser.Read(operate, position, length, bytes);
         }
 
         public T Read<T>(LocalFileInfo fileInfo, uint chunkIndex, SplitterInfo sinfo)
@@ -210,10 +210,11 @@ namespace ExtenderApp.Common.IO.Splitter
 
             long position = sinfo.MaxChunkSize * (sinfo.ChunkCount - 1);
             long length = sinfo.ChunkCount > chunkIndex ? sinfo.MaxChunkSize : (int)(sinfo.Length - position);
-            return _binaryParser.Read<T>(fileInfo, position, length);
+            //return _binaryParser.Read<T>(fileInfo, position, length);
+            return default;
         }
 
-        public T Read<T>(IConcurrentOperate operate, uint chunkIndex, SplitterInfo sinfo)
+        public T Read<T>(IFileOperate operate, uint chunkIndex, SplitterInfo sinfo)
         {
             sinfo.ArgumentNull(nameof(sinfo));
             if (chunkIndex > sinfo.ChunkCount)
@@ -223,7 +224,8 @@ namespace ExtenderApp.Common.IO.Splitter
 
             long position = sinfo.MaxChunkSize * (sinfo.ChunkCount - 1);
             long length = sinfo.ChunkCount > chunkIndex ? sinfo.MaxChunkSize : (int)(sinfo.Length - position);
-            return _binaryParser.Read<T>(operate, position, length);
+            //return _binaryParser.Read<T>(operate, position, length);
+            return default;
         }
 
         #endregion
@@ -240,10 +242,10 @@ namespace ExtenderApp.Common.IO.Splitter
 
             long position = sinfo.MaxChunkSize * (sinfo.ChunkCount - 1);
             long length = sinfo.ChunkCount > chunkIndex ? sinfo.MaxChunkSize : (int)(sinfo.Length - position);
-            _binaryParser.ReadAsync(fileInfo, position, length, callback);
+            //_binaryParser.ReadAsync(fileInfo, position, length, callback);
         }
 
-        public void ReadAsync(IConcurrentOperate operate, uint chunkIndex, SplitterInfo sinfo, Action<byte[]?> callback)
+        public void ReadAsync(IFileOperate operate, uint chunkIndex, SplitterInfo sinfo, Action<byte[]?> callback)
         {
             sinfo.ArgumentNull(nameof(sinfo));
             if (chunkIndex > sinfo.ChunkCount)
@@ -253,10 +255,10 @@ namespace ExtenderApp.Common.IO.Splitter
 
             long position = sinfo.MaxChunkSize * (sinfo.ChunkCount - 1);
             long length = sinfo.ChunkCount > chunkIndex ? sinfo.MaxChunkSize : (int)(sinfo.Length - position);
-            _binaryParser.ReadAsync(operate, position, length, callback);
+            //_binaryParser.ReadAsync(operate, position, length, callback);
         }
 
-        public void ReadAsync(LocalFileInfo fileInfo, uint chunkIndex, SplitterInfo sinfo, byte[] bytes, Action<bool> callback)
+        public void ReadAsync(LocalFileInfo fileInfo, uint chunkIndex, SplitterInfo sinfo, byte[] bytes, Action<byte[]> callback)
         {
             sinfo.ArgumentNull(nameof(sinfo));
             if (chunkIndex > sinfo.ChunkCount)
@@ -266,10 +268,10 @@ namespace ExtenderApp.Common.IO.Splitter
 
             long position = sinfo.MaxChunkSize * (sinfo.ChunkCount - 1);
             long length = sinfo.ChunkCount > chunkIndex ? sinfo.MaxChunkSize : (int)(sinfo.Length - position);
-            _binaryParser.ReadAsync(fileInfo, position, length, bytes, callback);
+            //_binaryParser.ReadAsync(fileInfo, position, length, bytes, callback);
         }
 
-        public void ReadAsync(IConcurrentOperate operate, uint chunkIndex, SplitterInfo sinfo, byte[] bytes, Action<bool> callback)
+        public void ReadAsync(IFileOperate operate, uint chunkIndex, SplitterInfo sinfo, byte[] bytes, Action<byte[]> callback)
         {
             sinfo.ArgumentNull(nameof(sinfo));
             if (chunkIndex > sinfo.ChunkCount)
@@ -278,8 +280,8 @@ namespace ExtenderApp.Common.IO.Splitter
             }
 
             long position = sinfo.MaxChunkSize * (sinfo.ChunkCount - 1);
-            long length = sinfo.ChunkCount > chunkIndex ? sinfo.MaxChunkSize : (int)(sinfo.Length - position);
-            _binaryParser.ReadAsync(operate, position, length, bytes, callback);
+            int length = sinfo.ChunkCount > chunkIndex ? sinfo.MaxChunkSize : (int)(sinfo.Length - position);
+            operate.ReadAsync(position, length, bytes, callback);
         }
 
         public void ReadAsync<T>(LocalFileInfo fileInfo, uint chunkIndex, SplitterInfo sinfo, Action<T?> callback)
@@ -292,10 +294,11 @@ namespace ExtenderApp.Common.IO.Splitter
 
             long position = sinfo.MaxChunkSize * (sinfo.ChunkCount - 1);
             long length = sinfo.ChunkCount > chunkIndex ? sinfo.MaxChunkSize : (int)(sinfo.Length - position);
-            _binaryParser.ReadAsync(fileInfo, position, length, callback);
+            //_binaryParser.ReadAsync(fileInfo, position, length, callback);
+
         }
 
-        public void ReadAsync<T>(IConcurrentOperate operate, uint chunkIndex, SplitterInfo sinfo, Action<T?> callback)
+        public void ReadAsync<T>(IFileOperate operate, uint chunkIndex, SplitterInfo sinfo, Action<T?> callback)
         {
             sinfo.ArgumentNull(nameof(sinfo));
             if (chunkIndex > sinfo.ChunkCount)
@@ -305,7 +308,7 @@ namespace ExtenderApp.Common.IO.Splitter
 
             long position = sinfo.MaxChunkSize * (sinfo.ChunkCount - 1);
             long length = sinfo.ChunkCount > chunkIndex ? sinfo.MaxChunkSize : (int)(sinfo.Length - position);
-            _binaryParser.ReadAsync(operate, position, length, callback);
+            //_binaryParser.ReadAsync(operate, position, length, callback);
         }
 
         #endregion
@@ -325,10 +328,10 @@ namespace ExtenderApp.Common.IO.Splitter
             }
             bytesLength = bytesLength == 0 ? bytes.Length : bytesLength;
             var position = sinfo.MaxChunkSize * chunkIndex;
-            _binaryParser.Write(targetFileInfo, bytes, position, 0, bytesLength);
+            //_binaryParser.Write(targetFileInfo, bytes, position, 0, bytesLength);
         }
 
-        public void Write(IConcurrentOperate operate, SplitterInfo sinfo, byte[] bytes, uint chunkIndex, int bytesLength = 0)
+        public void Write(IFileOperate operate, SplitterInfo sinfo, byte[] bytes, uint chunkIndex, int bytesLength = 0)
         {
             sinfo.ArgumentNull(nameof(sinfo));
             if (chunkIndex > sinfo.ChunkCount)
@@ -341,7 +344,7 @@ namespace ExtenderApp.Common.IO.Splitter
             }
             bytesLength = bytesLength == 0 ? bytes.Length : bytesLength;
             var position = sinfo.MaxChunkSize * chunkIndex;
-            _binaryParser.Write(operate, bytes, position, 0, bytesLength);
+            //_binaryParser.Write(operate, bytes, position, 0, bytesLength);
         }
 
         public void Write<T>(LocalFileInfo targetFileInfo, SplitterInfo sinfo, T value, uint chunkIndex)
@@ -352,17 +355,17 @@ namespace ExtenderApp.Common.IO.Splitter
                 ErrorUtil.ArgumentOutOfRange(nameof(chunkIndex), "块索引超出范围");
             }
 
-            var length = _binaryParser.GetLength(value);
-            if (length > sinfo.MaxChunkSize)
-            {
-                throw new ArgumentOutOfRangeException(nameof(value), "值的长度超出最大块大小");
-            }
+            //var length = _binaryParser.GetLength(value);
+            //if (length > sinfo.MaxChunkSize)
+            //{
+            //    throw new ArgumentOutOfRangeException(nameof(value), "值的长度超出最大块大小");
+            //}
 
-            var position = sinfo.MaxChunkSize * chunkIndex;
-            _binaryParser.Write(targetFileInfo, value, position);
+            //var position = sinfo.MaxChunkSize * chunkIndex;
+            //_binaryParser.Write(targetFileInfo, value, position);
         }
 
-        public void Write<T>(IConcurrentOperate operate, SplitterInfo sinfo, T value, uint chunkIndex)
+        public void Write<T>(IFileOperate operate, SplitterInfo sinfo, T value, uint chunkIndex)
         {
             sinfo.ArgumentNull(nameof(sinfo));
             if (chunkIndex > sinfo.ChunkCount)
@@ -370,14 +373,14 @@ namespace ExtenderApp.Common.IO.Splitter
                 ErrorUtil.ArgumentOutOfRange(nameof(chunkIndex), "块索引超出范围");
             }
 
-            var length = _binaryParser.GetLength(value);
-            if (length > sinfo.MaxChunkSize)
-            {
-                throw new ArgumentOutOfRangeException(nameof(value), "值的长度超出最大块大小");
-            }
+            //var length = _binaryParser.GetLength(value);
+            //if (length > sinfo.MaxChunkSize)
+            //{
+            //    throw new ArgumentOutOfRangeException(nameof(value), "值的长度超出最大块大小");
+            //}
 
-            var position = sinfo.MaxChunkSize * chunkIndex;
-            _binaryParser.Write(operate, value, position);
+            //var position = sinfo.MaxChunkSize * chunkIndex;
+            //_binaryParser.Write(operate, value, position);
         }
 
         public void Write<T>(LocalFileInfo targetFileInfo, SplitterInfo sinfo, SplitterDto dto)
@@ -385,7 +388,7 @@ namespace ExtenderApp.Common.IO.Splitter
             Write(targetFileInfo, sinfo, dto.Bytes, dto.ChunkIndex, dto.Length);
         }
 
-        public void Write<T>(IConcurrentOperate operate, SplitterInfo sinfo, SplitterDto dto)
+        public void Write<T>(IFileOperate operate, SplitterInfo sinfo, SplitterDto dto)
         {
             Write(operate, sinfo, dto.Bytes, dto.ChunkIndex, dto.Length);
         }
@@ -407,10 +410,10 @@ namespace ExtenderApp.Common.IO.Splitter
             }
             bytesLength = bytesLength == 0 ? bytes.Length : bytesLength;
             var position = sinfo.MaxChunkSize * chunkIndex;
-            _binaryParser.WriteAsync(targetFileInfo, bytes, position, 0, bytesLength, callback);
+            //_binaryParser.WriteAsync(targetFileInfo, bytes, position, 0, bytesLength, callback);
         }
 
-        public void WriteAsync(IConcurrentOperate operate, SplitterInfo sinfo, byte[] bytes, uint chunkIndex, int bytesLength = 0, Action<byte[]>? callback = null)
+        public void WriteAsync(IFileOperate operate, SplitterInfo sinfo, byte[] bytes, uint chunkIndex, int bytesLength = 0, Action<byte[]>? callback = null)
         {
             sinfo.ArgumentNull(nameof(sinfo));
             if (chunkIndex > sinfo.ChunkCount)
@@ -423,7 +426,7 @@ namespace ExtenderApp.Common.IO.Splitter
             }
             bytesLength = bytesLength == 0 ? bytes.Length : bytesLength;
             var position = sinfo.MaxChunkSize * chunkIndex;
-            _binaryParser.WriteAsync(operate, bytes, position, 0, bytesLength, callback);
+            //_binaryParser.WriteAsync(operate, bytes, position, 0, bytesLength, callback);
         }
 
         public void WriteAsync<T>(LocalFileInfo targetFileInfo, SplitterInfo sinfo, T value, uint chunkIndex, Action? callback = null)
@@ -434,17 +437,17 @@ namespace ExtenderApp.Common.IO.Splitter
                 ErrorUtil.ArgumentOutOfRange(nameof(chunkIndex), "块索引超出范围");
             }
 
-            var length = _binaryParser.GetLength(value);
-            if (length > sinfo.MaxChunkSize)
-            {
-                throw new ArgumentOutOfRangeException(nameof(value), "值的长度超出最大块大小");
-            }
+            //var length = _binaryParser.GetLength(value);
+            //if (length > sinfo.MaxChunkSize)
+            //{
+            //    throw new ArgumentOutOfRangeException(nameof(value), "值的长度超出最大块大小");
+            //}
 
-            var position = sinfo.MaxChunkSize * chunkIndex;
-            _binaryParser.WriteAsync(targetFileInfo, value, position, callback);
+            //var position = sinfo.MaxChunkSize * chunkIndex;
+            //_binaryParser.WriteAsync(targetFileInfo, value, position, callback);
         }
 
-        public void WriteAsync<T>(IConcurrentOperate operate, SplitterInfo sinfo, T value, uint chunkIndex, Action? callback = null)
+        public void WriteAsync<T>(IFileOperate operate, SplitterInfo sinfo, T value, uint chunkIndex, Action? callback = null)
         {
             sinfo.ArgumentNull(nameof(sinfo));
             if (chunkIndex > sinfo.ChunkCount)
@@ -452,14 +455,14 @@ namespace ExtenderApp.Common.IO.Splitter
                 ErrorUtil.ArgumentOutOfRange(nameof(chunkIndex), "块索引超出范围");
             }
 
-            var length = _binaryParser.GetLength(value);
-            if (length > sinfo.MaxChunkSize)
-            {
-                throw new ArgumentOutOfRangeException(nameof(value), "值的长度超出最大块大小");
-            }
+            //var length = _binaryParser.GetLength(value);
+            //if (length > sinfo.MaxChunkSize)
+            //{
+            //    throw new ArgumentOutOfRangeException(nameof(value), "值的长度超出最大块大小");
+            //}
 
-            var position = sinfo.MaxChunkSize * chunkIndex;
-            _binaryParser.WriteAsync(operate, value, position, callback);
+            //var position = sinfo.MaxChunkSize * chunkIndex;
+            //_binaryParser.WriteAsync(operate, value, position, callback);
         }
 
         public void WriteAsync(LocalFileInfo targetFileInfo, SplitterInfo sinfo, SplitterDto dto, Action? callback = null)
@@ -467,7 +470,7 @@ namespace ExtenderApp.Common.IO.Splitter
             WriteAsync(targetFileInfo, sinfo, dto.Bytes, dto.ChunkIndex, dto.Length, b => { callback?.Invoke(); });
         }
 
-        public void WriteAsync(IConcurrentOperate operate, SplitterInfo sinfo, SplitterDto dto, Action? callback = null)
+        public void WriteAsync(IFileOperate operate, SplitterInfo sinfo, SplitterDto dto, Action? callback = null)
         {
             WriteAsync(operate, sinfo, dto.Bytes, dto.ChunkIndex, dto.Length, callback == null ? null : b => { callback?.Invoke(); });
         }

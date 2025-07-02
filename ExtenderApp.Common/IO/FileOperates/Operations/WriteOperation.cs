@@ -1,4 +1,6 @@
-﻿
+﻿using ExtenderApp.Data;
+using System.Buffers;
+
 namespace ExtenderApp.Common.IO
 {
     /// <summary>
@@ -14,12 +16,7 @@ namespace ExtenderApp.Common.IO
         /// <summary>
         /// 回调委托，用于处理字节数组
         /// </summary>
-        private Action<byte[]>? callback;
-
-        /// <summary>
-        /// 写入的长度
-        /// </summary>
-        private long writeLength;
+        private Delegate? callback;
 
         /// <summary>
         /// 写位置变量，用于记录当前写入的位置。
@@ -27,9 +24,14 @@ namespace ExtenderApp.Common.IO
         private long writePosition;
 
         /// <summary>
-        /// 表示字节位置的私有变量
+        /// 只读字节序列。
         /// </summary>
-        private long bytesPosition;
+        private ReadOnlySequence<byte> readOnlySequence;
+
+        /// <summary>
+        /// 字节序列池的租赁。
+        /// </summary>
+        private SequencePool<byte>.Rental rental;
 
         /// <summary>
         /// 设置字节数组，并可选地提供一个回调函数。
@@ -46,10 +48,10 @@ namespace ExtenderApp.Common.IO
         /// </summary>
         /// <param name="bytes">要设置的字节数组</param>
         /// <param name="callback">回调函数，可选参数</param>
-        /// <param name="lenght">写入长度</param>
-        public void Set(byte[] bytes, long lenght, Action<byte[]>? callback)
+        /// <param name="length">写入长度</param>
+        public void Set(byte[] bytes, int length, Action<byte[]>? callback)
         {
-            Set(bytes, 0, lenght, callback);
+            Set(bytes, 0, length, callback);
         }
 
         /// <summary>
@@ -57,21 +59,31 @@ namespace ExtenderApp.Common.IO
         /// </summary>
         /// <param name="bytes">要写入的字节数组</param>
         /// <param name="position">写入开始的位置</param>
-        /// <param name="lenght">要写入的字节长度</param>
+        /// <param name="length">要写入的字节长度</param>
         /// <param name="callback">操作完成后的回调函数，参数为写入的字节数组</param>
-        public void Set(byte[] bytes, long position, long lenght, Action<byte[]>? callback)
+        public void Set(byte[] bytes, long position, int length, Action<byte[]>? callback)
         {
-            Set(bytes, position, lenght, 0, callback);
+            Set(bytes, position, length, 0, callback);
         }
 
-        public void Set(byte[] bytes, long position, long lenght, long bytesPosition, Action<byte[]>? callback)
+        public void Set(byte[] bytes, long position, int length, int bytesPosition, Action<byte[]>? callback)
         {
             writeBytes = bytes;
             this.callback = callback;
-            writeLength = lenght;
             writePosition = position;
-            this.bytesPosition = bytesPosition;
+
+            readOnlySequence = new ReadOnlySequence<byte>(bytes, bytesPosition, length);
         }
+
+        public void Set(ExtenderBinaryWriter writer, long position, Action? callback = null)
+        {
+            rental = writer.Rental;
+            readOnlySequence = rental.Value;
+            writePosition = position;
+            this.callback = callback;
+        }
+
+        //public void 
 
         /// <summary>
         /// 尝试重置写入操作的状态
@@ -81,29 +93,37 @@ namespace ExtenderApp.Common.IO
         {
             writeBytes = null;
             callback = null;
-            writeLength = 0;
             writePosition = 0;
             return true;
         }
 
         public override void Execute(FileOperateData item)
         {
-            if (item.FStream.Length < writePosition + writeLength)
+            if (item.FStream.Length < writePosition + readOnlySequence.Length)
             {
-                item.ExpandCapacity(writePosition + writeLength);
+                item.ExpandCapacity(writePosition + readOnlySequence.Length);
             }
 
             long writeIndex = writePosition;
-            long bytesIndex = bytesPosition;
+            int bytesIndex = 0;
             var accessor = item.Accessor;
-            var span = writeBytes.AsSpan();
-            for (long i = 0; i < writeLength; i++)
+
+            foreach (ReadOnlyMemory<byte> meory in readOnlySequence)
             {
-                accessor.Write(writeIndex, span[(int)bytesIndex]);
+                accessor.Write(writeIndex, meory.Span[bytesIndex]);
                 writeIndex++;
                 bytesIndex++;
             }
-            callback?.Invoke(writeBytes);
+
+            if (callback is Action<byte[]> arrayCallback)
+            {
+                arrayCallback?.Invoke(writeBytes);
+            }
+            else if (callback is Action actionCallbakc)
+            {
+                actionCallbakc?.Invoke();
+            }
+            rental.Dispose();
         }
     }
 }

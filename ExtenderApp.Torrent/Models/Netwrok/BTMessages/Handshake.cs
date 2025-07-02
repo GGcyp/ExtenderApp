@@ -34,8 +34,8 @@ namespace ExtenderApp.Torrent
             writer.Advance(1);
             writer.Write(ProtocolBytes);
             writer.Write(ReservedBytes);
-            Hash.CopyTo(writer);
-            PeerId.CopyTo(writer);
+            Hash.CopyTo(ref writer);
+            PeerId.CopyTo(ref writer);
         }
 
         //public static Handshake Decode(ReadOnlySpan<byte> buffer)

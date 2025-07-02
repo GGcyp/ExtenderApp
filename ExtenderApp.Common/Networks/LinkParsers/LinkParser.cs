@@ -31,13 +31,12 @@ namespace ExtenderApp.Common.Networks
                 throw new ArgumentNullException(nameof(linker));
             if (value == null)
                 throw new ArgumentNullException(nameof(value));
-            if (!linker.Connected)
-                throw new InvalidOperationException("链接未连接");
 
             var rental = _sequencePool.Rent();
-            var writer = new ExtenderBinaryWriter(rental.Value);
+            var writer = new ExtenderBinaryWriter(rental);
             Serialize(ref writer, value);
-            linker.Send(writer);
+            writer.Commit();
+            linker.SendWriter(writer);
         }
 
         /// <summary>
@@ -56,13 +55,12 @@ namespace ExtenderApp.Common.Networks
                 throw new ArgumentNullException(nameof(linker));
             if (value == null)
                 throw new ArgumentNullException(nameof(value));
-            if (!linker.Connected)
-                throw new InvalidOperationException("链接未连接");
 
             var rental = _sequencePool.Rent();
-            var writer = new ExtenderBinaryWriter(rental.Value);
+            var writer = new ExtenderBinaryWriter(rental);
             Serialize(ref writer, value);
-            linker.SendAsync(writer);
+            writer.Commit();
+            linker.SendAsyncWriter(writer);
         }
 
         internal void Receive(byte[] bytes, int length)

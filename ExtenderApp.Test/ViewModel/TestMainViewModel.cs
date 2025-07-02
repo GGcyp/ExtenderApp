@@ -14,14 +14,17 @@ namespace ExtenderApp.Test
     {
         private readonly LinkerClientFactory _linkerFactory;
 
-        public TestMainViewModel(LinkerClientFactory linkerClientFactory, IServiceStore serviceStore) : base(serviceStore)
+        public TestMainViewModel(IFileOperateProvider provider, IServiceStore serviceStore) : base(serviceStore)
         {
             //BinaryParserTest(parser);
             //SplitterParserTest(splitterParser, parser);
             //HashTest(hashProvider);
             //BinaryTest(sequencePool);
-            _linkerFactory = linkerClientFactory;
-            TcpLinkTest();
+            //_linkerFactory = linkerClientFactory;
+            //TcpLinkTest();
+            var fileOperate=provider.GetOperate(new LocalFileInfo("E:\\迅雷下载\\5A8F9BB08F1BE7DE41D87E5DE5B60E3961393AAC.torrent"));
+            var bytes=fileOperate.ReadForArrayPool(0, 1024);
+            Debug(bytes.Length);
         }
 
         private void BinaryParserTest(IBinaryParser parser)
@@ -83,7 +86,7 @@ namespace ExtenderApp.Test
             };
             client.ConnectAsync(IPAddress.Loopback, 12345);
             client.SendAsync(new byte[] { 0x01, 0x02, 0x03, 0x04 });
-            client.SendAsync(writer);
+            client.SendAsyncWriter(writer);
         }
 
         private void Linker_OnConnect(ILinker obj)

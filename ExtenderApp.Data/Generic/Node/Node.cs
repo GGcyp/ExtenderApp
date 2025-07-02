@@ -35,7 +35,7 @@ namespace ExtenderApp.Data
         }
         public bool HasChildNodes => nodes != null && Count > 0;
 
-        protected bool CheckIndexOut(int index) => index < 0 && index > m_NodeCount - 1;
+        protected bool CheckIndexOut(int index) => index < 0 || index > m_NodeCount - 1;
 
         protected void CreateOrExpansionNodes()
         {
@@ -102,7 +102,7 @@ namespace ExtenderApp.Data
         /// <returns>如果成功移除元素，则返回 true；否则返回 false。</returns>
         public virtual T? Remove(Predicate<T> predicate)
         {
-            if (!Get(predicate, out var node)) return node;
+            if (!Find(predicate, out var node)) return node;
             node.RemoveParentNode();
             return node;
         }
@@ -112,7 +112,7 @@ namespace ExtenderApp.Data
             T resultNode = null;
             if (CheckIndexOut(index)) return resultNode;
             resultNode = nodes[index];
-            for (int i = index; i < m_NodeCount - 1; i++) 
+            for (int i = index; i < m_NodeCount - 1; i++)
             {
                 nodes[i] = nodes[i + 1];
             }
@@ -126,10 +126,10 @@ namespace ExtenderApp.Data
         /// </summary>
         /// <param name="predicate">条件函数，用于判断元素是否匹配。</param>
         /// <returns>返回匹配的元素，若未找到则返回默认值。</returns>
-        public virtual T Get(Predicate<T> predicate)
+        public virtual T Find(Predicate<T> predicate)
         {
             if (predicate == null) return default;
-            Get(predicate, out var node);
+            Find(predicate, out var node);
             return node;
         }
 
@@ -139,7 +139,7 @@ namespace ExtenderApp.Data
         /// <param name="predicate">用于判断节点是否满足条件的函数，参数为树形结构中的节点类型T，返回值为bool。</param>
         /// <param name="node">如果找到满足条件的节点，则返回该节点；否则返回null。</param>
         /// <returns>如果找到满足条件的节点，则返回true；否则返回false。</returns>
-        private bool Get(Predicate<T> predicate ,out T node)
+        public virtual bool Find(Predicate<T> predicate, out T node)
         {
             node = null;
 
@@ -162,7 +162,7 @@ namespace ExtenderApp.Data
             {
                 //找到了
                 var n = this[i];
-                if (n.Get(predicate, out node)) return true;
+                if (n.Find(predicate, out node)) return true;
             }
 
             return false;

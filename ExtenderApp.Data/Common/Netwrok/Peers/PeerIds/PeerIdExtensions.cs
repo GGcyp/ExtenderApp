@@ -14,7 +14,7 @@ namespace ExtenderApp.Data
         /// <param name="peerId">要复制的 PeerId 对象</param>
         /// <param name="writer">目标 ExtenderBinaryWriter 对象</param>
         /// <exception cref="ArgumentException">如果 PeerId 为空，则抛出此异常</exception>
-        public static void CopyTo(this PeerId peerId, ExtenderBinaryWriter writer)
+        public static void CopyTo(this PeerId peerId, ref ExtenderBinaryWriter writer)
         {
             if (peerId.IsEmpty)
             {

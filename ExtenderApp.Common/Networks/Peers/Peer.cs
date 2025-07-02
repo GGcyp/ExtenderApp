@@ -6,7 +6,7 @@ namespace ExtenderApp.Common.Networks
     /// <summary>
     /// 表示对等体（Peer）的类。
     /// </summary>
-    public class Peer
+    public class Peer : DisposableObject
     {
         /// <summary>
         /// 获取对等体的信息。

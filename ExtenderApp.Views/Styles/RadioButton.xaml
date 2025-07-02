@@ -1,4 +1,4 @@
-﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:attached="clr-namespace:ExtenderApp.Views.Attached">
 
@@ -13,6 +13,7 @@
         <Setter Property="FocusVisualStyle" Value="{x:Null}"></Setter>
         <Setter Property="Foreground" Value="#777"/>
         <Setter Property="FontSize" Value="14"/>
+        <Setter Property="FontFamily" Value="JetBrains Mono" />
         <!--<Setter Property="Foreground" Value="{StaticResource Brush}"/>-->
         <Setter Property="IsChecked" Value="False"></Setter>
         <Setter Property="Template">

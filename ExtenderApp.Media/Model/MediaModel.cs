@@ -26,7 +26,7 @@ namespace ExtenderApp.Media
         /// <summary>
         /// 视频文件不存在则删除
         /// </summary>
-        public bool VideoNotExist {  get; set; }
+        public bool VideoNotExist { get; set; }
 
         public MediaModel()
         {

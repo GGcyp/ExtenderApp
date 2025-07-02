@@ -13,13 +13,13 @@ namespace ExtenderApp.Torrent
         /// <param name="infoHash">要复制的 InfoHash 对象</param>
         /// <param name="writer">目标 ExtenderBinaryWriter 对象</param>
         /// <exception cref="ArgumentException">当 InfoHash 为空时抛出异常</exception>
-        public static void CopyTo(this InfoHash infoHash, ExtenderBinaryWriter writer)
+        public static void CopyTo(this InfoHash infoHash, ref ExtenderBinaryWriter writer)
         {
             if (infoHash.IsEmpty)
                 throw new ArgumentException("InfoHash不能为空", nameof(infoHash));
 
             var hash = infoHash.GetSha1orSha256();
-            hash.CopyTo(writer);
+            hash.CopyTo(ref writer);
         }
     }
 }

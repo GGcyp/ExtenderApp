@@ -1,6 +1,7 @@
 ﻿using System.Net.Sockets;
 using ExtenderApp.Abstract;
 using ExtenderApp.Common.DataBuffers;
+using ExtenderApp.Common.Networks.UDP;
 
 namespace ExtenderApp.Common.Networks
 {
@@ -11,10 +12,12 @@ namespace ExtenderApp.Common.Networks
     internal class LinkerFactory : ILinkerFactory
     {
         private readonly DataBuffer _tcpBuffer;
+        private readonly DataBuffer _udpBuffer;
 
         public LinkerFactory()
         {
             _tcpBuffer = CreateDataBuffer<ITcpLinker>(s => new TcpLinker(s));
+            _udpBuffer = CreateDataBuffer<IUdpLinker>(s => new UdpLinker(s)); // Placeholder for UdpLinker, if implemented
         }
 
         private DataBuffer CreateDataBuffer<T>(Func<Socket, T> func)
@@ -34,7 +37,7 @@ namespace ExtenderApp.Common.Networks
             return typeof(T) switch
             {
                 var t when t == typeof(ITcpLinker) => _tcpBuffer.Process<Socket, T>(socket)!,
-                //var t when t == typeof(UdpLinker) => new UdpLinker(_fileParserStore) as T,
+                var t when t == typeof(IUdpLinker) => _udpBuffer.Process<Socket, T>(socket)!,
                 _ => throw new System.NotImplementedException()
             };
         }

@@ -3,11 +3,11 @@ using ExtenderApp.Data;
 
 namespace ExtenderApp.Torrent
 {
-    public class TorrentLinkParser : LinkParser<BTMessage>
+    public class BTMessageParser : LinkParser<BTMessage>
     {
         private readonly BTMessageEncoder encoder;
 
-        public TorrentLinkParser(BTMessageEncoder encoder, SequencePool<byte> sequencePool) : base(sequencePool)
+        public BTMessageParser(BTMessageEncoder encoder, SequencePool<byte> sequencePool) : base(sequencePool)
         {
             this.encoder = encoder;
         }

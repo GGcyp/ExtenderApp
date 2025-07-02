@@ -37,14 +37,6 @@ namespace ExtenderApp.Abstract
         /// </summary>
         event Action<byte[], int>? OnReceive;
 
-        ///// <summary>
-        ///// 发送流量事件，当发送流量时触发。
-        ///// </summary>
-        ///// <remarks>
-        ///// 参数表示发送的流量大小（以字节为单位）。
-        ///// </remarks>
-        //event Action<int>? OnSendingTraffic;
-
         /// <summary>
         /// 已发送流量事件，当流量发送完成时触发。
         /// </summary>
@@ -82,6 +74,18 @@ namespace ExtenderApp.Abstract
         /// <param name="address">IP地址</param>
         /// <param name="port">端口号</param>
         void Connect(IPAddress address, int port);
+
+        /// <summary>
+        /// 连接到指定的URI。
+        /// </summary>
+        /// <param name="uri">要连接的URI。</param>
+        void Connect(Uri uri);
+
+        /// <summary>
+        /// 异步连接到指定的URI。
+        /// </summary>
+        /// <param name="uri">要连接的URI。</param>
+        void ConnectAsync(Uri uri);
 
         /// <summary>
         /// 异步连接到指定的主机和端口。
@@ -124,6 +128,18 @@ namespace ExtenderApp.Abstract
         void Send(Memory<byte> memory);
 
         /// <summary>
+        /// 同步发送数据。
+        /// </summary>
+        /// <param name="writer">用于写入数据的二进制写入器。</param>
+        void SendWriter(ExtenderBinaryWriter writer);
+
+        /// <summary>
+        /// 异步发送数据。
+        /// </summary>
+        /// <param name="writer">用于写入数据的二进制写入器。</param>
+        void SendAsyncWriter(ExtenderBinaryWriter writer);
+
+        /// <summary>
         /// 异步发送数据
         /// </summary>
         /// <param name="data">要发送的数据</param>
@@ -149,7 +165,5 @@ namespace ExtenderApp.Abstract
         /// <param name="requireFullTransmission">是否要求完整传输。默认为false。</param>
         /// <param name="requireFullDataProcessing">是否要求完整数据处理。默认为false。</param>
         void Close(bool requireFullTransmission = false, bool requireFullDataProcessing = false);
-        void Send(ExtenderBinaryWriter writer);
-        void SendAsync(ExtenderBinaryWriter writer);
     }
 }

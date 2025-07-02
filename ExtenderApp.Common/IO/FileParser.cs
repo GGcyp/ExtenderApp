@@ -11,7 +11,7 @@ namespace ExtenderApp.Common.IO.FileParsers
         /// <summary>
         /// 文件存储的实例
         /// </summary>
-        protected readonly FileOperateStore _store;
+        protected readonly IFileOperateProvider _provider;
 
         /// <summary>
         /// 用于取消操作的取消令牌源。
@@ -22,40 +22,30 @@ namespace ExtenderApp.Common.IO.FileParsers
         /// FileParser 类的受保护构造函数。
         /// </summary>
         /// <param name="store">文件存储对象</param>
-        protected FileParser(FileOperateStore store)
+        protected FileParser(IFileOperateProvider provider)
         {
             /// <summary>
             /// 初始化文件存储对象
             /// </summary>
-            _store = store;
+            _provider = provider;
             /// <summary>
             /// 初始化取消令牌源
             /// </summary>
             _cancellationTokenSource = new CancellationTokenSource();
         }
 
-        #region Create
-
-        public void CreateBlankFile(LocalFileInfo info, long fileLength)
-        {
-            var operate = GetOperate(info.CreateReadWriteOperate());
-            operate.Data.ExpandCapacity(fileLength);
-        }
-
-        #endregion
-
         #region Read
         public abstract T? Read<T>(ExpectLocalFileInfo info);
 
         public abstract T? Read<T>(FileOperateInfo info);
 
-        public abstract T? Read<T>(IConcurrentOperate fileOperate);
+        public abstract T? Read<T>(IFileOperate fileOperate);
 
-        public abstract T? Read<T>(ExpectLocalFileInfo info, long position, long length);
+        public abstract T? Read<T>(ExpectLocalFileInfo info, long position, int length);
 
-        public abstract T? Read<T>(FileOperateInfo info, long position, long length);
+        public abstract T? Read<T>(FileOperateInfo info, long position, int length);
 
-        public abstract T? Read<T>(IConcurrentOperate fileOperate, long position, long length);
+        public abstract T? Read<T>(IFileOperate fileOperate, long position, int length);
 
         #endregion
 
@@ -65,13 +55,13 @@ namespace ExtenderApp.Common.IO.FileParsers
 
         public abstract void ReadAsync<T>(FileOperateInfo info, Action<T?> callback);
 
-        public abstract void ReadAsync<T>(IConcurrentOperate fileOperate, Action<T?> callback);
+        public abstract void ReadAsync<T>(IFileOperate fileOperate, Action<T?> callback);
 
-        public abstract void ReadAsync<T>(ExpectLocalFileInfo info, long position, long length, Action<T?> callback);
+        public abstract void ReadAsync<T>(ExpectLocalFileInfo info, long position, int length, Action<T?> callback);
 
-        public abstract void ReadAsync<T>(FileOperateInfo info, long position, long length, Action<T?> callback);
+        public abstract void ReadAsync<T>(FileOperateInfo info, long position, int length, Action<T?> callback);
 
-        public abstract void ReadAsync<T>(IConcurrentOperate fileOperate, long position, long length, Action<T?> callback);
+        public abstract void ReadAsync<T>(IFileOperate fileOperate, long position, int length, Action<T?> callback);
 
         #endregion
 
@@ -80,29 +70,29 @@ namespace ExtenderApp.Common.IO.FileParsers
 
         public abstract void Write<T>(FileOperateInfo info, T value);
 
-        public abstract void Write<T>(IConcurrentOperate fileOperate, T value);
+        public abstract void Write<T>(IFileOperate fileOperate, T value);
 
         public abstract void Write<T>(ExpectLocalFileInfo info, T value, long position);
 
         public abstract void Write<T>(FileOperateInfo info, T value, long position);
 
-        public abstract void Write<T>(IConcurrentOperate fileOperate, T value, long position);
+        public abstract void Write<T>(IFileOperate fileOperate, T value, long position);
 
         #endregion
 
         #region WriteAsync
 
-        public abstract void WriteAsync<T>(ExpectLocalFileInfo info, T value, Action? callback = null);
+        public abstract void WriteAsync<T>(ExpectLocalFileInfo info, T value, Action<byte[]>? callback = null);
 
-        public abstract void WriteAsync<T>(FileOperateInfo info, T value, Action? callback = null);
+        public abstract void WriteAsync<T>(FileOperateInfo info, T value, Action<byte[]>? callback = null);
 
-        public abstract void WriteAsync<T>(IConcurrentOperate fileOperate, T value, Action? callback = null);
+        public abstract void WriteAsync<T>(IFileOperate fileOperate, T value, Action<byte[]>? callback = null);
 
-        public abstract void WriteAsync<T>(ExpectLocalFileInfo info, T value, long position, Action? callback = null);
+        public abstract void WriteAsync<T>(ExpectLocalFileInfo info, T value, long position, Action<byte[]>? callback = null);
 
-        public abstract void WriteAsync<T>(FileOperateInfo info, T value, long position, Action? callback = null);
+        public abstract void WriteAsync<T>(FileOperateInfo info, T value, long position, Action<byte[]>? callback = null);
 
-        public abstract void WriteAsync<T>(IConcurrentOperate fileOperate, T value, long position, Action? callback = null);
+        public abstract void WriteAsync<T>(IFileOperate fileOperate, T value, long position, Action<byte[]>? callback = null);
 
         #endregion
 
@@ -113,12 +103,10 @@ namespace ExtenderApp.Common.IO.FileParsers
         /// </summary>
         /// <param name="info">文件操作信息对象。</param>
         /// <returns>返回对应的文件并发操作对象。</returns>
-        public FileConcurrentOperate GetOperate(FileOperateInfo info)
+        public IFileOperate GetOperate(FileOperateInfo info)
         {
-            return _store.GetOperate(info);
+            return _provider.GetOperate(info);
         }
-
-        IConcurrentOperate IFileParser.GetOperate(FileOperateInfo info) => GetOperate(info);
 
         #endregion
 
@@ -132,7 +120,7 @@ namespace ExtenderApp.Common.IO.FileParsers
 
         public void Delete(LocalFileInfo info)
         {
-            _store.Delete(info);
+            //_provider.Delete(info);
             info.Delete();
         }
 

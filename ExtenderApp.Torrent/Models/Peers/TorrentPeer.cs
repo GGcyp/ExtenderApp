@@ -4,9 +4,9 @@ using ExtenderApp.Data;
 
 namespace ExtenderApp.Torrent
 {
-    public class TorrentPeer : Peer<ITcpLinker, TorrentLinkParser, BTMessage>
+    public class TorrentPeer : Peer<ITcpLinker, BTMessageParser, BTMessage>
     {
-        public TorrentPeer(LinkClient<ITcpLinker, TorrentLinkParser> linkClient, PeerInfo peerInfo)
+        public TorrentPeer(LinkClient<ITcpLinker, BTMessageParser> linkClient, PeerInfo peerInfo)
             : base(linkClient, peerInfo)
         {
         }

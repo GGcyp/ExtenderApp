@@ -6,17 +6,70 @@ using ExtenderApp.Data;
 namespace ExtenderApp.Common.Networks
 {
     /// <summary>
-    /// LinkClient 类表示一个与 Linker 服务通信的客户端。
-    /// 实现了 IDisposable 接口和 ILinker 接口。
+    /// 表示一个抽象的LinkClient类，该类继承自DisposableObject并实现ILinker接口。
     /// </summary>
-    public class LinkClient<TLinker, TLinkParser> : DisposableObject, ILinker
+    public abstract class LinkClient : DisposableObject, ILinker
+    {
+        public abstract bool Connected { get; }
+
+        public abstract event Action<ILinker>? OnClose;
+        public abstract event Action<ILinker>? OnConnect;
+        public abstract event Action<string> OnErrored;
+        public abstract event Action<byte[], int>? OnReceive;
+        public abstract event Action<int>? OnSendedTraffic;
+        public abstract event Action<int>? OnReceiveingTraffic;
+        public abstract event Action<int>? OnReceivedTraffic;
+
+        public abstract void Close(bool requireFullTransmission = false, bool requireFullDataProcessing = false);
+
+        public abstract void Connect(string host, int port);
+
+        public abstract void Connect(IPAddress address, int port);
+
+        public abstract void Connect(Uri uri);
+
+        public abstract void ConnectAsync(Uri uri);
+
+        public abstract void ConnectAsync(string host, int port);
+
+        public abstract void ConnectAsync(IPAddress address, int port);
+
+        public abstract void ConnectAsync(EndPoint point);
+
+        public abstract void Send(byte[] data);
+
+        public abstract void Send(byte[] data, int start, int length);
+
+        public abstract void Send(Memory<byte> memory);
+
+        public abstract void Send<TValue>(TValue value);
+
+        public abstract void SendAsync<TValue>(TValue value);
+
+        public abstract void SendWriter(ExtenderBinaryWriter writer);
+
+        public abstract void SendAsync(byte[] data);
+
+        public abstract void SendAsync(byte[] data, int start, int length);
+
+        public abstract void SendAsync(Memory<byte> memory);
+
+        public abstract void SendAsyncWriter(ExtenderBinaryWriter writer);
+    }
+
+    /// <summary>
+    /// 泛型链接客户端类，用于处理特定类型的链接器和链接解析器。
+    /// </summary>
+    /// <typeparam name="TLinker">实现ILinker接口的链接器类型。</typeparam>
+    /// <typeparam name="TLinkParser">实现LinkParser接口的链接解析器类型。</typeparam>
+    public class LinkClient<TLinker, TLinkParser> : LinkClient
         where TLinker : ILinker
         where TLinkParser : LinkParser
     {
         /// <summary>
         /// 私有只读属性，表示TLinker实例。
         /// </summary>
-        private readonly TLinker _linker;
+        public TLinker Linker { get; }
 
         /// <summary>
         /// 公共属性，表示TLinkParser实例。
@@ -28,11 +81,11 @@ namespace ExtenderApp.Common.Networks
         /// </summary>
         public TrafficRecorder Recorder { get; }
 
-        public bool Connected => _linker.Connected;
+        public override bool Connected => Linker.Connected;
 
         public LinkClient(TLinker linker, TLinkParser parser)
         {
-            _linker = linker ?? throw new ArgumentNullException(nameof(linker));
+            this.Linker = linker;
             Parser = parser;
             Recorder = new TrafficRecorder();
             OnSendedTraffic += Recorder.RecordSend;
@@ -40,79 +93,92 @@ namespace ExtenderApp.Common.Networks
             OnReceive += Parser.Receive;
         }
 
-        public event Action<ILinker>? OnClose
+        public override event Action<ILinker>? OnClose
         {
-            add => _linker.OnClose += value;
-            remove => _linker.OnClose -= value;
+            add => Linker.OnClose += value;
+            remove => Linker.OnClose -= value;
         }
-        public event Action<ILinker>? OnConnect
+        public override event Action<ILinker>? OnConnect
         {
-            add => _linker.OnConnect += value;
-            remove => _linker.OnConnect -= value;
+            add => Linker.OnConnect += value;
+            remove => Linker.OnConnect -= value;
+        }
+        public override event Action<string> OnErrored
+        {
+            add => Linker.OnErrored += value;
+            remove => Linker.OnErrored -= value;
+        }
+        public override event Action<byte[], int>? OnReceive
+        {
+            add => Linker.OnReceive += value;
+            remove => Linker.OnReceive -= value;
+        }
+        public override event Action<int>? OnSendedTraffic
+        {
+            add => Linker.OnSendedTraffic += value;
+            remove => Linker.OnSendedTraffic -= value;
+        }
+        public override event Action<int>? OnReceiveingTraffic
+        {
+            add => Linker.OnReceiveingTraffic += value;
+            remove => Linker.OnReceiveingTraffic -= value;
+        }
+        public override event Action<int>? OnReceivedTraffic
+        {
+            add => Linker.OnReceivedTraffic += value;
+            remove => Linker.OnReceivedTraffic -= value;
         }
         public event Action<LinkClient<TLinker, TLinkParser>>? OnCloseClient;
         public event Action<LinkClient<TLinker, TLinkParser>>? OnConnectClient;
-        public event Action<string> OnErrored
-        {
-            add => _linker.OnErrored += value;
-            remove => _linker.OnErrored -= value;
-        }
-        public event Action<byte[], int>? OnReceive
-        {
-            add => _linker.OnReceive += value;
-            remove => _linker.OnReceive -= value;
-        }
-        public event Action<int>? OnSendedTraffic
-        {
-            add => _linker.OnSendedTraffic += value;
-            remove => _linker.OnSendedTraffic -= value;
-        }
-        public event Action<int>? OnReceiveingTraffic
-        {
-            add => _linker.OnReceiveingTraffic += value;
-            remove => _linker.OnReceiveingTraffic -= value;
-        }
-        public event Action<int>? OnReceivedTraffic
-        {
-            add => _linker.OnReceivedTraffic += value;
-            remove => _linker.OnReceivedTraffic -= value;
-        }
 
         #region Connect
 
-        public void Connect(string host, int port)
+        public override void Connect(string host, int port)
         {
-            _linker.OnConnect += PrivateConnected;
-            _linker.Connect(host, port);
+            Linker.OnConnect += PrivateConnected;
+            Linker.Connect(host, port);
 
         }
 
-        public void Connect(IPAddress address, int port)
+        public override void Connect(IPAddress address, int port)
         {
-            _linker.OnConnect += PrivateConnected;
-            _linker.Connect(address, port);
-        }
-        public void ConnectAsync(string host, int port)
-        {
-            _linker.OnConnect += PrivateConnected;
-            _linker.ConnectAsync(host, port);
+            Linker.OnConnect += PrivateConnected;
+            Linker.Connect(address, port);
         }
 
-        public void ConnectAsync(IPAddress address, int port)
+        public override void Connect(Uri uri)
         {
-            _linker.OnConnect += PrivateConnected;
-            _linker.ConnectAsync(address, port);
+            Linker.OnConnect += PrivateConnected;
+            Linker.Connect(uri);
         }
 
-        public void ConnectAsync(EndPoint point)
+        public override void ConnectAsync(Uri uri)
         {
-            _linker.OnConnect += PrivateConnected;
-            _linker.ConnectAsync(point);
+            Linker.OnConnect += PrivateConnected;
+            Linker.ConnectAsync(uri);
+        }
+
+        public override void ConnectAsync(string host, int port)
+        {
+            Linker.OnConnect += PrivateConnected;
+            Linker.ConnectAsync(host, port);
+        }
+
+        public override void ConnectAsync(IPAddress address, int port)
+        {
+            Linker.OnConnect += PrivateConnected;
+            Linker.ConnectAsync(address, port);
+        }
+
+        public override void ConnectAsync(EndPoint point)
+        {
+            Linker.OnConnect += PrivateConnected;
+            Linker.ConnectAsync(point);
         }
 
         private void PrivateConnected(ILinker linker)
         {
-            _linker.OnConnect -= PrivateConnected;
+            this.Linker.OnConnect -= PrivateConnected;
             OnConnectClient?.Invoke(this);
         }
 
@@ -121,71 +187,73 @@ namespace ExtenderApp.Common.Networks
         #endregion
 
         #region Send
-        public void Send<TValue>(TValue value)
+
+        public override void Send<TValue>(TValue value)
         {
             ThrowIfDisposed();
             if (Parser == null)
                 throw new InvalidOperationException("没有传入链接数据解析器，不能使用此方法");
-            Parser.Send(_linker, value);
+            Parser.Send(Linker, value);
         }
 
-        public void Send(byte[] data)
+        public override void Send(byte[] data)
         {
-            _linker.Send(data);
+            Linker.Send(data);
         }
 
-        public void Send(Memory<byte> memory)
+        public override void Send(Memory<byte> memory)
         {
-            _linker.Send(memory);
+            Linker.Send(memory);
         }
 
-        public void Send(byte[] data, int start, int length)
+        public override void Send(byte[] data, int start, int length)
         {
-            _linker.Send(data, start, length);
+            Linker.Send(data, start, length);
         }
 
-        public void Send(ExtenderBinaryWriter writer)
+        public override void SendWriter(ExtenderBinaryWriter writer)
         {
-            _linker.Send(writer);
+            Linker.SendWriter(writer);
         }
 
-        public void SendAsync(ExtenderBinaryWriter writer)
+        public override void SendAsyncWriter(ExtenderBinaryWriter writer)
         {
-            _linker.SendAsync(writer);
+            Linker.SendAsyncWriter(writer);
         }
-        public void SendAsync<TValue>(TValue value)
+
+        public override void SendAsync<TValue>(TValue value)
         {
             ThrowIfDisposed();
             if (Parser == null)
                 throw new InvalidOperationException("没有传入链接数据解析器，不能使用此方法");
-            Parser.SendAsync(_linker, value);
+            Parser.SendAsync(Linker, value);
         }
 
-        public void SendAsync(Memory<byte> memory)
+        public override void SendAsync(Memory<byte> memory)
         {
-            _linker.SendAsync(memory);
+            Linker.SendAsync(memory);
         }
 
-        public void SendAsync(byte[] data)
+        public override void SendAsync(byte[] data)
         {
-            _linker.SendAsync(data);
+            Linker.SendAsync(data);
         }
 
-        public void SendAsync(byte[] data, int start, int length)
+        public override void SendAsync(byte[] data, int start, int length)
         {
-            _linker.SendAsync(data, start, length);
+            Linker.SendAsync(data, start, length);
         }
 
         #endregion
 
-        public void Close(bool requireFullTransmission = false, bool requireFullDataProcessing = false)
+        public override void Close(bool requireFullTransmission = false, bool requireFullDataProcessing = false)
         {
-            _linker.Close(requireFullTransmission, requireFullDataProcessing);
+            Linker.Close(requireFullTransmission, requireFullDataProcessing);
         }
 
         protected override void Dispose(bool disposing)
         {
-            _linker.Dispose();
+            Linker.Dispose();
 
             base.Dispose(disposing);
         }

@@ -2,7 +2,7 @@
 {
     public readonly struct HashValue : IEquatable<HashValue>
     {
-        public static HashValue Empty = new HashValue(Array.Empty<byte>());
+        public static HashValue Empty = new HashValue(null);
 
         /// <summary>
         /// 存储哈希值的字节数组。
@@ -35,7 +35,6 @@
         /// </remarks>
         public HashValue(byte[] hashBytes)
         {
-            if (hashBytes == null) throw new ArgumentNullException(nameof(hashBytes));
             _hashBytes = hashBytes;
         }
 

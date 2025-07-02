@@ -10,8 +10,18 @@ namespace ExtenderApp.Common.IO
     /// <summary>
     /// 文件存储类，用于管理文件操作的并发处理。
     /// </summary>
-    public class FileOperateStore : DisposableObject
+    public class FileOperateProvider : DisposableObject, IFileOperateProvider
     {
+        /// <summary>
+        /// 文件并发操作对象池
+        /// </summary>
+        private readonly ObjectPool<FileConcurrentOperate> _operatePool;
+
+        /// <summary>
+        /// 文件操作数据对象池
+        /// </summary>
+        private readonly ObjectPool<FileOperateData> _dataPool;
+
         /// <summary>
         /// 文件操作字典，用于存储文件操作信息。
         /// </summary>
@@ -27,19 +37,18 @@ namespace ExtenderApp.Common.IO
         /// </summary>
         private readonly Action<FileOperateInfo> _releaseAction;
 
-        private readonly ObjectPool<FileOperateData> _pool;
-
         /// <summary>
         /// 初始化 FileStorage 类的新实例。
         /// </summary>
         /// <param name="operatePool">并发操作池实例。</param>
-        public FileOperateStore(ObjectPool<FileOperateData> pool)
+        public FileOperateProvider()
         {
             _operateDict = new();
             _task = new();
             _task.StartCycle(o => ReleaseOperate(), TimeSpan.FromSeconds(60));
             _releaseAction = ReleaseOperate;
-            _pool = pool ?? throw new ArgumentNullException(nameof(pool), "操作池不能为空。");
+            _dataPool = ObjectPool.CreateDefaultPool<FileOperateData>();
+            _operatePool = ObjectPool.CreateDefaultPool<FileConcurrentOperate>();
         }
 
         /// <summary>
@@ -47,7 +56,7 @@ namespace ExtenderApp.Common.IO
         /// </summary>
         /// <param name="info">文件操作信息。</param>
         /// <returns>返回文件并发操作实例。</returns>
-        public FileConcurrentOperate GetOperate(FileOperateInfo info)
+        public IFileOperate GetOperate(FileOperateInfo info)
         {
             var id = info.GetHashCode();
             if (_operateDict.TryGetValue(id, out var operate))
@@ -62,9 +71,9 @@ namespace ExtenderApp.Common.IO
                     return operate;
                 }
 
-                operate = FileConcurrentOperate.Get();
+                operate = _operatePool.Get();
 
-                var data = _pool.Get();
+                var data = _dataPool.Get();
                 data.Set(info, _releaseAction);
                 operate.Start(data);
 
@@ -98,7 +107,7 @@ namespace ExtenderApp.Common.IO
                 return;
             }
 
-            operate.Release();
+            _operatePool.Release(operate);
         }
 
         /// <summary>
@@ -128,15 +137,6 @@ namespace ExtenderApp.Common.IO
 
             if (_operateDict.Count <= 0)
                 _task.Pause();
-        }
-
-        /// <summary>
-        /// 删除本地文件信息
-        /// </summary>
-        /// <param name="info">本地文件信息对象</param>
-        public void Delete(LocalFileInfo info)
-        {
-            ReleaseOperate(info.GetHashCode());
         }
 
         /// <summary>

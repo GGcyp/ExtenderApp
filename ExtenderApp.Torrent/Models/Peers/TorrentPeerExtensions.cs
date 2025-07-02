@@ -24,7 +24,7 @@ namespace ExtenderApp.Torrent
             if (peerInfo.IsEmpty)
                 throw new ArgumentNullException(nameof(peerInfo));
 
-            var linker = factory.Create<ITcpLinker, TorrentLinkParser>();
+            var linker = factory.Create<ITcpLinker, BTMessageParser>();
             return new TorrentPeer(linker, peerInfo);
         }
     }

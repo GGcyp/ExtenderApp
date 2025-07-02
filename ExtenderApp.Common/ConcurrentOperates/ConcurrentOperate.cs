@@ -66,6 +66,14 @@ namespace ExtenderApp.Common.ConcurrentOperates
             _concurrencySemaphore.Dispose();
             base.Dispose(disposing);
         }
+
+        public abstract void Execute(IConcurrentOperation operation);
+
+        public abstract void Execute(IEnumerable<IConcurrentOperation> operations);
+
+        public abstract void ExecuteAsync(IConcurrentOperation operation);
+
+        public abstract void ExecuteAsync(IEnumerable<IConcurrentOperation> operations);
     }
 
     /// <summary>
@@ -134,6 +142,8 @@ namespace ExtenderApp.Common.ConcurrentOperates
         /// </summary>
         protected virtual void ProtectedStart() { }
 
+        #region ExecuteAsync
+
         /// <summary>
         /// 将操作加入队列并异步执行
         /// </summary>
@@ -186,6 +196,48 @@ namespace ExtenderApp.Common.ConcurrentOperates
             }
         }
 
+        public override void ExecuteAsync(IConcurrentOperation operation)
+        {
+            if (operation is not IConcurrentOperation<TData> dataOperation)
+                throw new ArgumentNullException(nameof(operation));
+
+            ExecuteAsync(dataOperation);
+        }
+
+        public override void ExecuteAsync(IEnumerable<IConcurrentOperation> operations)
+        {
+            if (operations == null)
+                throw new ArgumentNullException(nameof(operations));
+
+            if (operations is not IEnumerable<IConcurrentOperation<TData>> dataOperations)
+                throw new ArgumentNullException(nameof(operations));
+
+            ExecuteAsync(dataOperations);
+        }
+
+        #endregion
+
+        #region Execute
+
+        public override void Execute(IConcurrentOperation operation)
+        {
+            if (operation is not IConcurrentOperation<TData> dataOperation)
+                throw new ArgumentNullException(nameof(operation));
+
+            Execute(dataOperation);
+        }
+
+        public override void Execute(IEnumerable<IConcurrentOperation> operations)
+        {
+            if (operations == null)
+                throw new ArgumentNullException(nameof(operations));
+
+            if (operations is not IEnumerable<IConcurrentOperation<TData>> dataOperations)
+                throw new ArgumentNullException(nameof(operations));
+
+            Execute(dataOperations);
+        }
+
         /// <summary>
         /// 立即执行单个并发操作
         /// </summary>
@@ -232,6 +284,8 @@ namespace ExtenderApp.Common.ConcurrentOperates
                 }
             }
         }
+
+        #endregion
 
         /// <summary>
         /// 异步处理队列中的操作
@@ -317,7 +371,7 @@ namespace ExtenderApp.Common.ConcurrentOperates
                 throw new ArgumentNullException(nameof(operation));
 
             ThrowNull();
-            operation.ArgumentNull(typeof(TData).FullName);
+            operation.ArgumentNull();
         }
 
         private void ThrowNull()

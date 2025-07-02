@@ -6,6 +6,8 @@ namespace ExtenderApp.Data
     /// </summary>
     public struct LocalFileInfo : IEquatable<LocalFileInfo>
     {
+        public static readonly LocalFileInfo Empty = new LocalFileInfo();
+
         /// <summary>
         /// 存储文件信息的FileInfo对象
         /// </summary>
@@ -188,9 +190,24 @@ namespace ExtenderApp.Data
             return FilePath.Equals(other.FilePath);
         }
 
+        public static bool operator ==(LocalFileInfo left, LocalFileInfo right)
+        {
+            return left.Equals(right);
+        }
+
+        public static bool operator !=(LocalFileInfo left, LocalFileInfo right)
+        {
+            return !left.Equals(right);
+        }
+
         public override int GetHashCode()
         {
             return FilePath.GetHashCode();
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj is LocalFileInfo && Equals((LocalFileInfo)obj);
         }
     }
 }

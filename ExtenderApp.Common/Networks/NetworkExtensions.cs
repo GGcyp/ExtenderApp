@@ -17,6 +17,7 @@ namespace ExtenderApp.Common.Networks
         public static IServiceCollection AddNetwork(this IServiceCollection services)
         {
             services.AddLinker();
+            services.AddUdpLinker();
             services.AddLinkerClient();
             services.AddFileSegmenter();
             services.Configuration<IBinaryFormatterStore>(s =>

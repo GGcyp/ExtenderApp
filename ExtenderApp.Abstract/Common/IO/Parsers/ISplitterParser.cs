@@ -28,7 +28,7 @@ namespace ExtenderApp.Abstract
         /// </summary>
         /// <param name="operate">并发操作接口</param>
         /// <param name="sInfo">分割器信息</param>
-        void CreateInfoFile(IConcurrentOperate operate, SplitterInfo sInfo);
+        void CreateInfoFile(IFileOperate operate, SplitterInfo sInfo);
 
         /// <summary>
         /// 为文件创建信息
@@ -72,7 +72,7 @@ namespace ExtenderApp.Abstract
         /// <param name="chunkIndex">块索引</param>
         /// <param name="sinfo">分割器信息</param>
         /// <returns>分割器数据传输对象</returns>
-        SplitterDto ReadDot(IConcurrentOperate fileOperate, uint chunkIndex, SplitterInfo sinfo);
+        SplitterDto ReadDot(IFileOperate fileOperate, uint chunkIndex, SplitterInfo sinfo);
 
         /// <summary>
         /// 读取数据传输对象
@@ -118,7 +118,7 @@ namespace ExtenderApp.Abstract
         /// <param name="chunkIndex">要读取的索引块。</param>
         /// <param name="sinfo">分割信息。</param>
         /// <returns>返回指定类型的对象。</returns>
-        T Read<T>(IConcurrentOperate operate, uint chunkIndex, SplitterInfo sinfo);
+        T Read<T>(IFileOperate operate, uint chunkIndex, SplitterInfo sinfo);
 
         /// <summary>
         /// 读取指定索引块的数据到指定的字节数组中。
@@ -127,7 +127,7 @@ namespace ExtenderApp.Abstract
         /// <param name="chunkIndex">要读取的索引块。</param>
         /// <param name="sinfo">分割信息。</param>
         /// <param name="bytes">存储读取数据的字节数组。</param>
-        void Read(IConcurrentOperate operate, uint chunkIndex, SplitterInfo sinfo, byte[] bytes);
+        void Read(IFileOperate operate, uint chunkIndex, SplitterInfo sinfo, byte[] bytes);
 
         /// <summary>
         /// 读取指定索引块的数据，并返回一个字节数组。
@@ -136,7 +136,7 @@ namespace ExtenderApp.Abstract
         /// <param name="chunkIndex">要读取的索引块。</param>
         /// <param name="sinfo">分割信息。</param>
         /// <returns>包含读取数据的字节数组；如果没有数据可读，则返回null。</returns>
-        byte[]? Read(IConcurrentOperate operate, uint chunkIndex, SplitterInfo sinfo);
+        byte[]? Read(IFileOperate operate, uint chunkIndex, SplitterInfo sinfo);
 
         #endregion
 
@@ -159,7 +159,7 @@ namespace ExtenderApp.Abstract
         /// <param name="sinfo">拆分器信息。</param>
         /// <param name="bytes">存储读取数据的字节数组。</param>
         /// <param name="callback">读取完成后的回调方法，参数为读取是否成功。</param>
-        void ReadAsync(LocalFileInfo fileInfo, uint chunkIndex, SplitterInfo sinfo, byte[] bytes, Action<bool> callback);
+        void ReadAsync(LocalFileInfo fileInfo, uint chunkIndex, SplitterInfo sinfo, byte[] bytes, Action<byte[]> callback);
 
         /// <summary>
         /// 异步从指定文件中读取数据，读取完成后调用回调方法。
@@ -178,7 +178,7 @@ namespace ExtenderApp.Abstract
         /// <param name="chunkIndex">数据块索引</param>
         /// <param name="sinfo">拆分信息</param>
         /// <param name="callback">回调函数，用于处理读取到的数据</param>
-        void ReadAsync(IConcurrentOperate operate, uint chunkIndex, SplitterInfo sinfo, Action<byte[]?> callback);
+        void ReadAsync(IFileOperate operate, uint chunkIndex, SplitterInfo sinfo, Action<byte[]?> callback);
 
         /// <summary>
         /// 异步读取数据到指定缓冲区
@@ -188,7 +188,7 @@ namespace ExtenderApp.Abstract
         /// <param name="sinfo">拆分信息</param>
         /// <param name="bytes">存储读取数据的缓冲区</param>
         /// <param name="callback">回调函数，返回读取操作是否成功</param>
-        void ReadAsync(IConcurrentOperate operate, uint chunkIndex, SplitterInfo sinfo, byte[] bytes, Action<bool> callback);
+        void ReadAsync(IFileOperate operate, uint chunkIndex, SplitterInfo sinfo, byte[] bytes, Action<byte[]> callback);
 
         /// <summary>
         /// 异步读取数据并返回泛型类型结果
@@ -198,7 +198,7 @@ namespace ExtenderApp.Abstract
         /// <param name="chunkIndex">数据块索引</param>
         /// <param name="sinfo">拆分信息</param>
         /// <param name="callback">回调函数，用于处理读取到的数据并返回泛型类型结果</param>
-        void ReadAsync<T>(IConcurrentOperate operate, uint chunkIndex, SplitterInfo sinfo, Action<T?> callback);
+        void ReadAsync<T>(IFileOperate operate, uint chunkIndex, SplitterInfo sinfo, Action<T?> callback);
 
         #endregion
 
@@ -232,7 +232,7 @@ namespace ExtenderApp.Abstract
         /// <param name="bytes">要写入的字节数组</param>
         /// <param name="chunkIndex">分片索引</param>
         /// <param name="bytesLength">要写入的字节长度，默认为0</param>
-        void Write(IConcurrentOperate operate, SplitterInfo sinfo, byte[] bytes, uint chunkIndex, int bytesLength = 0);
+        void Write(IFileOperate operate, SplitterInfo sinfo, byte[] bytes, uint chunkIndex, int bytesLength = 0);
 
         /// <summary>
         /// 将指定类型的值写入指定的操作器
@@ -242,7 +242,7 @@ namespace ExtenderApp.Abstract
         /// <param name="sinfo">分片信息</param>
         /// <param name="value">要写入的值</param>
         /// <param name="chunkIndex">分片索引</param>
-        void Write<T>(IConcurrentOperate operate, SplitterInfo sinfo, T value, uint chunkIndex);
+        void Write<T>(IFileOperate operate, SplitterInfo sinfo, T value, uint chunkIndex);
         /// <summary>
         /// 将数据写入到指定的文件或并发操作中。
         /// </summary>
@@ -259,7 +259,7 @@ namespace ExtenderApp.Abstract
         /// <param name="operate">并发操作接口，表示要写入数据的并发操作</param>
         /// <param name="sinfo">分割器信息</param>
         /// <param name="dto">分割器数据传输对象</param>
-        void Write<T>(IConcurrentOperate operate, SplitterInfo sinfo, SplitterDto dto);
+        void Write<T>(IFileOperate operate, SplitterInfo sinfo, SplitterDto dto);
 
         #endregion
 
@@ -285,7 +285,7 @@ namespace ExtenderApp.Abstract
         /// <param name="chunkIndex">当前分片的索引。</param>
         /// <param name="bytesLength">要写入的字节长度，默认为0表示写入整个字节数组。</param>
         /// <param name="callback">写入完成后的回调函数，参数为写入的字节数组。</param>
-        void WriteAsync(IConcurrentOperate operate, SplitterInfo sinfo, byte[] bytes, uint chunkIndex, int bytesLength = 0, Action<byte[]>? callback = null);
+        void WriteAsync(IFileOperate operate, SplitterInfo sinfo, byte[] bytes, uint chunkIndex, int bytesLength = 0, Action<byte[]>? callback = null);
 
         /// <summary>
         /// 异步写入泛型值到指定文件。
@@ -307,7 +307,7 @@ namespace ExtenderApp.Abstract
         /// <param name="value">要写入的泛型值。</param>
         /// <param name="chunkIndex">当前分片的索引。</param>
         /// <param name="callback">写入完成后的回调函数。</param>
-        void WriteAsync<T>(IConcurrentOperate operate, SplitterInfo sinfo, T value, uint chunkIndex, Action? callback = null);
+        void WriteAsync<T>(IFileOperate operate, SplitterInfo sinfo, T value, uint chunkIndex, Action? callback = null);
 
         /// <summary>
         /// 异步写入文件。
@@ -325,7 +325,7 @@ namespace ExtenderApp.Abstract
         /// <param name="sinfo">分割器信息。</param>
         /// <param name="dto">分割器数据传输对象。</param>
         /// <param name="callback">写入完成后的回调方法，可为空。</param>
-        void WriteAsync(IConcurrentOperate operate, SplitterInfo sinfo, SplitterDto dto, Action? callback = null);
+        void WriteAsync(IFileOperate operate, SplitterInfo sinfo, SplitterDto dto, Action? callback = null);
 
         #endregion
     }

@@ -1,5 +1,4 @@
-﻿
-using System.Linq.Expressions;
+﻿using System.Linq.Expressions;
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
@@ -45,18 +44,30 @@ namespace ExtenderApp.Common.Hash
         /// 对象池存储
         /// </summary>
         private readonly ObjectPoolStore _poolStore;
-        private readonly FileOperateStore _fileStore;
+
+        /// <summary>
+        /// 文件操作提供者
+        /// </summary>
+        private readonly IFileOperateProvider _fileOperateProvider;
+
+        /// <summary>
+        /// 文件操作对象池
+        /// </summary>
         private readonly ObjectPool<HashFileOperation> _fileOperationPool;
+
+        /// <summary>
+        /// 编码格式
+        /// </summary>
         private readonly Encoding _encoding;
 
         /// <summary>
         /// 构造函数
         /// </summary>
         /// <param name="poolStore">对象池存储</param>
-        public HashProvider(ObjectPoolStore poolStore, FileOperateStore fileStore)
+        public HashProvider(ObjectPoolStore poolStore, IFileOperateProvider fileStore)
         {
             _poolStore = poolStore;
-            _fileStore = fileStore;
+            _fileOperateProvider = fileStore;
             _encoding = Encoding.UTF8; // 默认使用UTF8编码
             _fileOperationPool = poolStore.GetPool<HashFileOperation>();
         }
@@ -120,7 +131,7 @@ namespace ExtenderApp.Common.Hash
         {
             var pool = GetPool<T>();
             var hashAlgorithm = pool.Get();
-            var fileConcurrent = _fileStore.GetOperate(fileOperate);
+            var fileConcurrent = _fileOperateProvider.GetOperate(fileOperate);
             var operation = _fileOperationPool.Get();
 
             operation.Set(hashAlgorithm);
@@ -151,7 +162,7 @@ namespace ExtenderApp.Common.Hash
         {
             var pool = GetPool<T>();
             var hashAlgorithm = pool.Get();
-            var fileConcurrent = _fileStore.GetOperate(fileOperate);
+            var fileConcurrent = _fileOperateProvider.GetOperate(fileOperate);
             var operation = _fileOperationPool.Get();
 
             operation.Set(hashAlgorithm);

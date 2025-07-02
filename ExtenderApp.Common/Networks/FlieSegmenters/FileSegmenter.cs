@@ -11,12 +11,12 @@ namespace ExtenderApp.Common.Networks
         public const int DefaultChuckSize = 1024 * 1024;
 
         private readonly ILinkerFactory _linkerFactory;
-        private readonly IFileParserStore _fileParserStore;
+        //private readonly IFileParserStore _fileParserStore;
         private readonly Lazy<ConcurrentDictionary<int, LocalFileInfo>> _dictLazy;
         private readonly Lazy<ConcurrentQueue<(FileInfoDto, LocalFileInfo)>> _getFileInfoLazy;
         private readonly Lazy<ConcurrentQueue<ILinker>> _linkersLazy;
 
-        private ISplitterParser splitterParser => _fileParserStore.SplitterParser;
+        //private ISplitterParser splitterParser => _fileParserStore.SplitterParser;
         private ConcurrentDictionary<int, LocalFileInfo> fileInfoDict => _dictLazy.Value;
         private ConcurrentQueue<(FileInfoDto, LocalFileInfo)> getFileInfoQueue => _getFileInfoLazy.Value;
         private ConcurrentQueue<ILinker> linkerQueue => _linkersLazy.Value;
@@ -32,10 +32,9 @@ namespace ExtenderApp.Common.Networks
 
         public event Action<FileInfoDto[]>? OnReceiveFileInfos;
 
-        public FileSegmenter(ILinkerFactory linkerFactory, IFileParserStore fileParserStore)
+        public FileSegmenter(ILinkerFactory linkerFactory)
         {
             _linkerFactory = linkerFactory;
-            _fileParserStore = fileParserStore;
             _dictLazy = new();
             _getFileInfoLazy = new();
         }
@@ -66,7 +65,7 @@ namespace ExtenderApp.Common.Networks
 
             currentSplitterInfo.LoadChunk(splitterDto);
 
-            splitterParser.WriteAsync(currentFileOperate, currentSplitterInfo, splitterDto);
+            //splitterParser.WriteAsync(currentFileOperate, currentSplitterInfo, splitterDto);
 
             if (linkerCount > linkerCapacity)
             {

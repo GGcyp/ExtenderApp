@@ -25,6 +25,30 @@ namespace ExtenderApp.Abstract
         /// 开始方法。
         /// </summary>
         void Start();
+
+        /// <summary>
+        /// 执行单个并发操作。
+        /// </summary>
+        /// <param name="operation">要执行的并发操作。</param>
+        void Execute(IConcurrentOperation operation);
+
+        /// <summary>
+        /// 执行一组并发操作。
+        /// </summary>
+        /// <param name="operations">要执行的并发操作集合。</param>
+        void Execute(IEnumerable<IConcurrentOperation> operations);
+
+        /// <summary>
+        /// 异步执行单个并发操作。
+        /// </summary>
+        /// <param name="operation">要异步执行的并发操作。</param>
+        void ExecuteAsync(IConcurrentOperation operation);
+
+        /// <summary>
+        /// 异步执行一组并发操作。
+        /// </summary>
+        /// <param name="operations">要异步执行的并发操作集合。</param>
+        void ExecuteAsync(IEnumerable<IConcurrentOperation> operations);
     }
 
     /// <summary>

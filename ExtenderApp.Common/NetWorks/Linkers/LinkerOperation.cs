@@ -1,4 +1,5 @@
 ﻿using System.Buffers;
+using System.Net;
 using System.Net.Sockets;
 using ExtenderApp.Data;
 
@@ -29,56 +30,66 @@ namespace ExtenderApp.Common.Networks.LinkOperates
         /// <summary>
         /// 只读字节序列。
         /// </summary>
-        private ReadOnlySequence<byte> readOnlyMemories;
+        private ReadOnlySequence<byte> readOnlySequence;
 
         /// <summary>
         /// 字节序列池的租赁。
         /// </summary>
         private SequencePool<byte>.Rental rental;
 
+        private EndPoint? endPoint;
+
         public LinkerOperation()
         {
             sendBytes = Array.Empty<byte>();
         }
 
-        public void Set(byte[] bytes, int offset, int length, Action<int>? sendTrafficCallback, Action<byte[]>? sendBytesCallbcak = null)
+        public void Set(byte[] bytes, int offset, int length, Action<int>? sendTrafficCallback, Action<byte[]>? sendBytesCallbcak = null, EndPoint? end = null)
         {
-            readOnlyMemories = new ReadOnlySequence<byte>(bytes, offset, length);
+            readOnlySequence = new ReadOnlySequence<byte>(bytes, offset, length);
             this.sendTrafficCallback = sendTrafficCallback;
             this.sendBytesCallbcak = sendBytesCallbcak;
             sendBytes = bytes;
+            this.endPoint = end;
         }
 
-        public void Set(Memory<byte> memory, Action<int>? sendTrafficCallback)
+        public void Set(Memory<byte> memory, Action<int>? sendTrafficCallback, EndPoint? end = null)
         {
-            readOnlyMemories = new ReadOnlySequence<byte>(memory);
+            readOnlySequence = new ReadOnlySequence<byte>(memory);
             this.sendTrafficCallback = sendTrafficCallback;
+            endPoint = end;
         }
 
-        public void Set(ReadOnlySequence<byte> readOnlyMemories, Action<int>? sendTrafficCallback)
+        public void Set(ReadOnlySequence<byte> readOnlyMemories, Action<int>? sendTrafficCallback, EndPoint? end = null)
         {
-            this.readOnlyMemories = readOnlyMemories;
+            this.readOnlySequence = readOnlyMemories;
             this.sendTrafficCallback = sendTrafficCallback;
             sendBytesCallbcak = null;
             sendBytes = Array.Empty<byte>();
+            endPoint = end;
         }
 
-        public void Set(ExtenderBinaryWriter writer, Action<int>? sendTrafficCallback)
+        public void Set(ExtenderBinaryWriter writer, Action<int>? sendTrafficCallback, EndPoint? end = null)
         {
             rental = writer.Rental;
-            readOnlyMemories = rental.Value.AsReadOnlySequence;
+            readOnlySequence = rental.Value.AsReadOnlySequence;
             this.sendTrafficCallback = sendTrafficCallback;
             sendBytesCallbcak = null;
             sendBytes = Array.Empty<byte>();
+            endPoint = end;
         }
 
         public override void Execute(LinkOperateData item)
         {
             var socket = item.Socket;
             var sendTrafficLength = 0;
-            foreach (ReadOnlyMemory<byte> meory in readOnlyMemories)
+            if (endPoint == null)
             {
-                sendTrafficLength += socket.Send(meory.Span);
+                sendTrafficLength = Send(socket);
+            }
+            else
+            {
+                sendTrafficLength = SendTo(socket);
             }
 
             sendTrafficCallback?.Invoke(sendTrafficLength);
@@ -87,12 +98,33 @@ namespace ExtenderApp.Common.Networks.LinkOperates
             Release();
         }
 
+        private int Send(Socket socket)
+        {
+            var sendTrafficLength = 0;
+            foreach (ReadOnlyMemory<byte> meory in readOnlySequence)
+            {
+                sendTrafficLength += socket.Send(meory.Span);
+            }
+            return sendTrafficLength;
+        }
+
+        private int SendTo(Socket socket)
+        {
+            var sendTrafficLength = 0;
+            foreach (ReadOnlyMemory<byte> meory in readOnlySequence)
+            {
+                sendTrafficLength += socket.SendTo(meory.Span, endPoint!);
+            }
+            return sendTrafficLength;
+        }
+
         public override bool TryReset()
         {
-            sendBytes = Array.Empty<byte>();
+            sendBytes = null;
             sendBytesCallbcak = null;
             sendTrafficCallback = null;
             rental = default;
+            readOnlySequence = ReadOnlySequence<byte>.Empty;
             return true;
         }
 

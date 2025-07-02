@@ -53,6 +53,19 @@ namespace ExtenderApp.Data
         public SequencePool<byte>.Rental Rental;
 
         /// <summary>
+        /// 使用指定的 <see cref="SequencePool{byte}.Rental"/> 对象初始化 <see cref="ExtenderBinaryWriter"/> 类的新实例。
+        /// </summary>
+        /// <param name="rental">要使用的 <see cref="SequencePool{byte}.Rental"/> 对象。</param>
+        /// <remarks>
+        /// 该构造函数会调用带有 <see cref="byte"/> 数组参数的构造函数，并将 <see cref="Rental"/> 属性设置为提供的 <paramref name="rental"/> 对象。
+        /// </remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public ExtenderBinaryWriter(SequencePool<byte>.Rental rental) : this(rental.Value)
+        {
+            Rental = rental;
+        }
+
+        /// <summary>
         /// 使用指定的IBufferWriter<byte>初始化BufferWriter实例。
         /// </summary>
         /// <param name="output">IBufferWriter<byte>输出缓冲区。</param>
@@ -305,6 +318,17 @@ namespace ExtenderApp.Data
             Span = default;
             _buffered = 0;
             BytesCommitted = 0;
+        }
+
+        /// <summary>
+        /// 支持从 ExtenderBinaryWriter 隐式转换为 ExtenderBinaryReader。
+        /// </summary>
+        /// <param name="writer">要转换的写入器。</param>
+        public static implicit operator ExtenderBinaryReader(ExtenderBinaryWriter writer)
+        {
+            // 这里假设你有 FlushAndGetArray 或类似方法获取已写入的字节
+            var bytes = writer.FlushAndGetArray();
+            return new ExtenderBinaryReader(bytes);
         }
     }
 }
