@@ -1,8 +1,9 @@
-﻿using ExtenderApp.Data;
+﻿using System.Collections.ObjectModel;
+using ExtenderApp.Data;
 
 namespace ExtenderApp.Services
 {
-    public class PluginStore : ObservableStore<PluginDetails>
+    public class PluginStore : ObservableCollection<PluginDetails>
     {
     }
 }

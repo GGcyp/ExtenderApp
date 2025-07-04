@@ -7,10 +7,10 @@ namespace ExtenderApp.MainViews
 {
     public class MainViewModel : ExtenderAppViewModel<IMainView>
     {
-        public DisplayDetailsStore DisplayDetailsStore { get; }
+        public DisplayDetailsList DisplayDetailsStore { get; }
         private readonly MainModel _mainModel;
 
-        public MainViewModel(DisplayDetailsStore store, MainModel mainModel, IServiceStore serviceStore) : base(serviceStore)
+        public MainViewModel(DisplayDetailsList store, MainModel mainModel, IServiceStore serviceStore) : base(serviceStore)
         {
             DisplayDetailsStore = store;
             _mainModel = mainModel;

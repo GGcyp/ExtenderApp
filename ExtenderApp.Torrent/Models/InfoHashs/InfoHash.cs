@@ -101,5 +101,10 @@ namespace ExtenderApp.Torrent
         {
             return !Equals(left, right);
         }
+
+        public override bool Equals(object obj)
+        {
+            return obj is InfoHash && Equals((InfoHash)obj);
+        }
     }
 }

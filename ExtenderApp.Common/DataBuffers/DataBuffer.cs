@@ -276,23 +276,33 @@ namespace ExtenderApp.Common.DataBuffers
         }
     }
 
+    /// <summary>
+    /// 泛型数据缓冲区类，实现了 IResettable 接口，继承自 DisposableObject 类。
+    /// 提供对象池机制，支持泛型参数的三个数据项，并支持自定义处理动作。
+    /// </summary>
+    /// <typeparam name="T1">第一个泛型参数的类型。</typeparam>
+    /// <typeparam name="T2">第二个泛型参数的类型。</typeparam>
+    /// <typeparam name="T3">第三个泛型参数的类型。</typeparam>
     public class DataBuffer<T1, T2, T3> : DisposableObject, IResettable
     {
+
         /// <summary>
         /// 数据缓冲区对象池。
         /// </summary>
         private static ObjectPool<DataBuffer<T1, T2, T3>> pool = ObjectPool.CreateDefaultPool<DataBuffer<T1, T2, T3>>();
 
-        /// <summary>
-        /// 从对象池中获取一个新的 <see cref="DataBuffer{T1, T2}"/> 实例。
-        /// </summary>
-        /// <returns>返回一个新的 <see cref="DataBuffer{T1, T2}"/> 实例。</returns>
-        public static DataBuffer<T1, T2, T3> GetDataBuffer() => pool.Get();
 
         /// <summary>
-        /// 将 <see cref="DataBuffer{T1, T2}"/> 实例释放回对象池。
+        /// 从对象池中获取一个数据缓冲区实例。
         /// </summary>
-        /// <param name="item">要释放的 <see cref="DataBuffer{T1, T2}"/> 实例。</param>
+        /// <returns>从对象池中获取的数据缓冲区实例。</returns>
+        public static DataBuffer<T1, T2, T3> GetDataBuffer() => pool.Get();
+
+
+        /// <summary>
+        /// 将数据缓冲区实例释放回对象池。
+        /// </summary>
+        /// <param name="item">要释放的数据缓冲区实例。</param>
         public static void ReleaseDataBuffer(DataBuffer<T1, T2, T3> item) => pool.Release(item);
 
         /// <summary>
@@ -310,36 +320,151 @@ namespace ExtenderApp.Common.DataBuffers
         /// </summary>
         public T3 Item3 { get; set; }
 
+
         /// <summary>
-        /// 一个委托对象，用于存储处理操作。
+        /// 处理委托。
         /// </summary>
         private Delegate processDelegate;
 
+
         /// <summary>
-        /// 获取处理结果的动作。
+        /// 获取处理动作。
         /// </summary>
-        /// <typeparam name="TResult">处理结果的数据类型。</typeparam>
-        /// <param name="action">处理数据缓冲区和处理结果的动作。</param>
-        /// <returns>处理结果的动作。</returns>
+        /// <typeparam name="TResult">处理动作返回值的类型。</typeparam>
+        /// <param name="action">处理动作。</param>
+        /// <returns>处理动作委托。</returns>
         public Action<TResult> GetProcessAction<TResult>(Action<DataBuffer<T1, T2, T3>, TResult> action)
         {
             processDelegate = action;
             return Process;
         }
 
+
         /// <summary>
-        /// 设置处理结果的动作。
+        /// 设置处理动作。
         /// </summary>
-        /// <typeparam name="TResult">处理结果的数据类型。</typeparam>
-        /// <param name="action">处理数据缓冲区和处理结果的动作。</param>
+        /// <typeparam name="TResult">处理动作返回值的类型。</typeparam>
+        /// <param name="action">处理动作。</param>
         public void SetProcessAction<TResult>(Action<DataBuffer<T1, T2, T3>, TResult> action)
         {
             processDelegate = action;
         }
 
+        /// <summary>
+        /// 执行处理动作。
+        /// </summary>
+        /// <typeparam name="TResult">处理动作返回值的类型。</typeparam>
+        /// <param name="varule">处理动作所需的参数。</param>
         public void Process<TResult>(TResult varule)
         {
             var callback = processDelegate as Action<DataBuffer<T1, T2, T3>, TResult>;
+            callback?.Invoke(this, varule);
+        }
+
+
+        /// <summary>
+        /// 释放数据缓冲区实例。
+        /// </summary>
+        public void Release()
+        {
+            ReleaseDataBuffer(this);
+        }
+
+
+        /// <summary>
+        /// 尝试重置数据缓冲区实例。
+        /// </summary>
+        /// <returns>如果成功重置，则返回 true；否则返回 false。</returns>
+        public bool TryReset()
+        {
+            Item1 = default;
+            Item2 = default;
+            Item3 = default;
+            return true;
+        }
+    }
+
+    /// <summary>
+    /// 泛型数据缓冲区类，支持对象池和重置功能。
+    /// </summary>
+    /// <typeparam name="T1">缓冲区中第一个元素的类型。</typeparam>
+    /// <typeparam name="T2">缓冲区中第二个元素的类型。</typeparam>
+    /// <typeparam name="T3">缓冲区中第三个元素的类型。</typeparam>
+    /// <typeparam name="T4">缓冲区中第四个元素的类型。</typeparam>
+    public class DataBuffer<T1, T2, T3, T4> : DisposableObject, IResettable
+    {
+        /// <summary>
+        /// 静态对象池，用于存储和重用 DataBuffer 实例。
+        /// </summary>
+        private static ObjectPool<DataBuffer<T1, T2, T3, T4>> pool = ObjectPool.CreateDefaultPool<DataBuffer<T1, T2, T3, T4>>();
+
+        /// <summary>
+        /// 从对象池中获取一个 DataBuffer 实例。
+        /// </summary>
+        /// <returns>从对象池中获取的 DataBuffer 实例。</returns>
+        public static DataBuffer<T1, T2, T3, T4> GetDataBuffer() => pool.Get();
+
+        /// <summary>
+        /// 将 DataBuffer 实例释放回对象池。
+        /// </summary>
+        /// <param name="item">要释放的 DataBuffer 实例。</param>
+        public static void ReleaseDataBuffer(DataBuffer<T1, T2, T3, T4> item) => pool.Release(item);
+
+        /// <summary>
+        /// 缓冲区中的第一个元素。
+        /// </summary>
+        public T1 Item1 { get; set; }
+
+        /// <summary>
+        /// 缓冲区中的第二个元素。
+        /// </summary>
+        public T2 Item2 { get; set; }
+
+        /// <summary>
+        /// 缓冲区中的第三个元素。
+        /// </summary>
+        public T3 Item3 { get; set; }
+
+        /// <summary>
+        /// 缓冲区中的第四个元素。
+        /// </summary>
+        public T4 Item4 { get; set; }
+
+        /// <summary>
+        /// 用于处理缓冲区数据的委托。
+        /// </summary>
+        private Delegate processDelegate;
+
+        /// <summary>
+        /// 获取处理缓冲区数据的动作。
+        /// </summary>
+        /// <typeparam name="TResult">处理结果的数据类型。</typeparam>
+        /// <param name="action">处理数据缓冲区和处理结果的动作。</param>
+        /// <returns>处理动作。</returns>
+        public Action<TResult> GetProcessAction<TResult>(Action<DataBuffer<T1, T2, T3, T4>, TResult> action)
+        {
+            processDelegate = action;
+            return Process;
+        }
+
+        /// <summary>
+        /// 设置处理缓冲区数据的动作。
+        /// </summary>
+        /// <typeparam name="TResult">处理结果的数据类型。</typeparam>
+        /// <param name="action">处理数据缓冲区和处理结果的动作。</param>
+        public void SetProcessAction<TResult>(Action<DataBuffer<T1, T2, T3, T4>, TResult> action)
+        {
+            processDelegate = action;
+        }
+
+        /// <summary>
+        /// 处理缓冲区数据。
+        /// </summary>
+        /// <typeparam name="TResult">处理结果的数据类型。</typeparam>
+        /// <param name="varule">处理结果。</param>
+        public void Process<TResult>(TResult varule)
+        {
+            var callback = processDelegate as Action<DataBuffer<T1, T2, T3, T4>, TResult>;
             callback?.Invoke(this, varule);
         }
 
@@ -359,6 +484,8 @@ namespace ExtenderApp.Common.DataBuffers
         {
             Item1 = default;
             Item2 = default;
+            Item3 = default;
+            Item4 = default;
             return true;
         }
     }

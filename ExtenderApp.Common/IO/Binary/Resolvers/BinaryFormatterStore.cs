@@ -3,7 +3,7 @@ using ExtenderApp.Data;
 
 namespace ExtenderApp.Common
 {
-    internal class BinaryFormatterStore : DictionaryStore<Type, Type>, IBinaryFormatterStore
+    internal class BinaryFormatterStore : Dictionary<Type, Type>, IBinaryFormatterStore
     {
         public void AddFormatter(Type type, Type TypeFormatter)
         {

@@ -19,6 +19,9 @@ namespace ExtenderApp.Torrent
             services.AddTransient<HttpTrackerParser>();
             services.AddTransient<BTMessageParser>();
 
+            services.AddSingleton<TorrentProvider>();
+            services.AddSingleton<TorrentFileForamtter>();
+
             services.AddSingleton(new LocalTorrentInfo
             {
                 Port = 6881,

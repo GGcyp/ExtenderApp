@@ -8,8 +8,8 @@ namespace ExtenderApp.Data
     public class Node<T> where T : Node<T>
     {
         private const int c_DefaultSize = 4;
-        private int m_NodeCount;
-        public int Count => m_NodeCount;
+        private int nodeCount;
+        public int Count => nodeCount;
 
         public T? ParentNode { get; set; }
 
@@ -35,7 +35,7 @@ namespace ExtenderApp.Data
         }
         public bool HasChildNodes => nodes != null && Count > 0;
 
-        protected bool CheckIndexOut(int index) => index < 0 || index > m_NodeCount - 1;
+        protected bool CheckIndexOut(int index) => index < 0 || index > nodeCount - 1;
 
         protected void CreateOrExpansionNodes()
         {
@@ -45,7 +45,7 @@ namespace ExtenderApp.Data
                 return;
             }
 
-            if (m_NodeCount + 1 < nodes!.Length) return;
+            if (nodeCount + 1 < nodes!.Length) return;
 
             var array = nodes;
             nodes = new T[nodes.Length * 2];
@@ -65,8 +65,8 @@ namespace ExtenderApp.Data
             CreateOrExpansionNodes();
 
             node.ParentNode = this as T;
-            nodes![m_NodeCount] = node;
-            m_NodeCount++;
+            nodes![nodeCount] = node;
+            nodeCount++;
         }
 
         /// <summary>
@@ -83,7 +83,7 @@ namespace ExtenderApp.Data
 
             if (!HasChildNodes) return false;
 
-            for (int i = 0; i < m_NodeCount; i++)
+            for (int i = 0; i < nodeCount; i++)
             {
                 if (nodes?[i] == node)
                 {
@@ -112,11 +112,11 @@ namespace ExtenderApp.Data
             T resultNode = null;
             if (CheckIndexOut(index)) return resultNode;
             resultNode = nodes[index];
-            for (int i = index; i < m_NodeCount - 1; i++)
+            for (int i = index; i < nodeCount - 1; i++)
             {
                 nodes[i] = nodes[i + 1];
             }
-            m_NodeCount--;
+            nodeCount--;
             resultNode.RemoveParentNode();
             return resultNode;
         }
@@ -147,7 +147,7 @@ namespace ExtenderApp.Data
             //没有子集返回false
             if (!HasChildNodes) return false;
 
-            for (int i = 0; i < m_NodeCount; i++)
+            for (int i = 0; i < nodeCount; i++)
             {
                 //找到了
                 var n = this[i];
@@ -158,7 +158,7 @@ namespace ExtenderApp.Data
                 }
             }
 
-            for (int i = 0; i < m_NodeCount; i++)
+            for (int i = 0; i < nodeCount; i++)
             {
                 //找到了
                 var n = this[i];
@@ -167,6 +167,18 @@ namespace ExtenderApp.Data
 
             return false;
         }
+
+        /// <summary>
+        /// 清除所有记录或数据
+        /// </summary>
+        public void Clear()
+        {            if (nodes == null) return;            for (int i = 0; i < nodeCount; i++)
+            {
+                nodes[i] = default;
+            }            nodeCount = 0;
+            ParentNode = default;
+        }
+
 
         #region Loop
 

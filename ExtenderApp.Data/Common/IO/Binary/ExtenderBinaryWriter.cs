@@ -178,6 +178,22 @@ namespace ExtenderApp.Data
         }
 
         /// <summary>
+        /// 将一个字节写入缓冲区。
+        /// </summary>
+        /// <param name="source">要写入的字节。</param>
+        /// <remarks>
+        /// 使用 [MethodImpl(MethodImplOptions.AggressiveInlining)] 属性来指示编译器尽可能内联此方法，
+        /// 以提高性能。
+        /// </remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Write(byte source)
+        {
+            var span = GetSpan(1);
+            span[0] = source;
+            Advance(1);
+        }
+
+        /// <summary>
         /// 确保有足够的空间写入指定大小的数据。
         /// </summary>
         /// <param name="count">期望的空间大小。</param>
@@ -302,6 +318,11 @@ namespace ExtenderApp.Data
                 _segment.AsSpan(0, _buffered).CopyTo(realSpan);
                 SequencePool = null;
             }
+            else if (Output != null)
+            {
+                var realSpan = Output.GetSpan(_buffered);
+                _segment.AsSpan(0, _buffered).CopyTo(realSpan);
+            }
         }
 
         public void Dispose()
@@ -327,8 +348,8 @@ namespace ExtenderApp.Data
         public static implicit operator ExtenderBinaryReader(ExtenderBinaryWriter writer)
         {
             // 这里假设你有 FlushAndGetArray 或类似方法获取已写入的字节
-            var bytes = writer.FlushAndGetArray();
-            return new ExtenderBinaryReader(bytes);
+            writer.Commit();
+            return new ExtenderBinaryReader(writer.Rental.Value);
         }
     }
 }

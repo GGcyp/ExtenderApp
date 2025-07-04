@@ -3,7 +3,7 @@
 
 namespace ExtenderApp.MainViews
 {
-    public class DisplayDetailsStore : Store<DisplayDetails>
+    public class DisplayDetailsList : List<DisplayDetails>
     {
 
     }

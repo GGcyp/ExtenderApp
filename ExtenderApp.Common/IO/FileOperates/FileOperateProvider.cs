@@ -1,7 +1,5 @@
 ﻿using System.Collections.Concurrent;
-using System.IO.MemoryMappedFiles;
 using ExtenderApp.Abstract;
-using ExtenderApp.Common.Error;
 using ExtenderApp.Common.ObjectPools;
 using ExtenderApp.Data;
 
@@ -12,6 +10,8 @@ namespace ExtenderApp.Common.IO
     /// </summary>
     public class FileOperateProvider : DisposableObject, IFileOperateProvider
     {
+        private const int ReleaseTime = 1;
+
         /// <summary>
         /// 文件并发操作对象池
         /// </summary>
@@ -83,6 +83,11 @@ namespace ExtenderApp.Common.IO
             }
         }
 
+        public void ReleaseOperate(IFileOperate fileOperate)
+        {
+            ReleaseOperate(fileOperate.Info.GetHashCode());
+        }
+
         /// <summary>
         /// 释放指定的文件操作对象。
         /// </summary>
@@ -122,9 +127,14 @@ namespace ExtenderApp.Common.IO
                 _task.Pause();
 
             List<int> list = new List<int>(_operateDict.Count);
+            var now = DateTime.Now;
             foreach (var pair in _operateDict)
             {
-                if (!pair.Value.IsExecuting)
+                var fileOperate = pair.Value;
+                if (!fileOperate.IsHosted)
+                    continue;
+
+                if (!fileOperate.IsExecuting && (System.Math.Abs((fileOperate.LastOperateTime - now).TotalMinutes) > ReleaseTime))
                 {
                     list.Add(pair.Key);
                 }

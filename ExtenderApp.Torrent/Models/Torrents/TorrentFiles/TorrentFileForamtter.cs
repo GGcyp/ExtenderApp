@@ -1,43 +1,30 @@
-﻿using System.IO;
+﻿using System.Buffers;
+using System.IO;
 using System.Security.Cryptography;
 using System.Text;
 using ExtenderApp.Abstract;
 using ExtenderApp.Common.DataBuffers;
-using static ExtenderApp.Torrent.TorrentFile;
+using ExtenderApp.Data;
 
 namespace ExtenderApp.Torrent
 {
-    internal class TorrentFileForamtter
+    public class TorrentFileForamtter
     {
         private readonly IHashProvider _hashProvider;
+        private readonly SequencePool<byte> _sequencePool;
 
-        public TorrentFileForamtter(IHashProvider hashProvider)
+        public TorrentFileForamtter(IHashProvider hashProvider, SequencePool<byte> sequencePool)
         {
             _hashProvider = hashProvider;
+            _sequencePool = sequencePool;
         }
 
         #region Decode
 
-        private struct TorrentBuffer
+        public TorrentFile Decode(Memory<byte> data)
         {
-            public int Position { get; set; }
-
-            public TorrentBuffer()
-            {
-                Position = 0;
-            }
-        }
-
-        public TorrentFile Decode(IFileOperate operate)
-        {
-            byte[] data = operate.Read();
-            return Decode(data);
-        }
-
-        public TorrentFile Decode(byte[] data)
-        {
-            TorrentBuffer buffer = new TorrentBuffer();
-            var dict = DecodeValue(data, ref buffer) as Dictionary<string, object>;
+            int position = 0;
+            var dict = DecodeValue(data, ref position) as Dictionary<string, object>;
             if (dict == null)
                 throw new InvalidDataException("无效种子文件格式");
 
@@ -90,15 +77,14 @@ namespace ExtenderApp.Torrent
                 torrentFile.Name = DecodeString(nameObj);
 
             if (infoDict.TryGetValue("piece length", out var pieceLengthObj))
-                torrentFile.PieceLength = Convert.ToInt64(pieceLengthObj);
+                torrentFile.PieceLength = DecodeLong(pieceLengthObj);
 
             if (infoDict.TryGetValue("pieces", out var piecesObj))
             {
-                var dataBuffer = piecesObj as DataBuffer<int, int>;
+                var dataBuffer = piecesObj as DataBuffer<int, int, byte[]>;
                 if (dataBuffer != null)
                 {
-                    byte[] pieces = new byte[dataBuffer.Item2];
-                    Array.Copy(data, 0, pieces, dataBuffer.Item1, dataBuffer.Item2);
+                    byte[] pieces = dataBuffer.Item3.AsSpan(dataBuffer.Item1, dataBuffer.Item2).ToArray();
                     torrentFile.Pieces = pieces;
                 }
             }
@@ -108,7 +94,7 @@ namespace ExtenderApp.Torrent
             node.Name = torrentFile.Name;
             if (isSingleFile)
             {
-                node.Length = Convert.ToInt64(lengthObj);
+                node.Length = DecodeLong(lengthObj);
                 node.IsFile = true;
             }
             else
@@ -168,21 +154,41 @@ namespace ExtenderApp.Torrent
                         throw new InvalidDataException("路径节点未正确创建，childNode 仍为根节点，可能路径解析逻辑有误。请检查种子文件的 path 字段或解析实现。");
 
                     if (fileDict.TryGetValue("length", out lengthObj))
-                        childNode.Length = Convert.ToInt64(lengthObj);
+                        childNode.Length = DecodeLong(lengthObj);
                 }
             }
 
             return torrentFile;
         }
 
+        private long DecodeLong(object obj)
+        {
+            if (obj == null || obj is not DataBuffer<int, int, (byte[], byte)> dataBuffer)
+                return 0;
+
+            string result = DecodeString(dataBuffer.Item1, dataBuffer.Item2, dataBuffer.Item3.Item1);
+            dataBuffer.Release();
+            return long.Parse(result);
+        }
+
         private string DecodeString(object obj)
         {
-            if (obj == null || obj is not DataBuffer<int, int, byte[]> dataBuffer)
+            return DecodeString(obj as DataBuffer<int, int, Memory<byte>, byte>);
+        }
+
+        private string DecodeString(DataBuffer<int, int, Memory<byte>, byte>? dataBuffer)
+        {
+            if (dataBuffer == null)
                 return string.Empty;
 
-            string result = Encoding.UTF8.GetString(dataBuffer.Item3, dataBuffer.Item1, dataBuffer.Item2);
+            string result = DecodeString(dataBuffer.Item1, dataBuffer.Item2, dataBuffer.Item3);
             dataBuffer.Release();
             return result;
+        }
+
+        private string DecodeString(int start, int length, Memory<byte> data)
+        {
+            return Encoding.UTF8.GetString(data.Span.Slice(start, length));
         }
 
         private byte[] EncodeInfoDictionary(Dictionary<string, object> infoDict)
@@ -190,21 +196,21 @@ namespace ExtenderApp.Torrent
             return Encode(infoDict);
         }
 
-        private object DecodeValue(byte[] data, ref TorrentBuffer buffer)
+        private object DecodeValue(Memory<byte> data, ref int position)
         {
-            if (buffer.Position >= data.Length)
+            if (position >= data.Length)
                 return null;
 
-            char type = (char)data[buffer.Position];
+            char type = (char)data.Span[position];
 
             switch (type)
             {
                 case 'd': // 字典
-                    return DecodeDictionary(data, ref buffer);
+                    return DecodeDictionary(data, ref position);
                 case 'l': // 列表
-                    return DecodeList(data, ref buffer);
+                    return DecodeList(data, ref position);
                 case 'i': // 整数
-                    return DecodeInteger(data, ref buffer);
+                    return DecodeInteger(data, ref position);
                 case '0':
                 case '1':
                 case '2':
@@ -215,70 +221,76 @@ namespace ExtenderApp.Torrent
                 case '7':
                 case '8':
                 case '9': // 字符串
-                    return DecodeDataBuffer(data, ref buffer);
+                    return DecodeDataBuffer(data, ref position);
                 default:
                     throw new InvalidDataException($"Invalid Bencode type: {type}");
             }
         }
 
-        private DataBuffer<int, int, byte[]> DecodeDataBuffer(byte[] data, ref TorrentBuffer buffer)
+        private DataBuffer<int, int, Memory<byte>, byte> DecodeDataBuffer(Memory<byte> data, ref int position)
         {
-            int colonPos = Array.IndexOf(data, (byte)':', buffer.Position);
-            if (colonPos == -1)
+            //int colonPos = Array.IndexOf(data, (byte)':', position);
+            int colonLength = data.Span.Slice(position).IndexOf((byte)':');
+            if (colonLength == -1)
                 throw new InvalidDataException("Missing colon in string");
 
-            int length = int.Parse(Encoding.ASCII.GetString(data, buffer.Position, colonPos - buffer.Position));
+            int length = int.Parse(Encoding.ASCII.GetString(data.Span.Slice(position, colonLength)));
 
-            var dataBuffer = DataBuffer<int, int, byte[]>.GetDataBuffer();
-
-            int position = colonPos + 1;
-            dataBuffer.Item1 = position;
+            var dataBuffer = DataBuffer<int, int, Memory<byte>, byte>.GetDataBuffer();
+            dataBuffer.Item1 = position + colonLength + 1;
             dataBuffer.Item2 = length;
             dataBuffer.Item3 = data;
-            buffer.Position = position + length;
+            position += colonLength + 1 + length;
             return dataBuffer;
         }
 
-        private long DecodeInteger(byte[] data, ref TorrentBuffer buffer)
+        private DataBuffer<int, int, Memory<byte>, byte> DecodeInteger(Memory<byte> data, ref int position)
         {
-            buffer.Position++; // 跳过 'i'
-            int endPos = Array.IndexOf(data, (byte)'e', buffer.Position);
-            if (endPos == -1)
+            position++; // 跳过 'i'
+            //int endPos = Array.IndexOf(data, (byte)'e', position);
+            int length = data.Span.Slice(position).IndexOf((byte)'e');
+            if (length == -1)
                 throw new InvalidDataException("Missing 'e' in integer");
 
-            long result = long.Parse(Encoding.ASCII.GetString(data, buffer.Position, endPos - buffer.Position));
-            buffer.Position = endPos + 1;
-            return result;
+            //long result = long.Parse(Encoding.ASCII.GetString(data, position, endPos - position));
+
+            var dataBuffer = DataBuffer<int, int, Memory<byte>, byte>.GetDataBuffer();
+            dataBuffer.Item1 = position;
+            dataBuffer.Item2 = length;
+            dataBuffer.Item3 = data;
+            dataBuffer.Item4 = (byte)'i';
+            position += length + 1;
+            return dataBuffer;
         }
 
-        private List<object> DecodeList(byte[] data, ref TorrentBuffer buffer)
+        private List<object> DecodeList(Memory<byte> data, ref int position)
         {
-            buffer.Position++; // 跳过 'l'
+            position++; // 跳过 'l'
             var list = new List<object>();
 
-            while ((char)data[buffer.Position] != 'e')
+            while ((char)data.Span[position] != 'e')
             {
-                list.Add(DecodeValue(data, ref buffer));
+                list.Add(DecodeValue(data, ref position));
             }
 
-            buffer.Position++; // 跳过 'e'
+            position++; // 跳过 'e'
             return list;
         }
 
-        private Dictionary<string, object> DecodeDictionary(byte[] data, ref TorrentBuffer buffer)
+        private Dictionary<string, object> DecodeDictionary(Memory<byte> data, ref int position)
         {
-            buffer.Position++; // 跳过 'd'
+            position++; // 跳过 'd'
             var dict = new Dictionary<string, object>();
 
-            while ((char)data[buffer.Position] != 'e')
+            while ((char)data.Span[position] != 'e')
             {
-                var dataBuffer = DecodeDataBuffer(data, ref buffer);
+                var dataBuffer = DecodeDataBuffer(data, ref position);
                 string key = DecodeString(dataBuffer);
-                object value = DecodeValue(data, ref buffer);
+                object value = DecodeValue(data, ref position);
                 dict[key] = value;
             }
 
-            buffer.Position++; // 跳过 'e'
+            position++; // 跳过 'e'
             return dict;
         }
 
@@ -291,74 +303,74 @@ namespace ExtenderApp.Torrent
         /// </summary>
         public byte[] Encode(object value)
         {
-            using var ms = new MemoryStream();
-            EncodeValue(ms, value);
-            return ms.ToArray();
+            var writer = new ExtenderBinaryWriter(_sequencePool.Rent());
+            EncodeValue(ref writer, value);
+            return writer.FlushAndGetArray();
         }
 
-        private void EncodeValue(Stream stream, object value)
+        private void EncodeValue(ref ExtenderBinaryWriter writer, object value)
         {
             switch (value)
             {
                 case string s:
-                    EncodeString(stream, s);
+                    EncodeString(ref writer, s);
                     break;
                 case byte[] bytes:
-                    EncodeBytes(stream, bytes);
+                    EncodeBytes(ref writer, bytes);
                     break;
                 case long l:
-                    EncodeInteger(stream, l);
+                    EncodeInteger(ref writer, l);
                     break;
                 case int i:
-                    EncodeInteger(stream, i);
+                    EncodeInteger(ref writer, i);
                     break;
                 case IList<object> list:
-                    EncodeList(stream, list);
+                    EncodeList(ref writer, list);
                     break;
                 case IDictionary<string, object> dict:
-                    EncodeDictionary(stream, dict);
+                    EncodeDictionary(ref writer, dict);
                     break;
-                case DataBuffer<int, int, byte[]> dataB:
-                    EncodeDataBuffer(stream, dataB);
+                case DataBuffer<int, int, Memory<byte>, byte> dataB:
+                    EncodeDataBuffer(ref writer, dataB);
                     break;
                 default:
                     throw new NotSupportedException($"不支持的Bencode类型: {value?.GetType()}");
             }
         }
 
-        private void EncodeString(Stream stream, string value)
+        private void EncodeString(ref ExtenderBinaryWriter writer, string value)
         {
             var bytes = Encoding.UTF8.GetBytes(value);
-            EncodeBytes(stream, bytes);
+            EncodeBytes(ref writer, bytes);
         }
 
-        private void EncodeBytes(Stream stream, byte[] bytes)
+        private void EncodeBytes(ref ExtenderBinaryWriter writer, byte[] bytes)
         {
             var lenBytes = Encoding.ASCII.GetBytes(bytes.Length.ToString());
-            stream.Write(lenBytes, 0, lenBytes.Length);
-            stream.WriteByte((byte)':');
-            stream.Write(bytes, 0, bytes.Length);
+            writer.Write(lenBytes.AsSpan(0, lenBytes.Length));
+            writer.Write((byte)':');
+            writer.Write(bytes.AsSpan());
         }
 
-        private void EncodeInteger(Stream stream, long value)
+        private void EncodeInteger(ref ExtenderBinaryWriter writer, long value)
         {
-            stream.WriteByte((byte)'i');
+            writer.Write((byte)'i');
             var bytes = Encoding.ASCII.GetBytes(value.ToString());
-            stream.Write(bytes, 0, bytes.Length);
-            stream.WriteByte((byte)'e');
+            writer.Write(bytes.AsSpan());
+            writer.Write((byte)'e');
         }
 
-        private void EncodeList(Stream stream, IList<object> list)
+        private void EncodeList(ref ExtenderBinaryWriter writer, IList<object> list)
         {
-            stream.WriteByte((byte)'l');
+            writer.Write((byte)'l');
             foreach (var item in list)
             {
-                EncodeValue(stream, item);
+                EncodeValue(ref writer, item);
             }
-            stream.WriteByte((byte)'e');
+            writer.Write((byte)'e');
         }
 
-        private void EncodeDictionary(Stream stream, IDictionary<string, object> dict)
+        private void EncodeDictionary(ref ExtenderBinaryWriter writer, IDictionary<string, object> dict)
         {
             //stream.WriteByte((byte)'d');
             //foreach (var kv in dict)
@@ -368,25 +380,42 @@ namespace ExtenderApp.Torrent
             //}
             //stream.WriteByte((byte)'e');
 
-            stream.WriteByte((byte)'d');
+            writer.Write((byte)'d');
             foreach (var key in dict.Keys.OrderBy(k => k, StringComparer.Ordinal))
             {
-                EncodeString(stream, key);
-                EncodeValue(stream, dict[key]);
+                EncodeString(ref writer, key);
+                EncodeValue(ref writer, dict[key]);
             }
-            stream.WriteByte((byte)'e');
+            writer.Write((byte)'e');
         }
 
-        private void EncodeDataBuffer(Stream stream, DataBuffer<int, int, byte[]> dataBuffer)
+        private void EncodeDataBuffer(ref ExtenderBinaryWriter writer, DataBuffer<int, int, Memory<byte>, byte> dataBuffer)
         {
             var start = dataBuffer.Item1;
             var length = dataBuffer.Item2;
             var bytes = dataBuffer.Item3;
+            var type = dataBuffer.Item4;
 
-            var lenBytes = Encoding.ASCII.GetBytes(length.ToString());
-            stream.Write(lenBytes, 0, lenBytes.Length);
-            stream.WriteByte((byte)':');
-            stream.Write(bytes, start, length);
+            switch (type)
+            {
+                case (byte)'i':
+                    writer.Write(type);
+                    writer.Write(bytes.Span.Slice(start, length));
+                    writer.Write((byte)'e');
+                    break;
+                default:
+                    var lengthString = length.ToString();
+                    int len = Encoding.ASCII.GetByteCount(lengthString);
+                    byte[] buffer = ArrayPool<byte>.Shared.Rent(len);
+
+                    // 推荐用这个重载，避免内容不对
+                    int written = Encoding.ASCII.GetBytes(lengthString, 0, lengthString.Length, buffer, 0);
+                    writer.Write(buffer.AsSpan(0, written));
+                    writer.Write((byte)':');
+                    writer.Write(bytes.Span.Slice(start, length));
+                    ArrayPool<byte>.Shared.Return(buffer);
+                    break;
+            }
         }
 
         #endregion

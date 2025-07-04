@@ -27,6 +27,10 @@ namespace ExtenderApp.Common.IO
 
         public LocalFileInfo Info => Data.OperateInfo.LocalFileInfo;
 
+        public DateTime LastOperateTime { get; private set; }
+
+        public bool IsHosted { get; set; } = true;
+
         #region Read
 
         public byte[] Read()
@@ -68,6 +72,7 @@ namespace ExtenderApp.Common.IO
 
             var result = operation.ReslutBytes;
             operation.Release();
+            LastOperateTime = DateTime.Now;
             return result;
         }
 
@@ -105,7 +110,7 @@ namespace ExtenderApp.Common.IO
 
             length = length == -1 ? (int)Data.CurrentCapacity : length;
             operation.Set(position, length, bytes, bytesStart, callback);
-
+            LastOperateTime = DateTime.Now;
             ExecuteAsync(operation);
         }
 
@@ -136,6 +141,7 @@ namespace ExtenderApp.Common.IO
             var operation = _writeOperationPool.Get();
             operation.Set(writer, filePosition, null);
             Execute(operation);
+            LastOperateTime = DateTime.Now;
             operation.Release();
         }
 
@@ -166,7 +172,7 @@ namespace ExtenderApp.Common.IO
             var operation = _writeOperationPool.Get();
             operation.Set(bytes, filePosition, length, bytesPosition, null);
             Execute(operation);
-
+            LastOperateTime = DateTime.Now;
             operation.Release();
         }
 
@@ -197,6 +203,7 @@ namespace ExtenderApp.Common.IO
             var operation = _writeOperationPool.Get();
             operation.Set(writer, filePosition, callback);
             ExecuteAsync(operation);
+            LastOperateTime = DateTime.Now;
             operation.Release();
         }
 
@@ -228,6 +235,7 @@ namespace ExtenderApp.Common.IO
             var operation = _writeOperationPool.Get();
             operation.Set(bytes, filePosition, length, bytesPosition, callback);
             ExecuteAsync(operation);
+            LastOperateTime = DateTime.Now;
         }
 
         #endregion
@@ -235,6 +243,7 @@ namespace ExtenderApp.Common.IO
         public void ExpandCapacity(long newCapacity)
         {
             Data.ExpandCapacity(newCapacity);
+            LastOperateTime = DateTime.Now;
         }
     }
 }

@@ -19,5 +19,11 @@ namespace ExtenderApp.Abstract
         /// </summary>
         /// <param name="info">文件操作信息</param>
         void ReleaseOperate(FileOperateInfo info);
+
+        /// <summary>
+        /// 执行释放操作
+        /// </summary>
+        /// <param name="fileOperate">文件操作接口</param>
+        void ReleaseOperate(IFileOperate fileOperate);
     }
 }

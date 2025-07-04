@@ -1,7 +1,6 @@
 ﻿using ExtenderApp.Common;
 using ExtenderApp.Common.Networks;
 using ExtenderApp.Abstract;
-using System.Diagnostics;
 
 namespace ExtenderApp.Torrent
 {
@@ -45,24 +44,12 @@ namespace ExtenderApp.Torrent
             TrackerUrl = trackerUrl;
 
             _client = client;
-            _client.OnSendedTraffic += _client_OnSendedTraffic;
-            _client.OnReceiveingTraffic += _client_OnReceiveingTraffic;
 
             if (_client is LinkClient<IUdpLinker, UdpTrackerParser> udpClient)
             {
                 udpClient.Parser.OnReceiveConnectionId += OnReceiveConnectionId;
                 isUdpTracker = true;
             }
-        }
-
-        private void _client_OnReceiveingTraffic(int obj)
-        {
-            Debug.Print($"接收到{obj}");
-        }
-
-        private void _client_OnSendedTraffic(int obj)
-        {
-            Debug.Print($"发送{obj}");
         }
 
         /// <summary>
@@ -147,7 +134,7 @@ namespace ExtenderApp.Torrent
             cts?.Cancel();
             isConnection = true;
             OnConnection?.Invoke(this);
-        }     
+        }
     }
 
     ///// <summary>
