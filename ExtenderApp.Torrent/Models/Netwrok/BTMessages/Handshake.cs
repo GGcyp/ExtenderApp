@@ -1,5 +1,4 @@
-﻿using System.IO;
-using System.Text;
+﻿using System.Text;
 using ExtenderApp.Data;
 
 namespace ExtenderApp.Torrent
@@ -7,10 +6,19 @@ namespace ExtenderApp.Torrent
     /// <summary>
     /// BitTorrent 握手消息
     /// </summary>
-    public class Handshake
+    public struct Handshake
     {
+        /// <summary>
+        /// 表示BitTorrent协议的字符串。
+        /// </summary>
         private const string ProtocolString = "BitTorrent protocol";
+        /// <summary>
+        /// 将ProtocolString转换为ASCII编码的字节数组。
+        /// </summary>
         private static readonly byte[] ProtocolBytes = Encoding.ASCII.GetBytes(ProtocolString);
+        /// <summary>
+        /// 保留字节数组，长度为8。
+        /// </summary>
         private static readonly byte[] ReservedBytes = new byte[8];
 
         public InfoHash Hash { get; }

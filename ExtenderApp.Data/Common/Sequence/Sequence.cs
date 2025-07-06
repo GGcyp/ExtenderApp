@@ -1,4 +1,5 @@
 ﻿using System.Buffers;
+using System.Collections.Concurrent;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 
@@ -29,7 +30,7 @@ namespace ExtenderApp.Data
         /// <summary>
         /// 序列段对象池。
         /// </summary>
-        private static readonly Stack<SequenceSegment> SegmentPool = new Stack<SequenceSegment>();
+        private static readonly ConcurrentStack<SequenceSegment> SegmentPool = new();
 
         /// <summary>
         /// 内存池。
@@ -161,8 +162,13 @@ namespace ExtenderApp.Data
         {
             if (memory.Length > 0)
             {
-                var segment = SegmentPool.Count > 0 ? SegmentPool.Pop() : new SequenceSegment();
-                segment.AssignForeign(memory);
+                SequenceSegment? segment;
+                if (SegmentPool.Count > 0)
+                    SegmentPool.TryPop(out segment);
+                else
+                    segment = new SequenceSegment();
+
+                segment!.AssignForeign(memory);
                 Append(segment);
             }
         }
@@ -220,7 +226,12 @@ namespace ExtenderApp.Data
 
             if (minBufferSize.HasValue)
             {
-                var segment = SegmentPool.Count > 0 ? SegmentPool.Pop() : new SequenceSegment();
+                SequenceSegment? segment;
+                if (SegmentPool.Count > 0)
+                    SegmentPool.TryPop(out segment);
+                else
+                    segment = new SequenceSegment();
+
                 if (_arrayPool != null)
                 {
                     segment.Assign(_arrayPool.Rent(minBufferSize.Value == -1 ? DefaultLengthFromArrayPool : minBufferSize.Value));

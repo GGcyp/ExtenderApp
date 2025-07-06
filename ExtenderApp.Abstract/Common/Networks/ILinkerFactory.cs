@@ -17,11 +17,19 @@ namespace ExtenderApp.Abstract
         T CreateLinker<T>() where T : ILinker;
 
         /// <summary>
-        /// 创建一个指定类型的连接器实例。
+        /// 创建一个指定类型的链接器。
         /// </summary>
-        /// <typeparam name="T">连接器的类型，必须实现ILinker接口。</typeparam>
-        /// <param name="socket">与连接器关联的Socket对象，可以为null。</param>
-        /// <returns>返回指定类型的连接器实例。</returns>
-        T CreateLinker<T>(Socket? socket) where T : ILinker;
+        /// <typeparam name="T">链接器的类型，必须实现ILinker接口。</typeparam>
+        /// <param name="socket">用于创建链接器的Socket对象。</param>
+        /// <returns>返回指定类型的链接器实例。</returns>
+        T CreateLinker<T>(Socket socket) where T : ILinker;
+
+        /// <summary>
+        /// 创建一个指定类型的链接器。
+        /// </summary>
+        /// <typeparam name="T">链接器的类型，必须实现ILinker接口。</typeparam>
+        /// <param name="addressFamily">地址族，用于指定链接器使用的地址族。</param>
+        /// <returns>返回指定类型的链接器实例。</returns>
+        T CreateLinker<T>(AddressFamily addressFamily) where T : ILinker;
     }
 }

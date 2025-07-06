@@ -3,6 +3,7 @@ using System.IO;
 using System.Security.Cryptography;
 using System.Text;
 using ExtenderApp.Abstract;
+using ExtenderApp.Common.Caches;
 using ExtenderApp.Common.DataBuffers;
 using ExtenderApp.Data;
 
@@ -12,11 +13,13 @@ namespace ExtenderApp.Torrent
     {
         private readonly IHashProvider _hashProvider;
         private readonly SequencePool<byte> _sequencePool;
+        private readonly StringCache _stringCache;
 
-        public TorrentFileForamtter(IHashProvider hashProvider, SequencePool<byte> sequencePool)
+        public TorrentFileForamtter(IHashProvider hashProvider, SequencePool<byte> sequencePool, StringCache stringCache)
         {
             _hashProvider = hashProvider;
             _sequencePool = sequencePool;
+            _stringCache = stringCache;
         }
 
         #region Decode
@@ -32,13 +35,19 @@ namespace ExtenderApp.Torrent
 
 
             if (dict.TryGetValue("announce", out var announceObj))
-                torrentFile.AnnounceList.Add(DecodeString(announceObj));
+                torrentFile.AnnounceList.Add(DecodeStringForCache(announceObj));
 
             if (dict.TryGetValue("comment", out var commentObj))
                 torrentFile.Comment = DecodeString(commentObj);
 
             if (dict.TryGetValue("created by", out var createdByObj))
-                torrentFile.CreatedBy = DecodeString(createdByObj);
+                torrentFile.CreatedBy = DecodeStringForCache(createdByObj);
+
+            //if (dict.TryGetValue("creation date", out var creationDateObj))
+            //{
+            //    var creationDateString = DecodeString(creationDateObj);
+            //    torrentFile.CreationDate = DateTime.Parse(creationDateString);
+            //}
 
             if (dict.TryGetValue("announce-list", out var announceListObj))
             {
@@ -52,7 +61,7 @@ namespace ExtenderApp.Torrent
                         {
                             foreach (var url in urls)
                             {
-                                torrentFile.AnnounceList.Add(DecodeString(url));
+                                torrentFile.AnnounceList.Add(DecodeStringForCache(url));
                             }
                         }
                     }
@@ -125,7 +134,7 @@ namespace ExtenderApp.Torrent
 
                         for (int j = 0; j < pathList.Count - 1; j++)
                         {
-                            var pathName = DecodeString(pathList[j]);
+                            var pathName = DecodeStringForCache(pathList[j]);
                             if (pathNode.Find(n => n.Name == pathName, out childNode))
                             {
                                 if (childNode.IsFile)
@@ -182,6 +191,22 @@ namespace ExtenderApp.Torrent
                 return string.Empty;
 
             string result = DecodeString(dataBuffer.Item1, dataBuffer.Item2, dataBuffer.Item3);
+            dataBuffer.Release();
+            return result;
+        }
+
+        private string DecodeStringForCache(object obj)
+        {
+            return DecodeStringForCache(obj as DataBuffer<int, int, Memory<byte>, byte>);
+        }
+
+        private string DecodeStringForCache(DataBuffer<int, int, Memory<byte>, byte>? dataBuffer)
+        {
+            if (dataBuffer == null)
+                return string.Empty;
+
+            //string result = DecodeString(dataBuffer.Item1, dataBuffer.Item2, dataBuffer.Item3);
+            string result = _stringCache.GetString(dataBuffer.Item3.Span.Slice(dataBuffer.Item1, dataBuffer.Item2), Encoding.UTF8);
             dataBuffer.Release();
             return result;
         }
@@ -285,7 +310,7 @@ namespace ExtenderApp.Torrent
             while ((char)data.Span[position] != 'e')
             {
                 var dataBuffer = DecodeDataBuffer(data, ref position);
-                string key = DecodeString(dataBuffer);
+                string key = DecodeStringForCache(dataBuffer);
                 object value = DecodeValue(data, ref position);
                 dict[key] = value;
             }

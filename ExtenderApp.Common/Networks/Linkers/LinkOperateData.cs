@@ -25,12 +25,20 @@ namespace ExtenderApp.Common.Networks
 
         public Socket Socket { get; set; }
 
-        public LinkOperateData(AddressFamily addressFamily, SocketType socketType, ProtocolType protocolType, Socket? socket)
+        public LinkOperateData(Socket socket)
+        {
+            AddressFamily = socket.AddressFamily;
+            ProtocolType = socket.ProtocolType;
+            SocketType = socket.SocketType;
+            Socket = socket ?? new Socket(AddressFamily, SocketType, ProtocolType);
+        }
+
+        public LinkOperateData(AddressFamily addressFamily, SocketType socketType, ProtocolType protocolType)
         {
             AddressFamily = addressFamily;
             SocketType = socketType;
             ProtocolType = protocolType;
-            Socket = socket ?? new Socket(AddressFamily, SocketType, ProtocolType);
+            Socket = new Socket(AddressFamily, SocketType, ProtocolType);
         }
     }
 }

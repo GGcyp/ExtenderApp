@@ -68,9 +68,55 @@ namespace ExtenderApp.Common.DataBuffers
             processDelegate = func;
         }
 
+        /// <summary>
+        /// 设置一个处理函数，该函数接受一个输入值并返回一个结果。
+        /// </summary>
+        /// <typeparam name="TValue">输入值的类型。</typeparam>
+        /// <typeparam name="TResult">返回值的类型。</typeparam>
+        /// <param name="func">处理函数。</param>
         public void SetProcessFunc<TValue, TResult>(Func<TValue, TResult> func)
         {
             processDelegate = func;
+        }
+
+        /// <summary>
+        /// 使用设置的处理函数处理输入值，并返回处理结果。
+        /// </summary>
+        /// <typeparam name="TValue">输入值的类型。</typeparam>
+        /// <typeparam name="TResult">返回值的类型。</typeparam>
+        /// <param name="value">输入值。</param>
+        /// <returns>处理结果，如果未设置处理函数则返回默认值。</returns>
+        public TResult? Process<TValue, TResult>(TValue value)
+        {
+            var func = processDelegate as Func<TValue, TResult>;
+            return func != null ? func.Invoke(value) : default;
+        }
+
+        /// <summary>
+        /// 设置一个处理函数，该函数接受两个输入值并返回一个结果。
+        /// </summary>
+        /// <typeparam name="T1">第一个输入值的类型。</typeparam>
+        /// <typeparam name="T2">第二个输入值的类型。</typeparam>
+        /// <typeparam name="TResult">返回值的类型。</typeparam>
+        /// <param name="func">处理函数。</param>
+        public void SetProcessFunc<T1, T2, TResult>(Func<T1, T2, TResult> func)
+        {
+            processDelegate = func;
+        }
+
+        /// <summary>
+        /// 使用设置的处理函数处理两个输入值，并返回处理结果。
+        /// </summary>
+        /// <typeparam name="T1">第一个输入值的类型。</typeparam>
+        /// <typeparam name="T2">第二个输入值的类型。</typeparam>
+        /// <typeparam name="TResult">返回值的类型。</typeparam>
+        /// <param name="item1">第一个输入值。</param>
+        /// <param name="item2">第二个输入值。</param>
+        /// <returns>处理结果，如果未设置处理函数则返回默认值。</returns>
+        public TResult? Process<T1, T2, TResult>(T1 item1, T2 item2)
+        {
+            var func = processDelegate as Func<T1, T2, TResult>;
+            return func != null ? func.Invoke(item1, item2) : default;
         }
 
         /// <summary>
@@ -82,19 +128,6 @@ namespace ExtenderApp.Common.DataBuffers
         {
             var func = processDelegate as Func<TResult>;
             return func != null ? func.Invoke() : default;
-        }
-
-        /// <summary>
-        /// 处理输入值并返回结果。
-        /// </summary>
-        /// <typeparam name="TValue">输入值的类型。</typeparam>
-        /// <typeparam name="TResult">返回结果的类型。</typeparam>
-        /// <param name="value">输入值。</param>
-        /// <returns>处理后的结果，如果处理失败则返回默认值。</returns>
-        public TResult? Process<TValue, TResult>(TValue value)
-        {
-            var func = processDelegate as Func<TValue, TResult>;
-            return func != null ? func.Invoke(value) : default;
         }
 
         /// <summary>

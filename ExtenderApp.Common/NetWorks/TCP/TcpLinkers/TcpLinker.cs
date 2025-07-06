@@ -20,14 +20,27 @@ namespace ExtenderApp.Common
         /// <returns>返回数据包长度。</returns>
         protected override int PacketLength => DEFALUT_DATA_LENGTH;
 
-        public TcpLinker(Socket? socket) : base(socket)
+        public TcpLinker(AddressFamily addressFamily) : base(addressFamily)
         {
 
         }
 
-        protected override LinkOperateData CreateLinkOperateData(Socket? socket)
+        public TcpLinker(Socket socket) : base(socket)
         {
-            return new LinkOperateData(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp, socket);
+
+        }
+
+        protected override LinkOperateData CreateLinkOperateData(Socket socket)
+        {
+            if (socket.ProtocolType != ProtocolType.Tcp)
+                throw new Exception("生成套字节错误");
+
+            return new LinkOperateData(socket);
+        }
+
+        protected override LinkOperateData CreateLinkOperateData(AddressFamily addressFamily)
+        {
+            return new LinkOperateData(addressFamily, SocketType.Stream, ProtocolType.Tcp);
         }
     }
 }

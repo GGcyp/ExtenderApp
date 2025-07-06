@@ -7,7 +7,7 @@ namespace ExtenderApp.Torrent
 {
     public class TorrentMainViewModel : ExtenderAppViewModel
     {
-        public TorrentMainViewModel(TorrentFileForamtter torrentFileForamtter, LinkClient<IUdpLinker, UdpTrackerParser> client, LocalTorrentInfo localTorrentInfo, IServiceStore serviceStore) : base(serviceStore)
+        public TorrentMainViewModel(TorrentProvider provider, IServiceStore serviceStore) : base(serviceStore)
         {
             //var tracker = new Tracker(client, new Uri("udp://tracker.opentrackr.org:1337/announce"));
             //// 这里可以添加对 tracker 的操作，例如发送请求、处理响应等
@@ -28,9 +28,15 @@ namespace ExtenderApp.Torrent
             //};
             //tracker.OnConnection += t => t.AnnounceAsync(trackerRequest);
 
-            var torrentFile = torrentFileForamtter.Decode(File.ReadAllBytes("E:\\迅雷下载\\G奶尤物｜易鳴夫妻｜奶昔吖｜唯美性愛檔 穿性感情趣制服舔逗雞巴乳交各種體位速插波濤洶湧垂涎欲滴 720p\\E8FF39F2A378FE05D004BE5FED5A679022AF264F.torrent"));
-            var path = _serviceStore.PathService.CreateFolderPathForAppRootFolder("test");
-            torrentFile.FileInfoNode.CreateFileOrFolder(path);
+            //var torrentFile = torrentFileForamtter.Decode();
+            //var path = _serviceStore.PathService.CreateFolderPathForAppRootFolder("test");
+            //torrentFile.FileInfoNode.CreateFileOrFolder(path);
+            var torrent = provider.GetTorrent(File.ReadAllBytes("E:\\迅雷下载\\587383C5492E191CEA4CA9AF068356D9A8E391FE.torrent"));
+            Task.Run(async () =>
+            {
+                await Task.Delay(10000);
+                torrent.AnnounceAsync();
+            });
         }
     }
 }

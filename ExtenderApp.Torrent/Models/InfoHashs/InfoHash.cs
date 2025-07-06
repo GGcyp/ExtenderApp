@@ -8,7 +8,7 @@ namespace ExtenderApp.Torrent
     /// </summary>
     public struct InfoHash : IEquatable<InfoHash>
     {
-        public static InfoHash Empty => new InfoHash(HashValue.Empty, HashValue.Empty);
+        public static InfoHash Empty => new InfoHash();
 
         /// <summary>
         /// 获取或设置种子文件的sha1哈希值

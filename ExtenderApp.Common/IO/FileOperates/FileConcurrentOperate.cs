@@ -29,8 +29,6 @@ namespace ExtenderApp.Common.IO
 
         public DateTime LastOperateTime { get; private set; }
 
-        public bool IsHosted { get; set; } = true;
-
         #region Read
 
         public byte[] Read()

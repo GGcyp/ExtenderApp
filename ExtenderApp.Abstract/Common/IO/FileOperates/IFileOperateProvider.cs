@@ -25,5 +25,19 @@ namespace ExtenderApp.Abstract
         /// </summary>
         /// <param name="fileOperate">文件操作接口</param>
         void ReleaseOperate(IFileOperate fileOperate);
+
+        /// <summary>
+        /// 释放文件操作对象。
+        /// </summary>
+        /// <param name="info">文件操作信息。</param>
+        /// <param name="fileOperate">返回的文件操作对象，可能为 null。</param>
+        void ReleaseOperate(FileOperateInfo info, out IFileOperate? fileOperate);
+
+        /// <summary>
+        /// 根据文件操作ID释放文件操作对象。
+        /// </summary>
+        /// <param name="id">文件操作ID。</param>
+        /// <param name="fileOperate">返回的文件操作对象，可能为 null。</param>
+        void ReleaseOperate(int id, out IFileOperate? fileOperate);
     }
 }

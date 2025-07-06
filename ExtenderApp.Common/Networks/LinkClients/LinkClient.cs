@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using System;
+using System.Net;
 using System.Net.Sockets;
 using ExtenderApp.Abstract;
 using ExtenderApp.Data;
@@ -14,7 +15,7 @@ namespace ExtenderApp.Common.Networks
 
         public abstract event Action<ILinker>? OnClose;
         public abstract event Action<ILinker>? OnConnect;
-        public abstract event Action<string> OnErrored;
+        public abstract event Action<Exception> OnErrored;
         public abstract event Action<byte[], int>? OnReceive;
         public abstract event Action<int>? OnSendedTraffic;
         public abstract event Action<int>? OnReceiveingTraffic;
@@ -27,6 +28,8 @@ namespace ExtenderApp.Common.Networks
         public abstract void Connect(IPAddress address, int port);
 
         public abstract void Connect(Uri uri);
+
+        public abstract void Connect(EndPoint point);
 
         public abstract void ConnectAsync(Uri uri);
 
@@ -103,7 +106,7 @@ namespace ExtenderApp.Common.Networks
             add => Linker.OnConnect += value;
             remove => Linker.OnConnect -= value;
         }
-        public override event Action<string> OnErrored
+        public override event Action<Exception> OnErrored
         {
             add => Linker.OnErrored += value;
             remove => Linker.OnErrored -= value;
@@ -150,6 +153,12 @@ namespace ExtenderApp.Common.Networks
         {
             Linker.OnConnect += PrivateConnected;
             Linker.Connect(uri);
+        }
+
+        public override void Connect(EndPoint point)
+        {
+            Linker.OnConnect += PrivateConnected;
+            Linker.Connect(point);
         }
 
         public override void ConnectAsync(Uri uri)

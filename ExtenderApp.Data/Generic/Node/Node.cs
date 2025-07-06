@@ -253,6 +253,41 @@ namespace ExtenderApp.Data
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <typeparam name="T1"></typeparam>
+        /// <param name="action"></param>
+        /// <param name="value"></param>
+        public void LoopChildNodes<T1>(Action<T, T1> action, ref T1 value)
+        {
+            if (!HasChildNodes) return;
+
+            for (int i = 0; i < Count; i++)
+            {
+                action(this[i], value);
+            }
+        }
+
+        /// <summary>
+        /// 遍历这个节点的子节点和之后的所有子项
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <typeparam name="T1"></typeparam>
+        /// <param name="action"></param>
+        /// <param name="value"></param>
+        public void LoopAllChildNodes<T1>(Action<T, T1> action, ref T1 value)
+        {
+            if (!HasChildNodes) return;
+
+            for (int i = 0; i < Count; i++)
+            {
+                action(this[i], value);
+                this[i].LoopAllChildNodes(action, ref value);
+            }
+        }
+
+        /// <summary>
+        /// 遍历这个节点的子项
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <typeparam name="T1"></typeparam>
         /// <typeparam name="T2"></typeparam>
         /// <param name="action"></param>
         /// <param name="value1"></param>

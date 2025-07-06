@@ -18,14 +18,6 @@ namespace ExtenderApp.Abstract
         /// <returns>最后一次操作的时间。</returns>
         DateTime LastOperateTime { get; }
 
-        /// <summary>
-        /// 获取或设置是否托管。
-        /// </summary>
-        /// <value>
-        /// 如果托管，则为 true；否则为 false。
-        /// </value>
-        bool IsHosted { get; set; }
-
         #region Write
 
         /// <summary>

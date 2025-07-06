@@ -17,6 +17,7 @@ namespace ExtenderApp.Torrent
             services.AddTransient<TorrentMainView>();
 
             services.AddTransient<HttpTrackerParser>();
+            services.AddSingleton<UdpTrackerParser>();
             services.AddTransient<BTMessageParser>();
 
             services.AddSingleton<TorrentProvider>();

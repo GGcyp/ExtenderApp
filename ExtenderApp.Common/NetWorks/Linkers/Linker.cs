@@ -94,8 +94,8 @@ namespace ExtenderApp.Common.Networks
         /// <remarks>
         /// 事件处理函数接受一个字符串参数，表示错误信息
         /// </remarks>
-        public event Action<string>? OnErrored;
-        protected Action<string>? OnErroredCallback => OnErrored;
+        public event Action<Exception>? OnErrored;
+        protected Action<Exception>? OnErroredCallback => OnErrored;
 
         #endregion
 
@@ -139,12 +139,12 @@ namespace ExtenderApp.Common.Networks
         /// </summary>
         /// <param name="binaryParser">二进制解析器。</param>
         /// <param name="sequencePool">序列号池。</param>
-        public Linker() : this(null)
+        public Linker() : this(AddressFamily.InterNetwork)
         {
 
         }
 
-        public Linker(Socket? socket)
+        public Linker(Socket socket)
         {
             _receiveQueueBytes = new();
 
@@ -155,6 +155,19 @@ namespace ExtenderApp.Common.Networks
             cacheBytes = ArrayPool<byte>.Shared.Rent(PacketLength * 2);
 
             Start(CreateLinkOperateData(socket));
+        }
+
+        public Linker(AddressFamily addressFamily)
+        {
+            _receiveQueueBytes = new();
+
+            OnReceiveCallbcak = new AsyncCallback(ReceiveCallbcak);
+            _connectCallback = new AsyncCallback(ConnectCallbcak);
+
+
+            cacheBytes = ArrayPool<byte>.Shared.Rent(PacketLength * 2);
+
+            Start(CreateLinkOperateData(addressFamily));
         }
 
         #region Connect
@@ -454,7 +467,7 @@ namespace ExtenderApp.Common.Networks
                 if (bytesRead == 0)
                 {
                     ArrayPool<byte>.Shared.Return(receiveBuffer);
-                    OnErrored?.Invoke("连接已经断开");
+                    OnErrored?.Invoke(new Exception("连接已经断开"));
                     return;
                     //throw new Exception("连接已经断开");
                 }
@@ -473,7 +486,7 @@ namespace ExtenderApp.Common.Networks
             }
             catch (SocketException ex)
             {
-                throw;
+                OnErroredCallback?.Invoke(ex);
             }
         }
 
@@ -613,6 +626,13 @@ namespace ExtenderApp.Common.Networks
         /// </summary>
         /// <param name="socket">Socket对象</param>
         /// <returns>返回创建的LinkOperateData对象</returns>
-        protected abstract LinkOperateData CreateLinkOperateData(Socket? socket);
+        protected abstract LinkOperateData CreateLinkOperateData(Socket socket);
+
+        /// <summary>
+        /// 创建一个 LinkOperateData 对象
+        /// </summary>
+        /// <param name="addressFamily">地址族</param>
+        /// <returns>创建的 LinkOperateData 对象</returns>
+        protected abstract LinkOperateData CreateLinkOperateData(AddressFamily addressFamily);
     }
 }

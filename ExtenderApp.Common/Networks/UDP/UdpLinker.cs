@@ -7,19 +7,42 @@ using ExtenderApp.Data;
 
 namespace ExtenderApp.Common.Networks.UDP
 {
+    /// <summary>
+    /// UDP连接类，继承自Linker类，并实现IUdpLinker接口。
+    /// </summary>
     internal class UdpLinker : Linker, IUdpLinker
     {
+        /// <summary>
+        /// 获取数据包长度，默认为1KB。
+        /// </summary>
         protected override int PacketLength { get; } = 1 * 1024; // 1KB
+
+        /// <summary>
+        /// 远程端点信息。
+        /// </summary>
         private EndPoint? remoteEndPoint;
 
-        public UdpLinker(Socket? socket) : base(socket)
+        public UdpLinker(Socket socket) : base(socket)
         {
 
         }
 
-        protected override LinkOperateData CreateLinkOperateData(Socket? socket)
+        public UdpLinker(AddressFamily addressFamily) : base(addressFamily)
         {
-            return new LinkOperateData(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp, socket);
+
+        }
+
+        protected override LinkOperateData CreateLinkOperateData(Socket socket)
+        {
+            if (socket.ProtocolType != ProtocolType.Udp)
+                throw new ArgumentException("套字节设置错误");
+
+            return new LinkOperateData(socket);
+        }
+
+        protected override LinkOperateData CreateLinkOperateData(AddressFamily addressFamily)
+        {
+            return new LinkOperateData(addressFamily, SocketType.Dgram, ProtocolType.Udp);
         }
 
         #region Connect
@@ -37,7 +60,8 @@ namespace ExtenderApp.Common.Networks.UDP
                 throw new ArgumentException("此URI目标地址不是UDP协议", nameof(uri));
             if (uri.Host == null)
                 throw new ArgumentException("URI目标地址不能为空", nameof(uri));
-            var ip = Dns.GetHostAddresses(uri.Host)[0];
+            var ips = Dns.GetHostAddresses(uri.Host);
+            var ip = ips[0];
             remoteEndPoint = new IPEndPoint(ip, uri.Port);
 
             StartReceive();
@@ -297,5 +321,6 @@ namespace ExtenderApp.Common.Networks.UDP
                 throw new InvalidOperationException("使用UPD链接的目标地址不能为空");
             }
         }
+
     }
 }

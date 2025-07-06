@@ -1,8 +1,43 @@
-﻿namespace ExtenderApp.Data
+﻿using System.Security.Cryptography;
+
+namespace ExtenderApp.Data
 {
     public readonly struct HashValue : IEquatable<HashValue>
     {
         public static HashValue Empty = new HashValue(null);
+
+        /// <summary>
+        /// 使用SHA256算法计算给定字节序列的哈希值。
+        /// </summary>
+        /// <param name="span">包含要计算哈希值的字节序列的只读跨度。</param>
+        /// <returns>返回计算得到的哈希值。</returns>
+        public static HashValue SHA256ComputeHash(ReadOnlySpan<byte> span)
+        {
+            var bytes = SHA256.HashData(span);
+            return new HashValue(bytes);
+        }
+
+        /// <summary>
+        /// 使用SHA1算法计算给定字节序列的哈希值。
+        /// </summary>
+        /// <param name="span">包含要计算哈希值的字节序列的只读跨度。</param>
+        /// <returns>返回计算得到的哈希值。</returns>
+        public static HashValue SHA1ComputeHash(ReadOnlySpan<byte> span)
+        {
+            var bytes = SHA1.HashData(span);
+            return new HashValue(bytes);
+        }
+
+        /// <summary>
+        /// 使用MD5算法计算给定字节序列的哈希值。
+        /// </summary>
+        /// <param name="span">包含要计算哈希值的字节序列的只读跨度。</param>
+        /// <returns>返回计算得到的哈希值。</returns>
+        public static HashValue MD5ComputeHash(ReadOnlySpan<byte> span)
+        {
+            var bytes = MD5.HashData(span);
+            return new HashValue(bytes);
+        }
 
         /// <summary>
         /// 存储哈希值的字节数组。

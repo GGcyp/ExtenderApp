@@ -4,13 +4,17 @@ using ExtenderApp.Abstract;
 using ExtenderApp.Common.Hash;
 using ExtenderApp.Data;
 
-namespace ExtenderApp.Common
+namespace ExtenderApp.Common.Hash
 {
     /// <summary>
     /// SHA扩展类，提供SHA相关的扩展方法。
     /// </summary>
     public static class HashExtensions
     {
+        // FNV-1a算法的32位参数
+        const uint FNV_offset_basis = 2166136261;
+        const uint FNV_prime = 16777619;
+
         /// <summary>
         /// 为服务集合添加哈希服务。
         /// </summary>
@@ -48,6 +52,52 @@ namespace ExtenderApp.Common
         public static HashValue ComputeHashAsync<T>(this IHashProvider hashProvider, LocalFileInfo localFileInfo) where T : HashAlgorithm
         {
             return hashProvider.ComputeHashAsync<T>(localFileInfo.CreateReadWriteOperate());
+        }
+
+        /// <summary>
+        /// 计算给定字节序列的FNV-1a哈希值。
+        /// </summary>
+        /// <param name="span">要计算哈希值的字节序列。</param>
+        /// <returns>计算得到的哈希值。</returns>
+        public static int ComputeHash_FNV_1a(this ReadOnlySpan<byte> span)
+        {
+            if (span.IsEmpty)
+                return 0;
+
+            uint hash = FNV_offset_basis;
+            // 对每个字节应用FNV-1a算法
+            for (int i = 0; i < span.Length; i++)
+            {
+                // 先异或，再乘以质数
+                hash ^= span[i];
+                hash *= FNV_prime;
+            }
+
+            // 转换为int并返回
+            return (int)hash;
+        }
+
+        /// <summary>
+        /// 使用MD5算法计算给定字节序列的哈希值，并返回其前4个字节的整数表示。
+        /// </summary>
+        /// <param name="span">包含要计算哈希值的字节序列的<see cref="ReadOnlySpan{byte}"/>。</param>
+        /// <returns>返回计算出的哈希值的前4个字节的整数表示。如果输入为空或发生异常，则返回0。</returns>
+        public static int ComputeHash_MD5(this ReadOnlySpan<byte> span)
+        {
+            if (span.IsEmpty)
+                return 0;
+
+            try
+            {
+                byte[] hashBytes = MD5.HashData(span);
+                int hash = BitConverter.ToInt32(hashBytes, 0);
+                return hash;
+            }
+            catch (Exception)
+            {
+                // 处理可能的异常（如字节数组长度不足4）
+                return 0;
+            }
         }
     }
 }

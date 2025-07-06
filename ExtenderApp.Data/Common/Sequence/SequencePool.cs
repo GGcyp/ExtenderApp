@@ -1,4 +1,5 @@
 ﻿using System.Buffers;
+using System.Collections.Concurrent;
 
 namespace ExtenderApp.Data
 {
@@ -21,7 +22,7 @@ namespace ExtenderApp.Data
         /// <summary>
         /// 序列池实例。
         /// </summary>
-        private readonly Stack<Sequence<T>> _pool;
+        private readonly ConcurrentStack<Sequence<T>> _pool;
 
         /// <summary>
         /// 数组池或内存池实例。
@@ -77,16 +78,19 @@ namespace ExtenderApp.Data
         /// <returns>包含租用Sequence<byte>对象的Rental实例。</returns>
         public Rental Rent()
         {
+            Sequence<T> sequence;
             if (_pool.Count > 0)
             {
-                return new Rental(this, _pool.Pop());
+                _pool.TryPop(out sequence);
+                return new Rental(this, sequence);
             }
 
-            var sequence = _arrayPoolOrMemoryPool is ArrayPool<T> arrayPool
-                ? new Sequence<T>(arrayPool)
-                : new Sequence<T>((MemoryPool<T>)_arrayPoolOrMemoryPool);
+            sequence = _arrayPoolOrMemoryPool is ArrayPool<T> arrayPool
+               ? new Sequence<T>(arrayPool)
+               : new Sequence<T>((MemoryPool<T>)_arrayPoolOrMemoryPool);
 
             sequence.MinimumSpanLength = MinimumSpanLength;
+
 
             return new Rental(this, sequence);
         }

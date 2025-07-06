@@ -30,7 +30,7 @@ namespace ExtenderApp.Abstract
         /// <summary>
         /// 当发生错误时触发的事件。
         /// </summary>
-        event Action<string> OnErrored;
+        event Action<Exception> OnErrored;
 
         /// <summary>
         /// 当接收到数据时触发的事件
@@ -80,6 +80,12 @@ namespace ExtenderApp.Abstract
         /// </summary>
         /// <param name="uri">要连接的URI。</param>
         void Connect(Uri uri);
+
+        /// <summary>
+        /// 连接到指定的端点。
+        /// </summary>
+        /// <param name="point">要连接的端点。</param>
+        void Connect(EndPoint point);
 
         /// <summary>
         /// 异步连接到指定的URI。

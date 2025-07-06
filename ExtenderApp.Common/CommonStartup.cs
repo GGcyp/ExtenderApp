@@ -1,6 +1,7 @@
-﻿using System.Text;
-using AppHost.Builder;
+﻿using AppHost.Builder;
 using AppHost.Extensions.DependencyInjection;
+using ExtenderApp.Common.Caches;
+using ExtenderApp.Common.Hash;
 using ExtenderApp.Common.Networks;
 
 namespace ExtenderApp.Common
@@ -16,6 +17,7 @@ namespace ExtenderApp.Common
             services.AddObjectPool();
             services.AddNetwork();
             services.AddHash();
+            services.AddCache();
         }
     }
 }

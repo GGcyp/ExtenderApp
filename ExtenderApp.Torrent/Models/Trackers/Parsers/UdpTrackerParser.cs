@@ -1,8 +1,8 @@
 ﻿using System.Buffers;
 using System.Buffers.Binary;
 using System.IO;
-using System.Net;
 using System.Text;
+using ExtenderApp.Common.Caches;
 using ExtenderApp.Common.Networks;
 using ExtenderApp.Data;
 
@@ -14,7 +14,7 @@ namespace ExtenderApp.Torrent
         /// <summary>
         /// 固定初始连接ID
         /// </summary>
-        private const long ConnectionId = 0x41727101980L;
+        private const long StartConnectionId = 0x41727101980L;
 
         /// <summary>
         /// 连接动作
@@ -36,15 +36,40 @@ namespace ExtenderApp.Torrent
         /// </summary>
         private const int ActionError = 3;
 
-        private int transactionId;
+        /// <summary>
+        /// IP地址缓存实例
+        /// </summary>
+        private readonly IPAddressCache _addressCache;
 
-        private long connectionId;
+        /// <summary>
+        /// 当接收到连接ID时触发的事件
+        /// </summary>
+        public event Action<int, long>? OnReceiveConnectionId;
 
-        public event Action<long>? OnReceiveConnectionId;
+        /// <summary>
+        /// 当接收到Tracker响应时触发的事件
+        /// </summary>
         public event Action<TrackerResponse>? OnReceiveTrackerResponse;
 
-        public UdpTrackerParser(SequencePool<byte> sequencePool) : base(sequencePool)
+        /// <summary>
+        /// 当接收到对等体的消息时触发的事件
+        /// </summary>
+        /// <remarks>
+        /// 该事件提供了一个委托，该委托在接收到对等体的消息时被调用。
+        /// </remarks>
+        public event Action<int> OnReceivePeer;
+
+        /// <summary>
+        /// 当接收到对等地址时触发的事件
+        /// </summary>
+        /// <remarks>
+        /// 当收到来自对等节点的地址时，会触发此事件。
+        /// </remarks>
+        public event Action<int, PeerAddress>? OnReceivePeerAddress;
+
+        public UdpTrackerParser(SequencePool<byte> sequencePool, IPAddressCache addressCache) : base(sequencePool)
         {
+            _addressCache = addressCache;
         }
 
         public override void Serialize<T>(ref ExtenderBinaryWriter writer, T value)
@@ -52,19 +77,20 @@ namespace ExtenderApp.Torrent
             switch (value)
             {
                 case int transactionId:
-                    this.transactionId = transactionId;
                     WriteConnectTransactionId(ref writer, transactionId);
                     break;
                 case TrackerRequest request:
-                    this.transactionId = request.TransactionId;
                     WriteTrackerRequest(ref writer, request);
+                    break;
+                default:
+                    throw new InvalidOperationException($"不是可以解析的类型{typeof(T).FullName}");
                     break;
             }
         }
 
         protected override void Receive(ref ExtenderBinaryReader reader)
         {
-            if (reader.Remaining < 16)
+            if (reader.Remaining < 8)
                 throw new InvalidDataException($"响应长度无效：{reader.Remaining}");
 
 
@@ -77,26 +103,19 @@ namespace ExtenderApp.Torrent
             {
                 var errorMessage = Encoding.ASCII.GetString(reader.UnreadSpan);
                 throw new InvalidOperationException($"Tracker error: {errorMessage}");
-            }
-
-            if (transactionId != this.transactionId)
-            {
-                // 忽略错误的transactionId，继续等待正确的响应
                 return;
             }
 
             switch (action)
             {
                 case ActionConnect:
-                    var lastConnectionId = connectionId;
-                    connectionId = BinaryPrimitives.ReadInt64BigEndian(reader.UnreadSpan);
-                    if (lastConnectionId != connectionId)
-                    {
-                        OnReceiveConnectionId?.Invoke(connectionId);
-                    }
+                    long connectionId = BinaryPrimitives.ReadInt64BigEndian(reader.UnreadSpan);
+                    OnReceiveConnectionId?.Invoke(transactionId, connectionId);
                     return;
                 case ActionAnnounce:
-                    ReadTrackerResponse(reader);
+                    if (reader.Remaining <= 8) return;
+                    OnReceivePeer?.Invoke(transactionId);
+                    ReadTrackerResponse(transactionId, reader);
                     return;
             }
         }
@@ -104,7 +123,7 @@ namespace ExtenderApp.Torrent
         private void WriteConnectTransactionId(ref ExtenderBinaryWriter writer, int transactionId)
         {
             var span = writer.GetSpan(16);
-            BinaryPrimitives.WriteInt64BigEndian(span.Slice(0, 8), ConnectionId);
+            BinaryPrimitives.WriteInt64BigEndian(span.Slice(0, 8), StartConnectionId);
             BinaryPrimitives.WriteInt32BigEndian(span.Slice(8, 4), ActionConnect);
             BinaryPrimitives.WriteInt32BigEndian(span.Slice(12, 4), transactionId);
             writer.Advance(16);
@@ -113,9 +132,9 @@ namespace ExtenderApp.Torrent
         private void WriteTrackerRequest(ref ExtenderBinaryWriter writer, TrackerRequest request)
         {
             var span = writer.GetSpan(16);
-            BinaryPrimitives.WriteInt64BigEndian(span.Slice(0, 8), connectionId);
+            BinaryPrimitives.WriteInt64BigEndian(span.Slice(0, 8), request.ConnectionId);
             BinaryPrimitives.WriteInt32BigEndian(span.Slice(8, 4), ActionAnnounce);
-            BinaryPrimitives.WriteInt32BigEndian(span.Slice(12, 4), transactionId);
+            BinaryPrimitives.WriteInt32BigEndian(span.Slice(12, 4), request.TransactionId);
             writer.Advance(16);
 
             // 复制infoHash
@@ -157,7 +176,7 @@ namespace ExtenderApp.Torrent
             writer.Advance(2);
         }
 
-        private void ReadTrackerResponse(ExtenderBinaryReader reader)
+        private void ReadTrackerResponse(int transactionId, ExtenderBinaryReader reader)
         {
             var interval = BinaryPrimitives.ReadInt32BigEndian(reader.UnreadSpan);
             var leechers = BinaryPrimitives.ReadInt32BigEndian(reader.UnreadSpan.Slice(4, 4));
@@ -171,11 +190,9 @@ namespace ExtenderApp.Torrent
             ReadOnlySpan<byte> span = reader.UnreadSpan;
             for (int i = 0; i < reader.Remaining; i += 6)
             {
-                var ipBytes = span.Slice(i, 4).ToArray();
-                var ipAddress = new IPAddress(ipBytes);
-
+                var ipAddress = _addressCache.GetIpAddress(span.Slice(i, 4));
                 var port = BinaryPrimitives.ReadUInt16BigEndian(span.Slice(i + 4, 2));
-                PeerInfo peerInfo = new PeerInfo();
+                OnReceivePeerAddress?.Invoke(transactionId, new PeerAddress(ipAddress, port));
             }
 
             var result = new TrackerResponse

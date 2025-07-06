@@ -1,5 +1,6 @@
 ﻿using ExtenderApp.Abstract;
 using ExtenderApp.Common.Error;
+using ExtenderApp.Common.ObjectPools;
 using System.Collections.Concurrent;
 
 namespace ExtenderApp.Common.ConcurrentOperates
@@ -100,14 +101,14 @@ namespace ExtenderApp.Common.ConcurrentOperates
         public override bool CanOperate { get; protected set; }
 
         /// <summary>
-        /// 取消令牌源
-        /// </summary>
-        private readonly CancellationTokenSource _cts = new();
-
-        /// <summary>
         /// 数据访问锁，使用细粒度锁
         /// </summary>
         private readonly object _dataLock = new();
+
+        /// <summary>
+        /// 取消令牌源
+        /// </summary>
+        private CancellationTokenSource _cts;
 
         /// <summary>
         /// 构造函数
@@ -115,6 +116,7 @@ namespace ExtenderApp.Common.ConcurrentOperates
         public ConcurrentOperate() : base()
         {
             CanOperate = false;
+            _cts = new CancellationTokenSource();
         }
 
         /// <summary>
@@ -124,6 +126,7 @@ namespace ExtenderApp.Common.ConcurrentOperates
         {
             Data = operate ?? throw new ArgumentNullException(nameof(operate), "被操作类不能为空");
             CanOperate = true;
+            _cts = _cts.IsCancellationRequested ? new CancellationTokenSource() : _cts;
             ProtectedStart();
         }
 
@@ -133,8 +136,9 @@ namespace ExtenderApp.Common.ConcurrentOperates
             {
                 throw new InvalidOperationException("并发操作策略或被操作类未设置");
             }
-            ProtectedStart();
             CanOperate = true;
+            _cts = _cts.IsCancellationRequested ? new CancellationTokenSource() : _cts;
+            ProtectedStart();
         }
 
         /// <summary>
@@ -429,7 +433,6 @@ namespace ExtenderApp.Common.ConcurrentOperates
             // 重置状态
             Interlocked.Exchange(ref operationCount, 0);
             Interlocked.Exchange(ref _isExecuting, 0);
-            Data = null;
             CanOperate = false;
 
             return base.TryReset();

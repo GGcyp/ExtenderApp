@@ -2,6 +2,7 @@
 using System.Security.Cryptography;
 using ExtenderApp.Abstract;
 using ExtenderApp.Common.Error;
+using ExtenderApp.Common.Hash;
 using ExtenderApp.Data;
 
 namespace ExtenderApp.Common.IO.Splitter

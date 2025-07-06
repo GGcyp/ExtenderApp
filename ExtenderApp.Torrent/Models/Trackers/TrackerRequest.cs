@@ -1,6 +1,4 @@
-﻿
-using System.Text;
-using ExtenderApp.Data;
+﻿using ExtenderApp.Data;
 
 namespace ExtenderApp.Torrent
 {
@@ -15,6 +13,11 @@ namespace ExtenderApp.Torrent
         /// 客户端的唯一标识符
         /// </summary>
         public PeerId Id { get; set; }
+
+        /// <summary>
+        /// 获取或设置连接ID。
+        /// </summary>
+        public long ConnectionId { get; set; }
 
         /// <summary>
         /// 客户端监听的端口号
