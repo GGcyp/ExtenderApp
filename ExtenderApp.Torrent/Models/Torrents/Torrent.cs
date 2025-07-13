@@ -1,10 +1,10 @@
-﻿
+﻿using ExtenderApp.Abstract;
 
 namespace ExtenderApp.Torrent
 {
     public class Torrent
     {
-        public readonly LocalTorrentInfo _localInfo;
+        private readonly LocalTorrentInfo _localInfo;
 
         private readonly TorrentSender _torrentSender;
 
@@ -15,7 +15,7 @@ namespace ExtenderApp.Torrent
             get
             {
                 long uploaded = 0;
-                DownParent.ParentNode.LoopAllChildNodes((t, l) =>
+                InfoNodeParent.ParentNode.LoopAllChildNodes((t, l) =>
                 {
                     if (t.IsFile && t.IsDownload)
                         l += t.Uploaded;
@@ -29,7 +29,7 @@ namespace ExtenderApp.Torrent
             get
             {
                 long downloaded = 0;
-                DownParent.ParentNode.LoopAllChildNodes((t, l) =>
+                InfoNodeParent.ParentNode.LoopAllChildNodes((t, l) =>
                 {
                     if (t.IsFile && t.IsDownload)
                         l += t.Downloaded;
@@ -43,7 +43,7 @@ namespace ExtenderApp.Torrent
             get
             {
                 long left = 0;
-                DownParent.ParentNode.LoopAllChildNodes((t, l) =>
+                InfoNodeParent.ParentNode.LoopAllChildNodes((t, l) =>
                 {
                     if (t.IsFile && t.IsDownload)
                         l += t.Length;
@@ -52,25 +52,21 @@ namespace ExtenderApp.Torrent
             }
         }
 
-        public TorrentFileDownInfoNodeParent DownParent { get; }
+        public TorrentFileInfoNodeParent InfoNodeParent { get; }
+
+        public List<TorrentPeer> TorrentPeers { get; }
 
         public InfoHash Hash { get; }
 
-        public Torrent(InfoHash infoHash, TorrentFileDownInfoNodeParent parent, TorrentFile? torrentFile, LocalTorrentInfo info, TorrentSender torrentSender)
+        internal Torrent(InfoHash infoHash, TorrentFileInfoNodeParent parent, TorrentFile? torrentFile, LocalTorrentInfo info, TorrentSender torrentSender)
         {
             _localInfo = info;
             _torrentSender = torrentSender;
-            TorrentFile = torrentFile;
-            DownParent = parent;
-            Hash = infoHash;
-        }
 
-        public Torrent(TorrentFileDownInfoNodeParent parent, LocalTorrentInfo info, TorrentSender torrentSender)
-        {
-            _localInfo = info;
-            _torrentSender = torrentSender;
-            DownParent = parent;
-            Hash = parent.Hash;
+            TorrentFile = torrentFile;
+            InfoNodeParent = parent;
+            Hash = infoHash;
+            TorrentPeers = new List<TorrentPeer>();
         }
 
         public void AnnounceAsync()

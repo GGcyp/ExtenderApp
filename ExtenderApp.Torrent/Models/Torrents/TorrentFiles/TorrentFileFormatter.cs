@@ -165,7 +165,7 @@ namespace ExtenderApp.Torrent
                         for (int j = 0; j < pathList.Count - 1; j++)
                         {
                             var pathName = DecodeStringForCache(pathList[j]);
-                            if (pathNode.Find(n => n.Name == pathName, out childNode))
+                            if (pathNode.TryFind(n => n.Name == pathName, out childNode))
                             {
                                 if (childNode.IsFile)
                                     throw new InvalidDataException($"当前节点为文件节点，但是还包含文件{pathName}");

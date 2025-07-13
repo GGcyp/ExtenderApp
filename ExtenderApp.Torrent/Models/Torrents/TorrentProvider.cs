@@ -52,21 +52,19 @@ namespace ExtenderApp.Torrent
         /// <returns>种子对象</returns>
         /// <exception cref="ArgumentNullException">如果parent为null，抛出此异常</exception>
         /// <exception cref="ArgumentException">如果parent的TorrentFileInfo为空或无法解析Torrent文件内容，抛出此异常</exception>
-        public Torrent GetTorrent(TorrentFileDownInfoNodeParent parent)
+        public Torrent GetTorrent(TorrentFileInfoNodeParent parent)
         {
             if (parent == null)
                 throw new ArgumentNullException(nameof(parent), "管理种子文件下载信息节点不能为空");
 
             Torrent torrent;
-            if (parent.Hash.IsEmpty)
+            if (parent.TorrentFileInfo.IsEmpty)
             {
                 if (string.IsNullOrEmpty(parent.TorrentFileInfo))
                     throw new ArgumentException("种子文件地址不能为空", nameof(parent.TorrentFileInfo));
 
                 var fileOperate = _fileOperateProvider.GetOperate(parent.TorrentFileInfo);
                 var torrentFile = _torrentFileForamtter.Decode(fileOperate);
-                if (torrentFile == null)
-                    throw new ArgumentException("无法解析Torrent文件内容。");
                 parent.Set(torrentFile);
                 torrent = new Torrent(torrentFile.Hash, parent, torrentFile, _localTorrentInfo, _sender);
             }
@@ -104,7 +102,7 @@ namespace ExtenderApp.Torrent
                 throw new ArgumentException("无法解析Torrent文件内容。");
 
             Torrent torrent = GetTorrent(torrentFile);
-            torrent.DownParent.TorrentFileInfo = fileOperate.Info.FilePath;
+            torrent.InfoNodeParent.TorrentFileInfo = fileOperate.Info.FilePath;
             return torrent;
         }
 
@@ -132,7 +130,7 @@ namespace ExtenderApp.Torrent
             if (torrentFile.AnnounceList != null)
                 _trackerProvider.RegisterTracker(torrentFile.AnnounceList);
 
-            TorrentFileDownInfoNodeParent parent = new();
+            TorrentFileInfoNodeParent parent = new();
             parent.Set(torrentFile);
 
             Torrent torrent = new(torrentFile.Hash, parent, torrentFile, _localTorrentInfo, _sender);

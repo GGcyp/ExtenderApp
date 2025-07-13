@@ -1,4 +1,6 @@
-﻿namespace ExtenderApp.Data
+﻿using System.Collections;
+
+namespace ExtenderApp.Data
 {
     /// <summary>
     /// 表示文件节点的基类，继承自泛型类FileNode<T>，其中T是FileNode<T>本身。

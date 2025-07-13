@@ -6,7 +6,7 @@ namespace ExtenderApp.Torrent
 {
     public class TorrentModel
     {
-        public List<TorrentFileDownInfoNodeParent> Downloads { get; set; }
+        public List<TorrentFileInfoNodeParent> Downloads { get; set; }
         public HashSet<string> Tracker { get; set; }
     }
 }

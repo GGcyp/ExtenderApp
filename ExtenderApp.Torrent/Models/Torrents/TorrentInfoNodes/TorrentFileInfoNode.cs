@@ -1,4 +1,5 @@
 ﻿using System.IO;
+using ExtenderApp.Common.DataBuffers;
 using ExtenderApp.Common.IO;
 using ExtenderApp.Data;
 
@@ -10,7 +11,7 @@ namespace ExtenderApp.Torrent
     /// <remarks>
     /// TorrentFileDownInfoNode 类继承自 FIleOperateNode 类，泛型参数为 TorrentFileDownInfoNode。
     /// </remarks>
-    public class TorrentFileDownInfoNode : FIleOperateNode<TorrentFileDownInfoNode>
+    public class TorrentFileInfoNode : FIleOperateNode<TorrentFileInfoNode>
     {
         /// <summary>
         /// 获取或设置一个布尔值，表示是否下载。
@@ -31,21 +32,36 @@ namespace ExtenderApp.Torrent
         public long Downloaded { get; set; }
 
         /// <summary>
+        /// 获取或设置偏移量。
+        /// </summary>
+        public long Offset { get; set; }
+
+        /// <summary>
         /// 设置种子文件信息
         /// </summary>
         /// <param name="node">文件节点</param>
         public void SetTorrentInfo(FileNode node)
         {
+            var databuffer = DataBuffer<long>.GetDataBuffer();
+            databuffer.Item1 = 0; // 初始化偏移量为0
+            SetTorrentInfo(node, databuffer);
+            databuffer.Release();
+        }
+
+        private void SetTorrentInfo(FileNode node, DataBuffer<long> dataBuffer)
+        {
             Length = node.Length;
             Name = node.Name;
             IsFile = node.IsFile;
+            Offset = dataBuffer.Item1;
+            dataBuffer.Item1 += Length;
 
             if (node.HasChildNodes)
             {
                 node.LoopChildNodes((fileInfoNode, downInfoNode) =>
                 {
-                    var node = new TorrentFileDownInfoNode();
-                    node.SetTorrentInfo(fileInfoNode);
+                    var node = new TorrentFileInfoNode();
+                    node.SetTorrentInfo(fileInfoNode, dataBuffer);
                     Add(node);
                 }, this);
             }

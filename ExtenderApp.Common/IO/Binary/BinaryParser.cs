@@ -170,16 +170,9 @@ namespace ExtenderApp.Common.IO.Binaries
             var bytes = operate.ReadForArrayPool(position, length);
 
             var reader = new ExtenderBinaryReader(new Memory<byte>(bytes, 0, length));
-            var writer = new ExtenderBinaryWriter(_sequencePool.Rent());
-            if (TryDecompress(ref reader, ref writer))
-            {
-                writer.Commit();
-                reader = writer;
-            }
 
             var result = Deserialize<T>(ref reader);
             ArrayPool<byte>.Shared.Return(bytes);
-            writer.Dispose();
             return result;
         }
 
@@ -253,18 +246,9 @@ namespace ExtenderApp.Common.IO.Binaries
             {
                 var callback = d.Item1 as Action<T>;
                 var reader = new ExtenderBinaryReader(b);
-                var writer = new ExtenderBinaryWriter(_sequencePool.Rent());
-                if (TryDecompress(ref reader, ref writer))
-                {
-                    writer.Commit();
-                    reader = writer;
-                }
 
                 T? result = Deserialize<T>(ref reader);
-                writer.Dispose();
-
-                var reslut = Deserialize<T>(b);
-                callback?.Invoke(reslut);
+                callback?.Invoke(result);
             });
             operate.ReadAsync(position, length, action);
         }
@@ -559,11 +543,9 @@ namespace ExtenderApp.Common.IO.Binaries
                 return formatter.Default;
             }
 
-            var writer = new ExtenderBinaryWriter(_sequencePool.Rent());
-            if (TryDecompress(ref reader, ref writer))
+            if (TryDecompress(ref reader, out var writer))
             {
-                writer.Commit();
-                reader = writer;
+                reader = new ExtenderBinaryReader(writer.Rental.Value);
             }
 
             T? result = _resolver.GetFormatterWithVerify<T>().Deserialize(ref reader);
@@ -936,13 +918,17 @@ namespace ExtenderApp.Common.IO.Binaries
            }).ConfigureAwait(false);
         }
 
-        private bool TryDecompress(ref ExtenderBinaryReader reader, ref ExtenderBinaryWriter writer)
+        private bool TryDecompress(ref ExtenderBinaryReader reader, out ExtenderBinaryWriter writer)
         {
+            writer = new ExtenderBinaryWriter(_sequencePool.Rent());
             if (reader.End)
+            {
+                writer.Dispose();
                 return false;
+            }
 
             // Try to find LZ4Block
-            var header = Deserialize<ExtensionHeader>(ref reader);
+            var header = _resolver.GetFormatterWithVerify<ExtensionHeader>().Deserialize(ref reader);
 
             if (!header.IsEmpty && header.TypeCode == Lz4Block)
             {
@@ -950,7 +936,7 @@ namespace ExtenderApp.Common.IO.Binaries
 
                 //这个整数表示数据在解压缩之后的长度。这样的设计允许接收方在解压数据之前就知道最终数据的大小，
                 //这对于数据处理的效率和正确性至关重要。
-                int uncompressedLength = Deserialize<int>(ref extReader);
+                int uncompressedLength = _resolver.GetFormatterWithVerify<int>().Deserialize(ref extReader);
 
                 //接下来开始解压
                 ReadOnlySequence<byte> compressedData = extReader.Sequence.Slice(extReader.Position);
@@ -958,6 +944,7 @@ namespace ExtenderApp.Common.IO.Binaries
                 Span<byte> uncompressedSpan = writer.GetSpan(uncompressedLength).Slice(0, uncompressedLength);
                 int actualUncompressedLength = LZ4Operation(compressedData, uncompressedSpan, LZ4CodecDecode);
                 writer.Advance(actualUncompressedLength);
+                writer.Commit();
                 return true;
             }
 
@@ -967,7 +954,10 @@ namespace ExtenderApp.Common.IO.Binaries
             if (arrayLength == 0) return false;
             header = Deserialize<ExtensionHeader>(ref reader);
             if (header.TypeCode != Lz4BlockArray)
+            {
+                writer.Dispose();
                 return false;
+            }
 
             // 切换成原读取器
             reader = peekReader;
@@ -997,6 +987,7 @@ namespace ExtenderApp.Common.IO.Binaries
             {
                 ArrayPool<int>.Shared.Return(uncompressedLengths);
             }
+            writer.Dispose();
             return false;
         }
 

@@ -39,8 +39,8 @@ namespace ExtenderApp.Torrent
 
         public override void ConfigureBinaryFormatterStore(IBinaryFormatterStore store)
         {
-            store.Add<TorrentFileDownInfoNode, TorrentFileDownInfoNodeFormatter>();
-            store.Add<TorrentFileDownInfoNodeParent, TorrentFileDownInfoNodeParentFormatter>();
+            store.Add<TorrentFileInfoNode, TorrentFileInfoNodeFormatter>();
+            store.Add<TorrentFileInfoNodeParent, TorrentFileInfoNodeParentFormatter>();
             store.Add<InfoHash, InfoHashForamtter>();
         }
     }

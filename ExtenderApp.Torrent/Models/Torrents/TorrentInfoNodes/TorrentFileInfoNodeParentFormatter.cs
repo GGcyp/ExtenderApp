@@ -5,14 +5,14 @@ using ExtenderApp.Data;
 
 namespace ExtenderApp.Torrent.Models.Torrents.TorrentDowns
 {
-    internal class TorrentFileDownInfoNodeParentFormatter : FileOperateNodeParentForamtter<TorrentFileDownInfoNodeParent, TorrentFileDownInfoNode>
+    internal class TorrentFileInfoNodeParentFormatter : FileOperateNodeParentForamtter<TorrentFileInfoNodeParent, TorrentFileInfoNode>
     {
         protected readonly IBinaryFormatter<byte[]> _byteArray;
         protected readonly IBinaryFormatter<long> _long;
         protected readonly IBinaryFormatter<HashValues> _hashValues;
         protected readonly IBinaryFormatter<InfoHash> _infoHash;
 
-        public TorrentFileDownInfoNodeParentFormatter(IBinaryFormatterResolver resolver) : base(resolver)
+        public TorrentFileInfoNodeParentFormatter(IBinaryFormatterResolver resolver) : base(resolver)
         {
             _byteArray = resolver.GetFormatter<byte[]>();
             _long = resolver.GetFormatter<long>();
@@ -20,7 +20,7 @@ namespace ExtenderApp.Torrent.Models.Torrents.TorrentDowns
             _infoHash = resolver.GetFormatter<InfoHash>();
         }
 
-        public override TorrentFileDownInfoNodeParent Deserialize(ref ExtenderBinaryReader reader)
+        public override TorrentFileInfoNodeParent Deserialize(ref ExtenderBinaryReader reader)
         {
             var result = base.Deserialize(ref reader);
             result.TorrentFileInfo = _string.Deserialize(ref reader);
@@ -30,7 +30,7 @@ namespace ExtenderApp.Torrent.Models.Torrents.TorrentDowns
             return result;
         }
 
-        public override void Serialize(ref ExtenderBinaryWriter writer, TorrentFileDownInfoNodeParent value)
+        public override void Serialize(ref ExtenderBinaryWriter writer, TorrentFileInfoNodeParent value)
         {
             base.Serialize(ref writer, value);
             _string.Serialize(ref writer, value.TorrentFileInfo);
@@ -39,7 +39,7 @@ namespace ExtenderApp.Torrent.Models.Torrents.TorrentDowns
             _infoHash.Serialize(ref writer, value.Hash);
         }
 
-        public override long GetLength(TorrentFileDownInfoNodeParent value)
+        public override long GetLength(TorrentFileInfoNodeParent value)
         {
             return base.GetLength(value) + _string.GetLength(value.TorrentFileInfo);
         }

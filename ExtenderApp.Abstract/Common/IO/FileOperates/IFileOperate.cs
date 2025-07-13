@@ -150,7 +150,6 @@ namespace ExtenderApp.Abstract
         /// <param name="bytesStart">目标字节数组的起始位置</param>
         void ReadAsync(long filePosition, int length, byte[] bytes, Action<byte[]> callback, int bytesStart = 0);
 
-
         /// <summary>
         /// 从指定文件位置读取指定长度的字节数据到数组池中。
         /// </summary>

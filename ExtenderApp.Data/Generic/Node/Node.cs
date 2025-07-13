@@ -1,11 +1,14 @@
 ﻿
+using System.Collections;
+using System.Xml.Linq;
+
 namespace ExtenderApp.Data
 {
     /// <summary>
     /// 泛型节点类，其中 T 是继承自 Node<T> 的类型。
     /// </summary>
     /// <typeparam name="T">节点类型，必须是 Node<T> 的子类。</typeparam>
-    public class Node<T> where T : Node<T>
+    public class Node<T> : IEnumerable<T> where T : Node<T>, IEnumerable<T>
     {
         private const int c_DefaultSize = 4;
         private int nodeCount;
@@ -102,7 +105,7 @@ namespace ExtenderApp.Data
         /// <returns>如果成功移除元素，则返回 true；否则返回 false。</returns>
         public virtual T? Remove(Predicate<T> predicate)
         {
-            if (!Find(predicate, out var node)) return node;
+            if (!TryFind(predicate, out var node)) return node;
             node.RemoveParentNode();
             return node;
         }
@@ -129,7 +132,7 @@ namespace ExtenderApp.Data
         public virtual T Find(Predicate<T> predicate)
         {
             if (predicate == null) return default;
-            Find(predicate, out var node);
+            TryFind(predicate, out var node);
             return node;
         }
 
@@ -139,7 +142,7 @@ namespace ExtenderApp.Data
         /// <param name="predicate">用于判断节点是否满足条件的函数，参数为树形结构中的节点类型T，返回值为bool。</param>
         /// <param name="node">如果找到满足条件的节点，则返回该节点；否则返回null。</param>
         /// <returns>如果找到满足条件的节点，则返回true；否则返回false。</returns>
-        public virtual bool Find(Predicate<T> predicate, out T node)
+        public virtual bool TryFind(Predicate<T> predicate, out T node)
         {
             node = null;
 
@@ -162,11 +165,48 @@ namespace ExtenderApp.Data
             {
                 //找到了
                 var n = this[i];
-                if (n.Find(predicate, out node)) return true;
+                if (n.TryFind(predicate, out node)) return true;
             }
 
             return false;
         }
+
+
+        public virtual T Finds(Predicate<T> predicate)
+        {
+            if (predicate == null) return default;
+            TryFind(predicate, out var node);
+            return node;
+        }
+
+        public virtual bool TryFinds(Predicate<T> predicate, ref List<T> nodes)
+        {
+            //用广度算法
+            //没有子集返回false
+            if (!HasChildNodes) return false;
+
+            for (int i = 0; i < nodeCount; i++)
+            {
+                //找到了
+                var n = this[i];
+                if (predicate.Invoke(n))
+                {
+                    nodes.Add(n);
+                    return true;
+                }
+            }
+
+            for (int i = 0; i < nodeCount; i++)
+            {
+                //找到了
+                var n = this[i];
+                if (n.TryFinds(predicate, ref nodes)) return true;
+            }
+
+            return false;
+        }
+
+
 
         /// <summary>
         /// 清除所有记录或数据
@@ -319,6 +359,66 @@ namespace ExtenderApp.Data
             {
                 action(this[i], value1, value2);
                 this[i].LoopAllChildNodes(action, value1, value2);
+            }
+        }
+
+        #endregion
+
+        #region Enumerator
+
+        public IEnumerator<T> GetEnumerator()
+        {
+            return new NodeEnumerator((T)this);
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
+        }
+
+        private class NodeEnumerator : IEnumerator<T>
+        {
+            private readonly Queue<T> _queue;
+            private readonly T _items;
+
+            public NodeEnumerator(T items)
+            {
+                _queue = new();
+                this._items = items;
+                _queue.Enqueue(items);
+            }
+
+            public T Current { get; set; }
+
+            object IEnumerator.Current => Current;
+
+            public bool MoveNext()
+            {
+                if(_queue.Count == 0) 
+                    return false;
+
+                Current = _queue.Dequeue();
+                if(!Current.HasChildNodes)
+                    return true;
+
+                for (int i = 0; i < Current.Count; i++)
+                {
+                    _queue.Enqueue(Current[i]);
+                }
+
+                return true;
+            }
+
+            public void Reset()
+            {
+                _queue.Clear();
+                _queue.Enqueue(_items);
+                Current = default;
+            }
+
+            public void Dispose()
+            {
+                // 清理资源，如果需要的话
             }
         }
 

@@ -11,7 +11,7 @@ namespace ExtenderApp.Torrent
         /// <summary>
         /// 文件在列表中的索引（对应种子文件顺序）
         /// </summary>
-        public TorrentFileDownInfoNode? Node { get; set; }
+        public TorrentFileInfoNode? Node { get; set; }
 
         /// <summary>
         /// 该片段在文件内的起始偏移量（字节）
@@ -22,19 +22,5 @@ namespace ExtenderApp.Torrent
         /// 该片段的长度（字节）
         /// </summary>
         public int Length { get; set; }
-
-        /// <summary>
-        /// 文件操作接口
-        /// </summary>
-        /// <value>文件操作接口实例，可为空</value>
-        public IFileOperate? FileOperate { get; set; }
-
-        public void GetSegment(ref ExtenderBinaryWriter writer)
-        {
-            if (FileOperate == null)
-                throw new InvalidOperationException("文件操作接口不能为空");
-
-            FileOperate.Read(OffsetInFile, Length, ref writer);
-        }
     }
 }

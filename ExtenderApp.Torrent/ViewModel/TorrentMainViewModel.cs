@@ -5,7 +5,7 @@ namespace ExtenderApp.Torrent
 {
     public class TorrentMainViewModel : ExtenderAppViewModel<TorrentMainView, TorrentModel>
     {
-        public TorrentMainViewModel(TorrentProvider provider, IBinaryParser binaryParser, IServiceStore serviceStore) : base(serviceStore)
+        public TorrentMainViewModel(TorrentProvider provider, IBinaryParser binaryParser, IFileOperateProvider fileOperateProvider, IServiceStore serviceStore) : base(serviceStore)
         {
             //var torrent = provider.GetTorrent(File.ReadAllBytes("E:\\迅雷下载\\5A8F9BB08F1BE7DE41D87E5DE5B60E3961393AAC.torrent"));
             var torrent2 = provider.GetTorrent("E:\\迅雷下载\\G奶尤物｜易鳴夫妻｜奶昔吖｜唯美性愛檔 穿性感情趣制服舔逗雞巴乳交各種體位速插波濤洶湧垂涎欲滴 720p\\E8FF39F2A378FE05D004BE5FED5A679022AF264F.torrent");
@@ -15,9 +15,9 @@ namespace ExtenderApp.Torrent
             //    torrent.AnnounceAsync();
             //});
             //Model.Downloads = new();
-            Model.Downloads = new();
-            LoadModel();
-            Model.Downloads.Add(torrent2.DownParent);
+            //LoadModel();
+            //Model.Downloads = new();
+            //Model.Downloads.Add(torrent2.DownParent);
 
             //var temp1 = binaryParser.Serialize(torrent2.DownParent);
             //var temp2 = binaryParser.Compression(torrent2.DownParent, Data.CompressionType.Lz4Block);
@@ -31,7 +31,7 @@ namespace ExtenderApp.Torrent
             //    var torrent = provider.GetTorrent(item);
             //}
 
-            SaveModel();
+            //SaveModel();
         }
     }
 }

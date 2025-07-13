@@ -2317,3 +2317,214 @@
 //        public long Length { get; set; }
 //    }
 //}
+
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Security.Cryptography;
+using System.Text;
+
+namespace BitTorrentParser
+{
+    // Bencode解码工具类
+    public static class BencodeDecoder
+    {
+        public static object Decode(byte[] data)
+        {
+            using var ms = new MemoryStream(data);
+            return Decode(ms);
+        }
+
+        private static object Decode(MemoryStream ms)
+        {
+            int c = ms.ReadByte();
+            if (c == -1) throw new FormatException("Unexpected end of data");
+
+            switch (c)
+            {
+                case 'd': return DecodeDictionary(ms);
+                case 'l': return DecodeList(ms);
+                case 'i': return DecodeInteger(ms);
+                default:
+                    if (c >= '0' && c <= '9')
+                    {
+                        ms.Position--; // 回退一个字节以读取完整的字符串长度
+                        return DecodeString(ms);
+                    }
+                    throw new FormatException($"Invalid bencode type: {(char)c}");
+            }
+        }
+
+        private static Dictionary<string, object> DecodeDictionary(MemoryStream ms)
+        {
+            var dict = new Dictionary<string, object>();
+            while (true)
+            {
+                int c = ms.ReadByte();
+                if (c == -1) throw new FormatException("Unexpected end of dictionary");
+                if (c == 'e') break;
+
+                ms.Position--;
+                string key = (string)Decode(ms);
+                object value = Decode(ms);
+                dict[key] = value;
+            }
+            return dict;
+        }
+
+        private static List<object> DecodeList(MemoryStream ms)
+        {
+            var list = new List<object>();
+            while (true)
+            {
+                int c = ms.ReadByte();
+                if (c == -1) throw new FormatException("Unexpected end of list");
+                if (c == 'e') break;
+
+                ms.Position--;
+                list.Add(Decode(ms));
+            }
+            return list;
+        }
+
+        private static long DecodeInteger(MemoryStream ms)
+        {
+            var buffer = new List<byte>();
+            int c;
+            while ((c = ms.ReadByte()) != -1)
+            {
+                if (c == 'e') break;
+                buffer.Add((byte)c);
+            }
+            return long.Parse(Encoding.ASCII.GetString(buffer.ToArray()));
+        }
+
+        private static string DecodeString(MemoryStream ms)
+        {
+            int length = 0;
+            int c;
+            while ((c = ms.ReadByte()) != -1)
+            {
+                if (c == ':') break;
+                length = length * 10 + (c - '0');
+            }
+
+            var buffer = new byte[length];
+            int bytesRead = ms.Read(buffer, 0, length);
+            if (bytesRead != length) throw new FormatException("String length mismatch");
+
+            return Encoding.UTF8.GetString(buffer);
+        }
+    }
+
+    // 文件信息类
+    public class TorrentFile
+    {
+        public string Path { get; set; }
+        public long Length { get; set; }
+        public long Offset { get; set; } // 文件在全局数据流中的起始偏移量
+    }
+
+    // 种子解析器
+    public class TorrentParser
+    {
+        public string Announce { get; private set; }
+        public string Name { get; private set; }
+        public int PieceLength { get; private set; }
+        public List<byte[]> PieceHashes { get; private set; } = new List<byte[]>();
+        public List<TorrentFile> Files { get; private set; } = new List<TorrentFile>();
+        public bool IsMultiFile { get; private set; }
+
+        public void Parse(string torrentFilePath)
+        {
+            byte[] torrentData = File.ReadAllBytes(torrentFilePath);
+            var torrentDict = (Dictionary<string, object>)BencodeDecoder.Decode(torrentData);
+
+            // 解析基本信息
+            Announce = (string)torrentDict["announce"];
+            var infoDict = (Dictionary<string, object>)torrentDict["info"];
+            Name = (string)infoDict["name"];
+            PieceLength = (int)(long)infoDict["piece length"];
+
+            // 解析分片哈希
+            string pieces = (string)infoDict["pieces"];
+            byte[] piecesBytes = Encoding.ASCII.GetBytes(pieces);
+            for (int i = 0; i < piecesBytes.Length; i += 20)
+            {
+                byte[] hash = new byte[20];
+                Array.Copy(piecesBytes, i, hash, 0, 20);
+                PieceHashes.Add(hash);
+            }
+
+            // 解析文件信息
+            if (infoDict.ContainsKey("files"))
+            {
+                IsMultiFile = true;
+                var filesList = (List<object>)infoDict["files"];
+                long currentOffset = 0;
+
+                foreach (var fileObj in filesList)
+                {
+                    var fileDict = (Dictionary<string, object>)fileObj;
+                    long length = (long)fileDict["length"];
+
+                    // 构建文件路径
+                    var pathList = (List<object>)fileDict["path"];
+                    string fullPath = string.Join(Path.DirectorySeparatorChar,
+                        pathList.ConvertAll(p => (string)p));
+
+                    Files.Add(new TorrentFile
+                    {
+                        Path = fullPath,
+                        Length = length,
+                        Offset = currentOffset
+                    });
+
+                    currentOffset += length;
+                }
+            }
+            else
+            {
+                IsMultiFile = false;
+                long length = (long)infoDict["length"];
+                Files.Add(new TorrentFile
+                {
+                    Path = Name,
+                    Length = length,
+                    Offset = 0
+                });
+            }
+        }
+
+        // 根据块索引获取对应的文件和位置
+        public (TorrentFile file, long fileOffset, int pieceLength) GetFileForPiece(int pieceIndex)
+        {
+            long pieceOffset = (long)pieceIndex * PieceLength;
+            long remaining = PieceLength;
+
+            // 找到包含此块的文件
+            foreach (var file in Files)
+            {
+                if (pieceOffset >= file.Offset + file.Length)
+                    continue;
+
+                long fileStart = Math.Max(pieceOffset, file.Offset);
+                long fileOffset = fileStart - file.Offset;
+                long available = file.Length - fileOffset;
+                int pieceLen = (int)Math.Min(remaining, available);
+
+                return (file, fileOffset, pieceLen);
+            }
+
+            throw new ArgumentException("Invalid piece index");
+        }
+
+        // 计算文件的SHA1哈希值
+        public static byte[] CalculateFileHash(string filePath)
+        {
+            using var sha1 = SHA1.Create();
+            using var stream = File.OpenRead(filePath);
+            return sha1.ComputeHash(stream);
+        }
+    }
+}

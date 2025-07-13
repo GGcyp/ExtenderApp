@@ -113,6 +113,17 @@ namespace ExtenderApp.Data
         }
 
         /// <summary>
+        /// 使用指定的 <see cref="ExtenderBinaryWriter"/> 初始化 <see cref="ExtenderBinaryReader"/> 实例。
+        /// </summary>
+        /// <param name="writer">一个 <see cref="ExtenderBinaryWriter"/> 实例，用于初始化 <see cref="ExtenderBinaryReader"/>。</param>
+        public ExtenderBinaryReader(ExtenderBinaryWriter writer) : this()
+        {
+            writer.Commit();
+            reader = new(writer.Rental.Value);
+            Depth = 0;
+        }
+
+        /// <summary>
         /// 克隆当前 <see cref="ExtenderBinaryReader"/> 实例，并使用指定的只读序列进行初始化
         /// </summary>
         /// <param name="readOnlySequence">要读取的只读序列</param>

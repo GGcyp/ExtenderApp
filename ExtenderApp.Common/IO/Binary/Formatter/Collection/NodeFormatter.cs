@@ -10,7 +10,7 @@ namespace ExtenderApp.Common.IO.Binaries.Formatter
     /// 抽象类 NodeFormatter，用于格式化 Node<T> 类型的节点。
     /// </summary>
     /// <typeparam name="T">表示 Node<T> 类型的泛型参数。</typeparam>
-    public abstract class NodeFormatter<T> : ExtenderFormatter<T> where T : Node<T>
+    public abstract class NodeFormatter<T> : ExtenderFormatter<T> where T : Node<T>, IEnumerable<T>
     {
         /// <summary>
         /// 获取节点格式化的长度。

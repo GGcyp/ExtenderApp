@@ -29,7 +29,7 @@ namespace ExtenderApp.Common.IO
         /// <returns>如果 <see cref="Name"/> 为空或仅包含空白字符，则返回 true；否则返回 false。</returns>
         public virtual bool CanCreateFileOperate()
         {
-            return string.IsNullOrEmpty(Name);
+            return !string.IsNullOrEmpty(Name);
         }
     }
 }
