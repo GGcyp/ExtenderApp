@@ -24,7 +24,7 @@ namespace ExtenderApp.Common.IO.Binaries.Formatter
 
         protected override TList Create(int count)
         {
-            return _helpers.CreateCollection(count);    
+            return _helpers.CreateCollection(count);
         }
     }
 }

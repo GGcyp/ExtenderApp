@@ -23,9 +23,9 @@ namespace ExtenderApp.Torrent
         /// <summary>
         /// 将 BTMessage 对象编码为二进制数据。
         /// </summary>
-        /// <param name="message">要编码的 BTMessage 对象。</param>
         /// <param name="writer">用于写入二进制数据的 ExtenderBinaryWriter 对象。</param>
-        public void Encode(BTMessage message, ExtenderBinaryWriter writer)
+        /// <param name="message">要编码的 BTMessage 对象。</param>
+        public void Encode(ref ExtenderBinaryWriter writer, BTMessage message)
         {
             WriteInt(ref writer, message.LengthPrefix);
 
@@ -195,7 +195,6 @@ namespace ExtenderApp.Torrent
         /// <returns>解码后的 Port 类型的 BTMessage 对象。</returns>
         private BTMessage PortMessage(ReadOnlySpan<byte> bytes)
         {
-
             if (bytes.Length < 2)
                 throw new InvalidDataException("Port消息数据不足");
 
@@ -220,50 +219,5 @@ namespace ExtenderApp.Torrent
 
             return new BTMessage(BTMessageType.Unknown, lengthPrefix, length: length, data: byteArray);
         }
-
-        //public static BTMessageEncoder Decode(ReadOnlySpan<byte> buffer)
-        //{
-        //    if (buffer.Length < 4)
-        //        throw new InvalidDataException("消息长度不足");
-
-        //    int length = BinaryPrimitives.ReadInt32BigEndian(buffer);
-        //    buffer = buffer.Slice(4);
-
-        //    if (length == 0)
-        //        return new KeepAliveMessage();
-
-        //    if (buffer.Length < 1)
-        //        throw new InvalidDataException("消息ID缺失");
-
-        //    byte messageId = buffer[0];
-        //    buffer = buffer.Slice(1);
-
-        //    switch ((BTMessageType)messageId)
-        //    {
-        //        case BTMessageType.Choke:
-        //            return new ChokeMessage();
-        //        case BTMessageType.Unchoke:
-        //            return new UnchokeMessage();
-        //        case BTMessageType.Interested:
-        //            return new InterestedMessage();
-        //        case BTMessageType.NotInterested:
-        //            return new NotInterestedMessage();
-        //        case BTMessageType.Have:
-        //            return HaveMessage.Decode(buffer);
-        //        case BTMessageType.BitField:
-        //            return BitFieldMessage.Decode(buffer, length - 1);
-        //        case BTMessageType.Request:
-        //            return RequestMessage.Decode(buffer);
-        //        case BTMessageType.Piece:
-        //            return PieceMessage.Decode(buffer);
-        //        case BTMessageType.Cancel:
-        //            return CancelMessage.Decode(buffer);
-        //        case BTMessageType.Port:
-        //            return PortMessage.Decode(buffer);
-        //        default:
-        //            return new UnknownMessage(messageId, buffer.ToArray());
-
-        //            return null;
-        //    }
     }
 }

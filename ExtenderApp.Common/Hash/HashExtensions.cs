@@ -23,9 +23,10 @@ namespace ExtenderApp.Common.Hash
         internal static IServiceCollection AddHash(this IServiceCollection services)
         {
             services.AddSingleton<IHashProvider, HashProvider>();
-            services.Configuration<BinaryFormatterStore>(b =>
+            services.Configuration<IBinaryFormatterStore>(b =>
             {
                 b.AddStructFormatter<HashValue, HashValueFormatter>();
+                b.AddStructFormatter<HashValues, HashValuesFormatter>();
             });
             return services;
         }

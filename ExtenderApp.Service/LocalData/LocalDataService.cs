@@ -147,15 +147,12 @@ namespace ExtenderApp.Services
                 if (!_localDataDict.TryGetValue(dataName, out var info))
                 {
                     info = new LocalDataInfo(_pathService.DataPath, dataName, CreateSerializeMethodInfo(typeof(LocalData<T>)));
-                    info.LocalData = localData = data;
                     _localDataDict.Add(dataName, info);
                 }
-                else
-                {
-                    localData = info.LocalData as LocalData<T>;
-                }
 
-                _parser.Write(info.FileInfo, localData);
+                info.LocalData = localData = data;
+
+                _parser.WriteAsync(info.FileInfo, localData, CompressionType.Lz4Block);
                 return true;
             }
             catch (Exception ex)

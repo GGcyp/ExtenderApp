@@ -190,7 +190,7 @@ namespace ExtenderApp.Abstract
         /// <param name="info">文件信息对象。</param>
         /// <param name="value">要写入的数据。</param>
         /// <param name="callback">写入完成后的回调函数，可以为null。</param>
-        void WriteAsync<T>(ExpectLocalFileInfo info, T value, Action<byte[]>? callback = null);
+        void WriteAsync<T>(ExpectLocalFileInfo info, T value, Action? callback = null);
 
         /// <summary>
         /// 异步写入数据到文件。
@@ -199,7 +199,7 @@ namespace ExtenderApp.Abstract
         /// <param name="info">文件操作信息对象。</param>
         /// <param name="value">要写入的数据。</param>
         /// <param name="callback">写入完成后的回调函数，可以为null。</param>
-        void WriteAsync<T>(FileOperateInfo info, T value, Action<byte[]>? callback = null);
+        void WriteAsync<T>(FileOperateInfo info, T value, Action? callback = null);
 
         /// <summary>
         /// 异步写入数据到文件。
@@ -208,7 +208,7 @@ namespace ExtenderApp.Abstract
         /// <param name="fileOperate">并发操作接口。</param>
         /// <param name="value">要写入的数据。</param>
         /// <param name="callback">写入完成后的回调函数，可以为null。</param>
-        void WriteAsync<T>(IFileOperate fileOperate, T value, Action<byte[]>? callback = null);
+        void WriteAsync<T>(IFileOperate fileOperate, T value, Action? callback = null);
 
         /// <summary>
         /// 异步写入数据到文件的指定位置。
@@ -218,7 +218,7 @@ namespace ExtenderApp.Abstract
         /// <param name="value">要写入的数据。</param>
         /// <param name="position">写入的位置。</param>
         /// <param name="callback">写入完成后的回调函数，可以为null。</param>
-        void WriteAsync<T>(ExpectLocalFileInfo info, T value, long position, Action<byte[]>? callback = null);
+        void WriteAsync<T>(ExpectLocalFileInfo info, T value, long position, Action? callback = null);
 
         /// <summary>
         /// 异步写入数据到文件的指定位置。
@@ -228,7 +228,7 @@ namespace ExtenderApp.Abstract
         /// <param name="value">要写入的数据。</param>
         /// <param name="position">写入的位置。</param>
         /// <param name="callback">写入完成后的回调函数，可以为null。</param>
-        void WriteAsync<T>(FileOperateInfo info, T value, long position, Action<byte[]>? callback = null);
+        void WriteAsync<T>(FileOperateInfo info, T value, long position, Action? callback = null);
 
         /// <summary>
         /// 异步写入数据到文件的指定位置。
@@ -238,7 +238,7 @@ namespace ExtenderApp.Abstract
         /// <param name="value">要写入的数据。</param>
         /// <param name="position">写入的位置。</param>
         /// <param name="callback">写入完成后的回调函数，可以为null。</param>
-        void WriteAsync<T>(IFileOperate fileOperate, T value, long position, Action<byte[]>? callback = null);
+        void WriteAsync<T>(IFileOperate fileOperate, T value, long position, Action? callback = null);
 
         #endregion
 

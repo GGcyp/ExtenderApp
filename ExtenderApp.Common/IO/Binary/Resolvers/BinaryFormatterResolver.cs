@@ -13,8 +13,20 @@ namespace ExtenderApp.Common
         /// 存储BinaryFormatter解析器的仓库
         /// </summary>
         private readonly Dictionary<Type, IBinaryFormatter> _formmaterDict;
+
+        /// <summary>
+        /// 二进制格式化器存储接口实例
+        /// </summary>
         private readonly IBinaryFormatterStore _store;
+
+        /// <summary>
+        /// 临时提供程序接口实例
+        /// </summary>
         private readonly ITentativeProvider _serviceProvider;
+
+        /// <summary>
+        /// 二进制格式化器创建器实例
+        /// </summary>
         private readonly BinaryFormatterCreator _formatCreator;
 
         /// <summary>

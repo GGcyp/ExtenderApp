@@ -1,36 +1,17 @@
 ﻿using System.IO;
-using ExtenderApp.Abstract;
-using ExtenderApp.Common.ObjectPools;
+using ExtenderApp.Common.IO;
 using ExtenderApp.Data;
 
 namespace ExtenderApp.Torrent
 {
     /// <summary>
-    /// 表示一个Torrent文件信息节点的类。
+    /// 表示一个与种子文件下载信息节点相关的文件操作节点类。
     /// </summary>
-    public class TorrentFileInfoNode : Node<TorrentFileInfoNode>, IResettable
+    /// <remarks>
+    /// TorrentFileDownInfoNode 类继承自 FIleOperateNode 类，泛型参数为 TorrentFileDownInfoNode。
+    /// </remarks>
+    public class TorrentFileDownInfoNode : FIleOperateNode<TorrentFileDownInfoNode>
     {
-        private static readonly ObjectPool<TorrentFileInfoNode> _pool
-            = ObjectPool.CreateDefaultPool<TorrentFileInfoNode>();
-
-        public static TorrentFileInfoNode Get() => _pool.Get();
-        public static void Release(TorrentFileInfoNode node) => _pool.Release(node);
-
-        /// <summary>
-        /// 获取或设置文件的名称。
-        /// </summary>
-        public string? Name { get; set; }
-
-        /// <summary>
-        /// 获取或设置文件的大小（以字节为单位）。
-        /// </summary>
-        public long Length { get; set; }
-
-        /// <summary>
-        /// 获取或设置一个值，该值指示当前节点是否表示一个文件。
-        /// </summary>
-        public bool IsFile { get; set; } = false;
-
         /// <summary>
         /// 获取或设置一个布尔值，表示是否下载。
         /// </summary>
@@ -40,43 +21,44 @@ namespace ExtenderApp.Torrent
         public bool IsDownload { get; set; } = false;
 
         /// <summary>
-        /// 获取或设置文件操作接口
+        /// 获取或设置上传的字节数。
         /// </summary>
-        /// <value>文件操作接口</value>
-        public IFileOperate? fileOperate { get; set; }
+        public long Uploaded { get; set; }
 
         /// <summary>
-        /// 释放当前节点及其子节点的资源。
+        /// 获取或设置下载的字节数。
         /// </summary>
-        public void Release()
-        {
-            if (HasChildNodes)
-            {
-                LoopChildNodes(n =>
-                {
-                    n.Release();
-                });
-                Clear();
-            }
-            TryReset();
-        }
+        public long Downloaded { get; set; }
 
-        public bool TryReset()
+        /// <summary>
+        /// 设置种子文件信息
+        /// </summary>
+        /// <param name="node">文件节点</param>
+        public void SetTorrentInfo(FileNode node)
         {
-            Name = string.Empty;
-            Length = 0;
-            fileOperate = null;
-            return true;
+            Length = node.Length;
+            Name = node.Name;
+            IsFile = node.IsFile;
+
+            if (node.HasChildNodes)
+            {
+                node.LoopChildNodes((fileInfoNode, downInfoNode) =>
+                {
+                    var node = new TorrentFileDownInfoNode();
+                    node.SetTorrentInfo(fileInfoNode);
+                    Add(node);
+                }, this);
+            }
         }
 
         /// <summary>
         /// 创建文件或文件夹。
         /// </summary>
         /// <param name="path">目标路径。</param>
-        public void CreateFileOrFolder(string path)
+        public override void CreateFileOrFolder(string path)
         {
             // 调用子节点创建方法
-            ChildHasCreate();
+            ChildNeedCreate();
             // 调用私有方法创建文件或文件夹
             PrivateCreateFileOrFolder(path);
         }
@@ -95,23 +77,18 @@ namespace ExtenderApp.Torrent
             if (IsFile)
             {
                 // 如果是文件且需要下载，但文件不存在
-                if (IsDownload && !File.Exists(targetPath))
+                if (IsDownload)
                 {
-                    // 创建文件流
-                    var stream = File.Create(targetPath);
-                    // 设置文件长度
-                    stream.SetLength(Length);
-                    // 释放文件流
-                    stream.Dispose();
+                    CreateFile(targetPath);
                 }
             }
             else
             {
                 // 如果不是文件且需要下载，但目录不存在
-                if (!Directory.Exists(targetPath) && IsDownload)
+                if (IsDownload)
                 {
                     // 创建目录
-                    Directory.CreateDirectory(targetPath);
+                    CreateDirectory(targetPath);
                 }
 
                 // 遍历所有子节点，递归调用私有方法创建文件或文件夹
@@ -122,10 +99,16 @@ namespace ExtenderApp.Torrent
             }
         }
 
+        public override bool CanCreateFileOperate()
+        {
+            ChildNeedCreate();
+            return base.CanCreateFileOperate() && IsDownload;
+        }
+
         /// <summary>
-        /// 子节点已创建。
+        /// 子节点是否需要创建文件夹。
         /// </summary>
-        public void ChildHasCreate()
+        public void ChildNeedCreate()
         {
             // 如果是文件，则直接返回
             if (IsFile)
@@ -135,7 +118,7 @@ namespace ExtenderApp.Torrent
             if (HasChildNodes)
             {
                 // 遍历子节点，递归调用子节点创建方法
-                LoopChildNodes(t => { t.ChildHasCreate(); });
+                LoopChildNodes(t => { t.ChildNeedCreate(); });
             }
 
             // 遍历所有节点
@@ -143,10 +126,11 @@ namespace ExtenderApp.Torrent
             {
                 var item = this[i];
                 // 如果节点是文件且需要下载
-                if (item.IsFile && item.IsDownload)
+                if (item.IsDownload)
                 {
                     // 设置当前节点为需要下载
                     IsDownload = true;
+                    return;
                 }
             }
         }

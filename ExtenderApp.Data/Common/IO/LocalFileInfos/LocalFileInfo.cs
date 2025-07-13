@@ -200,6 +200,16 @@ namespace ExtenderApp.Data
             return !left.Equals(right);
         }
 
+        public static implicit operator LocalFileInfo(string filePath)
+        {
+            return new LocalFileInfo(filePath);
+        }
+
+        public static implicit operator string(LocalFileInfo localFileInfo)
+        {
+            return localFileInfo.IsEmpty ? string.Empty : localFileInfo.FilePath;
+        }
+
         public override int GetHashCode()
         {
             return FilePath.GetHashCode();

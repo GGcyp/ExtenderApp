@@ -177,5 +177,26 @@ namespace ExtenderApp.Data
         {
             return reader.TryCopyTo(destination);
         }
+
+        /// <summary>
+        /// 支持从 ExtenderBinaryWriter 隐式转换为 ExtenderBinaryReader。
+        /// </summary>
+        /// <param name="writer">要转换的写入器。</param>
+        public static implicit operator ExtenderBinaryReader(ExtenderBinaryWriter writer)
+        {
+            if (writer.IsEmpty)
+                return new ExtenderBinaryReader();
+
+            writer.Commit();
+            return new ExtenderBinaryReader(writer.Rental.Value);
+        }
+
+        public static implicit operator ExtenderBinaryReader(ReadOnlyMemory<byte> memory)
+        {
+            if (memory.IsEmpty)
+                return new ExtenderBinaryReader();
+
+            return new ExtenderBinaryReader(memory);
+        }
     }
 }

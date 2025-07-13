@@ -13,24 +13,24 @@ namespace ExtenderApp.Services
         /// <summary>
         /// 用于序列化和反序列化数据类型为T的二进制格式化器
         /// </summary>
-        private IBinaryFormatter<T> _binaryFormatter;
+        private IBinaryFormatter<T> _binary;
 
         /// <summary>
         /// 用于序列化和反序列化数据类型为Version的二进制格式化器
         /// </summary>
-        private IBinaryFormatter<Version> _versionFormatter;
+        private IBinaryFormatter<Version> _version;
 
         /// <summary>
         /// 获取默认的本地数据对象
         /// </summary>
         /// <returns>返回默认的本地数据对象</returns>
-        public override LocalData<T> Default => new LocalData<T>(_binaryFormatter.Default, _versionFormatter.Default);
+        public override LocalData<T> Default => new LocalData<T>(_binary.Default, _version.Default);
 
         /// <summary>
         /// 获取二进制格式化器中的对象数量
         /// </summary>
         /// <returns>返回二进制格式化器中的对象数量</returns>
-        public override int Length => _binaryFormatter.Length + _versionFormatter.Length;
+        public override int Length => _binary.Length + _version.Length;
 
         /// <summary>
         /// 初始化本地数据格式化器对象
@@ -38,8 +38,8 @@ namespace ExtenderApp.Services
         /// <param name="resolver">二进制格式化器解析器</param>
         public LocalDataFormatter(IBinaryFormatterResolver resolver) : base(resolver)
         {
-            _binaryFormatter = GetFormatter<T>();
-            _versionFormatter = GetFormatter<Version>();
+            _binary = GetFormatter<T>();
+            _version = GetFormatter<Version>();
         }
 
         /// <summary>
@@ -49,8 +49,8 @@ namespace ExtenderApp.Services
         /// <returns>返回反序列化的本地数据对象</returns>
         public override LocalData<T> Deserialize(ref ExtenderBinaryReader reader)
         {
-            var version = _versionFormatter.Deserialize(ref reader);
-            var data = _binaryFormatter.Deserialize(ref reader);
+            var version = _version.Deserialize(ref reader);
+            var data = _binary.Deserialize(ref reader);
             return new LocalData<T>(data, version);
         }
 
@@ -61,8 +61,8 @@ namespace ExtenderApp.Services
         /// <param name="value">要序列化的本地数据对象</param>
         public override void Serialize(ref ExtenderBinaryWriter writer, LocalData<T> value)
         {
-            _versionFormatter.Serialize(ref writer, value.Version);
-            _binaryFormatter.Serialize(ref writer, value.Data);
+            _version.Serialize(ref writer, value.Version);
+            _binary.Serialize(ref writer, value.Data);
         }
 
         /// <summary>
@@ -74,10 +74,10 @@ namespace ExtenderApp.Services
         {
             if (value == null)
             {
-                throw new ArgumentNullException(nameof(value));
+                return Length;
             }
 
-            return _versionFormatter.GetLength(value.Version) + _binaryFormatter.GetLength(value.Data);
+            return _version.GetLength(value.Version) + _binary.GetLength(value.Data);
         }
     }
 }

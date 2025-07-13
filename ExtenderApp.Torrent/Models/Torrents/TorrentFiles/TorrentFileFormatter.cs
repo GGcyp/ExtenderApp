@@ -1,5 +1,6 @@
 ﻿using System.Buffers;
 using System.IO;
+using System.Numerics;
 using System.Security.Cryptography;
 using System.Text;
 using ExtenderApp.Abstract;
@@ -9,13 +10,13 @@ using ExtenderApp.Data;
 
 namespace ExtenderApp.Torrent
 {
-    public class TorrentFileForamtter
+    public class TorrentFileFormatter
     {
         private readonly IHashProvider _hashProvider;
         private readonly SequencePool<byte> _sequencePool;
         private readonly StringCache _stringCache;
 
-        public TorrentFileForamtter(IHashProvider hashProvider, SequencePool<byte> sequencePool, StringCache stringCache)
+        public TorrentFileFormatter(IHashProvider hashProvider, SequencePool<byte> sequencePool, StringCache stringCache)
         {
             _hashProvider = hashProvider;
             _sequencePool = sequencePool;
@@ -23,6 +24,24 @@ namespace ExtenderApp.Torrent
         }
 
         #region Decode
+
+        public TorrentFile Decode(IFileOperate fileOperate)
+        {
+            var result = fileOperate.ReadForArrayPool(out int length);
+            TorrentFile torrent = Decode(new Memory<byte>(result, 0, length));
+            ArrayPool<byte>.Shared.Return(result);
+            return torrent;
+        }
+
+        public TorrentFile Decode(ExtenderBinaryReader reader)
+        {
+            int length = (int)reader.Remaining;
+            var result = ArrayPool<byte>.Shared.Rent(length);
+            reader.TryCopyTo(result);
+            TorrentFile torrent = Decode(new Memory<byte>(result, 0, length));
+            ArrayPool<byte>.Shared.Return(result);
+            return torrent;
+        }
 
         public TorrentFile Decode(Memory<byte> data)
         {
@@ -90,16 +109,27 @@ namespace ExtenderApp.Torrent
 
             if (infoDict.TryGetValue("pieces", out var piecesObj))
             {
-                var dataBuffer = piecesObj as DataBuffer<int, int, byte[]>;
+                var dataBuffer = piecesObj as DataBuffer<int, int, Memory<byte>, byte>;
                 if (dataBuffer != null)
                 {
-                    byte[] pieces = dataBuffer.Item3.AsSpan(dataBuffer.Item1, dataBuffer.Item2).ToArray();
-                    torrentFile.Pieces = pieces;
+                    var pieces = dataBuffer.Item3.Slice(dataBuffer.Item1, dataBuffer.Item2);
+                    torrentFile.Pieces = new HashValues(pieces.Span);
                 }
             }
 
+            // 检查是否为v2协议
+            if (infoDict.TryGetValue("meta version", out var metaVersionObj))
+            {
+                torrentFile.MetaVersion = DecodeInt(metaVersionObj);
+                if (torrentFile.MetaVersion < 1 || torrentFile.MetaVersion > 2)
+                    throw new InvalidDataException($"不支持的元数据版本：{torrentFile.MetaVersion}");
+
+                if (torrentFile.MetaVersion == 2 && torrentFile.Pieces.HashLength % 32 != 0)
+                    throw new InvalidDataException("v2协议的种子文件包含的pieces字段长度不匹配");
+            }
+
             var isSingleFile = infoDict.TryGetValue("length", out var lengthObj);
-            var node = torrentFile.FileInfoNode;
+            var node = torrentFile.FileNode;
             node.Name = torrentFile.Name;
             if (isSingleFile)
             {
@@ -125,8 +155,8 @@ namespace ExtenderApp.Torrent
                     var fileDict = fileObj as Dictionary<string, object>;
                     if (fileDict == null) continue;
 
-                    TorrentFileInfoNode pathNode = node;
-                    TorrentFileInfoNode childNode = node;
+                    FileNode pathNode = node;
+                    FileNode childNode = node;
                     if (fileDict.TryGetValue("path", out var pathObj))
                     {
                         var pathList = pathObj as List<object>;
@@ -145,7 +175,7 @@ namespace ExtenderApp.Torrent
                             }
                             else
                             {
-                                childNode = TorrentFileInfoNode.Get();
+                                childNode = new();
                                 childNode.Name = pathName;
                                 childNode.IsFile = false;
                                 pathNode.Add(childNode);
@@ -153,7 +183,7 @@ namespace ExtenderApp.Torrent
                             }
                         }
 
-                        childNode = TorrentFileInfoNode.Get();
+                        childNode = new();
                         childNode.Name = DecodeString(pathList[^1]);
                         childNode.IsFile = true;
                         pathNode.Add(childNode);
@@ -172,12 +202,14 @@ namespace ExtenderApp.Torrent
 
         private long DecodeLong(object obj)
         {
-            if (obj == null || obj is not DataBuffer<int, int, (byte[], byte)> dataBuffer)
-                return 0;
-
-            string result = DecodeString(dataBuffer.Item1, dataBuffer.Item2, dataBuffer.Item3.Item1);
-            dataBuffer.Release();
+            string result = DecodeString(obj);
             return long.Parse(result);
+        }
+
+        private int DecodeInt(object obj)
+        {
+            string result = DecodeString(obj);
+            return int.Parse(result);
         }
 
         private string DecodeString(object obj)

@@ -1,4 +1,5 @@
 ﻿
+using System.Buffers;
 using ExtenderApp.Data;
 
 namespace ExtenderApp.Abstract
@@ -17,9 +18,9 @@ namespace ExtenderApp.Abstract
         /// 将字节数组反序列化为指定类型的对象。
         /// </summary>
         /// <typeparam name="T">要反序列化的目标类型。</typeparam>
-        /// <param name="bytes">包含二进制数据的字节数组。</param>
-        /// <returns>反序列化后的对象，如果无法反序列化则返回null。</returns>
-        T? Deserialize<T>(byte[] bytes);
+        /// <param name="span">包含序列化数据的字节数组。</param>
+        /// <returns>反序列化后的对象，如果反序列化失败则返回null。</returns>
+        T? Deserialize<T>(ReadOnlyMemory<byte> span);
 
         /// <summary>
         /// 从流中反序列化对象。
@@ -28,6 +29,25 @@ namespace ExtenderApp.Abstract
         /// <param name="stream">包含要反序列化数据的流。</param>
         /// <returns>反序列化后的对象，如果流为空或格式不正确则返回null。</returns>
         T? Deserialize<T>(Stream stream);
+
+        /// <summary>
+        /// 异步反序列化给定流或字节数组为指定类型的对象。
+        /// </summary>
+        /// <typeparam name="T">目标对象的类型。</typeparam>
+        /// <param name="stream">包含要反序列化的数据的流。</param>
+        /// <param name="token">用于取消操作的取消令牌。</param>
+        /// <returns>反序列化后的对象，如果反序列化失败则返回null。</returns>
+        Task<T?> DeserializeAsync<T>(Stream stream, CancellationToken token);
+        
+        /// <summary>
+        /// 从给定的字节序列中异步反序列化对象。
+        /// </summary>
+        /// <typeparam name="T">要反序列化的对象类型。</typeparam>
+        /// <param name="span">包含要反序列化的数据的字节序列。</param>
+        /// <param name="token">用于取消操作的取消令牌。</param>
+        /// <returns>返回一个包含反序列化对象的Task。</returns>
+        Task<T?> DeserializeAsync<T>(ReadOnlyMemory<byte> span, CancellationToken token);
+
 
         #endregion
 
@@ -104,327 +124,118 @@ namespace ExtenderApp.Abstract
         /// <returns>包含序列化后数据的字节数组。</returns>
         byte[] SerializeForArrayPool<T>(T value, out int length);
 
+        /// <summary>
+        /// 异步地将对象序列化为字节数组。
+        /// </summary>
+        /// <typeparam name="T">要序列化的对象的类型。</typeparam>
+        /// <param name="value">要序列化的对象。</param>
+        /// <returns>返回一个包含序列化后字节的Task。</returns>
+        Task<byte[]> SerializeAsync<T>(T value, CancellationToken token);
+
+        /// <summary>
+        /// 异步地将对象序列化为字节流。
+        /// </summary>
+        /// <typeparam name="T">要序列化的对象的类型。</typeparam>
+        /// <param name="stream">要写入序列化数据的流。</param>
+        /// <param name="value">要序列化的对象。</param>
+        /// <returns>返回一个Task。</returns>
+        Task SerializeAsync<T>(Stream stream, T value, CancellationToken token);
+
         #endregion
 
-        //#region Read
+        #region LZ4
 
-        ///// <summary>
-        ///// 从指定位置读取指定长度的字节数组。
-        ///// </summary>
-        ///// <param name="info">包含文件信息的对象，可以为ExpectLocalFileInfo、LocalFileInfo、FileOperateInfo或IConcurrentOperate类型。</param>
-        ///// <param name="position">从文件的哪个位置开始读取数据，以字节为单位。</param>
-        ///// <param name="length">要读取的字节数。</param>
-        ///// <returns>包含读取到的字节数据的数组，如果读取失败或文件内容为空，则返回null。</returns>
-        //byte[]? Read(ExpectLocalFileInfo info, long position, long length);
+        /// <summary>
+        /// 将数据写入LZ4压缩块
+        /// </summary>
+        /// <typeparam name="T">数据类型</typeparam>
+        /// <param name="info">文件信息</param>
+        /// <param name="value">要写入的数据</param>
+        /// <param name="compression">压缩类型</param>
+        void Write<T>(ExpectLocalFileInfo info, T value, CompressionType compression);
 
-        ///// <summary>
-        ///// 从指定位置读取指定长度的数据。
-        ///// </summary>
-        ///// <param name="info">本地文件信息对象。</param>
-        ///// <param name="position">开始读取的位置。</param>
-        ///// <param name="length">要读取的长度。</param>
-        ///// <returns>读取的数据，如果读取失败则返回null。</returns>
-        //byte[]? Read(LocalFileInfo info, long position, long length);
+        /// <summary>
+        /// 将数据写入LZ4压缩块
+        /// </summary>
+        /// <typeparam name="T">数据类型</typeparam>
+        /// <param name="info">文件操作信息</param>
+        /// <param name="value">要写入的数据</param>
+        /// <param name="compression">压缩类型</param>
+        void Write<T>(FileOperateInfo info, T value, CompressionType compression);
 
-        ///// <summary>
-        ///// 从指定位置读取指定长度的字节数组。
-        ///// </summary>
-        ///// <param name="info">包含文件操作信息的FileOperateInfo对象。</param>
-        ///// <param name="position">从文件的哪个位置开始读取数据，以字节为单位。</param>
-        ///// <param name="length">要读取的字节数。</param>
-        ///// <returns>包含读取到的字节数据的数组，如果读取失败或文件内容为空，则返回null。</returns>
-        //byte[]? Read(FileOperateInfo info, long position, long length);
+        /// <summary>
+        /// 将数据写入LZ4压缩格式
+        /// </summary>
+        /// <typeparam name="T">数据类型</typeparam>
+        /// <param name="fileOperate">文件操作接口</param>
+        /// <param name="value">要写入的数据</param>
+        /// <param name="compression">压缩类型</param>
+        void Write<T>(IFileOperate fileOperate, T value, CompressionType compression);
 
-        ///// <summary>
-        ///// 从指定位置读取指定长度的字节数组。
-        ///// </summary>
-        ///// <param name="fileOperate">实现IConcurrentOperate接口的并发操作对象。</param>
-        ///// <param name="position">从文件的哪个位置开始读取数据，以字节为单位。</param>
-        ///// <param name="length">要读取的字节数。</param>
-        ///// <returns>包含读取到的字节数据的数组，如果读取失败或文件内容为空，则返回null。</returns>
-        //byte[]? Read(IConcurrentOperate? fileOperate, long position, long length);
+        /// <summary>
+        /// 将只读内存序列写入LZ4压缩格式
+        /// </summary>
+        /// <param name="readOnlyMemories">只读内存序列</param>
+        /// <param name="writer">二进制写入器</param>
+        /// <param name="compression">压缩类型</param>
+        void ToLz4(in ReadOnlySequence<byte> readOnlyMemories, ref ExtenderBinaryWriter writer, CompressionType compression);
 
-        ///// <summary>
-        ///// 从指定位置开始读取指定长度的文件内容到指定字节数组中
-        ///// </summary>
-        ///// <param name="info">文件信息对象，支持多种类型</param>
-        ///// <param name="position">读取起始位置</param>
-        ///// <param name="length">读取长度</param>
-        ///// <param name="bytes">存储读取内容的字节数组</param>
-        ///// <returns>若读取成功返回true，否则返回false</returns>
-        //bool Read(ExpectLocalFileInfo info, long position, long length, byte[] bytes);
+        /// <summary>
+        /// 异步地将数据写入LZ4压缩块
+        /// </summary>
+        /// <typeparam name="T">数据类型</typeparam>
+        /// <param name="info">文件信息</param>
+        /// <param name="value">要写入的数据</param>
+        /// <param name="compression">压缩类型</param>
+        /// <param name="callback">回调函数</param>
+        void WriteAsync<T>(ExpectLocalFileInfo info, T value, CompressionType compression, Action? callback = null);
 
-        ///// <summary>
-        ///// 从指定位置开始读取指定长度的文件内容到指定字节数组中
-        ///// </summary>
-        ///// <param name="info">LocalFileInfo类型的文件信息对象</param>
-        ///// <param name="position">读取起始位置</param>
-        ///// <param name="length">读取长度</param>
-        ///// <param name="bytes">存储读取内容的字节数组</param>
-        ///// <returns>若读取成功返回true，否则返回false</returns>
-        //bool Read(LocalFileInfo info, long position, long length, byte[] bytes);
+        /// <summary>
+        /// 异步地将数据写入LZ4压缩块
+        /// </summary>
+        /// <typeparam name="T">数据类型</typeparam>
+        /// <param name="info">文件操作信息</param>
+        /// <param name="value">要写入的数据</param>
+        /// <param name="compression">压缩类型</param>
+        /// <param name="callback">回调函数</param>
+        void WriteAsync<T>(FileOperateInfo info, T value, CompressionType compression, Action? callback = null);
 
-        ///// <summary>
-        ///// 从指定位置开始读取指定长度的文件内容到指定字节数组中
-        ///// </summary>
-        ///// <param name="info">FileOperateInfo类型的文件信息对象</param>
-        ///// <param name="position">读取起始位置</param>
-        ///// <param name="length">读取长度</param>
-        ///// <param name="bytes">存储读取内容的字节数组</param>
-        ///// <returns>若读取成功返回true，否则返回false</returns>
-        //bool Read(FileOperateInfo info, long position, long length, byte[] bytes);
+        /// <summary>
+        /// 异步地将数据写入LZ4压缩格式
+        /// </summary>
+        /// <typeparam name="T">数据类型</typeparam>
+        /// <param name="fileOperate">文件操作接口</param>
+        /// <param name="value">要写入的数据</param>
+        /// <param name="compression">压缩类型</param>
+        /// <param name="callback">回调函数</param>
+        void WriteAsync<T>(IFileOperate fileOperate, T value, CompressionType compression, Action? callback = null);
 
-        ///// <summary>
-        ///// 从指定位置开始读取指定长度的文件内容到指定字节数组中
-        ///// </summary>
-        ///// <param name="fileOperate">IConcurrentOperate类型的文件操作接口对象，可为null</param>
-        ///// <param name="position">读取起始位置</param>
-        ///// <param name="length">读取长度</param>
-        ///// <param name="bytes">存储读取内容的字节数组</param>
-        ///// <returns>若读取成功返回true，否则返回false</returns>
-        //bool Read(IConcurrentOperate? fileOperate, long position, long length, byte[] bytes);
+        /// <summary>
+        /// 对指定类型的数据进行压缩。
+        /// </summary>
+        /// <typeparam name="T">要压缩的数据的类型。</typeparam>
+        /// <param name="value">要压缩的数据。</param>
+        /// <param name="compression">压缩类型。</param>
+        /// <returns>压缩后的字节数组。</returns>
+        byte[] Compression<T>(T value, CompressionType compression);
 
-        //#endregion
+        /// <summary>
+        /// 对字节序列进行压缩。
+        /// </summary>
+        /// <param name="input">要压缩的字节序列。</param>
+        /// <param name="compression">压缩类型。</param>
+        /// <returns>压缩后的字节数组。</returns>
+        byte[] Compression(ReadOnlySpan<byte> input, CompressionType compression);
 
-        //#region ReadAsync
+        /// <summary>
+        /// 对只读字节序列进行压缩。
+        /// </summary>
+        /// <param name="readOnlyMemories">要压缩的只读字节序列。</param>
+        /// <param name="compression">压缩类型。</param>
+        /// <returns>压缩后的字节数组。</returns>
+        byte[] Compression(in ReadOnlySequence<byte> readOnlyMemories, CompressionType compression);
 
-        ///// <summary>
-        ///// 异步读取文件内容
-        ///// </summary>
-        ///// <param name="info">文件信息对象，支持多种类型，包括ExpectLocalFileInfo、LocalFileInfo、FileOperateInfo、IConcurrentOperate</param>
-        ///// <param name="position">读取的起始位置</param>
-        ///// <param name="length">读取的长度</param>
-        ///// <param name="callback">读取完成后的回调函数，参数为读取到的字节数组（可能为null）</param>
-        //void ReadAsync(ExpectLocalFileInfo info, long position, long length, Action<byte[]?> callback);
-
-        ///// <summary>
-        ///// 异步读取文件内容。
-        ///// </summary>
-        ///// <param name="info">文件信息对象。</param>
-        ///// <param name="position">开始读取的位置。</param>
-        ///// <param name="length">要读取的长度。</param>
-        ///// <param name="callback">读取完成后的回调函数，参数为读取到的字节数组（可能为null）。</param>
-        //void ReadAsync(LocalFileInfo info, long position, long length, Action<byte[]?> callback);
-
-        ///// <summary>
-        ///// 异步读取文件内容
-        ///// </summary>
-        ///// <param name="info">文件操作信息对象，类型为FileOperateInfo</param>
-        ///// <param name="position">读取的起始位置</param>
-        ///// <param name="length">读取的长度</param>
-        ///// <param name="callback">读取完成后的回调函数，参数为读取到的字节数组（可能为null）</param>
-        //void ReadAsync(FileOperateInfo info, long position, long length, Action<byte[]?> callback);
-
-        ///// <summary>
-        ///// 异步读取文件内容
-        ///// </summary>
-        ///// <param name="fileOperate">文件操作接口对象，类型为IConcurrentOperate，可能为null</param>
-        ///// <param name="position">读取的起始位置</param>
-        ///// <param name="length">读取的长度</param>
-        ///// <param name="callback">读取完成后的回调函数，参数为读取到的字节数组（可能为null）</param>
-        //void ReadAsync(IConcurrentOperate? fileOperate, long position, long length, Action<byte[]?> callback);
-
-        ///// <summary>
-        ///// 异步读取文件内容到指定字节数组
-        ///// </summary>
-        ///// <param name="info">文件信息对象，支持多种类型，包括ExpectLocalFileInfo、LocalFileInfo、FileOperateInfo、IConcurrentOperate</param>
-        ///// <param name="position">读取的起始位置</param>
-        ///// <param name="length">读取的长度</param>
-        ///// <param name="bytes">用于存储读取内容的字节数组</param>
-        ///// <param name="callback">读取完成后的回调函数，参数为操作是否成功</param>
-        //void ReadAsync(ExpectLocalFileInfo info, long position, long length, byte[] bytes, Action<bool> callback);
-
-        ///// <summary>
-        ///// 异步读取文件内容。
-        ///// </summary>
-        ///// <param name="info">本地文件信息。</param>
-        ///// <param name="position">开始读取的位置。</param>
-        ///// <param name="length">要读取的长度。</param>
-        ///// <param name="bytes">存储读取数据的字节数组。</param>
-        ///// <param name="callback">读取完成后的回调函数，参数为读取是否成功。</param>
-        //void ReadAsync(LocalFileInfo info, long position, long length, byte[] bytes, Action<bool> callback);
-
-        ///// <summary>
-        ///// 异步读取文件内容到指定字节数组
-        ///// </summary>
-        ///// <param name="info">文件操作信息对象，类型为FileOperateInfo</param>
-        ///// <param name="position">读取的起始位置</param>
-        ///// <param name="length">读取的长度</param>
-        ///// <param name="bytes">用于存储读取内容的字节数组</param>
-        ///// <param name="callback">读取完成后的回调函数，参数为操作是否成功</param>
-        //void ReadAsync(FileOperateInfo info, long position, long length, byte[] bytes, Action<bool> callback);
-
-        ///// <summary>
-        ///// 异步读取文件内容到指定字节数组
-        ///// </summary>
-        ///// <param name="fileOperate">文件操作接口对象，类型为IConcurrentOperate，可能为null</param>
-        ///// <param name="position">读取的起始位置</param>
-        ///// <param name="length">读取的长度</param>
-        ///// <param name="bytes">用于存储读取内容的字节数组</param>
-        ///// <param name="callback">读取完成后的回调函数，参数为操作是否成功</param>
-        //void ReadAsync(IConcurrentOperate? fileOperate, long position, long length, byte[] bytes, Action<bool> callback);
-
-        //#endregion
-
-        //#region Write
-
-        ///// <summary>
-        ///// 将数据写入到指定的文件中
-        ///// </summary>
-        ///// <param name="info">包含本地文件信息的对象</param>
-        ///// <param name="bytes">要写入文件的字节数组</param>
-        ///// <param name="filePosition">写入文件的起始位置</param>
-        //void Write(ExpectLocalFileInfo info, byte[] bytes, long filePosition);
-
-        ///// <summary>
-        ///// 将字节数据写入到指定文件中。
-        ///// </summary>
-        ///// <param name="info">文件信息对象，包含文件的路径和名称。</param>
-        ///// <param name="bytes">要写入的字节数据。</param>
-        ///// <param name="filePosition">要写入的文件位置。</param>
-        //void Write(LocalFileInfo info, byte[] bytes, long filePosition);
-
-        ///// <summary>
-        ///// 将数据写入到指定的文件中
-        ///// </summary>
-        ///// <param name="info">包含文件操作信息的对象</param>
-        ///// <param name="bytes">要写入文件的字节数组</param>
-        ///// <param name="filePosition">写入文件的起始位置</param>
-        //void Write(FileOperateInfo info, byte[] bytes, long filePosition);
-
-        ///// <summary>
-        ///// 将数据写入到指定的文件中
-        ///// </summary>
-        ///// <param name="fileOperate">并发文件操作对象，可以为null</param>
-        ///// <param name="bytes">要写入文件的字节数组</param>
-        ///// <param name="filePosition">写入文件的起始位置</param>
-        //void Write(IConcurrentOperate? fileOperate, byte[] bytes, long filePosition);
-
-        ///// <summary>
-        ///// 将指定字节写入到本地文件中。
-        ///// </summary>
-        ///// <param name="info">本地文件信息。</param>
-        ///// <param name="bytes">要写入的字节数据。</param>
-        ///// <param name="filePosition">文件写入位置。</param>
-        ///// <param name="bytesPosition">字节数据的起始位置。</param>
-        ///// <param name="bytesLength">要写入的字节长度。</param>
-        //void Write(ExpectLocalFileInfo info, byte[] bytes, long filePosition, int bytesPosition, int bytesLength);
-
-        ///// <summary>
-        ///// 将指定字节序列写入到文件中。
-        ///// </summary>
-        ///// <param name="info">文件信息对象，包含文件的路径和名称。</param>
-        ///// <param name="bytes">包含要写入文件的字节序列的只读字节跨度。</param>
-        ///// <param name="filePosition">文件中的起始位置，从该位置开始写入字节。</param>
-        ///// <param name="bytesPosition">字节序列中的起始位置，从该位置开始读取字节。</param>
-        ///// <param name="bytesLength">要写入文件的字节长度。</param>
-        //void Write(LocalFileInfo info, byte[] bytes, long filePosition, int bytesPosition, int bytesLength);
-
-        ///// <summary>
-        ///// 将指定字节写入到文件中。
-        ///// </summary>
-        ///// <param name="info">文件操作信息。</param>
-        ///// <param name="bytes">要写入的字节数据。</param>
-        ///// <param name="filePosition">文件写入位置。</param>
-        ///// <param name="bytesPosition">字节数据的起始位置。</param>
-        ///// <param name="bytesLength">要写入的字节长度。</param>
-        //void Write(FileOperateInfo info, byte[] bytes, long filePosition, int bytesPosition, int bytesLength);
-
-        ///// <summary>
-        ///// 将指定字节写入到文件中。
-        ///// </summary>
-        ///// <param name="fileOperate">并发文件操作信息。</param>
-        ///// <param name="bytes">要写入的字节数据。</param>
-        ///// <param name="filePosition">文件写入位置。</param>
-        ///// <param name="bytesPosition">字节数据的起始位置。</param>
-        ///// <param name="bytesLength">要写入的字节长度。</param>
-        //void Write(IConcurrentOperate? fileOperate, byte[] bytes, long filePosition, int bytesPosition, int bytesLength);
-
-        //#endregion
-
-        //#region WriteAsync
-
-        ///// <summary>
-        ///// 异步写入文件。
-        ///// </summary>
-        ///// <param name="info">文件信息对象。</param>
-        ///// <param name="bytes">要写入的字节数组。</param>
-        ///// <param name="filePosition">要写入的文件位置。</param>
-        ///// <param name="callback">写入完成后的回调函数，参数为写入的字节数组。默认为null。</param>
-        //void WriteAsync(ExpectLocalFileInfo info, byte[] bytes, long filePosition, Action<byte[]>? callback = null);
-
-        ///// <summary>
-        ///// 异步写入文件。
-        ///// </summary>
-        ///// <param name="info">文件信息对象。</param>
-        ///// <param name="bytes">要写入的字节数组。</param>
-        ///// <param name="filePosition">要写入的文件位置。</param>
-        ///// <param name="callback">写入完成后的回调函数，参数为写入的字节数组。默认为null。</param>
-        //void WriteAsync(LocalFileInfo info, byte[] bytes, long filePosition, Action<byte[]>? callback = null);
-
-        ///// <summary>
-        ///// 异步写入文件。
-        ///// </summary>
-        ///// <param name="info">文件操作信息对象。</param>
-        ///// <param name="bytes">要写入的字节数组。</param>
-        ///// <param name="filePosition">要写入的文件位置。</param>
-        ///// <param name="callback">写入完成后的回调函数，参数为写入的字节数组。默认为null。</param>
-        //void WriteAsync(FileOperateInfo info, byte[] bytes, long filePosition, Action<byte[]>? callback = null);
-
-        ///// <summary>
-        ///// 异步写入文件。
-        ///// </summary>
-        ///// <param name="fileOperate">并发文件操作对象。默认为null。</param>
-        ///// <param name="bytes">要写入的字节数组。</param>
-        ///// <param name="filePosition">要写入的文件位置。</param>
-        ///// <param name="callback">写入完成后的回调函数，参数为写入的字节数组。默认为null。</param>
-        //void WriteAsync(IConcurrentOperate? fileOperate, byte[] bytes, long filePosition, Action<byte[]>? callback = null);
-
-        ///// <summary>
-        ///// 异步写入文件的方法。
-        ///// </summary>
-        ///// <param name="info">文件信息对象。</param>
-        ///// <param name="bytes">要写入文件的数据字节数组。</param>
-        ///// <param name="filePosition">文件开始写入的位置。</param>
-        ///// <param name="bytesPosition">字节数组开始写入的位置。</param>
-        ///// <param name="bytesLength">要写入的字节数。</param>
-        ///// <param name="callback">写入完成后的回调函数，参数为写入的字节数组。</param>
-        //void WriteAsync(ExpectLocalFileInfo info, byte[] bytes, long filePosition, int bytesPosition, int bytesLength, Action<byte[]>? callback = null);
-
-        ///// <summary>
-        ///// 异步写入文件的方法。
-        ///// </summary>
-        ///// <param name="info">本地文件信息对象。</param>
-        ///// <param name="bytes">要写入文件的数据字节数组。</param>
-        ///// <param name="filePosition">文件开始写入的位置。</param>
-        ///// <param name="bytesPosition">字节数组开始写入的位置。</param>
-        ///// <param name="bytesLength">要写入的字节数。</param>
-        ///// <param name="callback">写入完成后的回调函数，参数为写入的字节数组。</param>
-        //void WriteAsync(LocalFileInfo info, byte[] bytes, long filePosition, int bytesPosition, int bytesLength, Action<byte[]>? callback = null);
-
-        ///// <summary>
-        ///// 异步写入文件的方法。
-        ///// </summary>
-        ///// <param name="info">文件操作信息对象。</param>
-        ///// <param name="bytes">要写入文件的数据字节数组。</param>
-        ///// <param name="filePosition">文件开始写入的位置。</param>
-        ///// <param name="bytesPosition">字节数组开始写入的位置。</param>
-        ///// <param name="bytesLength">要写入的字节数。</param>
-        ///// <param name="callback">写入完成后的回调函数，参数为写入的字节数组。</param>
-        //void WriteAsync(FileOperateInfo info, byte[] bytes, long filePosition, int bytesPosition, int bytesLength, Action<byte[]>? callback = null);
-
-        ///// <summary>
-        ///// 异步写入文件的方法。
-        ///// </summary>
-        ///// <param name="fileOperate">并发操作接口对象。</param>
-        ///// <param name="bytes">要写入文件的数据字节数组。</param>
-        ///// <param name="filePosition">文件开始写入的位置。</param>
-        ///// <param name="bytesPosition">字节数组开始写入的位置。</param>
-        ///// <param name="bytesLength">要写入的字节数。</param>
-        ///// <param name="callback">写入完成后的回调函数，参数为写入的字节数组。</param>
-        //void WriteAsync(IConcurrentOperate? fileOperate, byte[] bytes, long filePosition, int bytesPosition, int bytesLength, Action<byte[]>? callback = null);
-
-        //#endregion
+        #endregion
 
         /// <summary>
         /// 获取指定类型对象中的序列化后的长度。

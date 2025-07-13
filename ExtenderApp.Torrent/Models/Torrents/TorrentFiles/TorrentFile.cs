@@ -5,11 +5,17 @@ using ExtenderApp.Data;
 namespace ExtenderApp.Torrent
 {
     /// <summary>
-    /// 多文件模式下的文件信息
+    /// 种子文件内容的类，包含种子文件的元数据和信息字典。
     /// </summary>
     public class TorrentFile : DisposableObject, IResettable
     {
         // 文件元数据
+        /// <summary>
+        /// 获取或设置广播列表。
+        /// </summary>
+        /// <value>
+        /// 一个包含字符串的ValueOrList对象，表示广播列表。
+        /// </value>
         public ValueOrList<string> AnnounceList { get; set; }
 
         /// <summary>
@@ -31,7 +37,6 @@ namespace ExtenderApp.Torrent
         public DateTime CreationDate { get; set; }
 
         // 信息字典
-
         /// <summary>
         /// 名称
         /// </summary>
@@ -45,23 +50,18 @@ namespace ExtenderApp.Torrent
         /// <summary>
         /// 分片数组
         /// </summary>
-        public byte[]? Pieces { get; set; }
+        public HashValues Pieces { get; set; }
 
         /// <summary>
         /// 是否为单文件
         /// </summary>
         /// <returns>如果文件长度大于0，则为单文件，返回true；否则为false</returns>
-        public bool IsSingleFile => !FileInfoNode.HasChildNodes;
-
-        ///// <summary>
-        ///// 文件长度
-        ///// </summary>
-        //public long FileLength => FileInfoNode.Length;
+        public bool IsSingleFile => !FileNode.HasChildNodes;
 
         /// <summary>
         /// 获取Torrent文件信息列表
         /// </summary>
-        public TorrentFileInfoNode FileInfoNode { get; set; }
+        public FileNode FileNode { get; set; }
 
         // InfoHash (20字节)
         /// <summary>
@@ -69,18 +69,23 @@ namespace ExtenderApp.Torrent
         /// </summary>
         public InfoHash Hash { get; set; }
 
+        /// <summary>
+        /// 获取或设置元数据版本。
+        /// </summary>
+        public int MetaVersion { get; set; }
+
         public TorrentFile()
         {
             AnnounceList = new();
-            FileInfoNode = TorrentFileInfoNode.Get();
+            FileNode = new();
         }
 
         public bool TryReset()
         {
             AnnounceList.Clear();
-            FileInfoNode.Clear();
+            FileNode.Clear();
             Hash = InfoHash.Empty;
-            Pieces = null;
+            Pieces = HashValues.Empty;
             Name = string.Empty;
             CreatedBy = string.Empty;
             Comment = string.Empty;
@@ -91,10 +96,10 @@ namespace ExtenderApp.Torrent
         {
             AnnounceList.Clear();
             AnnounceList = null;
-            FileInfoNode.Clear();
-            TorrentFileInfoNode.Release(FileInfoNode);
+            FileNode.Clear();
+            FileNode = null;
             Hash = InfoHash.Empty;
-            Pieces = null;
+            Pieces = HashValues.Empty;
             Name = string.Empty;
             CreatedBy = string.Empty;
             Comment = string.Empty;

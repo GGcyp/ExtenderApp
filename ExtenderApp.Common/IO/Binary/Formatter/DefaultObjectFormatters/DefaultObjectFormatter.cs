@@ -1,7 +1,7 @@
 ﻿using System.Linq.Expressions;
 using System.Reflection;
 using ExtenderApp.Abstract;
-using ExtenderApp.Common.IO.Binary.Formatter;
+using ExtenderApp.Common.IO.Binaries.Formatter;
 using ExtenderApp.Data;
 
 namespace ExtenderApp.Common.IO.Binaries.Formatter
@@ -104,6 +104,8 @@ namespace ExtenderApp.Common.IO.Binaries.Formatter
 
         public long GetLength(T value)
         {
+            if (value == null)
+                return 1;
             return _getLengthMethod.Invoke(value);
         }
     }

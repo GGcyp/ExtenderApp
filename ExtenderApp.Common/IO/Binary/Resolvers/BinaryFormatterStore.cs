@@ -1,7 +1,7 @@
 ﻿using ExtenderApp.Abstract;
 using ExtenderApp.Data;
 
-namespace ExtenderApp.Common
+namespace ExtenderApp.Common.IO.Binaries
 {
     internal class BinaryFormatterStore : Dictionary<Type, Type>, IBinaryFormatterStore
     {

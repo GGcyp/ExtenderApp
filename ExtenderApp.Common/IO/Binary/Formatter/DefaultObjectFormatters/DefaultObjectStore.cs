@@ -4,7 +4,7 @@ using System.Reflection;
 using ExtenderApp.Abstract;
 using ExtenderApp.Data;
 
-namespace ExtenderApp.Common.IO.Binary.Formatter
+namespace ExtenderApp.Common.IO.Binaries.Formatter
 {
     /// <summary>
     /// 默认的对象存储类

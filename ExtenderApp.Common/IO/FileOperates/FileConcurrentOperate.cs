@@ -28,6 +28,7 @@ namespace ExtenderApp.Common.IO
         public LocalFileInfo Info => Data.OperateInfo.LocalFileInfo;
 
         public DateTime LastOperateTime { get; private set; }
+        public bool IsHosted { get; set; }
 
         #region Read
 
@@ -41,10 +42,25 @@ namespace ExtenderApp.Common.IO
             return PrivateRead(filePosition, length, null, 0);
         }
 
+        public void Read(long filePosition, int length, ref ExtenderBinaryWriter writer)
+        {
+            var bytes = ReadForArrayPool(filePosition, length);
+            writer.Write(bytes.AsSpan(0, length));
+            ArrayPool<byte>.Shared.Return(bytes); // 归还数组池
+        }
+
         public byte[] ReadForArrayPool(long filePosition, int length)
         {
             var bytes = ArrayPool<byte>.Shared.Rent(length);
             PrivateRead(filePosition, length, bytes, 0);
+            return bytes;
+        }
+
+        public byte[] ReadForArrayPool(out int length)
+        {
+            length = (int)Data.CurrentCapacity;
+            var bytes = ArrayPool<byte>.Shared.Rent(length);
+            PrivateRead(0, length, bytes, 0);
             return bytes;
         }
 

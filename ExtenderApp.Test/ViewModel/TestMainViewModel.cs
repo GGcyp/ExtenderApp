@@ -22,8 +22,8 @@ namespace ExtenderApp.Test
             //BinaryTest(sequencePool);
             //_linkerFactory = linkerClientFactory;
             //TcpLinkTest();
-            var fileOperate=provider.GetOperate(new LocalFileInfo("E:\\迅雷下载\\5A8F9BB08F1BE7DE41D87E5DE5B60E3961393AAC.torrent"));
-            var bytes=fileOperate.ReadForArrayPool(0, 1024);
+            var fileOperate = provider.GetOperate(new LocalFileInfo("E:\\迅雷下载\\5A8F9BB08F1BE7DE41D87E5DE5B60E3961393AAC.torrent"));
+            var bytes = fileOperate.ReadForArrayPool(0, 1024);
             Debug(bytes.Length);
         }
 

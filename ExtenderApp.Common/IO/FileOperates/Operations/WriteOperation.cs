@@ -105,14 +105,15 @@ namespace ExtenderApp.Common.IO
             }
 
             long writeIndex = writePosition;
-            int bytesIndex = 0;
             var accessor = item.Accessor;
 
             foreach (ReadOnlyMemory<byte> meory in readOnlySequence)
             {
-                accessor.Write(writeIndex, meory.Span[bytesIndex]);
-                writeIndex++;
-                bytesIndex++;
+                for (int i = 0; i < meory.Length; i++)
+                {
+                    accessor.Write(writeIndex, meory.Span[i]);
+                    writeIndex++;
+                }
             }
 
             if (callback is Action<byte[]> arrayCallback)

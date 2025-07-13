@@ -453,6 +453,16 @@ namespace ExtenderApp.Common.IO.Binaries
             writer.Advance(length);
         }
 
+        /// <summary>
+        /// 向二进制写入器中写入字符串头部。
+        /// </summary>
+        /// <param name="writer">二进制写入器。</param>
+        /// <param name="byteCount">字符串的字节数。</param>
+        /// <remarks>
+        /// 此方法首先通过调用 <see cref="ExtenderBinaryWriter.GetSpan(int)"/> 方法获取一个足够大的字节跨度，
+        /// 然后调用 <see cref="_binaryConvert.TryWriteStringHeader(Span{byte}, uint, out int)"/> 方法尝试将字符串头部写入该跨度中。
+        /// 如果写入成功，则通过调用 <see cref="ExtenderBinaryWriter.Advance(int)"/> 方法更新写入器的位置。
+        /// </remarks>
         public void WriteStringHeader(ref ExtenderBinaryWriter writer, int byteCount)
         {
             Span<byte> span = writer.GetSpan(byteCount + 5);
@@ -572,6 +582,24 @@ namespace ExtenderApp.Common.IO.Binaries
         }
 
         #endregion
+
+        /// <summary>
+        /// 写入扩展格式头部信息。
+        /// </summary>
+        /// <param name="writer">ExtenderBinaryWriter对象，用于写入数据。</param>
+        /// <param name="extensionHeader">要写入的扩展头部信息。</param>
+        /// <remarks>
+        /// 在编写数据头部信息时，同时请求足够空间来存储后续有效载荷数据的策略。
+        /// 这样做的目的是为了提高程序的效率，通过减少内存分配的次数来避免潜在的性能问题。
+        /// </remarks>
+        public void WriteExtensionFormatHeader(ref ExtenderBinaryWriter writer, ExtensionHeader extensionHeader)
+        {
+            //在编写数据头部信息时，同时请求足够空间来存储后续有效载荷数据的策略。
+            //这样做的目的是为了提高程序的效率，通过减少内存分配的次数来避免潜在的性能问题。
+            Span<byte> span = writer.GetSpan((int)(extensionHeader.Length + 6));
+            AssumesTrue(_binaryConvert.TryWriteExtensionFormatHeader(span, extensionHeader, out int written));
+            writer.Advance(written);
+        }
 
         /// <summary>
         /// 假设条件为真，否则抛出异常。

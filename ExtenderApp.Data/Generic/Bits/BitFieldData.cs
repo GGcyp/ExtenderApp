@@ -2,7 +2,7 @@
 using System.Numerics;
 using System.Runtime.CompilerServices;
 
-namespace ExtenderApp.Torrent
+namespace ExtenderApp.Data
 {
     /// <summary>
     /// 高效表示和操作 BitField 的类，用于跟踪可用的文件分片
@@ -10,12 +10,30 @@ namespace ExtenderApp.Torrent
     public class BitFieldData : IEnumerable<bool>
     {
         // 每个 ulong 存储 64 位
+        /// <summary>
+        /// 每个 ulong 存储 64 位
+        /// </summary>
         private const int BitsPerULong = 64;
+
+        /// <summary>
+        /// 每个字节包含 8 位
+        /// </summary>
         private const int BitsPerByte = 8;
+
+        /// <summary>
+        /// 每个字节的位移量是 3 位
+        /// </summary>
         private const int ShiftPerByte = 3; // 2^3 = 8
 
         // 底层存储
+        /// <summary>
+        /// 底层存储结构
+        /// </summary>
         private readonly ulong[] _data;
+
+        /// <summary>
+        /// 真实值的计数
+        /// </summary>
         private int _trueCount;
 
         /// <summary>
@@ -56,13 +74,13 @@ namespace ExtenderApp.Torrent
         /// <summary>
         /// 从字节数组创建 BitField
         /// </summary>
-        public BitFieldData(ReadOnlySpan<byte> bytes, int length)
+        public BitFieldData(ReadOnlySpan<byte> span, int length)
         {
             if (length <= 0)
-                throw new ArgumentException("Length must be positive", nameof(length));
+                throw new ArgumentException("长度必须为正数", nameof(length));
 
-            if (bytes.Length < LengthInBytes)
-                throw new ArgumentException("Byte array is too small", nameof(bytes));
+            if (span.Length < LengthInBytes)
+                throw new ArgumentException("字节数组太小", nameof(span));
 
             Length = length;
             _data = new ulong[(length + BitsPerULong - 1) / BitsPerULong];
@@ -77,7 +95,7 @@ namespace ExtenderApp.Torrent
 
                 for (int j = 0; j < bytesToRead; j++)
                 {
-                    value = (value << BitsPerByte) | bytes[byteIndex++];
+                    value = (value << BitsPerByte) | span[byteIndex++];
                 }
 
                 // 处理最后一个 ulong 可能不足 64 位的情况
@@ -97,7 +115,7 @@ namespace ExtenderApp.Torrent
         public BitFieldData(int length)
         {
             if (length <= 0)
-                throw new ArgumentException("Length must be positive", nameof(length));
+                throw new ArgumentException("长度必须为正数", nameof(length));
 
             Length = length;
             _data = new ulong[(length + BitsPerULong - 1) / BitsPerULong];
@@ -113,7 +131,7 @@ namespace ExtenderApp.Torrent
                 throw new ArgumentNullException(nameof(other));
 
             Length = other.Length;
-            _data = other._data.Clone() as ulong[];
+            _data = (other._data.Clone() as ulong[])!;
             _trueCount = other._trueCount;
         }
 
@@ -485,7 +503,7 @@ namespace ExtenderApp.Torrent
         private void ValidateIndex(int index)
         {
             if (index < 0 || index >= Length)
-                throw new IndexOutOfRangeException($"Index {index} is out of range (0-{Length - 1})");
+                throw new IndexOutOfRangeException($"索引 {index} 不处于 (0-{Length - 1})范围内");
         }
 
         /// <summary>
@@ -512,7 +530,7 @@ namespace ExtenderApp.Torrent
                 throw new ArgumentNullException(nameof(other));
 
             if (Length != other.Length)
-                throw new ArgumentException("BitFields must have the same length");
+                throw new ArgumentException("位字段都必须具有相同的长度。");
         }
 
         /// <summary>

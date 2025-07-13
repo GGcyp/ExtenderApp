@@ -14,16 +14,6 @@ namespace ExtenderApp.Torrent
     public class TrackerProvider
     {
         /// <summary>
-        /// 重试次数常量，值为3。
-        /// </summary>
-        private const int Retries = 3;
-
-        /// <summary>
-        /// UdpTrackerParser 对象，用于解析 UDP Tracker 数据。
-        /// </summary>
-        private readonly UdpTrackerParser _udpTrackerParser;
-
-        /// <summary>
         /// LinkerClientFactory 对象，用于创建 LinkClient 对象。
         /// </summary>
         private readonly LinkerClientFactory _clientFactory;
@@ -39,68 +29,133 @@ namespace ExtenderApp.Torrent
         private readonly ConcurrentDictionary<string, Uri> _urls;
 
         /// <summary>
-        /// 请求字典，使用 EvictionCache 存储 LinkClient、TrackerRequest 和 CancellationTokenSource 的 DataBuffer 对象。
-        /// </summary>
-        private readonly EvictionCache<int, DataBuffer<LinkClient, TrackerRequest, CancellationTokenSource>> _requestDict;
-
-        /// <summary>
-        /// 对等请求字典，使用 EvictionCache 存储 CancellationTokenSource 对象。
-        /// </summary>
-        private readonly EvictionCache<int, CancellationTokenSource> _peerRequestDict;
-
-        /// <summary>
         /// 无法连接的字符串的 HashSet。
         /// </summary>
         private readonly HashSet<string> _unconnectableHashSet;
 
-        /// <summary>
-        /// CancellationTokenSource 对象，用于取消操作。
-        /// </summary>
-        private readonly CancellationTokenSource _cts;
 
         /// <summary>
         /// 当移除 Uri 时调用的回调方法。
         /// </summary>
         private readonly Action<Uri> _removeCallback;
 
-        /// <summary>
-        /// 发送 Tracker 请求时调用的回调方法。
-        /// </summary>
-        private readonly Action<LinkClient, TrackerRequest> _sendTrackerRequestAction;
-
-        /// <summary>
-        /// 超时时间跨度。
-        /// </summary>
-        private readonly TimeSpan _timeout;
-
-        /// <summary>
-        /// 用于生成随机数的 Random 对象。
-        /// </summary>
-        private readonly Random _random;
-
-        public TrackerProvider(LinkerClientFactory linkerClientFactory, UdpTrackerParser udpTrackerParser)
+        public TrackerProvider(LinkerClientFactory linkerClientFactory)
         {
             _clientFactory = linkerClientFactory;
-            _udpTrackerParser = udpTrackerParser;
 
             _tracker = new();
             _urls = new();
-            _random = new();
+
             _unconnectableHashSet = new();
-            _cts = new();
-            _sendTrackerRequestAction = SendTrackerRequest;
-
-            var interval = TimeSpan.FromSeconds(50);
-            _peerRequestDict = new();
-            _peerRequestDict.ChangeInterval(interval);
-            _requestDict = new();
-            _requestDict.ChangeInterval(interval);
-
-            _timeout = TimeSpan.FromSeconds(15);
-
             _removeCallback = u => Remove(u);
-            _udpTrackerParser.OnReceiveConnectionId += ReceiveConnectionId;
-            _udpTrackerParser.OnReceivePeer += OnReceivePeer;
+        }
+
+        /// <summary>
+        /// 注册多个追踪器，通过字符串URI列表进行注册
+        /// </summary>
+        /// <param name="uris">字符串URI列表</param>
+        public void RegisterTracker(IEnumerable<string> uris)
+        {
+            if (uris == null) return;
+
+            foreach (var uri in uris)
+            {
+                RegisterTracker(uri);
+            }
+        }
+
+        /// <summary>
+        /// 注册多个追踪器，通过Uri对象列表进行注册
+        /// </summary>
+        /// <param name="uris">Uri对象列表</param>
+        public void RegisterTracker(IEnumerable<Uri> uris)
+        {
+            if (uris == null) return;
+
+            foreach (Uri uri in uris)
+            {
+                RegisterTracker(uri);
+            }
+        }
+
+        /// <summary>
+        /// 注册跟踪器。
+        /// </summary>
+        /// <param name="uri">跟踪器的URI。</param>
+        /// <remarks>
+        /// 如果传入的URI已存在于不可连接的集合中，则直接返回。
+        /// 如果传入的URI在URL字典中已经存在，并且对应的跟踪器已存在，则直接返回。
+        /// 如果跟踪器注册成功，则将URI和对应的Uri对象添加到URL字典中；如果注册失败，则将URI添加到不可连接的集合中。
+        /// </remarks>
+        public void RegisterTracker(string uri)
+        {
+            if (string.IsNullOrEmpty(uri))
+                return;
+
+            if (_unconnectableHashSet.Contains(uri))
+                return;
+
+            if (_urls.TryGetValue(uri, out var resultUri))
+            {
+                if (_tracker.ContainsKey(resultUri))
+                    return;
+            }
+
+            lock (_urls)
+            {
+                if (_urls.TryGetValue(uri, out resultUri))
+                {
+                    if (_tracker.ContainsKey(resultUri))
+                        return;
+                }
+
+                resultUri = new Uri(uri);
+                if (RegisterTracker(resultUri))
+                {
+                    _urls.TryAdd(uri, resultUri);
+                    return;
+                }
+
+                _unconnectableHashSet.Add(uri);
+            }
+        }
+
+        /// <summary>
+        /// 注册跟踪器。
+        /// </summary>
+        /// <param name="uri">跟踪器的Uri对象。</param>
+        /// <returns>如果注册成功，则返回true；否则返回false。</returns>
+        /// <remarks>
+        /// 如果传入的Uri对象的Scheme不是"udp"或者Uri对象为null，则直接返回false。
+        /// 如果传入的Uri对象已经存在于跟踪器字典中，则直接返回true。
+        /// 如果跟踪器注册成功，则返回true；否则返回false。
+        /// </remarks>
+        public bool RegisterTracker(Uri uri)
+        {
+            if (uri == null)
+                return false;
+
+            if (uri.Scheme != "udp" || uri == null)
+                return false;
+
+            if (_tracker.ContainsKey(uri))
+                return true;
+
+            lock (_tracker)
+            {
+                if (_tracker.ContainsKey(uri))
+                    return true;
+
+                var ipEndPoint = GetHostIPEndPoint(uri);
+                if (ipEndPoint == null)
+                    return false;
+
+                LinkClient linkClient = GetLinkClient(uri);
+
+                var tracker = new Tracker(linkClient, ipEndPoint, uri, _removeCallback);
+                _tracker.TryAdd(uri, tracker);
+            }
+            return true;
         }
 
         /// <summary>
@@ -110,6 +165,8 @@ namespace ExtenderApp.Torrent
         /// <returns>返回对应的Tracker对象。</returns>
         public Tracker? GetTracker(string uri)
         {
+            if (string.IsNullOrEmpty(uri)) return null;
+
             if (_unconnectableHashSet.Contains(uri))
                 return null;
 
@@ -157,6 +214,8 @@ namespace ExtenderApp.Torrent
         /// <returns>返回对应的Tracker对象。</returns>
         public Tracker? GetTracker(Uri uri)
         {
+            if (uri == null) return null;
+
             if (uri.Scheme != "udp" || uri == null)
                 return null;
 
@@ -174,7 +233,7 @@ namespace ExtenderApp.Torrent
 
                 LinkClient linkClient = GetLinkClient(uri);
 
-                resultTracker = new Tracker(linkClient, ipEndPoint, uri, _removeCallback, _sendTrackerRequestAction);
+                resultTracker = new Tracker(linkClient, ipEndPoint, uri, _removeCallback);
                 _tracker.TryAdd(uri, resultTracker);
             }
             return resultTracker;
@@ -187,9 +246,11 @@ namespace ExtenderApp.Torrent
         /// <returns>移除的Tracker对象，若不存在则返回null</returns>
         public Tracker? Remove(string uri)
         {
+            if (string.IsNullOrEmpty(uri)) return null;
+
             if (!_urls.Remove(uri, out var targetUri))
                 return null;
-
+            _unconnectableHashSet.Add(uri);
             return Remove(targetUri);
         }
 
@@ -200,73 +261,13 @@ namespace ExtenderApp.Torrent
         /// <returns>移除的Tracker对象</returns>
         public Tracker? Remove(Uri uri)
         {
-            _tracker.Remove(uri, out var tracker);
+            if (uri == null) return null;
+
+            if (_tracker.Remove(uri, out var tracker))
+                return tracker;
+
+            _unconnectableHashSet.Add(uri.ToString());
             return tracker;
-        }
-
-        /// <summary>
-        /// 发送Tracker请求
-        /// </summary>
-        /// <param name="linkClient">LinkClient对象</param>
-        /// <param name="trackerRequest">Tracker请求对象</param>
-        private void SendTrackerRequest(LinkClient linkClient, TrackerRequest trackerRequest)
-        {
-            int transactionId = 0;
-            while (true)
-            {
-                transactionId = _random.Next();
-                if (!_requestDict.TryGet(transactionId, out var value))
-                {
-                    break;
-                }
-            }
-
-            var dataBuffer = DataBuffer<LinkClient, TrackerRequest, CancellationTokenSource>.GetDataBuffer();
-            dataBuffer.Item1 = linkClient;
-            dataBuffer.Item2 = trackerRequest;
-            dataBuffer.Item3 = new();
-            _requestDict.AddOrUpdate(transactionId, dataBuffer);
-            linkClient.Send(transactionId);
-        }
-
-        /// <summary>
-        /// 接收连接ID
-        /// </summary>
-        /// <param name="transactionId">事务ID</param>
-        /// <param name="connectionId">连接ID</param>
-        private void ReceiveConnectionId(int transactionId, long connectionId)
-        {
-            if (!_requestDict.Remove(transactionId, out var result))
-                return;
-
-            var request = result.Item2;
-            request.ConnectionId = connectionId;
-            transactionId = _random.Next();
-            request.TransactionId = transactionId;
-            result.Item1.SendAsync(request);
-            var cts = result.Item3;
-            cts?.Cancel();
-            cts?.Dispose();
-
-            cts = new();
-            _peerRequestDict.AddOrUpdate(transactionId, cts);
-
-
-            UdpSendTo(result.Item1, cts, request);
-            DataBuffer<LinkClient, TrackerRequest, CancellationTokenSource>.ReleaseDataBuffer(result);
-        }
-
-        /// <summary>
-        /// 接收对等体请求
-        /// </summary>
-        /// <param name="transactionId">事务ID</param>
-        private void OnReceivePeer(int transactionId)
-        {
-            if (!_peerRequestDict.Remove(transactionId, out var cts))
-                return;
-
-            cts.Cancel();
-            cts.Dispose();
         }
 
         /// <summary>
@@ -303,57 +304,6 @@ namespace ExtenderApp.Torrent
                 "http" => _clientFactory.Create<IHttpLinker, HttpTrackerParser>(),
                 _ => throw new NotImplementedException()
             };
-        }
-
-        /// <summary>
-        /// 通过UDP发送数据到指定客户端。
-        /// </summary>
-        /// <typeparam name="T">发送的数据类型</typeparam>
-        /// <param name="linkClient">链接客户端</param>
-        /// <param name="cts">取消令牌源</param>
-        /// <param name="value">要发送的数据</param>
-        private void UdpSendTo<T>(LinkClient linkClient, CancellationTokenSource cts, T value)
-        {
-            Task.Run(async () =>
-            {
-                await UdpSendToAsync(linkClient, cts, value);
-            });
-        }
-
-        /// <summary>
-        /// 异步通过UDP发送数据到指定客户端。
-        /// </summary>
-        /// <typeparam name="T">发送的数据类型</typeparam>
-        /// <param name="linkClient">链接客户端</param>
-        /// <param name="cts">取消令牌源</param>
-        /// <param name="value">要发送的数据</param>
-        /// <returns>异步任务</returns>
-        /// <exception cref="Exception">链接Tracker服务器超时</exception>
-        private async Task UdpSendToAsync<T>(LinkClient linkClient, CancellationTokenSource cts, T value)
-        {
-            int retries = Retries;
-            var allToken = _cts.Token;
-            var timeToken = cts.Token;
-            while (retries > 0 && !allToken.IsCancellationRequested && !timeToken.IsCancellationRequested)
-            {
-                try
-                {
-                    linkClient.Send(value);
-                    await Task.WhenAny(Task.Delay(_timeout, timeToken), Task.FromCanceled(allToken));
-                    retries--;
-                }
-                catch (TaskCanceledException ex)
-                {
-                    // 被取消，说明收到响应或外部取消，直接退出方法即可
-                    return;
-                }
-                catch (InvalidOperationException ex)
-                {
-                    // 其它异常可根据需要处理或记录
-                    throw;
-                }
-            }
-            throw new Exception($"链接Tracker服务器超时");
         }
 
         /// <summary>

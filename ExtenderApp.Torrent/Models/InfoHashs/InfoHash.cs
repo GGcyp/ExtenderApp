@@ -8,7 +8,25 @@ namespace ExtenderApp.Torrent
     /// </summary>
     public struct InfoHash : IEquatable<InfoHash>
     {
+        /// <summary>
+        /// 获取一个空的 InfoHash 实例。
+        /// </summary>
+        /// <returns>返回一个空的 InfoHash 实例。</returns>
         public static InfoHash Empty => new InfoHash();
+
+        /// <summary>
+        /// 根据给定的字节数组生成一个 SHA1 哈希值的 InfoHash 实例。
+        /// </summary>
+        /// <param name="bytes">要生成哈希值的字节数组。</param>
+        /// <returns>返回生成的 InfoHash 实例。</returns>
+        public static InfoHash SHA1InfoHash(byte[] bytes) => new InfoHash(new HashValue(bytes), HashValue.Empty);
+
+        /// <summary>
+        /// 根据给定的字节数组生成一个 SHA256 哈希值的 InfoHash 实例。
+        /// </summary>
+        /// <param name="bytes">要生成哈希值的字节数组。</param>
+        /// <returns>返回生成的 InfoHash 实例。</returns>
+        public static InfoHash SHA256InfoHash(byte[] bytes) => new InfoHash(HashValue.Empty, new HashValue(bytes));
 
         /// <summary>
         /// 获取或设置种子文件的sha1哈希值

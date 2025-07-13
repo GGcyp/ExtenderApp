@@ -11,26 +11,30 @@ namespace ExtenderApp.Data
         /// 获取对等体地址。
         /// </summary>
         /// <returns>返回对等体地址。</returns>
-        private readonly PeerAddress _peerAddress;
+        public PeerAddress PeerAddress { get; }
 
         /// <summary>
         /// 获取对等端地址的IP地址。
         /// </summary>
         /// <returns>返回对等端地址的IP地址。</returns>
-        public IPAddress IP => _peerAddress.IP;
+        public IPAddress IP => PeerAddress.IP;
 
         /// <summary>
         /// 获取对等端地址的端口号。
         /// </summary>
         /// <returns>返回对等端地址的端口号。</returns>
-        public int Port => _peerAddress.Port;
+        public int Port => PeerAddress.Port;
 
         /// <summary>
         /// 获取对等节点的ID。
         /// </summary>
         public PeerId Id { get; }
 
-        public bool IsEmpty => _peerAddress.IsEmpty || Id.IsEmpty;
+        /// <summary>
+        /// 判断是否为空。
+        /// </summary>
+        /// <returns>如果 _peerAddress 或 Id 为空，则返回 true；否则返回 false。</returns>
+        public bool IsEmpty => PeerAddress.IsEmpty || Id.IsEmpty;
 
         /// <summary>
         /// 初始化 <see cref="PeerInfo"/> 结构体实例。
@@ -45,7 +49,7 @@ namespace ExtenderApp.Data
 
         public PeerInfo(PeerAddress peerAddress, PeerId id)
         {
-            _peerAddress = peerAddress;
+            PeerAddress = peerAddress;
             Id = id;
         }
 

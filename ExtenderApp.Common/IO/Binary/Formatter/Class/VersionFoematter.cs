@@ -9,14 +9,14 @@ namespace ExtenderApp.Common.IO.Binaries.Formatter
     /// </summary>
     internal class VersionFoematter : ResolverFormatter<Version>
     {
-        private readonly IBinaryFormatter<string> _formatter;
+        private readonly IBinaryFormatter<string> _string;
 
         public VersionFoematter(IBinaryFormatterResolver resolver) : base(resolver)
         {
-            _formatter = GetFormatter<string>();
+            _string = GetFormatter<string>();
         }
 
-        public override int Length => _formatter.Length;
+        public override int Length => _string.Length;
 
         public override Version Deserialize(ref ExtenderBinaryReader reader)
         {
@@ -25,7 +25,7 @@ namespace ExtenderApp.Common.IO.Binaries.Formatter
             //_binaryReaderConvert.TryReadStringSpan(ref reader, out ReadOnlySpan<byte> bytes);
             //var value = _binaryReaderConvert.UTF8ToString(bytes);
 
-            var version = _formatter.Deserialize(ref reader);
+            var version = _string.Deserialize(ref reader);
 
             return string.IsNullOrEmpty(version) ? null : new Version(version);
         }
@@ -40,12 +40,12 @@ namespace ExtenderApp.Common.IO.Binaries.Formatter
             //{
             //    _binaryWriterConvert.Write(ref writer, value.ToString());
             //}
-            _formatter.Serialize(ref writer, value == null ? string.Empty : value.ToString());
+            _string.Serialize(ref writer, value == null ? string.Empty : value.ToString());
         }
 
         public override long GetLength(Version value)
         {
-            return _formatter.GetLength(value == null ? string.Empty : value.ToString());
+            return _string.GetLength(value == null ? string.Empty : value.ToString());
         }
     }
 }

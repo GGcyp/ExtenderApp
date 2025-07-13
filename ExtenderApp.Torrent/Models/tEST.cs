@@ -11,9 +11,9 @@
 
 //namespace ExtenderApp.Torrent.Models
 //{
-//    / <summary>
-//    / BitTorrent Peer 连接
-//    / </summary>
+//    /// <summary>
+//    /// BitTorrent Peer 连接
+//    /// </summary>
 //    public class PeerConnection : IDisposable
 //    {
 //        private readonly TcpClient _client;
@@ -42,11 +42,11 @@
 
 //        public async Task ConnectAsync()
 //        {
-//            发送握手消息
+//            //发送握手消息
 //            byte[] handshakeData = _handshake.Encode();
 //            await _stream.WriteAsync(handshakeData, 0, handshakeData.Length);
 
-//            接收握手消息
+//            //接收握手消息
 //            byte[] receiveBuffer = new byte[68];
 //            int bytesRead = await _stream.ReadAsync(receiveBuffer, 0, receiveBuffer.Length);
 //            if (bytesRead != 68)
@@ -58,7 +58,7 @@
 
 //            Console.WriteLine("与Peer握手成功");
 
-//            启动接收和发送任务
+//            //启动接收和发送任务
 //           _receiveTask = ReceiveMessagesAsync();
 //            _sendTask = ProcessSendQueueAsync();
 //        }
@@ -70,7 +70,7 @@
 //                byte[] lengthBuffer = new byte[4];
 //                while (!_cts.Token.IsCancellationRequested)
 //                {
-//                    读取长度前缀
+//                    //读取长度前缀
 //                    int bytesRead = await ReadFullyAsync(lengthBuffer, 0, 4);
 //                    if (bytesRead == 0)
 //                        break; // 连接关闭
@@ -81,32 +81,32 @@
 
 //                    if (messageLength == 0)
 //                    {
-//                        保持活跃消息
+//                        //保持活跃消息
 //                       MessageReceived?.Invoke(this, new MessageReceivedEventArgs(new KeepAliveMessage()));
 //                        continue;
 //                    }
 
-//                    读取消息ID和数据
+//                    //读取消息ID和数据
 //                    byte[] messageBuffer = new byte[messageLength];
 //                    await ReadFullyAsync(messageBuffer, 0, messageLength);
 
-//                    解析消息
+//                    //解析消息
 //                   BTMessageEncoder message = BTMessageEncoder.Decode(messageBuffer);
 //                    MessageReceived?.Invoke(this, new MessageReceivedEventArgs(message));
 
-//                    处理特定消息
+//                    //处理特定消息
 //                    switch (message)
 //                    {
 //                        case BitFieldMessage bitFieldMsg:
 //                            _peerBitField = new BitFieldData(bitFieldMsg.BitField, _fileManager.PieceCount);
-//                            检查是否有感兴趣的分片
+//                            //检查是否有感兴趣的分片
 //                           _isInterested = HasInterestingPieces();
 //                            if (_isInterested)
 //                                EnqueueMessage(new InterestedMessage());
 //                            break;
 //                        case HaveMessage haveMsg:
 //                            _peerBitField[haveMsg.PieceIndex] = true;
-//                            检查是否对新分片感兴趣
+//                            //检查是否对新分片感兴趣
 //                            if (!_isInterested && _fileManager.BitField[haveMsg.PieceIndex] == false)
 //                            {
 //                                _isInterested = true;
@@ -115,19 +115,19 @@
 //                            break;
 //                        case UnchokeMessage _:
 //                            _isChoked = false;
-//                            开始请求数据
+//                            //开始请求数据
 //                            RequestPieces();
 //                            break;
 //                        case ChokeMessage _:
 //                            _isChoked = true;
 //                            break;
 //                        case PieceMessage pieceMsg:
-//                            保存接收到的数据块
+//                            //保存接收到的数据块
 //                           await _fileManager.WriteBlockAsync(pieceMsg.PieceIndex, pieceMsg.Begin, pieceMsg.Block);
 //                            BlockReceived?.Invoke(this, new BlockReceivedEventArgs(
 //                                pieceMsg.PieceIndex, pieceMsg.Begin, pieceMsg.Block.Length));
 
-//                            请求更多数据
+//                            //请求更多数据
 //                            RequestPieces();
 //                            break;
 //                    }
@@ -182,7 +182,7 @@
 //            }
 //            catch (OperationCanceledException)
 //            {
-//                正常取消
+//                //正常取消
 //            }
 //            catch (Exception ex)
 //            {
@@ -216,7 +216,7 @@
 //            if (_isChoked || _peerBitField == null)
 //                return;
 
-//            选择要请求的分片（简化版：选择第一个未下载的分片）
+//            //选择要请求的分片（简化版：选择第一个未下载的分片）
 //            int pieceIndex = _fileManager.BitField.FirstFalse();
 //            if (pieceIndex >= 0 && _peerBitField[pieceIndex])
 //            {
@@ -248,9 +248,9 @@
 //        }
 //    }
 
-//    / <summary>
-//    / 消息接收事件参数
-//    / </summary>
+//    /// <summary>
+//    /// 消息接收事件参数
+//    /// </summary>
 //    public class MessageReceivedEventArgs : EventArgs
 //    {
 //        public BTMessageEncoder Message { get; }
@@ -261,9 +261,9 @@
 //        }
 //    }
 
-//    / <summary>
-//    / 数据块接收事件参数
-//    / </summary>
+//    /// <summary>
+//    /// 数据块接收事件参数
+//    /// </summary>
 //    public class BlockReceivedEventArgs : EventArgs
 //    {
 //        public int PieceIndex { get; }

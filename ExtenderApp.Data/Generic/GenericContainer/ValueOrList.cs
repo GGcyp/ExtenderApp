@@ -235,5 +235,22 @@ namespace ExtenderApp.Data
                 throw new ArgumentOutOfRangeException(nameof(index));
             }
         }
+
+        /// <summary>
+        /// 在集合中查找满足指定条件的元素。
+        /// </summary>
+        /// <param name="predicate">一个用于测试每个元素的条件。</param>
+        /// <returns>如果找到满足条件的元素，则返回该元素；否则返回默认值。</returns>
+        public T Find(Predicate<T> predicate)
+        {
+            for (int i = 0; i < Count; i++)
+            {
+                if (predicate(this[i]))
+                {
+                    return this[i];
+                }
+            }
+            return default;
+        }
     }
 }

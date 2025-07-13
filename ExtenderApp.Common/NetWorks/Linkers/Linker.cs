@@ -621,6 +621,13 @@ namespace ExtenderApp.Common.Networks
             return base.TryReset();
         }
 
+        protected override void Dispose(bool disposing)
+        {
+            Close();
+            Data.Socket.Dispose();
+            base.Dispose(disposing);
+        }
+
         /// <summary>
         /// 创建一个LinkOperateData对象
         /// </summary>

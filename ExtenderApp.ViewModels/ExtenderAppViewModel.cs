@@ -146,7 +146,7 @@ namespace ExtenderApp.ViewModels
         /// <param name="message">要输出的警告内容。</param>
         protected void Warning(object message)
         {
-            Warning(message?.ToString() ?? string.Empty);   
+            Warning(message?.ToString() ?? string.Empty);
         }
 
         /// <summary>
@@ -228,8 +228,10 @@ namespace ExtenderApp.ViewModels
         /// <typeparam name="T">数据类型</typeparam>
         /// <param name="data">要设置的数据</param>
         /// <returns>如果成功设置数据则返回true，否则返回false</returns>
-        protected bool SaveLocalData<T>(T? data) where T : class
+        protected bool SaveLocalData<T>(T? data) where T : class, new()
         {
+            if (data is null)
+                data = new T();
             return _serviceStore.LocalDataService.SaveData(GetCurrentModDetails(), data);
         }
 

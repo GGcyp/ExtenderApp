@@ -1,4 +1,8 @@
-﻿using ExtenderApp.Abstract;
+﻿using System.Collections.Concurrent;
+using ExtenderApp.Abstract;
+using ExtenderApp.Common.IO.Binaries.Formatter.Collection;
+using ExtenderApp.Common.IO.FileOperates.FileOperateNodes;
+using ExtenderApp.Data;
 
 namespace ExtenderApp.Common.IO.Binaries.Formatter
 {
@@ -25,8 +29,20 @@ namespace ExtenderApp.Common.IO.Binaries.Formatter
             _store.AddFormatter(typeof(Stack<>), typeof(StackFormatter<>));
             _store.AddFormatter(typeof(Queue<>), typeof(QueueFormatter<>));
             _store.AddFormatter(typeof(Array), typeof(ArrayFormatter<>));
+            _store.AddFormatter(typeof(HashSet<>), typeof(HashSetFormatter<>));
 
             _store.AddFormatter(typeof(Dictionary<,>), typeof(DictionaryFormatter<,>));
+            _store.AddFormatter(typeof(ConcurrentDictionary<,>), typeof(ConcurrentDictionaryFormatter<,>));
+
+            _store.AddFormatter(typeof(FileNode<>), typeof(FileNodeFormatter<>));
+            _store.AddFormatter(typeof(FileNodeParent<>), typeof(FileNodeParentFormatter<,>));
+            _store.AddFormatter(typeof(FIleOperateNode<>), typeof(FileOperateNodeForamtter<>));
+            _store.AddFormatter(typeof(FileOperateNodeParent<>), typeof(FileOperateNodeParentForamtter<,>));
+
+            _store.AddFormatter(typeof(Memory<>), typeof(MemoryFormatter<>));
+            _store.AddFormatter(typeof(ReadOnlyMemory<>), typeof(ReadOnlyMemoryFormatter<>));
+
+            _store.AddFormatter(typeof(IEnumerable<>), typeof(IEnumerableFormatter<>));
         }
 
         /// <summary>

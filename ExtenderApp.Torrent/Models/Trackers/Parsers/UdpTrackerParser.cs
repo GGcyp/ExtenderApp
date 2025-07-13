@@ -3,6 +3,7 @@ using System.Buffers.Binary;
 using System.IO;
 using System.Text;
 using ExtenderApp.Common.Caches;
+using ExtenderApp.Common.DataBuffers;
 using ExtenderApp.Common.Networks;
 using ExtenderApp.Data;
 
@@ -44,20 +45,7 @@ namespace ExtenderApp.Torrent
         /// <summary>
         /// 当接收到连接ID时触发的事件
         /// </summary>
-        public event Action<int, long>? OnReceiveConnectionId;
-
-        /// <summary>
-        /// 当接收到Tracker响应时触发的事件
-        /// </summary>
-        public event Action<TrackerResponse>? OnReceiveTrackerResponse;
-
-        /// <summary>
-        /// 当接收到对等体的消息时触发的事件
-        /// </summary>
-        /// <remarks>
-        /// 该事件提供了一个委托，该委托在接收到对等体的消息时被调用。
-        /// </remarks>
-        public event Action<int> OnReceivePeer;
+        internal event Action<int, long>? OnReceiveConnectionId;
 
         /// <summary>
         /// 当接收到对等地址时触发的事件
@@ -65,7 +53,7 @@ namespace ExtenderApp.Torrent
         /// <remarks>
         /// 当收到来自对等节点的地址时，会触发此事件。
         /// </remarks>
-        public event Action<int, PeerAddress>? OnReceivePeerAddress;
+        internal event Func<int, DataBuffer<InfoHashPeerStore, Tracker>>? OnReceivePeerAddress;
 
         public UdpTrackerParser(SequencePool<byte> sequencePool, IPAddressCache addressCache) : base(sequencePool)
         {
@@ -114,7 +102,6 @@ namespace ExtenderApp.Torrent
                     return;
                 case ActionAnnounce:
                     if (reader.Remaining <= 8) return;
-                    OnReceivePeer?.Invoke(transactionId);
                     ReadTrackerResponse(transactionId, reader);
                     return;
             }
@@ -188,20 +175,28 @@ namespace ExtenderApp.Torrent
                 throw new InvalidDataException($"对等节点信息格式错误");
 
             ReadOnlySpan<byte> span = reader.UnreadSpan;
+            var item = OnReceivePeerAddress?.Invoke(transactionId);
+            if (item == null)
+                return;
+
+            var store = item.Item1;
             for (int i = 0; i < reader.Remaining; i += 6)
             {
                 var ipAddress = _addressCache.GetIpAddress(span.Slice(i, 4));
                 var port = BinaryPrimitives.ReadUInt16BigEndian(span.Slice(i + 4, 2));
-                OnReceivePeerAddress?.Invoke(transactionId, new PeerAddress(ipAddress, port));
+                store.AddPeerInfo(new PeerAddress(ipAddress, port));
             }
 
-            var result = new TrackerResponse
+
+            var response = new TrackerResponse
             {
                 Interval = interval,
                 Complete = seeders,
                 Incomplete = leechers,
+                LastAnnounceTime = DateTime.UtcNow,
             };
-            OnReceiveTrackerResponse?.Invoke(result);
+            item.Item2.AddTrackerResponse(store.Hash, response);
+            item.Release();
         }
     }
 }

@@ -82,17 +82,17 @@ namespace ExtenderApp.Common.IO.FileParsers
 
         #region WriteAsync
 
-        public abstract void WriteAsync<T>(ExpectLocalFileInfo info, T value, Action<byte[]>? callback = null);
+        public abstract void WriteAsync<T>(ExpectLocalFileInfo info, T value, Action? callback = null);
 
-        public abstract void WriteAsync<T>(FileOperateInfo info, T value, Action<byte[]>? callback = null);
+        public abstract void WriteAsync<T>(FileOperateInfo info, T value, Action? callback = null);
 
-        public abstract void WriteAsync<T>(IFileOperate fileOperate, T value, Action<byte[]>? callback = null);
+        public abstract void WriteAsync<T>(IFileOperate fileOperate, T value, Action? callback = null);
 
-        public abstract void WriteAsync<T>(ExpectLocalFileInfo info, T value, long position, Action<byte[]>? callback = null);
+        public abstract void WriteAsync<T>(ExpectLocalFileInfo info, T value, long position, Action? callback = null);
 
-        public abstract void WriteAsync<T>(FileOperateInfo info, T value, long position, Action<byte[]>? callback = null);
+        public abstract void WriteAsync<T>(FileOperateInfo info, T value, long position, Action? callback = null);
 
-        public abstract void WriteAsync<T>(IFileOperate fileOperate, T value, long position, Action<byte[]>? callback = null);
+        public abstract void WriteAsync<T>(IFileOperate fileOperate, T value, long position, Action? callback = null);
 
         #endregion
 

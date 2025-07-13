@@ -9,34 +9,18 @@ namespace ExtenderApp.Common.Hash
     /// </summary>
     internal class HashValueFormatter : ResolverFormatter<HashValue>
     {
-        /// <summary>
-        /// 字符串格式化器
-        /// </summary>
-        private readonly IBinaryFormatter<string> _string;
+        private readonly IBinaryFormatter<ReadOnlyMemory<ulong>> _ulongs;
+        private readonly IBinaryFormatter<int> _int;
 
         /// <summary>
         /// 获取格式化后的长度
         /// </summary>
-        public override int Length => _string.Length;
+        public override int Length => _ulongs.Length;
 
-        /// <summary>
-        /// 构造函数
-        /// </summary>
-        /// <param name="resolver">二进制格式化器解析器</param>
         public HashValueFormatter(IBinaryFormatterResolver resolver) : base(resolver)
         {
-            _string = GetFormatter<string>();
-        }
-
-        /// <summary>
-        /// 反序列化哈希值
-        /// </summary>
-        /// <param name="reader">二进制读取器</param>
-        /// <returns>反序列化后的哈希值</returns>
-        public override HashValue Deserialize(ref ExtenderBinaryReader reader)
-        {
-            var result = _string.Deserialize(ref reader);
-            return HashValue.FromHexString(result);
+            _ulongs = GetFormatter<ReadOnlyMemory<ulong>>();
+            _int = GetFormatter<int>();
         }
 
         /// <summary>
@@ -46,7 +30,31 @@ namespace ExtenderApp.Common.Hash
         /// <param name="value">要序列化的哈希值</param>
         public override void Serialize(ref ExtenderBinaryWriter writer, HashValue value)
         {
-            _string.Serialize(ref writer, value.ToHexString());
+            if (value.IsEmpty)
+            {
+                _ulongs.Serialize(ref writer, ReadOnlyMemory<ulong>.Empty);
+                return;
+            }
+
+            _ulongs.Serialize(ref writer, value.HashMemory);
+            _int.Serialize(ref writer, value.Length);
+        }
+
+        /// <summary>
+        /// 反序列化哈希值
+        /// </summary>
+        /// <param name="reader">二进制读取器</param>
+        /// <returns>反序列化后的哈希值</returns>
+        public override HashValue Deserialize(ref ExtenderBinaryReader reader)
+        {
+            var memory = _ulongs.Deserialize(ref reader);
+            if (memory.IsEmpty)
+            {
+                return HashValue.Empty;
+            }
+
+            var length = _int.Deserialize(ref reader);
+            return new HashValue(memory, length);
         }
 
         /// <summary>
@@ -56,7 +64,7 @@ namespace ExtenderApp.Common.Hash
         /// <returns>序列化后的长度</returns>
         public override long GetLength(HashValue value)
         {
-            return _string.GetLength(value.ToHexString());
+            return value.IsEmpty ? 0 : value.Length + 5;
         }
     }
 }

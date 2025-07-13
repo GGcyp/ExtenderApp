@@ -18,7 +18,10 @@ namespace ExtenderApp.Data
             if (hash.IsEmpty)
                 throw new ArgumentException("哈希值不能为空", nameof(hash));
 
-            writer.Write(hash._hashBytes);
+            for (int i = hash.Length; i < hash.Length; i++)
+            {
+                writer.Write(hash[i]);
+            }
         }
     }
 }

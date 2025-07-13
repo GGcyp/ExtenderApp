@@ -2,6 +2,9 @@
 
 namespace ExtenderApp.Torrent
 {
+    /// <summary>
+    /// 跟踪请求结构体
+    /// </summary>
     public struct TrackerRequest
     {
         /// <summary>

@@ -5,7 +5,7 @@ using ExtenderApp.Common.IO.Binaries;
 using ExtenderApp.Common.IO.Binaries.Formatter;
 using ExtenderApp.Data;
 
-namespace ExtenderApp.Common.IO.Binary.Formatter.Collection
+namespace ExtenderApp.Common.IO.Binaries.Formatter.Collection
 {
     internal class ByteArrayFormatter : ExtenderFormatter<byte[]>
     {

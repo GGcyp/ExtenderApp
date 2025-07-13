@@ -33,7 +33,9 @@ namespace ExtenderApp.Common.IO.Binaries.Formatter
                 return string.Empty;
             }
 
-            _binaryReaderConvert.TryReadStringSpan(ref reader, out ReadOnlySpan<byte> bytes);
+            if (!_binaryReaderConvert.TryReadStringSpan(ref reader, out ReadOnlySpan<byte> bytes))
+                return string.Empty;
+
             return _binaryReaderConvert.UTF8ToString(bytes);
         }
 

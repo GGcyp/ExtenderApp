@@ -1,5 +1,6 @@
 ﻿using ExtenderApp.Common;
 using ExtenderApp.Common.Networks;
+using ExtenderApp.Torrent.Models.Trackers;
 using System.Net;
 using System.Net.Sockets;
 
@@ -14,24 +15,26 @@ namespace ExtenderApp.Torrent
 
         //public LinkState Status => throw new NotImplementedException();
 
-        private readonly LinkClient _client;
-
         private readonly Action<Uri> _removeCallback;
+        private readonly Lazy<TrackerResponseCache> _responseCacheLazy;
 
-        private readonly Action<LinkClient, TrackerRequest> _sendCallback;
-
+        public LinkClient Client { get; }
         public Uri TrackerUri { get; }
 
-        private CancellationTokenSource? cts;
-
-        public Tracker(LinkClient client, EndPoint endPoint, Uri trackerUri, Action<Uri> removeCallback, Action<LinkClient, TrackerRequest> sendCallback)
+        public Tracker(LinkClient client, EndPoint endPoint, Uri trackerUri, Action<Uri> removeCallback)
         {
-            _client = client;
+            _responseCacheLazy = new(() =>
+            {
+                TrackerResponseCache cache = new();
+                cache.ChangeInterval(TimeSpan.FromMinutes(1));
+                return cache;
+            });
+
+            Client = client;
             TrackerUri = trackerUri;
             _removeCallback = removeCallback;
-            _client.OnErrored += OnErrored;
-            _client.ConnectAsync(endPoint);
-            _sendCallback = sendCallback;
+            Client.OnErrored += OnErrored;
+            Client.ConnectAsync(endPoint);
         }
 
         private void OnErrored(Exception obj)
@@ -41,23 +44,34 @@ namespace ExtenderApp.Torrent
                 case SocketException socketException:
                     _removeCallback?.Invoke(TrackerUri);
                     Dispose();
+                    //throw socketException;
                     break;
             }
         }
 
-        /// <summary>
-        /// 向 Tracker 发送 Announce 请求
-        /// </summary>
-        public void AnnounceAsync(TrackerRequest trackerRequest)
+        public bool CanResend(InfoHash infoHash)
         {
-            ThrowIfDisposed();
+            if (!_responseCacheLazy.Value.TryGet(infoHash, out var response))
+                return true;
 
-            _sendCallback(_client, trackerRequest);
+            if (DateTime.UtcNow - response.LastAnnounceTime > TimeSpan.FromMinutes(response.Interval))
+            {
+                response = _responseCacheLazy.Value.Remove(infoHash);
+                response.Release();
+                return true;
+            }
+
+            return false;
+        }
+
+        public void AddTrackerResponse(InfoHash infoHash, TrackerResponse response)
+        {
+            _responseCacheLazy.Value.AddOrUpdate(infoHash, response);
         }
 
         protected override void Dispose(bool disposing)
         {
-            _client?.Dispose();
+            Client?.Dispose();
         }
     }
 }

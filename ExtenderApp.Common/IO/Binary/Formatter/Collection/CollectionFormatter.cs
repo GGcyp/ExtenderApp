@@ -94,8 +94,11 @@ namespace ExtenderApp.Common.IO.Binaries.Formatter
                 return 1;
             }
 
-            var result = Length;
-            result += value.Count() * _formatter.Length;
+            long result = Length;
+            foreach (var item in value)
+            {
+                result += _formatter.GetLength(item);
+            }
             return result;
         }
 

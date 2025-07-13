@@ -82,9 +82,9 @@ namespace ExtenderApp.Common.IO
             _pool.Release(value);
         }
 
-        protected override bool ShouldEvict(FileConcurrentOperate value)
+        protected override bool ShouldEvict(FileConcurrentOperate value, DateTime now)
         {
-            return !value.IsExecuting;
+            return !value.IsExecuting || value.IsHosted;
         }
     }
 }

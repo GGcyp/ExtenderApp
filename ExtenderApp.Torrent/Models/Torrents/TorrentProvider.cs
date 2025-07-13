@@ -1,4 +1,5 @@
-﻿
+﻿using ExtenderApp.Abstract;
+using ExtenderApp.Common.IO;
 
 namespace ExtenderApp.Torrent
 {
@@ -10,7 +11,7 @@ namespace ExtenderApp.Torrent
         /// <summary>
         /// Torrent文件格式化器。
         /// </summary>
-        private readonly TorrentFileForamtter _torrentFileForamtter;
+        private readonly TorrentFileFormatter _torrentFileForamtter;
 
         /// <summary>
         /// Tracker提供者。
@@ -23,9 +24,11 @@ namespace ExtenderApp.Torrent
         private readonly LocalTorrentInfo _localTorrentInfo;
 
         /// <summary>
-        /// 随机数生成器。
+        /// TorrentSender的只读引用
         /// </summary>
-        private readonly Random _random;
+        private readonly TorrentSender _sender;
+
+        private readonly FileOperateProvider _fileOperateProvider;
 
         /// <summary>
         /// 初始化TorrentProvider类的新实例。
@@ -33,12 +36,76 @@ namespace ExtenderApp.Torrent
         /// <param name="torrentFileForamtter">Torrent文件格式化器。</param>
         /// <param name="trackerProvider">Tracker提供者。</param>
         /// <param name="info">本地Torrent信息。</param>
-        public TorrentProvider(TorrentFileForamtter torrentFileForamtter, TrackerProvider trackerProvider, LocalTorrentInfo info)
+        public TorrentProvider(TorrentFileFormatter torrentFileForamtter, TrackerProvider trackerProvider, LocalTorrentInfo info, TorrentSender sender, FileOperateProvider fileOperateProvider)
         {
             _torrentFileForamtter = torrentFileForamtter;
             _trackerProvider = trackerProvider;
             _localTorrentInfo = info;
-            _random = new Random();
+            _sender = sender;
+            _fileOperateProvider = fileOperateProvider;
+        }
+
+        /// <summary>
+        /// 获取种子对象
+        /// </summary>
+        /// <param name="parent">管理种子文件下载信息的节点</param>
+        /// <returns>种子对象</returns>
+        /// <exception cref="ArgumentNullException">如果parent为null，抛出此异常</exception>
+        /// <exception cref="ArgumentException">如果parent的TorrentFileInfo为空或无法解析Torrent文件内容，抛出此异常</exception>
+        public Torrent GetTorrent(TorrentFileDownInfoNodeParent parent)
+        {
+            if (parent == null)
+                throw new ArgumentNullException(nameof(parent), "管理种子文件下载信息节点不能为空");
+
+            Torrent torrent;
+            if (parent.Hash.IsEmpty)
+            {
+                if (string.IsNullOrEmpty(parent.TorrentFileInfo))
+                    throw new ArgumentException("种子文件地址不能为空", nameof(parent.TorrentFileInfo));
+
+                var fileOperate = _fileOperateProvider.GetOperate(parent.TorrentFileInfo);
+                var torrentFile = _torrentFileForamtter.Decode(fileOperate);
+                if (torrentFile == null)
+                    throw new ArgumentException("无法解析Torrent文件内容。");
+                parent.Set(torrentFile);
+                torrent = new Torrent(torrentFile.Hash, parent, torrentFile, _localTorrentInfo, _sender);
+            }
+            else
+            {
+                torrent = new(parent.Hash, parent, null, _localTorrentInfo, _sender);
+            }
+
+            if (parent.AnnounceList != null)
+                _trackerProvider.RegisterTracker(parent.AnnounceList);
+
+            return torrent;
+        }
+
+        /// <summary>
+        /// 根据提供的路径获取Torrent对象。
+        /// </summary>
+        /// <param name="path">Torrent文件路径。</param>
+        /// <returns>返回一个Torrent对象。</returns>
+        public Torrent GetTorrent(string path)
+        {
+            var fileOperate = _fileOperateProvider.GetOperate(path);
+            return GetTorrent(fileOperate);
+        }
+
+        /// <summary>
+        /// 根据提供的文件操作对象获取Torrent对象。
+        /// </summary>
+        /// <param name="fileOperate">文件操作对象。</param>
+        /// <returns>返回一个Torrent对象。</returns>
+        public Torrent GetTorrent(IFileOperate fileOperate)
+        {
+            var torrentFile = _torrentFileForamtter.Decode(fileOperate);
+            if (torrentFile == null)
+                throw new ArgumentException("无法解析Torrent文件内容。");
+
+            Torrent torrent = GetTorrent(torrentFile);
+            torrent.DownParent.TorrentFileInfo = fileOperate.Info.FilePath;
+            return torrent;
         }
 
         /// <summary>
@@ -49,10 +116,28 @@ namespace ExtenderApp.Torrent
         public Torrent GetTorrent(Memory<byte> memory)
         {
             var torrentFile = _torrentFileForamtter.Decode(memory);
+            if (torrentFile == null)
+                throw new ArgumentException("无法解析Torrent内容。");
 
-            Torrent result = new(torrentFile, _localTorrentInfo, _random, _trackerProvider);
+            return GetTorrent(torrentFile);
+        }
 
-            return result;
+        /// <summary>
+        /// 初始化Torrent对象。
+        /// </summary>
+        /// <param name="torrentFile">Torrent文件对象。</param>
+        /// <returns>返回一个Torrent对象。</returns>
+        private Torrent GetTorrent(TorrentFile torrentFile)
+        {
+            if (torrentFile.AnnounceList != null)
+                _trackerProvider.RegisterTracker(torrentFile.AnnounceList);
+
+            TorrentFileDownInfoNodeParent parent = new();
+            parent.Set(torrentFile);
+
+            Torrent torrent = new(torrentFile.Hash, parent, torrentFile, _localTorrentInfo, _sender);
+
+            return torrent;
         }
     }
 }

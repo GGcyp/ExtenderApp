@@ -52,6 +52,8 @@ namespace ExtenderApp.Data
         /// </summary>
         public SequencePool<byte>.Rental Rental;
 
+        public bool IsEmpty => Output == null && _segment == null;
+
         /// <summary>
         /// 使用指定的 <see cref="SequencePool{byte}.Rental"/> 对象初始化 <see cref="ExtenderBinaryWriter"/> 类的新实例。
         /// </summary>
@@ -174,6 +176,22 @@ namespace ExtenderApp.Data
             else
             {
                 WriteMultiBuffer(source);
+            }
+        }
+
+        /// <summary>
+        /// 将 <see cref="ReadOnlySequence{byte}"/> 类型的数据写入到当前实例中。
+        /// </summary>
+        /// <param name="rawMessagePackBlock">要写入的数据。</param>
+        /// <remarks>
+        /// 使用 <see cref="MethodImplOptions.AggressiveInlining"/> 优化方法内联，以提高性能。
+        /// </remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Write(in ReadOnlySequence<byte> rawMessagePackBlock)
+        {
+            foreach (ReadOnlyMemory<byte> segment in rawMessagePackBlock)
+            {
+                Write(segment.Span);
             }
         }
 
@@ -341,15 +359,5 @@ namespace ExtenderApp.Data
             BytesCommitted = 0;
         }
 
-        /// <summary>
-        /// 支持从 ExtenderBinaryWriter 隐式转换为 ExtenderBinaryReader。
-        /// </summary>
-        /// <param name="writer">要转换的写入器。</param>
-        public static implicit operator ExtenderBinaryReader(ExtenderBinaryWriter writer)
-        {
-            // 这里假设你有 FlushAndGetArray 或类似方法获取已写入的字节
-            writer.Commit();
-            return new ExtenderBinaryReader(writer.Rental.Value);
-        }
     }
 }

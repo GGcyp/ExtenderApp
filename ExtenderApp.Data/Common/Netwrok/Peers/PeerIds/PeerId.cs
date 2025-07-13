@@ -1,5 +1,7 @@
 ﻿
 
+using System.Text;
+
 namespace ExtenderApp.Data
 {
     /// <summary>
@@ -14,29 +16,30 @@ namespace ExtenderApp.Data
 
         public static PeerId CreateId()
         {
-            char[] buffer = new char[20];
+            //char[] buffer = new char[20];
             //我只需要guid前12位字符
             string id = CLITNET_PREFIX + Guid.NewGuid().ToString("N").Substring(0, 12);
-            return new PeerId(id);
+            var bytes = Encoding.UTF8.GetBytes(id, 0, id.Length);
+            return new PeerId(bytes);
         }
 
         /// <summary>
         /// 对等节点ID。
         /// </summary>
-        internal string Id { get; }
+        internal byte[] Id { get; }
 
-        public bool IsEmpty => string.IsNullOrEmpty(Id);
+        public bool IsEmpty => Id == null;
 
         /// <summary>
         /// 初始化 <see cref="PeerId"/> 结构体的新实例。
         /// </summary>
         /// <param name="id">对等节点ID。</param>
         /// <exception cref="ArgumentException">如果 <paramref name="id"/> 为空、为 null 或长度不为 20 个字符，则抛出此异常。</exception>
-        public PeerId(string id)
+        public PeerId(byte[] id)
         {
-            if (string.IsNullOrEmpty(id) || id.Length != 20)
+            if (id.Length != 20)
             {
-                throw new ArgumentException("对等节点ID不能为空或者小于20个字", nameof(id));
+                throw new ArgumentException("对等节点ID不能不为20个字节", nameof(id));
             }
             Id = id;
         }
@@ -68,7 +71,7 @@ namespace ExtenderApp.Data
 
         public override string ToString()
         {
-            return Id;
+            return Encoding.UTF8.GetString(Id);
         }
     }
 }

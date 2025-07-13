@@ -1,7 +1,11 @@
 ﻿using System.Buffers;
+using System.Diagnostics;
+using System.Reflection.PortableExecutable;
+using System.Runtime.Serialization;
 using ExtenderApp.Abstract;
 using ExtenderApp.Common.DataBuffers;
 using ExtenderApp.Common.Error;
+using ExtenderApp.Common.IO.Binaries.LZ4;
 using ExtenderApp.Common.IO.FileParsers;
 using ExtenderApp.Data;
 
@@ -26,6 +30,21 @@ namespace ExtenderApp.Common.IO.Binaries
         private const int SuggestedContiguousMemorySize = 1024 * 1024;
 
         /// <summary>
+        /// 压缩文件的最小长度
+        /// </summary>
+        private const int CompressionMinLength = 64;
+
+        /// <summary>
+        /// LZ4块压缩的标识常量
+        /// </summary>
+        private const sbyte Lz4Block = 99;
+
+        /// <summary>
+        /// LZ4块数组压缩的标识常量
+        /// </summary>
+        private const sbyte Lz4BlockArray = 98;
+
+        /// <summary>
         /// 二进制格式化器解析器
         /// </summary>
         private readonly IBinaryFormatterResolver _resolver;
@@ -35,15 +54,35 @@ namespace ExtenderApp.Common.IO.Binaries
         /// </summary>
         private readonly SequencePool<byte> _sequencePool;
 
+        /// <summary>
+        /// 二进制选项
+        /// </summary>
+        private readonly BinaryOptions _binaryOptions;
 
+        /// <summary>
+        /// 二进制写入转换器
+        /// </summary>
+        private readonly ExtenderBinaryWriterConvert _writerConvert;
+
+        /// <summary>
+        /// 二进制读取转换器
+        /// </summary>
+        private readonly ExtenderBinaryReaderConvert _readerConvert;
+
+        /// <summary>
+        /// 二进制文件扩展名
+        /// </summary>
         private readonly string _binaryFileExtensions;
 
-        public BinaryParser(IBinaryFormatterResolver binaryFormatterResolver, SequencePool<byte> sequencePool, IFileOperateProvider provider) : base(provider)
+        public BinaryParser(IBinaryFormatterResolver binaryFormatterResolver, SequencePool<byte> sequencePool, ExtenderBinaryReaderConvert readerConvert, ExtenderBinaryWriterConvert writerConvert, BinaryOptions options, IFileOperateProvider provider) : base(provider)
         {
             _resolver = binaryFormatterResolver;
             _sequencePool = sequencePool;
 
             _binaryFileExtensions = FileExtensions.BinaryFileExtensions;
+            _readerConvert = readerConvert;
+            _writerConvert = writerConvert;
+            _binaryOptions = options;
         }
 
         #region Get
@@ -125,12 +164,22 @@ namespace ExtenderApp.Common.IO.Binaries
         /// <param name="position">开始读取的位置。</param>
         /// <param name="length">需要读取的长度，默认为-1，表示读取到文件末尾。</param>
         /// <returns>读取到的数据。</returns>
-        private T? PrivateRead<T>(IFileOperate operate, long position = 0, int length = 0)
+        private T? PrivateRead<T>(IFileOperate operate, long position = 0, int length = -1)
         {
+            length = length == -1 ? (int)operate.Info.FileInfo.Length : length;
             var bytes = operate.ReadForArrayPool(position, length);
 
-            var reader = new ExtenderBinaryReader(bytes);
+            var reader = new ExtenderBinaryReader(new Memory<byte>(bytes, 0, length));
+            var writer = new ExtenderBinaryWriter(_sequencePool.Rent());
+            if (TryDecompress(ref reader, ref writer))
+            {
+                writer.Commit();
+                reader = writer;
+            }
+
             var result = Deserialize<T>(ref reader);
+            ArrayPool<byte>.Shared.Return(bytes);
+            writer.Dispose();
             return result;
         }
 
@@ -203,6 +252,17 @@ namespace ExtenderApp.Common.IO.Binaries
             var action = buffer.GetProcessAction<byte[]>((d, b) =>
             {
                 var callback = d.Item1 as Action<T>;
+                var reader = new ExtenderBinaryReader(b);
+                var writer = new ExtenderBinaryWriter(_sequencePool.Rent());
+                if (TryDecompress(ref reader, ref writer))
+                {
+                    writer.Commit();
+                    reader = writer;
+                }
+
+                T? result = Deserialize<T>(ref reader);
+                writer.Dispose();
+
                 var reslut = Deserialize<T>(b);
                 callback?.Invoke(reslut);
             });
@@ -261,9 +321,10 @@ namespace ExtenderApp.Common.IO.Binaries
 
         private void PrivateWrite<T>(IFileOperate operate, T value, long filePosition = 0)
         {
-            var bytes = SerializeForArrayPool(value, out int length);
-            operate.Write(bytes, filePosition, 0, length);
-            ArrayPool<byte>.Shared.Return(bytes);
+            var writer = new ExtenderBinaryWriter(_sequencePool.Rent());
+            Serialize(ref writer, value);
+            operate.Write(writer, filePosition);
+            writer.Dispose();
         }
 
 
@@ -271,7 +332,7 @@ namespace ExtenderApp.Common.IO.Binaries
 
         #region WriteAsync
 
-        public override void WriteAsync<T>(ExpectLocalFileInfo info, T value, Action<byte[]>? callback = null)
+        public override void WriteAsync<T>(ExpectLocalFileInfo info, T value, Action? callback = null)
         {
             if (info.IsEmpty)
             {
@@ -280,7 +341,7 @@ namespace ExtenderApp.Common.IO.Binaries
             WriteAsync(info.CreateReadWriteOperate(_binaryFileExtensions), value, callback);
         }
 
-        public override void WriteAsync<T>(FileOperateInfo info, T value, Action<byte[]>? callback = null)
+        public override void WriteAsync<T>(FileOperateInfo info, T value, Action? callback = null)
         {
             if (info.IsEmpty || !info.IsWrite())
             {
@@ -290,12 +351,12 @@ namespace ExtenderApp.Common.IO.Binaries
             PrivateWriteAsync(GetOperate(info), value, 0, callback);
         }
 
-        public override void WriteAsync<T>(IFileOperate fileOperate, T value, Action<byte[]>? callback = null)
+        public override void WriteAsync<T>(IFileOperate fileOperate, T value, Action? callback = null)
         {
             PrivateWriteAsync(fileOperate, value, 0, callback);
         }
 
-        public override void WriteAsync<T>(ExpectLocalFileInfo info, T value, long position, Action<byte[]>? callback = null)
+        public override void WriteAsync<T>(ExpectLocalFileInfo info, T value, long position, Action? callback = null)
         {
             if (info.IsEmpty)
             {
@@ -304,7 +365,7 @@ namespace ExtenderApp.Common.IO.Binaries
             WriteAsync(info.CreateReadWriteOperate(_binaryFileExtensions), value, position, callback);
         }
 
-        public override void WriteAsync<T>(FileOperateInfo info, T value, long position, Action<byte[]>? callback = null)
+        public override void WriteAsync<T>(FileOperateInfo info, T value, long position, Action? callback = null)
         {
             if (info.IsEmpty || !info.IsWrite())
             {
@@ -313,15 +374,20 @@ namespace ExtenderApp.Common.IO.Binaries
             PrivateWriteAsync(GetOperate(info), value, position, callback);
         }
 
-        public override void WriteAsync<T>(IFileOperate fileOperate, T value, long position, Action<byte[]>? callback = null)
+        public override void WriteAsync<T>(IFileOperate fileOperate, T value, long position, Action? callback = null)
         {
             PrivateWriteAsync(fileOperate, value, position, callback);
         }
 
-        private void PrivateWriteAsync<T>(IFileOperate operate, T value, long filePosition = 0, Action<byte[]>? callback = null)
+        private void PrivateWriteAsync<T>(IFileOperate operate, T value, long filePosition = 0, Action? callback = null)
         {
-            var bytes = SerializeForArrayPool(value, out int length);
-            operate.WriteAsync(bytes, filePosition, 0, length, callback);
+            Task.Run(() =>
+            {
+                var writer = new ExtenderBinaryWriter(_sequencePool.Rent());
+                var formatter = _resolver.GetFormatterWithVerify<T>();
+                formatter.Serialize(ref writer, value);
+                operate.WriteAsync(writer, filePosition, callback);
+            }).ConfigureAwait(false);
         }
 
         #endregion
@@ -380,10 +446,10 @@ namespace ExtenderApp.Common.IO.Binaries
             try
             {
                 _resolver.GetFormatterWithVerify<T>().Serialize(ref writer, value);
+                writer.Commit();
             }
             catch (Exception ex)
             {
-                //throw new MessagePackSerializationException($"Failed to serialize {typeof(T).FullName} value.", ex);
                 throw;
             }
         }
@@ -402,6 +468,40 @@ namespace ExtenderApp.Common.IO.Binaries
                 stream.Write(sharedBuffer, 0, sharedBuffer.Length);
             }
             rent.Dispose();
+        }
+
+        public async Task<byte[]> SerializeAsync<T>(T value, CancellationToken token)
+        {
+            byte[] bytes = ArrayPool<byte>.Shared.Rent(MaxByteArrayLength);
+
+            var formatter = _resolver.GetFormatterWithVerify<T>();
+
+            return await Task.Run(() =>
+            {
+                var writer = new ExtenderBinaryWriter(_sequencePool, bytes);
+                formatter.Serialize(ref writer, value);
+                var result = writer.FlushAndGetArray();
+                ArrayPool<byte>.Shared.Return(bytes);
+                return result;
+            }, token);
+        }
+
+        public Task SerializeAsync<T>(Stream stream, T value, CancellationToken token)
+        {
+            var rent = _sequencePool.Rent();
+            var writer = new ExtenderBinaryWriter(rent.Value);
+            Serialize(ref writer, value);
+            writer.Commit();
+            return Task.Run(() =>
+            {
+                foreach (ReadOnlyMemory<byte> segment in rent.Value.AsReadOnlySequence)
+                {
+                    var sharedBuffer = ArrayPool<byte>.Shared.Rent(segment.Length);
+                    segment.CopyTo(sharedBuffer);
+                    stream.Write(sharedBuffer, 0, sharedBuffer.Length);
+                }
+                rent.Dispose();
+            }, token);
         }
 
         /// <summary>
@@ -432,13 +532,13 @@ namespace ExtenderApp.Common.IO.Binaries
 
         #region Deserialize
 
-        public T? Deserialize<T>(byte[] bytes)
+        public T? Deserialize<T>(ReadOnlyMemory<byte> span)
         {
-            if (bytes == null)
-                throw new ArgumentNullException(nameof(bytes));
+            if (span.IsEmpty)
+                throw new ArgumentNullException(nameof(span));
 
 
-            ExtenderBinaryReader reader = new ExtenderBinaryReader(bytes);
+            ExtenderBinaryReader reader = new ExtenderBinaryReader(span);
             return Deserialize<T>(ref reader);
         }
 
@@ -459,7 +559,16 @@ namespace ExtenderApp.Common.IO.Binaries
                 return formatter.Default;
             }
 
-            return _resolver.GetFormatterWithVerify<T>().Deserialize(ref reader);
+            var writer = new ExtenderBinaryWriter(_sequencePool.Rent());
+            if (TryDecompress(ref reader, ref writer))
+            {
+                writer.Commit();
+                reader = writer;
+            }
+
+            T? result = _resolver.GetFormatterWithVerify<T>().Deserialize(ref reader);
+            writer.Dispose();
+            return result;
         }
 
         public T? Deserialize<T>(Stream stream)
@@ -486,7 +595,26 @@ namespace ExtenderApp.Common.IO.Binaries
             return result;
         }
 
-        public async Task<T?> DeserializeAsync<T>(Stream stream)
+        public async Task<T?> DeserializeAsync<T>(ReadOnlyMemory<byte> span, CancellationToken token)
+        {
+            if (span.IsEmpty)
+                throw new ArgumentNullException(nameof(span));
+
+
+            return await Task.Run(() =>
+            {
+                ExtenderBinaryReader reader = new ExtenderBinaryReader(span);
+                return Deserialize<T>(ref reader);
+            }, token);
+        }
+
+        /// <summary>
+        /// 异步从流中反序列化对象。
+        /// </summary>
+        /// <typeparam name="T">要反序列化的对象的类型。</typeparam>
+        /// <param name="stream">包含要反序列化的数据的流。</param>
+        /// <returns>反序列化后的对象，如果反序列化失败则返回null。</returns>
+        public async Task<T?> DeserializeAsync<T>(Stream stream, CancellationToken token)
         {
             if (TryDeserializeFromMemoryStream<T>(stream, out var result))
             {
@@ -509,6 +637,14 @@ namespace ExtenderApp.Common.IO.Binaries
             return result;
         }
 
+        /// <summary>
+        /// 从只读序列中反序列化对象，并在可能的情况下将流重置到未读取的第一个字节。
+        /// </summary>
+        /// <typeparam name="T">要反序列化的对象的类型。</typeparam>
+        /// <param name="stream">包含要反序列化的数据的流。</param>
+        /// <param name="sequence">包含要反序列化的数据的只读序列。</param>
+        /// <returns>反序列化后的对象。</returns>
+        /// <exception cref="ArgumentNullException">如果stream为null。</exception>
         private T? DeserializeFromSequenceAndRewindStreamIfPossible<T>(Stream stream, ReadOnlySequence<byte> sequence)
         {
             if (stream is null)
@@ -530,6 +666,13 @@ namespace ExtenderApp.Common.IO.Binaries
             return result;
         }
 
+        /// <summary>
+        /// 尝试从内存流中反序列化对象。
+        /// </summary>
+        /// <typeparam name="T">要反序列化的对象的类型。</typeparam>
+        /// <param name="stream">包含要反序列化的数据的流。</param>
+        /// <param name="result">反序列化后的对象。</param>
+        /// <returns>如果成功反序列化，则返回true；否则返回false。</returns>
         private bool TryDeserializeFromMemoryStream<T>(Stream stream, out T? result)
         {
             if (stream is MemoryStream ms && ms.TryGetBuffer(out ArraySegment<byte> streamBuffer))
@@ -570,6 +713,327 @@ namespace ExtenderApp.Common.IO.Binaries
         public long GetDefaulLength<T>()
         {
             return _resolver.GetFormatterWithVerify<T>().Length;
+        }
+
+        #endregion
+
+        #region LZ4
+
+        private delegate int LZ4Transform(ReadOnlySpan<byte> input, Span<byte> output);
+        private static readonly LZ4Transform LZ4CodecEncode = LZ4Codec.Encode;
+        private static readonly LZ4Transform LZ4CodecDecode = LZ4Codec.Decode;
+
+        /// <summary>
+        /// 使用LZ4算法对输入数据进行操作。
+        /// </summary>
+        /// <param name="input">输入数据，类型为ReadOnlySequence<byte>。</param>
+        /// <param name="output">输出缓冲区，类型为Span<byte>。</param>
+        /// <param name="lz4Operation">LZ4操作类型，类型为LZ4Transform。</param>
+        /// <returns>操作结果，返回值为int类型。</returns>
+        private int LZ4Operation(in ReadOnlySequence<byte> input, Span<byte> output, LZ4Transform lz4Operation)
+        {
+            ReadOnlySpan<byte> inputSpan;
+            byte[]? rentedInputArray = null;
+            if (input.IsSingleSegment)
+            {
+                inputSpan = input.First.Span;
+            }
+            else
+            {
+                rentedInputArray = ArrayPool<byte>.Shared.Rent((int)input.Length);
+                input.CopyTo(rentedInputArray);
+                inputSpan = rentedInputArray.AsSpan(0, (int)input.Length);
+            }
+
+            try
+            {
+                return lz4Operation(inputSpan, output);
+            }
+            finally
+            {
+                if (rentedInputArray != null)
+                {
+                    ArrayPool<byte>.Shared.Return(rentedInputArray);
+                }
+            }
+        }
+
+        public byte[] Compression<T>(T value, CompressionType compression)
+        {
+            var scratchWriter = new ExtenderBinaryWriter(_sequencePool.Rent());
+            Serialize(ref scratchWriter, value);
+
+
+            var writer = new ExtenderBinaryWriter(_sequencePool.Rent());
+            ToLz4(scratchWriter.Rental.Value, ref writer, compression);
+
+            byte[] result = writer.FlushAndGetArray();
+
+            scratchWriter.Dispose();
+            writer.Dispose();
+            return result;
+        }
+
+        public byte[] Compression(ReadOnlySpan<byte> input, CompressionType compression)
+        {
+            var scratchWriter = new ExtenderBinaryWriter(_sequencePool.Rent());
+            scratchWriter.Write(input);
+            var writer = new ExtenderBinaryWriter(_sequencePool.Rent());
+            ToLz4(scratchWriter.Rental.Value, ref writer, compression);
+            byte[] result = writer.FlushAndGetArray();
+            scratchWriter.Dispose();
+            writer.Dispose();
+            return result;
+        }
+
+        public byte[] Compression(in ReadOnlySequence<byte> readOnlyMemories, CompressionType compression)
+        {
+            ExtenderBinaryWriter writer = new ExtenderBinaryWriter(_sequencePool.Rent());
+            ToLz4(readOnlyMemories, ref writer, CompressionType.Lz4BlockArray);
+            var result = writer.FlushAndGetArray();
+            writer.Dispose();
+            return result;
+        }
+
+        public void Write<T>(ExpectLocalFileInfo info, T value, CompressionType compression)
+        {
+            if (info.IsEmpty)
+            {
+                ErrorUtil.ArgumentNull(nameof(info));
+            }
+            Write(info.CreateReadWriteOperate(_binaryFileExtensions), value, compression);
+        }
+
+        public void Write<T>(FileOperateInfo info, T value, CompressionType compression)
+        {
+            if (info.IsEmpty || !info.IsWrite())
+            {
+                ErrorUtil.ArgumentNull(nameof(info));
+            }
+            Write(GetOperate(info), value, compression);
+        }
+
+        public void Write<T>(IFileOperate fileOperate, T value, CompressionType compression)
+        {
+            if (fileOperate == null)
+            {
+                ErrorUtil.ArgumentNull(nameof(fileOperate));
+                return;
+            }
+
+            var scratchWriter = new ExtenderBinaryWriter(_sequencePool.Rent());
+            Serialize(ref scratchWriter, value);
+
+
+            var writer = new ExtenderBinaryWriter(_sequencePool.Rent());
+            ToLz4(scratchWriter.Rental.Value, ref writer, compression);
+            writer.Commit();
+
+            fileOperate.Write(writer, 0);
+
+            scratchWriter.Dispose();
+            writer.Dispose();
+        }
+
+        public void ToLz4(in ReadOnlySequence<byte> readOnlyMemories, ref ExtenderBinaryWriter writer, CompressionType compression)
+        {
+            if (readOnlyMemories.Length < CompressionMinLength || compression == CompressionType.None)
+            {
+                writer.Write(readOnlyMemories);
+                return;
+            }
+
+            switch (compression)
+            {
+                case CompressionType.Lz4Block:
+                    // 如果是LZ4压缩，则需要在前面添加LZ4块头
+                    var maxCompressedLength = LZ4Codec.MaximumOutputLength((int)readOnlyMemories.Length);
+                    var lz4Bytes = ArrayPool<byte>.Shared.Rent(maxCompressedLength);
+                    try
+                    {
+                        int lz4Length = LZ4Operation(readOnlyMemories, lz4Bytes, LZ4CodecEncode);
+                        _resolver.GetFormatterWithVerify<ExtensionHeader>().Serialize(ref writer, new ExtensionHeader(Lz4Block, (uint)lz4Length));
+                        _resolver.GetFormatterWithVerify<int>().Serialize(ref writer, (int)readOnlyMemories.Length);
+                        // 将LZ4压缩后的数据写入
+                        writer.Write(lz4Bytes.AsSpan(0, lz4Length));
+                    }
+                    finally
+                    {
+                        ArrayPool<byte>.Shared.Return(lz4Bytes);
+                    }
+                    break;
+                case CompressionType.Lz4BlockArray:
+                    var sequenceCount = 0;
+                    var extHeaderSize = 0;
+                    foreach (var item in readOnlyMemories)
+                    {
+                        sequenceCount++;
+                        extHeaderSize += GetUInt32WriteSize((uint)item.Length);
+                    }
+
+                    _writerConvert.WriteArrayHeader(ref writer, sequenceCount + 1);
+                    Serialize(ref writer, new ExtensionHeader(Lz4BlockArray, (uint)extHeaderSize));
+                    IBinaryFormatter<int> intFormatter = _resolver.GetFormatterWithVerify<int>();
+                    foreach (var item in readOnlyMemories)
+                    {
+                        intFormatter.Serialize(ref writer, item.Length);
+                    }
+
+                    foreach (var item in readOnlyMemories)
+                    {
+                        maxCompressedLength = LZ4Codec.MaximumOutputLength(item.Length);
+                        var lz4Span = writer.GetSpan(maxCompressedLength + 5);
+                        int lz4Length = LZ4Codec.Encode(item.Span, lz4Span.Slice(5, lz4Span.Length - 5));
+                        WriteBin32Header((uint)lz4Length, lz4Span);
+                        writer.Advance(lz4Length + 5);
+                    }
+
+                    break;
+            }
+        }
+
+        public void WriteAsync<T>(ExpectLocalFileInfo info, T value, CompressionType compression, Action? callback = null)
+        {
+            if (info.IsEmpty)
+            {
+                ErrorUtil.ArgumentNull(nameof(info));
+            }
+            WriteAsync(info.CreateReadWriteOperate(_binaryFileExtensions), value, compression, callback);
+        }
+
+        public void WriteAsync<T>(FileOperateInfo info, T value, CompressionType compression, Action? callback = null)
+        {
+            if (info.IsEmpty || !info.IsWrite())
+            {
+                ErrorUtil.ArgumentNull(nameof(info));
+            }
+            WriteAsync(GetOperate(info), value, compression, callback);
+        }
+
+        public void WriteAsync<T>(IFileOperate fileOperate, T value, CompressionType compression, Action? callback = null)
+        {
+            Task.Run(() =>
+           {
+               if (fileOperate == null)
+               {
+                   ErrorUtil.ArgumentNull(nameof(fileOperate));
+                   return;
+               }
+
+               var scratchWriter = new ExtenderBinaryWriter(_sequencePool.Rent());
+               Serialize(ref scratchWriter, value);
+
+
+               var writer = new ExtenderBinaryWriter(_sequencePool.Rent());
+               ToLz4(scratchWriter.Rental.Value, ref writer, compression);
+               writer.Commit();
+
+               fileOperate.WriteAsync(writer, 0, () =>
+               {
+                   callback?.Invoke();
+               });
+               scratchWriter.Dispose();
+           }).ConfigureAwait(false);
+        }
+
+        private bool TryDecompress(ref ExtenderBinaryReader reader, ref ExtenderBinaryWriter writer)
+        {
+            if (reader.End)
+                return false;
+
+            // Try to find LZ4Block
+            var header = Deserialize<ExtensionHeader>(ref reader);
+
+            if (!header.IsEmpty && header.TypeCode == Lz4Block)
+            {
+                var extReader = reader.CreatePeekReader();
+
+                //这个整数表示数据在解压缩之后的长度。这样的设计允许接收方在解压数据之前就知道最终数据的大小，
+                //这对于数据处理的效率和正确性至关重要。
+                int uncompressedLength = Deserialize<int>(ref extReader);
+
+                //接下来开始解压
+                ReadOnlySequence<byte> compressedData = extReader.Sequence.Slice(extReader.Position);
+
+                Span<byte> uncompressedSpan = writer.GetSpan(uncompressedLength).Slice(0, uncompressedLength);
+                int actualUncompressedLength = LZ4Operation(compressedData, uncompressedSpan, LZ4CodecDecode);
+                writer.Advance(actualUncompressedLength);
+                return true;
+            }
+
+
+            var peekReader = reader.CreatePeekReader();
+            var arrayLength = _readerConvert.ReadArrayHeader(ref peekReader);
+            if (arrayLength == 0) return false;
+            header = Deserialize<ExtensionHeader>(ref reader);
+            if (header.TypeCode != Lz4BlockArray)
+                return false;
+
+            // 切换成原读取器
+            reader = peekReader;
+
+            // 开始读取 [Ext(98:int,int...), bin,bin,bin...]
+            var sequenceCount = arrayLength - 1;
+            var uncompressedLengths = ArrayPool<int>.Shared.Rent(sequenceCount);
+            try
+            {
+                IBinaryFormatter<int> intFormatter = _resolver.GetFormatterWithVerify<int>();
+                for (int i = 0; i < sequenceCount; i++)
+                {
+                    uncompressedLengths[i] = intFormatter.Deserialize(ref reader);
+                }
+
+                for (int i = 0; i < sequenceCount; i++)
+                {
+                    var uncompressedLength = uncompressedLengths[i];
+                    ReadOnlySequence<byte> lz4Block = _readerConvert.ReadBytes(ref reader);
+                    Span<byte> uncompressedSpan = writer.GetSpan(uncompressedLength);
+                    var actualUncompressedLength = LZ4Operation(lz4Block, uncompressedSpan, LZ4CodecDecode);
+                    writer.Advance(actualUncompressedLength);
+                }
+                return true;
+            }
+            finally
+            {
+                ArrayPool<int>.Shared.Return(uncompressedLengths);
+            }
+            return false;
+        }
+
+        private void WriteBin32Header(uint value, Span<byte> span)
+        {
+            unchecked
+            {
+                span[0] = _binaryOptions.BinaryCode.Bin32;
+
+                // Write to highest index first so the JIT skips bounds checks on subsequent writes.
+                //在进行数组写操作时，如果首先写入数组的最高索引位置，
+                //那么在随后的写操作中，即时编译器（Just-In-Time, JIT）可能会跳过数组边界检查，从而提高性能。
+                span[4] = (byte)value;
+                span[3] = (byte)(value >> 8);
+                span[2] = (byte)(value >> 16);
+                span[1] = (byte)(value >> 24);
+            }
+        }
+
+        private int GetUInt32WriteSize(uint value)
+        {
+            if (value <= _binaryOptions.BinaryRang.MaxFixPositiveInt)
+            {
+                return 1;
+            }
+            else if (value <= byte.MaxValue)
+            {
+                return 2;
+            }
+            else if (value <= ushort.MaxValue)
+            {
+                return 3;
+            }
+            else
+            {
+                return 5;
+            }
         }
 
         #endregion

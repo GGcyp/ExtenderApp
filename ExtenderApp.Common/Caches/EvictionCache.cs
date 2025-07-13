@@ -82,6 +82,17 @@ namespace ExtenderApp.Common.Caches
         }
 
         /// <summary>
+        /// 根据指定的键移除键值对，并返回对应的值。
+        /// </summary>
+        /// <param name="key">要移除的键值对的键。</param>
+        /// <returns>返回被移除的键值对的值，如果键不存在，则返回默认值。</returns>
+        public TValue Remove(Tkey key)
+        {
+            Remove(key, out var value);
+            return value;
+        }
+
+        /// <summary>
         /// 从缓存中移除指定键的缓存项。
         /// </summary>
         /// <param name="key">缓存项的键。</param>
@@ -125,7 +136,7 @@ namespace ExtenderApp.Common.Caches
                 if (pair.Value.LastVisitTime - now > checkInterval)
                     continue;
 
-                if (ShouldEvict(pair.Value.GetValue<TValue>()))
+                if (ShouldEvict(pair.Value.GetValue<TValue>(), now))
                 {
                     toRemove.Add(pair.Key);
                 }
@@ -139,11 +150,12 @@ namespace ExtenderApp.Common.Caches
         }
 
         /// <summary>
-        /// 判断指定缓存项是否应该被逐出。
+        /// 判断是否应该移除缓存项
         /// </summary>
-        /// <param name="value">缓存中的值</param>
+        /// <param name="value">缓存项的值</param>
+        /// <param name="now">当前时间 UTC时间</param>
         /// <returns>如果应该移除，则返回true；否则返回false</returns>
-        protected virtual bool ShouldEvict(TValue value)
+        protected virtual bool ShouldEvict(TValue value, DateTime now)
         {
             return true;
         }

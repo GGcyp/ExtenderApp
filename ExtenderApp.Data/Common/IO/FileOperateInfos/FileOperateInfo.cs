@@ -142,5 +142,15 @@
         {
             return LocalFileInfo.GetHashCode();
         }
+
+        public static implicit operator FileOperateInfo(string filePath)
+        {
+            return new FileOperateInfo(filePath, FileMode.OpenOrCreate, FileAccess.ReadWrite);
+        }
+
+        public static implicit operator FileOperateInfo(LocalFileInfo fileInfo)
+        {
+            return new FileOperateInfo(fileInfo, FileMode.OpenOrCreate, FileAccess.ReadWrite);
+        }
     }
 }

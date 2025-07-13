@@ -1,6 +1,7 @@
 ﻿using System.Buffers;
 using ExtenderApp.Common.DataBuffers;
 using ExtenderApp.Common.Error;
+using ExtenderApp.Data;
 
 namespace ExtenderApp.Common.IO.Splitter
 {
@@ -71,15 +72,15 @@ namespace ExtenderApp.Common.IO.Splitter
             {
                 //bytes = pool.Rent((int)readLength);
                 //ReslutBytes = bytes;
-                bytes = new byte[readLength];
-                ReslutBytes = bytes;
+                ReslutBytes = bytes = new byte[readLength];
             }
 
             var accessor = item.Accessor;
             var span = bytes.AsSpan();
-            for (long i = readPosition; i < readLength; i++)
+            for (long i = 0; i < readLength; i++)
             {
-                span[(int)(i - readPosition + bytesPosition)] = accessor.ReadByte(i);
+                span[(int)(i + bytesPosition)] = accessor.ReadByte(readPosition);
+                readPosition++;
             }
             bytesCallback?.Invoke(bytes);
         }

@@ -130,52 +130,45 @@ namespace ExtenderApp.Common.IO.Binaries
 
         #region Array
 
+        /// <summary>
+        /// 尝试跳过下一个数组
+        /// </summary>
+        /// <param name="reader">ExtenderBinaryReader对象，通过ref传递以修改其状态</param>
+        /// <returns>如果成功跳过数组，则返回true；否则返回false</returns>
         private bool TrySkipNextArray(ref ExtenderBinaryReader reader)
             => TryArrayHeader(ref reader, out int count) && TrySkip(ref reader, count);
 
+        /// <summary>
+        /// 尝试读取数组头部信息
+        /// </summary>
+        /// <param name="reader">ExtenderBinaryReader对象，通过ref传递以读取其数据</param>
+        /// <param name="count">输出参数，存储数组元素的数量</param>
+        /// <returns>如果成功读取数组头部，则返回true；否则返回false</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool TryArrayHeader(ref ExtenderBinaryReader reader, out int count)
         {
-            //DecodeResult readResult = TryReadArrayHeader(reader.UnreadSpan, out uint uintCount, out int tokenSize);
-            //count = checked((int)uintCount);
-            //if (readResult == DecodeResult.Success)
-            //{
-            //    reader.Advance(tokenSize);
-            //    return true;
-            //}
-
-            //return SlowPath(ref this, readResult, ref count, ref tokenSize);
-
-            //static bool SlowPath(ref MessagePackReader self, DecodeResult readResult, ref int count, ref int tokenSize)
-            //{
-            //    switch (readResult)
-            //    {
-            //        case DecodeResult.Success:
-            //            reader.Advance(tokenSize);
-            //            return true;
-            //        case DecodeResult.TokenMismatch:
-            //            throw ThrowInvalidCode(reader.UnreadSpan[0]);
-            //        case DecodeResult.EmptyBuffer:
-            //        case DecodeResult.InsufficientBuffer:
-            //            Span<byte> buffer = stackalloc byte[tokenSize];
-            //            if (reader.TryCopyTo(buffer))
-            //            {
-            //                readResult = TryReadArrayHeader(buffer, out uint uintCount, out tokenSize);
-            //                count = checked((int)uintCount);
-            //                return SlowPath(ref self, readResult, ref count, ref tokenSize);
-            //            }
-            //            else
-            //            {
-            //                count = 0;
-            //                return false;
-            //            }
-
-            //        default:
-            //            throw ThrowUnreachable();
-            //    }
-            //}
+            // 原代码已被注释，此处为简化版本，直接返回true并设置count为0
             count = 0;
             return true;
+        }
+
+        /// <summary>
+        /// 读取字节序列
+        /// </summary>
+        /// <param name="reader">ExtenderBinaryReader对象，通过ref传递以读取其数据</param>
+        /// <returns>如果读取成功，则返回包含读取字节的ReadOnlySequence<byte>对象；如果读取到nil，则返回null</returns>
+        public ReadOnlySequence<byte> ReadBytes(ref ExtenderBinaryReader reader)
+        {
+            if (TryReadNil(ref reader))
+            {
+                return ReadOnlySequence<byte>.Empty;
+            }
+
+            TryBytesLength(ref reader, out uint length);
+            ThrowInsufficientBufferUnless(reader.Remaining >= length);
+            ReadOnlySequence<byte> result = reader.Sequence.Slice(reader.Position, length);
+            reader.Advance(length);
+            return result;
         }
 
         #endregion
@@ -289,105 +282,119 @@ namespace ExtenderApp.Common.IO.Binaries
 
         private bool TryBytesLength(ref ExtenderBinaryReader reader, out uint length)
         {
-            //bool usingBinaryHeader = true;
-            //DecodeResult readResult = TryReadBinHeader(reader.UnreadSpan, out length, out int tokenSize);
-            //if (readResult == DecodeResult.Success)
-            //{
-            //    reader.Advance(tokenSize);
-            //    return true;
-            //}
+            bool usingBinaryHeader = true;
+            DecodeResult readResult = _binaryConvert.TryReadBinHeader(reader.UnreadSpan, out length, out int tokenSize);
+            if (readResult == DecodeResult.Success)
+            {
+                reader.Advance(tokenSize);
+                return true;
+            }
 
-            //return SlowPath(ref this, readResult, usingBinaryHeader, ref length, ref tokenSize);
+            return SlowPath(ref reader, readResult, usingBinaryHeader, ref length, ref tokenSize);
 
-            //static bool SlowPath(ref MessagePackReader self, DecodeResult readResult, bool usingBinaryHeader, ref uint length, ref int tokenSize)
-            //{
-            //    switch (readResult)
-            //    {
-            //        case DecodeResult.Success:
-            //            reader.Advance(tokenSize);
-            //            return true;
-            //        case DecodeResult.TokenMismatch:
-            //            if (usingBinaryHeader)
-            //            {
-            //                usingBinaryHeader = false;
-            //                readResult = TryReadStringHeader(reader.UnreadSpan, out length, out tokenSize);
-            //                return SlowPath(ref self, readResult, usingBinaryHeader, ref length, ref tokenSize);
-            //            }
-            //            else
-            //            {
-            //                throw ThrowInvalidCode(reader.UnreadSpan[0]);
-            //            }
+            bool SlowPath(ref ExtenderBinaryReader reader, DecodeResult readResult, bool usingBinaryHeader, ref uint length, ref int tokenSize)
+            {
+                switch (readResult)
+                {
+                    case DecodeResult.Success:
+                        reader.Advance(tokenSize);
+                        return true;
+                    case DecodeResult.TokenMismatch:
+                        if (usingBinaryHeader)
+                        {
+                            usingBinaryHeader = false;
+                            readResult = _binaryConvert.TryReadStringHeader(reader.UnreadSpan, out length, out tokenSize);
+                            return SlowPath(ref reader, readResult, usingBinaryHeader, ref length, ref tokenSize);
+                        }
+                        else
+                        {
+                            throw ThrowInvalidCode(reader.UnreadSpan[0]);
+                        }
 
-            //        case DecodeResult.EmptyBuffer:
-            //        case DecodeResult.InsufficientBuffer:
-            //            Span<byte> buffer = stackalloc byte[tokenSize];
-            //            if (reader.TryCopyTo(buffer))
-            //            {
-            //                readResult = usingBinaryHeader
-            //                    ? TryReadBinHeader(buffer, out length, out tokenSize)
-            //                    : TryReadStringHeader(buffer, out length, out tokenSize);
-            //                return SlowPath(ref self, readResult, usingBinaryHeader, ref length, ref tokenSize);
-            //            }
-            //            else
-            //            {
-            //                length = default;
-            //                return false;
-            //            }
+                    case DecodeResult.EmptyBuffer:
+                    case DecodeResult.InsufficientBuffer:
+                        Span<byte> buffer = stackalloc byte[tokenSize];
+                        if (reader.TryCopyTo(buffer))
+                        {
+                            readResult = usingBinaryHeader
+                                ? _binaryConvert.TryReadBinHeader(buffer, out length, out tokenSize)
+                                : _binaryConvert.TryReadStringHeader(buffer, out length, out tokenSize);
+                            return SlowPath(ref reader, readResult, usingBinaryHeader, ref length, ref tokenSize);
+                        }
+                        else
+                        {
+                            length = default;
+                            return false;
+                        }
 
-            //        default:
-            //            throw ThrowUnreachable();
-            //    }
-            //}
+                    default:
+                        throw ThrowUnreachable();
+                }
+            }
             length = 0;
             return true;
         }
-
 
         #endregion
 
         #region ExtensionHeader
 
+        /// <summary>
+        /// 尝试读取扩展头，并尝试前进读取器到扩展头的长度位置
+        /// </summary>
+        /// <param name="reader">二进制读取器</param>
+        /// <returns>如果成功读取扩展头并成功前进读取器到扩展头的长度位置，则返回true；否则返回false</returns>
         private bool TryExtensionHeader(ref ExtenderBinaryReader reader)
-            => TryExtensionHeader(ref reader, out ExtensionHeader header) && reader.TryAdvance(header.Length);
+                    => TryExtensionHeader(ref reader, out ExtensionHeader header) && reader.TryAdvance(header.Length);
 
+        /// <summary>
+        /// 尝试从给定的二进制读取器中读取扩展头。
+        /// </summary>
+        /// <param name="reader">二进制读取器。</param>
+        /// <param name="extensionHeader">读取的扩展头。</param>
+        /// <returns>如果成功读取扩展头，则返回true；否则返回false。</returns>
+        /// <remarks>
+        /// 该方法首先尝试使用快速路径读取扩展头。如果快速路径失败，则调用慢速路径。
+        /// 快速路径和慢速路径都会处理不同的解码结果，并根据结果执行相应的操作。
+        /// </remarks>
         public bool TryExtensionHeader(ref ExtenderBinaryReader reader, out ExtensionHeader extensionHeader)
         {
-            //DecodeResult readResult = TryReadExtensionHeader(reader.UnreadSpan, out extensionHeader, out int tokenSize);
-            //if (readResult == DecodeResult.Success)
-            //{
-            //    reader.Advance(tokenSize);
-            //    return true;
-            //}
+            DecodeResult readResult = _binaryConvert.TryReadExtensionHeader(reader.UnreadSpan, out extensionHeader, out int tokenSize);
+            if (readResult == DecodeResult.Success)
+            {
+                reader.Advance(tokenSize);
+                return true;
+            }
 
-            //return SlowPath(ref this, readResult, ref extensionHeader, ref tokenSize);
+            return SlowPath(ref reader, readResult, ref extensionHeader, ref tokenSize);
 
-            //static bool SlowPath(ref MessagePackReader self, DecodeResult readResult, ref ExtensionHeader extensionHeader, ref int tokenSize)
-            //{
-            //    switch (readResult)
-            //    {
-            //        case DecodeResult.Success:
-            //            reader.Advance(tokenSize);
-            //            return true;
-            //        case DecodeResult.TokenMismatch:
-            //            throw ThrowInvalidCode(reader.UnreadSpan[0]);
-            //        case DecodeResult.EmptyBuffer:
-            //        case DecodeResult.InsufficientBuffer:
-            //            Span<byte> buffer = stackalloc byte[tokenSize];
-            //            if (reader.TryCopyTo(buffer))
-            //            {
-            //                readResult = TryReadExtensionHeader(buffer, out extensionHeader, out tokenSize);
-            //                return SlowPath(ref self, readResult, ref extensionHeader, ref tokenSize);
-            //            }
-            //            else
-            //            {
-            //                extensionHeader = default;
-            //                return false;
-            //            }
+            bool SlowPath(ref ExtenderBinaryReader reader, DecodeResult readResult, ref ExtensionHeader extensionHeader, ref int tokenSize)
+            {
+                switch (readResult)
+                {
+                    case DecodeResult.Success:
+                        reader.Advance(tokenSize);
+                        return true;
+                    case DecodeResult.TokenMismatch:
+                        throw ThrowInvalidCode(reader.UnreadSpan[0]);
+                    case DecodeResult.EmptyBuffer:
+                    case DecodeResult.InsufficientBuffer:
+                        Span<byte> buffer = stackalloc byte[tokenSize];
+                        if (reader.TryCopyTo(buffer))
+                        {
+                            readResult = _binaryConvert.TryReadExtensionHeader(buffer, out extensionHeader, out tokenSize);
+                            return SlowPath(ref reader, readResult, ref extensionHeader, ref tokenSize);
+                        }
+                        else
+                        {
+                            extensionHeader = default;
+                            return false;
+                        }
 
-            //        default:
-            //            throw ThrowUnreachable();
-            //    }
-            //}
+                    default:
+                        throw ThrowUnreachable();
+                }
+            }
             extensionHeader = default;
             return true;
         }

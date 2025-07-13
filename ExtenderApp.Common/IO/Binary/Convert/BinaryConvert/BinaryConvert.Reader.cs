@@ -171,6 +171,14 @@ namespace ExtenderApp.Common.IO.Binaries
             return result;
         }
 
+        /// <summary>
+        /// 尝试从字节序列中读取日期时间值。
+        /// </summary>
+        /// <param name="source">包含要解码的字节序列的只读字节序列。</param>
+        /// <param name="header">扩展头信息。</param>
+        /// <param name="value">输出参数，用于接收解码后的日期时间值。</param>
+        /// <param name="tokenSize">输出参数，用于接收解码后的字节序列的长度。</param>
+        /// <returns>返回一个DecodeResult枚举值，表示解码结果。</returns>
         public DecodeResult TryReadDateTime(ReadOnlySpan<byte> source, ExtensionHeader header, out DateTime value, out int tokenSize)
         {
             tokenSize = checked((int)header.Length);
@@ -210,6 +218,13 @@ namespace ExtenderApp.Common.IO.Binaries
             }
         }
 
+        /// <summary>
+        /// 尝试从字节序列中读取扩展头信息。
+        /// </summary>
+        /// <param name="source">包含要解码的字节序列的只读字节序列。</param>
+        /// <param name="extensionHeader">输出参数，用于接收解码后的扩展头信息。</param>
+        /// <param name="tokenSize">输出参数，用于接收解码后的字节序列的长度。</param>
+        /// <returns>返回一个DecodeResult枚举值，表示解码结果。</returns>
         public DecodeResult TryReadExtensionHeader(ReadOnlySpan<byte> source, out ExtensionHeader extensionHeader, out int tokenSize)
         {
             tokenSize = 2;

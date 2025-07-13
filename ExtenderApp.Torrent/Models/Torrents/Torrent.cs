@@ -1,40 +1,84 @@
 ﻿
-using ExtenderApp.Data;
 
 namespace ExtenderApp.Torrent
 {
     public class Torrent
     {
-        private readonly Random _random;
+        public readonly LocalTorrentInfo _localInfo;
 
-        public TorrentFile TorrentFile { get; }
+        private readonly TorrentSender _torrentSender;
 
-        public List<PeerId> Peers { get; }
+        public TorrentFile? TorrentFile { get; }
 
-        public LocalTorrentInfo LocalInfo { get; }
-
-        private int transactionId;
-        private TrackerProvider provider;
-        public long Uploaded { get; private set; }
-        public long Downloaded { get; private set; }
-        public long Left => GetLeft();
-
-        public Torrent(TorrentFile torrentFile, LocalTorrentInfo info, Random random, TrackerProvider trackerProvider)
+        public long Uploaded
         {
+            get
+            {
+                long uploaded = 0;
+                DownParent.ParentNode.LoopAllChildNodes((t, l) =>
+                {
+                    if (t.IsFile && t.IsDownload)
+                        l += t.Uploaded;
+                }, ref uploaded);
+                return uploaded;
+            }
+        }
+
+        public long Downloaded
+        {
+            get
+            {
+                long downloaded = 0;
+                DownParent.ParentNode.LoopAllChildNodes((t, l) =>
+                {
+                    if (t.IsFile && t.IsDownload)
+                        l += t.Downloaded;
+                }, ref downloaded);
+                return downloaded;
+            }
+        }
+
+        public long Left
+        {
+            get
+            {
+                long left = 0;
+                DownParent.ParentNode.LoopAllChildNodes((t, l) =>
+                {
+                    if (t.IsFile && t.IsDownload)
+                        l += t.Length;
+                }, ref left);
+                return left;
+            }
+        }
+
+        public TorrentFileDownInfoNodeParent DownParent { get; }
+
+        public InfoHash Hash { get; }
+
+        public Torrent(InfoHash infoHash, TorrentFileDownInfoNodeParent parent, TorrentFile? torrentFile, LocalTorrentInfo info, TorrentSender torrentSender)
+        {
+            _localInfo = info;
+            _torrentSender = torrentSender;
             TorrentFile = torrentFile;
-            LocalInfo = info;
-            _random = random;
-            Peers = new();
-            provider = trackerProvider;
+            DownParent = parent;
+            Hash = infoHash;
+        }
+
+        public Torrent(TorrentFileDownInfoNodeParent parent, LocalTorrentInfo info, TorrentSender torrentSender)
+        {
+            _localInfo = info;
+            _torrentSender = torrentSender;
+            DownParent = parent;
+            Hash = parent.Hash;
         }
 
         public void AnnounceAsync()
         {
-            transactionId = _random.Next();
             var trackerRequest = new TrackerRequest
             {
-                Id = LocalInfo.Id,
-                Port = (ushort)LocalInfo.Port,
+                Id = _localInfo.Id,
+                Port = (ushort)_localInfo.Port,
                 Uploaded = Uploaded,
                 Downloaded = Downloaded,
                 Left = 0,
@@ -42,32 +86,13 @@ namespace ExtenderApp.Torrent
                 NoPeerId = "1",
                 Hash = TorrentFile.Hash,
                 Event = (byte)AnnounceEventType.None,
-                TransactionId = transactionId
             };
 
             var trackers = TorrentFile.AnnounceList;
             for (int i = 0; i < trackers.Count; i++)
             {
-                var trackerUriSting = trackers[i];
-                var tracker = provider.GetTracker(trackerUriSting);
-                if (tracker == null)
-                {
-                    continue;
-                }
-
-                tracker.AnnounceAsync(trackerRequest);
+                _torrentSender.SendTrackerRequest(trackerRequest);
             }
-        }
-
-        private long GetLeft()
-        {
-            long left = 0;
-            TorrentFile.FileInfoNode.LoopAllChildNodes((t, l) =>
-            {
-                if (t.IsFile && t.IsDownload)
-                    l += t.Length;
-            }, ref left);
-            return left;
         }
     }
 }

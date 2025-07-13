@@ -21,13 +21,15 @@ namespace ExtenderApp.Data
                 throw new ArgumentException("对等节点ID不能为空", nameof(peerId));
             }
 
-            Encoding encoding = Encoding.ASCII;
-            var length = encoding.GetByteCount(peerId.Id);
-            var bytes = ArrayPool<byte>.Shared.Rent(length);
-            encoding.GetBytes(peerId.Id, bytes);
+            //Encoding encoding = Encoding.ASCII;
+            //var length = encoding.GetByteCount(peerId.Id);
+            //var length = peerId.Id.Length;
+            //var bytes = ArrayPool<byte>.Shared.Rent(length);
+            //encoding.GetBytes(peerId.Id, bytes);
 
-            writer.Write(bytes.AsSpan().Slice(0, length));
-            ArrayPool<byte>.Shared.Return(bytes);
+            //writer.Write(bytes.AsSpan().Slice(0, length));
+            //ArrayPool<byte>.Shared.Return(bytes);
+            writer.Write(peerId.Id.AsSpan());
         }
     }
 }

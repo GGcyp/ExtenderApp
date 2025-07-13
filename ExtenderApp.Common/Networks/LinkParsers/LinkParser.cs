@@ -83,33 +83,4 @@ namespace ExtenderApp.Common.Networks
         /// <param name="value">要序列化的值。</param>
         public abstract void Serialize<T>(ref ExtenderBinaryWriter writer, T value);
     }
-
-    /// <summary>
-    /// 泛型链接解析器基类
-    /// </summary>
-    /// <typeparam name="TMessage">消息类型</typeparam>
-    public abstract class LinkParser<TMessage> : LinkParser
-    {
-        /// <summary>
-        /// 消息接收事件
-        /// </summary>
-        public event Action<TMessage>? OnMessageReceived;
-
-        /// <summary>
-        /// 构造函数
-        /// </summary>
-        /// <param name="sequencePool">序列池</param>
-        protected LinkParser(SequencePool<byte> sequencePool) : base(sequencePool)
-        {
-        }
-
-        /// <summary>
-        /// 接收消息并触发事件
-        /// </summary>
-        /// <param name="message">接收到的消息</param>
-        protected void ReceivedMessage(TMessage message)
-        {
-            OnMessageReceived?.Invoke(message);
-        }
-    }
 }

@@ -26,7 +26,7 @@ namespace ExtenderApp.Common.IO.Binaries.Formatter
             _binaryFormatter = resolver.GetFormatter<T>();
         }
 
-        public override int Length => 5;
+        public override int Length => 1;
 
         /// <summary>
         /// 反序列化数组
@@ -71,7 +71,7 @@ namespace ExtenderApp.Common.IO.Binaries.Formatter
         /// <param name="value">要序列化的数组</param>
         public override void Serialize(ref ExtenderBinaryWriter writer, T[]? value)
         {
-            if (value == null)
+            if (value == null || value == Array.Empty<T>())
             {
                 _binaryWriterConvert.WriteNil(ref writer);
             }

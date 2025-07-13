@@ -18,6 +18,11 @@ namespace ExtenderApp.Abstract
         /// <returns>最后一次操作的时间。</returns>
         DateTime LastOperateTime { get; }
 
+        /// <summary>
+        /// 获取或设置是否托管。
+        /// </summary>
+        bool IsHosted { get; set; }
+
         #region Write
 
         /// <summary>
@@ -106,6 +111,14 @@ namespace ExtenderApp.Abstract
         byte[]? Read(long filePosition, int length);
 
         /// <summary>
+        /// 从文件中读取数据并写入到给定的<see cref="ExtenderBinaryWriter"/>对象中。
+        /// </summary>
+        /// <param name="filePosition">文件读取起始位置。</param>
+        /// <param name="length">需要读取的长度。</param>
+        /// <param name="writer">用于写入数据的<see cref="ExtenderBinaryWriter"/>对象。</param>
+        void Read(long filePosition, int length, ref ExtenderBinaryWriter writer);
+
+        /// <summary>
         /// 从指定位置读取指定长度的字节数组到目标字节数组中
         /// </summary>
         /// <param name="filePosition">读取的起始位置</param>
@@ -136,6 +149,15 @@ namespace ExtenderApp.Abstract
         /// <param name="callback">读取完成后的回调函数，参数为读取到的字节数组</param>
         /// <param name="bytesStart">目标字节数组的起始位置</param>
         void ReadAsync(long filePosition, int length, byte[] bytes, Action<byte[]> callback, int bytesStart = 0);
+
+
+        /// <summary>
+        /// 从指定文件位置读取指定长度的字节数据到数组池中。
+        /// </summary>
+        /// <param name="filePosition">文件位置。</param>
+        /// <param name="length">要读取的字节长度。</param>
+        /// <returns>包含读取数据的字节数组。</returns>
+        byte[] ReadForArrayPool(out int length);
 
         /// <summary>
         /// 从指定文件位置读取指定长度的字节数据到数组池中。
