@@ -26,6 +26,8 @@ namespace ExtenderApp.Common.Networks
         protected static ObjectPool<LinkerOperation> _operationPool =
                 ObjectPool.Create(new SelfResetPooledObjectPolicy<LinkerOperation>());
 
+        public ResourceLimiter ResourceLimit { get; }
+
         /// <summary>
         /// 接收回调。
         /// </summary>
@@ -35,11 +37,6 @@ namespace ExtenderApp.Common.Networks
         /// 连接回调。
         /// </summary>
         private readonly AsyncCallback _connectCallback;
-
-        /// <summary>
-        /// 接收队列字节。
-        /// </summary>
-        private readonly ConcurrentQueue<(byte[], int)> _receiveQueueBytes;
 
         #region Event
 
@@ -101,15 +98,10 @@ namespace ExtenderApp.Common.Networks
 
         #region 内部属性
 
-        /// <summary>
-        /// 缓存字节数组。
-        /// </summary>
-        private byte[] cacheBytes;
-
-        /// <summary>
-        /// 是否正在接收数据。
-        /// </summary>
-        private volatile int isReceiveing;
+        ///// <summary>
+        ///// 是否正在接收数据。
+        ///// </summary>
+        //private volatile int isReceiveing;
 
         /// <summary>
         /// 是否正在连接。
@@ -134,38 +126,25 @@ namespace ExtenderApp.Common.Networks
         /// <returns>返回数据包长度</returns>
         protected abstract int PacketLength { get; }
 
-        /// <summary>
-        /// 初始化 Linker 类的新实例。
-        /// </summary>
-        /// <param name="binaryParser">二进制解析器。</param>
-        /// <param name="sequencePool">序列号池。</param>
-        public Linker() : this(AddressFamily.InterNetwork)
+        public Linker(ResourceLimiter resourceLimit) : this(AddressFamily.InterNetwork, resourceLimit)
         {
 
         }
 
-        public Linker(Socket socket)
+        public Linker(Socket socket, ResourceLimiter resourceLimit)
         {
-            _receiveQueueBytes = new();
-
             OnReceiveCallbcak = new AsyncCallback(ReceiveCallbcak);
             _connectCallback = new AsyncCallback(ConnectCallbcak);
-
-
-            cacheBytes = ArrayPool<byte>.Shared.Rent(PacketLength * 2);
+            ResourceLimit = resourceLimit;
 
             Start(CreateLinkOperateData(socket));
         }
 
-        public Linker(AddressFamily addressFamily)
+        public Linker(AddressFamily addressFamily, ResourceLimiter resourceLimit)
         {
-            _receiveQueueBytes = new();
-
             OnReceiveCallbcak = new AsyncCallback(ReceiveCallbcak);
             _connectCallback = new AsyncCallback(ConnectCallbcak);
-
-
-            cacheBytes = ArrayPool<byte>.Shared.Rent(PacketLength * 2);
+            ResourceLimit = resourceLimit;
 
             Start(CreateLinkOperateData(addressFamily));
         }
@@ -339,7 +318,6 @@ namespace ExtenderApp.Common.Networks
         {
             if (data == null)
                 throw new ArgumentNullException(nameof(data));
-            CheckState();
 
             PrivateSend(data, 0, data.Length);
         }
@@ -348,7 +326,6 @@ namespace ExtenderApp.Common.Networks
         {
             if (data == null)
                 throw new ArgumentNullException(nameof(data));
-            CheckState();
             if (start < 0 || start > data.Length)
                 throw new ArgumentOutOfRangeException(nameof(start), "start is out of range");
             PrivateSend(data, start, data.Length - start);
@@ -360,14 +337,16 @@ namespace ExtenderApp.Common.Networks
                 throw new ArgumentNullException(nameof(data));
             if (start < 0 || length < 0 || start + length > data.Length)
                 throw new ArgumentOutOfRangeException("start or length is out of range");
-            CheckState();
-
             PrivateSend(data, start, length);
         }
 
-        public virtual void SendWriter(ExtenderBinaryWriter writer)
+        public virtual void Send(ExtenderBinaryWriter writer)
         {
             CheckState();
+
+            //_resourceLimit.WaitForMemoryAsync(writer.BytesCommitted).Wait();
+            ResourceLimit.WaitForSendPermissionAsync(writer.BytesCommitted).Wait();
+
             var operation = _operationPool.Get();
             operation.Set(writer, OnSendedTraffic);
 
@@ -378,7 +357,6 @@ namespace ExtenderApp.Common.Networks
         {
             if (data == null)
                 throw new ArgumentNullException(nameof(data));
-            CheckState();
 
             PrivateSendAsync(data, 0, data.Length);
         }
@@ -389,14 +367,16 @@ namespace ExtenderApp.Common.Networks
                 throw new ArgumentNullException(nameof(data));
             if (start < 0 || length < 0 || start + length > data.Length)
                 throw new ArgumentOutOfRangeException("start or length is out of range");
-            CheckState();
 
             PrivateSendAsync(data, start, length);
         }
 
-        public virtual void SendAsyncWriter(ExtenderBinaryWriter writer)
+        public virtual void SendAsync(ExtenderBinaryWriter writer)
         {
             CheckState();
+
+            ResourceLimit.WaitForSendPermissionAsync(writer.BytesCommitted).Wait();
+
             var operation = _operationPool.Get();
             operation.Set(writer, OnSendedTraffic);
 
@@ -405,6 +385,11 @@ namespace ExtenderApp.Common.Networks
 
         private void PrivateSend(byte[] data, int start, int length)
         {
+            CheckState();
+
+            ResourceLimit.WaitForMemoryAsync(length).Wait();
+            ResourceLimit.WaitForSendPermissionAsync(length).Wait();
+
             var operation = _operationPool.Get();
             operation.Set(data, start, length, OnSendedTraffic);
 
@@ -413,6 +398,9 @@ namespace ExtenderApp.Common.Networks
 
         private void PrivateSendAsync(byte[] data, int start, int length)
         {
+            ResourceLimit.WaitForMemoryAsync(length).Wait();
+            ResourceLimit.WaitForSendPermissionAsync(length).Wait();
+
             var operation = _operationPool.Get();
             operation.Set(data, start, length, OnSendedTraffic);
 
@@ -421,6 +409,9 @@ namespace ExtenderApp.Common.Networks
 
         public virtual void Send(Memory<byte> memory)
         {
+            ResourceLimit.WaitForMemoryAsync(memory.Length).Wait();
+            ResourceLimit.WaitForSendPermissionAsync(memory.Length).Wait();
+
             var operation = _operationPool.Get();
             operation.Set(memory, OnSendedTraffic);
 
@@ -429,6 +420,9 @@ namespace ExtenderApp.Common.Networks
 
         public virtual void SendAsync(Memory<byte> memory)
         {
+            ResourceLimit.WaitForMemoryAsync(memory.Length).Wait();
+            ResourceLimit.WaitForSendPermissionAsync(memory.Length).Wait();
+
             var operation = _operationPool.Get();
             operation.Set(memory, OnSendedTraffic);
             ExecuteAsync(operation);
@@ -472,16 +466,12 @@ namespace ExtenderApp.Common.Networks
                     //throw new Exception("连接已经断开");
                 }
 
+                ResourceLimit.WaitForMemoryAsync(bytesRead).Wait();
+                ResourceLimit.WaitForReceivePermissionAsync(bytesRead).Wait();
+
                 //记录接收数据长度
                 OnReceiveingTraffic?.Invoke(bytesRead);
-
-                _receiveQueueBytes.Enqueue((receiveBuffer, bytesRead));
-
-                if (Interlocked.CompareExchange(ref isReceiveing, 1, 0) == 0)
-                {
-                    ThreadPool.UnsafeQueueUserWorkItem(_ => ExecuteReceiveQueueBytes(), null);
-                }
-
+                OnReceive?.Invoke(receiveBuffer, bytesRead);
                 StartReceive();
             }
             catch (SocketException ex)
@@ -490,39 +480,11 @@ namespace ExtenderApp.Common.Networks
             }
         }
 
-        /// <summary>
-        /// 执行接收队列中的字节数据
-        /// </summary>
-        private void ExecuteReceiveQueueBytes()
-        {
-            //如果前后两个数据包的数据都不是我自定义的数据包，则直接调用回调函数
-            while (true)
-            {
-                if (!_receiveQueueBytes.TryDequeue(out var item))
-                {
-                    break;
-                }
-
-                OnReceive?.Invoke(item.Item1, item.Item2);
-
-                OnReceivedTraffic?.Invoke(item.Item2);
-
-                ArrayPool<byte>.Shared.Return(item.Item1);
-            }
-
-            Interlocked.Decrement(ref isReceiveing);
-            //如果接收队列中还有数据，则继续处理
-            if (_receiveQueueBytes.Count > 0 && Interlocked.CompareExchange(ref isReceiveing, 1, 0) == 0)
-            {
-                ThreadPool.UnsafeQueueUserWorkItem(_ => ExecuteReceiveQueueBytes(), null);
-                return;
-            }
-        }
-
         #endregion
 
         #region Close
-        public void Close(bool requireFullTransmission = false, bool requireFullDataProcessing = false)
+
+        public void Close(bool requireFullTransmission = false)
         {
             //if (IsExecuting)
             //{
@@ -541,14 +503,14 @@ namespace ExtenderApp.Common.Networks
                     Task.Delay(10).Wait();
                 }
             }
-            if (requireFullDataProcessing && _receiveQueueBytes.Count > 0)
-            {
-                // 等待所有接收操作完成
-                while (_receiveQueueBytes.Count > 0)
-                {
-                    Task.Delay(10).Wait();
-                }
-            }
+            //if (requireFullDataProcessing && _receiveQueueBytes.Count > 0)
+            //{
+            //    // 等待所有接收操作完成
+            //    while (_receiveQueueBytes.Count > 0)
+            //    {
+            //        Task.Delay(10).Wait();
+            //    }
+            //}
             PrivateClose();
         }
 
@@ -589,25 +551,8 @@ namespace ExtenderApp.Common.Networks
 
         public override bool TryReset()
         {
-            //foreach (var buffer in _registerDicts.Values)
-            //{
-            //    buffer.Release();
-            //}
-            //_registerDicts.Clear();
-
-            //if (_heartbeatLazy.IsValueCreated)
-            //{
-            //    Heartbeat.ChangeSendHearbeatInterval(0);
-            //    Heartbeat.ChangeTimeoutThreshold(0, 0);
-            //}
-
             isConnecting = 0;
-            isReceiveing = 0;
             isClosing = 0;
-
-            ArrayPool<byte>.Shared.Return(cacheBytes);
-
-            _receiveQueueBytes.Clear();
 
             OnReceive = null;
             //OnSendingTraffic = null;

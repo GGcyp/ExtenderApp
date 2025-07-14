@@ -36,7 +36,7 @@ namespace ExtenderApp.Common.Networks
             var writer = new ExtenderBinaryWriter(rental);
             Serialize(ref writer, value);
             writer.Commit();
-            linker.SendWriter(writer);
+            linker.Send(writer);
         }
 
         /// <summary>
@@ -60,7 +60,7 @@ namespace ExtenderApp.Common.Networks
             var writer = new ExtenderBinaryWriter(rental);
             Serialize(ref writer, value);
             writer.Commit();
-            linker.SendAsyncWriter(writer);
+            linker.SendAsync(writer);
         }
 
         internal void Receive(byte[] bytes, int length)

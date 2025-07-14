@@ -11,20 +11,22 @@ namespace ExtenderApp.Common.Networks
     /// </summary>
     internal class LinkerFactory : ILinkerFactory
     {
+        private readonly ResourceLimiter _resourceLimiter;
         private readonly DataBuffer _tcpSDataBuffer;
         private readonly DataBuffer _udpSDataBuffer;
         private readonly DataBuffer _tcpADataBuffer;
         private readonly DataBuffer _udpADataBuffer;
 
-        public LinkerFactory()
+        public LinkerFactory(ResourceLimiter resourceLimiter)
         {
-            _tcpSDataBuffer = CreateDataBuffer<Socket, TcpLinker>(s => new TcpLinker(s));
-            _udpSDataBuffer = CreateDataBuffer<Socket, UdpLinker>(s => new UdpLinker(s));
-            _tcpADataBuffer = CreateDataBuffer<AddressFamily, TcpLinker>(a => new TcpLinker(a));
-            _udpADataBuffer = CreateDataBuffer<AddressFamily, UdpLinker>(a => new UdpLinker(a));
+            _resourceLimiter = resourceLimiter;
+            _tcpSDataBuffer = CreateDataBuffer<Socket, ResourceLimiter, TcpLinker>((s, r) => new TcpLinker(s, r));
+            _udpSDataBuffer = CreateDataBuffer<Socket, ResourceLimiter, UdpLinker>((s, r) => new UdpLinker(s, r));
+            _tcpADataBuffer = CreateDataBuffer<AddressFamily, ResourceLimiter, TcpLinker>((a, r) => new TcpLinker(a, r));
+            _udpADataBuffer = CreateDataBuffer<AddressFamily, ResourceLimiter, UdpLinker>((a, r) => new UdpLinker(a, r));
         }
 
-        private DataBuffer CreateDataBuffer<T1, T2>(Func<T1, T2> func)
+        private DataBuffer CreateDataBuffer<T1, T2, T3>(Func<T1, T2, T3> func)
         {
             var result = DataBuffer.GetDataBuffer();
             result.SetProcessFunc(func);
@@ -40,8 +42,8 @@ namespace ExtenderApp.Common.Networks
         {
             return typeof(T) switch
             {
-                var t when t == typeof(ITcpLinker) => _tcpSDataBuffer.Process<Socket, T>(socket)!,
-                var t when t == typeof(IUdpLinker) => _udpSDataBuffer.Process<Socket, T>(socket)!,
+                var t when t == typeof(ITcpLinker) => _tcpSDataBuffer.Process<Socket, ResourceLimiter, T>(socket, _resourceLimiter)!,
+                var t when t == typeof(IUdpLinker) => _udpSDataBuffer.Process<Socket, ResourceLimiter, T>(socket, _resourceLimiter)!,
                 _ => throw new System.NotImplementedException()
             };
         }
@@ -50,8 +52,8 @@ namespace ExtenderApp.Common.Networks
         {
             return typeof(T) switch
             {
-                var t when t == typeof(ITcpLinker) => _tcpADataBuffer.Process<AddressFamily, T>(addressFamily)!,
-                var t when t == typeof(IUdpLinker) => _udpADataBuffer.Process<AddressFamily, T>(addressFamily)!,
+                var t when t == typeof(ITcpLinker) => _tcpADataBuffer.Process<AddressFamily, ResourceLimiter, T>(addressFamily, _resourceLimiter)!,
+                var t when t == typeof(IUdpLinker) => _udpADataBuffer.Process<AddressFamily, ResourceLimiter, T>(addressFamily, _resourceLimiter)!,
                 _ => throw new System.NotImplementedException()
             };
         }

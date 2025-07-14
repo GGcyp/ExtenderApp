@@ -22,14 +22,16 @@ namespace ExtenderApp.Common.Networks.UDP
         /// </summary>
         private EndPoint? remoteEndPoint;
 
-        public UdpLinker(Socket socket) : base(socket)
+        public UdpLinker(ResourceLimiter resourceLimit) : base(resourceLimit)
         {
-
         }
 
-        public UdpLinker(AddressFamily addressFamily) : base(addressFamily)
+        public UdpLinker(Socket socket, ResourceLimiter resourceLimit) : base(socket, resourceLimit)
         {
+        }
 
+        public UdpLinker(AddressFamily addressFamily, ResourceLimiter resourceLimit) : base(addressFamily, resourceLimit)
+        {
         }
 
         protected override LinkOperateData CreateLinkOperateData(Socket socket)
@@ -119,7 +121,7 @@ namespace ExtenderApp.Common.Networks.UDP
             PrivateSend(data, start, length);
         }
 
-        public override void SendWriter(ExtenderBinaryWriter writer)
+        public override void Send(ExtenderBinaryWriter writer)
         {
             CheckStatus();
             var operation = _operationPool.Get();
@@ -146,7 +148,7 @@ namespace ExtenderApp.Common.Networks.UDP
             PrivateSendAsync(data, start, length);
         }
 
-        public override void SendAsyncWriter(ExtenderBinaryWriter writer)
+        public override void SendAsync(ExtenderBinaryWriter writer)
         {
             CheckStatus();
             var operation = _operationPool.Get();

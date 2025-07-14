@@ -11,6 +11,32 @@ namespace ExtenderApp.Common.Networks
     /// </summary>
     public abstract class LinkClient : DisposableObject, ILinker
     {
+        /// <summary>
+        /// 最大发送速率（字节/秒）
+        /// </summary>
+        public long MaxSendRate { get; set; } = long.MaxValue;
+
+        /// <summary>
+        /// 最大接收速率（字节/秒）
+        /// </summary>
+        public long MaxReceiveRate { get; set; } = long.MaxValue;
+
+        /// <summary>
+        /// 获取或设置最大接收大小。
+        /// </summary>
+        /// <remarks>
+        /// 默认值为10MB。
+        /// </remarks>
+        public long MaxReceiveSize { get; set; } = Utility.MegabytesToBytes(10); // 默认10MB
+
+        /// <summary>
+        /// 获取或设置最大发送大小。
+        /// </summary>
+        /// <remarks>
+        /// 默认值为10MB。
+        /// </remarks>
+        public long MaxSendSize { get; set; } = Utility.MegabytesToBytes(10); // 默认10MB
+
         public abstract bool Connected { get; }
 
         public abstract event Action<ILinker>? OnClose;
@@ -21,7 +47,7 @@ namespace ExtenderApp.Common.Networks
         public abstract event Action<int>? OnReceiveingTraffic;
         public abstract event Action<int>? OnReceivedTraffic;
 
-        public abstract void Close(bool requireFullTransmission = false, bool requireFullDataProcessing = false);
+        public abstract void Close(bool requireFullTransmission = false);
 
         public abstract void Connect(string host, int port);
 
@@ -49,7 +75,7 @@ namespace ExtenderApp.Common.Networks
 
         public abstract void SendAsync<TValue>(TValue value);
 
-        public abstract void SendWriter(ExtenderBinaryWriter writer);
+        public abstract void Send(ExtenderBinaryWriter writer);
 
         public abstract void SendAsync(byte[] data);
 
@@ -57,7 +83,7 @@ namespace ExtenderApp.Common.Networks
 
         public abstract void SendAsync(Memory<byte> memory);
 
-        public abstract void SendAsyncWriter(ExtenderBinaryWriter writer);
+        public abstract void SendAsync(ExtenderBinaryWriter writer);
     }
 
     /// <summary>
@@ -191,8 +217,6 @@ namespace ExtenderApp.Common.Networks
             OnConnectClient?.Invoke(this);
         }
 
-
-
         #endregion
 
         #region Send
@@ -220,14 +244,14 @@ namespace ExtenderApp.Common.Networks
             Linker.Send(data, start, length);
         }
 
-        public override void SendWriter(ExtenderBinaryWriter writer)
+        public override void Send(ExtenderBinaryWriter writer)
         {
-            Linker.SendWriter(writer);
+            Linker.Send(writer);
         }
 
-        public override void SendAsyncWriter(ExtenderBinaryWriter writer)
+        public override void SendAsync(ExtenderBinaryWriter writer)
         {
-            Linker.SendAsyncWriter(writer);
+            Linker.SendAsync(writer);
         }
 
         public override void SendAsync<TValue>(TValue value)
@@ -255,9 +279,9 @@ namespace ExtenderApp.Common.Networks
 
         #endregion
 
-        public override void Close(bool requireFullTransmission = false, bool requireFullDataProcessing = false)
+        public override void Close(bool requireFullTransmission = false)
         {
-            Linker.Close(requireFullTransmission, requireFullDataProcessing);
+            Linker.Close(requireFullTransmission);
         }
 
         protected override void Dispose(bool disposing)

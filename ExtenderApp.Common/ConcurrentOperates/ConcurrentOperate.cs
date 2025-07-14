@@ -117,6 +117,7 @@ namespace ExtenderApp.Common.ConcurrentOperates
         {
             CanOperate = false;
             _cts = new CancellationTokenSource();
+            Data = default;
         }
 
         /// <summary>
@@ -144,7 +145,10 @@ namespace ExtenderApp.Common.ConcurrentOperates
         /// <summary>
         /// 受保护的启动方法
         /// </summary>
-        protected virtual void ProtectedStart() { }
+        protected virtual void ProtectedStart()
+        {
+
+        }
 
         #region ExecuteAsync
 
@@ -276,11 +280,12 @@ namespace ExtenderApp.Common.ConcurrentOperates
             // 使用细粒度锁保护数据访问
             lock (_dataLock)
             {
-                if (_cts.IsCancellationRequested)
-                    return;
 
                 foreach (var operation in operations)
                 {
+                    if (_cts.IsCancellationRequested)
+                        return;
+
                     if (operation != null)
                     {
                         operation.Execute(Data);
@@ -290,6 +295,8 @@ namespace ExtenderApp.Common.ConcurrentOperates
         }
 
         #endregion
+
+        #region  ExecuteOperation
 
         /// <summary>
         /// 异步处理队列中的操作
@@ -376,6 +383,14 @@ namespace ExtenderApp.Common.ConcurrentOperates
 
             ThrowNull();
             operation.ArgumentNull();
+        }
+
+        #endregion
+
+        public void Cancel()
+        {
+            ThrowIfDisposed();
+            _cts.Cancel();
         }
 
         private void ThrowNull()

@@ -86,7 +86,7 @@ namespace ExtenderApp.Test
             };
             client.ConnectAsync(IPAddress.Loopback, 12345);
             client.SendAsync(new byte[] { 0x01, 0x02, 0x03, 0x04 });
-            client.SendAsyncWriter(writer);
+            client.SendAsync(writer);
         }
 
         private void Linker_OnConnect(ILinker obj)

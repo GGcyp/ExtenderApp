@@ -137,13 +137,13 @@ namespace ExtenderApp.Abstract
         /// 同步发送数据。
         /// </summary>
         /// <param name="writer">用于写入数据的二进制写入器。</param>
-        void SendWriter(ExtenderBinaryWriter writer);
+        void Send(ExtenderBinaryWriter writer);
 
         /// <summary>
         /// 异步发送数据。
         /// </summary>
         /// <param name="writer">用于写入数据的二进制写入器。</param>
-        void SendAsyncWriter(ExtenderBinaryWriter writer);
+        void SendAsync(ExtenderBinaryWriter writer);
 
         /// <summary>
         /// 异步发送数据
@@ -169,7 +169,6 @@ namespace ExtenderApp.Abstract
         /// 关闭连接。
         /// </summary>
         /// <param name="requireFullTransmission">是否要求完整传输。默认为false。</param>
-        /// <param name="requireFullDataProcessing">是否要求完整数据处理。默认为false。</param>
-        void Close(bool requireFullTransmission = false, bool requireFullDataProcessing = false);
+        void Close(bool requireFullTransmission = false);
     }
 }
