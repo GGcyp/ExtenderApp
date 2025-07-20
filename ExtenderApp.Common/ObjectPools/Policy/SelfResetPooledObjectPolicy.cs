@@ -1,6 +1,6 @@
 ﻿using ExtenderApp.Abstract;
 
-namespace ExtenderApp.Common.ObjectPools.Policy
+namespace ExtenderApp.Common.ObjectPools
 {
     /// <summary>
     /// 自重置对象池策略类

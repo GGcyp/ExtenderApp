@@ -1,5 +1,4 @@
 ﻿using ExtenderApp.Abstract;
-using ExtenderApp.Common.IO;
 
 namespace ExtenderApp.Torrent
 {
@@ -23,12 +22,14 @@ namespace ExtenderApp.Torrent
         /// </summary>
         private readonly LocalTorrentInfo _localTorrentInfo;
 
+        private readonly TorrentPeerProvider _torrentPeerProvider;
+
         /// <summary>
         /// TorrentSender的只读引用
         /// </summary>
         private readonly TorrentSender _sender;
 
-        private readonly FileOperateProvider _fileOperateProvider;
+        private readonly IFileOperateProvider _fileOperateProvider;
 
         /// <summary>
         /// 初始化TorrentProvider类的新实例。
@@ -36,13 +37,19 @@ namespace ExtenderApp.Torrent
         /// <param name="torrentFileForamtter">Torrent文件格式化器。</param>
         /// <param name="trackerProvider">Tracker提供者。</param>
         /// <param name="info">本地Torrent信息。</param>
-        public TorrentProvider(TorrentFileFormatter torrentFileForamtter, TrackerProvider trackerProvider, LocalTorrentInfo info, TorrentSender sender, FileOperateProvider fileOperateProvider)
+        public TorrentProvider(TorrentFileFormatter torrentFileForamtter,
+            TrackerProvider trackerProvider,
+            LocalTorrentInfo info,
+            TorrentSender sender,
+            IFileOperateProvider fileOperateProvider,
+            TorrentPeerProvider torrentPeerProvider)
         {
             _torrentFileForamtter = torrentFileForamtter;
             _trackerProvider = trackerProvider;
             _localTorrentInfo = info;
             _sender = sender;
             _fileOperateProvider = fileOperateProvider;
+            _torrentPeerProvider = torrentPeerProvider;
         }
 
         /// <summary>
@@ -58,6 +65,7 @@ namespace ExtenderApp.Torrent
                 throw new ArgumentNullException(nameof(parent), "管理种子文件下载信息节点不能为空");
 
             Torrent torrent;
+            var store = _torrentPeerProvider.CreateInfoHashPeerStore(parent.Hash, parent);
             if (parent.TorrentFileInfo.IsEmpty)
             {
                 if (string.IsNullOrEmpty(parent.TorrentFileInfo))
@@ -66,11 +74,11 @@ namespace ExtenderApp.Torrent
                 var fileOperate = _fileOperateProvider.GetOperate(parent.TorrentFileInfo);
                 var torrentFile = _torrentFileForamtter.Decode(fileOperate);
                 parent.Set(torrentFile);
-                torrent = new Torrent(torrentFile.Hash, parent, torrentFile, _localTorrentInfo, _sender);
+                torrent = new Torrent(torrentFile.Hash, parent, torrentFile, _localTorrentInfo, _sender, store);
             }
             else
             {
-                torrent = new(parent.Hash, parent, null, _localTorrentInfo, _sender);
+                torrent = new(parent.Hash, parent, null, _localTorrentInfo, _sender, store);
             }
 
             if (parent.AnnounceList != null)
@@ -133,7 +141,8 @@ namespace ExtenderApp.Torrent
             TorrentFileInfoNodeParent parent = new();
             parent.Set(torrentFile);
 
-            Torrent torrent = new(torrentFile.Hash, parent, torrentFile, _localTorrentInfo, _sender);
+            var store = _torrentPeerProvider.CreateInfoHashPeerStore(torrentFile.Hash, parent);
+            Torrent torrent = new(torrentFile.Hash, parent, torrentFile, _localTorrentInfo, _sender, store);
 
             return torrent;
         }

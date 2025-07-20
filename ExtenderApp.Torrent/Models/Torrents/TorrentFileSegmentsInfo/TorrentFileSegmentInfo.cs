@@ -11,7 +11,7 @@ namespace ExtenderApp.Torrent
         /// <summary>
         /// 文件在列表中的索引（对应种子文件顺序）
         /// </summary>
-        public TorrentFileInfoNode? Node { get; set; }
+        public TorrentFileInfoNode Node { get; set; }
 
         /// <summary>
         /// 该片段在文件内的起始偏移量（字节）
@@ -22,5 +22,10 @@ namespace ExtenderApp.Torrent
         /// 该片段的长度（字节）
         /// </summary>
         public int Length { get; set; }
+
+        /// <summary>
+        /// 获取或设置已写入的长度。
+        /// </summary>
+        public int WritedLength { get; set; }
     }
 }

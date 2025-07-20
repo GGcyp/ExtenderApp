@@ -72,6 +72,9 @@ namespace ExtenderApp.Common.IO
                 throw new ArgumentNullException(nameof(node), "文件节点不能为空");
             if (provider == null)
                 throw new ArgumentNullException(nameof(provider), "文件操作提供者不可为空");
+            if (node.FileOperate != null)
+                return;
+
             string path = GetNodePath(node);
             if (string.IsNullOrEmpty(path))
                 throw new InvalidOperationException("无法获取节点的完整路径");

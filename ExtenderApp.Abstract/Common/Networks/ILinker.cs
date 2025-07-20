@@ -1,5 +1,4 @@
 ﻿using System.Net;
-using System.Net.Sockets;
 using ExtenderApp.Data;
 
 namespace ExtenderApp.Abstract
@@ -16,6 +15,12 @@ namespace ExtenderApp.Abstract
         /// 如果已连接，则返回 true；否则返回 false。
         /// </value>
         bool Connected { get; }
+
+        /// <summary>
+        /// 获取远程端点。
+        /// </summary>
+        /// <returns>返回远程端点。</returns>
+        EndPoint RemoteEndPoint { get; }
 
         /// <summary>
         /// 当连接关闭时触发的事件。
@@ -36,30 +41,6 @@ namespace ExtenderApp.Abstract
         /// 当接收到数据时触发的事件
         /// </summary>
         event Action<byte[], int>? OnReceive;
-
-        /// <summary>
-        /// 已发送流量事件，当流量发送完成时触发。
-        /// </summary>
-        /// <remarks>
-        /// 参数表示已发送的流量大小（以字节为单位）。
-        /// </remarks>
-        event Action<int>? OnSendedTraffic;
-
-        /// <summary>
-        /// 接收流量事件，当开始接收流量时触发。
-        /// </summary>
-        /// <remarks>
-        /// 参数表示开始接收的流量大小（以字节为单位）。
-        /// </remarks>
-        event Action<int>? OnReceiveingTraffic;
-
-        /// <summary>
-        /// 已接收流量事件，当流量接收处理完成时触发。
-        /// </summary>
-        /// <remarks>
-        /// 参数表示已处理完成的流量大小（以字节为单位）。
-        /// </remarks>
-        event Action<int>? OnReceivedTraffic;
 
         /// <summary>
         /// 通过主机名和端口号连接到服务器

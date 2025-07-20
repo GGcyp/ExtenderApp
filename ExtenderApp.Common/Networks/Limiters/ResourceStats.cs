@@ -26,5 +26,13 @@ namespace ExtenderApp.Common.Networks
         /// 获取或设置时间戳
         /// </summary>
         public DateTime Timestamp { get; set; }
+
+        public override string ToString()
+        {
+            return $"内存使用情况: {Utility.BytesToMegabytes(CurrentMemoryUsage)} M, " +
+                   $"发送情况: {Utility.BytesToMegabytes(SendBytesPerSecond)} M/s, " +
+                   $"接收情况: {Utility.BytesToMegabytes(ReceiveBytesPerSecond)} M/s, " +
+                   $"时间戳: {Timestamp}";
+        }
     }
 }

@@ -1,10 +1,13 @@
-﻿using ExtenderApp.Common.Caches;
+﻿using System.Net;
+using ExtenderApp.Abstract;
+using ExtenderApp.Common;
+using ExtenderApp.Common.Caches;
 using ExtenderApp.Common.DataBuffers;
 using ExtenderApp.Common.Networks;
 
 namespace ExtenderApp.Torrent
 {
-    public class TorrentSender
+    public class TorrentSender : DisposableObject
     {
         /// <summary>
         /// 重试次数常量，值为3。
@@ -49,8 +52,13 @@ namespace ExtenderApp.Torrent
         private readonly TrackerProvider _trackerProvider;
 
         private readonly TorrentPeerProvider _torrentPeerProvider;
+        private readonly IListenerLinker<ITcpLinker> _listenerLinker;
 
-        public TorrentSender(UdpTrackerParser udpTrackerParser, TrackerProvider trackerProvider, TorrentPeerProvider torrentPeerProvider)
+        public TorrentSender(UdpTrackerParser udpTrackerParser,
+            TrackerProvider trackerProvider,
+            TorrentPeerProvider torrentPeerProvider,
+            IListenerLinker<ITcpLinker> listenerLinker,
+            LocalTorrentInfo info)
         {
             _trackerProvider = trackerProvider;
             _torrentPeerProvider = torrentPeerProvider;
@@ -74,6 +82,12 @@ namespace ExtenderApp.Torrent
             _udpTrackerParser = udpTrackerParser;
             _udpTrackerParser.OnReceiveConnectionId += ReceiveConnectionId;
             _udpTrackerParser.OnReceivePeerAddress += OnReceivePeerAddress;
+
+            _listenerLinker = listenerLinker;
+            _listenerLinker.InitInterNetwork();
+            _listenerLinker.Bind(IPAddress.Loopback, info.Port);
+            _listenerLinker.Listen(10);
+            _listenerLinker.BeginAccept(_torrentPeerProvider.AddPeerToStore);
         }
 
         /// <summary>
@@ -219,6 +233,16 @@ namespace ExtenderApp.Torrent
                 }
             }
             throw new Exception($"链接Tracker服务器超时");
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (!disposing)
+                return;
+
+            _cts.Cancel();
+            _cts.Dispose();
+            _listenerLinker.Dispose();
         }
     }
 }

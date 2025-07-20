@@ -55,5 +55,18 @@ namespace ExtenderApp.Common.Networks
             var result = new LinkClient<TLinker, TLinkParser>(linker, parser);
             return result;
         }
+
+        public LinkClient<TLinker, TLinkParser> Create<TLinker, TLinkParser>(TLinker linker)
+            where TLinker : ILinker
+            where TLinkParser : LinkParser
+        {
+            if (linker == null)
+            {
+                throw new ArgumentNullException(nameof(linker), "链接不能为空");
+            }
+            var parser = _serviceProvider.GetRequiredService<TLinkParser>();
+            var result = new LinkClient<TLinker, TLinkParser>(linker, parser);
+            return result;
+        }
     }
 }

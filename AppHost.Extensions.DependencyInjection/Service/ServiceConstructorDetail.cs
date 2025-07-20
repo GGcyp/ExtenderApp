@@ -8,22 +8,6 @@ namespace AppHost.Extensions.DependencyInjection
     internal class ServiceConstructorDetail
     {
         /// <summary>
-        /// 获取一个空的 <see cref="ServiceConstructorDetail"/> 实例。
-        /// </summary>
-        /// <value>
-        /// 一个空的 <see cref="ServiceConstructorDetail"/> 实例。
-        /// </value>
-        public static ServiceConstructorDetail Empty { get; } = new ServiceConstructorDetail(null, null, null);
-
-        /// <summary>
-        /// 获取一个值，该值指示当前实例是否为空。
-        /// </summary>
-        /// <value>
-        /// 如果当前实例为空，则为 <c>true</c>；否则为 <c>false</c>。
-        /// </value>
-        public bool IsEmpty => this == Empty;
-
-        /// <summary>
         /// 服务类构造信息
         /// </summary>
         public ConstructorInfo ServiceConstructorInfo { get; }
@@ -99,11 +83,16 @@ namespace AppHost.Extensions.DependencyInjection
         private object CreateService(IServiceProvider provider)
         {
             //如果这个类的构建函数需要其他服务作为参数，则去查找并放入
-            object?[]? parameters = new object[ConstructorDetails.Length];
-            for (int i = 0; i < ConstructorDetails.Length; i++)
+            object?[]? parameters = null;
+            if (ConstructorDetails.Length > 0)
             {
-                parameters[i] = ConstructorDetails[i]?.GetService(provider);
+                parameters = new object[ConstructorDetails.Length];
+                for (int i = 0; i < ConstructorDetails.Length; i++)
+                {
+                    parameters[i] = ConstructorDetails[i]?.GetService(provider);
+                }
             }
+
             return ServiceConstructorInfo.Invoke(parameters);
         }
 

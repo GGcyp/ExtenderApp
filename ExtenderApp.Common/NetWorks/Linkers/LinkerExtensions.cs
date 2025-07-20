@@ -1,4 +1,5 @@
-﻿using AppHost.Extensions.DependencyInjection;
+﻿using System.Reflection;
+using AppHost.Extensions.DependencyInjection;
 using ExtenderApp.Abstract;
 
 namespace ExtenderApp.Common.Networks
@@ -8,6 +9,8 @@ namespace ExtenderApp.Common.Networks
     /// </summary>
     internal static class LinkerExtensions
     {
+        private static readonly MethodInfo createListenerLinkerMethodInfo = typeof(IListenerLinkerFactory).GetMethod("CreateListenerLinker");
+
         /// <summary>
         /// 向服务集合中添加链接操作相关服务。
         /// </summary>
@@ -15,10 +18,26 @@ namespace ExtenderApp.Common.Networks
         public static IServiceCollection AddLinker(this IServiceCollection services)
         {
             services.AddTcpLinker();
-            services.AddSingleton<ILinkerFactory, LinkerFactory>();
-            services.Configuration<IBinaryFormatterStore>(s =>
+            services.AddScoped<ILinkerFactory, LinkerFactory>();
+            services.AddScoped<IListenerLinkerFactory, ListenerLinkerFactory>();
+
+            services.AddTransient(typeof(IListenerLinker<>), (p, o) =>
             {
-                s.Add<LinkerDto, LinkerDtoFormatter>();
+                var types = o as Type[];
+                if (types is null)
+                    return null;
+
+                Type elementType = types[0];
+                if (!elementType.IsAssignableTo(typeof(ILinker)))
+                    return null;
+
+                var listenerMethodInfo = createListenerLinkerMethodInfo.MakeGenericMethod(elementType);
+
+                var factory = p.GetRequiredService<IListenerLinkerFactory>();
+
+                var listenerLinker = listenerMethodInfo.Invoke(factory, null);
+
+                return listenerLinker;
             });
 
             return services;

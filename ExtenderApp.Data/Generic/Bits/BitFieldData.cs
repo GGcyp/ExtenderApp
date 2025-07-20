@@ -71,6 +71,10 @@ namespace ExtenderApp.Data
         /// </summary>
         public ReadOnlySpan<ulong> DataSpan => _data.AsSpan();
 
+        public BitFieldData(ReadOnlySpan<byte> span) : this(span, span.Length)
+        {
+        }
+
         /// <summary>
         /// 从字节数组创建 BitField
         /// </summary>
@@ -360,6 +364,15 @@ namespace ExtenderApp.Data
         }
 
         /// <summary>
+        /// 对输入的字节序列执行按位与操作。
+        /// </summary>
+        /// <param name="span">包含字节序列的<see cref="ReadOnlySpan{T}"/>。</param>
+        public void And(ReadOnlySpan<byte> span)
+        {
+            And(new BitFieldData(span));
+        }
+
+        /// <summary>
         /// 对两个 BitField 执行逻辑与操作
         /// </summary>
         public void And(BitFieldData other)
@@ -375,6 +388,15 @@ namespace ExtenderApp.Data
         }
 
         /// <summary>
+        /// 对给定的字节数组进行按位或操作。
+        /// </summary>
+        /// <param name="span">要进行按位或操作的字节数组。</param>
+        public void Or(ReadOnlySpan<byte> span)
+        {
+            Or(new BitFieldData(span));
+        }
+
+        /// <summary>
         /// 对两个 BitField 执行逻辑或操作
         /// </summary>
         public void Or(BitFieldData other)
@@ -387,6 +409,15 @@ namespace ExtenderApp.Data
                 _data[i] |= other._data[i];
                 _trueCount += BitOperations.PopCount(_data[i]);
             }
+        }
+
+        /// <summary>
+        /// 对给定的字节序列进行异或操作。
+        /// </summary>
+        /// <param name="span">包含要进行异或操作的字节序列的<see cref="ReadOnlySpan{byte}"/>。</param>
+        public void Xor(ReadOnlySpan<byte> span)
+        {
+            Xor(new BitFieldData(span));
         }
 
         /// <summary>

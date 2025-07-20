@@ -54,6 +54,25 @@ namespace ExtenderApp.Data
         }
 
         /// <summary>
+        /// 获取当前节点所有文件的长度。
+        /// </summary>
+        /// <returns>返回长度。</returns>
+        public long GetLength()
+        {
+            long length = 0;
+            if (!IsFile)
+            {
+                for (int i = 0; i < Count; i++)
+                {
+                    length += this[i].GetLength();
+                }
+            }
+
+            length += Length;
+            return length;
+        }
+
+        /// <summary>
         /// 根据当前节点创建文件或文件夹。
         /// </summary>
         /// <param name="path">要创建文件或文件夹的父目录路径。</param>
@@ -90,7 +109,7 @@ namespace ExtenderApp.Data
             {
                 using (var stream = File.Create(path))
                 {
-                    Length = Length <= 0 ? 1024 : Length;
+                    Length = Length <= 0 ? 1 : Length;
                     stream.SetLength(Length);
                 }
             }

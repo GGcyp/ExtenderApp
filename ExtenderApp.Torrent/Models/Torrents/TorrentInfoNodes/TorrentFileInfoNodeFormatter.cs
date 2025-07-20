@@ -31,8 +31,6 @@ namespace ExtenderApp.Torrent
         {
             var result = base.ProtectedDeserialize(ref reader);
             result.IsDownload = _bool.Deserialize(ref reader);
-            result.Downloaded = _long.Deserialize(ref reader);
-            result.Uploaded = _long.Deserialize(ref reader);
             result.Offset = _long.Deserialize(ref reader); // 确保偏移量正确设置
             return result;
         }
@@ -46,8 +44,6 @@ namespace ExtenderApp.Torrent
         {
             base.ProtectedSerialize(ref writer, value);
             _bool.Serialize(ref writer, value.IsDownload);
-            _long.Serialize(ref writer, value.Downloaded);
-            _long.Serialize(ref writer, value.Uploaded);
             _long.Serialize(ref writer, value.Offset);
         }
 

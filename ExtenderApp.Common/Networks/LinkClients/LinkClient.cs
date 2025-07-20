@@ -39,13 +39,12 @@ namespace ExtenderApp.Common.Networks
 
         public abstract bool Connected { get; }
 
+        public abstract EndPoint RemoteEndPoint { get; }
+
         public abstract event Action<ILinker>? OnClose;
         public abstract event Action<ILinker>? OnConnect;
         public abstract event Action<Exception> OnErrored;
         public abstract event Action<byte[], int>? OnReceive;
-        public abstract event Action<int>? OnSendedTraffic;
-        public abstract event Action<int>? OnReceiveingTraffic;
-        public abstract event Action<int>? OnReceivedTraffic;
 
         public abstract void Close(bool requireFullTransmission = false);
 
@@ -105,20 +104,14 @@ namespace ExtenderApp.Common.Networks
         /// </summary>
         public TLinkParser Parser { get; }
 
-        /// <summary>
-        /// 公共属性，表示TrafficRecorder实例。
-        /// </summary>
-        public TrafficRecorder Recorder { get; }
-
         public override bool Connected => Linker.Connected;
+
+        public override EndPoint RemoteEndPoint => Linker.RemoteEndPoint;
 
         public LinkClient(TLinker linker, TLinkParser parser)
         {
             this.Linker = linker;
             Parser = parser;
-            Recorder = new TrafficRecorder();
-            OnSendedTraffic += Recorder.RecordSend;
-            OnReceivedTraffic += Recorder.RecordReceive;
             OnReceive += Parser.Receive;
         }
 
@@ -141,21 +134,6 @@ namespace ExtenderApp.Common.Networks
         {
             add => Linker.OnReceive += value;
             remove => Linker.OnReceive -= value;
-        }
-        public override event Action<int>? OnSendedTraffic
-        {
-            add => Linker.OnSendedTraffic += value;
-            remove => Linker.OnSendedTraffic -= value;
-        }
-        public override event Action<int>? OnReceiveingTraffic
-        {
-            add => Linker.OnReceiveingTraffic += value;
-            remove => Linker.OnReceiveingTraffic -= value;
-        }
-        public override event Action<int>? OnReceivedTraffic
-        {
-            add => Linker.OnReceivedTraffic += value;
-            remove => Linker.OnReceivedTraffic -= value;
         }
         public event Action<LinkClient<TLinker, TLinkParser>>? OnCloseClient;
         public event Action<LinkClient<TLinker, TLinkParser>>? OnConnectClient;

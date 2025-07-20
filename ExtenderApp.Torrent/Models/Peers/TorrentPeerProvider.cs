@@ -1,5 +1,7 @@
 ﻿using System.Collections.Concurrent;
+using System.Net;
 using System.Net.Sockets;
+using System.Security.Policy;
 using ExtenderApp.Abstract;
 using ExtenderApp.Common.Networks;
 using ExtenderApp.Data;
@@ -9,19 +11,17 @@ namespace ExtenderApp.Torrent
     public class TorrentPeerProvider
     {
         private readonly LocalTorrentInfo _localTorrentInfo;
-        private readonly ConcurrentDictionary<PeerInfo, TorrentPeer> _peerDict;
-        private readonly ConcurrentDictionary<PeerAddress, PeerInfo> _peerIdDict;
+        private readonly IFileOperateProvider _fileOperateProvider;
         private readonly ConcurrentDictionary<InfoHash, InfoHashPeerStore> _infoHashPeerDict;
         private readonly LinkerClientFactory _linkerClientFactory;
         private readonly ConcurrentQueue<LinkClient<ITcpLinker, BTMessageParser>> _linkerClientPool;
 
-        public TorrentPeerProvider(LinkerClientFactory linkerClientFactory, LocalTorrentInfo localTorrentInfo)
+        public TorrentPeerProvider(LinkerClientFactory linkerClientFactory, LocalTorrentInfo localTorrentInfo, IFileOperateProvider fileOperateProvider)
         {
             _linkerClientFactory = linkerClientFactory;
             _localTorrentInfo = localTorrentInfo;
+            _fileOperateProvider = fileOperateProvider;
 
-            _peerDict = new();
-            _peerIdDict = new();
             _infoHashPeerDict = new();
             _linkerClientPool = new();
         }
@@ -36,59 +36,76 @@ namespace ExtenderApp.Torrent
                 if (_infoHashPeerDict.TryGetValue(infoHash, out store))
                     return store;
 
-                store = new(infoHash, this);
+            }
+            throw new InvalidOperationException($"未找到指定种子哈希值的peer库{infoHash},请先创建");
+        }
+
+        public InfoHashPeerStore CreateInfoHashPeerStore(InfoHash infoHash, TorrentFileInfoNodeParent parent)
+        {
+            if (_infoHashPeerDict.TryGetValue(infoHash, out var store))
+                return store;
+
+            lock (_infoHashPeerDict)
+            {
+                if (_infoHashPeerDict.TryGetValue(infoHash, out store))
+                    return store;
+
+                store = new(infoHash, this, parent);
                 _infoHashPeerDict.TryAdd(infoHash, store);
             }
             return store;
         }
 
-        public TorrentPeer? GetPeer(PeerAddress address)
-        {
-            if (_peerIdDict.TryGetValue(address, out var peerInfo))
-                return GetPeer(peerInfo);
-
-            lock (_peerIdDict)
-            {
-                if (_peerIdDict.TryGetValue(address, out peerInfo))
-                    return GetPeer(peerInfo);
-
-                var linkClient = ConnectPeer(address);
-                //var newPeer = new TorrentPeer(linkClient, _linkerClientFactory, _localTorrentInfo.Id);
-
-                //_peerIdDict.TryAdd(address, peerInfo);
-                //_peerDict.TryAdd(peerInfo, newPeer);
-                //return newPeer;
-                return null;
-            }
-        }
-
-        public TorrentPeer? GetPeer(PeerInfo peerInfo)
+        public TorrentPeer? CreatePeer(PeerInfo peerInfo, TorrentFileInfoNodeParent parent)
         {
             if (peerInfo.IsEmpty)
                 return null;
 
-            if (_peerDict.TryGetValue(peerInfo, out var peer))
-            {
-                return peer;
-            }
-
-            lock (_peerDict)
-            {
-                if (_peerDict.TryGetValue(peerInfo, out peer))
-                    return peer;
-
-                // 如果没有找到，则创建一个新的 TorrentPeer 实例
-                var linkClient = ConnectPeer(peerInfo.PeerAddress);
-                //var newPeer = new TorrentPeer(linkClient, _linkerClientFactory, _localTorrentInfo.Id);
-                //_peerDict.TryAdd(peerInfo, newPeer);
-                //return newPeer;
-                return null;
-            }
+            return CreatePeer(peerInfo.PeerAddress, parent);
         }
 
-        private LinkClient<ITcpLinker, BTMessageParser> ConnectPeer(PeerAddress address)
+        public TorrentPeer? CreatePeer(PeerAddress address, TorrentFileInfoNodeParent parent)
         {
-            LinkClient<ITcpLinker, BTMessageParser> linkClient;
+            if (!TryConnectPeer(address, out var linkClient))
+                return null;
+
+            var peer = new TorrentPeer(linkClient, address, _localTorrentInfo.Id, parent, _fileOperateProvider);
+            return peer;
+        }
+
+        public TorrentPeer? CreatePeer(ITcpLinker linker, TorrentFileInfoNodeParent parent)
+        {
+            var linkClient = _linkerClientFactory.Create<ITcpLinker, BTMessageParser>(linker);
+
+            var peer = new TorrentPeer(linkClient, new PeerAddress((IPEndPoint)linker.RemoteEndPoint), _localTorrentInfo.Id, parent, _fileOperateProvider);
+            return peer;
+        }
+
+        public void AddPeerToStore(ITcpLinker linker)
+        {
+            var linkClient = _linkerClientFactory.Create<ITcpLinker, BTMessageParser>(linker);
+            linkClient.Parser.OnHandshake += (h, i) =>
+            {
+                if (!_infoHashPeerDict.TryGetValue(h, out var store))
+                {
+                    linkClient.Close();
+                    linkClient.Dispose();
+                    return;
+                }
+
+                var ipEndPoint = linker.RemoteEndPoint as IPEndPoint;
+                PeerAddress address = new PeerAddress();
+                if (ipEndPoint != null)
+                {
+                    address = new PeerAddress(ipEndPoint);
+                }
+                var peer = new TorrentPeer(linkClient, new PeerAddress((IPEndPoint)linker.RemoteEndPoint), _localTorrentInfo.Id, store.Parent, _fileOperateProvider);
+                store.Add(peer, false);
+            };
+        }
+
+        private bool TryConnectPeer(PeerAddress address, out LinkClient<ITcpLinker, BTMessageParser> linkClient)
+        {
             if (!_linkerClientPool.TryDequeue(out linkClient))
             {
                 linkClient = _linkerClientFactory.Create<ITcpLinker, BTMessageParser>();
@@ -97,21 +114,21 @@ namespace ExtenderApp.Torrent
             try
             {
                 linkClient.Connect(address.IP, address.Port);
-
             }
             catch (SocketException ex)
             {
                 //处理连接异常
                 //throw new InvalidOperationException($"连接到 {address} 失败: {ex.Message}", ex);
                 _linkerClientPool.Enqueue(linkClient);
-                return null;
+                linkClient = null;
+                return false;
             }
             catch (Exception ex)
             {
                 // 处理其他异常
                 throw new InvalidOperationException($"连接到 {address} 失败: {ex.Message}", ex);
             }
-            return linkClient;
+            return true;
         }
     }
 }

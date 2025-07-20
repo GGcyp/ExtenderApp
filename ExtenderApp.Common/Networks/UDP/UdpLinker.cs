@@ -125,7 +125,7 @@ namespace ExtenderApp.Common.Networks.UDP
         {
             CheckStatus();
             var operation = _operationPool.Get();
-            operation.Set(writer, OnSendedTrafficCallback, remoteEndPoint);
+            operation.Set(writer, _resourceLimit.ReleaseMemoryAction, remoteEndPoint);
 
             Execute(operation);
         }
@@ -152,7 +152,7 @@ namespace ExtenderApp.Common.Networks.UDP
         {
             CheckStatus();
             var operation = _operationPool.Get();
-            operation.Set(writer, OnSendedTrafficCallback, remoteEndPoint);
+            operation.Set(writer, _resourceLimit.ReleaseMemoryAction, remoteEndPoint);
 
             ExecuteAsync(operation);
         }
@@ -161,7 +161,7 @@ namespace ExtenderApp.Common.Networks.UDP
         {
             CheckStatus();
             var operation = _operationPool.Get();
-            operation.Set(data, start, length, OnSendedTrafficCallback, end: remoteEndPoint);
+            operation.Set(data, start, length, _resourceLimit.ReleaseMemoryAction, end: remoteEndPoint);
 
             Execute(operation);
         }
@@ -170,7 +170,7 @@ namespace ExtenderApp.Common.Networks.UDP
         {
             CheckStatus();
             var operation = _operationPool.Get();
-            operation.Set(data, start, length, OnSendedTrafficCallback, end: remoteEndPoint);
+            operation.Set(data, start, length, _resourceLimit.ReleaseMemoryAction, end: remoteEndPoint);
 
             ExecuteAsync(operation);
         }
@@ -179,7 +179,7 @@ namespace ExtenderApp.Common.Networks.UDP
         {
             CheckStatus();
             var operation = _operationPool.Get();
-            operation.Set(memory, OnSendedTrafficCallback, remoteEndPoint);
+            operation.Set(memory, _resourceLimit.ReleaseMemoryAction, remoteEndPoint);
 
             Execute(operation);
         }
@@ -188,7 +188,7 @@ namespace ExtenderApp.Common.Networks.UDP
         {
             CheckStatus();
             var operation = _operationPool.Get();
-            operation.Set(memory, OnSendedTrafficCallback, remoteEndPoint);
+            operation.Set(memory, _resourceLimit.ReleaseMemoryAction, remoteEndPoint);
             ExecuteAsync(operation);
         }
 
@@ -231,7 +231,7 @@ namespace ExtenderApp.Common.Networks.UDP
             remoteEndPoint = endPoint;
             CheckStatus();
             var operation = _operationPool.Get();
-            operation.Set(writer, OnSendedTrafficCallback, remoteEndPoint);
+            operation.Set(writer, _resourceLimit.ReleaseMemoryAction, remoteEndPoint);
 
             Execute(operation);
         }
@@ -259,7 +259,7 @@ namespace ExtenderApp.Common.Networks.UDP
             remoteEndPoint = endPoint;
             CheckStatus();
             var operation = _operationPool.Get();
-            operation.Set(writer, OnSendedTrafficCallback, remoteEndPoint);
+            operation.Set(writer, _resourceLimit.ReleaseMemoryAction, remoteEndPoint);
 
             ExecuteAsync(operation);
         }
@@ -269,7 +269,7 @@ namespace ExtenderApp.Common.Networks.UDP
             remoteEndPoint = endPoint;
             CheckStatus();
             var operation = _operationPool.Get();
-            operation.Set(data, start, length, OnSendedTrafficCallback, end: remoteEndPoint);
+            operation.Set(data, start, length, _resourceLimit.ReleaseMemoryAction, end: remoteEndPoint);
 
             Execute(operation);
         }
@@ -279,7 +279,7 @@ namespace ExtenderApp.Common.Networks.UDP
             remoteEndPoint = endPoint;
             CheckStatus();
             var operation = _operationPool.Get();
-            operation.Set(data, start, length, OnSendedTrafficCallback, end: remoteEndPoint);
+            operation.Set(data, start, length, _resourceLimit.ReleaseMemoryAction, end: remoteEndPoint);
 
             ExecuteAsync(operation);
         }
@@ -289,7 +289,7 @@ namespace ExtenderApp.Common.Networks.UDP
             remoteEndPoint = endPoint;
             CheckStatus();
             var operation = _operationPool.Get();
-            operation.Set(memory, OnSendedTrafficCallback, remoteEndPoint);
+            operation.Set(memory, _resourceLimit.ReleaseMemoryAction, remoteEndPoint);
             Execute(operation);
         }
 

@@ -52,7 +52,7 @@ namespace AppHost.Extensions.DependencyInjection
         /// </summary>
         /// <param name="serviceType">服务类型</param>
         /// <returns>返回ServiceConstructorDetail类型的服务构建详情</returns>
-        internal ServiceConstructorDetail CreateOrGetServiceConstructorDetail(Type serviceType)
+        internal ServiceConstructorDetail? CreateOrGetServiceConstructorDetail(Type serviceType)
         {
             ServiceConstructorDetail? result = null;
             //查询是否已经装进字典的注册服务构造详情
@@ -72,7 +72,7 @@ namespace AppHost.Extensions.DependencyInjection
             }
 
 
-            return result is null ? ServiceConstructorDetail.Empty : result;
+            return result;
         }
 
         /// <summary>
@@ -163,13 +163,15 @@ namespace AppHost.Extensions.DependencyInjection
 
                     return null;
                 }
-                constructorInfo = serviceType.GetConstructors().FirstOrDefault()!;
+                constructorInfo = serviceType.GetConstructor(Type.EmptyTypes);
             }
 
-            if (constructorInfo == null) return null;
+            if (constructorInfo == null)
+                return null;
 
             //获取已经注册的服务类构造信息，或者是无参数构造参数
-            ServiceConstructorDetail[] details = GetServiceConstructorParameterInfoDetails(constructorInfo.GetParameters());
+            var parameterInfos = constructorInfo.GetParameters();
+            ServiceConstructorDetail[] details = GetServiceConstructorParameterInfoDetails(parameterInfos);
 
             detail = new ServiceConstructorDetail(constructorInfo!, details, descriptor!);
             _serviceConstructorDetailsDict.TryAdd(serviceType, detail);
@@ -217,6 +219,17 @@ namespace AppHost.Extensions.DependencyInjection
         }
 
         #endregion
+
+        /// <summary>
+        /// 尝试从服务描述符字典中获取指定类型的服务描述符。
+        /// </summary>
+        /// <param name="serviceType">要查找的服务类型。</param>
+        /// <param name="serviceDescriptor">输出参数，如果找到匹配的服务描述符，则将其赋值给此参数。</param>
+        /// <returns>如果找到匹配的服务描述符，则返回 true；否则返回 false。</returns>
+        internal bool TryGetServiceDescriptor(Type serviceType, out ServiceDescriptor? serviceDescriptor)
+        {
+            return _serviceDescriptorDict.TryGetValue(serviceType, out serviceDescriptor);
+        }
 
         public virtual void Dispose()
         {

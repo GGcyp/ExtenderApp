@@ -22,16 +22,6 @@ namespace ExtenderApp.Torrent
         public bool IsDownload { get; set; } = false;
 
         /// <summary>
-        /// 获取或设置上传的字节数。
-        /// </summary>
-        public long Uploaded { get; set; }
-
-        /// <summary>
-        /// 获取或设置下载的字节数。
-        /// </summary>
-        public long Downloaded { get; set; }
-
-        /// <summary>
         /// 获取或设置偏移量。
         /// </summary>
         public long Offset { get; set; }

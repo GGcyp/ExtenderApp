@@ -39,7 +39,8 @@ namespace AppHost.Extensions.DependencyInjection
         {
             //如果本作用域里有就直接返回
             var result = base.GetService(serviceType);
-            if (result != null) return result;
+            if (result != null)
+                return result;
 
             return _serviceProvider.GetService(serviceType);
         }
@@ -60,16 +61,18 @@ namespace AppHost.Extensions.DependencyInjection
                     var parameterInfo = parameterInfos[i];
                     Type parameterType = parameterInfo.ParameterType;
 
-                    //现在自己的作用域中检查是否有注册服务
-                    ServiceConstructorDetail detail = CreateOrGetServiceConstructorDetail(parameterType);
-                    if (!detail.IsEmpty)
+                    ServiceConstructorDetail? detail;
+
+                    //如果没有再创建或获取服务构造函数详细信息
+                    detail = CreateOrGetServiceConstructorDetail(parameterType);
+                    if (detail != null)
                     {
                         details[i] = detail;
                         continue;
                     }
 
                     detail = GetReloScope(parameterType);
-                    if (!detail.IsEmpty)
+                    if (detail != null)
                     {
                         CheckService(detail, out detail);
                         details[i] = detail;
@@ -77,7 +80,7 @@ namespace AppHost.Extensions.DependencyInjection
                     }
 
                     detail = GetMainService(parameterType);
-                    if (!detail.IsEmpty)
+                    if (detail != null)
                     {
                         CheckService(detail, out detail);
                         details[i] = detail;
@@ -107,9 +110,9 @@ namespace AppHost.Extensions.DependencyInjection
         /// </summary>
         /// <param name="parameterInfos">参数信息数组</param>
         /// <returns>服务构造函数参数信息详情数组</returns>
-        private ServiceConstructorDetail GetMainService(Type serviceType)
+        private ServiceConstructorDetail? GetMainService(Type serviceType)
         {
-            ServiceConstructorDetail result = _serviceProvider.CreateOrGetServiceConstructorDetail(serviceType);
+            ServiceConstructorDetail? result = _serviceProvider.CreateOrGetServiceConstructorDetail(serviceType);
             return result;
         }
 
@@ -118,9 +121,9 @@ namespace AppHost.Extensions.DependencyInjection
         /// </summary>
         /// <param name="serviceType">服务类型</param>
         /// <returns>服务构造函数详情</returns>
-        private ServiceConstructorDetail GetReloScope(Type serviceType)
+        private ServiceConstructorDetail? GetReloScope(Type serviceType)
         {
-            ServiceConstructorDetail result = ServiceConstructorDetail.Empty;
+            ServiceConstructorDetail? result = null;
             var scopeList = ScopeOptions.ReloScopes;
             for (int i = 0; i < scopeList.Count; i++)
             {
@@ -139,18 +142,18 @@ namespace AppHost.Extensions.DependencyInjection
         /// <param name="scopeDetail">输出参数，表示服务的作用域信息。</param>
         private void CheckService(ServiceConstructorDetail detail, out ServiceConstructorDetail scopeDetail)
         {
-            if (detail.IsEmpty || detail.ServiceDescriptor.Lifetime != ServiceLifetime.Scoped)
+            if (detail == null || detail.ServiceDescriptor.Lifetime != ServiceLifetime.Scoped)
             {
                 scopeDetail = detail;
                 return;
             }
 
-            //var serviceType = detail.ServiceDescriptor.ImplementationType;
-            //var constructorInfo = serviceType.GetConstructors().FirstOrDefault()!;
-            //var details = GetServiceConstructorParameterInfoDetails(constructorInfo.GetParameters());
-            //scopeDetail = new ServiceConstructorDetail(constructorInfo, details, detail.ServiceDescriptor);
+            var serviceType = detail.ServiceDescriptor.ImplementationType;
+            var constructorInfo = serviceType.GetConstructors().FirstOrDefault()!;
+            var details = GetServiceConstructorParameterInfoDetails(constructorInfo.GetParameters());
+            scopeDetail = new ServiceConstructorDetail(constructorInfo, details, detail.ServiceDescriptor);
 
-            scopeDetail = CreateServiceConstructorDetail(detail.ServiceDescriptor.ImplementationType!);
+            //scopeDetail = CreateServiceConstructorDetail(detail.ServiceDescriptor.ImplementationType!);
         }
 
         public override void Dispose()

@@ -146,11 +146,7 @@ namespace ExtenderApp.Common.IO.Binaries
         /// <returns>如果成功读取数组头部，则返回true；否则返回false</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool TryArrayHeader(ref ExtenderBinaryReader reader, out int count)
-        {
-            // 原代码已被注释，此处为简化版本，直接返回true并设置count为0
-            count = 0;
-            return true;
-        }
+        => TryReadArrayHeader(ref reader, out count);
 
         /// <summary>
         /// 读取字节序列

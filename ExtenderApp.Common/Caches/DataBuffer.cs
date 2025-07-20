@@ -26,6 +26,48 @@ namespace ExtenderApp.Common.DataBuffers
         public static void ReleaseDataBuffer(DataBuffer item) => _pool.Release(item);
 
         /// <summary>
+        /// 创建一个包含三个参数的处理函数的DataBuffer对象。
+        /// </summary>
+        /// <typeparam name="T1">第一个参数的类型。</typeparam>
+        /// <typeparam name="T2">第二个参数的类型。</typeparam>
+        /// <typeparam name="T3">返回值的类型。</typeparam>
+        /// <param name="func">包含三个参数的处理函数。</param>
+        /// <returns>包含处理函数的DataBuffer对象。</returns>
+        public static DataBuffer CreateDataBuffer<T1, T2, T3>(Func<T1, T2, T3> func)
+        {
+            var result = GetDataBuffer();
+            result.SetProcessFunc(func);
+            return result;
+        }
+
+        /// <summary>
+        /// 创建一个包含两个参数的处理函数的DataBuffer对象。
+        /// </summary>
+        /// <typeparam name="T1">第一个参数的类型。</typeparam>
+        /// <typeparam name="T2">返回值的类型。</typeparam>
+        /// <param name="func">包含两个参数的处理函数。</param>
+        /// <returns>包含处理函数的DataBuffer对象。</returns>
+        public static DataBuffer CreateDataBuffer<T1, T2>(Func<T1, T2> func)
+        {
+            var result = GetDataBuffer();
+            result.SetProcessFunc(func);
+            return result;
+        }
+
+        /// <summary>
+        /// 创建一个包含指定处理函数的DataBuffer对象。
+        /// </summary>
+        /// <typeparam name="T1">处理函数的返回类型。</typeparam>
+        /// <param name="func">处理函数，返回类型为T1。</param>
+        /// <returns>返回创建的DataBuffer对象。</returns>
+        public static DataBuffer CreateDataBuffer<T1>(Func<T1> func)
+        {
+            var result = GetDataBuffer();
+            result.SetProcessFunc(func);
+            return result;
+        }
+
+        /// <summary>
         /// 一个委托对象，用于存储处理操作。
         /// </summary>
         private Delegate processDelegate;
@@ -135,7 +177,7 @@ namespace ExtenderApp.Common.DataBuffers
         /// </summary>
         /// <typeparam name="TResult">处理结果的类型。</typeparam>
         /// <param name="varule">要处理的数据。</param>
-        public virtual void Process<TResult>(TResult varule)
+        public void Process<TResult>(TResult varule)
         {
             var callback = processDelegate as Action<TResult>;
             callback?.Invoke(varule);
@@ -247,6 +289,11 @@ namespace ExtenderApp.Common.DataBuffers
         public static void ReleaseDataBuffer(DataBuffer<T1, T2> item) => pool.Release(item);
 
         /// <summary>
+        /// 一个委托对象，用于存储处理操作。
+        /// </summary>
+        private Delegate processDelegate;
+
+        /// <summary>
         /// 第一个泛型参数的数据项。
         /// </summary>
         public T1 Item1 { get; set; }
@@ -255,11 +302,6 @@ namespace ExtenderApp.Common.DataBuffers
         /// 第二个泛型参数的数据项。
         /// </summary>
         public T2 Item2 { get; set; }
-
-        /// <summary>
-        /// 一个委托对象，用于存储处理操作。
-        /// </summary>
-        private Delegate processDelegate;
 
         /// <summary>
         /// 获取处理动作
@@ -318,19 +360,16 @@ namespace ExtenderApp.Common.DataBuffers
     /// <typeparam name="T3">第三个泛型参数的类型。</typeparam>
     public class DataBuffer<T1, T2, T3> : DisposableObject, IResettable
     {
-
         /// <summary>
         /// 数据缓冲区对象池。
         /// </summary>
         private static ObjectPool<DataBuffer<T1, T2, T3>> pool = ObjectPool.CreateDefaultPool<DataBuffer<T1, T2, T3>>();
-
 
         /// <summary>
         /// 从对象池中获取一个数据缓冲区实例。
         /// </summary>
         /// <returns>从对象池中获取的数据缓冲区实例。</returns>
         public static DataBuffer<T1, T2, T3> GetDataBuffer() => pool.Get();
-
 
         /// <summary>
         /// 将数据缓冲区实例释放回对象池。
@@ -353,12 +392,10 @@ namespace ExtenderApp.Common.DataBuffers
         /// </summary>
         public T3 Item3 { get; set; }
 
-
         /// <summary>
         /// 处理委托。
         /// </summary>
         private Delegate processDelegate;
-
 
         /// <summary>
         /// 获取处理动作。
@@ -371,7 +408,6 @@ namespace ExtenderApp.Common.DataBuffers
             processDelegate = action;
             return Process;
         }
-
 
         /// <summary>
         /// 设置处理动作。
@@ -394,7 +430,6 @@ namespace ExtenderApp.Common.DataBuffers
             callback?.Invoke(this, varule);
         }
 
-
         /// <summary>
         /// 释放数据缓冲区实例。
         /// </summary>
@@ -402,7 +437,6 @@ namespace ExtenderApp.Common.DataBuffers
         {
             ReleaseDataBuffer(this);
         }
-
 
         /// <summary>
         /// 尝试重置数据缓冲区实例。

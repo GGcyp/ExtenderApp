@@ -8,7 +8,7 @@ namespace ExtenderApp.Common.IO
     /// <summary>
     /// 文件存储类，用于管理文件操作的并发处理。
     /// </summary>
-    public class FileOperateProvider : EvictionCache<int, FileConcurrentOperate>, IFileOperateProvider
+    internal class FileOperateProvider : EvictionCache<int, FileConcurrentOperate>, IFileOperateProvider
     {
         /// <summary>
         /// 文件并发操作对象池

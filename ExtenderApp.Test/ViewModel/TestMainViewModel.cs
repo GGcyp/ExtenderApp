@@ -14,7 +14,7 @@ namespace ExtenderApp.Test
     {
         private readonly LinkerClientFactory _linkerFactory;
 
-        public TestMainViewModel(IFileOperateProvider provider, IServiceStore serviceStore) : base(serviceStore)
+        public TestMainViewModel(ResourceLimiter limiter, ResourceLimiter limiter1, ITcpLinker linker, IListenerLinker<ITcpLinker> listenerLinker, IServiceStore serviceStore) : base(serviceStore)
         {
             //BinaryParserTest(parser);
             //SplitterParserTest(splitterParser, parser);
@@ -22,9 +22,13 @@ namespace ExtenderApp.Test
             //BinaryTest(sequencePool);
             //_linkerFactory = linkerClientFactory;
             //TcpLinkTest();
-            var fileOperate = provider.GetOperate(new LocalFileInfo("E:\\迅雷下载\\5A8F9BB08F1BE7DE41D87E5DE5B60E3961393AAC.torrent"));
-            var bytes = fileOperate.ReadForArrayPool(0, 1024);
-            Debug(bytes.Length);
+            limiter.OnStatsUpdated += r => Debug(r.ToString());
+            listenerLinker.InitInterNetwork();
+            listenerLinker.Bind(IPAddress.Loopback, 12345);
+            listenerLinker.Listen(10);
+            listenerLinker.BeginAccept(Linker_OnConnect);
+            linker.Connect(IPAddress.Loopback, 12345);
+            //linker.OnReceive += (s, i) => Debug($"{i}");
         }
 
         private void BinaryParserTest(IBinaryParser parser)
@@ -92,7 +96,11 @@ namespace ExtenderApp.Test
         private void Linker_OnConnect(ILinker obj)
         {
             Info("链接成功，开始发送数据");
-            obj.Send(new byte[] { 0x01, 0x02, 0x03, 0x04 });
+            byte[] bytes = new byte[Utility.MegabytesToBytes(1)];
+            for (int i = 0; i < 1000; i++)
+            {
+                obj.SendAsync(bytes);
+            }
         }
 
         private void BinaryTest(SequencePool<byte> sequencePool)

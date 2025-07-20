@@ -45,7 +45,7 @@ namespace ExtenderApp.Torrent
                     _removeCallback?.Invoke(TrackerUri);
                     Dispose();
                     //throw socketException;
-                    break;
+                    return;
             }
         }
 

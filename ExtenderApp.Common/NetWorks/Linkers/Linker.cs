@@ -1,14 +1,10 @@
 ﻿using System.Buffers;
-using System.Collections.Concurrent;
-using System.Drawing;
 using System.Net;
 using System.Net.Sockets;
 using ExtenderApp.Abstract;
 using ExtenderApp.Common.ConcurrentOperates;
-using ExtenderApp.Common.Error;
 using ExtenderApp.Common.Networks.LinkOperates;
 using ExtenderApp.Common.ObjectPools;
-using ExtenderApp.Common.ObjectPools.Policy;
 using ExtenderApp.Data;
 
 namespace ExtenderApp.Common.Networks
@@ -26,7 +22,13 @@ namespace ExtenderApp.Common.Networks
         protected static ObjectPool<LinkerOperation> _operationPool =
                 ObjectPool.Create(new SelfResetPooledObjectPolicy<LinkerOperation>());
 
-        public ResourceLimiter ResourceLimit { get; }
+        /// <summary>
+        /// 获取资源限制器对象。
+        /// </summary>
+        /// <value>
+        /// 资源限制器对象。
+        /// </value>
+        protected readonly ResourceLimiter _resourceLimit;
 
         /// <summary>
         /// 接收回调。
@@ -38,6 +40,8 @@ namespace ExtenderApp.Common.Networks
         /// </summary>
         private readonly AsyncCallback _connectCallback;
 
+        public EndPoint RemoteEndPoint => Data.Socket.RemoteEndPoint;
+
         #region Event
 
         /// <summary>
@@ -45,33 +49,6 @@ namespace ExtenderApp.Common.Networks
         /// </summary>
         public event Action<byte[], int>? OnReceive;
         protected Action<byte[], int>? OnReceiveCallback => OnReceive;
-
-        /// <summary>
-        /// 已发送流量事件，当流量发送完成时触发。
-        /// </summary>
-        /// <remarks>
-        /// 参数表示已发送的流量大小（以字节为单位）。
-        /// </remarks>
-        public event Action<int>? OnSendedTraffic;
-        protected Action<int>? OnSendedTrafficCallback => OnSendedTraffic;
-
-        /// <summary>
-        /// 接收流量事件，当开始接收流量时触发。
-        /// </summary>
-        /// <remarks>
-        /// 参数表示开始接收的流量大小（以字节为单位）。
-        /// </remarks>
-        public event Action<int>? OnReceiveingTraffic;
-        protected Action<int>? OnReceiveingTrafficCallback => OnReceiveingTraffic;
-
-        /// <summary>
-        /// 已接收流量事件，当流量接收处理完成时触发。
-        /// </summary>
-        /// <remarks>
-        /// 参数表示已处理完成的流量大小（以字节为单位）。
-        /// </remarks>
-        public event Action<int>? OnReceivedTraffic;
-        protected Action<int>? OnReceivedTrafficCallback => OnReceiveingTraffic;
 
         /// <summary>
         /// 连接事件。
@@ -135,7 +112,7 @@ namespace ExtenderApp.Common.Networks
         {
             OnReceiveCallbcak = new AsyncCallback(ReceiveCallbcak);
             _connectCallback = new AsyncCallback(ConnectCallbcak);
-            ResourceLimit = resourceLimit;
+            _resourceLimit = resourceLimit;
 
             Start(CreateLinkOperateData(socket));
         }
@@ -144,7 +121,7 @@ namespace ExtenderApp.Common.Networks
         {
             OnReceiveCallbcak = new AsyncCallback(ReceiveCallbcak);
             _connectCallback = new AsyncCallback(ConnectCallbcak);
-            ResourceLimit = resourceLimit;
+            _resourceLimit = resourceLimit;
 
             Start(CreateLinkOperateData(addressFamily));
         }
@@ -344,11 +321,10 @@ namespace ExtenderApp.Common.Networks
         {
             CheckState();
 
-            //_resourceLimit.WaitForMemoryAsync(writer.BytesCommitted).Wait();
-            ResourceLimit.WaitForSendPermissionAsync(writer.BytesCommitted).Wait();
+            _resourceLimit.WaitForSendPermissionAsync(writer.BytesCommitted);
 
             var operation = _operationPool.Get();
-            operation.Set(writer, OnSendedTraffic);
+            operation.Set(writer, _resourceLimit.ReleaseMemoryAction);
 
             Execute(operation);
         }
@@ -375,10 +351,10 @@ namespace ExtenderApp.Common.Networks
         {
             CheckState();
 
-            ResourceLimit.WaitForSendPermissionAsync(writer.BytesCommitted).Wait();
+            _resourceLimit.WaitForSendPermissionAsync(writer.BytesCommitted);
 
             var operation = _operationPool.Get();
-            operation.Set(writer, OnSendedTraffic);
+            operation.Set(writer, _resourceLimit.ReleaseMemoryAction);
 
             ExecuteAsync(operation);
         }
@@ -387,44 +363,44 @@ namespace ExtenderApp.Common.Networks
         {
             CheckState();
 
-            ResourceLimit.WaitForMemoryAsync(length).Wait();
-            ResourceLimit.WaitForSendPermissionAsync(length).Wait();
+            _resourceLimit.WaitForMemoryAsync(length);
+            _resourceLimit.WaitForSendPermissionAsync(length);
 
             var operation = _operationPool.Get();
-            operation.Set(data, start, length, OnSendedTraffic);
+            operation.Set(data, start, length, _resourceLimit.ReleaseMemoryAction);
 
             Execute(operation);
         }
 
         private void PrivateSendAsync(byte[] data, int start, int length)
         {
-            ResourceLimit.WaitForMemoryAsync(length).Wait();
-            ResourceLimit.WaitForSendPermissionAsync(length).Wait();
+            _resourceLimit.WaitForMemoryAsync(length);
+            _resourceLimit.WaitForSendPermissionAsync(length);
 
             var operation = _operationPool.Get();
-            operation.Set(data, start, length, OnSendedTraffic);
+            operation.Set(data, start, length, _resourceLimit.ReleaseMemoryAction);
 
             ExecuteAsync(operation);
         }
 
         public virtual void Send(Memory<byte> memory)
         {
-            ResourceLimit.WaitForMemoryAsync(memory.Length).Wait();
-            ResourceLimit.WaitForSendPermissionAsync(memory.Length).Wait();
+            _resourceLimit.WaitForMemoryAsync(memory.Length);
+            _resourceLimit.WaitForSendPermissionAsync(memory.Length);
 
             var operation = _operationPool.Get();
-            operation.Set(memory, OnSendedTraffic);
+            operation.Set(memory, _resourceLimit.ReleaseMemoryAction);
 
             Execute(operation);
         }
 
         public virtual void SendAsync(Memory<byte> memory)
         {
-            ResourceLimit.WaitForMemoryAsync(memory.Length).Wait();
-            ResourceLimit.WaitForSendPermissionAsync(memory.Length).Wait();
+            _resourceLimit.WaitForMemoryAsync(memory.Length);
+            _resourceLimit.WaitForSendPermissionAsync(memory.Length);
 
             var operation = _operationPool.Get();
-            operation.Set(memory, OnSendedTraffic);
+            operation.Set(memory, _resourceLimit.ReleaseMemoryAction);
             ExecuteAsync(operation);
         }
 
@@ -466,12 +442,20 @@ namespace ExtenderApp.Common.Networks
                     //throw new Exception("连接已经断开");
                 }
 
-                ResourceLimit.WaitForMemoryAsync(bytesRead).Wait();
-                ResourceLimit.WaitForReceivePermissionAsync(bytesRead).Wait();
+                _resourceLimit.WaitForMemoryAsync(bytesRead);
+                _resourceLimit.WaitForReceivePermissionAsync(bytesRead);
 
-                //记录接收数据长度
-                OnReceiveingTraffic?.Invoke(bytesRead);
-                OnReceive?.Invoke(receiveBuffer, bytesRead);
+
+                if (OnReceive == null)
+                {
+                    ArrayPool<byte>.Shared.Return(receiveBuffer);
+                }
+                else
+                {
+                    OnReceive.Invoke(receiveBuffer, bytesRead);
+                }
+
+                _resourceLimit.ReleaseMemory(bytesRead);
                 StartReceive();
             }
             catch (SocketException ex)
@@ -486,12 +470,7 @@ namespace ExtenderApp.Common.Networks
 
         public void Close(bool requireFullTransmission = false)
         {
-            //if (IsExecuting)
-            //{
-            //    CanOperate = false;
-            //    return;
-            //}
-
+ 
             if (Interlocked.CompareExchange(ref isClosing, 1, 0) == 1)
                 return;
 
@@ -500,27 +479,16 @@ namespace ExtenderApp.Common.Networks
                 // 等待所有发送操作完成
                 while (_concurrentQueue.Count > 0)
                 {
-                    Task.Delay(10).Wait();
+                    Task.Delay(10);
                 }
             }
-            //if (requireFullDataProcessing && _receiveQueueBytes.Count > 0)
-            //{
-            //    // 等待所有接收操作完成
-            //    while (_receiveQueueBytes.Count > 0)
-            //    {
-            //        Task.Delay(10).Wait();
-            //    }
-            //}
             PrivateClose();
         }
 
         private void PrivateClose()
         {
-            //Data.Socket.
             Data.Socket.Close();
             OnClose?.Invoke(this);
-            //Data.Socket.Dispose();
-            //Release();
         }
 
         #endregion
@@ -555,10 +523,6 @@ namespace ExtenderApp.Common.Networks
             isClosing = 0;
 
             OnReceive = null;
-            //OnSendingTraffic = null;
-            OnSendedTraffic = null;
-            OnReceiveingTraffic = null;
-            OnReceivedTraffic = null;
             OnErrored = null;
             OnConnect = null;
             OnClose = null;

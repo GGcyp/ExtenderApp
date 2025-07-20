@@ -15,7 +15,7 @@ namespace ExtenderApp.Common.Networks.LinkOperates
         /// <summary>
         /// 发送流量的回调函数。
         /// </summary>
-        private Action<int>? sendTrafficCallback;
+        private Action<long>? sendTrafficCallback;
 
         /// <summary>
         /// 要发送的字节数组。
@@ -44,7 +44,7 @@ namespace ExtenderApp.Common.Networks.LinkOperates
             sendBytes = Array.Empty<byte>();
         }
 
-        public void Set(byte[] bytes, int offset, int length, Action<int>? sendTrafficCallback, Action<byte[]>? sendBytesCallbcak = null, EndPoint? end = null)
+        public void Set(byte[] bytes, int offset, int length, Action<long>? sendTrafficCallback, Action<byte[]>? sendBytesCallbcak = null, EndPoint? end = null)
         {
             readOnlySequence = new ReadOnlySequence<byte>(bytes, offset, length);
             this.sendTrafficCallback = sendTrafficCallback;
@@ -53,14 +53,14 @@ namespace ExtenderApp.Common.Networks.LinkOperates
             this.endPoint = end;
         }
 
-        public void Set(Memory<byte> memory, Action<int>? sendTrafficCallback, EndPoint? end = null)
+        public void Set(Memory<byte> memory, Action<long>? sendTrafficCallback, EndPoint? end = null)
         {
             readOnlySequence = new ReadOnlySequence<byte>(memory);
             this.sendTrafficCallback = sendTrafficCallback;
             endPoint = end;
         }
 
-        public void Set(ReadOnlySequence<byte> readOnlyMemories, Action<int>? sendTrafficCallback, EndPoint? end = null)
+        public void Set(ReadOnlySequence<byte> readOnlyMemories, Action<long>? sendTrafficCallback, EndPoint? end = null)
         {
             this.readOnlySequence = readOnlyMemories;
             this.sendTrafficCallback = sendTrafficCallback;
@@ -69,7 +69,7 @@ namespace ExtenderApp.Common.Networks.LinkOperates
             endPoint = end;
         }
 
-        public void Set(ExtenderBinaryWriter writer, Action<int>? sendTrafficCallback, EndPoint? end = null)
+        public void Set(ExtenderBinaryWriter writer, Action<long>? sendTrafficCallback, EndPoint? end = null)
         {
             rental = writer.Rental;
             readOnlySequence = rental.Value.AsReadOnlySequence;

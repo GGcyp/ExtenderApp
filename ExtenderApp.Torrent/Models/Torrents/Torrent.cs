@@ -1,6 +1,4 @@
-﻿using ExtenderApp.Abstract;
-
-namespace ExtenderApp.Torrent
+﻿namespace ExtenderApp.Torrent
 {
     public class Torrent
     {
@@ -10,55 +8,19 @@ namespace ExtenderApp.Torrent
 
         public TorrentFile? TorrentFile { get; }
 
-        public long Uploaded
-        {
-            get
-            {
-                long uploaded = 0;
-                InfoNodeParent.ParentNode.LoopAllChildNodes((t, l) =>
-                {
-                    if (t.IsFile && t.IsDownload)
-                        l += t.Uploaded;
-                }, ref uploaded);
-                return uploaded;
-            }
-        }
+        public long Uploaded { get; private set; }
 
-        public long Downloaded
-        {
-            get
-            {
-                long downloaded = 0;
-                InfoNodeParent.ParentNode.LoopAllChildNodes((t, l) =>
-                {
-                    if (t.IsFile && t.IsDownload)
-                        l += t.Downloaded;
-                }, ref downloaded);
-                return downloaded;
-            }
-        }
+        public long Downloaded { get; private set; }
 
-        public long Left
-        {
-            get
-            {
-                long left = 0;
-                InfoNodeParent.ParentNode.LoopAllChildNodes((t, l) =>
-                {
-                    if (t.IsFile && t.IsDownload)
-                        l += t.Length;
-                }, ref left);
-                return left;
-            }
-        }
+        public long Left { get; private set; }
 
         public TorrentFileInfoNodeParent InfoNodeParent { get; }
 
-        public List<TorrentPeer> TorrentPeers { get; }
+        public InfoHashPeerStore TorrentPeers { get; }
 
         public InfoHash Hash { get; }
 
-        internal Torrent(InfoHash infoHash, TorrentFileInfoNodeParent parent, TorrentFile? torrentFile, LocalTorrentInfo info, TorrentSender torrentSender)
+        internal Torrent(InfoHash infoHash, TorrentFileInfoNodeParent parent, TorrentFile? torrentFile, LocalTorrentInfo info, TorrentSender torrentSender, InfoHashPeerStore infoHashPeerStore)
         {
             _localInfo = info;
             _torrentSender = torrentSender;
@@ -66,7 +28,7 @@ namespace ExtenderApp.Torrent
             TorrentFile = torrentFile;
             InfoNodeParent = parent;
             Hash = infoHash;
-            TorrentPeers = new List<TorrentPeer>();
+            TorrentPeers = infoHashPeerStore;
         }
 
         public void AnnounceAsync()
@@ -84,11 +46,8 @@ namespace ExtenderApp.Torrent
                 Event = (byte)AnnounceEventType.None,
             };
 
-            var trackers = TorrentFile.AnnounceList;
-            for (int i = 0; i < trackers.Count; i++)
-            {
-                _torrentSender.SendTrackerRequest(trackerRequest);
-            }
+
+            _torrentSender.SendTrackerRequest(trackerRequest);
         }
     }
 }

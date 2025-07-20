@@ -20,6 +20,10 @@ namespace ExtenderApp.Data
         /// <returns>如果IP为null，则返回true；否则返回false</returns>
         public bool IsEmpty => IP == null;
 
+        public PeerAddress(IPEndPoint iPEndPoint) : this(iPEndPoint.Address, iPEndPoint.Port)
+        {
+        }
+
         public PeerAddress(IPAddress iPAddress, int port)
         {
             IP = iPAddress;

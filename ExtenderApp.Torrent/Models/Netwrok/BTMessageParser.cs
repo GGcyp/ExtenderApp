@@ -73,7 +73,7 @@ namespace ExtenderApp.Torrent
         /// <summary>
         /// 数据片消息事件，当接收到数据片消息时触发。
         /// </summary>
-        public event Action<int, int, byte[]>? OnPiece;
+        public event Action<int, int, int, byte[]>? OnPiece;
 
         /// <summary>
         /// 取消消息事件，当接收到取消消息时触发。
@@ -149,7 +149,7 @@ namespace ExtenderApp.Torrent
                         break;
                     case BTMessageType.Piece:
                         if (message.Data != null)
-                            OnPiece?.Invoke(message.PieceIndex, message.Begin, message.Data);
+                            OnPiece?.Invoke(message.PieceIndex, message.Begin, message.Length, message.Data);
                         break;
                     case BTMessageType.Cancel:
                         OnCancel?.Invoke(message.PieceIndex, message.Begin, message.Length);

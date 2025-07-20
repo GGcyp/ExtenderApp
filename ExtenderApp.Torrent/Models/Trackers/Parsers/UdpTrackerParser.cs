@@ -184,7 +184,7 @@ namespace ExtenderApp.Torrent
             {
                 var ipAddress = _addressCache.GetIpAddress(span.Slice(i, 4));
                 var port = BinaryPrimitives.ReadUInt16BigEndian(span.Slice(i + 4, 2));
-                store.AddPeerInfo(new PeerAddress(ipAddress, port));
+                store.Add(new PeerAddress(ipAddress, port));
             }
 
 
