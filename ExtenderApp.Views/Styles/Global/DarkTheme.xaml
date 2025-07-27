@@ -8,14 +8,14 @@
     <SolidColorBrush x:Key="ThemeColor" Color="#FFBB86FC" />
 
     <!-- 定义全局颜色 -->
-    <Color x:Key="PrimaryColor">#FFBB86FC</Color>
-    <Color x:Key="SecondaryColor">#FF03DAC5</Color>
-    <Color x:Key="BackgroundColor">#302C3A</Color>
-    <Color x:Key="ForegroundColor">#FFFFFFFF</Color>
+    <Color x:Key="GlobalPrimaryColor">#FFBB86FC</Color>
+    <Color x:Key="GlobalSecondaryColor">#FF03DAC5</Color>
+    <Color x:Key="GlobalBackgroundColor">#302C3A</Color>
+    <Color x:Key="GlobalForegroundColor">#FFFFFFFF</Color>
 
     <!-- 定义全局画刷 -->
-    <SolidColorBrush x:Key="PrimaryBrush" Color="{StaticResource PrimaryColor}" />
-    <SolidColorBrush x:Key="SecondaryBrush" Color="{StaticResource SecondaryColor}" />
-    <SolidColorBrush x:Key="BackgroundBrush" Color="{StaticResource BackgroundColor}" />
-    <SolidColorBrush x:Key="ForegroundBrush" Color="{StaticResource ForegroundColor}" />
+    <SolidColorBrush x:Key="GlobalPrimaryBrush" Color="{StaticResource GlobalPrimaryColor}" />
+    <SolidColorBrush x:Key="GlobalSecondaryBrush" Color="{StaticResource GlobalSecondaryColor}" />
+    <SolidColorBrush x:Key="GlobalBackgroundBrush" Color="{StaticResource GlobalBackgroundColor}" />
+    <SolidColorBrush x:Key="GlobalForegroundBrush" Color="{StaticResource GlobalForegroundColor}" />
 </ResourceDictionary>

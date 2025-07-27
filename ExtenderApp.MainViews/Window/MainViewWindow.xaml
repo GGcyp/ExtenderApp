@@ -5,8 +5,8 @@
         xmlns:local="clr-namespace:ExtenderApp.MainViews"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:views="clr-namespace:ExtenderApp.Views;assembly=ExtenderApp.Views"
-        Width="800"
-        Height="450"
+        Width="1200"
+        Height="800"
         Background="#2B2833"
         mc:Ignorable="d">
     <ContentControl x:Name="viewControl"/>

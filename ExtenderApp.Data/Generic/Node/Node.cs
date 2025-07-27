@@ -10,13 +10,36 @@ namespace ExtenderApp.Data
     /// <typeparam name="T">节点类型，必须是 Node<T> 的子类。</typeparam>
     public class Node<T> : IEnumerable<T> where T : Node<T>, IEnumerable<T>
     {
+        /// <summary>
+        /// 默认大小常量
+        /// </summary>
         private const int c_DefaultSize = 4;
+
+        /// <summary>
+        /// 节点数量
+        /// </summary>
         private int nodeCount;
+
+        /// <summary>
+        /// 获取节点数量
+        /// </summary>
         public int Count => nodeCount;
 
+        /// <summary>
+        /// 父节点
+        /// </summary>
         public T? ParentNode { get; set; }
 
+        /// <summary>
+        /// 子节点数组
+        /// </summary>
         private T[]? nodes;
+
+        /// <summary>
+        /// 通过索引获取或设置子节点
+        /// </summary>
+        /// <param name="index">索引</param>
+        /// <returns>子节点</returns>
         public T this[int index]
         {
             get
@@ -36,10 +59,40 @@ namespace ExtenderApp.Data
                 nodes![index] = value;
             }
         }
+
+        /// <summary>
+        /// 判断是否有子节点
+        /// </summary>
+        /// <returns>是否有子节点</returns>
         public bool HasChildNodes => nodes != null && Count > 0;
 
+        /// <summary>
+        /// 获取当前节点的子节点数组。
+        /// </summary>
+        /// <returns>包含当前节点的子节点的数组，如果子节点为空则返回null。</returns>
+        public Node<T>[]? Children
+        {
+            get
+            {
+                if (nodes == null)
+                    return null;
+
+                T[]? children = new T[Count];
+                Array.Copy(nodes, children, Count);
+                return children;
+            }
+        }
+
+        /// <summary>
+        /// 检查索引是否越界
+        /// </summary>
+        /// <param name="index">索引</param>
+        /// <returns>是否越界</returns>
         protected bool CheckIndexOut(int index) => index < 0 || index > nodeCount - 1;
 
+        /// <summary>
+        /// 创建或扩展子节点数组
+        /// </summary>
         protected void CreateOrExpansionNodes()
         {
             if (!HasChildNodes)
@@ -129,10 +182,11 @@ namespace ExtenderApp.Data
         /// </summary>
         /// <param name="predicate">条件函数，用于判断元素是否匹配。</param>
         /// <returns>返回匹配的元素，若未找到则返回默认值。</returns>
-        public virtual T Find(Predicate<T> predicate)
+        public virtual T? Find(Predicate<T> predicate)
         {
             if (predicate == null) return default;
-            TryFind(predicate, out var node);
+            T? node = null;
+            PrivateTryFind(predicate, out node);
             return node;
         }
 
@@ -142,14 +196,17 @@ namespace ExtenderApp.Data
         /// <param name="predicate">用于判断节点是否满足条件的函数，参数为树形结构中的节点类型T，返回值为bool。</param>
         /// <param name="node">如果找到满足条件的节点，则返回该节点；否则返回null。</param>
         /// <returns>如果找到满足条件的节点，则返回true；否则返回false。</returns>
-        public virtual bool TryFind(Predicate<T> predicate, out T node)
+        public virtual bool TryFind(Predicate<T> predicate, out T? node)
         {
             node = null;
+            if (predicate == null) return false;
 
-            //用广度算法
-            //没有子集返回false
-            if (!HasChildNodes) return false;
+            return PrivateTryFind(predicate, out node);
+        }
 
+        private bool PrivateTryFind(Predicate<T> predicate, out T? node)
+        {
+            node = null;
             for (int i = 0; i < nodeCount; i++)
             {
                 //找到了
@@ -165,57 +222,24 @@ namespace ExtenderApp.Data
             {
                 //找到了
                 var n = this[i];
-                if (n.TryFind(predicate, out node)) return true;
+                if (n.PrivateTryFind(predicate, out node)) return true;
             }
 
             return false;
         }
-
-
-        public virtual T Finds(Predicate<T> predicate)
-        {
-            if (predicate == null) return default;
-            TryFind(predicate, out var node);
-            return node;
-        }
-
-        public virtual bool TryFinds(Predicate<T> predicate, ref List<T> nodes)
-        {
-            //用广度算法
-            //没有子集返回false
-            if (!HasChildNodes) return false;
-
-            for (int i = 0; i < nodeCount; i++)
-            {
-                //找到了
-                var n = this[i];
-                if (predicate.Invoke(n))
-                {
-                    nodes.Add(n);
-                    return true;
-                }
-            }
-
-            for (int i = 0; i < nodeCount; i++)
-            {
-                //找到了
-                var n = this[i];
-                if (n.TryFinds(predicate, ref nodes)) return true;
-            }
-
-            return false;
-        }
-
-
 
         /// <summary>
         /// 清除所有记录或数据
         /// </summary>
         public void Clear()
-        {            if (nodes == null) return;            for (int i = 0; i < nodeCount; i++)
+        {
+            if (nodes == null) return;
+
+            for (int i = 0; i < nodeCount; i++)
             {
                 nodes[i] = default;
-            }            nodeCount = 0;
+            }
+            nodeCount = 0;
             ParentNode = default;
         }
 
@@ -394,11 +418,11 @@ namespace ExtenderApp.Data
 
             public bool MoveNext()
             {
-                if(_queue.Count == 0) 
+                if (_queue.Count == 0)
                     return false;
 
                 Current = _queue.Dequeue();
-                if(!Current.HasChildNodes)
+                if (!Current.HasChildNodes)
                     return true;
 
                 for (int i = 0; i < Current.Count; i++)

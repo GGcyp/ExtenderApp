@@ -136,6 +136,18 @@ namespace ExtenderApp.Services
             var loadContext = new AssemblyLoadContext(details.Title, true);
             details.LoadContext = loadContext;
             string dllPath = Path.Combine(details.Path, details.StartupDll);
+
+            //添加模组依赖库
+            string packName = string.IsNullOrEmpty(details.PackPath) ? _pathProvider.PackFolderName : details.PackPath;
+            string packPath = Path.Combine(details.Path, packName);
+            if (Directory.Exists(packPath))
+            {
+                foreach (var dir in Directory.GetFiles(packPath))
+                {
+                    LoadAssembly(loadContext, dir);
+                }
+            }
+
             var startAssembly = LoadAssembly(loadContext, dllPath);
 
             _pluginTransform.Details = details;
@@ -144,18 +156,9 @@ namespace ExtenderApp.Services
             if (modStartup == null)
                 throw new InvalidOperationException(string.Format("未找到这个模组的启动项：{0}", details.Title));
             details.StartupType = modStartup.StartType;
+            details.CutsceneViewType = modStartup.CutsceneViewType;
             modStartup.ConfigureBinaryFormatterStore(_binaryFormatterStore);
 
-
-            //添加模组依赖库
-            string packName = string.IsNullOrEmpty(details.PackPath) ? _pathProvider.PackFolderName : details.PackPath;
-            string packPath = Path.Combine(details.Path, packName);
-            if (!Directory.Exists(packPath)) return;
-
-            foreach (var dir in Directory.GetFiles(packPath))
-            {
-                LoadAssembly(loadContext, dir);
-            }
         }
 
         /// <summary>

@@ -22,12 +22,14 @@ namespace ExtenderApp.Views
 
         public virtual void Enter(ViewInfo oldViewInfo)
         {
-
+            var viewModel = DataContext as IViewModel;
+            viewModel?.InjectView(this);
         }
 
         public virtual void Exit(ViewInfo newViewInfo)
         {
-
+            var viewModel = DataContext as IViewModel;
+            viewModel?.Close();
         }
     }
 }

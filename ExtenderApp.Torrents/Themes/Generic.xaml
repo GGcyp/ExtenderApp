@@ -1,0 +1,11 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+
+    <ResourceDictionary.MergedDictionaries>
+        <ResourceDictionary Source="/ExtenderApp.Views;component/Themes/ExpandSwitch/ExpandSwitch.xaml"/>
+        <ResourceDictionary Source="/ExtenderApp.Torrents;component/Themes/TorrentTreeViews/TorrentTreeView.xaml"/>
+        <ResourceDictionary Source="/ExtenderApp.Torrents;component/Themes/TorrentTreeItems/TorrentTreeItem.xaml"/>
+    </ResourceDictionary.MergedDictionaries>
+
+</ResourceDictionary>

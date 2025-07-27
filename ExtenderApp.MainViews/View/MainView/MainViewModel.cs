@@ -2,6 +2,7 @@
 using ExtenderApp.Data;
 using ExtenderApp.ViewModels;
 using ExtenderApp.Common.Error;
+using ExtenderApp.Views;
 
 namespace ExtenderApp.MainViews
 {
@@ -28,8 +29,7 @@ namespace ExtenderApp.MainViews
             base.InjectView(view);
 
             _mainModel.CurrentMainView = View;
-            if (View.GetType() == typeof(MainView))
-                View.ShowView(NavigateTo<PluginView>());
+            View.ShowView(NavigateTo<PluginView>());
         }
 
         /// <summary>
@@ -56,16 +56,25 @@ namespace ExtenderApp.MainViews
             _mainModel.CurrentMainView = view;
             _mainModel.MainWindow.ShowView(view);
             view.ShowView(NavigateTo(modDetails));
+
+            //Type cutsceneViewType = modDetails.CutsceneViewType ?? typeof(CutsceneView);
+            //ICutsceneView cutsceneView = NavigateTo(cutsceneViewType, string.Empty) as ICutsceneView;
+            //if (cutsceneView == null)
+            //    Error("传入过场动画没有继承ICutsceneView", new Exception());
+            //view.ShowView(cutsceneView);
+            //IView targetView = NavigateTo(modDetails);
+            //cutsceneView.End();
+            //view.ShowView(targetView);
         }
 
-        /// <summary>
-        /// 导航到指定视图。
-        /// </summary>
-        /// <typeparam name="T">目标视图的类型，必须继承自 IView 接口。</typeparam>
-        /// <returns>返回导航到的视图实例，如果导航失败则返回 null。</returns>
-        private new T NavigateTo<T>() where T : class, IView
-        {
-            return _serviceStore.NavigationService.NavigateTo(typeof(T), string.Empty, _mainModel.CurrentMainView.CurrentView) as T;
-        }
+        ///// <summary>
+        ///// 导航到指定视图。
+        ///// </summary>
+        ///// <typeparam name="T">目标视图的类型，必须继承自 IView 接口。</typeparam>
+        ///// <returns>返回导航到的视图实例，如果导航失败则返回 null。</returns>
+        //private new T NavigateTo<T>() where T : class, IView
+        //{
+        //    return _serviceStore.NavigationService.NavigateTo(typeof(T), string.Empty, _mainModel.CurrentMainView.CurrentView) as T;
+        //}
     }
 }

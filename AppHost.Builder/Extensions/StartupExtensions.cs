@@ -10,6 +10,22 @@ namespace AppHost.Builder
     public static class StartupExtensions
     {
         /// <summary>
+        /// 为指定的文件夹加载程序集
+        /// </summary>
+        /// <param name="builder">主机应用程序构建器</param>
+        /// <param name="folderName">文件夹名称</param>
+        /// <returns>返回主机应用程序构建器</returns>
+        /// <exception cref="ArgumentException">如果路径没有根目录，则抛出异常</exception>
+        public static IHostApplicationBuilder LoadAssembliesForFolder(this IHostApplicationBuilder builder, string folderName)
+        {
+            string folderPath = Path.Combine(builder.HostEnvironment.ContentRootPath, folderName);
+            if (!Path.IsPathRooted(folderPath)) throw new ArgumentException("路径没有根目录");
+
+            var assmblies = AppHostAssemblyHandle.LoadAssemblyForFolder(folderPath);
+            return builder;
+        }
+
+        /// <summary>
         /// 加载指定文件夹下所有程序集，并启动其中的starup
         /// </summary>
         /// <param name="builder"></param>
@@ -19,9 +35,7 @@ namespace AppHost.Builder
         public static IHostApplicationBuilder FindStarupForFolder(this IHostApplicationBuilder builder, string folderName)
         {
             string folderPath = Path.Combine(builder.HostEnvironment.ContentRootPath, folderName);
-            if (!Path.IsPathRooted(folderPath)) throw new ArgumentException("path is not rooted");
-
-            object[] args = new object[1] { builder };
+            if (!Path.IsPathRooted(folderPath)) throw new ArgumentException("路径没有根目录");
 
             var assmblies = AppHostAssemblyHandle.LoadAssemblyForFolder(folderPath);
 

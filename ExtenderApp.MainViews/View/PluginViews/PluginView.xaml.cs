@@ -24,13 +24,10 @@ namespace ExtenderApp.MainViews
     /// </summary>
     public partial class PluginView : ExtenderAppView
     {
-        private readonly PluginViewModle _viewModle;
-
         public PluginView(PluginViewModle viewModle)
         {
             InitializeComponent();
-            _viewModle = viewModle;
-            _viewModle.InjectView(this);
+            DataContext = viewModle;
             PluginTab.Callback = viewModle.OpenMod;
         }
     }

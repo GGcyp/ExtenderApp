@@ -17,6 +17,12 @@ namespace ExtenderApp.Services
         public abstract Type StartType { get; }
 
         /// <summary>
+        /// 获取过场动画视图类型
+        /// </summary>
+        /// <returns>返回过场动画视图类型，如果没有则为null</returns>
+        public virtual Type? CutsceneViewType { get; }
+
+        /// <summary>
         /// 配置作用域选项
         /// </summary>
         /// <param name="options">作用域选项</param>

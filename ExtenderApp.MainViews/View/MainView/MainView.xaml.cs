@@ -22,14 +22,12 @@ namespace ExtenderApp.MainViews
     /// </summary>
     public partial class MainView : ExtenderAppView, IMainView
     {
-        private readonly MainViewModel _viewModel;
         public IView CurrentView { get; set; }
 
         public MainView(MainViewModel viewModel)
         {
             InitializeComponent();
-            _viewModel = viewModel;
-            _viewModel.InjectView(this);
+            DataContext = viewModel;
         }
 
         public void ShowView(IView view)

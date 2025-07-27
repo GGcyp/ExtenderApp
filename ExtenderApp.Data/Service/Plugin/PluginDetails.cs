@@ -53,6 +53,15 @@ namespace ExtenderApp.Data
         public Type? StartupType { get; set; }
 
         /// <summary>
+        /// 获取或设置过场动画视图类型。
+        /// </summary>
+        /// <value>
+        /// 返回或设置一个表示过场动画视图类型的 <see cref="Type"/> 对象。
+        /// 如果该属性为 null，则表示没有设置过场动画视图类型。
+        /// </value>
+        public Type? CutsceneViewType { get; set; }
+
+        /// <summary>
         /// 获取或设置插件作用域
         /// </summary>
         public string ModScope { get; set; }

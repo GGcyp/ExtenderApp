@@ -1,6 +1,0 @@
-{
-  "PluginTitle": "Torrent",
-  "PluginDescription": "磁力链接下载插件",
-  "PluginVersion": "0.0.0.1",
-  "PluginStartupDll": "ExtenderApp.Torrent.dll"
-}

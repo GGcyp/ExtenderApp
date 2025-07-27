@@ -16,9 +16,7 @@
     </UserControl.Resources>
     <ScrollViewer>
         <StackPanel>
-            <UniformGrid x:Name="modGrid" Columns="4">
-
-            </UniformGrid>
+            <UniformGrid x:Name="modGrid" Columns="4"/>
         </StackPanel>
     </ScrollViewer>
 </view:ExtenderAppView>

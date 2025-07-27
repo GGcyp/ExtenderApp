@@ -1,0 +1,154 @@
+<Border.Resources>
+    <Storyboard x:Key="EnterAnimation">
+        <!-- 修改为水平平移动画 -->
+        <DoubleAnimation
+            Storyboard.TargetProperty="RenderTransform.X"
+            From="200"
+            To="0"
+            Duration="0:0:0.3">
+            <DoubleAnimation.EasingFunction>
+                <CubicEase EasingMode="EaseOut"/>
+            </DoubleAnimation.EasingFunction>
+        </DoubleAnimation>
+        <!-- 保留淡入效果 -->
+        <DoubleAnimation
+            Storyboard.TargetProperty="Opacity"
+            From="0"
+            To="1"
+            Duration="0:0:0.3"/>
+    </Storyboard>
+</Border.Resources>
+
+<Border.RenderTransform>
+    <!-- 添加平移变换 -->
+    <TranslateTransform X="0"/>
+</Border.RenderTransform>
+
+<Border.Style>
+    <Style TargetType="Border">
+        <Setter Property="Opacity" Value="0"/>
+        <Style.Triggers>
+            <DataTrigger Binding="{Binding SelectedTorrent, Converter={StaticResource NullToVisibilityConverter}}" Value="Visible">
+                <DataTrigger.EnterActions>
+                    <BeginStoryboard Storyboard="{StaticResource EnterAnimation}"/>
+                </DataTrigger.EnterActions>
+            </DataTrigger>
+        </Style.Triggers>
+    </Style>
+</Border.Style>
+
+<Grid.ColumnDefinitions>
+    <!-- 主内容区域保持自适应 -->
+    <ColumnDefinition x:Name="MainColumn" Width="*"/>
+    
+    <!-- 侧边栏初始宽度为0 -->
+    <ColumnDefinition x:Name="SidebarColumn" Width="0"/>
+</Grid.ColumnDefinitions>
+
+<!-- 在资源中定义动画 -->
+<Grid.Resources>
+    <Storyboard x:Key="ExpandSidebar">
+        <DoubleAnimation
+            Storyboard.TargetName="SidebarColumn"
+            Storyboard.TargetProperty="Width"
+            To="300" 
+            Duration="0:0:0.3">
+            <DoubleAnimation.EasingFunction>
+                <CubicEase EasingMode="EaseOut"/>
+            </DoubleAnimation.EasingFunction>
+        </DoubleAnimation>
+    </Storyboard>
+    
+    <Storyboard x:Key="CollapseSidebar">
+        <DoubleAnimation
+            Storyboard.TargetName="SidebarColumn"
+            Storyboard.TargetProperty="Width"
+            To="0" 
+            Duration="0:0:0.2"/>
+    </Storyboard>
+</Grid.Resources>
+
+<!-- 侧边栏内容 -->
+<Border Grid.Column="1" Background="White" 
+        Visibility="{Binding SelectedTorrent, Converter={StaticResource NullToVisibilityConverter}}">
+    <!-- 侧边栏内容... -->
+</Border>
+
+<!-- 在View Model中触发动画 -->
+<Grid.Style>
+    <Style TargetType="Grid">
+        <Style.Triggers>
+            <DataTrigger Binding="{Binding SelectedTorrent}" Value="{x:Null}">
+                <DataTrigger.EnterActions>
+                    <BeginStoryboard Storyboard="{StaticResource CollapseSidebar}"/>
+                </DataTrigger.EnterActions>
+            </DataTrigger>
+            <DataTrigger Binding="{Binding SelectedTorrent}" Value="{x:Null}">
+                <DataTrigger.ExitActions>
+                    <BeginStoryboard Storyboard="{StaticResource ExpandSidebar}"/>
+                </DataTrigger.ExitActions>
+            </DataTrigger>
+        </Style.Triggers>
+    </Style>
+</Grid.Style>
+<Grid.ColumnDefinitions>
+    <!-- 主内容区域保持自适应 -->
+    <ColumnDefinition x:Name="MainColumn" Width="*"/>
+    
+    <!-- 侧边栏初始宽度为0 -->
+    <ColumnDefinition x:Name="SidebarColumn" Width="0"/>
+</Grid.ColumnDefinitions>
+
+<!-- 在资源中定义动画 -->
+<Grid.Resources>
+    <Storyboard x:Key="ExpandSidebar">
+        <DoubleAnimation
+            Storyboard.TargetName="SidebarColumn"
+            Storyboard.TargetProperty="Width"
+            To="300" 
+            Duration="0:0:0.3">
+            <DoubleAnimation.EasingFunction>
+                <CubicEase EasingMode="EaseOut"/>
+            </DoubleAnimation.EasingFunction>
+        </DoubleAnimation>
+    </Storyboard>
+    
+    <Storyboard x:Key="CollapseSidebar">
+        <DoubleAnimation
+            Storyboard.TargetName="SidebarColumn"
+            Storyboard.TargetProperty="Width"
+            To="0" 
+            Duration="0:0:0.2"/>
+    </Storyboard>
+</Grid.Resources>
+
+<!-- 侧边栏内容 -->
+<Border Grid.Column="1" Background="White" 
+        Visibility="{Binding SelectedTorrent, Converter={StaticResource NullToVisibilityConverter}}">
+    <!-- 侧边栏内容... -->
+</Border>
+
+<!-- 在View Model中触发动画 -->
+<Grid.Triggers>
+    <EventTrigger RoutedEvent="Loaded">
+        <BeginStoryboard Storyboard="{StaticResource CollapseSidebar}"/>
+    </EventTrigger>
+    <DataTrigger Binding="{Binding SelectedTorrent}" Value="{x:Null}">
+        <DataTrigger.EnterActions>
+            <BeginStoryboard Storyboard="{StaticResource CollapseSidebar}"/>
+        </DataTrigger.EnterActions>
+        <DataTrigger.ExitActions>
+            <BeginStoryboard Storyboard="{StaticResource ExpandSidebar}"/>
+        </DataTrigger.ExitActions>
+    </DataTrigger>
+</Grid.Triggers>
+
+<!-- 修改动画定义 -->
+<Storyboard x:Key="ExpandSidebar">
+    <ObjectAnimationUsingKeyFrames 
+        Storyboard.TargetProperty="Width"
+        Duration="0:0:0.3">
+        <DiscreteObjectKeyFrame KeyTime="0:0:0" Value="0"/>
+        <DiscreteObjectKeyFrame KeyTime="0:0:0.3" Value="300"/>
+    </ObjectAnimationUsingKeyFrames>
+</Storyboard>

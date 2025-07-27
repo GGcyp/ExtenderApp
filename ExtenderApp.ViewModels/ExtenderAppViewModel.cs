@@ -43,9 +43,11 @@ namespace ExtenderApp.ViewModels
             _viewModelName = GetType().Name;
         }
 
-        /// <summary>
-        /// 关闭资源或连接。
-        /// </summary>
+        public virtual void InjectView(IView view)
+        {
+
+        }
+
         public virtual void Close()
         {
 
@@ -319,7 +321,7 @@ namespace ExtenderApp.ViewModels
         #endregion
     }
 
-    public abstract class ExtenderAppViewModel<TView> : ExtenderAppViewModel, IViewModel<TView> where TView : IView
+    public abstract class ExtenderAppViewModel<TView> : ExtenderAppViewModel, IViewModel<TView> where TView : class, IView
     {
         /// <summary>
         /// 视图接口实例
@@ -329,6 +331,13 @@ namespace ExtenderApp.ViewModels
         public ExtenderAppViewModel(IServiceStore serviceStore) : base(serviceStore)
         {
 
+        }
+
+        public override void InjectView(IView view)
+        {
+            TView targetView = view as TView;
+            if (targetView != null)
+                InjectView(targetView);
         }
 
         /// <summary>
@@ -370,7 +379,9 @@ namespace ExtenderApp.ViewModels
     /// </summary>
     /// <typeparam name="TView">视图接口</typeparam>
     /// <typeparam name="TModle">模型类型</typeparam>
-    public abstract class ExtenderAppViewModel<TView, TModle> : ExtenderAppViewModel<TView> where TView : IView where TModle : class, new()
+    public abstract class ExtenderAppViewModel<TView, TModle> : ExtenderAppViewModel<TView>
+        where TView : class, IView
+        where TModle : class, new()
     {
         /// <summary>
         /// 模型实例
@@ -380,7 +391,7 @@ namespace ExtenderApp.ViewModels
         /// <summary>
         /// 获取模型实例
         /// </summary>
-        protected TModle Model
+        public TModle Model
         {
             get
             {
@@ -390,6 +401,12 @@ namespace ExtenderApp.ViewModels
                         model = new TModle();
                 }
                 return model;
+            }
+            set
+            {
+                if (model == value)
+                    return;
+                model = value;
             }
         }
 
@@ -401,9 +418,14 @@ namespace ExtenderApp.ViewModels
         {
         }
 
-        public virtual void InjectViewModel(TModle model)
+        /// <summary>
+        /// 向对象注入模型
+        /// </summary>
+        /// <param name="model">要注入的模型</param>
+        public virtual void InjectModle(TModle model)
         {
             this.model = model;
+            SaveModel();
         }
 
         /// <summary>

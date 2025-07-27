@@ -12,7 +12,7 @@ namespace ExtenderApp.Test
 {
     public class TestMainViewModel : ExtenderAppViewModel
     {
-        private readonly LinkerClientFactory _linkerFactory;
+        private readonly LinkClientFactory _linkerFactory;
 
         public TestMainViewModel(ResourceLimiter limiter, ResourceLimiter limiter1, ITcpLinker linker, IListenerLinker<ITcpLinker> listenerLinker, IServiceStore serviceStore) : base(serviceStore)
         {

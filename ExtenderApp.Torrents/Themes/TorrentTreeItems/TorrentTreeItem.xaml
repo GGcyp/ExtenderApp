@@ -1,0 +1,82 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:local="clr-namespace:ExtenderApp.Torrents.Themes"
+                    xmlns:view="clr-namespace:ExtenderApp.Views.Themes;assembly=ExtenderApp.Views"
+                    xmlns:viewCon="clr-namespace:ExtenderApp.Views.Converters;assembly=ExtenderApp.Views"
+                    xmlns:con="clr-namespace:ExtenderApp.Torrents.Converter">
+
+    <ResourceDictionary.MergedDictionaries>
+        <ResourceDictionary Source="/ExtenderApp.Views;component/ViewStyles.xaml"/>
+    </ResourceDictionary.MergedDictionaries>
+
+    <Style TargetType="{x:Type local:TorrentTreeItem}">
+        <Setter Property="ItemsSource" Value="{Binding Children}"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Foreground" Value="{StaticResource GlobalForegroundBrush}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type local:TorrentTreeItem}">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition
+                                SharedSizeGroup="Indent"/>
+                            <ColumnDefinition
+                                SharedSizeGroup="Name"/>
+                            <ColumnDefinition
+                                SharedSizeGroup="Size"/>
+                            <ColumnDefinition
+                                SharedSizeGroup="Progress"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0"
+                                    Orientation="Horizontal">
+                            <view:ExpandSwitch
+                                IsChecked="{Binding RelativeSource={RelativeSource Templatedparent},Path=IsExpanded,Mode=TwoWay}"
+                                PathWidth="12"
+                                PathHeight="12"
+                                Margin="5 0 0 0"
+                                Foreground="{TemplateBinding Foreground}"
+                                Visibility="{Binding IsFile,Converter={viewCon:BooleanToVisibilityConverter},ConverterParameter=InverseHidden}"/>
+                            <CheckBox
+                                Margin="5 0 0 0"
+                                IsChecked="{Binding IsNeedDownload}"
+                                VerticalAlignment="Center"/>
+                        </StackPanel>
+                        <TextBlock
+                            Grid.Column="1"
+                            Text="{Binding Name}"
+                            Foreground="{TemplateBinding Foreground}"
+                            VerticalAlignment="Center"
+                            HorizontalAlignment="Left"
+                            Margin="{Binding Depth,Converter={con:DepthConverter}}"
+                            MaxWidth="{Binding Depth,Converter={con:MaxWidthConverter}}"
+                            TextTrimming="CharacterEllipsis"/>
+                        <TextBlock Grid.Column="2"
+                                   Text="{Binding Length,Converter={viewCon:SizeConverter}}"
+                                   Foreground="{TemplateBinding Foreground}"
+                                   VerticalAlignment="Center"
+                                   HorizontalAlignment="Left"/>
+                        <TextBlock Grid.Column="3"
+                                   Text="{Binding Progress}"
+                                   Foreground="{TemplateBinding Foreground}"
+                                   VerticalAlignment="Center"
+                                   HorizontalAlignment="Right"/>
+                        <ItemsPresenter x:Name="Items"
+                                        Grid.Row="1"
+                                        Grid.ColumnSpan="3"
+                                        Visibility="Collapsed"/>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsExpanded" Value="True">
+                            <Setter TargetName="Items" Property="Visibility" Value="Visible"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+</ResourceDictionary>
