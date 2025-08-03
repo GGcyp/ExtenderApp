@@ -14,15 +14,15 @@ namespace ExtenderApp.Common.IO.Binaries.Formatter
         {
         }
 
-        public override int Length => 5;
+        public override int DefaultLength => 5;
 
         public override long GetLength(string value)
         {
             if (string.IsNullOrEmpty(value))
             {
-                return Length;
+                return DefaultLength;
             }
-            return _binaryOptions.BinaryEncoding.GetMaxByteCount(value.Length) + Length;
+            return _binaryOptions.BinaryEncoding.GetMaxByteCount(value.Length) + DefaultLength;
             //return value.Length + Length;
         }
 

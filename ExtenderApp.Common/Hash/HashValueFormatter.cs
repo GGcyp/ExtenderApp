@@ -15,7 +15,7 @@ namespace ExtenderApp.Common.Hash
         /// <summary>
         /// 获取格式化后的长度
         /// </summary>
-        public override int Length => _ulongs.Length;
+        public override int DefaultLength => _ulongs.DefaultLength;
 
         public HashValueFormatter(IBinaryFormatterResolver resolver) : base(resolver)
         {

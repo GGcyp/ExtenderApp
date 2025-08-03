@@ -6,7 +6,7 @@ namespace ExtenderApp.Common.IO.Binary.Formatter.Struct
 {
     internal class ExtensionHeaderFormatter : ExtenderFormatter<ExtensionHeader>
     {
-        public override int Length => 5;
+        public override int DefaultLength => 5;
         public ExtensionHeaderFormatter(ExtenderBinaryWriterConvert binaryWriterConvert, ExtenderBinaryReaderConvert binaryReaderConvert, BinaryOptions options) : base(binaryWriterConvert, binaryReaderConvert, options)
         {
         }

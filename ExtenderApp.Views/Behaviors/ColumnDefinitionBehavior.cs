@@ -50,7 +50,10 @@ namespace ExtenderApp.Views.Behaviors
         }
 
         public static readonly DependencyProperty IsVisibleProperty =
-            DependencyProperty.Register("IsVisible", typeof(bool), typeof(ColumnDefinitionBehavior),
+            DependencyProperty.Register(
+                "IsVisible",
+                typeof(bool),
+                typeof(ColumnDefinitionBehavior),
                 new PropertyMetadata(false, OnIsVisibleChanged));
 
         #endregion

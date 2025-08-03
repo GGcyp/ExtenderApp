@@ -16,7 +16,7 @@ namespace ExtenderApp.Common.IO.Binaries.Formatter
         /// 获取节点格式化的长度。
         /// </summary>
         /// <returns>返回值为 1。</returns>
-        public override int Length => 1;
+        public override int DefaultLength => 1;
 
         /// <summary>
         /// 使用指定的参数初始化 NodeFormatter 实例。

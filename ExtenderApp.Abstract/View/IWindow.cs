@@ -5,8 +5,43 @@ namespace ExtenderApp.Abstract
     /// <summary>
     /// 定义一个窗口接口。
     /// </summary>
-    public interface IWindow
+    public interface IWindow : IView
     {
+        /// <summary>
+        /// 获取或设置窗口的最小宽度。
+        /// </summary>
+        double MinWidth { get; set; }
+
+        /// <summary>
+        /// 获取或设置窗口的最大宽度。
+        /// </summary>
+        double MaxWidth { get; set; }
+
+        /// <summary>
+        /// 获取或设置窗口的宽度。
+        /// </summary>
+        double Width { get; set; }
+
+        /// <summary>
+        /// 获取或设置窗口的最小高度。
+        /// </summary>
+        double MinHeight { get; set; }
+
+        /// <summary>
+        /// 获取或设置窗口的最大高度。
+        /// </summary>
+        double MaxHeight { get; set; }
+
+        /// <summary>
+        /// 获取或设置窗口的高度。
+        /// </summary>
+        double Height { get; set; }
+
+        /// <summary>
+        /// 获取或设置标题
+        /// </summary>
+        string Title { get; set; }
+
         /// <summary>
         /// 显示窗口。
         /// </summary>
@@ -19,9 +54,9 @@ namespace ExtenderApp.Abstract
         bool? ShowDialog();
 
         /// <summary>
-        /// 显示视图。
+        /// 显示主视图。
         /// </summary>
-        /// <param name="view">要显示的视图对象。</param>
-        void ShowView(IView view);
+        /// <param name="mainView">主视图接口对象。</param>
+        void ShowView(IMainView mainView);
     }
 }

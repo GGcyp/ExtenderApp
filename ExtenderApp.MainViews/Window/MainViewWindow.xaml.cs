@@ -12,6 +12,8 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 using ExtenderApp.Abstract;
+using ExtenderApp.Data;
+using ExtenderApp.MainViews.ViewModels;
 using ExtenderApp.Views;
 
 namespace ExtenderApp.MainViews
@@ -19,29 +21,40 @@ namespace ExtenderApp.MainViews
     /// <summary>
     /// MainViewWindow.xaml 的交互逻辑
     /// </summary>
-    public partial class MainViewWindow : Window, IMainWindow
+    public partial class MainViewWindow : Window, IMainWindow, IView
     {
-        private bool active;
+        /// <summary>
+        /// 获取视图信息
+        /// </summary>
+        public ViewInfo ViewInfo { get; }
 
-        public MainViewWindow()
+        /// <summary>
+        /// 视图模型私有只读变量
+        /// </summary>
+        private readonly MianWindowViewModel _viewModel;
+
+        public MainViewWindow(MianWindowViewModel viewModel)
         {
-            active = false;
+            ViewInfo = new ViewInfo(GetType().Name);
+            DataContext = viewModel;
+            _viewModel = viewModel;
+            viewModel.InjectView(this);
             InitializeComponent();
-            active = true;
         }
 
-
-        public void ShowView(IView view)
+        public void Enter(ViewInfo oldViewInfo)
         {
-            ArgumentNullException.ThrowIfNull(view, "The view null");
 
-            if(view is not IMainView)
-                throw new InvalidCastException(nameof(IView));
+        }
 
-            if (!active)
-                 new ArgumentNullException("MainWiodow not active");
+        public void Exit(ViewInfo newViewInfo)
+        {
 
-            viewControl.Content = view;
+        }
+
+        public void ShowView(IMainView mainView)
+        {
+            _viewModel.ShowView(mainView);
         }
     }
 }

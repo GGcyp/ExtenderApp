@@ -11,7 +11,7 @@ namespace ExtenderApp.Common.IO
         protected readonly IBinaryFormatter<TFileNode> _fileNode;
         protected readonly IBinaryFormatter<string> _string;
 
-        public override int Length => _fileNode.Length + _string.Length;
+        public override int DefaultLength => _fileNode.DefaultLength + _string.DefaultLength;
 
         public FileNodeParentFormatter(IBinaryFormatterResolver resolver) : base(resolver)
         {

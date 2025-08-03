@@ -8,7 +8,7 @@ namespace ExtenderApp.Common.Networks
     {
         private readonly IBinaryFormatter<bool> _bool;
 
-        public override int Length => _bool.Length;
+        public override int DefaultLength => _bool.DefaultLength;
 
         public LinkerDtoFormatter(IBinaryFormatterResolver resolver) : base(resolver)
         {

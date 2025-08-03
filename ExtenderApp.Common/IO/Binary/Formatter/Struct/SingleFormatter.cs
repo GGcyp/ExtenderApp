@@ -10,7 +10,7 @@ namespace ExtenderApp.Common.IO.Binaries.Formatter
     /// </remarks>
     internal class SingleFormatter : ExtenderFormatter<Single>
     {
-        public override int Length => 5;
+        public override int DefaultLength => 5;
 
         public SingleFormatter(ExtenderBinaryWriterConvert binaryWriterConvert, ExtenderBinaryReaderConvert binaryReaderConvert, BinaryOptions options) : base(binaryWriterConvert, binaryReaderConvert, options)
         {

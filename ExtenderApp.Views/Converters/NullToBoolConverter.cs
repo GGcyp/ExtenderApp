@@ -7,7 +7,7 @@ namespace ExtenderApp.Views.Converters
     /// <summary>
     /// NullToBoolConverter 类，用于将 null 值转换为布尔值。
     /// </summary>
-    public class NullToBoolConverter : MarkupExtension,IValueConverter
+    public class NullToBoolConverter : MarkupExtension, IValueConverter
     {
         /// <summary>
         /// 将值转换为布尔值。m
@@ -20,7 +20,11 @@ namespace ExtenderApp.Views.Converters
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
             // 可选：通过 parameter 反转结果（如 "Inverse" 表示 null 时返回 true）
-            bool inverse = parameter?.ToString().Equals("Inverse", StringComparison.OrdinalIgnoreCase) ?? false;
+            bool inverse = false;
+            if (parameter is string i)
+            {
+                inverse = i.ToString().Equals("Inverse", StringComparison.OrdinalIgnoreCase);
+            }
             bool result = value != null;
             return inverse ? !result : result;
         }

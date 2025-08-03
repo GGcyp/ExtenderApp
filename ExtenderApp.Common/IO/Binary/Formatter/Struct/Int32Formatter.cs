@@ -7,7 +7,7 @@ namespace ExtenderApp.Common.IO.Binaries.Formatter
     /// </summary>
     internal sealed class Int32Formatter : ExtenderFormatter<Int32>
     {
-        public override int Length => 5;
+        public override int DefaultLength => 5;
 
         public Int32Formatter(ExtenderBinaryWriterConvert binaryWriterConvert, ExtenderBinaryReaderConvert binaryReaderConvert, BinaryOptions options) : base(binaryWriterConvert, binaryReaderConvert, options)
         {

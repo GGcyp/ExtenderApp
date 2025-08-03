@@ -11,7 +11,7 @@ namespace ExtenderApp.Services
 
         public INavigationService NavigationService { get; }
 
-        public ITemporarilyService TemporarilyService { get; }
+        public ICacheService CacheService { get; }
 
         public ILogingService LogingService { get; }
 
@@ -21,18 +21,25 @@ namespace ExtenderApp.Services
 
         public IPathService PathService { get; }
 
+        public IServiceProvider ServiceProvider { get; }
+
         public ServiceStore(IDispatcherService dispatcherService,
-            INavigationService navigationService, ITemporarilyService temporarilyStore,
-            ILogingService logingService, IPluginService modService,
-            ILocalDataService localDataService, IPathService pathService)
+            INavigationService navigationService,
+            ICacheService cacheStore,
+            ILogingService logingService,
+            IPluginService modService,
+            ILocalDataService localDataService,
+            IPathService pathService,
+            IServiceProvider serviceProvider)
         {
             DispatcherService = dispatcherService;
             NavigationService = navigationService;
-            TemporarilyService = temporarilyStore;
+            CacheService = cacheStore;
             LogingService = logingService;
             ModService = modService;
             LocalDataService = localDataService;
             PathService = pathService;
+            ServiceProvider = serviceProvider;
         }
     }
 }

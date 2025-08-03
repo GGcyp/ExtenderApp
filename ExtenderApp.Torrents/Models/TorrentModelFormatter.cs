@@ -7,7 +7,7 @@ namespace ExtenderApp.Torrents.Models
 {
     internal class TorrentModelFormatter : ResolverFormatter<TorrentModel>
     {
-        public override int Length => 1;
+        public override int DefaultLength => 1;
 
         public TorrentModelFormatter(IBinaryFormatterResolver resolver) : base(resolver)
         {

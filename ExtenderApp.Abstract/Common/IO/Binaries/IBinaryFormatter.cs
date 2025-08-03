@@ -13,7 +13,7 @@ namespace ExtenderApp.Abstract
         /// 如果是Collection类型，返回的头元素中字节的数量。
         /// </summary>
         /// <returns>字节数量</returns>
-        int Length { get; }
+        int DefaultLength { get; }
     }
 
     /// <summary>

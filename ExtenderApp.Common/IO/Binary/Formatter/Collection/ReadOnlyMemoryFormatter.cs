@@ -9,7 +9,7 @@ namespace ExtenderApp.Common.IO.Binaries.Formatter
     {
         private readonly IBinaryFormatter<T> _formatter;
 
-        public override int Length => 1;
+        public override int DefaultLength => 1;
 
         public ReadOnlyMemoryFormatter(IBinaryFormatterResolver resolver, ExtenderBinaryWriterConvert binaryWriterConvert, ExtenderBinaryReaderConvert binaryReaderConvert, BinaryOptions options) : base(binaryWriterConvert, binaryReaderConvert, options)
         {

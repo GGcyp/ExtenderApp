@@ -16,7 +16,7 @@ namespace ExtenderApp.Common.IO.Binaries.Formatter
         protected readonly ExtenderBinaryReaderConvert _binaryReaderConvert;
         protected readonly BinaryOptions _binaryOptions;
 
-        public abstract int Length { get; }
+        public abstract int DefaultLength { get; }
 
         public virtual T Default => default(T);
 
@@ -70,7 +70,7 @@ namespace ExtenderApp.Common.IO.Binaries.Formatter
                 }
             }
 
-            return Length;
+            return DefaultLength;
         }
     }
 }

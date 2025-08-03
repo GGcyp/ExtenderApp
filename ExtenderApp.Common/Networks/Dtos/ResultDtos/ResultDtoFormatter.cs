@@ -9,7 +9,7 @@ namespace ExtenderApp.Common.Networks
         private readonly IBinaryFormatter<int> _int;
         private readonly IBinaryFormatter<string> _string;
 
-        public override int Length => _int.Length + _string.Length;
+        public override int DefaultLength => _int.DefaultLength + _string.DefaultLength;
         public ResultDtoFormatter(IBinaryFormatterResolver resolver) : base(resolver)
         {
             _int = resolver.GetFormatter<int>();
@@ -31,7 +31,7 @@ namespace ExtenderApp.Common.Networks
 
         public override long GetLength(ResultDto value)
         {
-            return _int.Length + _string.GetLength(value.Message);
+            return _int.DefaultLength + _string.GetLength(value.Message);
         }
     }
 }

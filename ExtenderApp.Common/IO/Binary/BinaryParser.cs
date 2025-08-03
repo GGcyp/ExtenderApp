@@ -694,7 +694,7 @@ namespace ExtenderApp.Common.IO.Binaries
 
         public long GetDefaulLength<T>()
         {
-            return _resolver.GetFormatterWithVerify<T>().Length;
+            return _resolver.GetFormatterWithVerify<T>().DefaultLength;
         }
 
         #endregion

@@ -1,33 +1,34 @@
-using System.Collections.ObjectModel;
 using System.Net;
-using System.Threading.Tasks;
 using ExtenderApp.Abstract;
-using ExtenderApp.Data;
+using ExtenderApp.Common;
 using ExtenderApp.Torrents.Models;
+using ExtenderApp.Torrents.Views;
 using ExtenderApp.ViewModels;
 using MonoTorrent;
 using MonoTorrent.Client;
 
-namespace ExtenderApp.Torrents
+namespace ExtenderApp.Torrents.ViewModels
 {
     public class TorrentMainViewModel : ExtenderAppViewModel<TorrentMainView, TorrentModel>
     {
-        private readonly CancellationTokenSource _cts;
-        public ObservableCollection<TorrentInfo> TorrentCollection { get; }
-        public TorrentInfo SelectedTorrent
+        private readonly ScheduledTask _task;
+
+        public TorrentMainViewModel(IMainWindow window, TorrentDownloadListView torrentDownloadListView, IServiceStore serviceStore) : base(serviceStore)
         {
-            get => Model.SelectedTorrent;
-            set => Model.SelectedTorrent = value;
-        }
+            _task = new();
+            TimeSpan outTime = TimeSpan.FromSeconds(1);
+            _task.StartCycle(o => Model.UpdateTorrentInfo(), outTime, outTime);
 
-        public double TargetWidth { get; set; } = 350;
+            Model.DowloadTorrentCollection = new();
+            Model.TorrentListView = torrentDownloadListView;
 
-        public double ListItemWidth { get; set; }
+            Model.TorrentFileInfoView = NavigateTo<TorrentFileInfoView>();
+            Model.TorrentDetailsView = Model.TorrentFileInfoView;
 
-        public TorrentMainViewModel(IServiceStore serviceStore) : base(serviceStore)
-        {
-            _cts = new();
-            TorrentCollection = new();
+            //_serviceStore.MainWindow.MinWidth = 800;
+            //_serviceStore.MainWindow.MinHeight = 600;
+            window.MinWidth = 800;
+            window.MinHeight = 600;
 
             // 1. 创建引擎配置
             EngineSettingsBuilder builder = new()
@@ -45,7 +46,7 @@ namespace ExtenderApp.Torrents
 
             // 2. 初始化引擎
             Model.Engine = new ClientEngine(builder.ToSettings());
-            Model.Engine.DiskManager;
+            //Model.Engine.DiskManager.PendingReadBytes;
             Model.SaveDirectory = _serviceStore.PathService.CreateFolderPathForAppRootFolder("test");
         }
 
@@ -60,68 +61,8 @@ namespace ExtenderApp.Torrents
             var info = new TorrentInfo(torrent);
             _serviceStore.DispatcherService.Invoke(() =>
             {
-                TorrentCollection.Add(info);
+                Model.DowloadTorrentCollection.Add(info);
             });
-        }
-
-        public async Task DownloadTorrentAsync(string torrentPath, string downloadFolder)
-        {
-            //// 1. 创建引擎配置
-            //var settings = new EngineSettings
-            //{
-            //    ListenEndPoint = new IPEndPoint(IPAddress.Any, 6881),
-            //    DiskIOBufferSize = 64 * 1024, // 64 KB
-            //    MaximumDiskIOBufferSize = 1024 * 1024, // 1 MB
-            //    UseDht = true // 启用分布式哈希表
-            //};
-            //var settings = new EngineSettings();
-
-            //// 2. 初始化引擎
-            //engine = new ClientEngine(settings);
-
-            ////3.加载 torrent 文件
-            //Torrent torrent = await torrent(torrentPath);
-
-            ////4.创建下载配置
-            //var managerSettings = new TorrentSettings
-            //{
-            //    MaximumConnections = 100,
-            //    MaximumDownloadSpeed = 0, // 无限制
-            //    MaximumUploadSpeed = 0, // 无限制
-            //    UploadSlots = 4
-            //};
-
-            //// 5. 创建 torrent 管理器
-            //manager = new TorrentManager(torrent, downloadFolder, managerSettings);
-
-            //// 6. 注册事件监听
-            //_manager.PeerConnected += Manager_PeerConnected;
-            //_manager.PeerDisconnected += Manager_PeerDisconnected;
-            //_manager.TorrentStateChanged += Manager_TorrentStateChanged;
-            //_manager.StatsUpdated += Manager_StatsUpdated;
-
-            //// 7. 注册到引擎并开始下载
-            //await engine.Register(_manager);
-            //cancellationToken = new CancellationTokenSource();
-
-            //try
-            //{
-            //    await _manager.StartAsync();
-            //    Console.WriteLine($"开始下载: {torrent.Name}");
-
-            //    // 等待下载完成或取消
-            //    await Task.Delay(-1, cancellationToken.Token);
-            //}
-            //catch (OperationCanceledException)
-            //{
-            //    Console.WriteLine("下载已取消");
-            //}
-            //finally
-            //{
-            //    // 清理资源
-            //    await _manager.StopAsync();
-            //    engine.Dispose();
-            //}
         }
     }
 }

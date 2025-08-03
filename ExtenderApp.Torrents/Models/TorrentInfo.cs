@@ -5,19 +5,71 @@ using MonoTorrent.Client;
 
 namespace ExtenderApp.Torrents.Models
 {
+    /// <summary>
+    /// 表示一个Torrent的信息
+    /// </summary>
     public class TorrentInfo : INotifyPropertyChanged
     {
+        /// <summary>
+        /// Torrent的名称
+        /// </summary>
         public string Name { get; set; }
 
+        /// <summary>
+        /// Torrent的大小
+        /// </summary>
         public long Size { get; set; }
 
-        public bool IsDownload { get; set; }
+        /// <summary>
+        /// Torrent是否正在下载
+        /// </summary>
+        public bool IsDownloading { get; set; }
 
+        /// <summary>
+        /// 每个数据块的大小
+        /// </summary>
         public int PieceLength { get; set; }
 
+        /// <summary>
+        /// 数据块的数量
+        /// </summary>
         public int PieceCount { get; set; }
 
-        public int Progress { get; set; }
+        /// <summary>
+        /// 下载进度
+        /// </summary>
+        public double Progress { get; set; }
+
+        /// <summary>
+        /// 下载速度
+        /// </summary>
+        public long DownloadSpeed { get; set; }
+
+        /// <summary>
+        /// 上传速度
+        /// </summary>
+        public long UploadSpeed { get; set; }
+
+        /// <summary>
+        /// 已完成的选中文件数量
+        /// </summary>
+        public int SelectedFileCompleteCount { get; set; }
+
+        /// <summary>
+        /// 已完成的选中文件总大小
+        /// </summary>
+        public long SelectedFileCompleteLength { get; set; }
+
+        /// <summary>
+        /// 选中的文件数量
+        /// </summary>
+        public int SelectedFileCount { get; set; }
+
+        /// <summary>
+        /// 选中的文件总大小
+        /// </summary>
+        public long SelectedFileLength { get; set; }
+
 
         #region Files
 
@@ -39,6 +91,17 @@ namespace ExtenderApp.Torrents.Models
 
         public TorrentManager? Manager { get; private set; }
 
+        public TorrentState? State
+        {
+            get
+            {
+                if (Manager == null)
+                    return TorrentState.Stopped;
+
+                return Manager.State;
+            }
+        }
+
         #endregion
 
         public event PropertyChangedEventHandler? PropertyChanged;
@@ -51,7 +114,7 @@ namespace ExtenderApp.Torrents.Models
             PieceLength = torrent.PieceLength;
             PieceCount = torrent.PieceCount;
             BitData = new BitFieldData(PieceCount);
-            IsDownload = false;
+            IsDownloading = false;
 
             Files = new();
             var list = torrent.Files;
@@ -126,6 +189,13 @@ namespace ExtenderApp.Torrents.Models
                     parentNode.Add(node);
                     node.Depth = parentNode.Depth + 1;
                 }
+
+            }
+
+            for (int i = 0; i < Files.Count; i++)
+            {
+                var file = Files[i];
+                file.UpdateLengthForFolder();
             }
         }
 
@@ -141,10 +211,21 @@ namespace ExtenderApp.Torrents.Models
                     continue;
 
                 node.TorrentManagerFile = file;
-                node.TorrentManager = manager;
                 node.TorrentFileInfoChanged();
             }
-            IsDownload = true;
+            Task.Run(async () =>
+            {
+                for (int i = 0; i < Files.Count; i++)
+                {
+                    var info = Files[i];
+                    foreach (var node in info)
+                    {
+                        if (node.TorrentManagerFile == null)
+                            continue;
+                        await Manager.SetFilePriorityAsync(node.TorrentManagerFile, node.Priority);
+                    }
+                }
+            });
         }
 
         private TorrentFileInfoNode? FindNodeForTorrentFilePath(string path)
@@ -193,8 +274,6 @@ namespace ExtenderApp.Torrents.Models
 
             foreach (var fileNode in Files)
             {
-                if (fileNode.IsFile)
-                    continue;
                 if (fileNode.Name == name)
                     return fileNode;
             }

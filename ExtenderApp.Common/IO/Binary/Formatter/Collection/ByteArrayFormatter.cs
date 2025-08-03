@@ -13,7 +13,7 @@ namespace ExtenderApp.Common.IO.Binaries.Formatter.Collection
         {
         }
 
-        public override int Length => 5;
+        public override int DefaultLength => 5;
 
         public override byte[] Deserialize(ref ExtenderBinaryReader reader)
         {
@@ -63,7 +63,7 @@ namespace ExtenderApp.Common.IO.Binaries.Formatter.Collection
                 return 1;
             }
 
-            var result = Length;
+            var result = DefaultLength;
             result += value.Length;
             return result;
         }

@@ -1,0 +1,64 @@
+﻿<view:ExtenderAppView x:Class="ExtenderApp.Torrents.Views.TorrentFileInfoView"
+                      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                      xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                      xmlns:local="clr-namespace:ExtenderApp.Torrents.ViewModels"
+                      xmlns:con="clr-namespace:ExtenderApp.Torrents.Converter"
+                      xmlns:view="clr-namespace:ExtenderApp.Views;assembly=ExtenderApp.Views"
+                      xmlns:localView="clr-namespace:ExtenderApp.Torrents.Themes"
+                      mc:Ignorable="d"
+                      d:DataContext="{d:DesignInstance Type=local:TorrentFileInfoViewModel}"
+                      d:DesignHeight="500" d:DesignWidth="350">
+
+    <view:ExtenderAppView.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/ExtenderApp.Views;component/ViewStyles.xaml"/>
+                <ResourceDictionary Source="/ExtenderApp.Torrents;component/Themes/Generic.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+            <con:SubtractConverter x:Key="SubtractConverter"/>
+        </ResourceDictionary>
+    </view:ExtenderAppView.Resources>
+
+    <Grid Margin="0 20 0 0">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="20"/>
+            <RowDefinition/>
+            <RowDefinition Height="25"/>
+        </Grid.RowDefinitions>
+        <StackPanel Grid.Row="0"
+                    Orientation="Horizontal">
+            <TextBlock Text="已添加" Foreground="{DynamicResource GlobalForegroundBrush}"/>
+            <TextBlock Text="0" Foreground="{DynamicResource GlobalForegroundBrush}"/>
+            <TextBlock Text="/" Foreground="{DynamicResource GlobalForegroundBrush}"/>
+            <TextBlock Text="{Binding Model.SelectedTorrent.FileCount}"
+                       Foreground="{DynamicResource GlobalForegroundBrush}"/>
+            <TextBlock Text="个文件" Foreground="{DynamicResource GlobalForegroundBrush}"/>
+        </StackPanel>
+        <!-- 文件目录TreeView -->
+        <localView:TorrentTreeView
+            Grid.Row="1"
+            ItemsSource="{Binding Model.SelectedTorrent.Files}"
+            Background="{DynamicResource GlobalBackgroundBrush}"
+            Foreground="{DynamicResource GlobalForegroundBrush}"
+            Margin="0 10 0 0"/>
+        <!--底部按钮-->
+        <Grid Grid.Row="2" Background="{DynamicResource GlobalBackgroundBrush}">
+            <CheckBox VerticalAlignment="Center"
+                      Margin="5 0 0 0"
+                      Command="{Binding SelectAllCommand}"/>
+            <TextBlock VerticalAlignment="Center"
+                       Margin="25 0 0 0"
+                       Text="全选"/>
+            <Button
+                Width="120"
+                FontSize="12"
+                Margin="0"
+                Content="下载选中的文件"
+                HorizontalAlignment="Right"
+                VerticalAlignment="Center"
+                Command="{Binding StartCommand}"/>
+        </Grid>
+    </Grid>
+</view:ExtenderAppView>

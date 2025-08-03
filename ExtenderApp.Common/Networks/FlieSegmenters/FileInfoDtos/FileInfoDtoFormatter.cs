@@ -9,7 +9,7 @@ namespace ExtenderApp.Common.Networks
         private readonly IBinaryFormatter<string> _string;
         private readonly IBinaryFormatter<long> _long;
 
-        public override int Length => throw new NotImplementedException();
+        public override int DefaultLength => throw new NotImplementedException();
 
         public FileInfoDtoFormatter(IBinaryFormatterResolver resolver) : base(resolver)
         {

@@ -49,7 +49,7 @@ namespace ExtenderApp.Common.IO.Binaries.Formatter
         private readonly GetLengthMethod _getLengthMethod;
 
         private readonly int _length;
-        public int Length => _length;
+        public int DefaultLength => _length;
 
         public T Default => default;
 
@@ -73,7 +73,7 @@ namespace ExtenderApp.Common.IO.Binaries.Formatter
                 serializes[i] = store.CreatePropertySerializeExpression(member, serializeMethodInfo, formatter);
                 deserializes[i] = store.CreatePropertyDeserializeExpression(property, deserializeMethodInfo, formatter);
                 getLengthExpression = store.CreateGetLengthExpression(member, getLengthMethodInfo, formatter, getLengthExpression);
-                _length += formatter.Length;
+                _length += formatter.DefaultLength;
             }
 
             //获取序列化委托

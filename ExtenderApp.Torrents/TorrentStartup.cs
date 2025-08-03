@@ -3,6 +3,8 @@ using ExtenderApp.Abstract;
 using ExtenderApp.Common;
 using ExtenderApp.Services;
 using ExtenderApp.Torrents.Models;
+using ExtenderApp.Torrents.ViewModels;
+using ExtenderApp.Torrents.Views;
 
 
 namespace ExtenderApp.Torrents
@@ -13,10 +15,13 @@ namespace ExtenderApp.Torrents
 
         public override void AddService(IServiceCollection services)
         {
-            services.AddTransient<TorrentMainViewModel>();
             services.AddTransient<TorrentMainView>();
             services.AddTransient<TorrentFileInfoView>();
+            services.AddTransient<TorrentDownloadListView>();
+
+            services.AddTransient<TorrentMainViewModel>();
             services.AddTransient<TorrentFileInfoViewModel>();
+            services.AddTransient<TorrentDownloadListViewModel>();
         }
 
         public override void ConfigureBinaryFormatterStore(IBinaryFormatterStore store)

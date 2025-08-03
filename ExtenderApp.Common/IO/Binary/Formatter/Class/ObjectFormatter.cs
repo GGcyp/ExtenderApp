@@ -20,7 +20,7 @@ namespace ExtenderApp.Common.IO.Binaries.Formatter.Class
         private readonly MethodInfo getMethod = typeof(IBinaryFormatterResolver).GetMethod("GetFormatter")!;
 
         private delegate void SerializeMethod(object formatter, ref ExtenderBinaryWriter writer, object value);
-        public override int Length => 0;
+        public override int DefaultLength => 0;
         private readonly IBinaryFormatterStore _store;
         private readonly BinaryFormatterCreator _creator;
         private readonly IBinaryFormatterResolver _resolver;

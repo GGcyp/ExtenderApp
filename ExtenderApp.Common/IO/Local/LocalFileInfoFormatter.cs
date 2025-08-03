@@ -8,7 +8,7 @@ namespace ExtenderApp.Common.IO
     {
         private readonly IBinaryFormatter<string> _string;
 
-        public override int Length => _string.Length;
+        public override int DefaultLength => _string.DefaultLength;
 
         public LocalFileInfoFormatter(IBinaryFormatterResolver resolver) : base(resolver)
         {

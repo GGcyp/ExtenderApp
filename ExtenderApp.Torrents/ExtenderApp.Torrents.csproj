@@ -60,4 +60,12 @@
 	<ItemGroup>
 	  <Compile Remove="C:\Users\win\.nuget\packages\reusabletasks\4.0.0\build\\AsyncVoidMethodBuilder.cs" />
 	</ItemGroup>
+
+	<ItemGroup>
+	  <Folder Include="Icon\" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Compile Remove="C:\Users\win\.nuget\packages\reusabletasks\4.0.0\build\\AsyncVoidMethodBuilder.cs" />
+	</ItemGroup>
 </Project>

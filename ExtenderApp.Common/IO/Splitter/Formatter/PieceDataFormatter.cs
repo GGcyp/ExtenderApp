@@ -6,7 +6,7 @@ namespace ExtenderApp.Common.IO.Splitter
 {
     internal class PieceDataFormatter : ResolverFormatter<PieceData>
     {
-        public override int Length => _byteArray.Length;
+        public override int DefaultLength => _byteArray.DefaultLength;
 
         private readonly IBinaryFormatter<byte[]> _byteArray;
         private readonly IBinaryFormatter<int> _int;
@@ -35,7 +35,7 @@ namespace ExtenderApp.Common.IO.Splitter
 
         public override long GetLength(PieceData value)
         {
-            return _int.Length * 2 + value.Length + _byteArray.Length;
+            return _int.DefaultLength * 2 + value.Length + _byteArray.DefaultLength;
         }
     }
 }

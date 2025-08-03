@@ -1,10 +1,11 @@
 ﻿using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media;
 using ExtenderApp.Data;
 
-namespace ExtenderApp.MainViews
+namespace ExtenderApp.MainViews.Themes
 {
-    class PluginTab : Button
+    public class PluginTab : Button
     {
         static PluginTab()
         {
@@ -13,23 +14,13 @@ namespace ExtenderApp.MainViews
                 new FrameworkPropertyMetadata(typeof(PluginTab)));
         }
 
-        public PluginDetails ModDetails { get; }
-        /// <summary>
-        /// 全局统一回调
-        /// </summary>
-        public static Action<PluginDetails> Callback { get; set; }
-
-        public PluginTab(PluginDetails modDetails)
+        public PluginTab()
         {
-            ModDetails = modDetails;
-            Title = modDetails.Title;
-            Description = modDetails.Description;
-            Version = modDetails.Version is null ? "未知版本" : modDetails.Version.ToString();
-        }
-
-        protected override void OnClick()
-        {
-            Callback?.Invoke(ModDetails);
+            //var modDetails = (PluginDetails)DataContext;
+            //Title = modDetails.Title;
+            //Description = modDetails.Description;
+            //Version = modDetails.Version is null ? "未知版本" : modDetails.Version.ToString();
+            //PluginIcon = modDetails.PluginIcon is null ? DefaltPluginPathGeometry : Geometry.Parse(modDetails.PluginIcon);
         }
 
         #region 名称
@@ -43,8 +34,7 @@ namespace ExtenderApp.MainViews
         public static readonly DependencyProperty TitleProperty =
             DependencyProperty.Register("Title",
                 typeof(string),
-                typeof(PluginTab),
-                new PropertyMetadata());
+                typeof(PluginTab));
 
         #endregion
 
@@ -59,8 +49,7 @@ namespace ExtenderApp.MainViews
         public static readonly DependencyProperty DescriptionProperty =
             DependencyProperty.Register("Description",
                 typeof(string),
-                typeof(PluginTab),
-                new PropertyMetadata());
+                typeof(PluginTab));
 
         #endregion
 
@@ -75,6 +64,21 @@ namespace ExtenderApp.MainViews
         public static readonly DependencyProperty VersionProperty =
             DependencyProperty.Register("Version",
                 typeof(string),
+                typeof(PluginTab));
+
+        #endregion
+
+        #region 图标
+
+        public Geometry PluginIcon
+        {
+            get { return (Geometry)GetValue(PluginIconProperty); }
+            set { SetValue(PluginIconProperty, value); }
+        }
+
+        public static readonly DependencyProperty PluginIconProperty =
+            DependencyProperty.Register("PluginIcon",
+                typeof(Geometry),
                 typeof(PluginTab),
                 new PropertyMetadata());
 

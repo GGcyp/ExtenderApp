@@ -8,7 +8,7 @@ namespace ExtenderApp.Common.IO.Binaries.Formatter
     internal class MemoryFormatter<T> : ExtenderFormatter<Memory<T>>
     {
         private readonly IBinaryFormatter<T> _formatter;
-        public override int Length => 1;
+        public override int DefaultLength => 1;
         public MemoryFormatter(IBinaryFormatterResolver resolver, ExtenderBinaryWriterConvert binaryWriterConvert, ExtenderBinaryReaderConvert binaryReaderConvert, BinaryOptions options) : base(binaryWriterConvert, binaryReaderConvert, options)
         {
             _formatter = resolver.GetFormatter<T>();

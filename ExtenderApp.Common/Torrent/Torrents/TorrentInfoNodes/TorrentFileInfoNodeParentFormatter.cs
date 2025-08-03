@@ -56,7 +56,7 @@ namespace ExtenderApp.Common.Torrent.Models.Torrents.TorrentDowns
             return base.GetLength(value)
                 + _string.GetLength(value.TorrentFileInfo)
                 + _hashValues.GetLength(value.PieceHashValues)
-                + _long.Length * 5
+                + _long.DefaultLength * 5
                 + _infoHash.GetLength(value.Hash)
                 + _bitFieldData.GetLength(value.LocalBiteField);
         }

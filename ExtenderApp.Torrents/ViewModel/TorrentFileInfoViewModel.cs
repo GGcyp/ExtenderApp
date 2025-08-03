@@ -1,24 +1,14 @@
 ﻿using ExtenderApp.Abstract;
-using ExtenderApp.Common;
 using ExtenderApp.Torrents.Models;
+using ExtenderApp.Torrents.Views;
 using ExtenderApp.ViewModels;
-using ExtenderApp.Views;
-using MonoTorrent.Client;
+using ExtenderApp.Views.Commands;
+using MonoTorrent;
 
-namespace ExtenderApp.Torrents
+namespace ExtenderApp.Torrents.ViewModels
 {
     public class TorrentFileInfoViewModel : ExtenderAppViewModel<TorrentFileInfoView, TorrentModel>
     {
-        #region 属性
-
-        public TorrentInfo SelectedTorrent
-        {
-            get => Model.SelectedTorrent;
-            set => Model.SelectedTorrent = value;
-        }
-
-        #endregion
-
         #region 命令
 
         public NoValueCommand StartCommand { get; set; }
@@ -32,36 +22,36 @@ namespace ExtenderApp.Torrents
             SelectAllCommand = new(SelecrAll, CanExecute);
         }
 
+        /// <summary>
+        /// 开始下载选中的种子
+        /// </summary>
         private void SatrtTorrent()
         {
-            Task.Run(SatrtTorrentAsync).ConfigureAwait(false);
-        }
-
-        private async Task SatrtTorrentAsync()
-        {
-            var selectedTorrent = Model.SelectedTorrent;
-
-            TorrentManager? manager = null;
-            if (selectedTorrent.Torrent != null)
-            {
-                manager = await Model.Engine.AddAsync(selectedTorrent.Torrent, Model.SaveDirectory);
-            }
-            else if (selectedTorrent.MagnetLink != null)
-            {
-                manager = await Model.Engine.AddAsync(selectedTorrent.MagnetLink, Model.SaveDirectory);
-            }
-            else
-            {
-                Error($"当前种子或磁力链接还未加载：{selectedTorrent.Torrent}", new ArgumentNullException());
+            var info = Model.SelectedTorrent;
+            if (info.IsDownloading)
                 return;
-            }
 
-            selectedTorrent.Set(manager);
-            Info($"开始下载；种子名字：{manager.Name}，种子哈希值：{manager.InfoHashes.V1OrV2.ToHex()}");
-            await manager.StartAsync();
-            await manager.LocalPeerAnnounceAsync();
+            Task.Run(async () =>
+            {
+                info.SelectedFileCount = 0;
+                info.SelectedFileLength = 0;
+                foreach (var node in info.Files)
+                {
+                    node.UpdateDownloadState();
+
+                    info.SelectedFileCount += node.GetSelectedFileCount();
+                    info.SelectedFileLength += node.GetSelectedFileLength();
+                }
+                await Model.SatrtTorrentAsync(info);
+                info.IsDownloading = true;
+            });
+            InfoHashes infoHashes = info.Torrent == null ? info.MagnetLink.InfoHashes : info.Torrent.InfoHashes;
+            Info($"开始下载；种子名字：{info.Name}，种子哈希值：{infoHashes.V1OrV2.ToHex()}");
         }
 
+        /// <summary>
+        /// 选择全部文件
+        /// </summary>
         private void SelecrAll()
         {
             var selectedTorrent = Model.SelectedTorrent;
@@ -70,11 +60,16 @@ namespace ExtenderApp.Torrents
             for (int i = 0; i < list.Count; i++)
             {
                 var node = list[i];
-                node.IsNeedDownload = selecrAll;
+                node.DisplayNeedDownload = selecrAll;
+                node.AllNeedDownload(selecrAll);
             }
             selectedTorrent.SelecrAll = selecrAll;
         }
 
+        /// <summary>
+        /// 判断是否可以执行
+        /// </summary>
+        /// <returns>如果可以执行，则返回true；否则返回false</returns>
         private bool CanExecute()
         {
             return Model.SelectedTorrent != null;

@@ -13,7 +13,7 @@ namespace ExtenderApp.Common.Networks
             _fileInfoDtos = GetFormatter<FileInfoDto[]>();
         }
 
-        public override int Length => _fileInfoDtos.Length;
+        public override int DefaultLength => _fileInfoDtos.DefaultLength;
 
         public override FileTransferRequestDto Deserialize(ref ExtenderBinaryReader reader)
         {

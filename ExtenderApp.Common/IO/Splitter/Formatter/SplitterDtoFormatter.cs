@@ -12,7 +12,7 @@ namespace ExtenderApp.Common.IO.Splitter
         private readonly IBinaryFormatter<int> _int;
         private readonly IBinaryFormatter<string> _string;
 
-        public override int Length => _uint.Length + _int.Length * 2;
+        public override int DefaultLength => _uint.DefaultLength + _int.DefaultLength * 2;
 
         public SplitterDtoFormatter(IBinaryFormatterResolver resolver, ExtenderBinaryWriterConvert binaryWriterConvert, ExtenderBinaryReaderConvert binaryReaderConvert, BinaryOptions options) : base(binaryWriterConvert, binaryReaderConvert, options)
         {
@@ -48,7 +48,7 @@ namespace ExtenderApp.Common.IO.Splitter
 
         public override long GetLength(SplitterDto value)
         {
-            return Length + 5 + value.Length;
+            return DefaultLength + 5 + value.Length;
         }
     }
 }

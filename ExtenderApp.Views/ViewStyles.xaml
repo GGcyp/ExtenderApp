@@ -5,11 +5,7 @@
         <ResourceDictionary Source="/ExtenderApp.Views;component/Styles/Expander.xaml" />
         <ResourceDictionary Source="/ExtenderApp.Views;component/Styles/RadioButton.xaml" />
         <ResourceDictionary Source="/ExtenderApp.Views;component/Styles/ScrollView.xaml" />
-        <ResourceDictionary Source="/ExtenderApp.Views;component/Styles/Svg_Icon.xaml" />
-
-        <!--<ResourceDictionary Source="/ExtenderApp.Views;component/Styles/GlobalColor.xaml" />-->
-        <!--<ResourceDictionary Source="/ExtenderApp.Views;component/Styles/Global/LightTheme.xaml" />-->
-        <ResourceDictionary Source="/ExtenderApp.Views;component/Styles/Global/DarkTheme.xaml" />
+        <ResourceDictionary Source="/ExtenderApp.Views;component/Themes/Global/DarkTheme.xaml" />
     </ResourceDictionary.MergedDictionaries>
 
     <!-- 定义全局按钮样式 -->

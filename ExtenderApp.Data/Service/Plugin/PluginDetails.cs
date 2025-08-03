@@ -1,4 +1,5 @@
-﻿using System.Runtime.Loader;
+﻿using System.IO;
+using System.Runtime.Loader;
 
 namespace ExtenderApp.Data
 {
@@ -10,17 +11,17 @@ namespace ExtenderApp.Data
         /// <summary>
         /// 插件信息对象
         /// </summary>
-        private readonly PluginInfo pluginInfo;
+        private readonly PluginInfo _pluginInfo;
 
         /// <summary>
         /// 获取插件标题
         /// </summary>
-        public string? Title => pluginInfo.PluginTitle;
+        public string? Title => _pluginInfo.PluginTitle;
 
         /// <summary>
         /// 获取插件描述
         /// </summary>
-        public string? Description => pluginInfo.PluginDescription;
+        public string? Description => _pluginInfo.PluginDescription;
 
         /// <summary>
         /// 获取插件版本号
@@ -30,12 +31,12 @@ namespace ExtenderApp.Data
         /// <summary>
         /// 获取插件启动DLL文件路径
         /// </summary>
-        public string? StartupDll => pluginInfo.PluginStartupDll;
+        public string? StartupDll => _pluginInfo.PluginStartupDll;
 
         /// <summary>
         /// 获取插件打包路径
         /// </summary>
-        public string? PackPath => pluginInfo.PackPath;
+        public string? PackPath => _pluginInfo.PackPath;
 
         /// <summary>
         /// 获取或设置插件加载上下文
@@ -43,7 +44,7 @@ namespace ExtenderApp.Data
         public AssemblyLoadContext? LoadContext { get; set; }
 
         /// <summary>
-        /// 获取或设置插件路径
+        /// 获取或设置插件文件夹目录路径
         /// </summary>
         public string? Path { get; set; }
 
@@ -67,12 +68,19 @@ namespace ExtenderApp.Data
         public string ModScope { get; set; }
 
         /// <summary>
+        /// 获取插件图标路径。
+        /// </summary>
+        /// <returns>返回插件图标路径的字符串。</returns>
+        public string? PluginIcon { get; set; }
+
+        /// <summary>
         /// 初始化一个插件详细信息实例
         /// </summary>
         /// <param name="modeInfo">插件信息对象</param>
         public PluginDetails(PluginInfo modeInfo) : this()
         {
-            this.pluginInfo = modeInfo;
+            _pluginInfo = modeInfo;
+            PluginIcon = modeInfo.PluginIcon;
             Version = string.IsNullOrEmpty(modeInfo.PluginVersion) ? null : new Version(modeInfo.PluginVersion);
         }
 
@@ -85,7 +93,7 @@ namespace ExtenderApp.Data
             Path = string.Empty;
             StartupType = null;
             LoadContext = null;
-            Version = pluginInfo.PluginVersion == null ? null : new Version(pluginInfo.PluginVersion);
+            Version = _pluginInfo.PluginVersion == null ? null : new Version(_pluginInfo.PluginVersion);
         }
     }
 }

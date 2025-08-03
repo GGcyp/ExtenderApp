@@ -39,7 +39,7 @@ namespace ExtenderApp.Services
             if (details is null)
                 throw new ArgumentNullException(nameof(details));
 
-            return service.SetData(details.Title, data);
+            return service.SaveData(details.Title, data);
         }
 
         /// <summary>
@@ -50,7 +50,7 @@ namespace ExtenderApp.Services
         /// <param name="dataName">数据的名称。</param>
         /// <param name="data">要设置的数据。</param>
         /// <returns>如果设置成功，则返回 true；否则返回 false。</returns>
-        public static bool SetData<T>(this ILocalDataService service, string dataName, T? data) where T : class
+        public static bool SaveData<T>(this ILocalDataService service, string dataName, T? data) where T : class
         {
             return service.SaveData(dataName, new LocalData<T>(data, null));
         }
@@ -64,7 +64,7 @@ namespace ExtenderApp.Services
         /// <param name="data">要设置的数据。</param>
         /// <param name="version">数据的版本。</param>
         /// <returns>如果设置成功，则返回 true；否则返回 false。</returns>
-        public static bool SetData<T>(this ILocalDataService service, string dataName, T? data, Version? version) where T : class
+        public static bool SaveData<T>(this ILocalDataService service, string dataName, T? data, Version? version) where T : class
         {
             return service.SaveData(dataName, new LocalData<T>(data, version));
         }

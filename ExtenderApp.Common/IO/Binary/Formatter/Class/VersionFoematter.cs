@@ -16,7 +16,7 @@ namespace ExtenderApp.Common.IO.Binaries.Formatter
             _string = GetFormatter<string>();
         }
 
-        public override int Length => _string.Length;
+        public override int DefaultLength => _string.DefaultLength;
 
         public override Version Deserialize(ref ExtenderBinaryReader reader)
         {

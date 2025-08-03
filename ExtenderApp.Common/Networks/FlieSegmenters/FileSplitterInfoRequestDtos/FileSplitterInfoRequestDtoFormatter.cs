@@ -7,7 +7,7 @@ namespace ExtenderApp.Common.Networks
     internal class FileSplitterInfoRequestDtoFormatter : ResolverFormatter<FileSplitterInfoRequestDto>
     {
         private readonly IBinaryFormatter<int> _int;
-        public override int Length => _int.Length * 2;
+        public override int DefaultLength => _int.DefaultLength * 2;
 
         public FileSplitterInfoRequestDtoFormatter(IBinaryFormatterResolver resolver) : base(resolver)
         {

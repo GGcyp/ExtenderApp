@@ -15,9 +15,13 @@ namespace ExtenderApp.Views
         /// <returns>返回当前视图的视图信息。</returns>
         public ViewInfo ViewInfo { get; }
 
-        public ExtenderAppView()
+        protected T? ViewModel<T>() where T : class, IViewModel
+            => DataContext as T;
+
+        public ExtenderAppView(IViewModel? dataContext = null)
         {
             ViewInfo = new ViewInfo(GetType().Name);
+            DataContext = dataContext;
         }
 
         public virtual void Enter(ViewInfo oldViewInfo)

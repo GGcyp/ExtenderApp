@@ -9,7 +9,7 @@ namespace ExtenderApp.Common.IO.Local
         private readonly IBinaryFormatter<LocalFileInfo> _localFileInfo;
         private readonly IBinaryFormatter<int> _int;
 
-        public override int Length => _int.Length * 3 + _localFileInfo.Length;
+        public override int DefaultLength => _int.DefaultLength * 3 + _localFileInfo.DefaultLength;
 
         public FileOperateInfoFormatter(IBinaryFormatterResolver resolver) : base(resolver)
         {
@@ -34,7 +34,7 @@ namespace ExtenderApp.Common.IO.Local
 
         public override long GetLength(FileOperateInfo value)
         {
-            return _localFileInfo.GetLength(value.LocalFileInfo) + _int.Length * 3;
+            return _localFileInfo.GetLength(value.LocalFileInfo) + _int.DefaultLength * 3;
         }
     }
 }

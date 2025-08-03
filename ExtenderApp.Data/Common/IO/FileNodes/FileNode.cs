@@ -1,6 +1,4 @@
-﻿using System.Collections;
-
-namespace ExtenderApp.Data
+﻿namespace ExtenderApp.Data
 {
     /// <summary>
     /// 表示文件节点的基类，继承自泛型类FileNode<T>，其中T是FileNode<T>本身。
@@ -70,6 +68,22 @@ namespace ExtenderApp.Data
 
             length += Length;
             return length;
+        }
+
+        /// <summary>
+        /// 更新文件夹内所有文件的长度
+        /// </summary>
+        public void UpdateLengthForFolder()
+        {
+            if (IsFile) 
+                return;
+
+            for (int i = 0; i < Count; i++)
+            {
+                var node = this[i];
+                node.UpdateLengthForFolder();
+                Length += node.Length;
+            }
         }
 
         /// <summary>

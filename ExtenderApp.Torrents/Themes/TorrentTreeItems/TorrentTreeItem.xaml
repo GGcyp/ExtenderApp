@@ -39,10 +39,12 @@
                                 PathHeight="12"
                                 Margin="5 0 0 0"
                                 Foreground="{TemplateBinding Foreground}"
-                                Visibility="{Binding IsFile,Converter={viewCon:BooleanToVisibilityConverter},ConverterParameter=InverseHidden}"/>
+                                Visibility="{Binding IsFile,
+                                Converter={viewCon:BooleanToVisibilityConverter},
+                                ConverterParameter=InverseHidden}"/>
                             <CheckBox
                                 Margin="5 0 0 0"
-                                IsChecked="{Binding IsNeedDownload}"
+                                IsChecked="{Binding DisplayNeedDownload}"
                                 VerticalAlignment="Center"/>
                         </StackPanel>
                         <TextBlock
@@ -52,7 +54,7 @@
                             VerticalAlignment="Center"
                             HorizontalAlignment="Left"
                             Margin="{Binding Depth,Converter={con:DepthConverter}}"
-                            MaxWidth="{Binding Depth,Converter={con:MaxWidthConverter}}"
+                            MaxWidth="{Binding Depth,Converter={con:DefaultMaxWidthConverter}}"
                             TextTrimming="CharacterEllipsis"/>
                         <TextBlock Grid.Column="2"
                                    Text="{Binding Length,Converter={viewCon:SizeConverter}}"
@@ -60,7 +62,7 @@
                                    VerticalAlignment="Center"
                                    HorizontalAlignment="Left"/>
                         <TextBlock Grid.Column="3"
-                                   Text="{Binding Progress}"
+                                   Text="{Binding Progress,StringFormat=P1}"
                                    Foreground="{TemplateBinding Foreground}"
                                    VerticalAlignment="Center"
                                    HorizontalAlignment="Right"/>

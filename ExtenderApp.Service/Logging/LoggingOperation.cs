@@ -20,7 +20,10 @@ namespace ExtenderApp.Services.Logging
             var stream = item.StreamWriter;
             var fileTime = item.CurrentFiletime;
 
-            if (info.Time.Year != fileTime.Year || info.Time.Month != fileTime.Month || info.Time.Day != fileTime.Day)
+            if (stream == null || 
+                info.Time.Year != fileTime.Year || 
+                info.Time.Month != fileTime.Month || 
+                info.Time.Day != fileTime.Day)
             {
                 var tempFiletime = info.Time.ToString("yyyyMMdd");
                 var fileName = string.Concat(tempFiletime, FileExtensions.LogFileExtensions);
@@ -34,11 +37,14 @@ namespace ExtenderApp.Services.Logging
                 try
                 {
                     stream = File.Exists(filepath) ? File.AppendText(filepath) : File.CreateText(filepath);
+                    stream.AutoFlush = true;
                 }
                 catch (Exception ex)
                 {
                     //this.Error($"无法创建或打开日志文件: {ex.Message}", typeof(ILogingService), ex);
+#if DEBUG
                     Debug.Print(ex.Message);
+#endif
                 }
             }
 

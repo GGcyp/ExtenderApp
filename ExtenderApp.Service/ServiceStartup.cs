@@ -20,21 +20,28 @@ namespace ExtenderApp.Services
         {
             services.AddSingleton<IServiceStore, ServiceStore>();
             services.AddSingleton<INavigationService, NavigationService>();
-            services.AddSingleton<ITemporarilyService, TemporarilyService>();
+            services.AddSingleton<ICacheService, CacheService>();
             services.AddSingleton<ILogingService, LoggingService>();
             services.AddSingleton<IPathService, PathService>();
 
-            AddModService(services);
+            AddPluginService(services);
             AddLocaDataService(services);
         }
 
         /// <summary>
-        /// 向服务容器中添加Mod服务。
+        /// 添加插件服务到服务集合中。
         /// </summary>
         /// <param name="services">服务集合。</param>
-        private void AddModService(IServiceCollection services)
+        private void AddPluginService(IServiceCollection services)
         {
+            /// <summary>
+            /// 向服务集合中添加一个单例的IPluginService实现。
+            /// </summary>
             services.AddSingleton<IPluginService, PluginService>();
+
+            /// <summary>
+            /// 向服务集合中添加一个单例的PluginStore。
+            /// </summary>
             services.AddSingleton<PluginStore>();
         }
 

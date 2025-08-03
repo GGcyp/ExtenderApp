@@ -1,0 +1,40 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:local="clr-namespace:ExtenderApp.Views.Themes">
+
+    <GeometryGroup x:Key="PlayGeometry">
+        <!-- 外圆路径 -->
+        <PathGeometry Figures="M512,42.667008 C254.733312,42.667008 42.665984,254.736384 42.665984,512 s212.067328,469.331968 469.331968,469.331968 c257.26464,0 469.334016,-212.067328 469.334016,-469.331968 0,-257.26464 -212.069376,-469.334016 -469.334016,-469.334016 M512,1024 C228.692992,1024 0,795.307008 0,512 0,228.692992 228.692992,0 512,0 c283.307008,0 512,228.692992 512,512 0,283.307008 -228.692992,512 -512,512"/>
+        <!-- 箭头路径 -->
+        <PathGeometry Figures="M631.883776,496.1024 c10.61888,7.949312 10.61888,23.846912 0,31.7952 L405.23776,678.93248 C394.61888,686.880768 384,681.582592 384,668.33408 V355.667968 c0,-13.249536 10.619904,-18.548736 21.23776,-10.600448 l226.646016,151.03488 z"/>
+    </GeometryGroup>
+    <GeometryGroup x:Key="PauseGeometry">
+        <!-- 外圆路径 -->
+        <PathGeometry Figures="M512,42.667008 C254.733312,42.667008 42.665984,254.736384 42.665984,512 s212.067328,469.331968 469.331968,469.331968 c257.26464,0 469.334016,-212.067328 469.334016,-469.331968 0,-257.26464 -212.069376,-469.334016 -469.334016,-469.334016 M512,1024 C228.692992,1024 0,795.307008 0,512 0,228.692992 228.692992,0 512,0 c283.307008,0 512,228.692992 512,512 0,283.307008 -228.692992,512 -512,512"/>
+        <!-- 正方形路径 -->
+        <PathGeometry Figures="M384,384 h256 v256 H384 z"/>
+    </GeometryGroup>
+    <Style TargetType="local:PlaySwitch">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="local:PlaySwitch">
+                    <Grid Background="{TemplateBinding Background}">
+                        <Path x:Name="Expand"
+                              Width="{TemplateBinding Width}"
+                              Height="{TemplateBinding Height}"
+                              Fill="{TemplateBinding Fill}"
+                              Stroke="{TemplateBinding Stroke}"
+                              Data="{StaticResource PlayGeometry}"
+                              Stretch="Uniform"/>
+                    </Grid>
+                    <!--<ControlTemplate.Triggers>
+                    <Trigger Property="IsPaly" Value="True">
+                    <Setter TargetName="Expand"  Property="Data" Value="{StaticResource PauseGeometry}"/>
+                    </Trigger>
+                    </ControlTemplate.Triggers>-->
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+</ResourceDictionary>

@@ -8,7 +8,7 @@ namespace ExtenderApp.Common.Networks.FlieSegmenters.FileResponseDtos
     {
         private readonly IBinaryFormatter<int> _int;
 
-        public override int Length => _int.Length;
+        public override int DefaultLength => _int.DefaultLength;
 
         public FileTransferConfigDtoFormatter(IBinaryFormatterResolver resolver) : base(resolver)
         {
@@ -28,7 +28,7 @@ namespace ExtenderApp.Common.Networks.FlieSegmenters.FileResponseDtos
 
         public override long GetLength(FileTransferConfigDto value)
         {
-            return _int.Length;
+            return _int.DefaultLength;
         }
     }
 }

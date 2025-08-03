@@ -18,7 +18,7 @@ namespace ExtenderApp.Common.IO.Binaries.Formatter
 
         public override TCollection Default => Create(0);
 
-        public override int Length => 5;
+        public override int DefaultLength => 5;
 
         /// <summary>
         /// 初始化 CollectionFormatter 实例。
@@ -94,7 +94,7 @@ namespace ExtenderApp.Common.IO.Binaries.Formatter
                 return 1;
             }
 
-            long result = Length;
+            long result = DefaultLength;
             foreach (var item in value)
             {
                 result += _formatter.GetLength(item);

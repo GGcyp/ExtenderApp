@@ -1,22 +1,20 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Globalization;
 using System.Windows.Data;
 using System.Windows.Markup;
 
 namespace ExtenderApp.Torrents.Converter
 {
-    public class MaxWidthConverter : MarkupExtension, IValueConverter
+    internal class MaxWidthConverter : MarkupExtension, IValueConverter
     {
-        private const int DefaultManWidth = 200;
-
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            int Depth = (int)value;
-            return DefaultManWidth - Depth * 20;
+            double width = (double)value;
+
+            if (parameter is not string minuend)
+                return 200;
+
+            width -= double.Parse(minuend);
+            return width;
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)

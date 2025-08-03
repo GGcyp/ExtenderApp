@@ -30,7 +30,6 @@ namespace ExtenderApp.Services
         /// </summary>
         private readonly LoadPluginTransform _pluginTransform;
 
-
         /// <summary>
         /// 作用域执行器
         /// </summary>
@@ -158,7 +157,6 @@ namespace ExtenderApp.Services
             details.StartupType = modStartup.StartType;
             details.CutsceneViewType = modStartup.CutsceneViewType;
             modStartup.ConfigureBinaryFormatterStore(_binaryFormatterStore);
-
         }
 
         /// <summary>
@@ -207,7 +205,7 @@ namespace ExtenderApp.Services
             {
                 Details.ModScope = options.ScopeName;
 
-                services.AddSingleton<IServiceStore, ScopeServiceStore>();
+                services.AddSingleton<IServiceStore, PluginServiceStore>();
                 services.AddSingleton(Details);
             }
         }

@@ -33,7 +33,9 @@ namespace ExtenderApp.Views.Animation
         /// 表示动画起始值的依赖属性。
         /// </summary>
         public static readonly DependencyProperty FromProperty =
-            DependencyProperty.Register("From", typeof(T), typeof(GenericAnimation<T>));
+            DependencyProperty.Register("From",
+                typeof(T),
+                typeof(GenericAnimation<T>));
 
         /// <summary>
         /// 获取或设置动画的起始值。
@@ -48,7 +50,9 @@ namespace ExtenderApp.Views.Animation
         /// 表示动画结束值的依赖属性。
         /// </summary>
         public static readonly DependencyProperty ToProperty =
-            DependencyProperty.Register("To", typeof(T), typeof(GenericAnimation<T>));
+            DependencyProperty.Register("To",
+                typeof(T),
+                typeof(GenericAnimation<T>));
 
         /// <summary>
         /// 获取或设置动画的结束值。

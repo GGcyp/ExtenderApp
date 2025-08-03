@@ -31,5 +31,13 @@ namespace ExtenderApp.Data
         /// 获取或设置插件包的路径。
         /// </summary>
         public string? PackPath { get; set; }
+
+        /// <summary>
+        /// 获取或设置插件图标。
+        /// </summary>
+        /// <value>
+        /// 插件图标，返回值为null表示没有设置图标。
+        /// </value>
+        public string? PluginIcon { get; set; }
     }
 }

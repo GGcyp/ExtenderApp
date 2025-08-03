@@ -8,7 +8,7 @@ namespace ExtenderApp.Common.IO.Binary.Formatter
 {
     internal class BitFieldDataFormatter : ExtenderFormatter<BitFieldData>
     {
-        public override int Length => 1;
+        public override int DefaultLength => 1;
 
         public BitFieldDataFormatter(ExtenderBinaryWriterConvert binaryWriterConvert, ExtenderBinaryReaderConvert binaryReaderConvert, BinaryOptions options) : base(binaryWriterConvert, binaryReaderConvert, options)
         {

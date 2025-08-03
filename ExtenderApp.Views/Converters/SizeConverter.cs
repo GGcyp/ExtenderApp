@@ -8,10 +8,11 @@ namespace ExtenderApp.Views.Converters
 {
     public class SizeConverter : MarkupExtension, IValueConverter
     {
+        private readonly string[] units = { "B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB" };
+
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
             value = value ?? 0;
-            string[] units = { "B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB" };
             double size = long.Parse(value.ToString());
             int unit = 0;
 

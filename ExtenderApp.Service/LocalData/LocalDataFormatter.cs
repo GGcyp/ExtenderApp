@@ -30,7 +30,7 @@ namespace ExtenderApp.Services
         /// 获取二进制格式化器中的对象数量
         /// </summary>
         /// <returns>返回二进制格式化器中的对象数量</returns>
-        public override int Length => _binary.Length + _version.Length;
+        public override int DefaultLength => _binary.DefaultLength + _version.DefaultLength;
 
         /// <summary>
         /// 初始化本地数据格式化器对象
@@ -74,7 +74,7 @@ namespace ExtenderApp.Services
         {
             if (value == null)
             {
-                return Length;
+                return DefaultLength;
             }
 
             return _version.GetLength(value.Version) + _binary.GetLength(value.Data);

@@ -13,7 +13,7 @@ namespace ExtenderApp.Common.IO.Binaries.Formatter
         private readonly IBinaryFormatter<TKey> _keyFormatter;
         private readonly IBinaryFormatter<TValue> _valueFormatter;
 
-        public override int Length => 5;
+        public override int DefaultLength => 5;
 
         public InterfaceDictionaryFormatter(IBinaryFormatterResolver resolver, ExtenderBinaryWriterConvert binaryWriterConvert, ExtenderBinaryReaderConvert binaryReaderConvert, BinaryOptions options) : base(binaryWriterConvert, binaryReaderConvert, options)
         {
@@ -63,8 +63,8 @@ namespace ExtenderApp.Common.IO.Binaries.Formatter
                 return 1;
             }
 
-            var result = Length;
-            result += (_keyFormatter.Length + _valueFormatter.Length) * value.Count;
+            var result = DefaultLength;
+            result += (_keyFormatter.DefaultLength + _valueFormatter.DefaultLength) * value.Count;
             return result;
         }
 

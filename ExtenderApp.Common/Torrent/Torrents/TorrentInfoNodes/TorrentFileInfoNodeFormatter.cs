@@ -55,10 +55,10 @@ namespace ExtenderApp.Common.Torrent
         protected override void ProtectedGetLength(TorrentFileInfoNode value, DataBuffer<long> dataBuffer)
         {
             base.ProtectedGetLength(value, dataBuffer);
-            dataBuffer.Item1 += _bool.Length;
-            dataBuffer.Item1 += _long.Length;
-            dataBuffer.Item1 += _long.Length;
-            dataBuffer.Item1 += _long.Length;
+            dataBuffer.Item1 += _bool.DefaultLength;
+            dataBuffer.Item1 += _long.DefaultLength;
+            dataBuffer.Item1 += _long.DefaultLength;
+            dataBuffer.Item1 += _long.DefaultLength;
         }
     }
 }

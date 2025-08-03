@@ -21,7 +21,7 @@ namespace AppHost.Extensions.Hosting
 
         public async Task StartAsync(CancellationToken cancellationToken = default)
         {
-            if(m_hostedServiceExecutor != null)
+            if (m_hostedServiceExecutor != null)
             {
                 await m_hostedServiceExecutor.StartAsync(cancellationToken);
             }

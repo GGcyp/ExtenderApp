@@ -17,6 +17,7 @@
 
 	<ItemGroup>
 		<PackageReference Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.135" />
+		<PackageReference Include="PropertyChanged.Fody" Version="4.1.0" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -27,12 +28,22 @@
 		<ProjectReference Include="..\ExtenderApp.Views\ExtenderApp.Views.csproj" />
 	</ItemGroup>
 
+	<ItemGroup>
+	  <Folder Include="Converter\" />
+	</ItemGroup>
+
 	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
 		<ItemGroup>
 			<TargetFolder Include="E:\WPF_Project\ExtenderApp\ExtenderApp\bin\Debug\net8.0-windows" />
 		</ItemGroup>
 		<MakeDir Directories="%(TargetFolder.Identity)\lib" Condition="!Exists('%(TargetFolder.Identity)\lib')" />
-		<Exec Command="copy &quot;$(TargetDir)\$(ProjectName).dll&quot; &quot;%(TargetFolder.Identity)\lib\$(ProjectName).dll&quot;" />
+
+
+		<!-- 收集要复制的动态库文件（.dll） -->
+		<ItemGroup>
+			<DllFiles Include="$(TargetDir)\$(ProjectName).dll" />
+		</ItemGroup>
+		<Copy SourceFiles="@(DllFiles)" DestinationFolder="%(TargetFolder.Identity)\lib" />
 	</Target>
 
 </Project>

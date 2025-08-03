@@ -7,7 +7,7 @@ namespace ExtenderApp.Common.IO.Binaries.Formatter
     /// </summary>
     public sealed class DateTimeFormatter : ExtenderFormatter<DateTime>
     {
-        public override int Length => 9;
+        public override int DefaultLength => 9;
 
         public DateTimeFormatter(ExtenderBinaryWriterConvert binaryWriterConvert, ExtenderBinaryReaderConvert binaryReaderConvert, BinaryOptions binaryOptions) : base(binaryWriterConvert, binaryReaderConvert, binaryOptions)
         {

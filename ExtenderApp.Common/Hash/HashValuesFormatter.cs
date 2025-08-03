@@ -9,7 +9,7 @@ namespace ExtenderApp.Common.Hash
         protected readonly IBinaryFormatter<ReadOnlyMemory<ulong>> _ulongs;
         protected readonly IBinaryFormatter<int> _int;
 
-        public override int Length => _ulongs.Length + _int.Length;
+        public override int DefaultLength => _ulongs.DefaultLength + _int.DefaultLength;
 
         public HashValuesFormatter(IBinaryFormatterResolver resolver) : base(resolver)
         {
@@ -47,7 +47,7 @@ namespace ExtenderApp.Common.Hash
                 return 1;
             }
 
-            return _ulongs.GetLength(value.ULongMemory) + _int.Length;
+            return _ulongs.GetLength(value.ULongMemory) + _int.DefaultLength;
         }
     }
 }

@@ -7,7 +7,7 @@ namespace ExtenderApp.Common.Torrent.Models.InfoHashs
     internal class InfoHashForamtter : ResolverFormatter<InfoHash>
     {
         private readonly IBinaryFormatter<HashValue> _hashValue;
-        public override int Length => _hashValue.Length;
+        public override int DefaultLength => _hashValue.DefaultLength;
         public InfoHashForamtter(IBinaryFormatterResolver resolver) : base(resolver)
         {
             _hashValue = GetFormatter<HashValue>();

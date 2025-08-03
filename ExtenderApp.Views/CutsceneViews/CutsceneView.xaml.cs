@@ -14,62 +14,54 @@ using System.Windows.Navigation;
 using System.Windows.Shapes;
 using System.Windows.Media.Animation;
 using ExtenderApp.Abstract;
+using System.ComponentModel;
 
-namespace ExtenderApp.Views
+namespace ExtenderApp.Views.CutsceneViews
 {
     /// <summary>
     /// CutsceneView.xaml 的交互逻辑
     /// </summary>
     public partial class CutsceneView : ExtenderAppView, ICutsceneView
     {
+        private readonly CutsceneViewModel viewModel;
         public CutsceneView()
         {
             InitializeComponent();
+            viewModel = new CutsceneViewModel();
+            DataContext = viewModel;
         }
 
         public void Start()
         {
-            // 初始化位置到中心
-            UpdateCenteredPositions();
-            // 开始进入动画
-            BeginEnterAnimation();
+            Start(null);
         }
 
-        private void UpdateCenteredPositions()
+        public void Start(Action? callback)
         {
-            // 计算中心位置
-            var centerX = AnimationCanvas.ActualWidth / 2;
-            var centerY = AnimationCanvas.ActualHeight / 2;
+            EventHandler eventHandler = null;
+            if (callback != null)
+            {
+                eventHandler = (o, e) => callback?.Invoke();
+            }
 
-            // 设置小球和文本的中心位置
-            BallTranslate.X = centerX;
-            BallTranslate.Y = centerY;
-            TextTranslate.X = centerX;
-            TextTranslate.Y = centerY;
-        }
-
-        /// <summary>
-        /// 开始进入动画 (从小到大遮蔽)
-        /// </summary>
-        public void BeginEnterAnimation()
-        {
-            UpdateCenteredPositions();
-            var storyboard = (Storyboard)Resources["EnterStoryboard"];
-            storyboard.Begin();
+            backgroundBehavior.ToggleVisibility(true, eventHandler);
+            foregroundBehavior.ToggleVisibility(true);
         }
 
         public void End()
         {
-            BeginExitAnimation();
+            End(null);
         }
 
-        /// <summary>
-        /// 开始退出动画 (从大到小消失)
-        /// </summary>
-        public void BeginExitAnimation()
+        public void End(Action? callback)
         {
-            var storyboard = (Storyboard)Resources["ExitStoryboard"];
-            storyboard.Begin();
+            EventHandler eventHandler = null;
+            if (callback != null)
+            {
+                eventHandler = (o, e) => callback?.Invoke();
+            }
+            backgroundBehavior.ToggleVisibility(false, eventHandler);
+            foregroundBehavior.ToggleVisibility(false);
         }
     }
 }

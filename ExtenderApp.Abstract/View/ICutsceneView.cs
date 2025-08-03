@@ -1,11 +1,12 @@
 ﻿
 
+
 namespace ExtenderApp.Abstract
 {
     /// <summary>
     /// 切场视图接口
     /// </summary>
-    public interface ICutsceneView : IView
+    public interface ICutsceneView : IMainView
     {
         /// <summary>
         /// 开始切场
@@ -16,5 +17,7 @@ namespace ExtenderApp.Abstract
         /// 结束切场
         /// </summary>
         void End();
+        void End(Action? callback);
+        void Start(Action? callback);
     }
 }

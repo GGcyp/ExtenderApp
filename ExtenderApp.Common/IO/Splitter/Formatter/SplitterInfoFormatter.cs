@@ -34,7 +34,7 @@ namespace ExtenderApp.Common.IO.Splitter
         /// </summary>
         private readonly IBinaryFormatter<PieceData> _pieceData;
 
-        public override int Length => _uint.Length * 2 + _pieceData.Length + _int.Length * 2 + _string.Length + _hash.Length;
+        public override int DefaultLength => _uint.DefaultLength * 2 + _pieceData.DefaultLength + _int.DefaultLength * 2 + _string.DefaultLength + _hash.DefaultLength;
 
         /// <summary>
         /// 初始化 FileSplitterInfoFormatter 实例
@@ -88,10 +88,10 @@ namespace ExtenderApp.Common.IO.Splitter
         {
             if (value == null)
             {
-                return _uint.Length * 2 + _int.Length * 2 + _string.Length * 2 + _pieceData.Length;
+                return _uint.DefaultLength * 2 + _int.DefaultLength * 2 + _string.DefaultLength * 2 + _pieceData.DefaultLength;
             }
 
-            long result = _uint.Length * 2 + _int.Length * 2;
+            long result = _uint.DefaultLength * 2 + _int.DefaultLength * 2;
             result += _string.GetLength(value.TargetExtensions);
             result += _hash.GetLength(value.HashValue);
             result += _pieceData.GetLength(value.pieceData);

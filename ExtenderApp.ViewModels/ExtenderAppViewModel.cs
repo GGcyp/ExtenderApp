@@ -5,6 +5,7 @@ using ExtenderApp.Services;
 using ExtenderApp.Data;
 using ExtenderApp.Common.Error;
 using ExtenderApp.Common;
+using AppHost.Extensions.DependencyInjection;
 
 namespace ExtenderApp.ViewModels
 {
@@ -18,6 +19,8 @@ namespace ExtenderApp.ViewModels
         /// 视图模型名称（只读）
         /// </summary>
         private readonly string _viewModelName;
+
+        protected PluginDetails? ModDetails { get; set; }
 
         /// <summary>
         /// 当属性更改时发生的事件
@@ -190,21 +193,6 @@ namespace ExtenderApp.ViewModels
 
         #endregion
 
-        #region Mod
-
-        /// <summary>
-        /// 获取当前模块的详细信息。
-        /// </summary>
-        /// <returns>当前模块的详细信息，如果无法获取则返回null。</returns>
-        protected PluginDetails? GetCurrentModDetails()
-        {
-            if (_serviceStore is IModServiceStore service)
-                return service.ModDetails;
-            return null;
-        }
-
-        #endregion
-
         #region LocalData
 
         /// <summary>
@@ -230,13 +218,23 @@ namespace ExtenderApp.ViewModels
         /// <typeparam name="T">数据类型</typeparam>
         /// <param name="data">要设置的数据</param>
         /// <returns>如果成功设置数据则返回true，否则返回false</returns>
-        protected bool SaveLocalData<T>(T? data) where T : class, new()
+        protected bool SaveLocalData<T>(T? data) where T : class
         {
             if (data is null)
-                data = new T();
+                data = _serviceStore.ServiceProvider.GetService<T>();
+
+            if (data is null)
+                return false;
+
             return _serviceStore.LocalDataService.SaveData(GetCurrentModDetails(), data);
         }
 
+        protected PluginDetails? GetCurrentModDetails()
+        {
+            if (_serviceStore is IPuginServiceStore store)
+                return store.PuginDetails;
+            return null;
+        }
 
         #endregion
 
@@ -381,12 +379,12 @@ namespace ExtenderApp.ViewModels
     /// <typeparam name="TModle">模型类型</typeparam>
     public abstract class ExtenderAppViewModel<TView, TModle> : ExtenderAppViewModel<TView>
         where TView : class, IView
-        where TModle : class, new()
+        where TModle : class
     {
         /// <summary>
         /// 模型实例
         /// </summary>
-        private TModle model;
+        private TModle? model;
 
         /// <summary>
         /// 获取模型实例
@@ -398,15 +396,9 @@ namespace ExtenderApp.ViewModels
                 if (model is null)
                 {
                     if (!LoadModel() || model is null)
-                        model = new TModle();
+                        model = _serviceStore.ServiceProvider.GetRequiredService<TModle>();
                 }
                 return model;
-            }
-            set
-            {
-                if (model == value)
-                    return;
-                model = value;
             }
         }
 
@@ -416,6 +408,11 @@ namespace ExtenderApp.ViewModels
         /// <param name="serviceStore">服务存储</param>
         protected ExtenderAppViewModel(IServiceStore serviceStore) : base(serviceStore)
         {
+        }
+
+        protected ExtenderAppViewModel(TModle model, IServiceStore serviceStore) : base(serviceStore)
+        {
+            this.model = model;
         }
 
         /// <summary>

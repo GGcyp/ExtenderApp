@@ -81,7 +81,7 @@ namespace ExtenderApp.Common.IO
                 dataBuffer.Item1 += 1;
                 return;
             }
-            dataBuffer.Item1 += _bool.Length + _long.Length + _string.GetLength(value.Name);
+            dataBuffer.Item1 += _bool.DefaultLength + _long.DefaultLength + _string.GetLength(value.Name);
         }
     }
 }

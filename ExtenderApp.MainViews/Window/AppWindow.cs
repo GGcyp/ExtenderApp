@@ -4,6 +4,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Shell;
 using ExtenderApp.Abstract;
+using ExtenderApp.Data;
 
 namespace ExtenderApp.MainViews
 {
@@ -64,6 +65,21 @@ namespace ExtenderApp.MainViews
         }
 
         public void ShowView(IView view)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void ShowView(IMainView mainView)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void Enter(ViewInfo oldViewInfo)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void Exit(ViewInfo newViewInfo)
         {
             throw new NotImplementedException();
         }
@@ -195,6 +211,9 @@ namespace ExtenderApp.MainViews
             get { return (bool)GetValue(FitSystemWindowProperty); }
             set { SetValue(FitSystemWindowProperty, value); }
         }
+
+        public ViewInfo ViewInfo => throw new NotImplementedException();
+
         public static readonly DependencyProperty FitSystemWindowProperty =
             DependencyProperty.Register("FitSystemWindow",
                 typeof(bool),

@@ -14,7 +14,7 @@ namespace ExtenderApp.Common.IO.Binaries.Formatter
         private readonly IBinaryFormatter<T> _formatter;
         private readonly IBinaryFormatter<List<T>> _list;
 
-        public override int Length => 5 + _formatter.Length;
+        public override int DefaultLength => 5 + _formatter.DefaultLength;
 
         public IEnumerableFormatter(IBinaryFormatterResolver resolver) : base(resolver)
         {

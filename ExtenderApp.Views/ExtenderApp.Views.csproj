@@ -8,6 +8,11 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+	  <Page Remove="Themes\Global\DarkTheme.xaml" />
+	  <Page Remove="Themes\Global\LightTheme.xaml" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<ProjectReference Include="..\AppHost.Builder\AppHost.Builder.csproj" />
 		<ProjectReference Include="..\ExtenderApp.Abstract\ExtenderApp.Abstract.csproj" />
 		<ProjectReference Include="..\ExtenderApp.Common\ExtenderApp.Common.csproj" />
@@ -15,6 +20,11 @@
 
 	<ItemGroup>
 		<PackageReference Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.135" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Resource Include="Themes\Global\DarkTheme.xaml" />
+	  <Resource Include="Themes\Global\LightTheme.xaml" />
 	</ItemGroup>
 
 	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
@@ -27,7 +37,7 @@
 		<ItemGroup>
 			<DllFiles Include="$(TargetDir)\$(ProjectName).dll" />
 		</ItemGroup>
-		<Copy SourceFiles="@(DllFiles)" DestinationFolder="%(TargetFolder.Identity)\lib" SkipUnchangedFiles="true" />
+		<Copy SourceFiles="@(DllFiles)" DestinationFolder="%(TargetFolder.Identity)\lib" />
 
 		<ItemGroup>
 			<PackageReferencePath Include="$(NuGetPackageRoot)\%(PackageReference.Identity)\%(PackageReference.Version)\lib\**\*.dll" />

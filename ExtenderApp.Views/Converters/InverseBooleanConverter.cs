@@ -1,4 +1,4 @@
-using System.Globalization; 
+using System.Globalization;
 using System.Windows.Data;
 using System.Windows.Markup;
 
@@ -7,7 +7,7 @@ namespace ExtenderApp.Views.Converters
     /// <summary>
     /// 布尔值反转转换器类
     /// </summary>
-    public class InverseBooleanConverter : MarkupExtension,IValueConverter
+    public class InverseBooleanConverter : MarkupExtension, IValueConverter
     {
         /// <summary>
         /// 将输入值转换为输出值

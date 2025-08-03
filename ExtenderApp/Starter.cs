@@ -32,7 +32,6 @@ namespace ExtenderApp
             Debug.Print($"生成服务成功 : {DateTime.Now}");
 
             ILogingService? logingService = application.Service.GetService<ILogingService>();
-
             try
             {
                 sw.Stop();

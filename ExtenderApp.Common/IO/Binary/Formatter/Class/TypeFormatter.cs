@@ -6,7 +6,7 @@ namespace ExtenderApp.Common.IO.Binaries.Formatter
     internal class TypeFormatter : ResolverFormatter<Type>
     {
         protected readonly IBinaryFormatter<string> _string;
-        public override int Length => _string.Length;
+        public override int DefaultLength => _string.DefaultLength;
         public TypeFormatter(IBinaryFormatterResolver resolver) : base(resolver)
         {
             _string = resolver.GetFormatter<string>();

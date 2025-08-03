@@ -2,5 +2,7 @@
     <ResourceDictionary.MergedDictionaries>
         <ResourceDictionary Source="/ExtenderApp.Views;component/Themes/Title/TitleLable.xaml" />
         <ResourceDictionary Source="/ExtenderApp.Views;component/Themes/ExpandSwitch/ExpandSwitch.xaml" />
+        <ResourceDictionary Source="/ExtenderApp.Views;component/Themes/StartSwitch/StartSwitch.xaml"/>
+        <ResourceDictionary Source="/ExtenderApp.Views;component/Themes/PlaySwitch/PlaySwitch.xaml"/>
     </ResourceDictionary.MergedDictionaries>
 </ResourceDictionary>

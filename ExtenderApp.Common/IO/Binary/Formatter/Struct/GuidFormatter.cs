@@ -7,7 +7,7 @@ namespace ExtenderApp.Common.IO.Binaries.Formatter
     {
         private readonly IBinaryFormatter<string> _formatter;
 
-        public override int Length => throw new NotImplementedException();
+        public override int DefaultLength => throw new NotImplementedException();
 
         public GuidFormatter(IBinaryFormatterResolver resolver) : base(resolver)
         {

@@ -16,7 +16,8 @@ namespace ExtenderApp.Views
 
         protected override Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            _mainWindow.ShowView(_navigationService.NavigateTo(typeof(IMainView), string.Empty, null));
+            var mainView = _navigationService.NavigateTo(typeof(IMainView), string.Empty, null) as IMainView;
+            _mainWindow.ShowView(mainView);
             _mainWindow.Show();
             return Task.CompletedTask;
         }

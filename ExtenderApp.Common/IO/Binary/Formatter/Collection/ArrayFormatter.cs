@@ -26,7 +26,7 @@ namespace ExtenderApp.Common.IO.Binaries.Formatter
             _binaryFormatter = resolver.GetFormatter<T>();
         }
 
-        public override int Length => 1;
+        public override int DefaultLength => 1;
 
         /// <summary>
         /// 反序列化数组
@@ -93,8 +93,8 @@ namespace ExtenderApp.Common.IO.Binaries.Formatter
                 return 1;
             }
 
-            var result = Length;
-            result += value.Length * _binaryFormatter.Length;
+            var result = DefaultLength;
+            result += value.Length * _binaryFormatter.DefaultLength;
             return result;
         }
     }
