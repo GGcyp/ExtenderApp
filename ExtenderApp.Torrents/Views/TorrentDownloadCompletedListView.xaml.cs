@@ -14,16 +14,15 @@ using System.Windows.Navigation;
 using System.Windows.Shapes;
 using ExtenderApp.Torrents.ViewModels;
 using ExtenderApp.Views;
-using Microsoft.Win32;
 
 namespace ExtenderApp.Torrents.Views
 {
     /// <summary>
-    /// TorrentMainView.xaml 的交互逻辑
+    /// TorrentDownloadCompletedListView.xaml 的交互逻辑
     /// </summary>
-    public partial class TorrentMainView : ExtenderAppView
+    public partial class TorrentDownloadCompletedListView : ExtenderAppView
     {
-        public TorrentMainView(TorrentMainViewModel viewModel) : base(viewModel)
+        public TorrentDownloadCompletedListView(TorrentDownloadCompletedListViewModel viewModel) : base(viewModel)
         {
             InitializeComponent();
         }

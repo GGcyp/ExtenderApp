@@ -1,5 +1,6 @@
 ﻿using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Net;
 using ExtenderApp.Abstract;
 using ExtenderApp.Torrents.Models;
 using MonoTorrent.Client;
@@ -18,11 +19,30 @@ namespace ExtenderApp.Torrents
 
         public IView? TorrentDetailsView { get; set; }
 
-        internal IView TorrentFileInfoView { get; set; }
-
-        public ObservableCollection<TorrentInfo> DowloadTorrentCollection { get; set; }
+        public ObservableCollection<TorrentInfo>? DowloadTorrentCollection { get; set; }
+        public ObservableCollection<TorrentInfo>? DowloadCompletedTorrentCollection { get; set; }
 
         public event PropertyChangedEventHandler? PropertyChanged;
+
+        public void CreateTorrentClientEngine()
+        {
+            // 1. 创建引擎配置
+            EngineSettingsBuilder builder = new()
+            {
+                AllowPortForwarding = true,
+                AutoSaveLoadDhtCache = true,
+                AutoSaveLoadFastResume = true,
+                AutoSaveLoadMagnetLinkMetadata = true,
+                ListenEndPoints = new Dictionary<string, IPEndPoint> {
+                    { "ipv4", new IPEndPoint (IPAddress.Any, 55123) },
+                    { "ipv6", new IPEndPoint (IPAddress.IPv6Any, 55123) }
+                },
+                DhtEndPoint = new IPEndPoint(IPAddress.Any, 55123),
+            };
+
+            // 2. 初始化引擎
+            Engine = new ClientEngine(builder.ToSettings());
+        }
 
         public async Task SatrtTorrentAsync(TorrentInfo info)
         {

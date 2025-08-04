@@ -17,17 +17,18 @@
         </ResourceDictionary>
     </view:ExtenderAppView.Resources>
     <Grid>
-        <Grid Panel.ZIndex="0">
-            <ContentControl Content="{Binding Model.CurrentView}"/>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="40"/>
+            <RowDefinition/>
+        </Grid.RowDefinitions>
+        <Grid Grid.Row="0"
+              Background="{DynamicResource GlobalBackgroundBrush}">
+            <Button Content="返回"
+                    Command="{Binding ToMainViewCommand}"
+                    HorizontalAlignment="Left"/>
         </Grid>
-        <Grid x:Name="mainViewSetup"
-              Grid.Column="0"
-              Width="70"
-              HorizontalAlignment="Left">
-            <StackPanel VerticalAlignment="Center">
-                <Button Content="返回"
-                        Command="{Binding ToMainViewCommand}"/>
-            </StackPanel>
+        <Grid Grid.Row="1">
+            <ContentControl Content="{Binding Model.CurrentView}"/>
         </Grid>
     </Grid>
 </view:ExtenderAppView>

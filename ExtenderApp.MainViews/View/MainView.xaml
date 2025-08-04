@@ -50,12 +50,8 @@
                     Style="{StaticResource AppScrollViewer}">
                     <StackPanel>
                         <Button Content="首页"
-                                Foreground="Black"
-                                Style="{StaticResource AppButton}"
                                 Click="Button_Click"/>
                         <Button Content="测试"
-                                Foreground="Black"
-                                Style="{StaticResource AppButton}"
                                 Click="Button_Click_1"/>
                     </StackPanel>
                 </ScrollViewer>

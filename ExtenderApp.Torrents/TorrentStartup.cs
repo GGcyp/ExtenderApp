@@ -18,10 +18,12 @@ namespace ExtenderApp.Torrents
             services.AddTransient<TorrentMainView>();
             services.AddTransient<TorrentFileInfoView>();
             services.AddTransient<TorrentDownloadListView>();
+            services.AddTransient<TorrentDownloadCompletedListView>();
 
             services.AddTransient<TorrentMainViewModel>();
             services.AddTransient<TorrentFileInfoViewModel>();
             services.AddTransient<TorrentDownloadListViewModel>();
+            services.AddTransient<TorrentDownloadCompletedListViewModel>();
         }
 
         public override void ConfigureBinaryFormatterStore(IBinaryFormatterStore store)

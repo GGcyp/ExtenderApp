@@ -1,0 +1,100 @@
+﻿<v:ExtenderAppView x:Class="ExtenderApp.Torrents.Views.TorrentDownloadCompletedListView"
+                   xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                   xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                   xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                   xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                   xmlns:local="clr-namespace:ExtenderApp.Torrents.Views"
+                   xmlns:v="clr-namespace:ExtenderApp.Views;assembly=ExtenderApp.Views"
+                   xmlns:vm="clr-namespace:ExtenderApp.Torrents.ViewModels"
+                   xmlns:c="clr-namespace:ExtenderApp.Torrents.Converter"
+                   xmlns:vc="clr-namespace:ExtenderApp.Views.Converters;assembly=ExtenderApp.Views"
+                   xmlns:vt="clr-namespace:ExtenderApp.Views.Themes;assembly=ExtenderApp.Views"
+                   mc:Ignorable="d"
+                   d:DataContext="{d:DesignInstance Type=vm:TorrentDownloadCompletedListViewModel}"
+                   d:DesignHeight="450" d:DesignWidth="800">
+    <v:ExtenderAppView.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/ExtenderApp.Views;component/ViewStyles.xaml"/>
+                <ResourceDictionary Source="/ExtenderApp.Torrents;component/Themes/TorrentContextMenu/TorrentContextMenu.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+            <Style x:Key="DownloadTextBlock" TargetType="TextBlock">
+                <Setter Property="Foreground" Value="{DynamicResource GlobalForegroundBrush}"/>
+            </Style>
+        </ResourceDictionary>
+    </v:ExtenderAppView.Resources>
+    <ListBox Background="Transparent"
+             ItemsSource="{Binding Model.DowloadCompletedTorrentCollection}"
+             SelectedItem="{Binding Model.SelectedTorrent}"
+             BorderBrush="{DynamicResource GlobalPrimaryBrush}"
+             BorderThickness="0">
+        <ListBox.ItemTemplate>
+            <DataTemplate>
+                <Border x:Name="torrentItem"
+                        BorderBrush="Transparent"
+                        CornerRadius="10"
+                        BorderThickness="2">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition  Width="{Binding ActualWidth,
+                                              RelativeSource={RelativeSource
+                                              AncestorType={x:Type Grid},
+                                              AncestorLevel=2},
+                                              Converter={c:MaxWidthConverter},
+                                              ConverterParameter=52}"/>
+                            <ColumnDefinition Width="80"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid Grid.Column="0">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="40"/>
+                                <RowDefinition Height="15"/>
+                                <RowDefinition Height="20"/>
+                            </Grid.RowDefinitions>
+                            <TextBlock Grid.Row="0"
+                                       Margin="5 5 5 5"
+                                       Text="{Binding Name}"
+                                       Foreground="{DynamicResource GlobalForegroundBrush}"
+                                       TextTrimming="CharacterEllipsis"
+                                       HorizontalAlignment="Left"/>
+                        </Grid>
+                        <Grid Grid.Column="1">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="40"/>
+                                <!--<ColumnDefinition Width="40"/>-->
+                            </Grid.ColumnDefinitions>
+                            <vt:PlaySwitch Grid.Column="0"
+                                           Height="20"
+                                           Width="20"
+                                           Fill="{DynamicResource GlobalForegroundBrush}"
+                                           Stroke="{DynamicResource GlobalForegroundBrush}"/>
+                        </Grid>
+                    </Grid>
+                </Border>
+                <DataTemplate.Triggers>
+                    <DataTrigger Binding="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=ListBoxItem}}" Value="True">
+                        <Setter TargetName="torrentItem" Property="BorderBrush" Value="{DynamicResource GlobalPrimaryBrush}"/>
+                    </DataTrigger>
+                    <Trigger Property="IsMouseOver" Value="True">
+                        <Setter TargetName="torrentItem" Property="Background" Value="{DynamicResource GlobalSelectedBrush}"/>
+                    </Trigger>
+                </DataTemplate.Triggers>
+            </DataTemplate>
+        </ListBox.ItemTemplate>
+        <ListBox.ItemContainerStyle>
+            <Style TargetType="ListBoxItem">
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="ListBoxItem">
+                            <ContentPresenter
+                                Content="{TemplateBinding Content}"
+                                ContentTemplate="{TemplateBinding ContentTemplate}"
+                                HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                SnapsToDevicePixels="True"/>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+        </ListBox.ItemContainerStyle>
+    </ListBox>
+</v:ExtenderAppView>

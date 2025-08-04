@@ -5,8 +5,8 @@
                       xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
                       xmlns:local="clr-namespace:ExtenderApp.Torrents.ViewModels"
                       xmlns:view="clr-namespace:ExtenderApp.Views;assembly=ExtenderApp.Views"
-                      xmlns:con="clr-namespace:ExtenderApp.Torrents.Converter"
-                      xmlns:vcon="clr-namespace:ExtenderApp.Views.Converters;assembly=ExtenderApp.Views"
+                      xmlns:c="clr-namespace:ExtenderApp.Torrents.Converter"
+                      xmlns:vc="clr-namespace:ExtenderApp.Views.Converters;assembly=ExtenderApp.Views"
                       xmlns:vt="clr-namespace:ExtenderApp.Views.Themes;assembly=ExtenderApp.Views"
                       xmlns:t="clr-namespace:ExtenderApp.Torrents.Themes"
                       mc:Ignorable="d"
@@ -31,16 +31,17 @@
              BorderThickness="0">
         <ListBox.ItemTemplate>
             <DataTemplate>
-                <Border BorderBrush="{DynamicResource GlobalPrimaryBrush}"
+                <Border x:Name="torrentItem"
+                        BorderBrush="Transparent"
                         CornerRadius="10"
-                        BorderThickness="1">
+                        BorderThickness="2">
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition  Width="{Binding ActualWidth,
                                               RelativeSource={RelativeSource
                                               AncestorType={x:Type Grid},
                                               AncestorLevel=2},
-                                              Converter={con:MaxWidthConverter},
+                                              Converter={c:MaxWidthConverter},
                                               ConverterParameter=92}"/>
                             <ColumnDefinition Width="80"/>
                         </Grid.ColumnDefinitions>
@@ -75,12 +76,12 @@
                                                StringFormat={}{0})}"
                                                Style="{StaticResource DownloadTextBlock}"/>
                                     <TextBlock Text="{Binding SelectedFileCompleteLength,
-                                               Converter={vcon:SizeConverter}}"
+                                               Converter={vc:SizeConverter}}"
                                                Style="{StaticResource DownloadTextBlock}"/>
                                     <TextBlock Text="/"
                                                Style="{StaticResource DownloadTextBlock}"/>
                                     <TextBlock Text="{Binding SelectedFileLength,
-                                               Converter={vcon:SizeConverter}}"
+                                               Converter={vc:SizeConverter}}"
                                                Style="{StaticResource DownloadTextBlock}"/>
                                 </StackPanel>
                                 <!--剩余时间-->
@@ -96,12 +97,12 @@
                                             HorizontalAlignment="Right"
                                             Orientation="Horizontal">
                                     <TextBlock Text="{Binding DownloadSpeed,
-                                               Converter={vcon:SizeConverter},
+                                               Converter={vc:SizeConverter},
                                                StringFormat={}{0}/s↓}"
                                                Margin="0 0 5 0"
                                                Style="{StaticResource DownloadTextBlock}"/>
                                     <TextBlock Text="{Binding UploadSpeed,
-                                               Converter={vcon:SizeConverter},
+                                               Converter={vc:SizeConverter},
                                                StringFormat={}{0}/s↑}"
                                                Style="{StaticResource DownloadTextBlock}"/>
                                 </StackPanel>
@@ -133,13 +134,37 @@
                                             Stroke="{DynamicResource GlobalForegroundBrush}"
                                             Command="{Binding DataContext,
                                             RelativeSource={RelativeSource AncestorType=Border,AncestorLevel=2},
-                                            Converter={vcon:GetPropertyConverter},
+                                            Converter={vc:GetPropertyConverter},
                                             ConverterParameter=StartCommand}"
                                             CommandParameter="{Binding}"/>
                         </Grid>
                     </Grid>
                 </Border>
+                <DataTemplate.Triggers>
+                    <DataTrigger Binding="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=ListBoxItem}}" Value="True">
+                        <Setter TargetName="torrentItem" Property="BorderBrush" Value="{DynamicResource GlobalPrimaryBrush}"/>
+                    </DataTrigger>
+                    <Trigger Property="IsMouseOver" Value="True">
+                        <Setter TargetName="torrentItem" Property="Background" Value="{DynamicResource GlobalSelectedBrush}"/>
+                    </Trigger>
+                </DataTemplate.Triggers>
             </DataTemplate>
         </ListBox.ItemTemplate>
+        <ListBox.ItemContainerStyle>
+            <Style TargetType="ListBoxItem">
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="ListBoxItem">
+                            <ContentPresenter
+                                Content="{TemplateBinding Content}"
+                                ContentTemplate="{TemplateBinding ContentTemplate}"
+                                HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                SnapsToDevicePixels="True"/>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+        </ListBox.ItemContainerStyle>
     </ListBox>
 </view:ExtenderAppView>

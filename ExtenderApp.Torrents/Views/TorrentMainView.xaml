@@ -21,22 +21,25 @@
     </views:ExtenderAppView.Resources>
     <Grid Background="{StaticResource GlobalBackgroundBrush}">
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
+            <RowDefinition Height="30" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
         <!-- 顶部操作栏 -->
-        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="5">
-            <Button Content="添加种子文件" Margin="0,0,5,0" Click="AddTorrent" />
-        </StackPanel>
+        <Grid Grid.Row="0">
+            <Button Content="添加种子文件"
+                    Margin="5,0,5,0"
+                    BorderBrush="Transparent"
+                    HorizontalAlignment="Left"
+                    Width="100"
+                    Command="{Binding AddTorrentCommand}" />
+        </Grid>
 
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition x:Name="TorrentListColumn"
-                                  Width="*" />
-                <ColumnDefinition x:Name="SidebarColumn"
-                                  Width="300" >
+                <ColumnDefinition Width="150" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="0" >
                     <i:Interaction.Behaviors>
                         <vb:ColumnDefinitionBehavior
                             TargetWidth="350"
@@ -48,11 +51,30 @@
             </Grid.ColumnDefinitions>
 
             <!-- 第一个区域：正在下载、已完成，垃圾桶 -->
-            <StackPanel Grid.Column="0" Orientation="Vertical" Margin="5">
-                <Button Content="正在下载" Margin="0,0,0,5" />
-                <Button Content="已完成" Margin="0,0,0,5" />
-                <Button Content="垃圾桶" />
-            </StackPanel>
+            <Border Grid.Column="0"
+                    BorderBrush="{DynamicResource GlobalPrimaryBrush}"
+                    BorderThickness="0 0 1 0">
+                <Grid>
+                    <TextBlock Text="种子状态"
+                               FontSize="14"
+                               Margin="5"
+                               VerticalAlignment="Top"/>
+                    <Button Content="正在下载"
+                            Margin="0,30,0,0"
+                            Height="30"
+                            VerticalAlignment="Top"
+                            Command="{Binding ToDownloadCommand}"/>
+                    <Button Content="已完成"
+                            Margin="0,70,0,0"
+                            Height="30"
+                            VerticalAlignment="Top"
+                            Command="{Binding ToDownloadCompletedListdCommand}"/>
+                    <Button Content="垃圾桶"
+                            Height="30"
+                            VerticalAlignment="Top"
+                            Margin="0,110,0,0"/>
+                </Grid>
+            </Border>
 
             <!-- 第二个区域：种子列表 -->
             <ContentControl Grid.Column="1"
@@ -83,14 +105,17 @@
                         <Button Grid.Column="0"
                                 Content="文件详情"
                                 Margin="0"
-                                BorderBrush="{StaticResource GlobalBackgroundBrush}"/>
+                                BorderBrush="{DynamicResource GlobalBackgroundBrush}"
+                                Command="{Binding ToFileInfoCommand}"/>
                         <Button Grid.Column="1"
                                 Content="种子详情"
                                 Margin="0"
-                                BorderBrush="{StaticResource GlobalBackgroundBrush}"/>
+                                BorderBrush="{DynamicResource GlobalBackgroundBrush}"
+                                Command="{Binding ToTorrentDetailsCommand}"/>
                     </Grid>
                 </Border>
                 <ContentControl Grid.Row="2"
+                                Margin="5 0 0 0"
                                 Content="{Binding Model.TorrentDetailsView}"/>
             </Grid>
         </Grid>
