@@ -7,7 +7,7 @@ using MonoTorrent;
 
 namespace ExtenderApp.Torrents.ViewModels
 {
-    public class TorrentFileInfoViewModel : ExtenderAppViewModel<TorrentFileInfoView, TorrentModel>
+    public class TorrentFileInfoViewModel : ExtenderAppViewModel<TorrentDownloadFileInfoView, TorrentModel>
     {
         #region 命令
 

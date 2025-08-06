@@ -3,6 +3,7 @@ using System.ComponentModel;
 using System.Net;
 using ExtenderApp.Abstract;
 using ExtenderApp.Torrents.Models;
+using MonoTorrent;
 using MonoTorrent.Client;
 
 namespace ExtenderApp.Torrents
@@ -96,6 +97,13 @@ namespace ExtenderApp.Torrents
                     info.UpdetaProgress();
                 }
             }
+        }
+
+        public async Task<TorrentInfo> LoadTorrentAsync(string torrentPath)
+        {
+            var torrent = await Torrent.LoadAsync(torrentPath);
+            var info = new TorrentInfo(torrent);
+            return info;
         }
     }
 }

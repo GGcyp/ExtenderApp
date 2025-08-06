@@ -77,5 +77,34 @@ namespace ExtenderApp.Services
         {
             return service.NavigateTo(targetType, string.Empty, oldView);
         }
+
+        /// <summary>
+        /// 导航到指定视图对应的窗口，不指定旧视图。
+        /// </summary>
+        /// <typeparam name="T">要导航到的视图类型，必须实现IView接口。</typeparam>
+        /// <param name="service">导航服务接口实例。</param>
+        /// <returns>返回导航到的窗口。</returns>
+        public static IWindow NavigateToWindow<T>(this INavigationService service) where T : class, IView
+        {
+            return NavigateToWindow<T>(service, string.Empty, null);
+        }
+
+        /// <summary>
+        /// 导航到一个新的窗口，并在其中显示指定的视图。
+        /// </summary>
+        /// <typeparam name="T">要显示的视图的类型，必须继承自 IView 接口。</typeparam>
+        /// <param name="service">用于导航的服务。</param>
+        /// <param name="scope">导航的作用域。</param>
+        /// <param name="oldView">旧视图，通常用于传递上下文信息。</param>
+        /// <returns>返回包含新视图的窗口。</returns>
+        public static IWindow NavigateToWindow<T>(this INavigationService service, string scope, IView oldView)
+            where T : class, IView
+        {
+            IWindow window = service.NavigateTo<IWindow>();
+            IView view = (T)service.NavigateTo(typeof(T), scope, oldView);
+            window.ShowView(view);
+            view.InjectWindow(window);
+            return window;
+        }
     }
 }

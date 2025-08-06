@@ -1,0 +1,114 @@
+﻿<v:ExtenderAppView x:Class="ExtenderApp.Torrents.Views.TorrentAddView"
+                   xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                   xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                   xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                   xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                   xmlns:local="clr-namespace:ExtenderApp.Torrents.Views"
+                   xmlns:vm="clr-namespace:ExtenderApp.Torrents.ViewModels"
+                   xmlns:v="clr-namespace:ExtenderApp.Views;assembly=ExtenderApp.Views"
+                   xmlns:c="clr-namespace:ExtenderApp.Torrents.Converter"
+                   mc:Ignorable="d"
+                   d:DataContext="{d:DesignInstance Type=vm:TorrentAddViewModel}"
+                   d:DesignHeight="300"
+                   d:DesignWidth="300">
+    <v:ExtenderAppView.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/ExtenderApp.Views;component/ViewStyles.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </v:ExtenderAppView.Resources>
+    <Grid Background="{DynamicResource GlobalBackgroundBrush}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="25"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="35"/>
+            <RowDefinition Height="60"/>
+            <RowDefinition Height="50"/>
+        </Grid.RowDefinitions>
+        <TextBlock Grid.Row="0"
+                   Text="添加种子"
+                   Margin="5 5 0 0"/>
+        <TextBox Grid.Row="1"
+                 Margin="10"
+                 Foreground="{DynamicResource GlobalForegroundBrush}"
+                 Background="{DynamicResource GlobalBackgroundBrush}"
+                 Text="{Binding MagnetLinksSting}"
+                 TextChanged="TextBox_TextChanged">
+            <TextBox.Style>
+                <Style TargetType="TextBox">
+                    <Setter Property="Template">
+                        <Setter.Value>
+                            <ControlTemplate TargetType="TextBox">
+                                <Border BorderBrush="{DynamicResource GlobalPrimaryBrush}"
+                                        BorderThickness="1"
+                                        CornerRadius="10"
+                                        Padding="5">
+                                    <Grid>
+                                        <!-- 文本框本身 -->
+                                        <ScrollViewer x:Name="PART_ContentHost"
+                                                      Background="Transparent"/>
+                                        <!-- 提示文字（默认隐藏） -->
+                                        <TextBlock x:Name="HintText"
+                                                   Text="添加多个下载链接时，请确保每行只有一个链接"
+                                                   Foreground="#AAAAAA"
+                                                   IsHitTestVisible="False"
+                                                   Margin="5,0"
+                                                   Visibility="Collapsed"/>
+                                    </Grid>
+                                </Border>
+                                <!-- 触发器：控制提示文字显示/隐藏 -->
+                                <ControlTemplate.Triggers>
+                                    <!-- 当获得焦点时，隐藏提示 -->
+                                    <Trigger Property="Text" Value="">
+                                        <Setter TargetName="HintText" Property="Visibility" Value="Visible"/>
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
+                </Style>
+            </TextBox.Style>
+        </TextBox>
+        <Button Grid.Row="2"
+                Content="选择种子"
+                Margin="20 0 20 0"
+                HorizontalAlignment="Stretch"
+                HorizontalContentAlignment="Center"
+                Style="{StaticResource EllipticalButton}"
+                Command="{Binding LoadTorrentCommand}"/>
+        <Grid Grid.Row="3"
+              Margin="0 5 0 0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="25"/>
+                <RowDefinition Height="25"/>
+            </Grid.RowDefinitions>
+            <Grid Grid.Row="0">
+                <TextBlock Text="下载到："/>
+                <TextBlock Text="{Binding Model.SaveDirectory}"
+                           Width="{Binding ActualWidth,
+                           RelativeSource={RelativeSource
+                           AncestorType={x:Type Grid},
+                           AncestorLevel=3},
+                           Converter={c:MaxWidthConverter},
+                           ConverterParameter=50}"
+                           Margin="50 0 0 0"
+                           TextTrimming="CharacterEllipsis"/>
+            </Grid>
+            <Button Grid.Row="2"
+                    Content="另选文件夹"
+                    FontSize="12"
+                    HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Center"
+                    Style="{StaticResource EllipticalButton}"
+                    Margin="20,0,20,0"/>
+        </Grid>
+        <Button Grid.Row="4"
+                Content="开始下载"
+                Margin="20 0 20 0"
+                HorizontalAlignment="Stretch"
+                HorizontalContentAlignment="Center"
+                Style="{StaticResource EllipticalButton}"
+                Command="{Binding StartTorrentCommand}"/>
+    </Grid>
+</v:ExtenderAppView>

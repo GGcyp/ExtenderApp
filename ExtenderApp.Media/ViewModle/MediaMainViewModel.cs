@@ -1,8 +1,7 @@
 ﻿using ExtenderApp.Abstract;
 using ExtenderApp.Common;
-using ExtenderApp.Data;
 using ExtenderApp.ViewModels;
-using ExtenderApp.Views;
+using ExtenderApp.Views.Commands;
 
 
 namespace ExtenderApp.Media

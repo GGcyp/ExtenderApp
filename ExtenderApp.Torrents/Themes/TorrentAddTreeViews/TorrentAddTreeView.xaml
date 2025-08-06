@@ -5,13 +5,13 @@
                     xmlns:c="clr-namespace:ExtenderApp.Torrents.Converter">
 
     <ResourceDictionary.MergedDictionaries>
-        <ResourceDictionary Source="/ExtenderApp.Torrents;component/Themes/TorrentTreeItems/TorrentTreeItem.xaml"/>
+        <ResourceDictionary Source="/ExtenderApp.Torrents;component/Themes/TorrentAddTreeItems/TorrentAddTreeItem.xaml"/>
     </ResourceDictionary.MergedDictionaries>
 
-    <Style TargetType="{x:Type local:TorrentTreeView}">
+    <Style TargetType="{x:Type local:TorrentAddTreeView}">
         <Setter Property="Template">
             <Setter.Value>
-                <ControlTemplate TargetType="{x:Type local:TorrentTreeView}">
+                <ControlTemplate TargetType="{x:Type local:TorrentAddTreeView}">
                     <Grid Background="{TemplateBinding Background}"
                           Grid.IsSharedSizeScope="True">
                         <Grid.RowDefinitions>
@@ -24,6 +24,7 @@
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition
                                     Width="40"
+                                    MaxWidth="40"
                                     SharedSizeGroup="Indent"/>
                                 <ColumnDefinition
                                     Width="{Binding ActualWidth,
@@ -31,15 +32,17 @@
                                     AncestorType={x:Type Grid},
                                     AncestorLevel=2},
                                     Converter={c:MaxWidthConverter},
-                                    ConverterParameter=165}"
+                                    ConverterParameter=180}"
                                     MinWidth="200"
                                     SharedSizeGroup="Name"/>
                                 <ColumnDefinition
-                                    Width="50"
-                                    SharedSizeGroup="Size"/>
+                                    Width="55"
+                                    MaxWidth="55"
+                                    SharedSizeGroup="FileType"/>
                                 <ColumnDefinition
-                                    Width="40"
-                                    SharedSizeGroup="Progress"/>
+                                    Width="50"
+                                    MaxWidth="50"
+                                    SharedSizeGroup="Size"/>
                             </Grid.ColumnDefinitions>
                             <Label Grid.Column="0"
                                    Grid.ColumnSpan="2"
@@ -48,12 +51,12 @@
                                    VerticalAlignment="Center"
                                    Foreground="{TemplateBinding Foreground}"/>
                             <Label Grid.Column="2"
-                                   Content="大小"
+                                   Content="类型"
                                    HorizontalAlignment="Left"
                                    VerticalAlignment="Center"
                                    Foreground="{TemplateBinding Foreground}"/>
                             <Label Grid.Column="3"
-                                   Content="进度"
+                                   Content="大小"
                                    HorizontalAlignment="Center"
                                    VerticalAlignment="Center"
                                    Foreground="{TemplateBinding Foreground}"/>

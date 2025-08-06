@@ -8,7 +8,7 @@ namespace ExtenderApp.MainViews.Models
 {
     public class MainModel : INotifyPropertyChanged
     {
-        public IMainView? CurrentMainView { get; set; }
+        public IView? CurrentMainView { get; set; }
 
         public IView? CurrentCutsceneView { get; set; }
 

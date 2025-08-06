@@ -2,8 +2,8 @@
 using AppHost.Extensions.DependencyInjection;
 using ExtenderApp.Abstract;
 using ExtenderApp.MainViews.ViewModels;
-using ExtenderApp.Common;
 using ExtenderApp.MainViews.Models;
+using ExtenderApp.MainViews.Windows;
 
 namespace ExtenderApp.MainViews
 {
@@ -13,18 +13,14 @@ namespace ExtenderApp.MainViews
 
         public override void AddService(IServiceCollection services)
         {
-            services.AddTransient<IMainWindow, MainViewWindow>();
-            services.AddSingleton<DisplayDetailsList>();
-
-            AddMainView(services);
+            services.AddSingleton<IMainWindow, MainViewWindow>();
+            services.AddTransient<IWindow, ExtenderDefaultWindow>();
+            services.AddTransient<ExtenderDefaultWindowViewModel>();
 
             services.AddTransient<PluginView>();
             services.AddTransient<PluginViewModle>();
             services.AddTransient<MianWindowViewModel>();
-        }
 
-        private void AddMainView(IServiceCollection services)
-        {
             services.AddTransient<IMainView, MainView>();
             services.AddTransient<MainView>();
             services.AddTransient<MainViewModel>();

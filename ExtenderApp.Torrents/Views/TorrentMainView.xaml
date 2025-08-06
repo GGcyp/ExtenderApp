@@ -10,7 +10,7 @@
                        xmlns:converter="clr-namespace:ExtenderApp.Views.Converters;assembly=ExtenderApp.Views"
                        mc:Ignorable="d"
                        d:DataContext="{d:DesignInstance Type=local:TorrentMainViewModel}"
-                       d:DesignHeight="600" d:DesignWidth="1400">
+                       d:DesignHeight="600" d:DesignWidth="1000">
     <views:ExtenderAppView.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
@@ -21,23 +21,52 @@
     </views:ExtenderAppView.Resources>
     <Grid Background="{StaticResource GlobalBackgroundBrush}">
         <Grid.RowDefinitions>
-            <RowDefinition Height="30" />
+            <RowDefinition Height="35" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
         <!-- 顶部操作栏 -->
         <Grid Grid.Row="0">
-            <Button Content="添加种子文件"
-                    Margin="5,0,5,0"
+            <Button Margin="5 5 20 0"
                     BorderBrush="Transparent"
-                    HorizontalAlignment="Left"
-                    Width="100"
-                    Command="{Binding AddTorrentCommand}" />
+                    HorizontalAlignment="Right"
+                    Command="{Binding AddTorrentCommand}">
+                <Button.Style>
+                    <Style TargetType="Button">
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="Button">
+                                    <Border Background="{DynamicResource GlobalPrimaryBrush}"
+                                            CornerRadius="10"
+                                            Padding="{TemplateBinding Padding}"
+                                            HorizontalAlignment="Center">
+                                        <Grid>
+                                            <TextBlock Text="+"
+                                                       Margin="5,0,0,0"
+                                                       HorizontalAlignment="Left"
+                                                       FontSize="20"/>
+                                            <TextBlock Text="新建"
+                                                       HorizontalAlignment="Left"
+                                                       VerticalAlignment="Center"
+                                                       Margin="30,0,5,0"/>
+                                        </Grid>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter Property="BorderBrush" Value="{DynamicResource GlobalSecondaryBrush}"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                </Button.Style>
+            </Button>
         </Grid>
 
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="150" />
+                <ColumnDefinition Width="120" />
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="0" >
                     <i:Interaction.Behaviors>
@@ -50,7 +79,7 @@
                 </ColumnDefinition>
             </Grid.ColumnDefinitions>
 
-            <!-- 第一个区域：正在下载、已完成，垃圾桶 -->
+            <!-- 第一个区域：种子状态 -->
             <Border Grid.Column="0"
                     BorderBrush="{DynamicResource GlobalPrimaryBrush}"
                     BorderThickness="0 0 1 0">
@@ -63,16 +92,17 @@
                             Margin="0,30,0,0"
                             Height="30"
                             VerticalAlignment="Top"
-                            Command="{Binding ToDownloadCommand}"/>
+                            Command="{Binding ToDownloadListCommand}"/>
                     <Button Content="已完成"
                             Margin="0,70,0,0"
                             Height="30"
                             VerticalAlignment="Top"
                             Command="{Binding ToDownloadCompletedListdCommand}"/>
-                    <Button Content="垃圾桶"
+                    <Button Content="回收站"
                             Height="30"
                             VerticalAlignment="Top"
-                            Margin="0,110,0,0"/>
+                            Margin="0,110,0,0"
+                            Command="{Binding ToRecyclebinListCommand}"/>
                 </Grid>
             </Border>
 

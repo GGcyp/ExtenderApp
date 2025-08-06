@@ -15,6 +15,7 @@ namespace ExtenderApp.ViewModels
         /// 服务存储接口实例
         /// </summary>
         protected readonly IServiceStore _serviceStore;
+
         /// <summary>
         /// 视图模型名称（只读）
         /// </summary>
@@ -47,6 +48,16 @@ namespace ExtenderApp.ViewModels
         }
 
         public virtual void InjectView(IView view)
+        {
+
+        }
+
+        public virtual void Enter(ViewInfo oldViewInfo)
+        {
+
+        }
+
+        public virtual void Exit(ViewInfo newViewInfo)
         {
 
         }
@@ -111,6 +122,23 @@ namespace ExtenderApp.ViewModels
                 Error("视图导航出现了问题！", ex);
             }
             return view;
+        }
+
+        protected virtual IWindow NavigateToWindow<TView>()
+            where TView : class, IView
+        {
+            IWindow window = null;
+            try
+            {
+                var details = GetCurrentModDetails();
+                string scope = details is null ? string.Empty : details.ModScope;
+                window = _serviceStore.NavigationService.NavigateToWindow<TView>(scope, null);
+            }
+            catch (Exception ex)
+            {
+                Error("视图导航出现了问题！", ex);
+            }
+            return window;
         }
 
         #endregion
@@ -369,6 +397,22 @@ namespace ExtenderApp.ViewModels
                 Error("视图导航出现了问题！", ex);
             }
             return view;
+        }
+
+        protected override IWindow? NavigateToWindow<T>()
+        {
+            IWindow? window = null;
+            try
+            {
+                var details = GetCurrentModDetails();
+                string scope = details is null ? string.Empty : details.ModScope;
+                window = _serviceStore.NavigationService.NavigateToWindow<T>(scope, View);
+            }
+            catch (Exception ex)
+            {
+                Error("视图导航出现了问题！", ex);
+            }
+            return window;
         }
     }
 

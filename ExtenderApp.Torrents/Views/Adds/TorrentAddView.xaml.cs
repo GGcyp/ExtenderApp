@@ -18,13 +18,18 @@ using ExtenderApp.Views;
 namespace ExtenderApp.Torrents.Views
 {
     /// <summary>
-    /// TorrentFileInfoView.xaml 的交互逻辑
+    /// TorrentAddView.xaml 的交互逻辑
     /// </summary>
-    public partial class TorrentFileInfoView : ExtenderAppView
+    public partial class TorrentAddView : ExtenderAppView
     {
-        public TorrentFileInfoView(TorrentFileInfoViewModel viewModel) : base(viewModel)
+        public TorrentAddView(TorrentAddViewModel viewModel) : base(viewModel)
         {
             InitializeComponent();
+        }
+
+        private void TextBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+
         }
     }
 }

@@ -14,14 +14,21 @@ namespace ExtenderApp.Torrents.ViewModels
     public class TorrentMainViewModel : ExtenderAppViewModel<TorrentMainView, TorrentModel>
     {
         private readonly ScheduledTask _task;
+        private readonly IMainWindow _mainWindow;
 
         #region Command
 
-        public NoValueCommand AddTorrentCommand { get; set; }
+        #region List
 
-        public NoValueCommand ToDownloadCommand { get; set; }
+        public NoValueCommand ToDownloadListCommand { get; set; }
 
         public NoValueCommand ToDownloadCompletedListdCommand { get; set; }
+
+        public NoValueCommand ToRecyclebinListCommand { get; set; }
+
+        #endregion
+
+        public NoValueCommand AddTorrentCommand { get; set; }
 
         public NoValueCommand ToFileInfoCommand { get; set; }
 
@@ -31,21 +38,24 @@ namespace ExtenderApp.Torrents.ViewModels
 
         public TorrentMainViewModel(IMainWindow window, IServiceStore serviceStore) : base(serviceStore)
         {
-            ToDownloadCommand = CreateTorrentListCommand<TorrentDownloadListView>();
-            ToDownloadCompletedListdCommand = CreateTorrentListCommand<TorrentDownloadCompletedListView>();
+            _mainWindow = window;
 
-            ToFileInfoCommand = CreateTorrentDetailsCommand<TorrentFileInfoView>();
+            ToDownloadListCommand = CreateTorrentListCommand<TorrentDownloadListView>();
+            ToDownloadCompletedListdCommand = CreateTorrentListCommand<TorrentDownloadCompletedListView>();
+            ToRecyclebinListCommand = CreateTorrentListCommand<TorrentRecyclebinListView>();
+
+            ToFileInfoCommand = CreateTorrentDetailsCommand<TorrentDownloadFileInfoView>();
             ToTorrentDetailsCommand = new(() =>
             {
                 Model.TorrentDetailsView = null;
             });
 
-            AddTorrentCommand = new(AddTorrent);
+            AddTorrentCommand = new(ShowAddTorrentView);
 
             Model.DowloadTorrentCollection = new();
             Model.DowloadCompletedTorrentCollection = new();
             Model.TorrentListView = NavigateTo<TorrentDownloadListView>();
-            Model.TorrentDetailsView = NavigateTo<TorrentFileInfoView>();
+            Model.TorrentDetailsView = NavigateTo<TorrentDownloadFileInfoView>();
 
             window.MinWidth = 800;
             window.MinHeight = 600;
@@ -73,36 +83,15 @@ namespace ExtenderApp.Torrents.ViewModels
             });
         }
 
-        public void AddTorrent()
+        public void ShowAddTorrentView()
         {
-            // 创建文件选择对话框实例
-            OpenFileDialog openFileDialog = new OpenFileDialog();
-            // 设置文件筛选器，仅显示 .torrent 文件
-            openFileDialog.Filter = "Torrent 文件 (*.torrent)|*.torrent";
-            // 打开文件选择对话框并获取用户选择结果
-            bool? result = openFileDialog.ShowDialog();
-
-            if (result == true)
-            {
-                // 用户选择了文件，获取文件路径
-                string filePath = openFileDialog.FileName;
-                LoadTorrent(filePath);
-            }
-        }
-
-        public void LoadTorrent(string torrentPath)
-        {
-            Task.Run(() => LoadTorrentAsync(torrentPath));
-        }
-
-        public async Task LoadTorrentAsync(string torrentPath)
-        {
-            var torrent = await Torrent.LoadAsync(torrentPath);
-            var info = new TorrentInfo(torrent);
-            _serviceStore.DispatcherService.Invoke(() =>
-            {
-                Model.DowloadTorrentCollection.Add(info);
-            });
+            var window = NavigateToWindow<TorrentAddView>();
+            var view = window.CurrentView as TorrentAddView;
+            window.Height = 300;
+            window.Width = 300;
+            window.Owner = _mainWindow;
+            window.WindowStartupLocation = 2;
+            window.Show();
         }
     }
 }

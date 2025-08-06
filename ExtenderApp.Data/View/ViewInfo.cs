@@ -2,25 +2,29 @@
 namespace ExtenderApp.Data
 {
     /// <summary>
-    /// 表示视图信息的结构体。
+    /// 包含视图名称和视图模型的结构体。
     /// </summary>
     public struct ViewInfo
     {
         /// <summary>
-        /// 获取视图的哈希码。
+        /// 获取视图名称。
         /// </summary>
-        public int ViewHashCode { get; }
-
         public string ViewName { get; }
+
+        /// <summary>
+        /// 获取视图模型。
+        /// </summary>
+        public object? ViewModel { get; }
 
         /// <summary>
         /// 使用视图名称初始化 <see cref="ViewInfo"/> 结构体的新实例。
         /// </summary>
         /// <param name="viewName">视图名称。</param>
-        public ViewInfo(string viewName)
+        /// <param name="viewModel">视图模型。</param>
+        public ViewInfo(string viewName, object? viewModel = null)
         {
-            ViewHashCode = viewName.GetHashCode();
             ViewName = viewName;
+            ViewModel = viewModel;
         }
     }
 }

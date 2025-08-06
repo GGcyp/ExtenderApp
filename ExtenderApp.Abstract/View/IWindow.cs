@@ -43,6 +43,30 @@ namespace ExtenderApp.Abstract
         string Title { get; set; }
 
         /// <summary>
+        /// Manual = 0 <br/> 
+        /// CenterScreen = 1 <br/> 
+        /// CenterOwner = 2 <br/> 
+        /// 当选择Manual时，窗口的位置不是自动确定的。开发者需要在代码中明确指定窗口的位置，或者如果不指定，则窗口可能会出现在由操作系统决定的默认位置。 <br/> 
+        /// 当选择CenterScreen时，窗口会在当前鼠标所在的屏幕中央启动。这对于确保窗口在用户的视线范围内很有用，特别是在多显示器设置中。 <br/> 
+        /// 当选择CenterOwner时，窗口会在其拥有者窗口的中央启动。这对于创建模态对话框或子窗口很有用，这些窗口应该相对于它们的主窗口居中显示。 <br/> 
+        /// </summary>
+        public int WindowStartupLocation { get; set; }
+
+        /// <summary>
+        /// 获取或设置所有者窗口。
+        /// </summary>
+        /// <returns>
+        /// 返回表示所有者窗口的 <see cref="IWindow"/> 对象，如果没有所有者窗口，则为 null。
+        /// </returns>
+        IWindow? Owner { get; set; }
+
+        /// <summary>
+        /// 获取当前视图接口。
+        /// </summary>
+        /// <value>返回当前视图接口。</value>
+        IView? CurrentView { get; }
+
+        /// <summary>
         /// 显示窗口。
         /// </summary>
         void Show();
@@ -54,9 +78,14 @@ namespace ExtenderApp.Abstract
         bool? ShowDialog();
 
         /// <summary>
-        /// 显示主视图。
+        /// 显示视图。
         /// </summary>
-        /// <param name="mainView">主视图接口对象。</param>
-        void ShowView(IMainView mainView);
+        /// <param name="view">要显示的视图。</param>
+        void ShowView(IView view);
+
+        /// <summary>
+        /// 关闭视图。
+        /// </summary>
+        void Close();
     }
 }

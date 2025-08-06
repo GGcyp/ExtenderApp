@@ -18,15 +18,13 @@
                 <ResourceDictionary Source="/ExtenderApp.Views;component/ViewStyles.xaml"/>
                 <ResourceDictionary Source="/ExtenderApp.Torrents;component/Themes/TorrentContextMenu/TorrentContextMenu.xaml"/>
             </ResourceDictionary.MergedDictionaries>
-            <Style x:Key="DownloadTextBlock" TargetType="TextBlock">
-                <Setter Property="Foreground" Value="{DynamicResource GlobalForegroundBrush}"/>
-            </Style>
         </ResourceDictionary>
     </v:ExtenderAppView.Resources>
     <ListBox Background="Transparent"
              ItemsSource="{Binding Model.DowloadCompletedTorrentCollection}"
              SelectedItem="{Binding Model.SelectedTorrent}"
              BorderBrush="{DynamicResource GlobalPrimaryBrush}"
+             Foreground="{DynamicResource GlobalForegroundBrush}"
              BorderThickness="0">
         <ListBox.ItemTemplate>
             <DataTemplate>
@@ -41,21 +39,37 @@
                                               AncestorType={x:Type Grid},
                                               AncestorLevel=2},
                                               Converter={c:MaxWidthConverter},
-                                              ConverterParameter=52}"/>
+                                              ConverterParameter=92}"/>
                             <ColumnDefinition Width="80"/>
                         </Grid.ColumnDefinitions>
                         <Grid Grid.Column="0">
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="40"/>
-                                <RowDefinition Height="15"/>
                                 <RowDefinition Height="20"/>
                             </Grid.RowDefinitions>
                             <TextBlock Grid.Row="0"
                                        Margin="5 5 5 5"
                                        Text="{Binding Name}"
-                                       Foreground="{DynamicResource GlobalForegroundBrush}"
                                        TextTrimming="CharacterEllipsis"
                                        HorizontalAlignment="Left"/>
+                            <Grid Grid.Row="1"
+                                  Margin="5 0 0 0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="2*"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <!--下载数量及大小-->
+                                <StackPanel Grid.Column="0"
+                                            Orientation="Horizontal">
+                                    <TextBlock Text="{Binding SelectedFileCount,
+                                               StringFormat=(已下载{0}个文件)}"
+                                               Margin="5 0 0 0"/>
+                                    <TextBlock Text="{Binding SelectedFileLength,
+                                               Converter={vc:SizeConverter}}"/>
+                                </StackPanel>
+                            </Grid>
                         </Grid>
                         <Grid Grid.Column="1">
                             <Grid.ColumnDefinitions>
@@ -65,6 +79,7 @@
                             <vt:PlaySwitch Grid.Column="0"
                                            Height="20"
                                            Width="20"
+                                           Margin="5 0 5 0"
                                            Fill="{DynamicResource GlobalForegroundBrush}"
                                            Stroke="{DynamicResource GlobalForegroundBrush}"/>
                         </Grid>

@@ -17,6 +17,7 @@
   </ItemGroup>
 
 	<ItemGroup>
+		<PackageReference Include="FFmpeg.AutoGen" Version="7.1.1" />
 		<PackageReference Include="PropertyChanged.Fody" Version="4.1.0" />
 	</ItemGroup>
 
@@ -37,10 +38,11 @@
 		<Copy SourceFiles="@(DllFiles)" DestinationFolder="%(TargetFolder.Identity)\$(ProjectName)" SkipUnchangedFiles="true" />
 		<Copy SourceFiles="@(JsonFiles)" DestinationFolder="%(TargetFolder.Identity)\$(ProjectName)" SkipUnchangedFiles="true" />
 
-		<!--NuGet包的动态库复制-->
-		<!--
-		<MakeDir Directories="%(TargetFolder.Identity)\$(ProjectName)\pack" Condition="Exists('%(TargetFolder.Identity)\$(ProjectName)\pack')" />
-		<Copy SourceFiles="@(NuGetDllFiles)" DestinationFolder="%(TargetFolder.Identity)\$(ProjectName)\pack" SkipUnchangedFiles="true" />-->
+		<!-- 获取所有包引用的路径 -->
+		<ItemGroup>
+			<PackageReferencePath Include="$(NuGetPackageRoot)\%(PackageReference.Identity)\%(PackageReference.Version)\lib\**\*.dll" Condition="'%(PackageReference.Identity)' != 'PropertyChanged.Fody'" />
+		</ItemGroup>
+		<Copy SourceFiles="@(PackageReferencePath)" DestinationFolder="%(TargetFolder.Identity)\$(ProjectName)\pack" SkipUnchangedFiles="true" />
 	</Target>
 
 	<ItemGroup>

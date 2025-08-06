@@ -4,15 +4,17 @@ using ExtenderApp.ViewModels;
 
 namespace ExtenderApp.MainViews.ViewModels
 {
-    public class MianWindowViewModel : ExtenderAppViewModel<MainViewWindow, MainModel>
+    public class MianWindowViewModel : ExtenderAppViewModel<MainViewWindow, MainModel>, IWindowViewModel
     {
+        public IView? CurrentView => Model.CurrentMainView;
+
         public MianWindowViewModel(MainModel model, IServiceStore serviceStore) : base(model, serviceStore)
         {
         }
 
-        public void ShowView(IMainView mainView)
+        public void ShowView(IView view)
         {
-            Model.CurrentMainView = mainView;
+            Model.CurrentMainView = view;
         }
     }
 }

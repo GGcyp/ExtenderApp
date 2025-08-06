@@ -9,27 +9,23 @@
         <ResourceDictionary Source="/ExtenderApp.Views;component/ViewStyles.xaml"/>
     </ResourceDictionary.MergedDictionaries>
 
-    <Style TargetType="{x:Type local:TorrentTreeItem}">
+    <Style TargetType="{x:Type local:TorrentAddTreeItem}">
         <Setter Property="ItemsSource" Value="{Binding Children}"/>
         <Setter Property="Background" Value="Transparent"/>
         <Setter Property="Foreground" Value="{StaticResource GlobalForegroundBrush}"/>
         <Setter Property="Template">
             <Setter.Value>
-                <ControlTemplate TargetType="{x:Type local:TorrentTreeItem}">
+                <ControlTemplate TargetType="{x:Type local:TorrentAddTreeItem}">
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="*"/>
                         </Grid.RowDefinitions>
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition
-                                SharedSizeGroup="Indent"/>
-                            <ColumnDefinition
-                                SharedSizeGroup="Name"/>
-                            <ColumnDefinition
-                                SharedSizeGroup="Size"/>
-                            <ColumnDefinition
-                                SharedSizeGroup="Progress"/>
+                            <ColumnDefinition SharedSizeGroup="Indent"/>
+                            <ColumnDefinition SharedSizeGroup="Name"/>
+                            <ColumnDefinition SharedSizeGroup="FileType"/>
+                            <ColumnDefinition SharedSizeGroup="Size"/>
                         </Grid.ColumnDefinitions>
                         <StackPanel Grid.Column="0"
                                     Orientation="Horizontal">
@@ -47,21 +43,20 @@
                                 IsChecked="{Binding DisplayNeedDownload}"
                                 VerticalAlignment="Center"/>
                         </StackPanel>
-                        <TextBlock
-                            Grid.Column="1"
-                            Text="{Binding Name}"
-                            Foreground="{TemplateBinding Foreground}"
-                            VerticalAlignment="Center"
-                            HorizontalAlignment="Left"
-                            Margin="{Binding Depth,Converter={con:DepthConverter}}"
-                            TextTrimming="CharacterEllipsis"/>
-                        <TextBlock Grid.Column="2"
-                                   Text="{Binding Length,Converter={viewCon:SizeConverter}}"
+                        <TextBlock Grid.Column="1"
+                                   Text="{Binding Name}"
                                    Foreground="{TemplateBinding Foreground}"
                                    VerticalAlignment="Center"
-                                   HorizontalAlignment="Left"/>
+                                   HorizontalAlignment="Left"
+                                   Margin="{Binding Depth,Converter={con:DepthConverter}}"
+                                   TextTrimming="CharacterEllipsis"/>
+                        <TextBlock Grid.Column="2"
+                                   Text="{Binding Extension}"
+                                   Foreground="{TemplateBinding Foreground}"
+                                   VerticalAlignment="Center"
+                                   HorizontalAlignment="Center"/>
                         <TextBlock Grid.Column="3"
-                                   Text="{Binding Progress,StringFormat=P1}"
+                                   Text="{Binding Length,Converter={viewCon:SizeConverter}}"
                                    Foreground="{TemplateBinding Foreground}"
                                    VerticalAlignment="Center"
                                    HorizontalAlignment="Right"/>

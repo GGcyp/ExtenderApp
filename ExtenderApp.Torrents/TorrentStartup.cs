@@ -15,13 +15,19 @@ namespace ExtenderApp.Torrents
 
         public override void AddService(IServiceCollection services)
         {
+            services.AddTransient<TorrentAddView>();
             services.AddTransient<TorrentMainView>();
-            services.AddTransient<TorrentFileInfoView>();
+            services.AddTransient<TorrentAddFileInfoView>();
             services.AddTransient<TorrentDownloadListView>();
+            services.AddTransient<TorrentRecyclebinListView>();
+            services.AddTransient<TorrentDownloadFileInfoView>();
             services.AddTransient<TorrentDownloadCompletedListView>();
 
+
+            services.AddTransient<TorrentAddViewModel>();
             services.AddTransient<TorrentMainViewModel>();
             services.AddTransient<TorrentFileInfoViewModel>();
+            services.AddTransient<TorrentAddFileInfoViewModel>();
             services.AddTransient<TorrentDownloadListViewModel>();
             services.AddTransient<TorrentDownloadCompletedListViewModel>();
         }

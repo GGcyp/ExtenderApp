@@ -130,7 +130,7 @@ namespace ExtenderApp.Services
             }
             catch (Exception ex)
             {
-                _logingService.Error("读取本地数据出现错误", nameof(ILocalDataService), ex);
+                _logingService.Error($"读取本地数据出现错误:{dataName}", nameof(ILocalDataService), ex);
                 return false;
             }
         }
@@ -157,7 +157,7 @@ namespace ExtenderApp.Services
             }
             catch (Exception ex)
             {
-                _logingService.Error("写入本地数据出现错误", nameof(ILocalDataService), ex);
+                _logingService.Error($"写入本地数据出现错误:{dataName}", nameof(ILocalDataService), ex);
                 return false;
             }
         }

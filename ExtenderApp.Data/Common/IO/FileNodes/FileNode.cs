@@ -36,6 +36,23 @@
         public FileSystemInfo? Info { get; set; }
 
         /// <summary>
+        /// 获取文件的扩展名。
+        /// </summary>
+        /// <returns>返回文件的扩展名。</returns>
+        public string? Extension
+        {
+            get
+            {
+                if (!IsFile)
+                    return string.Empty;
+                if (Info != null)
+                    return Info.Extension;
+
+                return Path.GetExtension(Name);
+            }
+        }
+
+        /// <summary>
         /// 尝试获取本地文件信息。
         /// </summary>
         /// <param name="info">输出参数，用于接收本地文件信息。</param>
@@ -75,7 +92,7 @@
         /// </summary>
         public void UpdateLengthForFolder()
         {
-            if (IsFile) 
+            if (IsFile)
                 return;
 
             for (int i = 0; i < Count; i++)

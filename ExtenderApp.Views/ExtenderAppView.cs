@@ -15,25 +15,33 @@ namespace ExtenderApp.Views
         /// <returns>返回当前视图的视图信息。</returns>
         public ViewInfo ViewInfo { get; }
 
+        public IWindow? Window { get; private set; }
+
         protected T? ViewModel<T>() where T : class, IViewModel
             => DataContext as T;
 
         public ExtenderAppView(IViewModel? dataContext = null)
         {
-            ViewInfo = new ViewInfo(GetType().Name);
+            ViewInfo = new ViewInfo(GetType().Name, dataContext);
             DataContext = dataContext;
+        }
+
+        public virtual void InjectWindow(IWindow window)
+        {
+            Window = window;
         }
 
         public virtual void Enter(ViewInfo oldViewInfo)
         {
             var viewModel = DataContext as IViewModel;
+            viewModel?.Enter(oldViewInfo);
             viewModel?.InjectView(this);
         }
 
         public virtual void Exit(ViewInfo newViewInfo)
         {
             var viewModel = DataContext as IViewModel;
-            viewModel?.Close();
+            viewModel?.Exit(newViewInfo);
         }
     }
 }
