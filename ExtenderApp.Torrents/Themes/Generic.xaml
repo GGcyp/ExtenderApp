@@ -6,6 +6,12 @@
         <ResourceDictionary Source="/ExtenderApp.Views;component/Themes/ExpandSwitch/ExpandSwitch.xaml"/>
         <ResourceDictionary Source="/ExtenderApp.Torrents;component/Themes/TorrentTreeViews/TorrentTreeView.xaml"/>
         <ResourceDictionary Source="/ExtenderApp.Torrents;component/Themes/TorrentTreeItems/TorrentTreeItem.xaml"/>
+        <ResourceDictionary Source="/ExtenderApp.Torrents;component/Themes/TorrentAddTreeViews/TorrentAddTreeView.xaml"/>
+        <ResourceDictionary Source="/ExtenderApp.Torrents;component/Themes/TorrentAddTreeItems/TorrentAddTreeItem.xaml"/>
+
+        <ResourceDictionary Source="/ExtenderApp.Torrents;component/Themes/TorrentButtonStyle.xaml"/>
+
+        <!--<ResourceDictionary Source="/ExtenderApp.Views;component/ViewStyles.xaml"/>-->
     </ResourceDictionary.MergedDictionaries>
 
 </ResourceDictionary>

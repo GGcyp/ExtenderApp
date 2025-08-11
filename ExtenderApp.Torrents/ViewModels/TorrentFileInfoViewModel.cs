@@ -33,14 +33,9 @@ namespace ExtenderApp.Torrents.ViewModels
 
             Task.Run(async () =>
             {
-                info.SelectedFileCount = 0;
-                info.SelectedFileLength = 0;
                 foreach (var node in info.Files)
                 {
                     node.UpdateDownloadState();
-
-                    info.SelectedFileCount += node.GetSelectedFileCount();
-                    info.SelectedFileLength += node.GetSelectedFileLength();
                 }
                 await Model.SatrtTorrentAsync(info);
                 info.IsDownloading = true;
@@ -54,16 +49,7 @@ namespace ExtenderApp.Torrents.ViewModels
         /// </summary>
         private void SelecrAll()
         {
-            var selectedTorrent = Model.SelectedTorrent;
-            var list = selectedTorrent.Files;
-            bool selecrAll = !selectedTorrent.SelecrAll;
-            for (int i = 0; i < list.Count; i++)
-            {
-                var node = list[i];
-                node.DisplayNeedDownload = selecrAll;
-                node.AllNeedDownload(selecrAll);
-            }
-            selectedTorrent.SelecrAll = selecrAll;
+            Model.SelectedTorrent!.SelecrAllFiles();
         }
 
         /// <summary>

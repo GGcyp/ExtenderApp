@@ -32,7 +32,7 @@
             <TextBlock Text="已添加" Foreground="{DynamicResource GlobalForegroundBrush}"/>
             <TextBlock Text="0" Foreground="{DynamicResource GlobalForegroundBrush}"/>
             <TextBlock Text="/" Foreground="{DynamicResource GlobalForegroundBrush}"/>
-            <TextBlock Text="{Binding Model.SelectedTorrent.FileCount}"
+            <TextBlock Text="{Binding Model.SelectedTorrent.SelectedFileCount}"
                        Foreground="{DynamicResource GlobalForegroundBrush}"/>
             <TextBlock Text="个文件" Foreground="{DynamicResource GlobalForegroundBrush}"/>
         </StackPanel>

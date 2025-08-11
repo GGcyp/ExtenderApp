@@ -30,37 +30,19 @@
             <Button Margin="5 5 20 0"
                     BorderBrush="Transparent"
                     HorizontalAlignment="Right"
+                    Style="{DynamicResource EllipticalButton}"
                     Command="{Binding AddTorrentCommand}">
-                <Button.Style>
-                    <Style TargetType="Button">
-                        <Setter Property="Template">
-                            <Setter.Value>
-                                <ControlTemplate TargetType="Button">
-                                    <Border Background="{DynamicResource GlobalPrimaryBrush}"
-                                            CornerRadius="10"
-                                            Padding="{TemplateBinding Padding}"
-                                            HorizontalAlignment="Center">
-                                        <Grid>
-                                            <TextBlock Text="+"
-                                                       Margin="5,0,0,0"
-                                                       HorizontalAlignment="Left"
-                                                       FontSize="20"/>
-                                            <TextBlock Text="新建"
-                                                       HorizontalAlignment="Left"
-                                                       VerticalAlignment="Center"
-                                                       Margin="30,0,5,0"/>
-                                        </Grid>
-                                    </Border>
-                                    <ControlTemplate.Triggers>
-                                        <Trigger Property="IsMouseOver" Value="True">
-                                            <Setter Property="BorderBrush" Value="{DynamicResource GlobalSecondaryBrush}"/>
-                                        </Trigger>
-                                    </ControlTemplate.Triggers>
-                                </ControlTemplate>
-                            </Setter.Value>
-                        </Setter>
-                    </Style>
-                </Button.Style>
+                <Grid>
+                    <TextBlock Text="+"
+                               Margin="5,0,35,0"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center"
+                               FontSize="25"/>
+                    <TextBlock Text="新建"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center"
+                               Margin="30,0,5,0"/>
+                </Grid>
             </Button>
         </Grid>
 

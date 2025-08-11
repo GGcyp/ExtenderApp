@@ -28,12 +28,16 @@ namespace ExtenderApp.Torrents.Models
             set
             {
                 displyNeedDownload = value;
-                if (IsFile)
-                    return;
 
-                AllNeedDownload(displyNeedDownload);
+                if (!IsFile)
+                {
+                    AllNeedDownload(displyNeedDownload);
+                }
+                TorrentInfo?.UpdateInfo();
             }
         }
+
+        public TorrentInfo? TorrentInfo { get; set; }
 
         /// <summary>
         /// 获取或设置一个布尔值，指示是否需要下载。
@@ -60,9 +64,9 @@ namespace ExtenderApp.Torrents.Models
         /// 设置所有子节点是否需要下载
         /// </summary>
         /// <param name="isNeedDownload">是否需要下载</param>
-        public void AllNeedDownload(bool isNeedDownload)
+        private void AllNeedDownload(bool isNeedDownload)
         {
-            LoopAllChildNodes(n => n.DisplayNeedDownload = isNeedDownload);
+            LoopAllChildNodes(n => n.displyNeedDownload = isNeedDownload);
         }
 
         /// <summary>
@@ -103,37 +107,16 @@ namespace ExtenderApp.Torrents.Models
         /// <summary>
         /// 更新下载状态
         /// </summary>
-        /// <remarks>
-        /// 该方法将 IsDownloading 属性设置为 IsNeedDownload 属性的值，
-        /// 然后遍历集合中的每个元素，调用它们的 UpdateDownloadState 方法。
-        /// </remarks>
-        public void UpdateDownloadState()
+        /// <param name="isUpdate">是否更新下载状态，默认为true</param>
+        public void UpdateDownloadState(bool isUpdate = true)
         {
-            NeedDownloading = DisplayNeedDownload;
+            NeedDownloading = isUpdate ? DisplayNeedDownload : NeedDownloading;
 
             for (int i = 0; i < Count; i++)
             {
-                this[i].UpdateDownloadState();
+                this[i].UpdateDownloadState(isUpdate);
             }
         }
-
-        /// <summary>
-        /// 取消更新下载状态
-        /// </summary>
-        /// <remarks>
-        /// 该方法将 IsDownloading 属性设置为 IsNeedDownload 属性的值，
-        /// 然后遍历集合中的每个元素，调用它们的 UpdateDownloadState 方法。
-        /// </remarks>
-        public void UnUpdateDownloadState()
-        {
-            DisplayNeedDownload = NeedDownloading;
-
-            for (int i = 0; i < Count; i++)
-            {
-                this[i].UnUpdateDownloadState();
-            }
-        }
-
 
         /// <summary>
         /// 获取需要下载的文件数量
@@ -141,12 +124,11 @@ namespace ExtenderApp.Torrents.Models
         /// <returns>返回需要下载的文件数量</returns>
         public int GetSelectedFileCount()
         {
-            if (IsFile)
-            {
-                if (NeedDownloading)
-                    return 1;
+            if (!DisplayNeedDownload)
                 return 0;
-            }
+
+            if (IsFile)
+                return 1;
 
             int count = 0;
             for (int i = 0; i < Count; i++)
@@ -162,17 +144,56 @@ namespace ExtenderApp.Torrents.Models
         /// <returns>返回需要下载的文件总长度</returns>
         public long GetSelectedFileLength()
         {
-            if (IsFile)
-            {
-                if (NeedDownloading)
-                    return Length;
+            if (!DisplayNeedDownload)
                 return 0;
-            }
+
+            if (IsFile)
+                return Length;
 
             long length = 0;
             for (int i = 0; i < Count; i++)
             {
                 length += this[i].GetSelectedFileLength();
+            }
+            return length;
+        }
+
+        /// <summary>
+        /// 获取已选文件完成数量
+        /// </summary>
+        /// <returns>返回已选文件完成数量</returns>
+        public int GetSelectedFileCompleteCount()
+        {
+            if (!DisplayNeedDownload)
+                return 0;
+
+            if (IsFile)
+                return Progress >= 1.00 ? 1 : 0;
+
+            int count = 0;
+            for (int i = 0; i < Count; i++)
+            {
+                count += this[i].GetSelectedFileCompleteCount();
+            }
+            return count;
+        }
+
+        /// <summary>
+        /// 获取当前选择的文件或文件夹的完整长度（以字节为单位）。
+        /// </summary>
+        /// <returns>返回选择的文件或文件夹的完整长度（以字节为单位）。</returns>
+        public long GetSelectedFileCompleteLength()
+        {
+            if (!DisplayNeedDownload)
+                return 0;
+
+            if (IsFile)
+                return (long)Progress * Length;
+
+            long length = 0;
+            for (int i = 0; i < Count; i++)
+            {
+                length += this[i].GetSelectedFileCompleteLength();
             }
             return length;
         }

@@ -70,7 +70,6 @@ namespace ExtenderApp.Torrents.Models
         /// </summary>
         public long SelectedFileLength { get; set; }
 
-
         #region Files
 
         public BitFieldData? BitData { get; set; }
@@ -79,7 +78,7 @@ namespace ExtenderApp.Torrents.Models
 
         public int FileCount { get; set; }
 
-        public bool SelecrAll { get; set; } = false;
+        public bool SelecrAll { get; set; }
 
         #endregion
 
@@ -115,6 +114,7 @@ namespace ExtenderApp.Torrents.Models
             PieceCount = torrent.PieceCount;
             BitData = new BitFieldData(PieceCount);
             IsDownloading = false;
+            SelecrAll = false;
 
             Files = new();
             var list = torrent.Files;
@@ -151,6 +151,7 @@ namespace ExtenderApp.Torrents.Models
                         node = new();
                         node.Name = parentNodeName;
                         node.IsFile = false;
+                        node.TorrentInfo = this;
                         parentNode = lastParentNode;
                     }
                     else
@@ -179,6 +180,7 @@ namespace ExtenderApp.Torrents.Models
                 node.Length = file.Length;
                 node.Name = new string(span);
                 node.IsFile = true;
+                node.TorrentInfo = this;
                 if (parentNode == null)
                 {
                     Files.Add(node);
@@ -279,5 +281,111 @@ namespace ExtenderApp.Torrents.Models
             }
             return null;
         }
+
+        /// <summary>
+        /// 选择或取消选择所有文件
+        /// </summary>
+        public void SelecrAllFiles()
+        {
+            var list = Files;
+            bool selecrAll = !SelecrAll;
+            for (int i = 0; i < list.Count; i++)
+            {
+                var node = list[i];
+                node.DisplayNeedDownload = selecrAll;
+            }
+            SelecrAll = selecrAll;
+        }
+
+        #region Update
+
+        /// <summary>
+        /// 更新信息
+        /// </summary>
+        /// <remarks>
+        /// 该方法用于更新文件信息，包括所有选中文件的数量、总大小、已完成的数量以及已完成的总大小。
+        /// </remarks>
+        public void UpdateInfo()
+        {
+            int allCount = 0;
+            long allLength = 0;
+            int completeCount = 0;
+            long completeLength = 0;
+
+            for (int i = 0; i < Files.Count; i++)
+            {
+                var node = Files[i];
+                allCount += node.GetSelectedFileCount();
+                allLength += node.GetSelectedFileLength();
+                completeCount += node.GetSelectedFileCompleteCount();
+                completeLength += node.GetSelectedFileCompleteLength();
+            }
+            SelectedFileCount = allCount;
+            SelectedFileLength = allLength;
+            SelectedFileCompleteCount = completeCount;
+            SelectedFileCompleteLength = completeLength;
+        }
+
+        /// <summary>
+        /// 更新选中文件的总长度。
+        /// </summary>
+        /// <returns>返回选中文件的总长度。</returns>
+        public long UpdateSelectedFileLength()
+        {
+            long result = 0;
+            for (int i = 0; i < Files.Count; i++)
+            {
+                result += Files[i].GetSelectedFileLength();
+            }
+            SelectedFileLength = result;
+            return result;
+        }
+
+        /// <summary>
+        /// 更新选中文件的总数。
+        /// </summary>
+        /// <returns>返回选中文件的总数。</returns>
+        public int UpdateSelectedFileCount()
+        {
+            int result = 0;
+            for (int i = 0; i < Files.Count; i++)
+            {
+                result += Files[i].GetSelectedFileCount();
+            }
+            SelectedFileCount = result;
+            return result;
+        }
+
+        /// <summary>
+        /// 更新所有文件中已选择文件的总长度，并返回该长度。
+        /// </summary>
+        /// <returns>返回所有文件中已选择文件的总长度。</returns>
+        public long UpdateSelectedFileCompleteLength()
+        {
+            long result = 0;
+            for (int i = 0; i < Files.Count; i++)
+            {
+                result += Files[i].GetSelectedFileCompleteLength();
+            }
+            SelectedFileCompleteLength = result;
+            return result;
+        }
+
+        /// <summary>
+        /// 更新所有文件中已选择文件的总数，并返回该数量。
+        /// </summary>
+        /// <returns>返回所有文件中已选择文件的总数。</returns>
+        public int UpdateSelectedFileCompleteCount()
+        {
+            int result = 0;
+            for (int i = 0; i < Files.Count; i++)
+            {
+                result += Files[i].GetSelectedFileCompleteCount();
+            }
+            SelectedFileCompleteCount = result;
+            return result;
+        }
+
+        #endregion
     }
 }

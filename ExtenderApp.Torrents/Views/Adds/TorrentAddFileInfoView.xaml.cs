@@ -26,5 +26,11 @@ namespace ExtenderApp.Torrents.Views
         {
             InitializeComponent();
         }
+
+
+        private void EditToggleButton_Click(object sender, RoutedEventArgs e)
+        {
+            NameTextBox.Focus();
+        }
     }
 }

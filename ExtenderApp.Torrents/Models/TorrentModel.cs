@@ -1,5 +1,7 @@
 ﻿using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Diagnostics;
+using System.IO;
 using System.Net;
 using ExtenderApp.Abstract;
 using ExtenderApp.Torrents.Models;
@@ -48,6 +50,8 @@ namespace ExtenderApp.Torrents
         public async Task SatrtTorrentAsync(TorrentInfo info)
         {
             TorrentManager? manager = info.Manager;
+            //TorrentSettingsBuilder builder = new();
+
             if (manager != null)
             {
                 await manager.StartAsync();
@@ -67,6 +71,10 @@ namespace ExtenderApp.Torrents
                 throw new ArgumentNullException($"当前种子或磁力链接还未加载：{info.Torrent}");
             }
 
+            if (!string.IsNullOrEmpty(manager.ContainingDirectory) && !Directory.Exists(manager.ContainingDirectory))
+            {
+                Directory.CreateDirectory(manager.ContainingDirectory);
+            }
             info.Set(manager);
             await manager.StartAsync();
             await manager.LocalPeerAnnounceAsync();

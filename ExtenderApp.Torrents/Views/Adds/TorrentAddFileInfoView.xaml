@@ -7,6 +7,8 @@
                    xmlns:v="clr-namespace:ExtenderApp.Views;assembly=ExtenderApp.Views"
                    xmlns:t="clr-namespace:ExtenderApp.Torrents.Themes"
                    xmlns:vm="clr-namespace:ExtenderApp.Torrents.ViewModels"
+                   xmlns:c="clr-namespace:ExtenderApp.Torrents.Converter"
+                   xmlns:vc="clr-namespace:ExtenderApp.Views.Converters;assembly=ExtenderApp.Views"
                    mc:Ignorable="d"
                    d:DataContext="{d:DesignInstance Type=vm:TorrentAddFileInfoViewModel}"
                    d:DesignHeight="400"
@@ -24,55 +26,88 @@
             </GeometryGroup>
         </ResourceDictionary>
     </v:ExtenderAppView.Resources>
-    <Grid DataContext="{Binding CurrentTorrentInfo}"
-          Background="{DynamicResource GlobalBackgroundBrush}">
+    <Grid Background="{DynamicResource GlobalBackgroundBrush}">
         <Grid.RowDefinitions>
             <RowDefinition Height="30"/>
+            <RowDefinition Height="75"/>
             <RowDefinition/>
-            <RowDefinition/>
-            <RowDefinition/>
+            <RowDefinition Height="40"/>
         </Grid.RowDefinitions>
         <TextBlock Grid.Row="0"
                    Text="新建下载任务"
-                   Margin="5"/>
-        <Grid Grid.Row="1">
+                   Margin="5"
+                   Focusable="True"/>
+        <Grid Grid.Row="1"
+              Focusable="True">
             <Grid.RowDefinitions>
                 <RowDefinition Height="25"/>
-                <RowDefinition/>
+                <RowDefinition Height="25"/>
+                <RowDefinition Height="20"/>
             </Grid.RowDefinitions>
-            <StackPanel Grid.Row="0"
-                        Orientation="Horizontal">
-                <TextBox Grid.Row="0"
+            <Grid Grid.Row="0">
+                <TextBox x:Name="NameTextBox"
+                         Grid.Row="0"
                          BorderBrush="Transparent"
                          Background="{DynamicResource GlobalBackgroundBrush}"
                          Foreground="{DynamicResource GlobalForegroundBrush}"
-                         Text="{Binding Name}">
-                    <TextBox.Style>
-                        <Style TargetType="TextBox">
-                            <Setter Property="IsReadOnly" Value="True"/>
-                            <Style.Triggers>
-                                <DataTrigger Binding="{Binding IsChecked, ElementName=EditToggleButton}" Value="True">
-                                    <Setter Property="IsReadOnly" Value="False"/>
-                                </DataTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </TextBox.Style>
-                </TextBox>
+                         Width="{Binding ActualWidth,
+                         RelativeSource={RelativeSource
+                         AncestorType={x:Type Grid},
+                         AncestorLevel=2},
+                         Converter={c:MaxWidthConverter},
+                         ConverterParameter=50}"
+                         HorizontalAlignment="Left"
+                         Margin="10 0 0 0"
+                         HorizontalContentAlignment="Center"
+                         VerticalContentAlignment="Center"
+                         Text="{Binding Name}"/>
                 <ToggleButton x:Name="EditToggleButton"
                               Background="Transparent"
                               BorderBrush="Transparent"
-                              Margin="5 0 0 0">
+                              HorizontalAlignment="Right"
+                              Margin="5 0 10 0"
+                              Click="EditToggleButton_Click">
                     <Path Data="{StaticResource EditorIcon}"
                           Fill="{DynamicResource GlobalForegroundBrush}"
                           Stroke="{DynamicResource GlobalForegroundBrush}"
                           Stretch="Uniform"/>
                 </ToggleButton>
-            </StackPanel>
+            </Grid>
+            <Grid Grid.Row="1"
+                  DataContext="{Binding CurrentTorrentInfo}">
+                <StackPanel Grid.Column="0"
+                            Orientation="Horizontal">
+                    <TextBlock Text="{Binding SelectedFileCount,
+                               StringFormat=已添加{0}}"
+                               Margin="5 0 0 0"/>
+                    <TextBlock Text="{Binding FileCount,
+                               StringFormat=/{0}个文件}"/>
+                    <TextBlock Text="{Binding SelectedFileLength,
+                               Converter={vc:SizeConverter}}"
+                               Margin="5 0 0 0"/>
+                </StackPanel>
+            </Grid>
+            <Grid Grid.Row="2">
+                <CheckBox Content="全选"
+                          Foreground="{DynamicResource GlobalForegroundBrush}"
+                          Margin="5 0 0 0"
+                          HorizontalAlignment="Left"
+                          VerticalAlignment="Center"
+                          Command="{Binding SelectedAllCommand}"/>
+            </Grid>
         </Grid>
         <Border Grid.Row="2"
+                DataContext="{Binding CurrentTorrentInfo}"
                 BorderBrush="{DynamicResource GlobalPrimaryBrush}">
             <t:TorrentAddTreeView ItemsSource="{Binding Files}"
                                   Foreground="{DynamicResource GlobalForegroundBrush}"/>
         </Border>
+        <Grid Grid.Row="3">
+            <Button Margin="5"
+                    Content="开始下载"
+                    BorderBrush="Transparent"
+                    Style="{StaticResource EllipticalButton}"
+                    Command="{Binding StartDownloadCommand}"/>
+        </Grid>
     </Grid>
 </v:ExtenderAppView>
