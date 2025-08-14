@@ -19,6 +19,7 @@ namespace ExtenderApp.Torrents.Models
         public event PropertyChangedEventHandler? PropertyChanged;
 
         private bool displyNeedDownload;
+
         /// <summary>
         /// 获取或设置一个布尔值，指示是否需要显示下载提示。
         /// </summary>
@@ -33,7 +34,7 @@ namespace ExtenderApp.Torrents.Models
                 {
                     AllNeedDownload(displyNeedDownload);
                 }
-                TorrentInfo?.UpdateInfo();
+                TorrentInfo?.UpdateSelectedFileInfo();
             }
         }
 

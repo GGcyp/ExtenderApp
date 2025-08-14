@@ -77,8 +77,8 @@ namespace ExtenderApp.Torrents
             }
             info.Set(manager);
             await manager.StartAsync();
-            await manager.LocalPeerAnnounceAsync();
-            await manager.DhtAnnounceAsync();
+            //await manager.LocalPeerAnnounceAsync();
+            //await manager.DhtAnnounceAsync();
         }
 
         public async Task PauseTorrentAsync(TorrentInfo info)
@@ -93,17 +93,7 @@ namespace ExtenderApp.Torrents
         {
             foreach (var torrent in DowloadTorrentCollection)
             {
-                var manager = torrent.Manager;
-                if (manager == null)
-                    continue;
-
-                torrent.Progress = manager.Progress;
-                torrent.DownloadSpeed = manager.Monitor.DownloadRate;
-                torrent.UploadSpeed = manager.Monitor.UploadRate;
-                foreach (var info in torrent.Files)
-                {
-                    info.UpdetaProgress();
-                }
+                torrent.UpdateInfo();
             }
         }
 

@@ -31,7 +31,7 @@
             <RowDefinition Height="30"/>
             <RowDefinition Height="75"/>
             <RowDefinition/>
-            <RowDefinition Height="40"/>
+            <RowDefinition Height="50"/>
         </Grid.RowDefinitions>
         <TextBlock Grid.Row="0"
                    Text="新建下载任务"
@@ -103,10 +103,10 @@
                                   Foreground="{DynamicResource GlobalForegroundBrush}"/>
         </Border>
         <Grid Grid.Row="3">
-            <Button Margin="5"
+            <Button Margin="20 5 20 5"
                     Content="开始下载"
                     BorderBrush="Transparent"
-                    Style="{StaticResource EllipticalButton}"
+                    Style="{DynamicResource EllipticalButton}"
                     Command="{Binding StartDownloadCommand}"/>
         </Grid>
     </Grid>

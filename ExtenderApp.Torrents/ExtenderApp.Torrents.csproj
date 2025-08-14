@@ -10,6 +10,13 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+	  <Compile Remove="Icon\**" />
+	  <EmbeddedResource Remove="Icon\**" />
+	  <None Remove="Icon\**" />
+	  <Page Remove="Icon\**" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<PackageReference Include="MonoTorrent" Version="3.0.2" />
 		<PackageReference Include="PropertyChanged.Fody" Version="4.1.0" />
 		<PackageReference Include="ReusableTasks" Version="4.0.0" />
@@ -59,10 +66,6 @@
 
 	<ItemGroup>
 	  <Compile Remove="C:\Users\win\.nuget\packages\reusabletasks\4.0.0\build\\AsyncVoidMethodBuilder.cs" />
-	</ItemGroup>
-
-	<ItemGroup>
-	  <Folder Include="Icon\" />
 	</ItemGroup>
 
 	<ItemGroup>

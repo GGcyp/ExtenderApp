@@ -34,6 +34,8 @@ namespace ExtenderApp.Torrents.ViewModels
 
         public NoValueCommand ToTorrentDetailsCommand { get; set; }
 
+        public NoValueCommand ToTorrentDownloadStateCommand { get; set; }
+
         #endregion
 
         public TorrentMainViewModel(IMainWindow window, IServiceStore serviceStore) : base(serviceStore)
@@ -45,6 +47,7 @@ namespace ExtenderApp.Torrents.ViewModels
             ToRecyclebinListCommand = CreateTorrentListCommand<TorrentRecyclebinListView>();
 
             ToFileInfoCommand = CreateTorrentDetailsCommand<TorrentDownloadFileInfoView>();
+            ToTorrentDownloadStateCommand = CreateTorrentDetailsCommand<TorrentDownloadStateView>();
             ToTorrentDetailsCommand = new(() =>
             {
                 Model.TorrentDetailsView = null;

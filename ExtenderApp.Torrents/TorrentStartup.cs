@@ -19,16 +19,17 @@ namespace ExtenderApp.Torrents
             services.AddTransient<TorrentMainView>();
             services.AddTransient<TorrentAddFileInfoView>();
             services.AddTransient<TorrentDownloadListView>();
+            services.AddTransient<TorrentDownloadStateView>();
             services.AddTransient<TorrentRecyclebinListView>();
             services.AddTransient<TorrentDownloadFileInfoView>();
             services.AddTransient<TorrentDownloadCompletedListView>();
-
 
             services.AddTransient<TorrentAddViewModel>();
             services.AddTransient<TorrentMainViewModel>();
             services.AddTransient<TorrentFileInfoViewModel>();
             services.AddTransient<TorrentAddFileInfoViewModel>();
             services.AddTransient<TorrentDownloadListViewModel>();
+            services.AddTransient<TorrentDownloadStateViewModel>();
             services.AddTransient<TorrentDownloadCompletedListViewModel>();
         }
 

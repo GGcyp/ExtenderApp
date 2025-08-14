@@ -1,17 +1,18 @@
-﻿<view:ExtenderAppView x:Class="ExtenderApp.Torrents.Views.TorrentDownloadFileInfoView"
-                      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-                      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-                      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-                      xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-                      xmlns:local="clr-namespace:ExtenderApp.Torrents.ViewModels"
-                      xmlns:con="clr-namespace:ExtenderApp.Torrents.Converter"
-                      xmlns:view="clr-namespace:ExtenderApp.Views;assembly=ExtenderApp.Views"
-                      xmlns:localView="clr-namespace:ExtenderApp.Torrents.Themes"
-                      mc:Ignorable="d"
-                      d:DataContext="{d:DesignInstance Type=local:TorrentFileInfoViewModel}"
-                      d:DesignHeight="500" d:DesignWidth="350">
+﻿<v:ExtenderAppView x:Class="ExtenderApp.Torrents.Views.TorrentDownloadFileInfoView"
+                   xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                   xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                   xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                   xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                   xmlns:local="clr-namespace:ExtenderApp.Torrents.ViewModels"
+                   xmlns:con="clr-namespace:ExtenderApp.Torrents.Converter"
+                   xmlns:v="clr-namespace:ExtenderApp.Views;assembly=ExtenderApp.Views"
+                   xmlns:t="clr-namespace:ExtenderApp.Torrents.Themes"
+                   mc:Ignorable="d"
+                   d:DataContext="{d:DesignInstance Type=local:TorrentFileInfoViewModel}"
+                   d:DesignHeight="500"
+                   d:DesignWidth="350">
 
-    <view:ExtenderAppView.Resources>
+    <v:ExtenderAppView.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="/ExtenderApp.Views;component/ViewStyles.xaml"/>
@@ -19,7 +20,7 @@
             </ResourceDictionary.MergedDictionaries>
             <con:SubtractConverter x:Key="SubtractConverter"/>
         </ResourceDictionary>
-    </view:ExtenderAppView.Resources>
+    </v:ExtenderAppView.Resources>
 
     <Grid Margin="0 20 0 0">
         <Grid.RowDefinitions>
@@ -37,7 +38,7 @@
             <TextBlock Text="个文件" Foreground="{DynamicResource GlobalForegroundBrush}"/>
         </StackPanel>
         <!-- 文件目录TreeView -->
-        <localView:TorrentTreeView
+        <t:TorrentTreeView
             Grid.Row="1"
             ItemsSource="{Binding Model.SelectedTorrent.Files}"
             Background="{DynamicResource GlobalBackgroundBrush}"
@@ -61,4 +62,4 @@
                 Command="{Binding StartCommand}"/>
         </Grid>
     </Grid>
-</view:ExtenderAppView>
+</v:ExtenderAppView>

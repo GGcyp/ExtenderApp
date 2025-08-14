@@ -41,17 +41,10 @@ namespace ExtenderApp.Torrents.ViewModels
             Task.Run(async () =>
             {
                 await Model.SatrtTorrentAsync(CurrentTorrentInfo!);
-                var manager = CurrentTorrentInfo.Manager;
-                Debug(manager.TrackerManager.Tiers.Count);
-                manager.PeerConnected += (sender, e) =>
+                DispatcherInvoke(() =>
                 {
-                    Debug(e.Peer);
-                    //Debug(e.)
-                };
-                manager.TorrentStateChanged += (sender, e) =>
-                {
-                    Debug(e.NewState);
-                };
+                    View.Window?.Close();
+                });
             });
         }
     }

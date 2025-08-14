@@ -70,6 +70,12 @@ namespace ExtenderApp.Torrents.Models
         /// </summary>
         public long SelectedFileLength { get; set; }
 
+        public int Seeds { get; set; }
+
+        public int Leechs { get; set; }
+
+        public int Available{ get; set; }
+
         #region Files
 
         public BitFieldData? BitData { get; set; }
@@ -299,13 +305,32 @@ namespace ExtenderApp.Torrents.Models
 
         #region Update
 
+        public void UpdateInfo()
+        {
+            if (Manager == null)
+                return;
+
+            Progress = Manager.Progress;
+            DownloadSpeed = Manager.Monitor.DownloadRate;
+            UploadSpeed = Manager.Monitor.UploadRate;
+
+            Seeds = Manager.Peers.Seeds;
+            Leechs = Manager.Peers.Leechs;
+            Available = Manager.Peers.Available;
+
+            foreach (var info in Files)
+            {
+                info.UpdetaProgress();
+            }
+        }
+
         /// <summary>
         /// 更新信息
         /// </summary>
         /// <remarks>
         /// 该方法用于更新文件信息，包括所有选中文件的数量、总大小、已完成的数量以及已完成的总大小。
         /// </remarks>
-        public void UpdateInfo()
+        public void UpdateSelectedFileInfo()
         {
             int allCount = 0;
             long allLength = 0;

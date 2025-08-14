@@ -24,7 +24,7 @@
             <RowDefinition Height="*"/>
             <RowDefinition Height="35"/>
             <RowDefinition Height="60"/>
-            <RowDefinition Height="50"/>
+            <RowDefinition Height="30"/>
         </Grid.RowDefinitions>
         <TextBlock Grid.Row="0"
                    Text="添加种子"
@@ -105,7 +105,7 @@
         </Grid>
         <Button Grid.Row="4"
                 Content="开始下载"
-                Margin="20 0 20 0"
+                Margin="20 0 20 5"
                 HorizontalAlignment="Stretch"
                 HorizontalContentAlignment="Center"
                 Style="{StaticResource EllipticalButton}"
