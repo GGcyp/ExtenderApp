@@ -10,9 +10,13 @@
 	<ItemGroup>
 		<AvaloniaXaml Remove="Converters\**" />
 		<Compile Remove="Converters\**" />
+		<Compile Remove="Converter\**" />
 		<EmbeddedResource Remove="Converters\**" />
+		<EmbeddedResource Remove="Converter\**" />
 		<None Remove="Converters\**" />
+		<None Remove="Converter\**" />
 		<Page Remove="Converters\**" />
+		<Page Remove="Converter\**" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -26,10 +30,6 @@
 		<ProjectReference Include="..\ExtenderApp.Service\ExtenderApp.Services.csproj" />
 		<ProjectReference Include="..\ExtenderApp.ViewModels\ExtenderApp.ViewModels.csproj" />
 		<ProjectReference Include="..\ExtenderApp.Views\ExtenderApp.Views.csproj" />
-	</ItemGroup>
-
-	<ItemGroup>
-	  <Folder Include="Converter\" />
 	</ItemGroup>
 
 	<Target Name="PostBuild" AfterTargets="PostBuildEvent">

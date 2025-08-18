@@ -48,5 +48,10 @@
         /// 获取服务提供者。
         /// </summary>
         IServiceProvider ServiceProvider { get; }
+
+        /// <summary>
+        /// 获取主窗口服务接口。
+        /// </summary>
+        IMainWindowService MainWindowService { get; }
     }
 }

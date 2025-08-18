@@ -13,8 +13,6 @@ namespace ExtenderApp.Torrents.ViewModels
 {
     public class TorrentAddViewModel : ExtenderAppViewModel<TorrentAddView, TorrentModel>
     {
-        private readonly IMainWindow _mainWindow;
-
         #region Command
 
         public NoValueCommand LoadTorrentCommand { get; set; }
@@ -28,9 +26,8 @@ namespace ExtenderApp.Torrents.ViewModels
 
         public TorrentInfo? CurrentTorrentInfo { get; private set; }
 
-        public TorrentAddViewModel(IMainWindow mainWindow, IServiceStore serviceStore) : base(serviceStore)
+        public TorrentAddViewModel(IServiceStore serviceStore) : base(serviceStore)
         {
-            _mainWindow = mainWindow;
             torrentsLazy = new();
             LoadTorrentCommand = new(LoadTorrent);
             StartTorrentCommand = new(StartTorrent);
@@ -61,7 +58,7 @@ namespace ExtenderApp.Torrents.ViewModels
                             window.MinWidth = 400;
                             window.Height = 400;
                             window.Width = 350;
-                            window.Owner = _mainWindow;
+                            window.Owner = CurrrentMainWindow;
                             window.WindowStartupLocation = 2;
                             window.Show();
                             View.Window?.Close();

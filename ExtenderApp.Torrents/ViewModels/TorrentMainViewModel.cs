@@ -8,13 +8,13 @@ using ExtenderApp.Views.Commands;
 using Microsoft.Win32;
 using MonoTorrent;
 using MonoTorrent.Client;
+using MonoTorrent.Logging;
 
 namespace ExtenderApp.Torrents.ViewModels
 {
     public class TorrentMainViewModel : ExtenderAppViewModel<TorrentMainView, TorrentModel>
     {
         private readonly ScheduledTask _task;
-        private readonly IMainWindow _mainWindow;
 
         #region Command
 
@@ -38,9 +38,9 @@ namespace ExtenderApp.Torrents.ViewModels
 
         #endregion
 
-        public TorrentMainViewModel(IMainWindow window, IServiceStore serviceStore) : base(serviceStore)
+        public TorrentMainViewModel(TorrentLongingFactory factory, IServiceStore serviceStore) : base(serviceStore)
         {
-            _mainWindow = window;
+            LoggerFactory.Register(factory.CreateTorrentLonging);
 
             ToDownloadListCommand = CreateTorrentListCommand<TorrentDownloadListView>();
             ToDownloadCompletedListdCommand = CreateTorrentListCommand<TorrentDownloadCompletedListView>();
@@ -60,8 +60,8 @@ namespace ExtenderApp.Torrents.ViewModels
             Model.TorrentListView = NavigateTo<TorrentDownloadListView>();
             Model.TorrentDetailsView = NavigateTo<TorrentDownloadFileInfoView>();
 
-            window.MinWidth = 800;
-            window.MinHeight = 600;
+            CurrrentMainWindow.MinWidth = 800;
+            CurrrentMainWindow.MinHeight = 600;
             Model.CreateTorrentClientEngine();
             Model.SaveDirectory = _serviceStore.PathService.CreateFolderPathForAppRootFolder("test");
 
@@ -92,7 +92,7 @@ namespace ExtenderApp.Torrents.ViewModels
             var view = window.CurrentView as TorrentAddView;
             window.Height = 300;
             window.Width = 300;
-            window.Owner = _mainWindow;
+            window.Owner = CurrrentMainWindow;
             window.WindowStartupLocation = 2;
             window.Show();
         }

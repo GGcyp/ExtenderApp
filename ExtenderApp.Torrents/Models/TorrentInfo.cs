@@ -74,7 +74,7 @@ namespace ExtenderApp.Torrents.Models
 
         public int Leechs { get; set; }
 
-        public int Available{ get; set; }
+        public int Available { get; set; }
 
         #region Files
 

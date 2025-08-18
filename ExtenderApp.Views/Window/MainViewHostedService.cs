@@ -5,20 +5,21 @@ namespace ExtenderApp.Views
 {
     internal class MainViewHostedService : BackgroundService
     {
-        private readonly IMainWindow _mainWindow;
+        private readonly IMainWindowService _mainWindowService;
         private readonly INavigationService _navigationService;
 
-        public MainViewHostedService(IMainWindow mainWindow, INavigationService service)
+        public MainViewHostedService(IMainWindowService mainWindowService, INavigationService navigationService)
         {
-            _mainWindow = mainWindow;
-            _navigationService = service;
+            _mainWindowService = mainWindowService;
+            _navigationService = navigationService;
         }
 
         protected override Task ExecuteAsync(CancellationToken stoppingToken)
         {
+            var mainWindow = _mainWindowService.CreateMainWindow();
             var mainView = _navigationService.NavigateTo(typeof(IMainView), string.Empty, null) as IMainView;
-            _mainWindow.ShowView(mainView);
-            _mainWindow.Show();
+            mainWindow.ShowView(mainView);
+            mainWindow.Show();
             return Task.CompletedTask;
         }
     }

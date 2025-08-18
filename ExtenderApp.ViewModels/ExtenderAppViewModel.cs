@@ -24,6 +24,11 @@ namespace ExtenderApp.ViewModels
         protected PluginDetails? ModDetails { get; set; }
 
         /// <summary>
+        /// 返回当前的主窗口实例
+        /// </summary>
+        protected IMainWindow? CurrrentMainWindow => _serviceStore.MainWindowService.CurrentMainWindow;
+
+        /// <summary>
         /// 当属性更改时发生的事件
         /// </summary>
         public event PropertyChangedEventHandler? PropertyChanged;
@@ -342,6 +347,19 @@ namespace ExtenderApp.ViewModels
             if (callback is null) return;
 
             _serviceStore.DispatcherService.Invoke(callback);
+        }
+
+        #endregion
+
+        #region MainWindow
+
+        /// <summary>
+        /// 创建主窗口实例。
+        /// </summary>
+        /// <returns>主窗口实例</returns>
+        protected IMainWindow CreateMainWindow()
+        {
+            return _serviceStore.MainWindowService.CreateMainWindow();
         }
 
         #endregion

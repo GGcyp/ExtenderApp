@@ -31,6 +31,8 @@ namespace ExtenderApp.Torrents
             services.AddTransient<TorrentDownloadListViewModel>();
             services.AddTransient<TorrentDownloadStateViewModel>();
             services.AddTransient<TorrentDownloadCompletedListViewModel>();
+
+            services.AddSingleton<TorrentLongingFactory>();
         }
 
         public override void ConfigureBinaryFormatterStore(IBinaryFormatterStore store)

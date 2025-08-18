@@ -1,5 +1,7 @@
 ﻿
 
+using System.ComponentModel;
+
 namespace ExtenderApp.Abstract
 {
     /// <summary>
@@ -7,6 +9,8 @@ namespace ExtenderApp.Abstract
     /// </summary>
     public interface IWindow : IView
     {
+        #region Properties
+
         /// <summary>
         /// 获取或设置窗口的最小宽度。
         /// </summary>
@@ -67,6 +71,19 @@ namespace ExtenderApp.Abstract
         IView? CurrentView { get; }
 
         /// <summary>
+        /// 获取窗口是否处于活动状态。
+        /// 如果窗口是前台窗口并且正在接收用户输入，则为 true；否则为 false。
+        /// </summary>
+        bool IsActive { get; }
+
+        /// <summary>
+        /// 获取或设置窗口是否始终位于其他窗口之上。    
+        /// </summary>
+        bool Topmost { get; set; }
+
+        #endregion
+
+        /// <summary>
         /// 显示窗口。
         /// </summary>
         void Show();
@@ -87,5 +104,34 @@ namespace ExtenderApp.Abstract
         /// 关闭视图。
         /// </summary>
         void Close();
+
+        #region Events
+
+        /// <summary>
+        /// 当窗口被激活时触发的事件。
+        /// </summary>
+        event EventHandler Activated;
+
+        /// <summary>
+        /// 当窗口即将关闭时触发的事件，允许取消关闭操作。
+        /// </summary>
+        event CancelEventHandler Closing;
+
+        /// <summary>
+        /// 当窗口的位置发生变化时触发的事件。
+        /// </summary>
+        event EventHandler LocationChanged;
+
+        /// <summary>
+        /// 当窗口关闭时触发的事件。
+        /// </summary>
+        event EventHandler Closed;
+
+        /// <summary>
+        /// 当窗口的状态发生变化时触发的事件（例如，最大化、最小化等）。
+        /// </summary>
+        event EventHandler StateChanged;
+
+        #endregion 
     }
 }

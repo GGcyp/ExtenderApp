@@ -21,7 +21,7 @@ namespace ExtenderApp.MainViews
     /// <summary>
     /// MainViewWindow.xaml 的交互逻辑
     /// </summary>
-    public partial class MainViewWindow : ExtenderAppWindow, IMainWindow, IView
+    public partial class MainViewWindow : ExtenderAppWindow, IMainWindow
     {
         public MainViewWindow(MianWindowViewModel viewModel) : base(viewModel)
         {

@@ -23,6 +23,7 @@ namespace ExtenderApp.Services
             services.AddSingleton<ICacheService, CacheService>();
             services.AddSingleton<ILogingService, LoggingService>();
             services.AddSingleton<IPathService, PathService>();
+            services.AddSingleton<IMainWindowService, MainWindowService>();
 
             AddPluginService(services);
             AddLocaDataService(services);

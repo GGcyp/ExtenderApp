@@ -23,6 +23,8 @@ namespace ExtenderApp.Services
 
         public IServiceProvider ServiceProvider { get; }
 
+        public IMainWindowService MainWindowService { get; }
+
         public ServiceStore(IDispatcherService dispatcherService,
             INavigationService navigationService,
             ICacheService cacheStore,
@@ -30,7 +32,8 @@ namespace ExtenderApp.Services
             IPluginService modService,
             ILocalDataService localDataService,
             IPathService pathService,
-            IServiceProvider serviceProvider)
+            IServiceProvider serviceProvider,
+            IMainWindowService mainWindowService)
         {
             DispatcherService = dispatcherService;
             NavigationService = navigationService;
@@ -40,6 +43,7 @@ namespace ExtenderApp.Services
             LocalDataService = localDataService;
             PathService = pathService;
             ServiceProvider = serviceProvider;
+            MainWindowService = mainWindowService;
         }
     }
 }
