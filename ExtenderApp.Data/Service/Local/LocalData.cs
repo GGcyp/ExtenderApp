@@ -1,29 +1,34 @@
 ﻿namespace ExtenderApp.Data
 {
     [Serializable]
-    public class LocalData
+    public abstract class LocalData
     {
-        public Version? Version { get; set; }
+        public Version Version { get; set; }
 
         public LocalData(Version version)
         {
             Version = version;
         }
+
+        public abstract void SaveData(ExpectLocalFileInfo info);
     }
 
     [Serializable]
     public class LocalData<T> : LocalData
     {
-        public T? Data { get; set; }
+        public Action<ExpectLocalFileInfo, Version, T> SaveAcion { get; set; }
 
-        public LocalData(T? data, Version version) : base(version)
+        public T Data { get; }
+
+        public LocalData(T data, Action<ExpectLocalFileInfo, Version, T> saveAction, Version version) : base(version)
         {
             Data = data;
+            SaveAcion = saveAction;
         }
 
-        public LocalData(T? data) : base(null)
+        public override void SaveData(ExpectLocalFileInfo info)
         {
-            Data = data;
+            SaveAcion.Invoke(info, Version, Data);
         }
     }
 }

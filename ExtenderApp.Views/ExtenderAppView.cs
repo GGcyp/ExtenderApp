@@ -34,8 +34,8 @@ namespace ExtenderApp.Views
         public virtual void Enter(ViewInfo oldViewInfo)
         {
             var viewModel = DataContext as IViewModel;
-            viewModel?.Enter(oldViewInfo);
             viewModel?.InjectView(this);
+            viewModel?.Enter(oldViewInfo);
         }
 
         public virtual void Exit(ViewInfo newViewInfo)

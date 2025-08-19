@@ -53,7 +53,6 @@ namespace ExtenderApp.Services
         private void AddLocaDataService(IServiceCollection services)
         {
             services.AddSingleton<ILocalDataService, LocalDataService>();
-            services.Configuration<IBinaryFormatterStore>(s => { s.AddFormatter(typeof(LocalData<>), typeof(LocalDataFormatter<>)); });
         }
     }
 }

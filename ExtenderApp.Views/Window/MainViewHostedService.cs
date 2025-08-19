@@ -19,6 +19,7 @@ namespace ExtenderApp.Views
             var mainWindow = _mainWindowService.CreateMainWindow();
             var mainView = _navigationService.NavigateTo(typeof(IMainView), string.Empty, null) as IMainView;
             mainWindow.ShowView(mainView);
+            mainView.InjectWindow(mainWindow);
             mainWindow.Show();
             return Task.CompletedTask;
         }

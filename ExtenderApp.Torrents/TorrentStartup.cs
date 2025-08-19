@@ -37,7 +37,7 @@ namespace ExtenderApp.Torrents
 
         public override void ConfigureBinaryFormatterStore(IBinaryFormatterStore store)
         {
-            store.Add<TorrentModel, TorrentModelFormatter>();
+            store.AddVersionData<TorrentModel, TorrentModelFormatter>();
         }
     }
 }

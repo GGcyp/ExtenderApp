@@ -1,4 +1,5 @@
 ﻿using AppHost.Extensions.DependencyInjection;
+using ExtenderApp.Data;
 
 namespace ExtenderApp.Abstract
 {
@@ -15,12 +16,11 @@ namespace ExtenderApp.Abstract
         public void AddFormatter(Type type, Type TypeFormatter);
 
         /// <summary>
-        /// 根据给定的类型获取相应的格式化器类型。
+        /// 尝试根据指定类型获取对应的格式化器类型集合
         /// </summary>
-        /// <typeparam name="T">泛型参数类型。</typeparam>
-        /// <param name="type">需要获取格式化器类型的目标类型。</param>
-        /// <param name="formatter">输出参数，用于返回找到的格式化器类型。</param>
-        /// <returns>如果找到对应的格式化器类型，则返回true；否则返回false。</returns>
+        /// <param name="type">需要获取格式化器的目标类型</param>
+        /// <param name="formatters">输出参数，返回找到的格式化器类型集合，封装在 <see cref="ValueOrList{Type}"/> 中。</param>
+        bool TryGetValue(Type type, out ValueOrList<Type> formatters);
         bool TryGetValue(Type type, out Type formatter);
     }
 }

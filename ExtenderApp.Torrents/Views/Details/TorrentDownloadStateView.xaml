@@ -34,10 +34,15 @@
         <Grid Grid.Row="1"
               DataContext="{Binding Model.SelectedTorrent}">
             <StackPanel>
+                <TextBlock Text="下载状态"
+                           Margin="5 0 0 0"
+                           Foreground="{DynamicResource GlobalForegroundBrush}"/>
                 <TextBlock Text="{Binding Seeds}"/>
                 <TextBlock Text="{Binding Leechs}"/>
-            </StackPanel>
+                <TextBlock Text="{Binding Torrent.PieceCount}"/>
+                <TextBlock Text="{Binding Torrent.PieceLength}"/>
 
+            </StackPanel>
         </Grid>
     </Grid>
 </v:ExtenderAppView>

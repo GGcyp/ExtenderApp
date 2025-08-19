@@ -1,5 +1,6 @@
 ﻿using ExtenderApp.Abstract;
-using ExtenderApp.Common.IO.Binaries.Formatter;
+using ExtenderApp.Common.IO.Binaries.Formatters;
+using ExtenderApp.Data;
 
 namespace ExtenderApp.Common
 {
@@ -178,6 +179,20 @@ namespace ExtenderApp.Common
         public static IBinaryFormatterStore Add<Type, TFormatter>(this IBinaryFormatterStore store) where TFormatter : IBinaryFormatter<Type>
         {
             store.AddFormatter(typeof(Type), typeof(TFormatter));
+            return store;
+        }
+
+        /// <summary>
+        /// 为指定类型添加版本化数据格式化器，用于处理 <see cref="VersionData{T}"/> 类型的序列化/反序列化
+        /// </summary>
+        /// <typeparam name="Type">需要版本化管理的原始数据类型</typeparam>
+        /// <typeparam name="TFormatter">
+        /// 版本化数据格式化器类型，必须实现 <see cref="IVersionDataFormatter{T}"/> 接口
+        /// </typeparam>
+        public static IBinaryFormatterStore AddVersionData<Type, TFormatter>(this IBinaryFormatterStore store) 
+            where TFormatter : IVersionDataFormatter<Type>
+        {
+            store.AddFormatter(typeof(VersionData<Type>), typeof(TFormatter));
             return store;
         }
     }

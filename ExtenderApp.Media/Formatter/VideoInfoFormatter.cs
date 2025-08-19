@@ -1,4 +1,4 @@
-﻿using ExtenderApp.Common.IO.Binaries.Formatter;
+﻿using ExtenderApp.Common.IO.Binaries.Formatters;
 using ExtenderApp.Common.IO.Binaries;
 using ExtenderApp.Data;
 using ExtenderApp.Abstract;

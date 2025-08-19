@@ -1,4 +1,5 @@
 ﻿using System.Globalization;
+using System.Windows;
 using System.Windows.Data;
 using System.Windows.Markup;
 
@@ -11,10 +12,12 @@ namespace ExtenderApp.Torrents.Converter
             double width = (double)value;
 
             if (parameter is not string minuend)
-                return 200;
+                return new GridLength(200);
 
             width -= double.Parse(minuend);
-            return width;
+            if (width < 200)
+                width = 200;
+            return new GridLength(width);
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)

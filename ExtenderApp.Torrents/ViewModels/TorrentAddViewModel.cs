@@ -33,6 +33,11 @@ namespace ExtenderApp.Torrents.ViewModels
             StartTorrentCommand = new(StartTorrent);
         }
 
+        public override void Enter(ViewInfo oldViewInfo)
+        {
+            View.Window.Closed += (s, e) => MainWindowTopmost();
+        }
+
         private void LoadTorrent()
         {
             // 创建文件选择对话框实例

@@ -33,7 +33,6 @@ namespace ExtenderApp.Services
 
         private void CurrentMainWindow_Closed(object? sender, EventArgs e)
         {
-            CurrentMainWindow!.Closed -= CurrentMainWindow_Closed;
             CurrentMainWindow = null;
         }
     }

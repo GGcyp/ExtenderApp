@@ -1,16 +1,18 @@
-﻿
-using ExtenderApp.Abstract;
-using ExtenderApp.Common.IO.Binaries.Formatter;
+﻿using ExtenderApp.Abstract;
+using ExtenderApp.Common.IO.Binaries.Formatters;
 using ExtenderApp.Data;
 
 namespace ExtenderApp.Torrents.Models
 {
-    internal class TorrentModelFormatter : ResolverFormatter<TorrentModel>
+    internal class TorrentModelFormatter : VersionDataFormatter<TorrentModel>
     {
         public override int DefaultLength => 1;
 
+        public override Version FormatterVersion { get; }
+
         public TorrentModelFormatter(IBinaryFormatterResolver resolver) : base(resolver)
         {
+            FormatterVersion = new Version(0, 0, 0, 1);
         }
 
         public override TorrentModel Deserialize(ref ExtenderBinaryReader reader)

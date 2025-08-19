@@ -26,14 +26,14 @@ namespace ExtenderApp.Torrents.ViewModels
             {
                 CurrentTorrentInfo!.SelecrAllFiles();
             });
+
         }
 
         public override void Enter(ViewInfo oldViewInfo)
         {
             var torrentAddViewModel = oldViewInfo.ViewModel as TorrentAddViewModel;
             CurrentTorrentInfo = torrentAddViewModel?.CurrentTorrentInfo;
-            //Model.DowloadTorrentCollection!.Add(CurrentTorrentInfo!);
-            //Model.SatrtTorrentAsync(CurrentTorrentInfo!);
+            View.Window.Closed += (s, e) => MainWindowTopmost();
         }
 
         private void SatrtDownload()
@@ -44,13 +44,9 @@ namespace ExtenderApp.Torrents.ViewModels
                 DispatcherInvoke(() =>
                 {
                     View.Window?.Close();
-                    CurrrentMainWindow.Topmost = true;
+                    Model.DowloadTorrentCollection!.Add(CurrentTorrentInfo!);
                 });
-                await Task.Delay(300);
-                DispatcherInvoke(() =>
-                {
-                    CurrrentMainWindow.Topmost = false;
-                });
+                MainWindowTopmost();
             });
         }
     }

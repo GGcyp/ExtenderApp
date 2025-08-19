@@ -1,7 +1,4 @@
 ﻿using System.Buffers;
-using System.Diagnostics;
-using System.Reflection.PortableExecutable;
-using System.Runtime.Serialization;
 using ExtenderApp.Abstract;
 using ExtenderApp.Common.DataBuffers;
 using ExtenderApp.Common.Error;
@@ -310,7 +307,6 @@ namespace ExtenderApp.Common.IO.Binaries
             operate.Write(writer, filePosition);
             writer.Dispose();
         }
-
 
         #endregion
 

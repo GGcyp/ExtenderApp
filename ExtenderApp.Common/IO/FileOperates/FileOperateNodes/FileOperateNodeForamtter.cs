@@ -1,6 +1,6 @@
 ﻿using ExtenderApp.Abstract;
 using ExtenderApp.Common.IO.Binaries;
-using ExtenderApp.Common.IO.Binaries.Formatter;
+using ExtenderApp.Common.IO.Binaries.Formatters;
 using ExtenderApp.Data;
 
 namespace ExtenderApp.Common.IO

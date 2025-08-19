@@ -29,7 +29,7 @@
                                     Width="{Binding ActualWidth,
                                     RelativeSource={RelativeSource
                                     AncestorType={x:Type Grid},
-                                    AncestorLevel=2},
+                                    AncestorLevel=3},
                                     Converter={c:MaxWidthConverter},
                                     ConverterParameter=165}"
                                     MinWidth="200"

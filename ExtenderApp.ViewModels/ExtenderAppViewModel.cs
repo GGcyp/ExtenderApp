@@ -362,6 +362,31 @@ namespace ExtenderApp.ViewModels
             return _serviceStore.MainWindowService.CreateMainWindow();
         }
 
+        /// <summary>
+        /// 临时将主窗口置顶显示（闪烁效果）
+        /// </summary>
+        /// <remarks>
+        /// 该方法通过先设置窗口Topmost=true，短暂延迟后再设置Topmost=false，
+        /// 实现窗口短暂置顶的效果，常用于吸引用户注意或窗口激活提示。
+        /// 注意：该方法会在后台线程启动任务，但通过DispatcherInvoke确保UI操作在UI线程执行。
+        /// </remarks>
+        protected void MainWindowTopmost()
+        {
+            Task.Run(async () =>
+            {
+                if (CurrrentMainWindow == null) return;
+                DispatcherInvoke(() =>
+                {
+                    CurrrentMainWindow.Topmost = true;
+                });
+                await Task.Delay(300);
+                DispatcherInvoke(() =>
+                {
+                    CurrrentMainWindow.Topmost = false;
+                });
+            });
+        }
+
         #endregion
     }
 

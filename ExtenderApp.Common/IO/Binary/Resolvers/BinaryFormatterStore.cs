@@ -1,21 +1,47 @@
 ﻿using ExtenderApp.Abstract;
+using ExtenderApp.Common.IO.Binaries.Formatters;
 using ExtenderApp.Data;
 
 namespace ExtenderApp.Common.IO.Binaries
 {
-    internal class BinaryFormatterStore : Dictionary<Type, Type>, IBinaryFormatterStore
+    internal class BinaryFormatterStore : Dictionary<Type, ValueOrList<Type>>, IBinaryFormatterStore
     {
-        public void AddFormatter(Type type, Type TypeFormatter)
+        public void AddFormatter(Type type, Type typeFormatter)
         {
-            if (ContainsKey(type))
-                throw new Exception(string.Format("重复添加转换器类型：{0}", type.FullName));
+            if (type == null)
+                throw new ArgumentNullException(nameof(type));
+            if (typeFormatter == null)
+                throw new ArgumentNullException(nameof(typeFormatter));
 
-            Add(type, TypeFormatter);
+            if (TryGetValue(type, out ValueOrList<Type> valueOrList))
+            {
+                if (!typeFormatter.GetGenericTypeDefinition().IsAssignableTo(typeof(IVersionDataFormatter<>)))
+                {
+                    throw new InvalidOperationException($"只有继承IVersionDataFormatter的转换器才能重复添加：{type.FullName} : {typeFormatter.FullName}");
+                }
+
+                if (valueOrList.Contains(typeFormatter))
+                {
+                    throw new Exception($"转换器已存在：{type.FullName} : {typeFormatter.FullName}");
+                }
+            }
+            else
+            {
+                valueOrList = new ValueOrList<Type>();
+            }
+
+            valueOrList.Add(typeFormatter);
+            Add(type, valueOrList);
         }
 
-        public bool TryGetValue<T>(Type type, out Type formatter)
+        public bool TryGetValue(Type type, out Type formatter)
         {
-            return TryGetValue(type, out formatter);
+            formatter = default;
+            if (!TryGetValue(type, out ValueOrList<Type> valueOrList))
+                return false;
+
+            formatter = valueOrList[valueOrList.Count - 1];
+            return true;
         }
     }
 }

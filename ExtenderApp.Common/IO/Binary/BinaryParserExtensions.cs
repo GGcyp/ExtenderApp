@@ -2,12 +2,12 @@
 using System.Reflection;
 using AppHost.Extensions.DependencyInjection;
 using ExtenderApp.Abstract;
-using ExtenderApp.Common.IO.Binaries.Formatter;
-using ExtenderApp.Common.IO.Binaries.Formatter;
-using ExtenderApp.Common.IO.Binaries.Formatter.Collection;
-using ExtenderApp.Common.IO.Binaries.Formatter.Struct;
-using ExtenderApp.Common.IO.Binary.Formatter;
-using ExtenderApp.Common.IO.Binary.Formatter.Struct;
+using ExtenderApp.Common.IO.Binaries.Formatters;
+using ExtenderApp.Common.IO.Binaries.Formatters;
+using ExtenderApp.Common.IO.Binaries.Formatters.Collection;
+using ExtenderApp.Common.IO.Binaries.Formatters.Struct;
+using ExtenderApp.Common.IO.Binary.Formatters;
+using ExtenderApp.Common.IO.Binary.Formatters.Struct;
 using ExtenderApp.Common.IO.Local;
 using ExtenderApp.Data;
 

@@ -337,6 +337,7 @@ namespace ExtenderApp.Torrents.Models
             int completeCount = 0;
             long completeLength = 0;
 
+            bool isAllSelected = true;
             for (int i = 0; i < Files.Count; i++)
             {
                 var node = Files[i];
@@ -344,7 +345,9 @@ namespace ExtenderApp.Torrents.Models
                 allLength += node.GetSelectedFileLength();
                 completeCount += node.GetSelectedFileCompleteCount();
                 completeLength += node.GetSelectedFileCompleteLength();
+                if (!node.DisplayNeedDownload) isAllSelected = false;
             }
+            SelecrAll = isAllSelected;
             SelectedFileCount = allCount;
             SelectedFileLength = allLength;
             SelectedFileCompleteCount = completeCount;

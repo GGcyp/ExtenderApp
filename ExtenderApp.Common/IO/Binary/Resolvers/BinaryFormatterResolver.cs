@@ -1,6 +1,7 @@
 ﻿using AppHost.Extensions.DependencyInjection;
 using ExtenderApp.Abstract;
-using ExtenderApp.Common.IO.Binaries.Formatter;
+using ExtenderApp.Common.IO.Binaries.Formatters;
+using ExtenderApp.Data;
 
 namespace ExtenderApp.Common
 {
@@ -60,15 +61,33 @@ namespace ExtenderApp.Common
                         return (IBinaryFormatter<T>)formatter;
                     }
 
-                    if (!_store.TryGetValue(resultType, out var formatterType))
+                    Type? formatterType = null;
+                    if (!_store.TryGetValue(resultType, out ValueOrList<Type> formatterTypes))
                     {
                         formatterType = _formatCreator.CreatFormatter(resultType);
                         if (formatterType is null)
-                            throw new ArgumentNullException(resultType.FullName);
+                            throw new InvalidOperationException($"未找到转换器类型：{resultType.FullName}.");
+
+                        formatter = _serviceProvider.GetService(formatterType!) as IBinaryFormatter;
                     }
-
-
-                    formatter = _serviceProvider.GetService(formatterType!) as IBinaryFormatter;
+                    else
+                    {
+                        if (formatterTypes.Count > 1)
+                        {
+                            formatterType = formatterTypes.First();
+                            formatter = _serviceProvider.GetService(formatterType!) as IBinaryFormatter;
+                        }
+                        else
+                        {
+                            VersionDataFormatterMananger<T> mananger = new(this);
+                            formatter = mananger;
+                            for (int i = 0; i < formatterTypes.Count; i++)
+                            {
+                                var vdFormatter = _serviceProvider.GetRequiredService(formatterTypes[i]);
+                                mananger.AddFormatter(vdFormatter);
+                            }
+                        }
+                    }
                     if (formatter == null)
                         throw new ArgumentNullException(resultType.FullName);
 

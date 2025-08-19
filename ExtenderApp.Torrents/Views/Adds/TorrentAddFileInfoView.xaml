@@ -31,7 +31,7 @@
             <RowDefinition Height="30"/>
             <RowDefinition Height="75"/>
             <RowDefinition/>
-            <RowDefinition Height="50"/>
+            <RowDefinition Height="40"/>
         </Grid.RowDefinitions>
         <TextBlock Grid.Row="0"
                    Text="新建下载任务"
@@ -93,7 +93,11 @@
                           Margin="5 0 0 0"
                           HorizontalAlignment="Left"
                           VerticalAlignment="Center"
+                          IsChecked="{Binding Model.SelectedTorrent.SelecrAll}"
                           Command="{Binding SelectedAllCommand}"/>
+                <TextBlock Margin="250 0 0 0"
+                           Foreground="{DynamicResource GlobalForegroundBrush}"
+                           Text="{Binding Model.SelectedTorrent.SelecrAll}"/>
             </Grid>
         </Grid>
         <Border Grid.Row="2"
