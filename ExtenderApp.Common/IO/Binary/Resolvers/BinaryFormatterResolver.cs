@@ -72,24 +72,32 @@ namespace ExtenderApp.Common
                     }
                     else
                     {
-                        if (formatterTypes.Count > 1)
+                        if (formatterTypes.Count == 0)
                         {
-                            formatterType = formatterTypes.First();
-                            formatter = _serviceProvider.GetService(formatterType!) as IBinaryFormatter;
+                            throw new ArgumentNullException($"转换器类型为空：{resultType}");
                         }
-                        else
+
+                        if (resultType.IsGenericType && resultType.GetGenericTypeDefinition() == typeof(VersionData<>))
                         {
-                            VersionDataFormatterMananger<T> mananger = new(this);
-                            formatter = mananger;
+                            Type[] typeArgs = resultType.GetGenericArguments();
+                            var managerType = typeof(VersionDataFormatterMananger<>).MakeGenericType(typeArgs);
+                            var manager = Activator.CreateInstance(managerType, this) as IVersionDataFormatterMananger;
+
+                            formatter = manager as IBinaryFormatter;
                             for (int i = 0; i < formatterTypes.Count; i++)
                             {
                                 var vdFormatter = _serviceProvider.GetRequiredService(formatterTypes[i]);
-                                mananger.AddFormatter(vdFormatter);
+                                manager.AddFormatter(vdFormatter);
                             }
+                        }
+                        else if (formatterTypes.Count == 1)
+                        {
+                            formatterType = formatterTypes[0];
+                            formatter = _serviceProvider.GetService(formatterType!) as IBinaryFormatter;
                         }
                     }
                     if (formatter == null)
-                        throw new ArgumentNullException(resultType.FullName);
+                        throw new ArgumentNullException($"未找到：{resultType.FullName} 的格式转换器");
 
                     _formmaterDict.Add(resultType, formatter);
                 }

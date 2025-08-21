@@ -356,11 +356,6 @@ namespace ExtenderApp.Common.IO.Binaries
         public bool TryExtensionHeader(ref ExtenderBinaryReader reader, out ExtensionHeader extensionHeader)
         {
             DecodeResult readResult = _binaryConvert.TryReadExtensionHeader(reader.UnreadSpan, out extensionHeader, out int tokenSize);
-            if (readResult == DecodeResult.Success)
-            {
-                reader.Advance(tokenSize);
-                return true;
-            }
 
             return SlowPath(ref reader, readResult, ref extensionHeader, ref tokenSize);
 
@@ -372,7 +367,8 @@ namespace ExtenderApp.Common.IO.Binaries
                         reader.Advance(tokenSize);
                         return true;
                     case DecodeResult.TokenMismatch:
-                        throw ThrowInvalidCode(reader.UnreadSpan[0]);
+                        //throw ThrowInvalidCode(reader.UnreadSpan[0]);
+                        return false;
                     case DecodeResult.EmptyBuffer:
                     case DecodeResult.InsufficientBuffer:
                         Span<byte> buffer = stackalloc byte[tokenSize];

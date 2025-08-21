@@ -1,13 +1,9 @@
-using System.Net;
 using ExtenderApp.Abstract;
 using ExtenderApp.Common;
 using ExtenderApp.Torrents.Models;
 using ExtenderApp.Torrents.Views;
 using ExtenderApp.ViewModels;
 using ExtenderApp.Views.Commands;
-using Microsoft.Win32;
-using MonoTorrent;
-using MonoTorrent.Client;
 using MonoTorrent.Logging;
 
 namespace ExtenderApp.Torrents.ViewModels

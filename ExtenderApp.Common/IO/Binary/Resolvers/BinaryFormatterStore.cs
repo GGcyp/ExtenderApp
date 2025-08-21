@@ -15,7 +15,7 @@ namespace ExtenderApp.Common.IO.Binaries
 
             if (TryGetValue(type, out ValueOrList<Type> valueOrList))
             {
-                if (!typeFormatter.GetGenericTypeDefinition().IsAssignableTo(typeof(IVersionDataFormatter<>)))
+                if (!typeFormatter.IsAssignableTo(typeof(IVersionDataFormatter)))
                 {
                     throw new InvalidOperationException($"只有继承IVersionDataFormatter的转换器才能重复添加：{type.FullName} : {typeFormatter.FullName}");
                 }
@@ -24,12 +24,11 @@ namespace ExtenderApp.Common.IO.Binaries
                 {
                     throw new Exception($"转换器已存在：{type.FullName} : {typeFormatter.FullName}");
                 }
-            }
-            else
-            {
-                valueOrList = new ValueOrList<Type>();
+                valueOrList.Add(typeFormatter);
+                return;
             }
 
+            valueOrList = new ValueOrList<Type>();
             valueOrList.Add(typeFormatter);
             Add(type, valueOrList);
         }

@@ -925,8 +925,13 @@ namespace ExtenderApp.Common.IO.Binaries
 
             // Try to find LZ4Block
             var header = _resolver.GetFormatterWithVerify<ExtensionHeader>().Deserialize(ref reader);
+            if (header.IsEmpty)
+            {
+                writer.Dispose();
+                return false;
+            }
 
-            if (!header.IsEmpty && header.TypeCode == Lz4Block)
+            if (header.TypeCode == Lz4Block)
             {
                 var extReader = reader.CreatePeekReader();
 

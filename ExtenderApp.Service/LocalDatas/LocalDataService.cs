@@ -66,15 +66,7 @@ namespace ExtenderApp.Services
                     ExpectLocalFileInfo fileInfo = new(_pathService.DataPath, dataName);
                     var tempdata = _parser.Read<VersionData<T>>(fileInfo);
 
-                    if (tempdata.Data is null)
-                    {
-                        //如果读取失败则创建一个新的LocalData对象
-                        localData = new LocalData<T>(Activator.CreateInstance(typeof(T)) as T, SaveLocalData, _version);
-                    }
-                    else
-                    {
-                        localData = new LocalData<T>(tempdata.Data ?? Activator.CreateInstance(typeof(T)) as T, SaveLocalData, tempdata.DataVersion ?? _version);
-                    }
+                    localData = new LocalData<T>(tempdata.Data ?? Activator.CreateInstance(typeof(T)) as T, SaveLocalData, tempdata.DataVersion ?? _version);
 
                     info = new LocalDataInfo(_pathService.DataPath, dataName, localData);
                     _localDataDict.Add(dataName, info);
@@ -121,7 +113,7 @@ namespace ExtenderApp.Services
                         data.SaveAcion = SaveLocalData;
                 }
 
-                _parser.WriteAsync(info.FileInfo, data, CompressionType.Lz4Block);
+                _parser.WriteAsync(info.FileInfo, data.ToVersionData(), CompressionType.Lz4Block);
                 return true;
             }
             catch (Exception ex)

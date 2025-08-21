@@ -4,6 +4,27 @@ using ExtenderApp.Data;
 namespace ExtenderApp.Common.IO.Binaries.Formatters
 {
     /// <summary>
+    /// 定义版本化数据格式化器管理器的接口，用于管理多个版本化的数据格式化器。
+    /// </summary>
+    /// <remarks>
+    /// 该接口主要用于在需要处理多个不同版本数据格式化器的场景中，
+    /// 提供统一的格式化器添加和管理功能。
+    /// </remarks>
+    internal interface IVersionDataFormatterMananger
+    {
+        /// <summary>
+        /// 添加一个版本化数据格式化器到管理器中。
+        /// </summary>
+        /// <param name="formatter">
+        /// 要添加的版本化数据格式化器实例，必须实现 <see cref="IVersionDataFormatter"/> 接口。
+        /// </param>
+        /// <exception cref="System.ArgumentNullException">
+        /// 当传入的格式化器为 null 时抛出此异常。
+        /// </exception>
+        void AddFormatter(object formatter);
+    }
+
+    /// <summary>
     /// 版本化数据格式化器管理器，用于管理不同版本的 <see cref="VersionData{T}"/> 序列化/反序列化逻辑
     /// </summary>
     /// <typeparam name="T">需要版本化管理的数据类型</typeparam>
@@ -12,7 +33,7 @@ namespace ExtenderApp.Common.IO.Binaries.Formatters
     /// 2. 实现 <see cref="IVersionFormatterMananger"/> 接口，管理多个版本的格式化器
     /// 3. 内部维护格式化器列表，按版本号排序以确保使用正确的格式化器
     /// </remarks>
-    internal class VersionDataFormatterMananger<T> : ResolverFormatter<VersionData<T>>
+    internal class VersionDataFormatterMananger<T> : ResolverFormatter<VersionData<T>>, IVersionDataFormatterMananger
     {
         private readonly IBinaryFormatter<Version> _version;
 
@@ -26,9 +47,14 @@ namespace ExtenderApp.Common.IO.Binaries.Formatters
             _version = resolver.GetFormatter<Version>();
         }
 
-        public IVersionDataFormatter<T>? GetFormatter(Version version)
+        public IVersionDataFormatter<T> GetFormatter(Version version)
         {
-            return Formatters.FirstOrDefault(f => f.FormatterVersion == version);
+            IVersionDataFormatter<T>? formatter = Formatters.FirstOrDefault(f => f.FormatterVersion == version);
+            if (formatter == null)
+            {
+                throw new InvalidOperationException($"未找到对应版本的格式化器，版本号：{version} ，类型名：{typeof(T).FullName}");
+            }
+            return formatter;
         }
 
         public void AddFormatter(object formatter)
@@ -65,14 +91,11 @@ namespace ExtenderApp.Common.IO.Binaries.Formatters
             var version = _version.Deserialize(ref reader);
             if (version == null)
             {
-                throw new InvalidOperationException($"读取到的版本信息为空，无法确定使用哪个格式化器进行反序列化。序列化类型为：{typeof(T).Name}");
+                //throw new InvalidOperationException($"读取到的版本信息为空，无法确定使用哪个格式化器进行反序列化。序列化类型为：{typeof(T).Name}");
+                return new VersionData<T>(version, default);
             }
 
             var formatter = GetFormatter(version);
-            if (formatter == null)
-            {
-                throw new InvalidOperationException($"未找到对应版本的格式化器：{version} ：{typeof(T).Name}");
-            }
             var data = formatter.Deserialize(ref reader);
             return new VersionData<T>(version, data);
         }
@@ -81,7 +104,7 @@ namespace ExtenderApp.Common.IO.Binaries.Formatters
         {
             if (Formatters.Count == 0)
             {
-                throw new InvalidOperationException($"没有可用的格式化器，请先添加格式化器。 {typeof(T).Name}");
+                throw new InvalidOperationException($"没有可用的格式化器，请先添加格式化器。 {typeof(T).FullName}");
             }
 
             if (value.IsEmpty)
@@ -94,10 +117,6 @@ namespace ExtenderApp.Common.IO.Binaries.Formatters
             _version.Serialize(ref writer, version);
 
             var formatter = GetFormatter(version);
-            if (formatter == null)
-            {
-                throw new InvalidOperationException($"未找到对应版本的格式化器：{version} ：{typeof(T).Name}");
-            }
             formatter.Serialize(ref writer, value.Data);
         }
 

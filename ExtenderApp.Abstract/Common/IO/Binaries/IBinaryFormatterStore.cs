@@ -21,6 +21,18 @@ namespace ExtenderApp.Abstract
         /// <param name="type">需要获取格式化器的目标类型</param>
         /// <param name="formatters">输出参数，返回找到的格式化器类型集合，封装在 <see cref="ValueOrList{Type}"/> 中。</param>
         bool TryGetValue(Type type, out ValueOrList<Type> formatters);
+
+        /// <summary>
+        /// 尝试获取与指定类型关联的格式化器类型
+        /// </summary>
+        /// <param name="type">要查询的数据类型</param>
+        /// <param name="formatter">
+        /// 当方法返回true时，输出参数包含与指定类型关联的格式化器类型；
+        /// 当方法返回false时，输出参数为null
+        /// </param>
+        /// <returns>
+        /// 如果找到与指定类型关联的格式化器类型则返回true，否则返回false
+        /// </returns>
         bool TryGetValue(Type type, out Type formatter);
     }
 }

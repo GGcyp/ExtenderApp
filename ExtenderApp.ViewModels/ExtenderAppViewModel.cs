@@ -262,6 +262,31 @@ namespace ExtenderApp.ViewModels
             return _serviceStore.LocalDataService.SaveData(GetCurrentModDetails(), data);
         }
 
+        /// <summary>
+        /// 保存本地数据到服务，支持自动解析服务实例（如果数据为null）
+        /// </summary>
+        /// <typeparam name="T">要保存的数据类型，必须是引用类型</typeparam>
+        /// <param name="data">要保存的数据实例，如果为null则会尝试从服务容器解析</param>
+        /// <param name="version">要保存的数据版本信息</param>
+        /// <returns>
+        /// 返回保存操作是否成功：
+        /// </returns>
+        protected bool SaveLocalData<T>(T? data, Version version)
+            where T : class
+        {
+            if (data is null)
+                data = _serviceStore.ServiceProvider.GetService<T>();
+
+            if (data is null)
+                return false;
+
+            var details = GetCurrentModDetails();
+            if (details is null)
+                return false;
+
+            return _serviceStore.LocalDataService.SaveData(details.Title, data, version);
+        }
+
         protected PluginDetails? GetCurrentModDetails()
         {
             if (_serviceStore is IPuginServiceStore store)
@@ -528,6 +553,16 @@ namespace ExtenderApp.ViewModels
         protected bool SaveModel()
         {
             return SaveLocalData(model);
+        }
+
+        /// <summary>
+        /// 将模型数据保存到本地
+        /// </summary>
+        /// <param name="version">数据保存目标版本</param>
+        /// <returns>是否成功保存数据</returns>
+        protected bool SaveModel(Version version)
+        {
+            return SaveLocalData(model, version);
         }
 
         public override void Close()
