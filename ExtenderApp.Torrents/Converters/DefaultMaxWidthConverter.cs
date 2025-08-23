@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using System.Windows.Data;
 using System.Windows.Markup;
 
-namespace ExtenderApp.Torrents.Converter
+namespace ExtenderApp.Torrents.Converters
 {
     public class DefaultMaxWidthConverter : MarkupExtension, IValueConverter
     {

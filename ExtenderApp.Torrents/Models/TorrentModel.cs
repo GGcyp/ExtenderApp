@@ -76,6 +76,7 @@ namespace ExtenderApp.Torrents
                 Directory.CreateDirectory(manager.ContainingDirectory);
             }
             info.Set(manager);
+            info.IsDownloading = true;
             await manager.StartAsync();
             //await manager.LocalPeerAnnounceAsync();
             //await manager.DhtAnnounceAsync();
@@ -86,6 +87,7 @@ namespace ExtenderApp.Torrents
             var manager = info.Manager;
             if (manager == null)
                 return;
+            info.IsDownloading = false;
             await manager.PauseAsync();
         }
 
@@ -97,10 +99,10 @@ namespace ExtenderApp.Torrents
             }
         }
 
-        public async Task<TorrentInfo> LoadTorrentAsync(string torrentPath)
+        public async Task<TorrentInfo> LoadTorrentAsync(string torrentPath, IDispatcherService service)
         {
             var torrent = await Torrent.LoadAsync(torrentPath);
-            var info = new TorrentInfo(torrent);
+            var info = new TorrentInfo(torrent, service);
             return info;
         }
     }

@@ -1,0 +1,27 @@
+﻿<views:ExtenderAppView x:Class="ExtenderApp.Test.TestMainView"
+                       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                       xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                       xmlns:local="clr-namespace:ExtenderApp.Test"
+                       xmlns:views="clr-namespace:ExtenderApp.Views;assembly=ExtenderApp.Views"
+                       xmlns:t="clr-namespace:ExtenderApp.Views.Themes;assembly=ExtenderApp.Views"
+                       mc:Ignorable="d"
+                       d:DataContext="{d:DesignInstance Type=local:TestMainViewModel}"
+                       d:DesignHeight="450"
+                       d:DesignWidth="800">
+    <views:ExtenderAppView.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/ExtenderApp.Views;component/ViewStyles.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </views:ExtenderAppView.Resources>
+    <Grid Background="{DynamicResource GlobalBackgroundBrush}">
+        <TextBlock Text="测试主界面"
+                   HorizontalAlignment="Center"
+                   VerticalAlignment="Top"
+                   FontSize="24"
+                   Margin="0,10,0,0"/>
+    </Grid>
+</views:ExtenderAppView>

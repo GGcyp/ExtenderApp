@@ -36,5 +36,11 @@
         /// <param name="folderName">要创建的文件夹名称</param>
         /// <returns>返回新创建的文件夹路径</returns>
         string CreateFolderPathForAppRootFolder(string folferName);
+
+        /// <summary>
+        /// 在文件资源管理器中打开指定路径的文件夹
+        /// </summary>
+        /// <param name="folderPath">要打开的文件夹路径</param>
+        void OpenFolderInExplorer(string folderPath);
     }
 }

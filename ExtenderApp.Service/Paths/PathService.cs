@@ -51,27 +51,48 @@ namespace ExtenderApp.Common.IO
             PackFolderName = PACKNAME;
         }
 
-        /// <summary>
-        /// 检查并创建文件夹
-        /// </summary>
-        /// <param name="environment">主机环境</param>
-        /// <param name="name">文件夹名称</param>
-        /// <returns>文件夹路径</returns>
-        private string ChekAndCreateFolder(string name)
+        public string CreateFolderPathForAppRootFolder(string folferName)
         {
-            string path = Path.Combine(_environment.ContentRootPath, name);
+            return ChekAndCreateFolder(folferName);
+        }
 
+        private string ChekAndCreateFolder(string folderName)
+        {
+            string path = Path.Combine(_environment.ContentRootPath, folderName);
             if (!Directory.Exists(path))
             {
                 Directory.CreateDirectory(path);
             }
-
             return path;
         }
 
-        public string CreateFolderPathForAppRootFolder(string folferName)
+        /// <summary>
+        /// 在文件资源管理器中打开指定路径的文件夹
+        /// </summary>
+        /// <param name="folderPath">要打开的文件夹路径</param>
+        public void OpenFolderInExplorer(string folderPath)
         {
-            return ChekAndCreateFolder(folferName);
+            if (Directory.Exists(folderPath))
+            {
+                try
+                {
+                    // 启动资源管理器并打开指定目录
+                    System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo()
+                    {
+                        FileName = folderPath,
+                        UseShellExecute = true,
+                        Verb = "open" // 确保以打开方式启动
+                    });
+                }
+                catch (Exception ex)
+                {
+                    throw new InvalidOperationException("无法打开指定的文件夹路径。", ex);
+                }
+            }
+            else
+            {
+                throw new DirectoryNotFoundException("指定的文件夹路径不存在。");
+            }
         }
 
         public string LoggingPath { get; }

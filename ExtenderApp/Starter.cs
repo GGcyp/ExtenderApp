@@ -52,7 +52,7 @@ namespace ExtenderApp
                 //throw new Exception(ex.Message);
                 logingService?.Print(new Data.LogInfo()
                 {
-                    LogLevel = Data.LogLevel.INFO,
+                    LogLevel = Data.LogLevel.ERROR,
                     Message = "程序出现问题了！",
                     Source = nameof(Starter),
                     Time = DateTime.Now,

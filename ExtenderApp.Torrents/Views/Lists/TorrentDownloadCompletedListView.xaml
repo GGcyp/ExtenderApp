@@ -6,7 +6,7 @@
                    xmlns:local="clr-namespace:ExtenderApp.Torrents.Views"
                    xmlns:v="clr-namespace:ExtenderApp.Views;assembly=ExtenderApp.Views"
                    xmlns:vm="clr-namespace:ExtenderApp.Torrents.ViewModels"
-                   xmlns:c="clr-namespace:ExtenderApp.Torrents.Converter"
+                   xmlns:c="clr-namespace:ExtenderApp.Torrents.Converters"
                    xmlns:vc="clr-namespace:ExtenderApp.Views.Converters;assembly=ExtenderApp.Views"
                    xmlns:vt="clr-namespace:ExtenderApp.Views.Themes;assembly=ExtenderApp.Views"
                    mc:Ignorable="d"
@@ -86,11 +86,16 @@
                     </Grid>
                 </Border>
                 <DataTemplate.Triggers>
-                    <DataTrigger Binding="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=ListBoxItem}}" Value="True">
-                        <Setter TargetName="torrentItem" Property="BorderBrush" Value="{DynamicResource GlobalPrimaryBrush}"/>
+                    <DataTrigger Binding="{Binding IsSelected,
+                                 RelativeSource={RelativeSource AncestorType=ListBoxItem}}" Value="True">
+                        <Setter TargetName="torrentItem"
+                                Property="BorderBrush"
+                                Value="{DynamicResource GlobalPrimaryBrush}"/>
                     </DataTrigger>
                     <Trigger Property="IsMouseOver" Value="True">
-                        <Setter TargetName="torrentItem" Property="Background" Value="{DynamicResource GlobalSelectedBrush}"/>
+                        <Setter TargetName="torrentItem"
+                                Property="Background"
+                                Value="{DynamicResource GlobalSelectedBrush}"/>
                     </Trigger>
                 </DataTemplate.Triggers>
             </DataTemplate>

@@ -23,7 +23,7 @@
     </UserControl.Resources>
     <ScrollViewer>
         <ListBox ItemsSource="{Binding Model.PluginStore}"
-                 SelectedItem="{Binding Model.CurrentModDetails}"
+                 SelectedItem="{Binding Model.SelectedModDetails}"
                  vt:ThemeProps.Background="{DynamicResource GlobalBackgroundBrush}">
             <ListBox.ItemContainerStyle>
                 <Style TargetType="ListBoxItem">
@@ -44,7 +44,8 @@
                     <themes:PluginTab Command="{Binding DataContext,
                                       RelativeSource={RelativeSource AncestorType=ScrollViewer},
                                       Converter={vc:GetPropertyConverter},
-                                      ConverterParameter=OpenPluginCommand}"/>
+                                      ConverterParameter=OpenPluginCommand}"
+                                      CommandParameter="{Binding}"/>
                 </ItemContainerTemplate>
             </ListBox.ItemTemplate>
         </ListBox>

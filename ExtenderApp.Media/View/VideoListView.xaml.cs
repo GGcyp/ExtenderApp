@@ -22,13 +22,9 @@ namespace ExtenderApp.Media
     /// </summary>
     public partial class VideoListView : ExtenderAppView
     {
-        private VideoListViewModle _viewModle;
-
-        public VideoListView(VideoListViewModle viewModle)
+        public VideoListView(VideoListViewModle viewModle) : base(viewModle)
         {
-            DataContext = viewModle;
             InitializeComponent();
-            _viewModle = viewModle;
         }
 
         /// <summary>
@@ -40,7 +36,7 @@ namespace ExtenderApp.Media
         {
             if (sender is TextBlock textBlock && textBlock.DataContext is VideoInfo videoInfo)
             {
-                _viewModle.SelectedVideo(videoInfo);
+                ViewModel<VideoListViewModle>()!.SelectedVideo(videoInfo);
             }
         }
 
@@ -58,7 +54,7 @@ namespace ExtenderApp.Media
             {
                 var selectedFilePaths = openFileDialog.FileNames;
                 // 将选中的视频路径添加到 ViewModel
-                _viewModle.AddVideoPaths(selectedFilePaths);
+                ViewModel<VideoListViewModle>()!.AddVideoPaths(selectedFilePaths);
             }
         }
 

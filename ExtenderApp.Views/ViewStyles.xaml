@@ -46,4 +46,18 @@
         <Setter Property="FontSize" Value="14" />
     </Style>
 
+    <!-- 定义全局带关联功能的控件标签块样式 -->
+    <Style TargetType="Label">
+        <Setter Property="Foreground" Value="{DynamicResource GlobalForegroundBrush}" />
+        <Setter Property="FontSize" Value="14" />
+    </Style>
+
+    <!-- 定义全局可输入文本块样式 -->
+    <Style TargetType="TextBox">
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="Foreground" Value="{DynamicResource GlobalForegroundBrush}" />
+        <Setter Property="Background" Value="{DynamicResource GlobalBackgroundBrush}" />
+        <Setter Property="BorderBrush" Value="Transparent" />
+    </Style>
+
 </ResourceDictionary>

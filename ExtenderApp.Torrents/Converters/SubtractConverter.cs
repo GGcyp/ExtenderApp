@@ -2,7 +2,7 @@
 using System.Windows;
 using System.Windows.Data;
 
-namespace ExtenderApp.Torrents.Converter
+namespace ExtenderApp.Torrents.Converters
 {
     internal class SubtractConverter : IValueConverter
     {

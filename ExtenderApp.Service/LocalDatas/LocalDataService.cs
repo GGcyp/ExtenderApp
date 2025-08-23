@@ -53,13 +53,22 @@ namespace ExtenderApp.Services
         public bool LoadData<T>(string? dataName, out LocalData<T>? data) where T : class
         {
             data = default;
+
             try
             {
                 if (string.IsNullOrEmpty(dataName))
                 {
                     throw new ArgumentNullException("获取本地数据名字不能为空");
                 }
+            }
+            catch (Exception ex)
+            {
+                _logingService.Error(ex.Message, nameof(ILocalDataService), ex);
+                return false;
+            }
 
+            try
+            {
                 LocalData<T>? localData = null;
                 if (!_localDataDict.TryGetValue(dataName, out var info))
                 {
@@ -82,7 +91,14 @@ namespace ExtenderApp.Services
             catch (Exception ex)
             {
                 _logingService.Error($"读取本地数据出现错误:{dataName}", nameof(ILocalDataService), ex);
-                return false;
+
+                if (typeof(T).GetConstructor(Type.EmptyTypes) == null)
+                    return false;
+
+                data = new LocalData<T>(Activator.CreateInstance(typeof(T)) as T, SaveLocalData, _version);
+                var info = new LocalDataInfo(_pathService.DataPath, dataName, data);
+                _localDataDict.Add(dataName, info);
+                return true;
             }
         }
 

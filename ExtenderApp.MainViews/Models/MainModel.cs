@@ -16,7 +16,7 @@ namespace ExtenderApp.MainViews.Models
 
         public Action? ToHomeAction { get; set; }
         public Action? ToRunAction { get; set; }
-        public PluginDetails? CurrentModDetails { get; set; }
+        public PluginDetails? SelectedModDetails { get; set; }
         public PluginStore? PluginStore { get; set; }
 
         public event PropertyChangedEventHandler? PropertyChanged;

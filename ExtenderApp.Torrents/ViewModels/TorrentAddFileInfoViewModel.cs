@@ -4,7 +4,6 @@ using ExtenderApp.Torrents.Models;
 using ExtenderApp.Torrents.Views;
 using ExtenderApp.ViewModels;
 using ExtenderApp.Views.Commands;
-using MonoTorrent;
 
 namespace ExtenderApp.Torrents.ViewModels
 {
@@ -26,7 +25,6 @@ namespace ExtenderApp.Torrents.ViewModels
             {
                 CurrentTorrentInfo!.SelecrAllFiles();
             });
-
         }
 
         public override void Enter(ViewInfo oldViewInfo)
@@ -45,6 +43,7 @@ namespace ExtenderApp.Torrents.ViewModels
                 {
                     View.Window?.Close();
                     Model.DowloadTorrentCollection!.Add(CurrentTorrentInfo!);
+                    Model.SelectedTorrent = CurrentTorrentInfo;
                 });
                 MainWindowTopmost();
             });

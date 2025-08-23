@@ -8,7 +8,7 @@ using System.Windows;
 using System.Windows.Data;
 using System.Windows.Markup;
 
-namespace ExtenderApp.Torrents.Converter
+namespace ExtenderApp.Torrents.Converters
 {
     /// <summary>
     /// DepthConverter 类用于将深度值转换为边距。

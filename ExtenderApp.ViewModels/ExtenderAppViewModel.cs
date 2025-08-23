@@ -104,8 +104,16 @@ namespace ExtenderApp.ViewModels
 
         protected IView NavigateTo(PluginDetails modDetails)
         {
-            modDetails.ArgumentNull(nameof(modDetails));
-            modDetails.StartupType.ArgumentObjectNull(nameof(modDetails));
+            try
+            {
+                modDetails.ArgumentNull(nameof(modDetails));
+                modDetails.StartupType.ArgumentObjectNull(nameof(modDetails));
+            }catch (ArgumentNullException ex)
+            {
+                Error("导航参数不能为空！", ex);
+                return null;
+            }
+
             return NavigateTo(modDetails.StartupType, modDetails.ModScope);
         }
 
@@ -410,6 +418,26 @@ namespace ExtenderApp.ViewModels
                     CurrrentMainWindow.Topmost = false;
                 });
             });
+        }
+
+        #endregion
+
+        #region Path
+
+        /// <summary>
+        /// 在文件资源管理器中打开指定路径的文件夹
+        /// </summary>
+        /// <param name="folderPath">要打开的文件夹路径</param>
+        protected void OpenFolder(string? path)
+        {
+            try
+            {
+                _serviceStore.PathService.OpenFolderInExplorer(path);
+            }
+            catch (Exception ex)
+            {
+                Error($"打开路径失败：{path}", ex);
+            }
         }
 
         #endregion

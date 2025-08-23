@@ -5,7 +5,7 @@
                       xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
                       xmlns:local="clr-namespace:ExtenderApp.Torrents.ViewModels"
                       xmlns:view="clr-namespace:ExtenderApp.Views;assembly=ExtenderApp.Views"
-                      xmlns:c="clr-namespace:ExtenderApp.Torrents.Converter"
+                      xmlns:c="clr-namespace:ExtenderApp.Torrents.Converters"
                       xmlns:vc="clr-namespace:ExtenderApp.Views.Converters;assembly=ExtenderApp.Views"
                       xmlns:vt="clr-namespace:ExtenderApp.Views.Themes;assembly=ExtenderApp.Views"
                       xmlns:t="clr-namespace:ExtenderApp.Torrents.Themes"

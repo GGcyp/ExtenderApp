@@ -1,4 +1,7 @@
-﻿using System.ComponentModel;
+﻿using System.Linq;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
+using ExtenderApp.Abstract;
 using ExtenderApp.Data;
 using MonoTorrent;
 using MonoTorrent.Client;
@@ -10,6 +13,10 @@ namespace ExtenderApp.Torrents.Models
     /// </summary>
     public class TorrentInfo : INotifyPropertyChanged
     {
+        private readonly IDispatcherService _dispatcherService;
+
+        #region Properties
+
         /// <summary>
         /// Torrent的名称
         /// </summary>
@@ -70,13 +77,52 @@ namespace ExtenderApp.Torrents.Models
         /// </summary>
         public long SelectedFileLength { get; set; }
 
-        public int Seeds { get; set; }
+        /// <summary>
+        /// 种子文件的保存路径
+        /// </summary>
+        public string? TorrentPath { get; set; }
 
-        public int Leechs { get; set; }
+        /// <summary>
+        /// 下载保存路径
+        /// </summary>
+        public string? SavePath { get; set; }
 
-        public int Available { get; set; }
+        /// <summary>
+        /// 磁力链接
+        /// </summary>
+        public string TorrentMagnetLink { get; set; }
 
-        #region Files
+        /// <summary>
+        /// 创建时间
+        /// </summary>
+        public DateTime CreateTime { get; set; }
+
+        /// <summary>
+        /// 创建时间
+        /// </summary>
+        public DateTime TorrentCreateTime { get; set; }
+
+        /// <summary>
+        /// 获取或设置创建该种子的客户端名称/版本
+        /// 示例值: "uTorrent/3.5.5"
+        /// </summary>
+        public string CreatedBy { get; set; }
+
+        /// <summary>
+        /// 获取或设置种子附加的评论信息
+        /// 可能是制作者注释、文件说明等内容
+        /// </summary>
+        public string Comment { get; set; }
+
+        /// <summary>
+        /// 获取或设置种子文件的编码格式
+        /// 示例值: "UTF-8"
+        /// </summary>
+        public string Encoding { get; set; }
+
+        #endregion
+
+        #region TorrentFiles
 
         public BitFieldData? BitData { get; set; }
 
@@ -90,9 +136,9 @@ namespace ExtenderApp.Torrents.Models
 
         #region MonoTorrent
 
-        public MagnetLink? MagnetLink { get; set; }
+        public MagnetLink? MagnetLink { get; private set; }
 
-        public Torrent? Torrent { get; set; }
+        public Torrent? Torrent { get; private set; }
 
         public TorrentManager? Manager { get; private set; }
 
@@ -109,10 +155,33 @@ namespace ExtenderApp.Torrents.Models
 
         #endregion
 
+        #region Peers
+
+        /// <summary>
+        /// 做种者数量
+        /// </summary>
+        public int Seeds { get; set; }
+
+        /// <summary>
+        /// 下载者数量
+        /// </summary>
+        public int Leechs { get; set; }
+
+        /// <summary>
+        /// 可用连接数（做种者+下载者）
+        /// </summary>
+        public int Available { get; set; }
+
+        public ObservableCollection<TorrentPeer> Peers { get; set; }
+
+        #endregion
+
         public event PropertyChangedEventHandler? PropertyChanged;
 
-        public TorrentInfo(Torrent torrent)
+        public TorrentInfo(Torrent torrent, IDispatcherService service)
         {
+            _dispatcherService = service;
+
             Torrent = torrent;
             Name = torrent.Name;
             Size = torrent.Size;
@@ -121,10 +190,135 @@ namespace ExtenderApp.Torrents.Models
             BitData = new BitFieldData(PieceCount);
             IsDownloading = false;
             SelecrAll = false;
+            TorrentCreateTime = torrent.CreationDate;
+            CreateTime = DateTime.Now;
+            CreatedBy = !string.IsNullOrEmpty(torrent.CreatedBy) ? torrent.CreatedBy : "未找到";
+            Comment = torrent.Comment;
+            Encoding = !string.IsNullOrEmpty(torrent.Encoding) ? torrent.Encoding : "未找到";
+            TorrentMagnetLink = torrent.GetMagnetLink();
 
+            Peers = new();
             Files = new();
             var list = torrent.Files;
             FileCount = list.Count;
+            WriteFileInfo(list);
+
+            for (int i = 0; i < Files.Count; i++)
+            {
+                var file = Files[i];
+                file.UpdateLengthForFolder();
+            }
+        }
+
+        public void Set(TorrentManager manager)
+        {
+            Manager = manager;
+            var list = Manager.Files;
+            for (int i = 0; i < list.Count; i++)
+            {
+                var file = list[i];
+                var node = FindNodeForTorrentFilePath(file.Path);
+                if (node == null)
+                    continue;
+
+                node.TorrentManagerFile = file;
+                node.TorrentFileInfoChanged();
+            }
+
+            SavePath = manager.SavePath;
+            manager.PeerConnected += (o, e) =>
+            {
+                _dispatcherService.Invoke(() => { Peers.Add(new TorrentPeer(e.Peer)); });
+
+            };
+            manager.PeerDisconnected += (o, e) =>
+            {
+                int index = -1;
+                for (int i = 0; i < Peers.Count; i++)
+                {
+                    if (Peers[i].PeerId == e.Peer)
+                    {
+                        Peers.RemoveAt(index);
+                        break;
+                    }
+                }
+                if (index != -1)
+                {
+                    _dispatcherService.Invoke(() =>
+                    {
+                        Peers.RemoveAt(index);
+                    });
+                }
+            };
+            Task.Run(async () =>
+            {
+                for (int i = 0; i < Files.Count; i++)
+                {
+                    var info = Files[i];
+                    foreach (var node in info)
+                    {
+                        if (node.TorrentManagerFile == null)
+                            continue;
+                        await Manager.SetFilePriorityAsync(node.TorrentManagerFile, node.Priority);
+                    }
+                }
+            });
+        }
+
+        private TorrentFileInfoNode? FindNodeForTorrentFilePath(string path)
+        {
+            var span = path.AsSpan();
+            var index = span.IndexOf(System.IO.Path.DirectorySeparatorChar);
+            TorrentFileInfoNode? node = null;
+            string nodeName = string.Empty;
+
+            if (index != -1)
+            {
+                nodeName = new(span.Slice(0, index));
+                node = FindNodeForFiles(nodeName);
+                if (node == null) return null;
+            }
+            else
+            {
+                //直接是文件，没有父文件夹
+                return FindNodeForFiles(path);
+            }
+
+            while (index != -1)
+            {
+                span = span.Slice(index + 1);
+                index = span.IndexOf(System.IO.Path.DirectorySeparatorChar);
+                if (index == -1)
+                    break;
+
+                nodeName = new(span.Slice(0, index));
+                node = node?.Find(n => n.Name == nodeName);
+
+                if (node == null || node.Name == nodeName)
+                    break;
+            }
+            return node;
+        }
+
+        /// <summary>
+        /// 根据文件名查找对应的 TorrentFileInfoNode 节点
+        /// </summary>
+        /// <param name="name">文件名</param>
+        /// <returns>找到对应的 TorrentFileInfoNode 节点，如果未找到则返回 null</returns>
+        private TorrentFileInfoNode? FindNodeForFiles(string name)
+        {
+            if (Files == null) return null;
+
+            foreach (var fileNode in Files)
+            {
+                if (fileNode.Name == name)
+                    return fileNode;
+            }
+            return null;
+        }
+
+        private void WriteFileInfo(IList<ITorrentFile> list)
+        {
             foreach (var file in list)
             {
                 var span = file.Path.AsSpan();
@@ -199,93 +393,6 @@ namespace ExtenderApp.Torrents.Models
                 }
 
             }
-
-            for (int i = 0; i < Files.Count; i++)
-            {
-                var file = Files[i];
-                file.UpdateLengthForFolder();
-            }
-        }
-
-        public void Set(TorrentManager manager)
-        {
-            Manager = manager;
-            var list = Manager.Files;
-            for (int i = 0; i < list.Count; i++)
-            {
-                var file = list[i];
-                var node = FindNodeForTorrentFilePath(file.Path);
-                if (node == null)
-                    continue;
-
-                node.TorrentManagerFile = file;
-                node.TorrentFileInfoChanged();
-            }
-            Task.Run(async () =>
-            {
-                for (int i = 0; i < Files.Count; i++)
-                {
-                    var info = Files[i];
-                    foreach (var node in info)
-                    {
-                        if (node.TorrentManagerFile == null)
-                            continue;
-                        await Manager.SetFilePriorityAsync(node.TorrentManagerFile, node.Priority);
-                    }
-                }
-            });
-        }
-
-        private TorrentFileInfoNode? FindNodeForTorrentFilePath(string path)
-        {
-            var span = path.AsSpan();
-            var index = span.IndexOf(System.IO.Path.DirectorySeparatorChar);
-            TorrentFileInfoNode? node = null;
-            string nodeName = string.Empty;
-
-            if (index != -1)
-            {
-                nodeName = new(span.Slice(0, index));
-                node = FindNodeForFiles(nodeName);
-                if (node == null) return null;
-            }
-            else
-            {
-                //直接是文件，没有父文件夹
-                return FindNodeForFiles(path);
-            }
-
-            while (index != -1)
-            {
-                span = span.Slice(index + 1);
-                index = span.IndexOf(System.IO.Path.DirectorySeparatorChar);
-                if (index == -1)
-                    break;
-
-                nodeName = new(span.Slice(0, index));
-                node = node?.Find(n => n.Name == nodeName);
-
-                if (node == null || node.Name == nodeName)
-                    break;
-            }
-            return node;
-        }
-
-        /// <summary>
-        /// 根据文件名查找对应的 TorrentFileInfoNode 节点
-        /// </summary>
-        /// <param name="name">文件名</param>
-        /// <returns>找到对应的 TorrentFileInfoNode 节点，如果未找到则返回 null</returns>
-        private TorrentFileInfoNode? FindNodeForFiles(string name)
-        {
-            if (Files == null) return null;
-
-            foreach (var fileNode in Files)
-            {
-                if (fileNode.Name == name)
-                    return fileNode;
-            }
-            return null;
         }
 
         /// <summary>
@@ -318,10 +425,15 @@ namespace ExtenderApp.Torrents.Models
             Leechs = Manager.Peers.Leechs;
             Available = Manager.Peers.Available;
 
-            foreach (var info in Files)
+            for (int i = 0; i < Files.Count; i++)
             {
-                info.UpdetaProgress();
+                Files[i].UpdetaProgress();
             }
+            for (int i = 0; i < Peers.Count; i++)
+            {
+                Peers[i].Update();
+            }
+
         }
 
         /// <summary>
@@ -414,6 +526,6 @@ namespace ExtenderApp.Torrents.Models
             return result;
         }
 
-        #endregion
+        #endregion      
     }
 }

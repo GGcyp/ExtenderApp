@@ -7,7 +7,7 @@
                    xmlns:v="clr-namespace:ExtenderApp.Views;assembly=ExtenderApp.Views"
                    xmlns:t="clr-namespace:ExtenderApp.Torrents.Themes"
                    xmlns:vm="clr-namespace:ExtenderApp.Torrents.ViewModels"
-                   xmlns:c="clr-namespace:ExtenderApp.Torrents.Converter"
+                   xmlns:c="clr-namespace:ExtenderApp.Torrents.Converters"
                    xmlns:vc="clr-namespace:ExtenderApp.Views.Converters;assembly=ExtenderApp.Views"
                    mc:Ignorable="d"
                    d:DataContext="{d:DesignInstance Type=vm:TorrentAddFileInfoViewModel}"
@@ -60,7 +60,7 @@
                          Margin="10 0 0 0"
                          HorizontalContentAlignment="Center"
                          VerticalContentAlignment="Center"
-                         Text="{Binding Name}"/>
+                         Text="{Binding CurrentTorrentInfo.Name}"/>
                 <ToggleButton x:Name="EditToggleButton"
                               Background="Transparent"
                               BorderBrush="Transparent"
@@ -93,11 +93,8 @@
                           Margin="5 0 0 0"
                           HorizontalAlignment="Left"
                           VerticalAlignment="Center"
-                          IsChecked="{Binding Model.SelectedTorrent.SelecrAll}"
+                          IsChecked="{Binding CurrentTorrentInfo.SelecrAll, Mode=OneWay}"
                           Command="{Binding SelectedAllCommand}"/>
-                <TextBlock Margin="250 0 0 0"
-                           Foreground="{DynamicResource GlobalForegroundBrush}"
-                           Text="{Binding Model.SelectedTorrent.SelecrAll}"/>
             </Grid>
         </Grid>
         <Border Grid.Row="2"

@@ -14,22 +14,26 @@ namespace ExtenderApp.Test
     {
         private readonly LinkClientFactory _linkerFactory;
 
-        public TestMainViewModel(ResourceLimiter limiter, ResourceLimiter limiter1, ITcpLinker linker, IListenerLinker<ITcpLinker> listenerLinker, IServiceStore serviceStore) : base(serviceStore)
+        public TestMainViewModel(IServiceStore serviceStore) : base(serviceStore)
         {
-            //BinaryParserTest(parser);
-            //SplitterParserTest(splitterParser, parser);
-            //HashTest(hashProvider);
-            //BinaryTest(sequencePool);
-            //_linkerFactory = linkerClientFactory;
-            //TcpLinkTest();
-            limiter.OnStatsUpdated += r => Debug(r.ToString());
-            listenerLinker.InitInterNetwork();
-            listenerLinker.Bind(IPAddress.Loopback, 12345);
-            listenerLinker.Listen(10);
-            listenerLinker.BeginAccept(Linker_OnConnect);
-            linker.Connect(IPAddress.Loopback, 12345);
-            //linker.OnReceive += (s, i) => Debug($"{i}");
         }
+
+        //public TestMainViewModel(ResourceLimiter limiter, ResourceLimiter limiter1, ITcpLinker linker, IListenerLinker<ITcpLinker> listenerLinker, IServiceStore serviceStore) : base(serviceStore)
+        //{
+        //    //BinaryParserTest(parser);
+        //    //SplitterParserTest(splitterParser, parser);
+        //    //HashTest(hashProvider);
+        //    //BinaryTest(sequencePool);
+        //    //_linkerFactory = linkerClientFactory;
+        //    //TcpLinkTest();
+        //    //limiter.OnStatsUpdated += r => Debug(r.ToString());
+        //    //listenerLinker.InitInterNetwork();
+        //    //listenerLinker.Bind(IPAddress.Loopback, 12345);
+        //    //listenerLinker.Listen(10);
+        //    //listenerLinker.BeginAccept(Linker_OnConnect);
+        //    //linker.Connect(IPAddress.Loopback, 12345);
+        //    //linker.OnReceive += (s, i) => Debug($"{i}");
+        //}
 
         private void BinaryParserTest(IBinaryParser parser)
         {

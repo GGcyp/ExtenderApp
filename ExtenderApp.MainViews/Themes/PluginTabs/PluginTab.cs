@@ -16,11 +16,7 @@ namespace ExtenderApp.MainViews.Themes
 
         public PluginTab()
         {
-            //var modDetails = (PluginDetails)DataContext;
-            //Title = modDetails.Title;
-            //Description = modDetails.Description;
-            //Version = modDetails.Version is null ? "未知版本" : modDetails.Version.ToString();
-            //PluginIcon = modDetails.PluginIcon is null ? DefaltPluginPathGeometry : Geometry.Parse(modDetails.PluginIcon);
+
         }
 
         #region 名称

@@ -22,7 +22,6 @@ namespace ExtenderApp.MainViews.ViewModels
             cutscene.Start();
             Task.Run(async () =>
             {
-                await Task.Delay(500);
                 _serviceStore.DispatcherService.Invoke(() =>
                 {
                     Model.CurrentMainView = NavigateTo<MainView>();
@@ -31,6 +30,7 @@ namespace ExtenderApp.MainViews.ViewModels
                         Model.CurrentCutsceneView = null;
                     });
                 });
+                await Task.Delay(300);
             });
         }
     }

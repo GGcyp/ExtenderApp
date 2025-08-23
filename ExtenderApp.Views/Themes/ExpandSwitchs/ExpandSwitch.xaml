@@ -17,17 +17,26 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type views:ExpandSwitch}">
-                    <Grid Background="{TemplateBinding Background}">
-                        <Path
-                            x:Name="Expand"
-                            Width="{TemplateBinding PathWidth}"
-                            Height="{TemplateBinding PathHeight}"
-                            Style="{StaticResource PathStyle}"
-                            Fill="{TemplateBinding Foreground}"/>
-                    </Grid>
+                    <DockPanel Background="{TemplateBinding Background}">
+                        <Path DockPanel.Dock="Left"
+                              x:Name="Expand"
+                              Width="{TemplateBinding PathWidth}"
+                              Height="{TemplateBinding PathHeight}"
+                              Style="{StaticResource PathStyle}"
+                              Fill="{TemplateBinding Foreground}"/>
+                        <ContentPresenter x:Name="ContentP"
+                                          Content="{TemplateBinding Content}"
+                                          DockPanel.Dock="Right"
+                                          Margin="5 0 0 0"
+                                          ContentTemplate="{TemplateBinding ContentTemplate}"
+                                          ContentStringFormat="{TemplateBinding ContentStringFormat}"/>
+                    </DockPanel>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsChecked" Value="True">
                             <Setter TargetName="Expand" Property="Data" Value="{StaticResource ChevronUp}" />
+                        </Trigger>
+                        <Trigger Property="Content" Value="{x:Null}">
+                            <Setter TargetName="ContentP" Property="Visibility" Value="Collapsed" />
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>

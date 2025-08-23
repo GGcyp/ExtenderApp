@@ -4,7 +4,7 @@
                    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
                    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
                    xmlns:local="clr-namespace:ExtenderApp.Torrents.ViewModels"
-                   xmlns:con="clr-namespace:ExtenderApp.Torrents.Converter"
+                   xmlns:con="clr-namespace:ExtenderApp.Torrents.Converters"
                    xmlns:v="clr-namespace:ExtenderApp.Views;assembly=ExtenderApp.Views"
                    xmlns:t="clr-namespace:ExtenderApp.Torrents.Themes"
                    mc:Ignorable="d"
@@ -48,7 +48,7 @@
         <Grid Grid.Row="2" Background="{DynamicResource GlobalBackgroundBrush}">
             <CheckBox VerticalAlignment="Center"
                       Margin="5 0 0 0"
-                      IsChecked="{Binding Model.SelectedTorrent.SelecrAll}"
+                      IsChecked="{Binding Model.SelectedTorrent.SelecrAll, Mode=OneWay}"
                       Command="{Binding SelectAllCommand}"/>
             <TextBlock VerticalAlignment="Center"
                        Margin="25 0 0 0"

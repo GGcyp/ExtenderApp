@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -21,13 +22,9 @@ namespace ExtenderApp.Test
     /// </summary>
     public partial class TestMainView : ExtenderAppView
     {
-        private readonly TestMainViewModel _viewModel;
-
-        public TestMainView(TestMainViewModel viewModel)
+        public TestMainView(TestMainViewModel viewModel) : base(viewModel)
         {
             InitializeComponent();
-
-            this._viewModel = viewModel;
         }
     }
 }

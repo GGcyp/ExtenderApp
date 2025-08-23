@@ -3,7 +3,7 @@
                     xmlns:local="clr-namespace:ExtenderApp.Torrents.Themes"
                     xmlns:view="clr-namespace:ExtenderApp.Views.Themes;assembly=ExtenderApp.Views"
                     xmlns:viewCon="clr-namespace:ExtenderApp.Views.Converters;assembly=ExtenderApp.Views"
-                    xmlns:con="clr-namespace:ExtenderApp.Torrents.Converter">
+                    xmlns:con="clr-namespace:ExtenderApp.Torrents.Converters">
 
     <ResourceDictionary.MergedDictionaries>
         <ResourceDictionary Source="/ExtenderApp.Views;component/ViewStyles.xaml"/>
