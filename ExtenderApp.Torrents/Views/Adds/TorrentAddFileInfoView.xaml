@@ -108,7 +108,7 @@
                     Content="开始下载"
                     BorderBrush="Transparent"
                     Style="{DynamicResource EllipticalButton}"
-                    Command="{Binding SatrtDownloadCommand}"/>
+                    Command="{Binding StartDownloadCommand}"/>
         </Grid>
     </Grid>
 </v:ExtenderAppView>

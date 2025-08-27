@@ -558,6 +558,9 @@
                                           BorderThickness="0"
                                           HorizontalContentAlignment="Stretch"
                                           ItemsSource="{Binding Bitfield}"
+                                          VirtualizingPanel.IsVirtualizing="True"
+                                          VirtualizingPanel.VirtualizationMode="Recycling"
+                                          ScrollViewer.CanContentScroll="True"
                                           Background="{DynamicResource GlobalBackgroundBrush}"
                                           Foreground="{DynamicResource GlobalForegroundBrush}">
                                 <ItemsControl.ItemsPanel>
