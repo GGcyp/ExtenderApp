@@ -9,10 +9,11 @@
                    xmlns:c="clr-namespace:ExtenderApp.Views.Converters;assembly=ExtenderApp.Views"
                    xmlns:t="clr-namespace:ExtenderApp.Views.Themes;assembly=ExtenderApp.Views"
                    xmlns:tc="clr-namespace:ExtenderApp.Torrents.Converters"
+                   xmlns:m="clr-namespace:ExtenderApp.Torrents.Models"
                    mc:Ignorable="d"
                    d:DataContext="{d:DesignInstance Type=vm:TorrentDownloadStateViewModel}"
                    d:DesignHeight="500"
-                   d:DesignWidth="350">
+                   d:DesignWidth="400">
     <v:ExtenderAppView.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
@@ -22,17 +23,21 @@
         </ResourceDictionary>
     </v:ExtenderAppView.Resources>
     <Grid Background="{DynamicResource GlobalBackgroundBrush}">
-        <ScrollViewer Grid.Row="1"
+        <Grid.RowDefinitions>
+            <RowDefinition/>
+            <RowDefinition Height="25"/>
+        </Grid.RowDefinitions>
+        <ScrollViewer Grid.Row="0"
                       VerticalScrollBarVisibility="Auto"
                       HorizontalScrollBarVisibility="Auto"
                       VerticalAlignment="Top"
-                      MinHeight="470"
-                      MaxWidth="350">
-            <StackPanel DataContext="{Binding Model.SelectedTorrent}">
+                      Margin="0"
+                      MaxWidth="400">
+            <StackPanel>
                 <!--基础信息-->
-                <Expander Grid.Row="0"
-                          Margin="5 5 0 0"
+                <Expander Margin="5 5 0 0"
                           VerticalAlignment="Top"
+                          DataContext="{Binding Model.SelectedTorrent}"
                           Style="{StaticResource TorrentExpander}">
                     <Expander.Header>
                         <t:ExpandSwitch HorizontalAlignment="Left"
@@ -78,7 +83,7 @@
                                   VerticalAlignment="Center">
                                 <TextBlock Text="种子创建时间"/>
                                 <TextBlock Text="{Binding TorrentCreateTime,
-                                           StringFormat=yyyy年MM月dd日HH时mm分,
+                                           StringFormat=yyyy-MM-dd HH:mm:ss,
                                            TargetNullValue=暂未发现创建时间}"
                                            VerticalAlignment="Center"
                                            Margin="95 0 0 0"/>
@@ -87,7 +92,7 @@
                                   VerticalAlignment="Center">
                                 <TextBlock Text="创建时间"/>
                                 <TextBlock Text="{Binding CreateTime,
-                                           StringFormat=yyyy年MM月dd日HH时mm分}"
+                                           StringFormat=MM-dd HH:mm}"
                                            VerticalAlignment="Center"
                                            Margin="95 0 0 0"/>
                             </Grid>
@@ -111,7 +116,7 @@
                                                        Text="{Binding SavePath}"
                                                        Margin="10 0 0 0"
                                                        TextTrimming="CharacterEllipsis"
-                                                       MaxWidth="200"
+                                                       MaxWidth="240"
                                                        HorizontalAlignment="Left"
                                                        VerticalAlignment="Center"
                                                        Visibility="{Binding IsExpanded,
@@ -135,6 +140,7 @@
                                 <Button HorizontalAlignment="Right"
                                         VerticalAlignment="Top"
                                         Height="27"
+                                        Margin="0 0 10 0"
                                         Style="{StaticResource EllipticalButton}"
                                         Command="{Binding DataContext,
                                         RelativeSource={RelativeSource AncestorType=Grid,AncestorLevel=3},
@@ -165,7 +171,7 @@
                                                            Text="{Binding TorrentMagnetLink}"
                                                            Margin="10 0 0 0"
                                                            TextTrimming="CharacterEllipsis"
-                                                           MaxWidth="200"
+                                                           MaxWidth="240"
                                                            HorizontalAlignment="Left"
                                                            VerticalAlignment="Center"
                                                            Visibility="{Binding IsExpanded,
@@ -190,6 +196,7 @@
                                     <Button HorizontalAlignment="Right"
                                             VerticalAlignment="Top"
                                             Height="27"
+                                            Margin="0 0 10 0"
                                             Style="{StaticResource EllipticalButton}"
                                             Command="{Binding DataContext,
                                             RelativeSource={RelativeSource AncestorType=Grid,AncestorLevel=3},
@@ -205,22 +212,30 @@
                 </Expander>
                 <!--下载信息-->
                 <!--同伴信息-->
-                <Expander Grid.Row="1"
-                          Margin="5 5 0 0"
+                <Expander Margin="5 5 0 0"
                           IsExpanded="True"
                           VerticalAlignment="Top"
                           Style="{StaticResource TorrentExpander}">
                     <Expander.Header>
-                        <t:ExpandSwitch HorizontalAlignment="Left"
-                                        Content="对等节点信息"
-                                        FontSize="16"
-                                        PathHeight="14"
-                                        PathWidth="14"
-                                        IsChecked="{Binding IsExpanded,
-                                        RelativeSource={RelativeSource AncestorType=Expander}}"/>
+                        <Grid>
+                            <t:ExpandSwitch HorizontalAlignment="Left"
+                                            Content="对等节点信息"
+                                            FontSize="16"
+                                            PathHeight="14"
+                                            PathWidth="14"
+                                            IsChecked="{Binding IsExpanded,
+                                            RelativeSource={RelativeSource AncestorType=Expander}}"/>
+                            <Button HorizontalAlignment="Right"
+                                    Margin="0 0 10 0"
+                                    Command="{Binding AddPeerCommand}"
+                                    Style="{StaticResource EllipticalButton}">
+                                <TextBlock Text="添加" Margin="5 0 5 0"/>
+                            </Button>
+                        </Grid>
                     </Expander.Header>
                     <Expander.Content>
-                        <Grid Margin="0 5 0 0">
+                        <Grid Margin="0 5 0 0"
+                              DataContext="{Binding Model.SelectedTorrent}">
                             <Grid.RowDefinitions>
                                 <RowDefinition/>
                                 <RowDefinition/>
@@ -234,10 +249,12 @@
                                 <Grid Grid.Column="0">
                                     <TextBlock Text="已发现"
                                                Margin="5 0 0 0"
+                                               FontSize="16"
                                                ToolTip="已发现所有种子及下载者数量"
                                                VerticalAlignment="Center"/>
                                     <TextBlock Text="{Binding Available}"
                                                Margin="60,0,0,0"
+                                               FontSize="16"
                                                ToolTip="已发现所有种子及下载者数量"
                                                VerticalAlignment="Center"/>
                                 </Grid>
@@ -245,19 +262,23 @@
                                     <TextBlock Text="做种者"
                                                Margin="5 0 0 0"
                                                ToolTip="种子数量"
+                                               FontSize="16"
                                                VerticalAlignment="Center"/>
                                     <TextBlock Text="{Binding Seeds}"
                                                Margin="60 0 0 0"
                                                ToolTip="种子数量"
+                                               FontSize="16"
                                                VerticalAlignment="Center"/>
                                 </Grid>
                                 <Grid Grid.Column="2">
                                     <TextBlock Text="下载者"
                                                Margin="5 0 0 0"
+                                               FontSize="16"
                                                ToolTip="同时下载人数"
                                                VerticalAlignment="Center"/>
                                     <TextBlock Text="{Binding Leechs}"
                                                Margin="60 0 0 0"
+                                               FontSize="16"
                                                ToolTip="同时下载人数"
                                                VerticalAlignment="Center"/>
                                 </Grid>
@@ -266,19 +287,30 @@
                                       Margin="0 5 0 0"
                                       Style="{StaticResource TorrentExpander}">
                                 <Expander.Header>
-                                    <t:ExpandSwitch Content="已连接对等节点"
-                                                    FontSize="14"
-                                                    IsChecked="{Binding IsExpanded,
-                                                    RelativeSource={RelativeSource AncestorType=Expander}}"/>
+                                    <Grid>
+                                        <t:ExpandSwitch Margin="5 0 0 0"
+                                                        PathHeight="14"
+                                                        PathWidth="14"
+                                                        FontSize="14"
+                                                        Content="已连接对等体列表"
+                                                        IsChecked="{Binding IsExpanded,
+                                                        RelativeSource={RelativeSource AncestorType=Expander}}"/>
+                                        <TextBlock Text="已连接数量"
+                                                   Margin="0 0 50 0"
+                                                   HorizontalAlignment="Right"/>
+                                        <TextBlock Text="{Binding ConnectPeers.Count}"
+                                                   Margin="0 0 10 0"
+                                                   HorizontalAlignment="Right"/>
+                                    </Grid>
                                 </Expander.Header>
                                 <Expander.Content>
-                                    <ListBox Grid.Row="1"
-                                             BorderThickness="0"
-                                             ItemsSource="{Binding Peers}"
+                                    <ListBox BorderThickness="0"
+                                             HorizontalContentAlignment="Stretch"
+                                             ItemsSource="{Binding ConnectPeers}"
                                              Background="{DynamicResource GlobalBackgroundBrush}"
                                              Foreground="{DynamicResource GlobalForegroundBrush}">
                                         <ListBox.ItemTemplate>
-                                            <DataTemplate DataType="ListBoxItem">
+                                            <DataTemplate DataType="{x:Type m:TorrentPeer}">
                                                 <Grid Margin="5 0 0 0">
                                                     <Grid.RowDefinitions>
                                                         <RowDefinition/>
@@ -287,9 +319,10 @@
                                                         <RowDefinition/>
                                                         <RowDefinition/>
                                                         <RowDefinition/>
+                                                        <RowDefinition/>
                                                     </Grid.RowDefinitions>
                                                     <Grid Grid.Row="0"
-                                                          Margin="0 5 0 0">
+                                                          Margin="0,5,0,0">
                                                         <TextBlock Text="对等地址"/>
                                                         <TextBlock Text="{Binding PeerUri}"
                                                                    Margin="70 0 0 0"/>
@@ -297,33 +330,135 @@
                                                     <Grid Grid.Row="1"
                                                           Margin="0 5 0 0">
                                                         <TextBlock Text="唯一标识"/>
-                                                        <TextBlock Text="{Binding PeerID}"
+                                                        <TextBlock Text="{Binding Id}"
                                                                    Margin="70 0 0 0"/>
                                                     </Grid>
-                                                    <Grid Grid.Row="2"
+                                                    <Grid Grid.Row="2">
+                                                        <TextBlock Text="客户端标识"/>
+                                                        <TextBlock Text="{Binding ClientApp.Client}"
+                                                                   Margin="80 0 0 0"/>
+                                                    </Grid>
+                                                    <Grid Grid.Row="3"
                                                           Margin="0 5 0 0">
                                                         <TextBlock Text="加密类型"/>
                                                         <TextBlock Text="{Binding EncryptionType,
                                                                    Converter={tc:EncryptionConverter}}"
                                                                    Margin="70 0 0 0"/>
                                                         <TextBlock Text="连接方向"
-                                                                   Margin="140 0 0 0"/>
+                                                                   Margin="190 0 0 0"/>
                                                         <TextBlock Text="{Binding ConnectionDirection,
                                                                    Converter={tc:DirectionConverter}}"
-                                                                   Margin="200 0 0 0"/>
+                                                                   Margin="250 0 0 0"/>
                                                     </Grid>
-                                                    <Grid Grid.Row="3">
-                                                        <!--<TextBlock Text="上传速度"/>
-                                                        <TextBlock Text="{Binding EncryptionType,
-                                                        Converter={tc:EncryptionConverter}}"
-                                                        Margin="70 0 0 0"/>
-                                                        <TextBlock Text="连接方向"
-                                                        Margin="150"/>
-                                                        <TextBlock Text="{Binding ConnectionDirection,
-                                                        Converter={tc:DirectionConverter}}"
-                                                        Margin="220 0 0 0"/>-->
+                                                    <Grid Grid.Row="4"
+                                                          Margin="0 5 0 0">
+                                                        <TextBlock Text="连接时间"/>
+                                                        <TextBlock Text="{Binding StartTime,
+                                                                   StringFormat=MM月dd日HH时mm分,
+                                                                   TargetNullValue=暂未发现创建时间}"
+                                                                   Margin="70 0 0 0"/>
+                                                        <TextBlock Text="持续时间"
+                                                                   Margin="190 0 0 0"/>
+                                                        <TextBlock Text="{Binding ElapsedTime,
+                                                                   StringFormat=dd日HH时mm分}"
+                                                                   Margin="250 0 0 0"/>
                                                     </Grid>
-                                                    <Expander Grid.Row="4"
+                                                    <Expander Grid.Row="5"
+                                                              VerticalAlignment="Center"
+                                                              Background="{Binding Background,
+                                                              RelativeSource={RelativeSource AncestorType=Grid,
+                                                              AncestorLevel=2}}"
+                                                              Style="{StaticResource TorrentExpander}">
+                                                        <Expander.Header>
+                                                            <t:ExpandSwitch Content="上传及下载"
+                                                                            IsChecked="{Binding IsExpanded,
+                                                                            RelativeSource={RelativeSource AncestorType=Expander}}"/>
+                                                        </Expander.Header>
+                                                        <Expander.Content>
+                                                            <Grid Margin="0 5 0 0">
+                                                                <Grid.RowDefinitions>
+                                                                    <RowDefinition/>
+                                                                    <RowDefinition/>
+                                                                    <RowDefinition/>
+                                                                </Grid.RowDefinitions>
+                                                                <Grid.ColumnDefinitions>
+                                                                    <ColumnDefinition Width="*"/>
+                                                                    <ColumnDefinition Width="*"/>
+                                                                    <ColumnDefinition Width="*"/>
+                                                                    <ColumnDefinition Width="2*"/>
+                                                                    <ColumnDefinition Width="2*"/>
+                                                                </Grid.ColumnDefinitions>
+                                                                <TextBlock Grid.Row="0"
+                                                                           Grid.Column="1"
+                                                                           HorizontalAlignment="Center"
+                                                                           Text="速度"/>
+                                                                <TextBlock Grid.Row="0"
+                                                                           Grid.Column="2"
+                                                                           HorizontalAlignment="Center"
+                                                                           Text="总量"/>
+                                                                <TextBlock Grid.Row="0"
+                                                                           Grid.Column="3"
+                                                                           HorizontalAlignment="Center"
+                                                                           Text="无效数据量"/>
+                                                                <TextBlock Grid.Row="0"
+                                                                           Grid.Column="4"
+                                                                           Margin="10 0 0 0"
+                                                                           HorizontalAlignment="Center"
+                                                                           Text="有效数据量"/>
+                                                                <TextBlock Grid.Row="1"
+                                                                           Grid.Column="0"
+                                                                           HorizontalAlignment="Center"
+                                                                           Text="下载"/>
+                                                                <TextBlock Grid.Row="2"
+                                                                           Grid.Column="0"
+                                                                           HorizontalAlignment="Center"
+                                                                           Text="上传"/>
+                                                                <TextBlock Grid.Row="1"
+                                                                           Grid.Column="1"
+                                                                           HorizontalAlignment="Center"
+                                                                           Text="{Binding PiecesSentRate,
+                                                                           Converter={c:SizeConverter}}"/>
+                                                                <TextBlock Grid.Row="2"
+                                                                           Grid.Column="1"
+                                                                           HorizontalAlignment="Center"
+                                                                           Text="{Binding PiecesReceivedRate,
+                                                                           Converter={c:SizeConverter}}"/>
+                                                                <TextBlock Grid.Row="1"
+                                                                           Grid.Column="2"
+                                                                           HorizontalAlignment="Center"
+                                                                           Text="{Binding PiecesSent,
+                                                                           Converter={c:SizeConverter}}"/>
+                                                                <TextBlock Grid.Row="2"
+                                                                           Grid.Column="2"
+                                                                           HorizontalAlignment="Center"
+                                                                           Text="{Binding PiecesReceived,
+                                                                           Converter={c:SizeConverter}}"/>
+                                                                <TextBlock Grid.Row="1"
+                                                                           Grid.Column="3"
+                                                                           HorizontalAlignment="Center"
+                                                                           Text="{Binding ProtocolSent,
+                                                                           Converter={c:SizeConverter}}"/>
+                                                                <TextBlock Grid.Row="2"
+                                                                           Grid.Column="3"
+                                                                           HorizontalAlignment="Center"
+                                                                           Text="{Binding ProtocolReceived,
+                                                                           Converter={c:SizeConverter}}"/>
+                                                                <TextBlock Grid.Row="1"
+                                                                           Grid.Column="4"
+                                                                           Margin="10 0 0 0"
+                                                                           HorizontalAlignment="Center"
+                                                                           Text="{Binding ContentSent,
+                                                                           Converter={c:SizeConverter}}"/>
+                                                                <TextBlock Grid.Row="2"
+                                                                           Grid.Column="4"
+                                                                           Margin="10 0 0 0"
+                                                                           HorizontalAlignment="Center"
+                                                                           Text="{Binding ContentReceived,
+                                                                           Converter={c:SizeConverter}}"/>
+                                                            </Grid>
+                                                        </Expander.Content>
+                                                    </Expander>
+                                                    <Expander Grid.Row="6"
                                                               Background="{Binding Background,RelativeSource={RelativeSource AncestorType=Grid,AncestorLevel=2}}"
                                                               Style="{StaticResource TorrentExpander}">
                                                         <Expander.Header>
@@ -345,30 +480,38 @@
                                                                 </Grid.ColumnDefinitions>
                                                                 <TextBlock Grid.Row="0"
                                                                            Grid.Column="1"
+                                                                           HorizontalAlignment="Center"
                                                                            Text="阻塞"/>
                                                                 <TextBlock Grid.Row="0"
                                                                            Grid.Column="2"
+                                                                           HorizontalAlignment="Center"
                                                                            Text="感兴趣"/>
                                                                 <TextBlock Grid.Row="1"
                                                                            Grid.Column="0"
+                                                                           HorizontalAlignment="Center"
                                                                            Text="我方"/>
                                                                 <TextBlock Grid.Row="2"
                                                                            Grid.Column="0"
+                                                                           HorizontalAlignment="Center"
                                                                            Text="对方"/>
                                                                 <TextBlock Grid.Row="1"
                                                                            Grid.Column="1"
+                                                                           HorizontalAlignment="Center"
                                                                            Text="{Binding AmChoking,
                                                                            Converter={c:BoolToStringConverter}}"/>
                                                                 <TextBlock Grid.Row="2"
                                                                            Grid.Column="1"
+                                                                           HorizontalAlignment="Center"
                                                                            Text="{Binding IsChoking,
                                                                            Converter={c:BoolToStringConverter}}"/>
                                                                 <TextBlock Grid.Row="1"
                                                                            Grid.Column="2"
+                                                                           HorizontalAlignment="Center"
                                                                            Text="{Binding AmInterested,
                                                                            Converter={c:BoolToStringConverter}}"/>
                                                                 <TextBlock Grid.Row="2"
                                                                            Grid.Column="2"
+                                                                           HorizontalAlignment="Center"
                                                                            Text="{Binding IsInterested,
                                                                            Converter={c:BoolToStringConverter}}"/>
                                                             </Grid>
@@ -383,7 +526,128 @@
                         </Grid>
                     </Expander.Content>
                 </Expander>
+                <Expander Margin="5 5 0 0"
+                          VerticalAlignment="Top"
+                          DataContext="{Binding Model.SelectedTorrent}"
+                          Style="{StaticResource TorrentExpander}">
+                    <Expander.Header>
+                        <t:ExpandSwitch HorizontalAlignment="Left"
+                                        Content="种子文件分块信息"
+                                        FontSize="16"
+                                        PathHeight="14"
+                                        PathWidth="14"
+                                        IsChecked="{Binding IsExpanded,
+                                        RelativeSource={RelativeSource AncestorType=Expander}}"/>
+                    </Expander.Header>
+                    <Expander.Content>
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition/>
+                                <RowDefinition/>
+                            </Grid.RowDefinitions>
+                            <Grid Grid.Row="0">
+                                <TextBlock Text="已完成块"/>
+                                <TextBlock Text="{Binding TrueCount}"
+                                           Margin="70 0 0 0"/>
+                                <TextBlock Text="已选中块"
+                                           Margin="190 0 0 0"/>
+                                <TextBlock Text="{Binding TrueCount}"
+                                           Margin="250 0 0 0"/>
+                            </Grid>
+                            <ItemsControl Grid.Row="1"
+                                          BorderThickness="0"
+                                          HorizontalContentAlignment="Stretch"
+                                          ItemsSource="{Binding Bitfield}"
+                                          Background="{DynamicResource GlobalBackgroundBrush}"
+                                          Foreground="{DynamicResource GlobalForegroundBrush}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <UniformGrid Columns="28"
+                                                     Margin="5"/>
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Width="10"
+                                                Height="10"
+                                                Margin="1"
+                                                ToolTipService.InitialShowDelay="100"
+                                                Background="{Binding State,
+                                                Converter={tc:BItfleToColorConverter}}">
+                                            <Border.ToolTip>
+                                                <Grid>
+                                                    <Grid.RowDefinitions>
+                                                        <RowDefinition/>
+                                                        <RowDefinition/>
+                                                    </Grid.RowDefinitions>
+                                                    <TextBlock Grid.Row="0"
+                                                               Text="{Binding Name}"
+                                                               Visibility="{Binding Name,Converter={c:ObjectToVisibilityConverter}}"/>
+                                                    <TextBlock Grid.Row="1"
+                                                               Text="{Binding Messagetype}"
+                                                               Visibility="{Binding Messagetype,Converter={c:ObjectToVisibilityConverter}}"/>
+                                                </Grid>
+                                            </Border.ToolTip>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </Grid>
+                    </Expander.Content>
+                </Expander>
+                <Expander Margin="5 5 0 0"
+                          VerticalAlignment="Top"
+                          DataContext="{Binding Model.SelectedTorrent}"
+                          Style="{StaticResource TorrentExpander}">
+                    <Expander.Header>
+                        <t:ExpandSwitch HorizontalAlignment="Left"
+                                        Content="追踪器信息"
+                                        FontSize="16"
+                                        PathHeight="14"
+                                        PathWidth="14"
+                                        IsChecked="{Binding IsExpanded,
+                                        RelativeSource={RelativeSource AncestorType=Expander}}"/>
+                    </Expander.Header>
+                    <Expander.Content>
+                        <ListBox BorderThickness="0"
+                                 HorizontalContentAlignment="Stretch"
+                                 ItemsSource="{Binding Trackers}"
+                                 Background="{DynamicResource GlobalBackgroundBrush}"
+                                 Foreground="{DynamicResource GlobalForegroundBrush}">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate DataType="m:TorrentTracker">
+                                    <Grid>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition/>
+                                            <RowDefinition/>
+                                            <RowDefinition/>
+                                        </Grid.RowDefinitions>
+                                        <Grid Grid.Row="0"
+                                              Margin="0 5 0 0">
+                                            <TextBlock Text="追踪器地址"/>
+                                            <TextBlock Text="{Binding TrackerUri}"
+                                                       Margin="75 0 0 0"/>
+                                        </Grid>
+                                        <Grid Grid.Row="1"
+                                              Margin="0 5 0 0">
+                                            <TextBlock Text="支持抓取"/>
+                                            <TextBlock Text="{Binding CanScrape,
+                                                       Converter={c:BoolToStringConverter}}"
+                                                       Margin="75 0 0 0"/>
+                                        </Grid>
+                                    </Grid>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </Expander.Content>
+                </Expander>
             </StackPanel>
         </ScrollViewer>
+        <Grid Grid.Row="1">
+            <Button Content="检查文件"
+                    HorizontalAlignment="Left"
+                    Command="{Binding VerifyFileIntegrityCommand}"
+                    Style="{StaticResource EllipticalButton}"/>
+        </Grid>
     </Grid>
 </v:ExtenderAppView>

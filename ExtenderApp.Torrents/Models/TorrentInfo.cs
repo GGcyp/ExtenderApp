@@ -1,10 +1,11 @@
-﻿using System.Linq;
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Xml.Linq;
 using ExtenderApp.Abstract;
 using ExtenderApp.Data;
 using MonoTorrent;
 using MonoTorrent.Client;
+using MonoTorrent.Trackers;
 
 namespace ExtenderApp.Torrents.Models
 {
@@ -16,6 +17,8 @@ namespace ExtenderApp.Torrents.Models
         private readonly IDispatcherService _dispatcherService;
 
         #region Properties
+
+        private bool isVerifyFileIntegrity;
 
         /// <summary>
         /// Torrent的名称
@@ -93,12 +96,12 @@ namespace ExtenderApp.Torrents.Models
         public string TorrentMagnetLink { get; set; }
 
         /// <summary>
-        /// 创建时间
+        /// 下载任务创建时间
         /// </summary>
         public DateTime CreateTime { get; set; }
 
         /// <summary>
-        /// 创建时间
+        /// 种子创建时间
         /// </summary>
         public DateTime TorrentCreateTime { get; set; }
 
@@ -120,11 +123,14 @@ namespace ExtenderApp.Torrents.Models
         /// </summary>
         public string Encoding { get; set; }
 
+        /// <summary>
+        /// 剩余下载时间
+        /// </summary>
+        public TimeSpan RemainingTime { get; set; }
+
         #endregion
 
         #region TorrentFiles
-
-        public BitFieldData? BitData { get; set; }
 
         public ValueOrList<TorrentFileInfoNode> Files { get; set; }
 
@@ -172,22 +178,43 @@ namespace ExtenderApp.Torrents.Models
         /// </summary>
         public int Available { get; set; }
 
-        public ObservableCollection<TorrentPeer> Peers { get; set; }
+        /// <summary>
+        /// 已连接的对等体数量
+        /// </summary>
+        public int PeerCount { get; set; }
+
+        public ObservableCollection<TorrentPeer> ConnectPeers { get; set; }
+
+        #endregion
+
+        #region Tracker
+
+        public ObservableCollection<TorrentTracker> Trackers { get; set; }
+
+        #endregion
+
+        #region Piece
+
+        /// <summary>
+        /// 获取或设置表示种子文件位域（Bitfield）的可观察集合。
+        /// </summary>
+        public ObservableCollection<TorrentPiece> Bitfield { get; set; }
+
+        public int TrueCount { get; set; }
+
+        public int SelectedBitfieldCount { get; set; }
 
         #endregion
 
         public event PropertyChangedEventHandler? PropertyChanged;
 
-        public TorrentInfo(Torrent torrent, IDispatcherService service)
+        public TorrentInfo(Torrent torrent, IDispatcherService service) : this(service)
         {
-            _dispatcherService = service;
-
             Torrent = torrent;
             Name = torrent.Name;
             Size = torrent.Size;
             PieceLength = torrent.PieceLength;
             PieceCount = torrent.PieceCount;
-            BitData = new BitFieldData(PieceCount);
             IsDownloading = false;
             SelecrAll = false;
             TorrentCreateTime = torrent.CreationDate;
@@ -197,17 +224,28 @@ namespace ExtenderApp.Torrents.Models
             Encoding = !string.IsNullOrEmpty(torrent.Encoding) ? torrent.Encoding : "未找到";
             TorrentMagnetLink = torrent.GetMagnetLink();
 
-            Peers = new();
             Files = new();
+            Bitfield = new();
+            for (int i = 0; i < PieceCount; i++)
+            {
+                Bitfield.Add(new TorrentPiece());
+            }
+
             var list = torrent.Files;
             FileCount = list.Count;
             WriteFileInfo(list);
-
             for (int i = 0; i < Files.Count; i++)
             {
                 var file = Files[i];
                 file.UpdateLengthForFolder();
             }
+        }
+
+        public TorrentInfo(IDispatcherService service)
+        {
+            _dispatcherService = service;
+            ConnectPeers = new();
+            Trackers = new();
         }
 
         public void Set(TorrentManager manager)
@@ -226,30 +264,9 @@ namespace ExtenderApp.Torrents.Models
             }
 
             SavePath = manager.SavePath;
-            manager.PeerConnected += (o, e) =>
-            {
-                _dispatcherService.Invoke(() => { Peers.Add(new TorrentPeer(e.Peer)); });
+            InitPeerEvent(manager);
+            InitTrackerEvent(manager);
 
-            };
-            manager.PeerDisconnected += (o, e) =>
-            {
-                int index = -1;
-                for (int i = 0; i < Peers.Count; i++)
-                {
-                    if (Peers[i].PeerId == e.Peer)
-                    {
-                        Peers.RemoveAt(index);
-                        break;
-                    }
-                }
-                if (index != -1)
-                {
-                    _dispatcherService.Invoke(() =>
-                    {
-                        Peers.RemoveAt(index);
-                    });
-                }
-            };
             Task.Run(async () =>
             {
                 for (int i = 0; i < Files.Count; i++)
@@ -263,6 +280,78 @@ namespace ExtenderApp.Torrents.Models
                     }
                 }
             });
+        }
+
+        private void InitPeerEvent(TorrentManager manager)
+        {
+            manager.PeerConnected += (o, e) =>
+            {
+                TorrentPeer? peer = new TorrentPeer(e.Peer);
+
+                _dispatcherService.Invoke(() =>
+                {
+                    ConnectPeers.Add(new TorrentPeer(e.Peer));
+                });
+            };
+            manager.PeerDisconnected += (o, e) =>
+            {
+                int index = -1;
+                TorrentPeer? peer = null;
+                for (int i = 0; i < ConnectPeers.Count; i++)
+                {
+                    if (ConnectPeers[i].Id == e.Peer)
+                    {
+                        index = i;
+                        peer = ConnectPeers[i];
+                        break;
+                    }
+                }
+                if (index != -1)
+                {
+                    _dispatcherService.Invoke(() =>
+                    {
+                        ConnectPeers.RemoveAt(index);
+                    });
+                }
+            };
+        }
+
+        private void InitTrackerEvent(TorrentManager manager)
+        {
+            manager.TrackerManager.AnnounceComplete += (o, e) =>
+            {
+                int index = -1;
+                for (int i = 0; i < Trackers.Count; i++)
+                {
+                    var tracker = Trackers[i];
+                    if (e.Tracker.Uri == tracker.TrackerUri)
+                    {
+                        tracker.Update();
+                        index = i;
+                    }
+                }
+
+                if (index != -1)
+                {
+                    if (e.Successful)
+                    {
+                        _dispatcherService.Invoke(() =>
+                        {
+                            Trackers.RemoveAt(index);
+                        });
+                    }
+                    return;
+                }
+
+                _dispatcherService.Invoke(() =>
+                {
+                    Trackers.Add(new TorrentTracker(e.Tracker));
+                });
+            };
+            manager.TrackerManager.ScrapeComplete += (o, e) =>
+            {
+
+            };
         }
 
         private TorrentFileInfoNode? FindNodeForTorrentFilePath(string path)
@@ -410,30 +499,131 @@ namespace ExtenderApp.Torrents.Models
             SelecrAll = selecrAll;
         }
 
+        /// <summary>
+        /// 验证文件的完整性
+        /// </summary>
+        /// <remarks>
+        /// 该方法首先检查Manager是否存在以及是否包含元数据，
+        /// 如果不满足条件则直接返回。否则，先停止Manager，
+        /// 然后执行哈希校验以验证文件完整性。
+        /// </remarks>
+        public async Task VerifyFileIntegrity()
+        {
+            if (Manager == null || !Manager.HasMetadata)
+                return;
+            isVerifyFileIntegrity = true;
+
+            await Manager.StopAsync();
+            await Manager.HashCheckAsync(false);
+            isVerifyFileIntegrity = false;
+        }
+
+        /// <summary>
+        /// 检查当前状态是否满足特定条件。
+        /// </summary>
+        /// <returns>
+        /// 如果Manager为null或者isVerifyFileIntegrity为true，则返回true；否则返回false。
+        /// </returns>
+        private bool ChekeState()
+        {
+            return Manager != null || !isVerifyFileIntegrity;
+        }
+
+        /// <summary>
+        /// 异步添加一个 Peer 节点到当前 Torrent 任务。
+        /// </summary>
+        /// <param name="peerUri">Peer 节点的 URI 地址（例如：tcp://192.168.1.100:54321）</param>
+        /// <remarks>
+        /// 如果 Manager 未初始化（null），则直接返回不执行任何操作。<br/>
+        /// 实际添加 Peer 的操作通过 <see cref="Task.Run"/> 异步执行，避免阻塞主线程。
+        /// </remarks>
+        public void AddPeer(Uri peerUri)
+        {
+            if (Manager == null) return;
+
+            Task.Run(async () =>
+            {
+                await Manager.AddPeerAsync(new MonoTorrent.PeerInfo(peerUri));
+            });
+        }
+
         #region Update
 
-        public void UpdateInfo()
+        public void SimlpeUpdateInfo()
         {
-            if (Manager == null)
+            if (!ChekeState())
                 return;
 
             Progress = Manager.Progress;
             DownloadSpeed = Manager.Monitor.DownloadRate;
             UploadSpeed = Manager.Monitor.UploadRate;
 
+            long completeLength = 0;
+            for (int i = 0; i < Files.Count; i++)
+            {
+                var node = Files[i];
+                completeLength += node.GetSelectedFileCompleteLength();
+            }
+            SelectedFileCompleteLength = completeLength;
+
+            long RemainingLength = SelectedFileLength - SelectedFileCompleteLength;
+
+            double remainingTime = DownloadSpeed == 0 ? 0 : RemainingLength / DownloadSpeed;
+            RemainingTime = TimeSpan.FromSeconds(remainingTime);
+        }
+
+        public void UpdateInfo()
+        {
+            if (!ChekeState())
+                return;
+
             Seeds = Manager.Peers.Seeds;
             Leechs = Manager.Peers.Leechs;
             Available = Manager.Peers.Available;
+            PeerCount = ConnectPeers.Count;
 
+            int selectedBitfieldCount = 0;
             for (int i = 0; i < Files.Count; i++)
             {
-                Files[i].UpdetaProgress();
+                var file = Files[i];
+                file.UpdateProgress();
+                selectedBitfieldCount += file.UpdatePieceCount();
             }
-            for (int i = 0; i < Peers.Count; i++)
+            SelectedBitfieldCount = selectedBitfieldCount;
+            for (int i = 0; i < ConnectPeers.Count; i++)
             {
-                Peers[i].Update();
+                ConnectPeers[i].Update();
             }
+            var bitfield = Manager.Bitfield;
+            TrueCount = bitfield.TrueCount;
+            _dispatcherService.Invoke(() =>
+            {
+                for (int i = 0; i < PieceCount; i++)
+                {
+                    var piece = Bitfield[i];
+                    bool bitBool = bitfield[i];
+                    piece.State = bitBool ? TorrentPieceStateType.Complete : piece.State;
+                    piece.UpdateMessageType();
+                }
+            });
+        }
 
+        /// <summary>
+        /// 更新当前种子中所有文件的下载状态
+        /// </summary>
+        /// <param name="isUpdate">可选参数，默认为true，表示是否更新下载状态</param>
+        public void UpdateDownloadState(bool isUpdate = true)
+        {
+            // 遍历当前种子中的所有文件
+            for (int i = 0; i < Files.Count; i++)
+            {
+                // 获取当前文件节点
+                var file = Files[i];
+
+                // 调用文件节点的更新下载状态方法
+                file.UpdateDownloadState(isUpdate);
+                file.UpdatePieces(Bitfield);
+            }
         }
 
         /// <summary>

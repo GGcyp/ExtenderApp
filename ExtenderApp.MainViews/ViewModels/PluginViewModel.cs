@@ -23,7 +23,7 @@ namespace ExtenderApp.MainViews.ViewModels
             cutscene.Start();
             Task.Run(async () =>
             {
-                _serviceStore.ModService.LoadPlugin(details);
+                await LoadPluginAsync(details);
                 _serviceStore.DispatcherService.Invoke(() =>
                 {
                     Model.CurrentMainView = NavigateTo<MainView_Run>();

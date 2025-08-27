@@ -189,10 +189,10 @@ namespace ExtenderApp.Common
         /// <typeparam name="TFormatter">
         /// 版本化数据格式化器类型，必须实现 <see cref="IVersionDataFormatter{T}"/> 接口
         /// </typeparam>
-        public static IBinaryFormatterStore AddVersionData<Type, TFormatter>(this IBinaryFormatterStore store) 
+        public static IBinaryFormatterStore AddVersionData<Type, TFormatter>(this IBinaryFormatterStore store)
             where TFormatter : IVersionDataFormatter<Type>
         {
-            store.AddFormatter(typeof(VersionData<Type>), typeof(TFormatter));
+            store.AddFormatter(typeof(Type), typeof(TFormatter), true);
             return store;
         }
     }

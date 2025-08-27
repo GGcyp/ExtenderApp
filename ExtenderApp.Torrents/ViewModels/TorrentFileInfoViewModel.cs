@@ -33,10 +33,6 @@ namespace ExtenderApp.Torrents.ViewModels
 
             Task.Run(async () =>
             {
-                foreach (var node in info.Files)
-                {
-                    node.UpdateDownloadState();
-                }
                 await Model.SatrtTorrentAsync(info);
                 info.IsDownloading = true;
             });

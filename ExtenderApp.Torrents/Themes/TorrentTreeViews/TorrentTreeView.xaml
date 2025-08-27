@@ -5,10 +5,12 @@
                     xmlns:c="clr-namespace:ExtenderApp.Torrents.Converters">
 
     <ResourceDictionary.MergedDictionaries>
+        <ResourceDictionary Source="/ExtenderApp.Views;component/ViewStyles.xaml"/>
         <ResourceDictionary Source="/ExtenderApp.Torrents;component/Themes/TorrentTreeItems/TorrentTreeItem.xaml"/>
     </ResourceDictionary.MergedDictionaries>
 
     <Style TargetType="{x:Type local:TorrentTreeView}">
+        <Setter Property="Foreground" Value="{DynamicResource GlobalForegroundBrush}"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type local:TorrentTreeView}">
@@ -32,31 +34,30 @@
                                     AncestorLevel=3},
                                     Converter={c:MaxWidthConverter},
                                     ConverterParameter=165}"
-                                    MinWidth="200"
                                     SharedSizeGroup="Name"/>
                                 <ColumnDefinition
                                     Width="50"
                                     SharedSizeGroup="Size"/>
                                 <ColumnDefinition
-                                    Width="40"
+                                    Width="50"
                                     SharedSizeGroup="Progress"/>
                             </Grid.ColumnDefinitions>
-                            <Label Grid.Column="0"
-                                   Grid.ColumnSpan="2"
-                                   Content="文件名称"
-                                   HorizontalAlignment="Left"
-                                   VerticalAlignment="Center"
-                                   Foreground="{TemplateBinding Foreground}"/>
-                            <Label Grid.Column="2"
-                                   Content="大小"
-                                   HorizontalAlignment="Left"
-                                   VerticalAlignment="Center"
-                                   Foreground="{TemplateBinding Foreground}"/>
-                            <Label Grid.Column="3"
-                                   Content="进度"
-                                   HorizontalAlignment="Center"
-                                   VerticalAlignment="Center"
-                                   Foreground="{TemplateBinding Foreground}"/>
+                            <Button Grid.Column="0"
+                                    Grid.ColumnSpan="2"
+                                    Content="文件名称"
+                                    HorizontalAlignment="Left"
+                                    VerticalAlignment="Center"
+                                    Foreground="{TemplateBinding Foreground}"/>
+                            <Button Grid.Column="2"
+                                    Content="大小"
+                                    HorizontalAlignment="Left"
+                                    VerticalAlignment="Center"
+                                    Foreground="{TemplateBinding Foreground}"/>
+                            <Button Grid.Column="3"
+                                    Content="进度"
+                                    HorizontalAlignment="Right"
+                                    VerticalAlignment="Center"
+                                    Foreground="{TemplateBinding Foreground}"/>
                         </Grid>
                         <ScrollViewer Grid.Row="1"
                                       Grid.ColumnSpan="4"

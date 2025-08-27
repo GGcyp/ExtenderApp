@@ -36,9 +36,36 @@ namespace ExtenderApp.Views.Behaviors
                 typeof(ForegroundBegavior),
                 new PropertyMetadata(500));
 
+        public int ShowDuration
+        {
+            get => (int)GetValue(ShowDurationProperty);
+            set => SetValue(ShowDurationProperty, value);
+        }
+
+        public static readonly DependencyProperty ShowDurationProperty =
+            DependencyProperty.Register(
+                "ShowDuration",
+                typeof(int),
+                typeof(ForegroundBegavior),
+                new PropertyMetadata(1000)); // 默认显示1秒
+
         #endregion
 
         private Color lastColor;
+
+        public void ToggleVisibility()
+        {
+            ToggleVisibility(true);
+            Task.Run(async () =>
+            {
+                await Task.Delay(AnimationDuration + ShowDuration);
+
+                AssociatedObject.Dispatcher.Invoke(() =>
+                {
+                    ToggleVisibility(false);
+                });
+            });
+        }
 
         public void ToggleVisibility(bool isVisible)
         {
@@ -71,8 +98,7 @@ namespace ExtenderApp.Views.Behaviors
             else
             {
                 lastColor = foreground == null ? Color.FromArgb(0, 0, 0, 0) : foreground.Color;
-                Brush brush = new SolidColorBrush(lastColor);
-                AssociatedObject.Foreground = brush;
+                AssociatedObject.Foreground = new SolidColorBrush(lastColor);
             }
         }
     }

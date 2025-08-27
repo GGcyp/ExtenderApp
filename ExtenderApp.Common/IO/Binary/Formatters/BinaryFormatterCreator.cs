@@ -1,6 +1,7 @@
 ﻿using System.Collections.Concurrent;
 using ExtenderApp.Abstract;
 using ExtenderApp.Common.IO.Binaries.Formatters.Collection;
+using ExtenderApp.Common.IO.Binary.Formatters;
 using ExtenderApp.Common.IO.FileOperates.FileOperateNodes;
 using ExtenderApp.Data;
 
@@ -30,6 +31,7 @@ namespace ExtenderApp.Common.IO.Binaries.Formatters
             _store.AddFormatter(typeof(Queue<>), typeof(QueueFormatter<>));
             _store.AddFormatter(typeof(Array), typeof(ArrayFormatter<>));
             _store.AddFormatter(typeof(HashSet<>), typeof(HashSetFormatter<>));
+            _store.AddFormatter(typeof(ValueOrList<>), typeof(ValueOrListFormatter<>));
 
             _store.AddFormatter(typeof(Dictionary<,>), typeof(DictionaryFormatter<,>));
             _store.AddFormatter(typeof(ConcurrentDictionary<,>), typeof(ConcurrentDictionaryFormatter<,>));
@@ -94,7 +96,7 @@ namespace ExtenderApp.Common.IO.Binaries.Formatters
         /// <returns>是否创建成功</returns>
         private Type? CreatArray(Type type)
         {
-            if (!_store.TryGetValue(typeof(Array), out Type formatterType))
+            if (!_store.TryGetSingleFormatterType(typeof(Array), out Type formatterType))
                 return null;
 
             return formatterType.MakeGenericType(type);
@@ -107,7 +109,7 @@ namespace ExtenderApp.Common.IO.Binaries.Formatters
         /// <returns>是否创建成功</returns>
         private Type? CreatEnum(Type type)
         {
-            if (!_store.TryGetValue(typeof(Enum), out Type formatterType))
+            if (!_store.TryGetSingleFormatterType(typeof(Enum), out Type formatterType))
                 return null;
 
             return formatterType.MakeGenericType(type);
@@ -121,7 +123,7 @@ namespace ExtenderApp.Common.IO.Binaries.Formatters
         private Type? CreatGenericCollection(Type type)
         {
             var genericTypeDefinition = type.GetGenericTypeDefinition();
-            if (!_store.TryGetValue(genericTypeDefinition, out Type formatterType))
+            if (!_store.TryGetSingleFormatterType(genericTypeDefinition, out Type formatterType))
                 return null;
 
             Type[] typeArguments = type.GetGenericArguments();
@@ -149,6 +151,5 @@ namespace ExtenderApp.Common.IO.Binaries.Formatters
 
             return null;
         }
-
     }
 }

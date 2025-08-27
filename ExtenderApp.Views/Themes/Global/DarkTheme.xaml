@@ -8,10 +8,15 @@
     <SolidColorBrush x:Key="ThemeColor" Color="#FFBB86FC" />
 
     <!-- 定义全局颜色 -->
+    <!-- 主色调：用于主要按钮、关键元素 -->
     <Color x:Key="GlobalPrimaryColor">#FFBB86FC</Color>
+    <!-- 辅助色：用于次要按钮、强调元素 -->
     <Color x:Key="GlobalSecondaryColor">#FF03DAC5</Color>
+    <!-- 背景色：页面/容器背景 -->
     <Color x:Key="GlobalBackgroundColor">#302C3A</Color>
+    <!-- 前景色：主要文本颜色 -->
     <Color x:Key="GlobalForegroundColor">#FFFFFFFF</Color>
+    <!-- 选中色：选中状态背景 -->
     <Color x:Key="GlobalSelectedColor">#5E5A68</Color>
 
     <!-- 定义全局画刷 -->

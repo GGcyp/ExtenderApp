@@ -170,6 +170,57 @@ namespace ExtenderApp.Services
         }
 
         /// <summary>
+        /// 异步加载插件
+        /// </summary>
+        /// <param name="details">插件详情信息</param>
+        /// <exception cref="ArgumentNullException">当插件详情为null或关键路径为空时抛出</exception>
+        /// <exception cref="InvalidOperationException">当未找到插件启动项时抛出</exception>
+        public async Task LoadPluginAsync(PluginDetails details)
+        {
+            ArgumentNullException.ThrowIfNull(details, nameof(details));
+
+            if (details.LoadContext is not null)
+                return;
+
+            if (string.IsNullOrEmpty(details.Path) || string.IsNullOrEmpty(details.StartupDll))
+                throw new ArgumentNullException("Mod详情中的路径或启动DLL不能为空");
+
+            var loadContext = new AssemblyLoadContext(details.Title, true);
+            details.LoadContext = loadContext;
+            string dllPath = Path.Combine(details.Path, details.StartupDll);
+
+            //添加模组依赖库
+            string packName = string.IsNullOrEmpty(details.PackPath) ? _pathProvider.PackFolderName : details.PackPath;
+            string packPath = Path.Combine(details.Path, packName);
+            if (Directory.Exists(packPath))
+            {
+                foreach (var dir in Directory.GetFiles(packPath))
+                {
+                    await LoadAssemblyAsync(loadContext, dir);
+                }
+            }
+
+            var startAssembly = LoadAssembly(loadContext, dllPath);
+
+            _pluginTransform.Details = details;
+            var modStartup = _scopeExecutor.LoadScope<PluginEntityStartup>(startAssembly, _pluginTransform.AddServiceToPluginScope);
+
+            if (modStartup == null)
+                throw new InvalidOperationException(string.Format("未找到这个模组的启动项：{0}", details.Title));
+            details.StartupType = modStartup.StartType;
+            details.CutsceneViewType = modStartup.CutsceneViewType;
+            modStartup.ConfigureBinaryFormatterStore(_binaryFormatterStore);
+        }
+
+        private async Task LoadAssemblyAsync(AssemblyLoadContext loadContext, string dllPath)
+        {
+            await Task.Run(() =>
+            {
+                LoadAssembly(loadContext, dllPath);
+            });
+        }
+
+        /// <summary>
         /// 加载程序集
         /// </summary>
         /// <param name="context">程序集加载上下文</param>

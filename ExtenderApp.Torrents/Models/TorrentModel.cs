@@ -4,13 +4,14 @@ using System.Diagnostics;
 using System.IO;
 using System.Net;
 using ExtenderApp.Abstract;
+using ExtenderApp.Models;
 using ExtenderApp.Torrents.Models;
 using MonoTorrent;
 using MonoTorrent.Client;
 
 namespace ExtenderApp.Torrents
 {
-    public class TorrentModel : INotifyPropertyChanged
+    public class TorrentModel : ExtenderAppModel
     {
         public ClientEngine? Engine { get; set; }
 
@@ -49,6 +50,8 @@ namespace ExtenderApp.Torrents
 
         public async Task SatrtTorrentAsync(TorrentInfo info)
         {
+            info.UpdateDownloadState();
+
             TorrentManager? manager = info.Manager;
             //TorrentSettingsBuilder builder = new();
 
@@ -95,7 +98,12 @@ namespace ExtenderApp.Torrents
         {
             foreach (var torrent in DowloadTorrentCollection)
             {
-                torrent.UpdateInfo();
+                torrent.SimlpeUpdateInfo();
+            }
+
+            if (SelectedTorrent != null)
+            {
+                SelectedTorrent.UpdateInfo();
             }
         }
 

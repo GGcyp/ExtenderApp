@@ -11,12 +11,12 @@ namespace ExtenderApp.Data
         /// <summary>
         /// 存储单个值。
         /// </summary>
-        private T? _single;
+        private T? single;
 
         /// <summary>
         /// 存储值的列表。
         /// </summary>
-        private List<T>? _list;
+        private List<T>? list;
 
         /// <summary>
         /// 获取集合中的元素数量。
@@ -25,8 +25,8 @@ namespace ExtenderApp.Data
         {
             get
             {
-                if (_list != null) return _list.Count;
-                return _single is not null ? 1 : 0;
+                if (list != null) return list.Count;
+                return single is not null ? 1 : 0;
             }
         }
 
@@ -44,19 +44,19 @@ namespace ExtenderApp.Data
         {
             get
             {
-                if (_list != null) return _list[index];
-                if (index == 0 && _single is not null) return _single;
+                if (list != null) return list[index];
+                if (index == 0 && single is not null) return single;
                 throw new IndexOutOfRangeException();
             }
             set
             {
-                if (_list != null)
+                if (list != null)
                 {
-                    _list[index] = value;
+                    list[index] = value;
                 }
-                else if (index == 0 && _single is not null)
+                else if (index == 0 && single is not null)
                 {
-                    _single = value;
+                    single = value;
                 }
                 else
                 {
@@ -65,24 +65,38 @@ namespace ExtenderApp.Data
             }
         }
 
+        public ValueOrList() : this(0)
+        {
+
+        }
+
+        public ValueOrList(int capacity)
+        {
+            if (capacity < 0)
+                throw new ArgumentOutOfRangeException();
+
+            if (capacity > 1)
+                list = new List<T>(capacity);
+        }
+
         /// <summary>
         /// 将对象添加到集合的末尾。
         /// </summary>
         /// <param name="item">要添加到集合末尾的对象。</param>
         public void Add(T item)
         {
-            if (_list != null)
+            if (list != null)
             {
-                _list.Add(item);
+                list.Add(item);
             }
-            else if (_single is null)
+            else if (single is null)
             {
-                _single = item;
+                single = item;
             }
             else
             {
-                _list = new List<T>(2) { _single!, item };
-                _single = default;
+                list = new List<T>(2) { single!, item };
+                single = default;
             }
         }
 
@@ -91,8 +105,8 @@ namespace ExtenderApp.Data
         /// </summary>
         public void Clear()
         {
-            _single = default;
-            _list = null;
+            single = default;
+            list = null;
         }
 
         /// <summary>
@@ -102,8 +116,8 @@ namespace ExtenderApp.Data
         /// <returns>如果集合包含指定的元素，则为 true；否则为 false。</returns>
         public bool Contains(T item)
         {
-            if (_list != null) return _list.Contains(item);
-            if (_single is not null) return EqualityComparer<T>.Default.Equals(_single, item);
+            if (list != null) return list.Contains(item);
+            if (single is not null) return EqualityComparer<T>.Default.Equals(single, item);
             return false;
         }
 
@@ -114,13 +128,13 @@ namespace ExtenderApp.Data
         /// <param name="arrayIndex">array 中从零开始的索引，从此处开始复制集合中的元素。</param>
         public void CopyTo(T[] array, int arrayIndex)
         {
-            if (_list != null)
+            if (list != null)
             {
-                _list.CopyTo(array, arrayIndex);
+                list.CopyTo(array, arrayIndex);
             }
-            else if (_single is not null)
+            else if (single is not null)
             {
-                array[arrayIndex] = _single;
+                array[arrayIndex] = single;
             }
         }
 
@@ -130,16 +144,16 @@ namespace ExtenderApp.Data
         /// <returns>一个可用于循环访问集合的枚举器。</returns>
         public IEnumerator<T> GetEnumerator()
         {
-            if (_list != null)
+            if (list != null)
             {
-                for (int i = 0; i < _list.Count; i++)
+                for (int i = 0; i < list.Count; i++)
                 {
-                    yield return _list[i];
+                    yield return list[i];
                 }
             }
-            else if (_single is not null)
+            else if (single is not null)
             {
-                yield return _single;
+                yield return single;
             }
         }
 
@@ -156,8 +170,8 @@ namespace ExtenderApp.Data
         /// <returns>在集合中对象第一次出现的从零开始的索引；如果未找到对象，则为 -1。</returns>
         public int IndexOf(T item)
         {
-            if (_list != null) return _list.IndexOf(item);
-            if (_single is not null && EqualityComparer<T>.Default.Equals(_single, item)) return 0;
+            if (list != null) return list.IndexOf(item);
+            if (single is not null && EqualityComparer<T>.Default.Equals(single, item)) return 0;
             return -1;
         }
 
@@ -168,23 +182,23 @@ namespace ExtenderApp.Data
         /// <param name="item">要插入集合的元素。</param>
         public void Insert(int index, T item)
         {
-            if (_list != null)
+            if (list != null)
             {
-                _list.Insert(index, item);
+                list.Insert(index, item);
             }
-            else if (_single is null && index == 0)
+            else if (single is null && index == 0)
             {
-                _single = item;
+                single = item;
             }
-            else if (_single is not null && index == 0)
+            else if (single is not null && index == 0)
             {
-                _list = new List<T>(2) { item, _single! };
-                _single = default;
+                list = new List<T>(2) { item, single! };
+                single = default;
             }
-            else if (_single is not null && index == 1)
+            else if (single is not null && index == 1)
             {
-                _list = new List<T>(2) { _single!, item };
-                _single = default;
+                list = new List<T>(2) { single!, item };
+                single = default;
             }
             else
             {
@@ -199,13 +213,13 @@ namespace ExtenderApp.Data
         /// <returns>如果已从集合中成功移除 item，则为 true；否则为 false。如果在集合中未找到 item，该方法也返回 false。</returns>
         public bool Remove(T item)
         {
-            if (_list != null)
+            if (list != null)
             {
-                return _list.Remove(item);
+                return list.Remove(item);
             }
-            else if (_single is not null && EqualityComparer<T>.Default.Equals(_single, item))
+            else if (single is not null && EqualityComparer<T>.Default.Equals(single, item))
             {
-                _single = default;
+                single = default;
                 return true;
             }
             return false;
@@ -217,18 +231,18 @@ namespace ExtenderApp.Data
         /// <param name="index">要移除的元素的从零开始的索引。</param>
         public void RemoveAt(int index)
         {
-            if (_list != null)
+            if (list != null)
             {
-                _list.RemoveAt(index);
-                if (_list.Count == 1)
+                list.RemoveAt(index);
+                if (list.Count == 1)
                 {
-                    _single = _list[0];
-                    _list = null;
+                    single = list[0];
+                    list = null;
                 }
             }
-            else if (_single is not null && index == 0)
+            else if (single is not null && index == 0)
             {
-                _single = default;
+                single = default;
             }
             else
             {

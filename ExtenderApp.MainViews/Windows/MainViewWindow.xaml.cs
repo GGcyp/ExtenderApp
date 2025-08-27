@@ -23,9 +23,23 @@ namespace ExtenderApp.MainViews
     /// </summary>
     public partial class MainViewWindow : ExtenderAppWindow, IMainWindow
     {
-        public MainViewWindow(MianWindowViewModel viewModel) : base(viewModel)
+        public MainViewWindow(MainWindowViewModel viewModel) : base(viewModel)
         {
             InitializeComponent();
+        }
+
+        public void DisplayMessageToMainWindow(string message,
+            ExHorizontalAlignment horizontalAlignment,
+            ExVerticalAlignment verticalAlignment,
+            ExThickness messageThickness)
+        {
+            ViewModel<MainWindowViewModel>().Model.ShowMessage(
+                message,
+                horizontalAlignment,
+                verticalAlignment,
+                messageThickness);
+            messageBehavior.ToggleVisibility();
+            messageFontBehavior.ToggleVisibility();
         }
     }
 }

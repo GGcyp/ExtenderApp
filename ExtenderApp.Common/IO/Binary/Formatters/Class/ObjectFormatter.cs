@@ -54,7 +54,7 @@ namespace ExtenderApp.Common.IO.Binaries.Formatters.Class
             }
 
             // 如果没有找到对应的格式化器，则创建一个新的格式化器
-            if (!_store.TryGetValue(type, out Type formatterType))
+            if (!_store.TryGetSingleFormatterType(type, out Type formatterType))
             {
                 formatterType = _creator.CreatFormatter(type);
                 if (formatterType == null)

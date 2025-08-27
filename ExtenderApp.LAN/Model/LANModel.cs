@@ -1,11 +1,12 @@
 ﻿using System.Collections.ObjectModel;
 using System.Net.NetworkInformation;
 using ExtenderApp.Common;
+using ExtenderApp.Models;
 
 
 namespace ExtenderApp.LAN
 {
-    public class LANModel
+    public class LANModel : ExtenderAppModel
     {
         public ObservableCollection<LANInteraceInfo> LANInteraces { get; private set; }
 

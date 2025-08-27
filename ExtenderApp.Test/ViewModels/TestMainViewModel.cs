@@ -119,6 +119,11 @@ namespace ExtenderApp.Test
             Info(value);
         }
 
+        public void ShowMessage()
+        {
+            _serviceStore.MainWindowService.CurrentMainWindow.DisplayMessageToMainWindow("打开", ExHorizontalAlignment.Center, ExVerticalAlignment.Center, new ExThickness(0));
+        }
+
         private async void TcpListener()
         {
             TcpListener listener = new TcpListener(IPAddress.Loopback, 12345);

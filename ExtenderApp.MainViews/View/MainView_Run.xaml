@@ -22,12 +22,13 @@
             <RowDefinition Height="40"/>
             <RowDefinition/>
         </Grid.RowDefinitions>
-        <Grid Grid.Row="0"
-              Background="{DynamicResource GlobalBackgroundBrush}">
+        <StackPanel Grid.Row="0"
+                    Orientation="Horizontal"
+                    Background="{DynamicResource GlobalBackgroundBrush}">
             <Button Content="返回"
                     Command="{Binding ToMainViewCommand}"
                     HorizontalAlignment="Left"/>
-        </Grid>
+        </StackPanel>
         <Grid Grid.Row="1"
               t:ThemeProps.Background="{DynamicResource GlobalBackgroundBrush}">
             <ContentControl Content="{Binding Model.CurrentView}"/>

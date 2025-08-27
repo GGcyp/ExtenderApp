@@ -1,5 +1,6 @@
 using ExtenderApp.Abstract;
 using ExtenderApp.Common;
+using ExtenderApp.Data;
 using ExtenderApp.Torrents.Models;
 using ExtenderApp.Torrents.Views;
 using ExtenderApp.ViewModels;
@@ -45,8 +46,8 @@ namespace ExtenderApp.Torrents.ViewModels
 
             AddTorrentCommand = new(ShowAddTorrentView);
 
-            Model.DowloadTorrentCollection = new();
-            Model.DowloadCompletedTorrentCollection = new();
+            Model.DowloadTorrentCollection = Model.DowloadTorrentCollection ?? new();
+            Model.DowloadCompletedTorrentCollection = Model.DowloadCompletedTorrentCollection ?? new();
             Model.TorrentListView = NavigateTo<TorrentDownloadListView>();
             Model.TorrentDetailsView = NavigateTo<TorrentDownloadFileInfoView>();
 

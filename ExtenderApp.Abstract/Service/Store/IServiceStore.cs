@@ -28,7 +28,7 @@
         /// <summary>
         /// 获取模组服务
         /// </summary>
-        IPluginService ModService { get; }
+        IPluginService PluginService { get; }
 
         /// <summary>
         /// 获取本地数据服务接口。

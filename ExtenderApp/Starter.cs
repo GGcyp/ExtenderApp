@@ -17,7 +17,7 @@ namespace ExtenderApp
             Debug.Close();
             Stopwatch sw = new Stopwatch();
             sw.Start();
-            Debug.Print($"开始启动 : {DateTime.Now}");
+            DebugMessage($"开始启动 : {DateTime.Now}");
             app = new App();
 
             var builder = AppHostApplication.CreateBuilder();
@@ -25,11 +25,11 @@ namespace ExtenderApp
             //builder.FindStarupForFolder(AppSetting.AppBinFolderName);
             builder.LoadAssembliesForFolder("pack");
             builder.FindStarupForFolder("lib");
-            Debug.Print($"启动成功 : {DateTime.Now}");
+            DebugMessage($"启动成功 : {DateTime.Now}");
 
-            Debug.Print($"开始生成服务 : {DateTime.Now}");
+            DebugMessage($"开始生成服务 : {DateTime.Now}");
             application = builder.Builde();
-            Debug.Print($"生成服务成功 : {DateTime.Now}");
+            DebugMessage($"生成服务成功 : {DateTime.Now}");
 
             ILogingService? logingService = application.Service.GetService<ILogingService>();
             try
@@ -48,8 +48,6 @@ namespace ExtenderApp
             }
             catch (Exception ex)
             {
-                Debug.Print(ex.Message);
-                //throw new Exception(ex.Message);
                 logingService?.Print(new Data.LogInfo()
                 {
                     LogLevel = Data.LogLevel.ERROR,
@@ -61,5 +59,12 @@ namespace ExtenderApp
                 });
             }
         }
+
+#if DEBUG
+        private static void DebugMessage(string message)
+        {
+            Debug.Print(message);
+        }
+#endif
     }
 }

@@ -1,4 +1,6 @@
-﻿namespace ExtenderApp.Abstract
+﻿using ExtenderApp.Data;
+
+namespace ExtenderApp.Abstract
 {
     /// <summary>
     /// 定义一个本地格式化器接口，用于将对象序列化为二进制格式，并提供版本信息。

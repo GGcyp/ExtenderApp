@@ -15,7 +15,7 @@ namespace ExtenderApp.Services
 
         public ILogingService LogingService { get; }
 
-        public IPluginService ModService { get; }
+        public IPluginService PluginService { get; }
 
         public ILocalDataService LocalDataService { get; }
 
@@ -39,7 +39,7 @@ namespace ExtenderApp.Services
             NavigationService = navigationService;
             CacheService = cacheStore;
             LogingService = logingService;
-            ModService = modService;
+            PluginService = modService;
             LocalDataService = localDataService;
             PathService = pathService;
             ServiceProvider = serviceProvider;

@@ -20,7 +20,7 @@ namespace ExtenderApp.MainViews
 
             services.AddTransient<PluginView>();
             services.AddTransient<PluginViewModle>();
-            services.AddTransient<MianWindowViewModel>();
+            services.AddTransient<MainWindowViewModel>();
 
             services.AddTransient<IMainView, MainView>();
             services.AddTransient<MainView>();

@@ -4,42 +4,50 @@ using ExtenderApp.Data;
 
 namespace ExtenderApp.Common.IO.Binaries
 {
-    internal class BinaryFormatterStore : Dictionary<Type, ValueOrList<Type>>, IBinaryFormatterStore
+    internal class BinaryFormatterStore : Dictionary<Type, BinaryFormatterDetails>, IBinaryFormatterStore
     {
-        public void AddFormatter(Type type, Type typeFormatter)
+        public void AddFormatter(Type type, Type typeFormatter, bool isVersionDataFormatter = false)
         {
             if (type == null)
                 throw new ArgumentNullException(nameof(type));
             if (typeFormatter == null)
                 throw new ArgumentNullException(nameof(typeFormatter));
 
-            if (TryGetValue(type, out ValueOrList<Type> valueOrList))
+            if (TryGetValue(type, out BinaryFormatterDetails? details))
             {
                 if (!typeFormatter.IsAssignableTo(typeof(IVersionDataFormatter)))
                 {
                     throw new InvalidOperationException($"只有继承IVersionDataFormatter的转换器才能重复添加：{type.FullName} : {typeFormatter.FullName}");
                 }
 
-                if (valueOrList.Contains(typeFormatter))
+                if (details.FormatterTypes.Contains(typeFormatter))
                 {
-                    throw new Exception($"转换器已存在：{type.FullName} : {typeFormatter.FullName}");
+                    throw new Exception($"转换器类型已存在：{type.FullName} : {typeFormatter.FullName}");
                 }
-                valueOrList.Add(typeFormatter);
+                details.FormatterTypes.Add(typeFormatter);
                 return;
             }
 
-            valueOrList = new ValueOrList<Type>();
-            valueOrList.Add(typeFormatter);
-            Add(type, valueOrList);
+            details = new BinaryFormatterDetails(type, isVersionDataFormatter);
+            details.FormatterTypes.Add(typeFormatter);
+            Add(type, details);
+            if (isVersionDataFormatter && details.VersionDataBinaryType != null)
+                Add(details.VersionDataBinaryType, details);
         }
 
-        public bool TryGetValue(Type type, out Type formatter)
+        public bool TryGetSingleFormatterType(Type type, out Type formatterType)
         {
-            formatter = default;
-            if (!TryGetValue(type, out ValueOrList<Type> valueOrList))
-                return false;
+            if (!TryGetValue(type, out var details))
+            {
+                throw new KeyNotFoundException($"未找到指定类型的格式化器 {type.FullName}");
+            }
 
-            formatter = valueOrList[valueOrList.Count - 1];
+            if (details.IsVersionDataFormatter)
+            {
+                throw new InvalidCastException($"此类为版本格式化器 {type.FullName} 不能使用此函数");
+            }
+
+            formatterType = details.FormatterTypes[0];
             return true;
         }
     }

@@ -52,7 +52,7 @@
                 <ColumnDefinition Width="0" >
                     <i:Interaction.Behaviors>
                         <vb:ColumnDefinitionBehavior
-                            TargetWidth="350"
+                            TargetWidth="400"
                             AnimationDuration="500"
                             IsVisible="{Binding Model.SelectedTorrent ,
                             Converter={StaticResource NullToBoolConverter}}"/>
@@ -126,7 +126,6 @@
                     </Grid>
                 </Border>
                 <ContentControl Grid.Row="2"
-                                Margin="5 0 0 0"
                                 Content="{Binding Model.TorrentDetailsView}"/>
             </Grid>
         </Grid>

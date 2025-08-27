@@ -62,7 +62,7 @@ namespace ExtenderApp.Common
                     }
 
                     Type? formatterType = null;
-                    if (!_store.TryGetValue(resultType, out ValueOrList<Type> formatterTypes))
+                    if (!_store.TryGetValue(resultType, out var details))
                     {
                         formatterType = _formatCreator.CreatFormatter(resultType);
                         if (formatterType is null)
@@ -72,27 +72,31 @@ namespace ExtenderApp.Common
                     }
                     else
                     {
-                        if (formatterTypes.Count == 0)
+                        if (details.FormatterTypes.Count == 0)
                         {
                             throw new ArgumentNullException($"转换器类型为空：{resultType}");
                         }
 
-                        if (resultType.IsGenericType && resultType.GetGenericTypeDefinition() == typeof(VersionData<>))
+                        //检查是不是版本数据转换器
+                        if (details.IsVersionDataFormatter)
                         {
-                            Type[] typeArgs = resultType.GetGenericArguments();
-                            var managerType = typeof(VersionDataFormatterMananger<>).MakeGenericType(typeArgs);
-                            var manager = Activator.CreateInstance(managerType, this) as IVersionDataFormatterMananger;
+                            var managerType = typeof(VersionDataFormatterMananger<>).MakeGenericType(details.BinaryType);
+                            var obj = Activator.CreateInstance(managerType, this);
+                            var manager = obj as IVersionDataFormatterMananger;
 
-                            formatter = manager as IBinaryFormatter;
+                            formatter = manager;
+                            var formatterTypes = details.FormatterTypes;
                             for (int i = 0; i < formatterTypes.Count; i++)
                             {
                                 var vdFormatter = _serviceProvider.GetRequiredService(formatterTypes[i]);
                                 manager.AddFormatter(vdFormatter);
                             }
+
+                            _formmaterDict.Add(details.VersionDataBinaryType!, formatter!);
                         }
-                        else if (formatterTypes.Count == 1)
+                        else
                         {
-                            formatterType = formatterTypes[0];
+                            formatterType = details.FormatterTypes[0];
                             formatter = _serviceProvider.GetService(formatterType!) as IBinaryFormatter;
                         }
                     }

@@ -15,8 +15,7 @@ namespace ExtenderApp.Torrents.Converters
                 return new GridLength(200);
 
             width -= double.Parse(minuend);
-            if (width < 200)
-                width = 200;
+            if(width <= 0) return new GridLength(0);
             return new GridLength(width);
         }
 

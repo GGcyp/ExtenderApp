@@ -78,10 +78,10 @@
                                 </StackPanel>
                                 <!--剩余时间-->
                                 <TextBlock Grid.Column="1"
-                                           Text="20:50"/>
+                                           Text="{Binding RemainingTime}"/>
                                 <!--进度-->
                                 <TextBlock Grid.Column="2"
-                                           Text="{Binding Progress, StringFormat=P1}"/>
+                                           Text="{Binding Progress, StringFormat={}{0:F2}%}"/>
                                 <!--下载速度-->
                                 <StackPanel Grid.Column="3"
                                             HorizontalAlignment="Right"

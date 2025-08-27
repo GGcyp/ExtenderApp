@@ -15,7 +15,7 @@ namespace ExtenderApp.MainViews.Windows
 
         public IMainWindow CreateMainWindow()
         {
-            var viewModel = _serviceProvider.GetRequiredService<MianWindowViewModel>();
+            var viewModel = _serviceProvider.GetRequiredService<MainWindowViewModel>();
             return new MainViewWindow(viewModel);
         }
     }

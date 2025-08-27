@@ -1,12 +1,13 @@
 ﻿using System.Collections.ObjectModel;
 using System.Windows;
+using ExtenderApp.Models;
 
 namespace ExtenderApp.Media
 {
     /// <summary>
     /// 媒体数据类
     /// </summary>
-    public class MediaModel
+    public class MediaModel : ExtenderAppModel
     {
         /// <summary>
         /// 视频信息集合

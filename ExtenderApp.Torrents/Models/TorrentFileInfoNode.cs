@@ -1,4 +1,5 @@
-﻿using System.ComponentModel;
+﻿using System.Collections.ObjectModel;
+using System.ComponentModel;
 using ExtenderApp.Data;
 using MonoTorrent;
 using MonoTorrent.Client;
@@ -73,8 +74,11 @@ namespace ExtenderApp.Torrents.Models
         /// <summary>
         /// 更新进度。
         /// </summary>
-        public void UpdetaProgress()
+        public void UpdateProgress()
         {
+            if (!NeedDownloading)
+                return;
+
             if (TorrentManagerFile != null)
             {
                 Progress = TorrentManagerFile.BitField.PercentComplete;
@@ -86,6 +90,58 @@ namespace ExtenderApp.Torrents.Models
                     return;
                 n.Progress = n.TorrentManagerFile.BitField.PercentComplete;
             });
+        }
+
+        public int UpdatePieceCount()
+        {
+            int pieceCount = 0;
+            if (!NeedDownloading)
+                return pieceCount;
+
+            if (TorrentManagerFile != null)
+            {
+                pieceCount += TorrentManagerFile.PieceCount;
+            }
+
+            LoopAllChildNodes(n =>
+            {
+                if (!IsFile || !NeedDownloading || n.TorrentManagerFile == null)
+                    return;
+
+                pieceCount += n.TorrentManagerFile.PieceCount;
+            });
+
+            return pieceCount;
+        }
+
+        public void UpdatePieces(ObservableCollection<TorrentPiece> list)
+        {
+            if (TorrentManagerFile != null)
+            {
+                for (int i = TorrentManagerFile.StartPieceIndex; i < TorrentManagerFile.EndPieceIndex + 1; i++)
+                {
+                    var file = list[i];
+
+                    file.State = NeedDownloading ? TorrentPieceStateType.ToBeDownloaded : TorrentPieceStateType.DontDownloaded;
+                    file.Name = string.IsNullOrEmpty(file.Name) ? Name : $"{file.Name}{Environment.NewLine}{Name}";
+                    file.UpdateMessageType();
+                }
+            }
+
+            LoopAllChildNodes((n, l) =>
+            {
+                if (n.TorrentManagerFile == null)
+                    return;
+
+                for (int i = n.TorrentManagerFile.StartPieceIndex; i < n.TorrentManagerFile.EndPieceIndex + 1; i++)
+                {
+                    var file = l[i];
+
+                    file.State = NeedDownloading ? TorrentPieceStateType.ToBeDownloaded : TorrentPieceStateType.DontDownloaded;
+                    file.Name = string.IsNullOrEmpty(file.Name) ? Name : $"{file.Name}{Environment.NewLine}{Name}";
+                    file.UpdateMessageType();
+                }
+            }, list);
         }
 
         /// <summary>
@@ -101,7 +157,7 @@ namespace ExtenderApp.Torrents.Models
             }
             else
             {
-                Priority = Priority.High;
+                Priority = Priority.Normal;
             }
         }
 
@@ -111,7 +167,7 @@ namespace ExtenderApp.Torrents.Models
         /// <param name="isUpdate">是否更新下载状态，默认为true</param>
         public void UpdateDownloadState(bool isUpdate = true)
         {
-            NeedDownloading = isUpdate ? DisplayNeedDownload : NeedDownloading;
+            displyNeedDownload = NeedDownloading = isUpdate ? DisplayNeedDownload : NeedDownloading;
 
             for (int i = 0; i < Count; i++)
             {
@@ -169,7 +225,7 @@ namespace ExtenderApp.Torrents.Models
                 return 0;
 
             if (IsFile)
-                return Progress >= 1.00 ? 1 : 0;
+                return Progress >= 100 ? 1 : 0;
 
             int count = 0;
             for (int i = 0; i < Count; i++)
@@ -180,16 +236,16 @@ namespace ExtenderApp.Torrents.Models
         }
 
         /// <summary>
-        /// 获取当前选择的文件或文件夹的完整长度（以字节为单位）。
+        /// 获取当前选择的文件或文件夹的下载完成的长度（以字节为单位）。
         /// </summary>
-        /// <returns>返回选择的文件或文件夹的完整长度（以字节为单位）。</returns>
+        /// <returns>返回选择的文件或文件夹的下载完成的长度（以字节为单位）。</returns>
         public long GetSelectedFileCompleteLength()
         {
             if (!DisplayNeedDownload)
                 return 0;
 
             if (IsFile)
-                return (long)Progress * Length;
+                return (long)Progress / 100 * Length;
 
             long length = 0;
             for (int i = 0; i < Count; i++)

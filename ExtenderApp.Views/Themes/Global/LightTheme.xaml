@@ -12,10 +12,13 @@
     <Color x:Key="GlobalSecondaryColor">#FF03DAC5</Color>
     <Color x:Key="GlobalBackgroundColor">#FFFFFFFF</Color>
     <Color x:Key="GlobalForegroundColor">#FF000000</Color>
+    <!-- 选中色：选中状态背景 -->
+    <Color x:Key="GlobalSelectedColor">#5E5A68</Color>
 
     <!-- 定义全局画刷 -->
     <SolidColorBrush x:Key="GlobalPrimaryBrush" Color="{StaticResource GlobalPrimaryColor}" />
     <SolidColorBrush x:Key="GlobalSecondaryBrush" Color="{StaticResource GlobalSecondaryColor}" />
     <SolidColorBrush x:Key="GlobalBackgroundBrush" Color="{StaticResource GlobalBackgroundColor}" />
     <SolidColorBrush x:Key="GlobalForegroundBrush" Color="{StaticResource GlobalForegroundColor}" />
+    <SolidColorBrush x:Key="GlobalSelectedBrush" Color="{StaticResource GlobalSelectedColor}" />
 </ResourceDictionary>

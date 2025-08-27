@@ -31,7 +31,11 @@ namespace ExtenderApp.Torrents.ViewModels
         {
             var torrentAddViewModel = oldViewInfo.ViewModel as TorrentAddViewModel;
             CurrentTorrentInfo = torrentAddViewModel?.CurrentTorrentInfo;
-            View.Window.Closed += (s, e) => MainWindowTopmost();
+            View.Window.Closed += (s, e) =>
+            {
+                CurrentTorrentInfo.UpdateDownloadState(false);
+                MainWindowTopmost();
+            };
         }
 
         private void SatrtDownload()
@@ -44,6 +48,7 @@ namespace ExtenderApp.Torrents.ViewModels
                     View.Window?.Close();
                     Model.DowloadTorrentCollection!.Add(CurrentTorrentInfo!);
                     Model.SelectedTorrent = CurrentTorrentInfo;
+                    SaveModel();
                 });
                 MainWindowTopmost();
             });

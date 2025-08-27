@@ -26,7 +26,7 @@ namespace ExtenderApp.Torrents.Converters
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
             int depth = (int)value;
-            int depthLength = 16;
+            int depthLength = 21;
 
             if (parameter is string depthLengthString)
             {
@@ -34,6 +34,8 @@ namespace ExtenderApp.Torrents.Converters
             }
 
             Thickness margin = new Thickness(depth * depthLength, 0, 0, 0);
+            if (depth == 0)
+                margin = new Thickness(5, 0, 0, 0);
             return margin;
         }
 

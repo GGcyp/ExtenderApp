@@ -75,6 +75,7 @@ namespace ExtenderApp.Common.IO.Binaries
             store.AddStructFormatter<double, DoubleFormatter>();
             store.AddStructFormatter<float, SingleFormatter>();
             store.AddStructFormatter<char, CharFormatter>();
+            store.AddStructFormatter<Nil, NilFormatter>();
 
             store.AddClassFormatter<string, StringFormatter>();
             store.AddClassFormatter<Version, VersionFoematter>();

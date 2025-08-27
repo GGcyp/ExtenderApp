@@ -86,6 +86,7 @@ namespace ExtenderApp.Torrents.ViewModels
                 //TorrentInfo info = torrents[i];
                 //Model.DowloadTorrentCollection.Add(info);
             }
+            SaveModel();
             View.Window?.Close();
         }
     }

@@ -7,12 +7,45 @@
                      xmlns:v="clr-namespace:ExtenderApp.Views;assembly=ExtenderApp.Views"
                      xmlns:vm="clr-namespace:ExtenderApp.MainViews.ViewModels"
                      xmlns:con="clr-namespace:ExtenderApp.Views.Converters;assembly=ExtenderApp.Views"
+                     xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
+                     xmlns:vb="clr-namespace:ExtenderApp.Views.Behaviors;assembly=ExtenderApp.Views"
+                     xmlns:b="clr-namespace:ExtenderApp.MainViews.Behaviors"
                      Width="1200"
                      Height="800"
                      mc:Ignorable="d"
-                     d:DataContext="{d:DesignInstance Type=vm:MianWindowViewModel}">
-    <Grid>
+                     d:DataContext="{d:DesignInstance Type=vm:MainWindowViewModel}">
+    <v:ExtenderAppWindow.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/ExtenderApp.Views;component/ViewStyles.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </v:ExtenderAppWindow.Resources>
+    <Grid Background="Black">
         <ContentControl Content="{Binding Model.CurrentMainView}"/>
+
+        <Border HorizontalAlignment="{Binding Model.MessageHorizontalAlignment,FallbackValue=Left}"
+                VerticalAlignment="{Binding Model.MessageVerticalAlignment,FallbackValue=Top}"
+                IsHitTestVisible="False"
+                CornerRadius="10"
+                BorderThickness="1"
+                Padding="5,5"
+                Background="Transparent"
+                Margin="{Binding Model.MessageMargin}">
+            <TextBlock Foreground="Transparent"
+                       Text="{Binding Model.Message}">
+                <i:Interaction.Behaviors>
+                    <vb:ForegroundBegavior x:Name="messageFontBehavior"
+                                           AnimationDuration="500"
+                                           ShowDuration="1000"
+                                           TargetColor="{DynamicResource GlobalForegroundColor}"/>
+                </i:Interaction.Behaviors>
+            </TextBlock>
+            <i:Interaction.Behaviors>
+                <b:ShowMessageBehavior x:Name="messageBehavior"
+                                       AnimationDuration="500"/>
+            </i:Interaction.Behaviors>
+        </Border>
 
         <ContentControl Panel.ZIndex="1"
                         Content="{Binding Model.CurrentCutsceneView}"

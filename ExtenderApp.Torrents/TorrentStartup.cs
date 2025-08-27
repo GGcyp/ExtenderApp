@@ -4,6 +4,7 @@ using ExtenderApp.Common;
 using ExtenderApp.Data;
 using ExtenderApp.Services;
 using ExtenderApp.Torrents.Models;
+using ExtenderApp.Torrents.Models.Formatters;
 using ExtenderApp.Torrents.ViewModels;
 using ExtenderApp.Torrents.Views;
 
@@ -39,6 +40,8 @@ namespace ExtenderApp.Torrents
         public override void ConfigureBinaryFormatterStore(IBinaryFormatterStore store)
         {
             store.AddLocalDataFormatter<TorrentModel, TorrentModelFormatter>();
+            store.AddVersionData<TorrentFileInfoNode, TorrentFileInfoNodeFormatter_1>();
+            store.AddVersionData<TorrentInfo, TorrentInfoFormatter_1>();
         }
     }
 }

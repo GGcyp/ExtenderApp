@@ -16,7 +16,7 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type local:TorrentTreeItem}">
-                    <Grid>
+                    <Grid Margin="0 5 0 0">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="*"/>
@@ -63,7 +63,7 @@
                                    VerticalAlignment="Center"
                                    HorizontalAlignment="Left"/>
                         <TextBlock Grid.Column="3"
-                                   Text="{Binding Progress,StringFormat=P1}"
+                                   Text="{Binding Progress,StringFormat={}{0:F2}%}"
                                    Foreground="{TemplateBinding Foreground}"
                                    VerticalAlignment="Center"
                                    HorizontalAlignment="Right"/>

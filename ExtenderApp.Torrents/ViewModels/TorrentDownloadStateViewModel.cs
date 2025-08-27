@@ -1,5 +1,7 @@
-﻿using System.Windows;
+﻿using System.Collections.ObjectModel;
+using System.Windows;
 using ExtenderApp.Abstract;
+using ExtenderApp.Torrents.Models;
 using ExtenderApp.Torrents.Views;
 using ExtenderApp.ViewModels;
 using ExtenderApp.Views.Commands;
@@ -11,7 +13,12 @@ namespace ExtenderApp.Torrents.ViewModels
         #region Command
 
         public NoValueCommand OpenSaveFolderCommand { get; set; }
+
         public NoValueCommand CopyMagnetLinkCommand { get; set; }
+
+        public NoValueCommand VerifyFileIntegrityCommand { get; set; }
+
+        public NoValueCommand AddPeerCommand { get; set; }
 
         #endregion
 
@@ -19,6 +26,8 @@ namespace ExtenderApp.Torrents.ViewModels
         {
             OpenSaveFolderCommand = new(OpenSaveFolder);
             CopyMagnetLinkCommand = new(CopyTextToClipboard);
+            VerifyFileIntegrityCommand = new(VerifyFileIntegrity);
+            AddPeerCommand = new(AddPeer);
         }
 
         /// <summary>
@@ -44,6 +53,20 @@ namespace ExtenderApp.Torrents.ViewModels
                 return;
 
             OpenFolder(Model.SelectedTorrent.SavePath);
+        }
+
+        private void VerifyFileIntegrity()
+        {
+            var info = Model.SelectedTorrent;
+            if (info == null)
+                return;
+
+            Task.Run(info.VerifyFileIntegrity);
+        }
+
+        private void AddPeer()
+        {
+
         }
     }
 }

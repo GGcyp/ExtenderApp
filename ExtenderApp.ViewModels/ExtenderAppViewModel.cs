@@ -6,6 +6,7 @@ using ExtenderApp.Data;
 using ExtenderApp.Common.Error;
 using ExtenderApp.Common;
 using AppHost.Extensions.DependencyInjection;
+using ExtenderApp.Models;
 
 namespace ExtenderApp.ViewModels
 {
@@ -108,7 +109,8 @@ namespace ExtenderApp.ViewModels
             {
                 modDetails.ArgumentNull(nameof(modDetails));
                 modDetails.StartupType.ArgumentObjectNull(nameof(modDetails));
-            }catch (ArgumentNullException ex)
+            }
+            catch (ArgumentNullException ex)
             {
                 Error("导航参数不能为空！", ex);
                 return null;
@@ -441,6 +443,20 @@ namespace ExtenderApp.ViewModels
         }
 
         #endregion
+
+        #region  Plugin
+
+        protected void LoadPlugin(PluginDetails plugin)
+        {
+            _serviceStore.PluginService.LoadPlugin(plugin);
+        }
+
+        protected async Task LoadPluginAsync(PluginDetails plugin)
+        {
+            await _serviceStore.PluginService.LoadPluginAsync(plugin);
+        }
+
+        #endregion
     }
 
     public abstract class ExtenderAppViewModel<TView> : ExtenderAppViewModel, IViewModel<TView> where TView : class, IView
@@ -519,7 +535,7 @@ namespace ExtenderApp.ViewModels
     /// <typeparam name="TModle">模型类型</typeparam>
     public abstract class ExtenderAppViewModel<TView, TModle> : ExtenderAppViewModel<TView>
         where TView : class, IView
-        where TModle : class
+        where TModle : ExtenderAppModel
     {
         /// <summary>
         /// 模型实例

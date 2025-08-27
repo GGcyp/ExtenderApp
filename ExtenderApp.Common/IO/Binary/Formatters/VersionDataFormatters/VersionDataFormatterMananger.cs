@@ -4,27 +4,6 @@ using ExtenderApp.Data;
 namespace ExtenderApp.Common.IO.Binaries.Formatters
 {
     /// <summary>
-    /// 定义版本化数据格式化器管理器的接口，用于管理多个版本化的数据格式化器。
-    /// </summary>
-    /// <remarks>
-    /// 该接口主要用于在需要处理多个不同版本数据格式化器的场景中，
-    /// 提供统一的格式化器添加和管理功能。
-    /// </remarks>
-    internal interface IVersionDataFormatterMananger
-    {
-        /// <summary>
-        /// 添加一个版本化数据格式化器到管理器中。
-        /// </summary>
-        /// <param name="formatter">
-        /// 要添加的版本化数据格式化器实例，必须实现 <see cref="IVersionDataFormatter"/> 接口。
-        /// </param>
-        /// <exception cref="System.ArgumentNullException">
-        /// 当传入的格式化器为 null 时抛出此异常。
-        /// </exception>
-        void AddFormatter(object formatter);
-    }
-
-    /// <summary>
     /// 版本化数据格式化器管理器，用于管理不同版本的 <see cref="VersionData{T}"/> 序列化/反序列化逻辑
     /// </summary>
     /// <typeparam name="T">需要版本化管理的数据类型</typeparam>
@@ -33,13 +12,15 @@ namespace ExtenderApp.Common.IO.Binaries.Formatters
     /// 2. 实现 <see cref="IVersionFormatterMananger"/> 接口，管理多个版本的格式化器
     /// 3. 内部维护格式化器列表，按版本号排序以确保使用正确的格式化器
     /// </remarks>
-    internal class VersionDataFormatterMananger<T> : ResolverFormatter<VersionData<T>>, IVersionDataFormatterMananger
+    internal class VersionDataFormatterMananger<T> : ResolverFormatter<VersionData<T>>, IVersionDataFormatterMananger<T>
     {
         private readonly IBinaryFormatter<Version> _version;
 
         public List<IVersionDataFormatter<T>> Formatters { get; }
 
         public override int DefaultLength => Formatters.Last().DefaultLength;
+
+        T IBinaryFormatter<T>.Default => throw new NotImplementedException();
 
         public VersionDataFormatterMananger(IBinaryFormatterResolver resolver) : base(resolver)
         {
@@ -55,6 +36,16 @@ namespace ExtenderApp.Common.IO.Binaries.Formatters
                 throw new InvalidOperationException($"未找到对应版本的格式化器，版本号：{version} ，类型名：{typeof(T).FullName}");
             }
             return formatter;
+        }
+
+        private IVersionDataFormatter<T> LastFormatter()
+        {
+            if (Formatters.Count <= 0)
+            {
+                throw new ArgumentOutOfRangeException("还未添加格式化器", typeof(T).FullName);
+            }
+
+            return Formatters[Formatters.Count - 1];
         }
 
         public void AddFormatter(object formatter)
@@ -109,11 +100,15 @@ namespace ExtenderApp.Common.IO.Binaries.Formatters
 
             if (value.IsEmpty)
             {
-                _version.Serialize(ref writer, null);
+                WriteNil(ref writer);
                 return;
             }
 
             var version = value.DataVersion;
+            if (version == null)
+            {
+                throw new ArgumentNullException($"格式化器版本不能为空 {typeof(T).FullName}");
+            }
             _version.Serialize(ref writer, version);
 
             var formatter = GetFormatter(version);
@@ -127,11 +122,84 @@ namespace ExtenderApp.Common.IO.Binaries.Formatters
                 return _version.DefaultLength;
             }
             var formatter = GetFormatter(value.DataVersion);
-            if (formatter == null)
+            return _version.GetLength(value.DataVersion) + formatter.GetLength(value.Data);
+        }
+
+        public void Serialize(ref ExtenderBinaryWriter writer, T value, Version version)
+        {
+            if (Formatters.Count == 0)
             {
-                throw new InvalidOperationException($"未找到对应版本的格式化器：{value.DataVersion} ：{typeof(T).Name}");
+                throw new InvalidOperationException($"没有可用的格式化器，请先添加格式化器。 {typeof(T).FullName}");
             }
-            return _version.DefaultLength + formatter.GetLength(value.Data);
+
+            if (version == null)
+            {
+                throw new ArgumentNullException($"格式化器版本不能为空 {typeof(T).FullName}");
+            }
+
+            if (EqualityComparer<T>.Default.Equals(value, default))
+            {
+                WriteNil(ref writer);
+                return;
+            }
+
+            IVersionDataFormatter<T> formatter = GetFormatter(version);
+            _version.Serialize(ref writer, version);
+            formatter.Serialize(ref writer, value);
+        }
+
+        public T Deserialize(ref ExtenderBinaryReader reader, Version version)
+        {
+            if (version == null)
+            {
+                throw new ArgumentNullException("格式化器版本不能为空", nameof(version));
+            }
+
+            var binaryVersion = _version.Deserialize(ref reader);
+            if (binaryVersion == null)
+            {
+                throw new InvalidOperationException($"读取到的版本信息为空，无法确定使用哪个格式化器进行反序列化。序列化类型为：{typeof(T).Name}");
+
+            }
+
+            if (binaryVersion != version)
+            {
+                throw new InvalidCastException($"文件版本和需要版本不匹配,文件版本：{binaryVersion},需要版本：{version},{typeof(T).FullName}");
+            }
+
+            var formatter = GetFormatter(version);
+            return formatter.Deserialize(ref reader);
+        }
+
+        public long GetLength(T value, Version version)
+        {
+            if (version == null)
+            {
+                throw new ArgumentNullException("输入格式化版本不能为空");
+            }
+            var formatter = GetFormatter(version);
+            return _version.GetLength(version) + formatter.GetLength(value);
+        }
+
+        public void Serialize(ref ExtenderBinaryWriter writer, T value)
+        {
+            IVersionDataFormatter<T> formatter = LastFormatter();
+
+            _version.Serialize(ref writer, formatter.FormatterVersion);
+            formatter.Serialize(ref writer, value);
+        }
+
+        T IBinaryFormatter<T>.Deserialize(ref ExtenderBinaryReader reader)
+        {
+            var version = _version.Deserialize(ref reader);
+            IVersionDataFormatter<T> formatter = version == null ? LastFormatter() : GetFormatter(version);
+            return formatter.Deserialize(ref reader);
+        }
+
+        public long GetLength(T value)
+        {
+            var formatter = LastFormatter();
+            return _version.GetLength(formatter.FormatterVersion) + formatter.GetLength(value);
         }
     }
 }
