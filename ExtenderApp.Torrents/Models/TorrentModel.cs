@@ -1,6 +1,5 @@
 ﻿using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Diagnostics;
 using System.IO;
 using System.Net;
 using ExtenderApp.Abstract;
@@ -13,7 +12,7 @@ namespace ExtenderApp.Torrents
 {
     public class TorrentModel : ExtenderAppModel
     {
-        public ClientEngine? Engine { get; set; }
+        public ClientEngine Engine { get; set; }
 
         public string? SaveDirectory { get; set; }
 
@@ -25,8 +24,6 @@ namespace ExtenderApp.Torrents
 
         public ObservableCollection<TorrentInfo>? DowloadTorrentCollection { get; set; }
         public ObservableCollection<TorrentInfo>? DowloadCompletedTorrentCollection { get; set; }
-
-        public event PropertyChangedEventHandler? PropertyChanged;
 
         public void CreateTorrentClientEngine()
         {
@@ -53,7 +50,22 @@ namespace ExtenderApp.Torrents
             info.UpdateDownloadState();
 
             TorrentManager? manager = info.Manager;
-            //TorrentSettingsBuilder builder = new();
+
+            if (info.Torrent == null)
+            {
+                if (!File.Exists(info.TorrentPath))
+                {
+                    if (!MagnetLink.TryParse(info.TorrentMagnetLink, out var magnetLink))
+                    {
+                        throw new FileNotFoundException($"{info.Name}下载任务发生错误，无法找到种子文件及磁力链接，无法继续下载");
+                    }
+                    info.MagnetLink = magnetLink;
+                }
+                else
+                {
+                    info.Torrent = await Torrent.LoadAsync(info.TorrentPath);
+                }
+            }
 
             if (manager != null)
             {
@@ -71,10 +83,11 @@ namespace ExtenderApp.Torrents
             }
             else
             {
-                throw new ArgumentNullException($"当前种子或磁力链接还未加载：{info.Torrent}");
+                throw new ArgumentNullException($"种子下载任务{info.Name}的种子或磁力链接不能为空");
             }
 
-            if (!string.IsNullOrEmpty(manager.ContainingDirectory) && !Directory.Exists(manager.ContainingDirectory))
+
+            if (!string.IsNullOrEmpty(manager!.ContainingDirectory) && !Directory.Exists(manager.ContainingDirectory))
             {
                 Directory.CreateDirectory(manager.ContainingDirectory);
             }

@@ -67,6 +67,16 @@ namespace ExtenderApp.Common.IO.Binaries.Formatters
             _nil.Serialize(ref writer, true);
         }
 
+        /// <summary>
+        /// 尝试从二进制读取器中读取一个空值。
+        /// </summary>
+        /// <param name="reader">二进制读取器。</param>
+        /// <returns>如果成功读取到一个空值，则返回true；否则返回false。</returns>
+        protected bool TryReadNil(ref ExtenderBinaryReader reader)
+        {
+            return _nil.Deserialize(ref reader).IsNil;
+        }
+
         public virtual long GetLength(T value)
         {
             return DefaultLength;

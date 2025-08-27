@@ -142,11 +142,13 @@ namespace ExtenderApp.Torrents.Models
 
         #region MonoTorrent
 
-        public MagnetLink? MagnetLink { get; private set; }
+        public MagnetLink? MagnetLink { get; set; }
 
-        public Torrent? Torrent { get; private set; }
+        public Torrent? Torrent { get; set; }
 
-        public TorrentManager? Manager { get; private set; }
+        public TorrentManager? Manager { get; set; }
+
+        public InfoHashes? InfoHashes => Torrent == null ? MagnetLink == null ? null : MagnetLink.InfoHashes : Torrent.InfoHashes;
 
         public TorrentState? State
         {
@@ -519,17 +521,6 @@ namespace ExtenderApp.Torrents.Models
         }
 
         /// <summary>
-        /// 检查当前状态是否满足特定条件。
-        /// </summary>
-        /// <returns>
-        /// 如果Manager为null或者isVerifyFileIntegrity为true，则返回true；否则返回false。
-        /// </returns>
-        private bool ChekeState()
-        {
-            return Manager != null || !isVerifyFileIntegrity;
-        }
-
-        /// <summary>
         /// 异步添加一个 Peer 节点到当前 Torrent 任务。
         /// </summary>
         /// <param name="peerUri">Peer 节点的 URI 地址（例如：tcp://192.168.1.100:54321）</param>
@@ -551,7 +542,7 @@ namespace ExtenderApp.Torrents.Models
 
         public void SimlpeUpdateInfo()
         {
-            if (!ChekeState())
+            if (Manager == null || isVerifyFileIntegrity)
                 return;
 
             Progress = Manager.Progress;
@@ -574,7 +565,7 @@ namespace ExtenderApp.Torrents.Models
 
         public void UpdateInfo()
         {
-            if (!ChekeState())
+            if (Manager == null || isVerifyFileIntegrity)
                 return;
 
             Seeds = Manager.Peers.Seeds;

@@ -93,6 +93,7 @@ namespace ExtenderApp.Common
                             }
 
                             _formmaterDict.Add(details.VersionDataBinaryType!, formatter!);
+                            resultType = details.BinaryType;
                         }
                         else
                         {

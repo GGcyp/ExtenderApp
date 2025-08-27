@@ -5,7 +5,7 @@ using ExtenderApp.Data;
 
 namespace ExtenderApp.Torrents.Models.Formatters
 {
-    internal class TorrentInfoFormatter_1 : ResolverFormatter<TorrentInfo>, IVersionDataFormatter<TorrentInfo>
+    internal class TorrentInfoFormatter_1 : VersionDataFormatter<TorrentInfo>, IVersionDataFormatter<TorrentInfo>
     {
         protected readonly IBinaryFormatter<bool> _bool;
         protected readonly IBinaryFormatter<int> _int;
@@ -18,7 +18,7 @@ namespace ExtenderApp.Torrents.Models.Formatters
         protected readonly IBinaryFormatter<TorrentPieceStateType> _pieceStateType;
         protected readonly IDispatcherService _dispatcherService;
 
-        public Version FormatterVersion { get; } = new Version(1, 0, 0, 0);
+        public override Version FormatterVersion { get; } = new Version(1, 0, 0, 0);
 
         public override int DefaultLength => 1;
 
@@ -39,7 +39,7 @@ namespace ExtenderApp.Torrents.Models.Formatters
         public override TorrentInfo Deserialize(ref ExtenderBinaryReader reader)
         {
             TorrentInfo info = new TorrentInfo(_dispatcherService);
-            if (!_nil.Deserialize(ref reader))
+            if (TryReadNil(ref reader))
                 return info;
 
             info.Name = _string.Deserialize(ref reader);
@@ -51,6 +51,7 @@ namespace ExtenderApp.Torrents.Models.Formatters
             info.SelectedFileLength = _long.Deserialize(ref reader);
             info.SelectedFileCompleteCount = _int.Deserialize(ref reader);
             info.SelectedFileCompleteLength = _long.Deserialize(ref reader);
+            info.TorrentPath = _string.Deserialize(ref reader);
             info.SavePath = _string.Deserialize(ref reader);
             info.TorrentMagnetLink = _string.Deserialize(ref reader);
             info.CreateTime = _dateTime.Deserialize(ref reader);
@@ -80,7 +81,7 @@ namespace ExtenderApp.Torrents.Models.Formatters
         {
             if (value == null)
             {
-                _nil.Serialize(ref writer, true);
+                WriteNil(ref writer);
                 return;
             }
 
@@ -93,6 +94,7 @@ namespace ExtenderApp.Torrents.Models.Formatters
             _long.Serialize(ref writer, value.SelectedFileLength);
             _int.Serialize(ref writer, value.SelectedFileCompleteCount);
             _long.Serialize(ref writer, value.SelectedFileCompleteLength);
+            _string.Serialize(ref writer, value.TorrentPath);
             _string.Serialize(ref writer, value.SavePath);
             _string.Serialize(ref writer, value.TorrentMagnetLink);
             _dateTime.Serialize(ref writer, value.CreateTime);

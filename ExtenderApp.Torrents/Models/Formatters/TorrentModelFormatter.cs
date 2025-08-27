@@ -22,7 +22,16 @@ namespace ExtenderApp.Torrents.Models
 
         public override TorrentModel Deserialize(ref ExtenderBinaryReader reader)
         {
-            return new TorrentModel();
+            TorrentModel model = new TorrentModel();
+            if (TryReadNil(ref reader))
+            {
+                return model;
+            }
+
+            model.SaveDirectory = _string.Deserialize(ref reader);
+            model.DowloadTorrentCollection = _torrentInfos.Deserialize(ref reader);
+            model.DowloadCompletedTorrentCollection = _torrentInfos.Deserialize(ref reader);
+            return model;
         }
 
         public override void Serialize(ref ExtenderBinaryWriter writer, TorrentModel value)
