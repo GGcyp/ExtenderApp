@@ -12,6 +12,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using ExtenderApp.Torrents.Models;
 using ExtenderApp.Torrents.ViewModels;
 using ExtenderApp.Views;
 
@@ -25,6 +26,17 @@ namespace ExtenderApp.Torrents.Views
         public TorrentDownloadListView(TorrentDownloadListViewModel viewModel) : base(viewModel)
         {
             InitializeComponent();
+            viewModel.Selecteds = downloadList.SelectedItems as IList<object>;
+        }
+
+        private void ContextMenu_Opened(object sender, RoutedEventArgs e)
+        {
+            ViewModel<TorrentDownloadListViewModel>()?.UpdateSeletedState();
+        }
+
+        private void downloadList_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            downloadList.SelectedItem = null;
         }
     }
 }

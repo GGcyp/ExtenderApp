@@ -45,7 +45,12 @@ namespace ExtenderApp.Common.IO.Binaries.Formatters
 
         public override long GetLength(Version value)
         {
-            return _string.GetLength(value == null ? string.Empty : value.ToString());
+            if (value == null)
+            {
+                return 1;
+            }
+
+            return _string.GetLength(value.ToString());
         }
     }
 }

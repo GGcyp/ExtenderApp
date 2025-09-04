@@ -1,6 +1,7 @@
 ﻿using ExtenderApp.Abstract;
 using ExtenderApp.Data;
 using ExtenderApp.MainViews.Models;
+using ExtenderApp.MainViews.Views;
 using ExtenderApp.ViewModels;
 using ExtenderApp.Views.Commands;
 using ExtenderApp.Views.CutsceneViews;
@@ -18,6 +19,7 @@ namespace ExtenderApp.MainViews.ViewModels
 
         public void OpenPlugin(PluginDetails details)
         {
+            Model.CurrentPluginDetails = details;
             var cutscene = NavigateTo<CutsceneView>();
             Model.CurrentCutsceneView = cutscene;
             cutscene.Start();
@@ -26,7 +28,7 @@ namespace ExtenderApp.MainViews.ViewModels
                 await LoadPluginAsync(details);
                 _serviceStore.DispatcherService.Invoke(() =>
                 {
-                    Model.CurrentMainView = NavigateTo<MainView_Run>();
+                    Model.CurrentMainView = NavigateTo<MainView_RunView>();
                     Model.CurrentView = NavigateTo(details);
                     cutscene.End(() =>
                     {

@@ -1,36 +1,132 @@
-﻿using ExtenderApp.Abstract;
+﻿using System.Windows.Controls;
+using AppHost.Extensions.DependencyInjection;
+using ExtenderApp.Abstract;
 using ExtenderApp.MainViews.Models;
+using ExtenderApp.MainViews.Views;
 using ExtenderApp.ViewModels;
 using ExtenderApp.Views.Commands;
 using ExtenderApp.Views.CutsceneViews;
 
 namespace ExtenderApp.MainViews.ViewModels
 {
-    public class MainView_RunViewModel : ExtenderAppViewModel<MainView_Run, MainModel>
+    /// <summary>
+    /// 主运行视图的视图模型，负责处理与主运行视图相关的逻辑和数据绑定。
+    /// </summary>
+    public class MainView_RunViewModel : ExtenderAppViewModel<MainView_RunView, MainModel>
     {
+        /// <summary>
+        /// 依赖注入的 IScopeExecutor 实例，用于执行与插件作用域相关的操作。
+        /// </summary>
+        private readonly IScopeExecutor _scopeExecutor;
+
+        private IMainViewSettings? currentMainViewSettings;
+
+        /// <summary>
+        /// 命令属性，用于绑定到视图中的按钮，当按钮被点击时，将执行 ToMainView 方法。
+        /// </summary>
         public NoValueCommand ToMainViewCommand { get; set; }
 
-        public MainView_RunViewModel(MainModel model, IServiceStore serviceStore) : base(model, serviceStore)
+        /// <summary>
+        /// 打开设置视图的命令属性。
+        /// </summary>
+        public NoValueCommand OpenSettingsWindowCommand { get; set; }
+
+        /// <summary>
+        /// 构造函数，初始化视图模型并设置依赖注入的实例。
+        /// </summary>
+        /// <param name="model">MainModel 实例，提供视图模型所需的数据。</param>
+        /// <param name="scope">IScopeExecutor 实例，用于执行与插件作用域相关的操作。</param>
+        /// <param name="serviceStore">IServiceStore 实例，提供应用程序所需的服务。</param>
+        public MainView_RunViewModel(MainModel model, IScopeExecutor scope, IServiceStore serviceStore) : base(model, serviceStore)
         {
-            ToMainViewCommand = new(ToMainView);
+            ToMainViewCommand = new NoValueCommand(ToMainView);
+            OpenSettingsWindowCommand = new NoValueCommand(OpenSettingsWindow);
+            _scopeExecutor = scope;
+
+            var details = Model.CurrentPluginDetails;
+            if (details != null)
+            {
+                currentMainViewSettings = _scopeExecutor.GetServiceProvider(details.PluginScope)?.GetService<IMainViewSettings>();
+            }
         }
 
+        /// <summary>
+        /// 打开设置窗口的方法，显示当前插件的设置视图。
+        /// </summary>
+        private void OpenSettingsWindow()
+        {
+            if (currentMainViewSettings == null)
+                return;
+
+            var settingWindow = NavigateToWindow<SettingsView>()!;
+
+            var view = settingWindow.CurrentView as SettingsView;
+            var settingsViewModel = view.ViewModel<SettingsViewModel>();
+            settingsViewModel.CurrentPluginSettingsView = currentMainViewSettings.SettingsView;
+            settingsViewModel.SetMainViewSettings(currentMainViewSettings);
+            currentMainViewSettings.SettingNavigationConfig(view.navigationBar.Children);
+            settingsViewModel.InitMainViewSettings();
+
+            settingWindow.Title = "下载设置";
+            settingWindow.Height = 400;
+            settingWindow.Width = 600;
+            settingWindow.WindowStartupLocation = 2;
+            settingWindow.Owner = CurrrentMainWindow;
+            settingWindow.Topmost = true;
+
+            settingWindow.ShowDialog();
+        }
+
+        /// <summary>
+        /// 将视图注入到视图模型中，并设置按钮集合。
+        /// </summary>
+        /// <param name="view">MainView_RunView 实例，提供视图模型所需的视图。</param>
+        public override void InjectView(MainView_RunView view)
+        {
+            base.InjectView(view);
+            SetCollection(view.buttonStackPanel.Children);
+        }
+
+        /// <summary>
+        /// 设置按钮集合，包括一个返回主菜单的按钮，并根据插件详细信息设置顶部视图设置。
+        /// </summary>
+        /// <param name="collection">UIElementCollection 实例，表示要添加按钮的集合。</param>
+        public void SetCollection(UIElementCollection collection)
+        {
+            if (currentMainViewSettings == null)
+                return;
+
+            currentMainViewSettings.TopSetting(collection);
+        }
+
+        /// <summary>
+        /// 导航到主视图的方法，同时处理过场动画的启动和结束。
+        /// </summary>
         private void ToMainView()
         {
+            // 清除当前插件详细信息
+            Model.CurrentPluginDetails = null;
+
+            // 导航到 CutsceneView 并设置为当前过场动画视图
             var cutscene = NavigateTo<CutsceneView>();
             Model.CurrentCutsceneView = cutscene;
             cutscene.Start();
+
+            // 在后台线程中处理视图更新，以确保 UI 线程不会被阻塞
             Task.Run(async () =>
             {
+                // 使用 DispatcherService 在 UI 线程上执行操作
                 _serviceStore.DispatcherService.Invoke(() =>
                 {
-                    Model.CurrentMainView = NavigateTo<MainView>();
+                    // 导航到 MainView 并设置为当前主视图
+                    Model.CurrentMainView = NavigateTo<MainView>(Model.CurrentView);
+
+                    // 当过场动画结束时，将当前过场动画视图设置为 null
                     cutscene.End(() =>
                     {
                         Model.CurrentCutsceneView = null;
                     });
                 });
-                await Task.Delay(300);
             });
         }
     }

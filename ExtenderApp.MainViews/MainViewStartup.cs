@@ -4,6 +4,7 @@ using ExtenderApp.Abstract;
 using ExtenderApp.MainViews.ViewModels;
 using ExtenderApp.MainViews.Models;
 using ExtenderApp.MainViews.Windows;
+using ExtenderApp.MainViews.Views;
 
 namespace ExtenderApp.MainViews
 {
@@ -25,9 +26,12 @@ namespace ExtenderApp.MainViews
             services.AddTransient<IMainView, MainView>();
             services.AddTransient<MainView>();
             services.AddTransient<MainViewModel>();
-            services.AddTransient<MainView_Run>();
+            services.AddTransient<MainView_RunView>();
             services.AddTransient<MainView_RunViewModel>();
             services.AddSingleton<MainModel>();
+
+            services.AddTransient<SettingsView>();
+            services.AddTransient<SettingsViewModel>();
         }
     }
 }

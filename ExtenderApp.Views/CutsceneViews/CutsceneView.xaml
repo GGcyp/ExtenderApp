@@ -15,18 +15,10 @@
 
 
     <!-- 动画定义 -->
-    <local:ExtenderAppView.Resources>
-        <ResourceDictionary>
-            <ResourceDictionary.MergedDictionaries>
-                <ResourceDictionary Source="/ExtenderApp.Views;component/ViewStyles.xaml"/>
-            </ResourceDictionary.MergedDictionaries>
-        </ResourceDictionary>
-    </local:ExtenderAppView.Resources>
-
     <Grid Background="Transparent">
         <i:Interaction.Behaviors>
             <b:BackgroundBehavior x:Name="backgroundBehavior"
-                                  TargetColor="{StaticResource GlobalBackgroundColor}"
+                                  TargetColor="{DynamicResource GlobalBackgroundColor}"
                                   AnimationDuration="300"/>
         </i:Interaction.Behaviors>
         <!-- 加载文本 -->
@@ -37,7 +29,7 @@
                    Foreground="Transparent">
             <i:Interaction.Behaviors>
                 <b:ForegroundBegavior x:Name="foregroundBehavior"
-                                      TargetColor="{StaticResource GlobalForegroundColor}"
+                                      TargetColor="{DynamicResource GlobalForegroundColor}"
                                       AnimationDuration="300"/>
             </i:Interaction.Behaviors>
         </TextBlock>

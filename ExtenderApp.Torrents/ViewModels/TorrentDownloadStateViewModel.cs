@@ -16,8 +16,6 @@ namespace ExtenderApp.Torrents.ViewModels
 
         public NoValueCommand CopyMagnetLinkCommand { get; set; }
 
-        public NoValueCommand VerifyFileIntegrityCommand { get; set; }
-
         public NoValueCommand AddPeerCommand { get; set; }
 
         #endregion
@@ -26,7 +24,6 @@ namespace ExtenderApp.Torrents.ViewModels
         {
             OpenSaveFolderCommand = new(OpenSaveFolder);
             CopyMagnetLinkCommand = new(CopyTextToClipboard);
-            VerifyFileIntegrityCommand = new(VerifyFileIntegrity);
             AddPeerCommand = new(AddPeer);
         }
 
@@ -37,14 +34,11 @@ namespace ExtenderApp.Torrents.ViewModels
         {
             var magnetLink = Model.SelectedTorrent?.TorrentMagnetLink;
             // 检查文本是否有效
-            if (string.IsNullOrEmpty(Model.SelectedTorrent?.TorrentMagnetLink))
+            if (string.IsNullOrEmpty(magnetLink))
                 return;
 
-            DispatcherInvoke(() =>
-            {
-                // 将文本复制到剪贴板
-                Clipboard.SetText(Model.SelectedTorrent?.TorrentMagnetLink);
-            });
+            // 将文本复制到剪贴板
+            ClipboardSetText(magnetLink);
         }
 
         private void OpenSaveFolder()
@@ -53,15 +47,6 @@ namespace ExtenderApp.Torrents.ViewModels
                 return;
 
             OpenFolder(Model.SelectedTorrent.SavePath);
-        }
-
-        private void VerifyFileIntegrity()
-        {
-            var info = Model.SelectedTorrent;
-            if (info == null)
-                return;
-
-            Task.Run(info.VerifyFileIntegrity);
         }
 
         private void AddPeer()

@@ -1,4 +1,5 @@
 ﻿using System.Buffers;
+using System.Net;
 using System.Reflection;
 using AppHost.Extensions.DependencyInjection;
 using ExtenderApp.Abstract;
@@ -7,6 +8,7 @@ using ExtenderApp.Common.IO.Binaries.Formatters;
 using ExtenderApp.Common.IO.Binaries.Formatters.Collection;
 using ExtenderApp.Common.IO.Binaries.Formatters.Struct;
 using ExtenderApp.Common.IO.Binary.Formatters;
+using ExtenderApp.Common.IO.Binary.Formatters.Class;
 using ExtenderApp.Common.IO.Binary.Formatters.Struct;
 using ExtenderApp.Common.IO.Local;
 using ExtenderApp.Data;
@@ -61,26 +63,28 @@ namespace ExtenderApp.Common.IO.Binaries
         {
             var store = new BinaryFormatterStore();
 
+            store.AddStructFormatter<Nil, NilFormatter>();
+            store.AddStructFormatter<Guid, GuidFormatter>();
+            store.AddStructFormatter<int, Int32Formatter>();
+            store.AddStructFormatter<char, CharFormatter>();
+            store.AddStructFormatter<long, Int64Formatter>();
+            store.AddStructFormatter<short, Int16Formatter>();
+            store.AddStructFormatter<sbyte, SByteFormatter>();
+            store.AddStructFormatter<uint, UInt32Formatter>();
+            store.AddStructFormatter<bool, BooleanFormatter>();
+            store.AddStructFormatter<ulong, UInt64Formatter>();
+            store.AddStructFormatter<float, SingleFormatter>();
+            store.AddStructFormatter<ushort, UInt16Formatter>();
+            store.AddStructFormatter<double, DoubleFormatter>();
             store.AddStructFormatter<DateTime, DateTimeFormatter>();
             store.AddStructFormatter<TimeSpan, TimeSpanFormatter>();
-            store.AddStructFormatter<Guid, GuidFormatter>();
-            store.AddStructFormatter<short, Int16Formatter>();
-            store.AddStructFormatter<int, Int32Formatter>();
-            store.AddStructFormatter<long, Int64Formatter>();
-            store.AddStructFormatter<ushort, UInt16Formatter>();
-            store.AddStructFormatter<uint, UInt32Formatter>();
-            store.AddStructFormatter<ulong, UInt64Formatter>();
-            store.AddStructFormatter<bool, BooleanFormatter>();
-            store.AddStructFormatter<sbyte, SByteFormatter>();
-            store.AddStructFormatter<double, DoubleFormatter>();
-            store.AddStructFormatter<float, SingleFormatter>();
-            store.AddStructFormatter<char, CharFormatter>();
-            store.AddStructFormatter<Nil, NilFormatter>();
 
-            store.AddClassFormatter<string, StringFormatter>();
-            store.AddClassFormatter<Version, VersionFoematter>();
             store.AddClassFormatter<Uri, UriFormatter>();
             store.AddClassFormatter<Type, TypeFormatter>();
+            store.AddClassFormatter<string, StringFormatter>();
+            store.AddClassFormatter<Version, VersionFoematter>();
+            store.AddClassFormatter<IPAddress, IPAddressFormatter>();
+            store.AddClassFormatter<IPEndPoint, IPEndPoinFormatter>();
             store.AddClassFormatter<BitFieldData, BitFieldDataFormatter>();
 
             store.AddStructFormatter<LocalFileInfo, LocalFileInfoFormatter>();

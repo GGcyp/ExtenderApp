@@ -39,7 +39,7 @@ namespace AppHost.Extensions.DependencyInjection
                 if (parameter is null)
                 {
                     //无默认值的,无构造参数
-                    if (!parameterInfo.HasDefaultValue) 
+                    if (!parameterInfo.HasDefaultValue)
                         return null;
 
                     parameter = parameterInfo.DefaultValue;

@@ -117,8 +117,9 @@ namespace ExtenderApp.Services
 
                 if (!_localDataDict.TryGetValue(dataName, out var info))
                 {
-                    info = new LocalDataInfo(_pathService.DataPath, dataName, data);
-                    _localDataDict.Add(dataName, info);
+                    //info = new LocalDataInfo(_pathService.DataPath, dataName, data);
+                    //_localDataDict.Add(dataName, info);
+                    return false;
                 }
                 else
                 {

@@ -4,9 +4,7 @@ using AppHost.Builder.Extensions;
 using AppHost.Extensions.DependencyInjection;
 using ExtenderApp.Abstract;
 using ExtenderApp.Data;
-using ExtenderApp.Services;
 using ExtenderApp.Common.Error;
-using ExtenderApp.Common;
 
 namespace ExtenderApp.Services
 {
@@ -110,7 +108,7 @@ namespace ExtenderApp.Services
 
                 //加载模组主程序集
                 PluginDetails details = new PluginDetails(info);
-                details.Path = dir;
+                details.PluginDirectoryPath = dir;
 
                 _pluginStore.Add(details);
             }
@@ -129,16 +127,16 @@ namespace ExtenderApp.Services
             if (details.LoadContext is not null)
                 return;
 
-            if (string.IsNullOrEmpty(details.Path) || string.IsNullOrEmpty(details.StartupDll))
+            if (string.IsNullOrEmpty(details.PluginDirectoryPath) || string.IsNullOrEmpty(details.StartupDll))
                 throw new ArgumentNullException("Mod详情中的路径或启动DLL不能为空");
 
             var loadContext = new AssemblyLoadContext(details.Title, true);
             details.LoadContext = loadContext;
-            string dllPath = Path.Combine(details.Path, details.StartupDll);
+            string dllPath = Path.Combine(details.PluginDirectoryPath, details.StartupDll);
 
             //添加模组依赖库
             string packName = string.IsNullOrEmpty(details.PackPath) ? _pathProvider.PackFolderName : details.PackPath;
-            string packPath = Path.Combine(details.Path, packName);
+            string packPath = Path.Combine(details.PluginDirectoryPath, packName);
             if (Directory.Exists(packPath))
             {
                 foreach (var dir in Directory.GetFiles(packPath))
@@ -182,16 +180,16 @@ namespace ExtenderApp.Services
             if (details.LoadContext is not null)
                 return;
 
-            if (string.IsNullOrEmpty(details.Path) || string.IsNullOrEmpty(details.StartupDll))
+            if (string.IsNullOrEmpty(details.PluginDirectoryPath) || string.IsNullOrEmpty(details.StartupDll))
                 throw new ArgumentNullException("Mod详情中的路径或启动DLL不能为空");
 
             var loadContext = new AssemblyLoadContext(details.Title, true);
             details.LoadContext = loadContext;
-            string dllPath = Path.Combine(details.Path, details.StartupDll);
+            string dllPath = Path.Combine(details.PluginDirectoryPath, details.StartupDll);
 
             //添加模组依赖库
             string packName = string.IsNullOrEmpty(details.PackPath) ? _pathProvider.PackFolderName : details.PackPath;
-            string packPath = Path.Combine(details.Path, packName);
+            string packPath = Path.Combine(details.PluginDirectoryPath, packName);
             if (Directory.Exists(packPath))
             {
                 foreach (var dir in Directory.GetFiles(packPath))
@@ -254,7 +252,7 @@ namespace ExtenderApp.Services
             /// <param name="services">服务集合</param>
             public void AddServiceToPluginScope(ScopeOptions options, IServiceCollection services)
             {
-                Details.ModScope = options.ScopeName;
+                Details.PluginScope = options.ScopeName;
 
                 services.AddSingleton<IServiceStore, PluginServiceStore>();
                 services.AddSingleton(Details);

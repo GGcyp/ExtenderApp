@@ -16,14 +16,14 @@ using ExtenderApp.Abstract;
 using ExtenderApp.MainViews.ViewModels;
 using ExtenderApp.Views;
 
-namespace ExtenderApp.MainViews
+namespace ExtenderApp.MainViews.Views
 {
     /// <summary>
-    /// MainView_Run.xaml 的交互逻辑
+    /// MainView_RunView.xaml 的交互逻辑
     /// </summary>
-    public partial class MainView_Run : ExtenderAppView, IMainView
+    public partial class MainView_RunView : ExtenderAppView, IMainView
     {
-        public MainView_Run(MainView_RunViewModel viewModel) : base(viewModel)
+        public MainView_RunView(MainView_RunViewModel viewModel) : base(viewModel)
         {
             InitializeComponent();
         }

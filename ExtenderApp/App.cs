@@ -9,6 +9,7 @@ namespace ExtenderApp
             //this.Resources.MergedDictionaries.Add(new() { Source = new("pack://application:,,,/HandyControl;component/Themes/SkinDefault.xaml") });
             //this.Resources.MergedDictionaries.Add(new() { Source = new("pack://application:,,,/HandyControl;component/Themes/Theme.xaml") });
             //this.Resources.MergedDictionaries.Add(new() { Source = new("pack://application:,,,/MainApp.Mods.PPR;PPRDictionary.xaml") });
+            Resources.MergedDictionaries.Add(new() { Source = new("pack://application:,,,/ExtenderApp.Views;component/Themes/Global/DarkTheme.xaml") });
         }
     }
 }

@@ -3,6 +3,9 @@ using System.ComponentModel;
 using ExtenderApp.Data;
 using MonoTorrent;
 using MonoTorrent.Client;
+using ExtenderApp.Common;
+using ExtenderApp.Common.Hash;
+using ExtenderApp.Common.DataBuffers;
 
 namespace ExtenderApp.Torrents.Models
 {
@@ -63,6 +66,11 @@ namespace ExtenderApp.Torrents.Models
         public Priority Priority { get; set; }
 
         /// <summary>
+        /// 名称简单哈希值
+        /// </summary>
+        private int nameHashCode;
+
+        /// <summary>
         /// 设置所有子节点是否需要下载
         /// </summary>
         /// <param name="isNeedDownload">是否需要下载</param>
@@ -114,17 +122,36 @@ namespace ExtenderApp.Torrents.Models
             return pieceCount;
         }
 
-        public void UpdatePieces(ObservableCollection<TorrentPiece> list)
+        public void UpdatePieces(IList<TorrentPiece> list)
         {
             if (TorrentManagerFile != null)
             {
+                if (nameHashCode == 0)
+                {
+                    nameHashCode = Name.ComputeHash_FNV_1a();
+                    if (nameHashCode == 0)
+                        Name = string.Empty;
+                }
+
                 for (int i = TorrentManagerFile.StartPieceIndex; i < TorrentManagerFile.EndPieceIndex + 1; i++)
                 {
-                    var file = list[i];
+                    TorrentPiece? piece = null;
+                    if (list.Count <= i)
+                    {
+                        piece = new TorrentPiece();
+                        list.Add(piece);
+                    }
+                    else
+                    {
+                        piece = list[i];
+                    }
 
-                    file.State = NeedDownloading ? TorrentPieceStateType.ToBeDownloaded : TorrentPieceStateType.DontDownloaded;
-                    file.Name = string.IsNullOrEmpty(file.Name) ? Name : $"{file.Name}{Environment.NewLine}{Name}";
-                    file.UpdateMessageType();
+                    piece.State = piece.State == TorrentPieceStateType.DontDownloaded ? NeedDownloading ? TorrentPieceStateType.ToBeDownloaded : TorrentPieceStateType.DontDownloaded : piece.State;
+                    DataBuffer<int, string> data = DataBuffer<int, string>.GetDataBuffer();
+                    data.Item1 = nameHashCode;
+                    data.Item2 = Name;
+                    piece.PieceNames.Add(data);
+                    piece.UpdateMessageType();
                 }
             }
 
@@ -133,13 +160,31 @@ namespace ExtenderApp.Torrents.Models
                 if (n.TorrentManagerFile == null)
                     return;
 
+                if (n.nameHashCode == 0)
+                {
+                    n.nameHashCode = n.Name.ComputeHash_FNV_1a();
+                    if (nameHashCode == 0)
+                        n.Name = string.Empty;
+                }
+
                 for (int i = n.TorrentManagerFile.StartPieceIndex; i < n.TorrentManagerFile.EndPieceIndex + 1; i++)
                 {
-                    var file = l[i];
-
-                    file.State = NeedDownloading ? TorrentPieceStateType.ToBeDownloaded : TorrentPieceStateType.DontDownloaded;
-                    file.Name = string.IsNullOrEmpty(file.Name) ? Name : $"{file.Name}{Environment.NewLine}{Name}";
-                    file.UpdateMessageType();
+                    TorrentPiece? piece = null;
+                    if (list.Count <= i)
+                    {
+                        piece = new TorrentPiece();
+                        list.Add(piece);
+                    }
+                    else
+                    {
+                        piece = list[i];
+                    }
+                    piece.State = piece.State == TorrentPieceStateType.DontDownloaded ? NeedDownloading ? TorrentPieceStateType.ToBeDownloaded : TorrentPieceStateType.DontDownloaded : piece.State;
+                    DataBuffer<int, string> data = DataBuffer<int, string>.GetDataBuffer();
+                    data.Item1 = nameHashCode;
+                    data.Item2 = Name;
+                    piece.PieceNames.Add(data);
+                    piece.UpdateMessageType();
                 }
             }, list);
         }

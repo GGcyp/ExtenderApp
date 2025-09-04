@@ -1,4 +1,5 @@
-﻿using System.Windows;
+﻿using System.IO;
+using System.Windows;
 using ExtenderApp.Abstract;
 using ExtenderApp.Data;
 using ExtenderApp.Torrents.Models;
@@ -7,7 +8,6 @@ using ExtenderApp.ViewModels;
 using ExtenderApp.Views.Commands;
 using Microsoft.Win32;
 using MonoTorrent;
-using MonoTorrent.Client;
 
 namespace ExtenderApp.Torrents.ViewModels
 {
@@ -80,14 +80,17 @@ namespace ExtenderApp.Torrents.ViewModels
 
         private void StartTorrent()
         {
-            var list = torrentsLazy.Value;
-            for (int i = 0; i < list.Count; i++)
+            if (!MagnetLink.TryParse(MagnetLinksSting, out var magnetLink))
             {
-                //TorrentInfo info = torrents[i];
-                //Model.DowloadTorrentCollection.Add(info);
+                throw new FileNotFoundException($"下载任务发生错误，无法解析磁力链接，无法继续下载");
             }
-            SaveModel();
-            View.Window?.Close();
+
+            Task.Run(async () =>
+            {
+                var manager = await Model.Engine.AddAsync(magnetLink, Model.SaveDirectory);
+                await manager.WaitForMetadataAsync(Model.CancellationTokenSource.Token);
+                View.Window?.Close();
+            });
         }
     }
 }

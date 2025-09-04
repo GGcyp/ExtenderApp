@@ -20,6 +20,7 @@
 		<PackageReference Include="MonoTorrent" Version="3.0.2" />
 		<PackageReference Include="PropertyChanged.Fody" Version="4.1.0" />
 		<PackageReference Include="ReusableTasks" Version="4.0.0" />
+		<PackageReference Include="VirtualizingWrapPanel" Version="2.3.1" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -33,6 +34,9 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<None Update="DefaultTrackerList.txt">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
 		<None Update="init.json">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>
@@ -45,15 +49,21 @@
 		</ItemGroup>
 		<!-- 收集要复制的 JSON 文件 -->
 		<ItemGroup>
-			<JsonFiles Include="$(TargetDir)\init.json" />
+			<JsonFile Include="$(TargetDir)\init.json" />
 		</ItemGroup>
+		<!--收集要复制的Tarcker文件-->
+		<ItemGroup>
+			<TrackerFile Include="$(TargetDir)\DefaultTrackerList.txt" />
+		</ItemGroup>
+		<!--目标文件夹-->
 		<ItemGroup>
 			<TargetFolder Include="E:\WPF_Project\ExtenderApp\ExtenderApp\bin\Debug\net8.0-windows\mods" />
 		</ItemGroup>
 		<!-- 创建目标文件夹（如果不存在）并复制动态库文件和init.json -->
 		<MakeDir Directories="%(TargetFolder.Identity)\$(ProjectName)" Condition="!Exists('%(TargetFolder.Identity)\$(ProjectName)')" />
 		<Copy SourceFiles="@(DllFiles)" DestinationFolder="%(TargetFolder.Identity)\$(ProjectName)" SkipUnchangedFiles="true" />
-		<Copy SourceFiles="@(JsonFiles)" DestinationFolder="%(TargetFolder.Identity)\$(ProjectName)" SkipUnchangedFiles="true" />
+		<Copy SourceFiles="@(JsonFile)" DestinationFolder="%(TargetFolder.Identity)\$(ProjectName)" SkipUnchangedFiles="true" />
+		<Copy SourceFiles="@(TrackerFile)" DestinationFolder="%(TargetFolder.Identity)\$(ProjectName)" SkipUnchangedFiles="true" />
 
 		<MakeDir Directories="%(TargetFolder.Identity)\$(ProjectName)" Condition="!Exists('%(TargetFolder.Identity)\$(ProjectName)\pack')" />
 

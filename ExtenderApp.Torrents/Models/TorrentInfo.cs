@@ -1,8 +1,8 @@
 ﻿using System.Collections.ObjectModel;
-using System.ComponentModel;
-using System.Xml.Linq;
+using System.IO;
 using ExtenderApp.Abstract;
 using ExtenderApp.Data;
+using ExtenderApp.Models;
 using MonoTorrent;
 using MonoTorrent.Client;
 using MonoTorrent.Trackers;
@@ -12,7 +12,7 @@ namespace ExtenderApp.Torrents.Models
     /// <summary>
     /// 表示一个Torrent的信息
     /// </summary>
-    public class TorrentInfo : INotifyPropertyChanged
+    public class TorrentInfo : DataModel
     {
         private readonly IDispatcherService _dispatcherService;
 
@@ -51,6 +51,11 @@ namespace ExtenderApp.Torrents.Models
         public double Progress { get; set; }
 
         /// <summary>
+        /// 是否完成下载
+        /// </summary>
+        public bool IsComplete => Progress >= 100;
+
+        /// <summary>
         /// 下载速度
         /// </summary>
         public long DownloadSpeed { get; set; }
@@ -83,12 +88,12 @@ namespace ExtenderApp.Torrents.Models
         /// <summary>
         /// 种子文件的保存路径
         /// </summary>
-        public string? TorrentPath { get; set; }
+        public string TorrentPath { get; set; }
 
         /// <summary>
         /// 下载保存路径
         /// </summary>
-        public string? SavePath { get; set; }
+        public string SavePath { get; set; }
 
         /// <summary>
         /// 磁力链接
@@ -127,6 +132,24 @@ namespace ExtenderApp.Torrents.Models
         /// 剩余下载时间
         /// </summary>
         public TimeSpan RemainingTime { get; set; }
+
+        /// <summary>
+        /// 获取或设置V1哈希值，用于标识 torrent 的版本1信息。
+        /// </summary>
+        public HashValue V1 { get; set; }
+
+        /// <summary>
+        /// 获取或设置V2哈希值，用于标识 torrent 的版本2信息。
+        /// </summary>
+        public HashValue V2 { get; set; }
+
+        /// <summary>
+        /// 获取当前 Torrent 的有效哈希值，优先返回 V1（如果存在），否则返回 V2。
+        /// </summary>
+        /// <remarks>
+        /// 用于兼容 Hybrid Torrent（同时支持 V1 和 V2 哈希）的场景。
+        /// </remarks>
+        public HashValue V1orV2 => V1.IsEmpty ? V2 : V1;
 
         #endregion
 
@@ -200,7 +223,7 @@ namespace ExtenderApp.Torrents.Models
         /// <summary>
         /// 获取或设置表示种子文件位域（Bitfield）的可观察集合。
         /// </summary>
-        public ObservableCollection<TorrentPiece> Bitfield { get; set; }
+        public List<TorrentPiece> Pieces { get; set; }
 
         public int TrueCount { get; set; }
 
@@ -208,9 +231,7 @@ namespace ExtenderApp.Torrents.Models
 
         #endregion
 
-        public event PropertyChangedEventHandler? PropertyChanged;
-
-        public TorrentInfo(Torrent torrent, IDispatcherService service) : this(service)
+        public TorrentInfo(Torrent torrent, string torrentPath, string savePath, IDispatcherService service) : this(service)
         {
             Torrent = torrent;
             Name = torrent.Name;
@@ -224,16 +245,16 @@ namespace ExtenderApp.Torrents.Models
             CreatedBy = !string.IsNullOrEmpty(torrent.CreatedBy) ? torrent.CreatedBy : "未找到";
             Comment = torrent.Comment;
             Encoding = !string.IsNullOrEmpty(torrent.Encoding) ? torrent.Encoding : "未找到";
+            V1 = torrent.InfoHashes.V1 == null ? HashValue.SHA1Empty : new(torrent.InfoHashes.V1.Span);
+            V2 = torrent.InfoHashes.V2 == null ? HashValue.SHA256Empty : new(torrent.InfoHashes.V2.Span);
             TorrentMagnetLink = torrent.GetMagnetLink();
+            TorrentPath = torrentPath;
+            SavePath = savePath;
 
             Files = new();
-            Bitfield = new();
-            for (int i = 0; i < PieceCount; i++)
-            {
-                Bitfield.Add(new TorrentPiece());
-            }
+            Pieces = new(PieceCount);
 
-            var list = torrent.Files;
+            var list = Torrent.Files;
             FileCount = list.Count;
             WriteFileInfo(list);
             for (int i = 0; i < Files.Count; i++)
@@ -250,7 +271,7 @@ namespace ExtenderApp.Torrents.Models
             Trackers = new();
         }
 
-        public void Set(TorrentManager manager)
+        public void StartTorrent(TorrentManager manager)
         {
             Manager = manager;
             var list = Manager.Files;
@@ -265,12 +286,16 @@ namespace ExtenderApp.Torrents.Models
                 node.TorrentFileInfoChanged();
             }
 
-            SavePath = manager.SavePath;
             InitPeerEvent(manager);
             InitTrackerEvent(manager);
 
             Task.Run(async () =>
             {
+                if (!Directory.Exists(SavePath))
+                {
+                    Directory.CreateDirectory(SavePath);
+                }
+
                 for (int i = 0; i < Files.Count; i++)
                 {
                     var info = Files[i];
@@ -295,6 +320,7 @@ namespace ExtenderApp.Torrents.Models
                     ConnectPeers.Add(new TorrentPeer(e.Peer));
                 });
             };
+
             manager.PeerDisconnected += (o, e) =>
             {
                 int index = -1;
@@ -323,27 +349,34 @@ namespace ExtenderApp.Torrents.Models
             manager.TrackerManager.AnnounceComplete += (o, e) =>
             {
                 int index = -1;
+                TorrentTracker? tracker = null;
                 for (int i = 0; i < Trackers.Count; i++)
                 {
-                    var tracker = Trackers[i];
+                    tracker = Trackers[i];
                     if (e.Tracker.Uri == tracker.TrackerUri)
                     {
                         tracker.Update();
                         index = i;
+                        break;
                     }
                 }
 
-                if (index != -1)
+                if (index != -1 && !e.Successful)
                 {
-                    if (e.Successful)
+                    _dispatcherService.Invoke(() =>
                     {
-                        _dispatcherService.Invoke(() =>
-                        {
-                            Trackers.RemoveAt(index);
-                        });
-                    }
+                        Trackers.RemoveAt(index);
+                    });
                     return;
                 }
+
+                //if (tracker != null && tracker.Tracker == e.Tracker &&
+                //tracker.TrackerUri.Host == e.Tracker.Uri.Host &&
+                //tracker.TrackerUri.Port == e.Tracker.Uri.Port)
+                //{
+                //    manager.TrackerManager.RemoveTrackerAsync(e.Tracker);
+                //    return;
+                //}
 
                 _dispatcherService.Invoke(() =>
                 {
@@ -572,6 +605,7 @@ namespace ExtenderApp.Torrents.Models
             Leechs = Manager.Peers.Leechs;
             Available = Manager.Peers.Available;
             PeerCount = ConnectPeers.Count;
+            Progress = Manager.Progress;
 
             int selectedBitfieldCount = 0;
             for (int i = 0; i < Files.Count; i++)
@@ -591,7 +625,7 @@ namespace ExtenderApp.Torrents.Models
             {
                 for (int i = 0; i < PieceCount; i++)
                 {
-                    var piece = Bitfield[i];
+                    var piece = Pieces[i];
                     bool bitBool = bitfield[i];
                     piece.State = bitBool ? TorrentPieceStateType.Complete : piece.State;
                     piece.UpdateMessageType();
@@ -605,16 +639,19 @@ namespace ExtenderApp.Torrents.Models
         /// <param name="isUpdate">可选参数，默认为true，表示是否更新下载状态</param>
         public void UpdateDownloadState(bool isUpdate = true)
         {
-            // 遍历当前种子中的所有文件
-            for (int i = 0; i < Files.Count; i++)
+            Task.Run(() =>
             {
-                // 获取当前文件节点
-                var file = Files[i];
+                // 遍历当前种子中的所有文件
+                for (int i = 0; i < Files.Count; i++)
+                {
+                    // 获取当前文件节点
+                    var file = Files[i];
 
-                // 调用文件节点的更新下载状态方法
-                file.UpdateDownloadState(isUpdate);
-                file.UpdatePieces(Bitfield);
-            }
+                    // 调用文件节点的更新下载状态方法
+                    file.UpdateDownloadState(isUpdate);
+                    file.UpdatePieces(Pieces);
+                }
+            });
         }
 
         /// <summary>

@@ -43,6 +43,7 @@ namespace ExtenderApp.Views.Themes
                 ResourceDictionary last = _themes[lastTheme];
                 Application.Current.Resources.MergedDictionaries.Remove(last);
             }
+            //Application.Current.Resources.MergedDictionaries.Clear();
 
             Application.Current.Resources.MergedDictionaries.Add(theme);
             lastTheme = themeName;

@@ -108,7 +108,7 @@ namespace ExtenderApp.Data
             MaxChunkSize = 0;
             TargetExtensions = string.Empty;
             pieceData = PieceData.Empty;
-            HashValue = HashValue.Empty;
+            HashValue = HashValue.SHA1Empty;
         }
 
         public void LoadChunk(SplitterDto dto)

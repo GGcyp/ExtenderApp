@@ -4,10 +4,172 @@
                    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
                    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
                    xmlns:local="clr-namespace:ExtenderApp.Torrents.Views"
+                   xmlns:vm="clr-namespace:ExtenderApp.Torrents.ViewModels"
+                   xmlns:c="clr-namespace:ExtenderApp.Torrents.Converters"
+                   xmlns:vc="clr-namespace:ExtenderApp.Views.Converters;assembly=ExtenderApp.Views"
+                   xmlns:vt="clr-namespace:ExtenderApp.Views.Themes;assembly=ExtenderApp.Views"
                    xmlns:v="clr-namespace:ExtenderApp.Views;assembly=ExtenderApp.Views"
                    mc:Ignorable="d"
-                   d:DesignHeight="450" d:DesignWidth="800">
+                   d:DataContext="{d:DesignInstance Type=vm:TorrentRecyclebinListViewModel}"
+                   d:DesignHeight="450"
+                   d:DesignWidth="800">
     <Grid>
-
+        <!-- 回收站列表 -->
+        <ListBox x:Name="downloadList"
+                 Background="Transparent"
+                 ItemsSource="{Binding Model.RecycleBinCollection}"
+                 SelectedItem="{Binding Model.SelectedTorrent}"
+                 SelectionMode="Extended"
+                 VirtualizingPanel.IsVirtualizing="True"
+                 VirtualizingPanel.VirtualizationMode="Recycling"
+                 BorderBrush="{DynamicResource GlobalPrimaryBrush}"
+                 Foreground="{DynamicResource GlobalForegroundBrush}"
+                 Mouse.MouseDown="downloadList_MouseDown"
+                 BorderThickness="0">
+            <ListBox.ItemTemplate>
+                <DataTemplate>
+                    <Border x:Name="torrentItem"
+                            BorderBrush="Transparent"
+                            CornerRadius="10"
+                            BorderThickness="2">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="{Binding ActualWidth,
+                                                  RelativeSource={RelativeSource
+                                                  AncestorType={x:Type Grid},
+                                                  AncestorLevel=2},
+                                                  Converter={c:MaxWidthConverter},
+                                                  ConverterParameter=92}"/>
+                                <ColumnDefinition Width="80"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid Grid.Column="0">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="40"/>
+                                    <RowDefinition Height="15"/>
+                                    <RowDefinition Height="20"/>
+                                </Grid.RowDefinitions>
+                                <TextBlock Grid.Row="0"
+                                           Margin="5 5 5 5"
+                                           Text="{Binding Name}"
+                                           TextTrimming="CharacterEllipsis"
+                                           HorizontalAlignment="Left"/>
+                                <Grid Grid.Row="1"
+                                      Margin="5 0 0 0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="2*"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <!--下载数量及大小-->
+                                    <StackPanel Grid.Column="0"
+                                                Orientation="Horizontal">
+                                        <TextBlock Text="{Binding SelectedFileCompleteCount,
+                                                   StringFormat=(已下载{0}}"
+                                                   Margin="5 0 0 0"/>
+                                        <TextBlock Text="{Binding SelectedFileCount,
+                                                   StringFormat=/{0})}"/>
+                                        <TextBlock Text="{Binding SelectedFileCompleteLength,
+                                                   Converter={vc:SizeConverter}}"/>
+                                        <TextBlock Text="/"/>
+                                        <TextBlock Text="{Binding SelectedFileLength,
+                                                   Converter={vc:SizeConverter}}"/>
+                                    </StackPanel>
+                                    <!--下载速度-->
+                                    <StackPanel Grid.Column="3"
+                                                HorizontalAlignment="Right"
+                                                Orientation="Horizontal">
+                                        <TextBlock Text="{Binding DownloadSpeed,
+                                                   Converter={vc:SizeConverter},
+                                                   StringFormat={}{0}/s↓}"
+                                                   Margin="0 0 5 0"/>
+                                        <TextBlock Text="{Binding UploadSpeed,
+                                                   Converter={vc:SizeConverter},
+                                                   StringFormat={}{0}/s↑}"/>
+                                    </StackPanel>
+                                </Grid>
+                                <ProgressBar Grid.Row="2"
+                                             Value="{Binding Progress}"
+                                             Height="12"
+                                             Margin="5 0 0 0"
+                                             Foreground="Blue"
+                                             Background="{DynamicResource GlobalBackgroundBrush}"
+                                             Minimum="0"
+                                             Maximum="100"/>
+                            </Grid>
+                            <Grid Grid.Column="1">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="40"/>
+                                    <ColumnDefinition Width="40"/>
+                                </Grid.ColumnDefinitions>
+                                <vt:PlaySwitch Grid.Column="0"
+                                               Height="20"
+                                               Width="20"
+                                               Fill="{DynamicResource GlobalForegroundBrush}"
+                                               Stroke="{DynamicResource GlobalForegroundBrush}"/>
+                                <vt:StartSwitch Grid.Column="1"
+                                                Height="20"
+                                                Width="20"
+                                                IsStart="{Binding IsDownloading}"
+                                                Fill="{DynamicResource GlobalForegroundBrush}"
+                                                Stroke="{DynamicResource GlobalForegroundBrush}"
+                                                Command="{Binding DataContext,
+                                                RelativeSource={RelativeSource AncestorType=Border,AncestorLevel=2},
+                                                Converter={vc:GetPropertyConverter},
+                                                ConverterParameter=StartCommand}"
+                                                CommandParameter="{Binding}"/>
+                            </Grid>
+                        </Grid>
+                    </Border>
+                    <DataTemplate.Triggers>
+                        <DataTrigger Binding="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=ListBoxItem}}" Value="True">
+                            <Setter TargetName="torrentItem" Property="BorderBrush" Value="{DynamicResource GlobalPrimaryBrush}"/>
+                        </DataTrigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="torrentItem" Property="Background" Value="{DynamicResource GlobalSelectedBrush}"/>
+                        </Trigger>
+                    </DataTemplate.Triggers>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+            <ListBox.ItemContainerStyle>
+                <Style TargetType="ListBoxItem">
+                    <Setter Property="Template">
+                        <Setter.Value>
+                            <ControlTemplate TargetType="ListBoxItem">
+                                <ContentPresenter
+                                    Content="{TemplateBinding Content}"
+                                    ContentTemplate="{TemplateBinding ContentTemplate}"
+                                    HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                    VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                    SnapsToDevicePixels="True"/>
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
+                </Style>
+            </ListBox.ItemContainerStyle>
+            <ListBox.ContextMenu>
+                <ContextMenu Background="{DynamicResource GlobalBackgroundBrush}"
+                             Foreground="{DynamicResource GlobalForegroundBrush}"
+                             BorderBrush="{DynamicResource GlobalBackgroundBrush}"
+                             BorderThickness="0">
+                    <MenuItem Background="{DynamicResource GlobalBackgroundBrush}"
+                              BorderBrush="{DynamicResource GlobalBackgroundBrush}"
+                              BorderThickness="0"
+                              Command="{Binding StartSelectedsCommand}">
+                        <MenuItem.Header>
+                            <TextBlock Text="取回"/>
+                        </MenuItem.Header>
+                    </MenuItem>
+                    <MenuItem Background="{DynamicResource GlobalBackgroundBrush}"
+                              BorderBrush="{DynamicResource GlobalBackgroundBrush}"
+                              BorderThickness="0"
+                              Command="{Binding DeleteCommand}">
+                        <MenuItem.Header>
+                            <TextBlock Text="彻底删除"/>
+                        </MenuItem.Header>
+                    </MenuItem>
+                </ContextMenu>
+            </ListBox.ContextMenu>
+        </ListBox>
     </Grid>
 </v:ExtenderAppView>

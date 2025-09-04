@@ -53,5 +53,10 @@
         /// 获取主窗口服务接口。
         /// </summary>
         IMainWindowService MainWindowService { get; }
+
+        /// <summary>
+        /// 获取系统服务接口。
+        /// </summary>
+        ISystemService SystemService { get; }
     }
 }

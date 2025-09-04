@@ -6,10 +6,13 @@
                    xmlns:local="clr-namespace:ExtenderApp.Torrents.Views"
                    xmlns:v="clr-namespace:ExtenderApp.Views;assembly=ExtenderApp.Views"
                    xmlns:vm="clr-namespace:ExtenderApp.Torrents.ViewModels"
+                   xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
+                   xmlns:b="clr-namespace:ExtenderApp.Views.Behaviors;assembly=ExtenderApp.Views"
                    xmlns:c="clr-namespace:ExtenderApp.Views.Converters;assembly=ExtenderApp.Views"
                    xmlns:t="clr-namespace:ExtenderApp.Views.Themes;assembly=ExtenderApp.Views"
                    xmlns:tc="clr-namespace:ExtenderApp.Torrents.Converters"
                    xmlns:m="clr-namespace:ExtenderApp.Torrents.Models"
+                   xmlns:vwp="clr-namespace:WpfToolkit.Controls;assembly=VirtualizingWrapPanel"
                    mc:Ignorable="d"
                    d:DataContext="{d:DesignInstance Type=vm:TorrentDownloadStateViewModel}"
                    d:DesignHeight="500"
@@ -25,7 +28,6 @@
     <Grid Background="{DynamicResource GlobalBackgroundBrush}">
         <Grid.RowDefinitions>
             <RowDefinition/>
-            <RowDefinition Height="25"/>
         </Grid.RowDefinitions>
         <ScrollViewer Grid.Row="0"
                       VerticalScrollBarVisibility="Auto"
@@ -215,6 +217,9 @@
                 <Expander Margin="5 5 0 0"
                           IsExpanded="True"
                           VerticalAlignment="Top"
+                          Visibility="{Binding Model.SelectedTorrent.IsComplete,
+                          Converter={c:BooleanToVisibilityConverter},
+                          ConverterParameter=InverseHidden}"
                           Style="{StaticResource TorrentExpander}">
                     <Expander.Header>
                         <Grid>
@@ -526,9 +531,13 @@
                         </Grid>
                     </Expander.Content>
                 </Expander>
+                <!--种子文件分块信息-->
                 <Expander Margin="5 5 0 0"
                           VerticalAlignment="Top"
                           DataContext="{Binding Model.SelectedTorrent}"
+                          Visibility="{Binding IsComplete,
+                          Converter={c:BooleanToVisibilityConverter},
+                          ConverterParameter=InverseHidden}"
                           Style="{StaticResource TorrentExpander}">
                     <Expander.Header>
                         <t:ExpandSwitch HorizontalAlignment="Left"
@@ -557,7 +566,7 @@
                             <ItemsControl Grid.Row="1"
                                           BorderThickness="0"
                                           HorizontalContentAlignment="Stretch"
-                                          ItemsSource="{Binding Bitfield}"
+                                          ItemsSource="{Binding Pieces}"
                                           VirtualizingPanel.IsVirtualizing="True"
                                           VirtualizingPanel.VirtualizationMode="Recycling"
                                           ScrollViewer.CanContentScroll="True"
@@ -565,30 +574,39 @@
                                           Foreground="{DynamicResource GlobalForegroundBrush}">
                                 <ItemsControl.ItemsPanel>
                                     <ItemsPanelTemplate>
-                                        <UniformGrid Columns="28"
-                                                     Margin="5"/>
+                                        <vwp:VirtualizingWrapPanel Orientation="Horizontal"
+                                                                   ItemSize="14,14"
+                                                                   Margin="5"
+                                                                   MaxWidth="370"/>
                                     </ItemsPanelTemplate>
                                 </ItemsControl.ItemsPanel>
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
-                                        <Border Width="10"
-                                                Height="10"
-                                                Margin="1"
+                                        <Border Margin="1"
                                                 ToolTipService.InitialShowDelay="100"
                                                 Background="{Binding State,
                                                 Converter={tc:BItfleToColorConverter}}">
                                             <Border.ToolTip>
-                                                <Grid>
+                                                <Grid Background="{DynamicResource GlobalBackgroundBrush}">
                                                     <Grid.RowDefinitions>
                                                         <RowDefinition/>
                                                         <RowDefinition/>
                                                     </Grid.RowDefinitions>
                                                     <TextBlock Grid.Row="0"
-                                                               Text="{Binding Name}"
-                                                               Visibility="{Binding Name,Converter={c:ObjectToVisibilityConverter}}"/>
-                                                    <TextBlock Grid.Row="1"
+                                                               Foreground="{DynamicResource GlobalForegroundBrush}"
                                                                Text="{Binding Messagetype}"
                                                                Visibility="{Binding Messagetype,Converter={c:ObjectToVisibilityConverter}}"/>
+                                                    <ListBox Grid.Row="1"
+                                                             Background="{DynamicResource GlobalBackgroundBrush}"
+                                                             ItemsSource="{Binding PieceNames}"
+                                                             Foreground="{DynamicResource GlobalForegroundBrush}"
+                                                             Visibility="{Binding PieceNames,Converter={c:ObjectToVisibilityConverter}}">
+                                                        <ListBox.ItemTemplate>
+                                                            <DataTemplate DataType="ListBoxItem">
+                                                                <TextBlock Text="{Binding Item2}"/>
+                                                            </DataTemplate>
+                                                        </ListBox.ItemTemplate>
+                                                    </ListBox>
                                                 </Grid>
                                             </Border.ToolTip>
                                         </Border>
@@ -598,9 +616,13 @@
                         </Grid>
                     </Expander.Content>
                 </Expander>
+                <!--种子追踪器信息-->
                 <Expander Margin="5 5 0 0"
                           VerticalAlignment="Top"
                           DataContext="{Binding Model.SelectedTorrent}"
+                          Visibility="{Binding IsComplete,
+                          Converter={c:BooleanToVisibilityConverter},
+                          ConverterParameter=InverseHidden}"
                           Style="{StaticResource TorrentExpander}">
                     <Expander.Header>
                         <t:ExpandSwitch HorizontalAlignment="Left"
@@ -628,7 +650,7 @@
                                         <Grid Grid.Row="0"
                                               Margin="0 5 0 0">
                                             <TextBlock Text="追踪器地址"/>
-                                            <TextBlock Text="{Binding TrackerUri}"
+                                            <TextBlock Text="{Binding TrackerUri,Converter={c:UriToStringConverter}}"
                                                        Margin="75 0 0 0"/>
                                         </Grid>
                                         <Grid Grid.Row="1"
@@ -646,11 +668,5 @@
                 </Expander>
             </StackPanel>
         </ScrollViewer>
-        <Grid Grid.Row="1">
-            <Button Content="检查文件"
-                    HorizontalAlignment="Left"
-                    Command="{Binding VerifyFileIntegrityCommand}"
-                    Style="{StaticResource EllipticalButton}"/>
-        </Grid>
     </Grid>
 </v:ExtenderAppView>

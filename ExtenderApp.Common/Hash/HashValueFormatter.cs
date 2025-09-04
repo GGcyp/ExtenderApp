@@ -32,12 +32,12 @@ namespace ExtenderApp.Common.Hash
         {
             if (value.IsEmpty)
             {
-                _ulongs.Serialize(ref writer, ReadOnlyMemory<ulong>.Empty);
+                WriteNil(ref writer);
                 return;
             }
 
-            _ulongs.Serialize(ref writer, value.HashMemory);
             _int.Serialize(ref writer, value.Length);
+            _ulongs.Serialize(ref writer, value.HashMemory);
         }
 
         /// <summary>
@@ -47,13 +47,13 @@ namespace ExtenderApp.Common.Hash
         /// <returns>反序列化后的哈希值</returns>
         public override HashValue Deserialize(ref ExtenderBinaryReader reader)
         {
-            var memory = _ulongs.Deserialize(ref reader);
-            if (memory.IsEmpty)
+            if (TryReadNil(ref reader))
             {
-                return HashValue.Empty;
+                return HashValue.SHA1Empty;
             }
 
             var length = _int.Deserialize(ref reader);
+            var memory = _ulongs.Deserialize(ref reader);
             return new HashValue(memory, length);
         }
 

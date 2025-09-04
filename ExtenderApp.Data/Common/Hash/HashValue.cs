@@ -6,7 +6,8 @@ namespace ExtenderApp.Data
 {
     public readonly struct HashValue : IEquatable<HashValue>
     {
-        public static HashValue Empty = new HashValue(null);
+        public static HashValue SHA1Empty = new HashValue(new byte[20]);
+        public static HashValue SHA256Empty = new HashValue(new byte[32]);
 
         /// <summary>
         /// 使用SHA256算法计算给定字节序列的哈希值。

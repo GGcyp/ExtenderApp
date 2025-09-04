@@ -46,7 +46,7 @@ namespace ExtenderApp.Data
         /// <summary>
         /// 获取或设置插件文件夹目录路径
         /// </summary>
-        public string? Path { get; set; }
+        public string? PluginDirectoryPath { get; set; }
 
         /// <summary>
         /// 获取或设置插件启动类型
@@ -65,7 +65,7 @@ namespace ExtenderApp.Data
         /// <summary>
         /// 获取或设置插件作用域
         /// </summary>
-        public string ModScope { get; set; }
+        public string PluginScope { get; set; }
 
         /// <summary>
         /// 获取插件图标路径。
@@ -89,8 +89,8 @@ namespace ExtenderApp.Data
         /// </summary>
         public PluginDetails()
         {
-            ModScope = string.Empty;
-            Path = string.Empty;
+            PluginScope = string.Empty;
+            PluginDirectoryPath = string.Empty;
             StartupType = null;
             LoadContext = null;
             Version = _pluginInfo.PluginVersion == null ? null : new Version(_pluginInfo.PluginVersion);

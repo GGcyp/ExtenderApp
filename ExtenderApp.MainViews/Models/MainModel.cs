@@ -40,10 +40,10 @@ namespace ExtenderApp.MainViews.Models
         /// <summary>
         /// 选中的插件详情信息
         /// </summary>
-        public PluginDetails? SelectedModDetails { get; set; }
+        public PluginDetails? CurrentPluginDetails { get; set; }
 
         /// <summary>
-        /// 插件商店实例
+        /// 插件仓库实例
         /// </summary>
         public PluginStore? PluginStore { get; set; }
 

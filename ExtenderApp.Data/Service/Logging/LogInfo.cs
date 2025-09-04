@@ -4,19 +4,6 @@ namespace ExtenderApp.Data
 {
     public struct LogInfo
     {
-        public static LogInfo DefaultLogInfo(LogLevel level, string source, string message, Exception exception = null)
-        {
-            return new LogInfo()
-            {
-                Time = DateTime.Now,
-                ThreadId = Thread.CurrentThread.ManagedThreadId,
-                Source = source,
-                LogLevel = level,
-                Message = message,
-                Exception = exception
-            };
-        }
-
         /// <summary>
         /// 时间
         /// </summary>
@@ -46,6 +33,16 @@ namespace ExtenderApp.Data
         /// 异常对象
         /// </summary>
         public Exception Exception { get; set; }
+
+        public LogInfo(LogLevel logLevel, string source, string message, Exception exception = null)
+        {
+            Time = DateTime.Now;
+            ThreadId = Thread.CurrentThread.ManagedThreadId;
+            LogLevel = logLevel;
+            Source = source;
+            Message = message;
+            Exception = exception;
+        }
 
         /// <summary>
         /// 将LogInfo结构体转换为字符串形式

@@ -10,7 +10,10 @@ using ExtenderApp.Models;
 
 namespace ExtenderApp.ViewModels
 {
-    public abstract class ExtenderAppViewModel : IViewModel, INotifyPropertyChanged
+    /// <summary>
+    /// 扩展应用程序视图模型基类，继承自<see cref="IViewModel"/>
+    /// </summary>
+    public abstract class ExtenderAppViewModel : DisposableObject, IViewModel, INotifyPropertyChanged
     {
         /// <summary>
         /// 服务存储接口实例
@@ -22,7 +25,7 @@ namespace ExtenderApp.ViewModels
         /// </summary>
         private readonly string _viewModelName;
 
-        protected PluginDetails? ModDetails { get; set; }
+        protected PluginDetails? Details { get; set; }
 
         /// <summary>
         /// 返回当前的主窗口实例
@@ -80,30 +83,56 @@ namespace ExtenderApp.ViewModels
         /// </summary>
         /// <typeparam name="TView">目标视图的类型。</typeparam>
         /// <returns>返回目标视图的实例。</returns>
-        protected TView NavigateTo<TView>() where TView : class, IView
+        protected TView? NavigateTo<TView>()
+            where TView : class, IView
         {
             var details = GetCurrentModDetails();
-            string scope = details is null ? string.Empty : details.ModScope;
-            return (TView)NavigateTo(typeof(TView), scope);
+            string scope = details is null ? string.Empty : details.PluginScope;
+            return NavigateTo(typeof(TView), scope) as TView;
         }
 
         /// <summary>
-        /// 导航到指定的视图，并指定作用域。
+        /// 导航到指定的视图（可指定旧视图），返回目标视图实例。
         /// </summary>
-        /// <typeparam name="TView">目标视图的类型。</typeparam>
-        /// <param name="scope">作用域。</param>
-        /// <returns>返回目标视图的实例。</returns>
-        protected TView NavigateTo<TView>(string scope) where TView : class, IView
+        /// <typeparam name="TView">目标视图类型，必须实现IView接口。</typeparam>
+        /// <param name="oldView">旧的视图实例。</param>
+        /// <returns>返回目标视图实例，如果导航失败则返回null。</returns>
+        protected TView? NavigateTo<TView>(IView oldView)
+            where TView : class, IView
         {
-            return (TView)NavigateTo(typeof(TView), scope);
+            var details = GetCurrentModDetails();
+            string scope = details is null ? string.Empty : details.PluginScope;
+            return NavigateTo(typeof(TView), scope, oldView) as TView;
         }
 
-        protected TView NavigateTo<TView>(PluginDetails modDetails) where TView : class, IView
+        /// <summary>
+        /// 导航到指定作用域下的目标视图类型。
+        /// </summary>
+        /// <typeparam name="TView">目标视图类型，必须实现IView接口。</typeparam>
+        /// <param name="scope">导航作用域标识。</param>
+        /// <returns>返回目标视图实例，如果导航失败则返回null。</returns>
+        protected TView? NavigateTo<TView>(string scope) where TView : class, IView
         {
-            return NavigateTo<TView>(modDetails.ModScope);
+            return NavigateTo(typeof(TView), scope) as TView;
         }
 
-        protected IView NavigateTo(PluginDetails modDetails)
+        /// <summary>
+        /// 根据插件详情导航到目标视图类型。
+        /// </summary>
+        /// <typeparam name="TView">目标视图类型，必须实现IView接口。</typeparam>
+        /// <param name="modDetails">插件详情对象。</param>
+        /// <returns>返回目标视图实例，如果导航失败则返回null。</returns>
+        protected TView? NavigateTo<TView>(PluginDetails modDetails) where TView : class, IView
+        {
+            return NavigateTo<TView>(modDetails.PluginScope);
+        }
+
+        /// <summary>
+        /// 根据插件详情导航到目标视图类型（支持异常处理）。
+        /// </summary>
+        /// <param name="modDetails">插件详情对象。</param>
+        /// <returns>返回目标视图实例，如果导航失败则返回null。</returns>
+        protected IView? NavigateTo(PluginDetails modDetails)
         {
             try
             {
@@ -116,18 +145,18 @@ namespace ExtenderApp.ViewModels
                 return null;
             }
 
-            return NavigateTo(modDetails.StartupType, modDetails.ModScope);
+            return NavigateTo(modDetails.StartupType, modDetails.PluginScope);
         }
 
         /// <summary>
-        /// 导航到指定的视图类型，并指定作用域。
+        /// 导航到指定类型的视图，并指定作用域。
         /// </summary>
-        /// <param name="targetView">目标视图的类型。</param>
-        /// <param name="scope">作用域。</param>
-        /// <returns>返回目标视图的实例。</returns>
-        protected virtual IView NavigateTo(Type targetView, string scope)
+        /// <param name="targetView">目标视图类型。</param>
+        /// <param name="scope">导航作用域标识。</param>
+        /// <returns>返回目标视图实例，如果导航失败则返回null。</returns>
+        protected virtual IView? NavigateTo(Type targetView, string scope)
         {
-            IView view = null;
+            IView? view = null;
             try
             {
                 view = _serviceStore.NavigationService.NavigateTo(targetView, scope);
@@ -139,6 +168,32 @@ namespace ExtenderApp.ViewModels
             return view;
         }
 
+        /// <summary>
+        /// 导航到指定类型的视图，并指定作用域和旧视图实例。
+        /// </summary>
+        /// <param name="targetView">目标视图类型。</param>
+        /// <param name="scope">导航作用域标识。</param>
+        /// <param name="oldView">旧的视图实例。</param>
+        /// <returns>返回目标视图实例，如果导航失败则返回null。</returns>
+        protected virtual IView? NavigateTo(Type targetView, string scope, IView oldView)
+        {
+            IView? view = null;
+            try
+            {
+                view = _serviceStore.NavigationService.NavigateTo(targetView, scope, oldView);
+            }
+            catch (Exception ex)
+            {
+                Error("视图导航出现了问题！", ex);
+            }
+            return view;
+        }
+
+        /// <summary>
+        /// 导航到指定类型的窗口，并指定作用域。
+        /// </summary>
+        /// <typeparam name="TView">目标视图类型，必须实现IView接口。</typeparam>
+        /// <returns>返回窗口实例，如果导航失败则返回null。</returns>
         protected virtual IWindow NavigateToWindow<TView>()
             where TView : class, IView
         {
@@ -146,7 +201,7 @@ namespace ExtenderApp.ViewModels
             try
             {
                 var details = GetCurrentModDetails();
-                string scope = details is null ? string.Empty : details.ModScope;
+                string scope = details is null ? string.Empty : details.PluginScope;
                 window = _serviceStore.NavigationService.NavigateToWindow<TView>(scope, null);
             }
             catch (Exception ex)
@@ -164,7 +219,7 @@ namespace ExtenderApp.ViewModels
         /// 输出信息日志。
         /// </summary>
         /// <param name="message">要输出的信息内容。</param>
-        protected void Info(object message)
+        public void Info(object message)
         {
             Info(message?.ToString() ?? string.Empty);
         }
@@ -173,7 +228,7 @@ namespace ExtenderApp.ViewModels
         /// 输出调试日志。
         /// </summary>
         /// <param name="message">要输出的调试内容。</param>
-        protected void Debug(object message)
+        public void Debug(object message)
         {
             Debug(message?.ToString() ?? string.Empty);
         }
@@ -183,7 +238,7 @@ namespace ExtenderApp.ViewModels
         /// </summary>
         /// <param name="message">要输出的错误信息内容。</param>
         /// <param name="exception">异常对象。</param>
-        protected void Error(object message, Exception exception)
+        public void Error(object message, Exception exception)
         {
             Error(message?.ToString() ?? string.Empty, exception);
         }
@@ -192,7 +247,7 @@ namespace ExtenderApp.ViewModels
         /// 输出警告日志。
         /// </summary>
         /// <param name="message">要输出的警告内容。</param>
-        protected void Warning(object message)
+        public void Warning(object message)
         {
             Warning(message?.ToString() ?? string.Empty);
         }
@@ -201,7 +256,7 @@ namespace ExtenderApp.ViewModels
         /// 记录信息级别的日志。
         /// </summary>
         /// <param name="message">要记录的信息内容。</param>
-        protected void Info(string message)
+        public void Info(string message)
         {
             _serviceStore.LogingService.Info(message, _viewModelName);
         }
@@ -210,7 +265,7 @@ namespace ExtenderApp.ViewModels
         /// 记录调试级别的日志。
         /// </summary>
         /// <param name="message">要记录的调试信息内容。</param>
-        protected void Debug(string message)
+        public void Debug(string message)
         {
             _serviceStore.LogingService.Debug(message, _viewModelName);
         }
@@ -220,7 +275,7 @@ namespace ExtenderApp.ViewModels
         /// </summary>
         /// <param name="message">要记录的错误信息内容。</param>
         /// <param name="exception">引发的异常。</param>
-        protected void Error(string message, Exception exception)
+        public void Error(string message, Exception exception)
         {
             _serviceStore.LogingService.Error(message, _viewModelName, exception);
         }
@@ -229,7 +284,7 @@ namespace ExtenderApp.ViewModels
         /// 记录警告级别的日志。
         /// </summary>
         /// <param name="message">要记录的警告信息内容。</param>
-        protected void Warning(string message)
+        public void Warning(string message)
         {
             _serviceStore.LogingService.Warning(message, _viewModelName);
         }
@@ -264,12 +319,13 @@ namespace ExtenderApp.ViewModels
         protected bool SaveLocalData<T>(T? data) where T : class
         {
             if (data is null)
-                data = _serviceStore.ServiceProvider.GetService<T>();
-
-            if (data is null)
                 return false;
 
-            return _serviceStore.LocalDataService.SaveData(GetCurrentModDetails(), data);
+            var details = GetCurrentModDetails();
+            if (details is null)
+                return false;
+
+            return _serviceStore.LocalDataService.SaveData(details, data);
         }
 
         /// <summary>
@@ -284,9 +340,6 @@ namespace ExtenderApp.ViewModels
         protected bool SaveLocalData<T>(T? data, Version version)
             where T : class
         {
-            if (data is null)
-                data = _serviceStore.ServiceProvider.GetService<T>();
-
             if (data is null)
                 return false;
 
@@ -377,11 +430,32 @@ namespace ExtenderApp.ViewModels
 
         #region Dispatcher
 
+        /// <summary>
+        /// 在UI线程上同步执行指定的操作。
+        /// </summary>
+        /// <param name="callback">要在UI线程上执行的操作。</param>
+        /// <remarks>
+        /// 如果传入的操作为null，则方法直接返回而不执行任何操作。
+        /// 使用DispatcherService的Invoke方法确保操作在UI线程上执行。
+        /// </remarks>
         protected void DispatcherInvoke(Action callback)
         {
             if (callback is null) return;
-
             _serviceStore.DispatcherService.Invoke(callback);
+        }
+
+        /// <summary>
+        /// 在UI线程上异步执行指定的操作。
+        /// </summary>
+        /// <param name="callback">要在UI线程上执行的操作。</param>
+        /// <remarks>
+        /// 如果传入的操作为null，则方法直接返回而不执行任何操作。
+        /// 使用DispatcherService的BeginInvoke方法异步确保操作在UI线程上执行。
+        /// </remarks>
+        protected void DispatcherBeginInvoke(Action callback)
+        {
+            if (callback is null) return;
+            _serviceStore.DispatcherService.BeginInvoke(callback);
         }
 
         #endregion
@@ -442,6 +516,23 @@ namespace ExtenderApp.ViewModels
             }
         }
 
+        /// <summary>
+        /// 在文件根路径下创建指定的文件夹路径
+        /// </summary>
+        /// <param name="folderPath"></param>
+        protected string CreateFolderPathForAppRootFolder(string folderPath)
+        {
+            try
+            {
+                return _serviceStore.PathService.CreateFolderPathForAppRootFolder(folderPath);
+            }
+            catch (Exception ex)
+            {
+                Error($"创建路径失败：{folderPath}", ex);
+                return string.Empty;
+            }
+        }
+
         #endregion
 
         #region  Plugin
@@ -457,8 +548,25 @@ namespace ExtenderApp.ViewModels
         }
 
         #endregion
+
+        #region System
+
+        /// <summary>
+        /// 向剪切板写入文本
+        /// </summary>
+        /// <param name="text">需要写入的文本.</param>
+        protected void ClipboardSetText(string text)
+        {
+            _serviceStore.SystemService.Clipboard.SetText(text);
+        }
+
+        #endregion
     }
 
+    /// <summary>
+    /// 泛型扩展应用程序视图模型基类，继承自<see cref="ExtenderAppViewModel"/>
+    /// </summary>
+    /// <typeparam name="TView">视图接口</typeparam>
     public abstract class ExtenderAppViewModel<TView> : ExtenderAppViewModel, IViewModel<TView> where TView : class, IView
     {
         /// <summary>
@@ -473,22 +581,16 @@ namespace ExtenderApp.ViewModels
 
         public override void InjectView(IView view)
         {
-            TView targetView = view as TView;
-            if (targetView != null)
-                InjectView(targetView);
+            if (view is TView tview)
+                InjectView(tview);
         }
 
         /// <summary>
         /// 注入视图
         /// </summary>
         /// <param name="view">要注入的视图</param>
-        /// <exception cref="ArgumentNullException">如果传入的视图为空，则抛出此异常</exception>
-        /// <exception cref="InvalidDataException">如果当前视图不可更改且已存在视图，则抛出此异常</exception>
         public virtual void InjectView(TView view)
         {
-            if (view is null)
-                throw new ArgumentNullException(nameof(view));
-
             View = view;
         }
 
@@ -502,7 +604,7 @@ namespace ExtenderApp.ViewModels
             IView view = null;
             try
             {
-                view = _serviceStore.NavigationService.NavigateTo(targetView, scope, view);
+                view = _serviceStore.NavigationService.NavigateTo(targetView, scope, View);
             }
             catch (Exception ex)
             {
@@ -517,7 +619,7 @@ namespace ExtenderApp.ViewModels
             try
             {
                 var details = GetCurrentModDetails();
-                string scope = details is null ? string.Empty : details.ModScope;
+                string scope = details is null ? string.Empty : details.PluginScope;
                 window = _serviceStore.NavigationService.NavigateToWindow<T>(scope, View);
             }
             catch (Exception ex)
@@ -571,6 +673,16 @@ namespace ExtenderApp.ViewModels
             this.model = model;
         }
 
+        public override void Enter(ViewInfo oldViewInfo)
+        {
+
+        }
+
+        public override void Exit(ViewInfo newViewInfo)
+        {
+            SaveModel();
+        }
+
         /// <summary>
         /// 向对象注入模型
         /// </summary>
@@ -587,7 +699,9 @@ namespace ExtenderApp.ViewModels
         /// <returns>是否成功获取数据</returns>
         protected bool LoadModel()
         {
-            return LoadLocalData(out model);
+            var loadState = LoadLocalData(out model);
+            model.Initialize(_serviceStore as IPuginServiceStore);
+            return loadState;
         }
 
         /// <summary>
@@ -600,13 +714,37 @@ namespace ExtenderApp.ViewModels
         }
 
         /// <summary>
-        /// 将模型数据保存到本地
+        /// 将模型数据保存到本地，使用指定名称保存
+        /// </summary>
+        /// <param name="saveName">保存的数据名称</param>
+        /// <returns>是否成功保存数据</returns>
+        protected bool SaveModel(string saveName)
+        {
+            // 调用本地数据服务保存数据，版本参数传null表示使用默认版本
+            return _serviceStore.LocalDataService.SaveData(saveName, model, null);
+        }
+
+        /// <summary>
+        /// 将模型数据保存到本地，使用指定版本保存
         /// </summary>
         /// <param name="version">数据保存目标版本</param>
         /// <returns>是否成功保存数据</returns>
         protected bool SaveModel(Version version)
         {
+            // 调用内部方法保存数据，使用默认名称和指定版本
             return SaveLocalData(model, version);
+        }
+
+        /// <summary>
+        /// 将模型数据保存到本地，使用指定名称和版本保存
+        /// </summary>
+        /// <param name="saveName">保存的数据名称</param>
+        /// <param name="version">数据保存目标版本</param>
+        /// <returns>是否成功保存数据</returns>
+        protected bool SaveModel(string saveName, Version version)
+        {
+            // 调用本地数据服务保存数据，同时指定名称和版本
+            return _serviceStore.LocalDataService.SaveData(saveName, model, version);
         }
 
         public override void Close()

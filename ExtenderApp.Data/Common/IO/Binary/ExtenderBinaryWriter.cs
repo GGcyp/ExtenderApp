@@ -291,6 +291,25 @@ namespace ExtenderApp.Data
             }
         }
 
+        public void CopyTo(byte[] bytes)
+        {
+            if (Rental.Value == null)
+            {
+                throw new NotSupportedException("此实例未初始化以支持此操作。");
+            }
+            Commit();
+            if (bytes.Length < BytesCommitted)
+            {
+                throw new ArgumentOutOfRangeException(nameof(bytes), "目标数组长度不足以容纳所有数据。");
+            }
+
+            foreach (var segment in Rental.Value.AsReadOnlySequence)
+            {
+                segment.Span.CopyTo(bytes);
+                bytes = bytes.AsSpan(segment.Length).ToArray();
+            }
+        }
+
         ///// <summary>
         ///// 刷新并清空当前对象
         ///// </summary>
@@ -358,6 +377,5 @@ namespace ExtenderApp.Data
             _buffered = 0;
             BytesCommitted = 0;
         }
-
     }
 }

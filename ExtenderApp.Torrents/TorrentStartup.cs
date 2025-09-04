@@ -11,7 +11,7 @@ using ExtenderApp.Torrents.Views;
 
 namespace ExtenderApp.Torrents
 {
-    class TorrentStartup : PluginEntityStartup
+    internal class TorrentStartup : PluginEntityStartup
     {
         public override Type StartType => typeof(TorrentMainView);
 
@@ -32,9 +32,14 @@ namespace ExtenderApp.Torrents
             services.AddTransient<TorrentAddFileInfoViewModel>();
             services.AddTransient<TorrentDownloadListViewModel>();
             services.AddTransient<TorrentDownloadStateViewModel>();
+            services.AddTransient<TorrentRecyclebinListViewModel>();
             services.AddTransient<TorrentDownloadCompletedListViewModel>();
 
             services.AddSingleton<TorrentLongingFactory>();
+
+            services.AddTransient<IMainViewSettings, TorrentMainViewSettings>();
+            services.AddTransient<TorrentSettingsView>();
+            services.AddTransient<TorrentSettingsViewModel>();
         }
 
         public override void ConfigureBinaryFormatterStore(IBinaryFormatterStore store)
@@ -42,6 +47,9 @@ namespace ExtenderApp.Torrents
             store.AddLocalDataFormatter<TorrentModel, TorrentModelFormatter>();
             store.AddVersionData<TorrentFileInfoNode, TorrentFileInfoNodeFormatter_1>();
             store.AddVersionData<TorrentInfo, TorrentInfoFormatter_1>();
+
+            store.Add<EngineSettingsBuilderModel, EngineSettingsFormatter>();
+            store.Add<TorrentSettingsBuilderModel, TorrentSettingsFormatter>();
         }
     }
 }

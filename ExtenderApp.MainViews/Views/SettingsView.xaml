@@ -1,0 +1,56 @@
+﻿<v:ExtenderAppView x:Class="ExtenderApp.MainViews.Views.SettingsView"
+                   xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                   xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                   xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                   xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                   xmlns:local="clr-namespace:ExtenderApp.MainViews.Views"
+                   xmlns:v="clr-namespace:ExtenderApp.Views;assembly=ExtenderApp.Views"
+                   xmlns:vm="clr-namespace:ExtenderApp.MainViews.ViewModels"
+                   mc:Ignorable="d"
+                   d:DataContext="{d:DesignInstance Type=vm:SettingsViewModel}"
+                   d:DesignHeight="400"
+                   d:DesignWidth="550">
+    <v:ExtenderAppView.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/ExtenderApp.Views;component/ViewStyles.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </v:ExtenderAppView.Resources>
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="200"/>
+            <ColumnDefinition/>
+        </Grid.ColumnDefinitions>
+        <ScrollViewer Grid.Column="0"
+                      VerticalScrollBarVisibility="Auto"
+                      Foreground="{DynamicResource GlobalForegroundBrush}"
+                      Background="{DynamicResource GlobalBackgroundBrush}">
+            <StackPanel x:Name="navigationBar"
+                        Margin="0 20 0 0"
+                        VerticalAlignment="Top"/>
+        </ScrollViewer>
+        <ScrollViewer x:Name="settingsBar"
+                      Grid.Column="1"
+                      ScrollChanged="SettingsBar_ScrollChanged"
+                      VerticalScrollBarVisibility="Auto"
+                      Foreground="{DynamicResource GlobalForegroundBrush}"
+                      Background="{DynamicResource GlobalBackgroundBrush}">
+            <StackPanel x:Name="settingsPanel">
+                <TextBlock x:Name="basicSettings"
+                           Text="基本设置"
+                           Style="{DynamicResource TitleTextBlock}"/>
+
+                <TextBlock x:Name="pluginSettings"
+                           Text="插件设置"
+                           Style="{DynamicResource TitleTextBlock}"/>
+
+                <ContentControl x:Name="pluginContentControl"
+                                Content="{Binding CurrentPluginSettingsView}"
+                                Margin="10 10 0 0"/>
+
+                <Border Height="200" Background="Transparent"/>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</v:ExtenderAppView>

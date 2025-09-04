@@ -12,6 +12,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using ExtenderApp.Torrents.ViewModels;
 using ExtenderApp.Views;
 
 namespace ExtenderApp.Torrents.Views
@@ -21,9 +22,14 @@ namespace ExtenderApp.Torrents.Views
     /// </summary>
     public partial class TorrentRecyclebinListView : ExtenderAppView
     {
-        public TorrentRecyclebinListView()
+        public TorrentRecyclebinListView(TorrentRecyclebinListViewModel viewModel) : base(viewModel)
         {
             InitializeComponent();
+        }
+
+        private void downloadList_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+
         }
     }
 }

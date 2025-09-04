@@ -56,6 +56,26 @@ namespace ExtenderApp.Common.Hash
         }
 
         /// <summary>
+        /// 使用FNV-1a算法计算字符串的哈希值
+        /// </summary>
+        /// <param name="str">要计算哈希值的字符串</param>
+        /// <returns>计算得到的哈希值，如果输入为null或空字符串则返回0</returns>
+        public static int ComputeHash_FNV_1a(this string str)
+        {
+            if (string.IsNullOrEmpty(str))
+                return 0;
+            uint hash = FNV_offset_basis;
+            for (int i = 0; i < str.Length; i++)
+            {
+                char c = str[i];
+                // 先异或，再乘以质数
+                hash ^= c;
+                hash *= FNV_prime;
+            }
+            return (int)hash;
+        }
+
+        /// <summary>
         /// 计算给定字节序列的FNV-1a哈希值。
         /// </summary>
         /// <param name="span">要计算哈希值的字节序列。</param>

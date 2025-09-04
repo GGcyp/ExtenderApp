@@ -17,7 +17,7 @@ namespace ExtenderApp.Views
 
         public IWindow? Window { get; private set; }
 
-        protected T? ViewModel<T>() where T : class, IViewModel
+        public T? ViewModel<T>() where T : class, IViewModel
             => DataContext as T;
 
         public ExtenderAppView(IViewModel? dataContext = null)
@@ -29,6 +29,10 @@ namespace ExtenderApp.Views
         public virtual void InjectWindow(IWindow window)
         {
             Window = window;
+            Window.Closed += (s, e) =>
+            {
+                Exit(new());
+            };
         }
 
         public virtual void Enter(ViewInfo oldViewInfo)

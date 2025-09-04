@@ -8,6 +8,9 @@ namespace ExtenderApp.Views.Converters
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
+            if (value == null)
+                return null;
+
             if (parameter is not string propertyName)
                 return null;
 

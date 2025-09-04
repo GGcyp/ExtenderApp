@@ -1,6 +1,7 @@
 ﻿using AppHost.Extensions.DependencyInjection;
 using ExtenderApp.Abstract;
 
+
 namespace ExtenderApp.Services
 {
     /// <summary>
@@ -18,15 +19,18 @@ namespace ExtenderApp.Services
         /// </summary>
         private readonly IScopeExecutor _scopeExecutor;
 
+        private readonly ILogingService _logingService;
+
         /// <summary>
         /// 导航服务构造函数
         /// </summary>
         /// <param name="serviceProvider">服务提供程序</param>
         /// <param name="scopeExecutor">作用域执行器</param>
-        public NavigationService(IServiceProvider serviceProvider, IScopeExecutor scopeExecutor)
+        public NavigationService(IServiceProvider serviceProvider, IScopeExecutor scopeExecutor, ILogingService logingService)
         {
             _serviceProvider = serviceProvider;
             _scopeExecutor = scopeExecutor;
+            _logingService = logingService;
         }
 
         /// <summary>
@@ -38,11 +42,19 @@ namespace ExtenderApp.Services
         /// <returns>新视图</returns>
         public IView NavigateTo(Type targetViewType, string scope, IView? oldView)
         {
-            IView? newView = string.IsNullOrEmpty(scope) ?
-                _serviceProvider.GetRequiredService(targetViewType) as IView
-                : _scopeExecutor.GetServiceProvider(scope)?.GetRequiredService(targetViewType) as IView;
+            IView? newView = null;
+            try
+            {
+                newView = string.IsNullOrEmpty(scope) ?
+                    _serviceProvider.GetRequiredService(targetViewType) as IView
+                    : _scopeExecutor.GetServiceProvider(scope)?.GetRequiredService(targetViewType) as IView;
+            }
+            catch (Exception ex)
+            {
+                _logingService.Error(string.Format("导航到视图时发生错误，目标视图类型：{0}，作用域：{1}，错误信息：{2}", targetViewType.Name, scope, ex.Message), nameof(INavigationService), ex);
+                throw;
+            }
 
-            ArgumentNullException.ThrowIfNull(newView, string.Format("没有找到要转换的视图：{0}", targetViewType.Name));
 
             oldView?.Exit(newView.ViewInfo);
             newView.Enter(oldView is null ? default : oldView.ViewInfo);

@@ -492,11 +492,11 @@ namespace ExtenderApp.Common.IO.Binaries
         /// <returns>包含序列化数据的字节数组。</returns>
         public byte[] SerializeForArrayPool<T>(T value, out long length)
         {
-            length = GetLength(value);
-            byte[] bytes = ArrayPool<byte>.Shared.Rent((int)length);
-            var writer = new ExtenderBinaryWriter(_sequencePool, bytes);
+            var writer = new ExtenderBinaryWriter(_sequencePool.Rent());
             Serialize(ref writer, value);
-
+            length = writer.BytesCommitted;
+            byte[] bytes = ArrayPool<byte>.Shared.Rent((int)writer.BytesCommitted);
+            writer.CopyTo(bytes);
             writer.Dispose();
             return bytes;
         }

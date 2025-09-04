@@ -1,6 +1,7 @@
 ﻿using ExtenderApp.Abstract;
 using ExtenderApp.ViewModels;
 using ExtenderApp.MainViews.Models;
+using ExtenderApp.MainViews.Views;
 
 namespace ExtenderApp.MainViews.ViewModels
 {

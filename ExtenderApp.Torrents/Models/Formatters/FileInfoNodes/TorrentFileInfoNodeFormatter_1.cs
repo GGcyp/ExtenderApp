@@ -11,7 +11,7 @@ namespace ExtenderApp.Torrents.Models
     {
         protected readonly IBinaryFormatter<int> _int;
 
-        public Version FormatterVersion { get; } = new Version(1, 0, 0, 0);
+        public Version FormatterVersion { get; } = TorrentFormatterVersion.Version_1;
 
         public TorrentFileInfoNodeFormatter_1(IBinaryFormatterResolver resolver, ExtenderBinaryWriterConvert binaryWriterConvert, ExtenderBinaryReaderConvert binaryReaderConvert, BinaryOptions options) : base(resolver, binaryWriterConvert, binaryReaderConvert, options)
         {

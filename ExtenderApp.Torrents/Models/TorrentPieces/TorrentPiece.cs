@@ -1,26 +1,24 @@
-﻿
-
-using System.ComponentModel;
+﻿using ExtenderApp.Common.DataBuffers;
+using ExtenderApp.Data;
+using ExtenderApp.Models;
 
 namespace ExtenderApp.Torrents.Models
 {
-    public class TorrentPiece : INotifyPropertyChanged
+    public class TorrentPiece : DataModel
     {
         public TorrentPieceStateType State { get; set; }
-        public string? Name { get; set; }
-        public string? Messagetype { get; set; }
+        public ValueOrList<DataBuffer<int, string>> PieceNames { get; set; }
+        public string? Messagetype { get; private set; }
 
-        public TorrentPiece() : this(TorrentPieceStateType.DontDownloaded)
+        public TorrentPiece() : this(TorrentPieceStateType.DontDownloaded, new())
         {
-            Name = null;
         }
 
-        public TorrentPiece(TorrentPieceStateType state)
+        public TorrentPiece(TorrentPieceStateType state, ValueOrList<DataBuffer<int, string>> values)
         {
             State = state;
+            PieceNames = values;
         }
-
-        public event PropertyChangedEventHandler? PropertyChanged;
 
         public void UpdateMessageType()
         {

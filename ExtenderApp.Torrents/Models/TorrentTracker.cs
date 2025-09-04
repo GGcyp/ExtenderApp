@@ -8,9 +8,9 @@ namespace ExtenderApp.Torrents.Models
     public class TorrentTracker
     {
         /// <summary>
-        /// 私有字段，用于存储跟踪器实例
+        /// 跟踪器实例
         /// </summary>
-        private readonly ITracker _tracker;
+        public ITracker Tracker { get; }
 
         /// <summary>
         /// 获取或设置跟踪器的URI地址。
@@ -58,7 +58,7 @@ namespace ExtenderApp.Torrents.Models
         /// <param name="tracker">用于初始化的跟踪器实例。</param>
         public TorrentTracker(ITracker tracker)
         {
-            _tracker = tracker;
+            Tracker = tracker;
             TrackerUri = tracker.Uri;
             CanScrape = tracker.CanScrape;
         }
@@ -68,13 +68,13 @@ namespace ExtenderApp.Torrents.Models
         /// </summary>
         public void Update()
         {
-            CanScrape = _tracker.CanScrape;
-            MinUpdateInterval = _tracker.MinUpdateInterval;
-            UpdateInterval = _tracker.UpdateInterval;
-            TimeSinceLastAnnounce = _tracker.TimeSinceLastAnnounce;
-            Status = _tracker.Status;
-            WarningMessage = _tracker.WarningMessage;
-            FailureMessage = _tracker.FailureMessage;
+            CanScrape = Tracker.CanScrape;
+            MinUpdateInterval = Tracker.MinUpdateInterval;
+            UpdateInterval = Tracker.UpdateInterval;
+            TimeSinceLastAnnounce = Tracker.TimeSinceLastAnnounce;
+            Status = Tracker.Status;
+            WarningMessage = Tracker.WarningMessage;
+            FailureMessage = Tracker.FailureMessage;
         }
     }
 }

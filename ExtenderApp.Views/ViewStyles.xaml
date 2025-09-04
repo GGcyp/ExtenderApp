@@ -3,6 +3,7 @@
     <ResourceDictionary.MergedDictionaries>
         <ResourceDictionary Source="/ExtenderApp.Views;component/Styles/Button.xaml"/>
         <ResourceDictionary Source="/ExtenderApp.Views;component/Styles/ScrollView.xaml" />
+        <ResourceDictionary Source="/ExtenderApp.Views;component/Styles/TextBlock.xaml"/>
         <ResourceDictionary Source="/ExtenderApp.Views;component/Themes/Global/DarkTheme.xaml" />
     </ResourceDictionary.MergedDictionaries>
 
@@ -58,6 +59,22 @@
         <Setter Property="Foreground" Value="{DynamicResource GlobalForegroundBrush}" />
         <Setter Property="Background" Value="{DynamicResource GlobalBackgroundBrush}" />
         <Setter Property="BorderBrush" Value="Transparent" />
+    </Style>
+
+    <!-- 定义全局复选框样式 -->
+    <Style TargetType="CheckBox">
+        <Setter Property="Foreground" Value="{DynamicResource GlobalForegroundBrush}" />
+        <Setter Property="FontSize" Value="14" />
+    </Style>
+
+    <!-- 定义全局网格样式 -->
+    <Style TargetType="Grid">
+        <Setter Property="Background"  Value="{DynamicResource GlobalBackgroundBrush}" />
+    </Style>
+
+    <!-- 定义全局堆栈面板样式 -->
+    <Style TargetType="StackPanel">
+        <Setter Property="Background"  Value="{DynamicResource GlobalBackgroundBrush}" />
     </Style>
 
 </ResourceDictionary>

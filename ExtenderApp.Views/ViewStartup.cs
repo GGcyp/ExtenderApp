@@ -5,6 +5,7 @@ using AppHost.Extensions.DependencyInjection;
 using AppHost.Extensions.Hosting;
 using ExtenderApp.Abstract;
 using ExtenderApp.Abstract.View;
+using ExtenderApp.Views.Clipboards;
 using ExtenderApp.Views.CutsceneViews;
 using ExtenderApp.Views.Themes;
 
@@ -15,7 +16,8 @@ namespace ExtenderApp.Views
         public override void AddService(IServiceCollection services)
         {
             services.AddHosted<MainViewHostedService>();
-            services.AddSingleton<IDispatcherService>(new Dispatcher_WPF());
+            services.AddSingleton<IDispatcherService, Dispatcher_WPF>();
+            services.AddSingleton<IClipboard, Clipboard_WPF>();
             services.AddTransient<CutsceneView>();
             AddThemeManager(services);
 

@@ -18,7 +18,7 @@ using ExtenderApp.Abstract.View;
 using ExtenderApp.MainViews.ViewModels;
 using ExtenderApp.Views;
 
-namespace ExtenderApp.MainViews
+namespace ExtenderApp.MainViews.Views
 {
     /// <summary>
     /// MainViewControl.xaml 的交互逻辑
@@ -27,7 +27,7 @@ namespace ExtenderApp.MainViews
     {
         private IThemeManager themeManager;
 
-        public MainView(IThemeManager themeManager,MainViewModel viewModel) : base(viewModel)
+        public MainView(IThemeManager themeManager, MainViewModel viewModel) : base(viewModel)
         {
             InitializeComponent();
             this.themeManager = themeManager;
@@ -41,6 +41,7 @@ namespace ExtenderApp.MainViews
         private void Button_Click_1(object sender, RoutedEventArgs e)
         {
             themeManager.ApplyTheme("LightTheme");
+            var item = Application.Current.Resources.MergedDictionaries.Count;
         }
     }
 }
