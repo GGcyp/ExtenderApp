@@ -90,7 +90,7 @@ namespace ExtenderApp.Services.Messages
 
             var consumeInfo = new MessageConsumeInfo<TMessage>(target, eventHandler);
             _subscribers.Add(consumeInfo);
-            return new MessageHandle(MessageType, consumeInfo.ConsumeId);
+            return new MessageHandle(MessageType.FullName ?? MessageType.Name, consumeInfo.ConsumeId);
         }
 
         /// <summary>

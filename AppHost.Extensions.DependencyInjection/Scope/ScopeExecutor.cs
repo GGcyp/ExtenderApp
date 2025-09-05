@@ -35,7 +35,13 @@ namespace AppHost.Extensions.DependencyInjection
 
         public void UnLoadScope(string scope)
         {
-            _scopesProviderDict.Remove(scope);
+            if(string.IsNullOrEmpty(scope))
+            {
+                return;
+            }
+
+            _scopesProviderDict.Remove(scope, out var scopeService);
+            scopeService?.Dispose();
         }
 
         public IScopeServiceProvider? GetServiceProvider(string scope)

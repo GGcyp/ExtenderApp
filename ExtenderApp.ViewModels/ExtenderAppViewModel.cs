@@ -540,14 +540,14 @@ namespace ExtenderApp.ViewModels
 
         #region  Plugin
 
-        protected void LoadPlugin(PluginDetails plugin)
-        {
-            _serviceStore.PluginService.LoadPlugin(plugin);
-        }
-
         protected async Task LoadPluginAsync(PluginDetails plugin)
         {
             await _serviceStore.PluginService.LoadPluginAsync(plugin);
+        }
+
+        protected void UnLoadPlugin(PluginDetails plugin)
+        {
+            _serviceStore.PluginService.UnloadPlugin(plugin);
         }
 
         #endregion

@@ -159,7 +159,17 @@ namespace AppHost.Extensions.DependencyInjection
         public override void Dispose()
         {
             base.Dispose();
-            ScopeOptions.Dispose();
+            foreach (var scope in ScopeOptions.ReloScopes)
+            {
+                _scopeExecutor.UnLoadScope(scope);
+            }
+            foreach (var item in _serviceConstructorDetailsDict.Values)
+            {
+                if (item.ServiceInstance is IDisposable disposable)
+                {
+                    disposable.Dispose();
+                }
+            }
         }
     }
 }

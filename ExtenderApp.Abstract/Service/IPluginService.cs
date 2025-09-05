@@ -24,12 +24,6 @@ namespace ExtenderApp.Abstract
         void LoadPluginInfo(string modFolderPath = null);
 
         /// <summary>
-        /// 加载模组
-        /// </summary>
-        /// <param name="details">模组详细信息</param>
-        void LoadPlugin(PluginDetails details);
-
-        /// <summary>
         /// 卸载模组
         /// </summary>
         /// <param name="details">模组详细信息</param>

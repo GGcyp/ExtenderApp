@@ -104,9 +104,6 @@ namespace ExtenderApp.MainViews.ViewModels
         /// </summary>
         private void ToMainView()
         {
-            // 清除当前插件详细信息
-            Model.CurrentPluginDetails = null;
-
             // 导航到 CutsceneView 并设置为当前过场动画视图
             var cutscene = NavigateTo<CutsceneView>();
             Model.CurrentCutsceneView = cutscene;
@@ -115,6 +112,9 @@ namespace ExtenderApp.MainViews.ViewModels
             // 在后台线程中处理视图更新，以确保 UI 线程不会被阻塞
             Task.Run(async () =>
             {
+                UnLoadPlugin(Model.CurrentPluginDetails);
+                // 清除当前插件详细信息
+                Model.CurrentPluginDetails = null;
                 // 使用 DispatcherService 在 UI 线程上执行操作
                 _serviceStore.DispatcherService.Invoke(() =>
                 {

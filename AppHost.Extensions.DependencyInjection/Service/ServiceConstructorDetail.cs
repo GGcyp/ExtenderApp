@@ -27,6 +27,11 @@ namespace AppHost.Extensions.DependencyInjection
         /// </summary>
         private object? _serviceInstance;
 
+        /// <summary>
+        /// 获取服务实例
+        /// </summary>
+        public object? ServiceInstance => _serviceInstance ?? ServiceDescriptor.ImplementationInstance;
+
         public ServiceConstructorDetail(ServiceDescriptor serviceDescriptor) : this(null, null, serviceDescriptor)
         {
 

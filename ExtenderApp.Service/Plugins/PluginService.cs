@@ -1,10 +1,11 @@
-﻿using System.Reflection;
+﻿using System.IO;
+using System.Reflection;
 using System.Runtime.Loader;
 using AppHost.Builder.Extensions;
 using AppHost.Extensions.DependencyInjection;
 using ExtenderApp.Abstract;
-using ExtenderApp.Data;
 using ExtenderApp.Common.Error;
+using ExtenderApp.Data;
 
 namespace ExtenderApp.Services
 {
@@ -79,11 +80,7 @@ namespace ExtenderApp.Services
         {
             if (string.IsNullOrEmpty(modStartDLLName)) return null;
 
-            for (int i = 0; i < _pluginStore.Count; i++)
-            {
-                if (_pluginStore[i].StartupDll == modStartDLLName) return _pluginStore[i];
-            }
-            return null;
+            return _pluginStore.FirstOrDefault(m => m.StartupDll == modStartDLLName);
         }
 
         /// <summary>
@@ -115,56 +112,12 @@ namespace ExtenderApp.Services
         }
 
         /// <summary>
-        /// 加载插件
-        /// </summary>
-        /// <param name="details">插件详细信息</param>
-        /// <exception cref="ArgumentNullException">如果插件详细信息为空或路径、启动DLL为空</exception>
-        /// <exception cref="InvalidOperationException">如果未找到模组的启动项</exception>
-        public void LoadPlugin(PluginDetails details)
-        {
-            ArgumentNullException.ThrowIfNull(details, nameof(details));
-
-            if (details.LoadContext is not null)
-                return;
-
-            if (string.IsNullOrEmpty(details.PluginDirectoryPath) || string.IsNullOrEmpty(details.StartupDll))
-                throw new ArgumentNullException("Mod详情中的路径或启动DLL不能为空");
-
-            var loadContext = new AssemblyLoadContext(details.Title, true);
-            details.LoadContext = loadContext;
-            string dllPath = Path.Combine(details.PluginDirectoryPath, details.StartupDll);
-
-            //添加模组依赖库
-            string packName = string.IsNullOrEmpty(details.PackPath) ? _pathProvider.PackFolderName : details.PackPath;
-            string packPath = Path.Combine(details.PluginDirectoryPath, packName);
-            if (Directory.Exists(packPath))
-            {
-                foreach (var dir in Directory.GetFiles(packPath))
-                {
-                    LoadAssembly(loadContext, dir);
-                }
-            }
-
-            var startAssembly = LoadAssembly(loadContext, dllPath);
-
-            _pluginTransform.Details = details;
-            var modStartup = _scopeExecutor.LoadScope<PluginEntityStartup>(startAssembly, _pluginTransform.AddServiceToPluginScope);
-
-            if (modStartup == null)
-                throw new InvalidOperationException(string.Format("未找到这个模组的启动项：{0}", details.Title));
-            details.StartupType = modStartup.StartType;
-            details.CutsceneViewType = modStartup.CutsceneViewType;
-            modStartup.ConfigureBinaryFormatterStore(_binaryFormatterStore);
-        }
-
-        /// <summary>
         /// 卸载插件
         /// </summary>
         /// <param name="details">插件详细信息</param>
         public void UnloadPlugin(PluginDetails details)
         {
-            _scopeExecutor.UnLoadScope(details.Title);
-            details.LoadContext.Unload();
+            _scopeExecutor.UnLoadScope(details.PluginScope);
         }
 
         /// <summary>
@@ -177,9 +130,32 @@ namespace ExtenderApp.Services
         {
             ArgumentNullException.ThrowIfNull(details, nameof(details));
 
-            if (details.LoadContext is not null)
-                return;
+            bool isStart = details.LoadContext == null;
+            if (isStart)
+            {
+                await LoadAssemblyAsync(details);
+            }
 
+            var loadContext = details.LoadContext;
+
+            var startAssembly = details.StartAssembly;
+
+            _pluginTransform.Details = details;
+            var modStartup = _scopeExecutor.LoadScope<PluginEntityStartup>(startAssembly, _pluginTransform.AddServiceToPluginScope);
+
+            if (modStartup == null)
+                throw new InvalidOperationException(string.Format("未找到这个模组的启动项：{0}", details.Title));
+            details.StartupType = modStartup.StartType;
+            details.CutsceneViewType = modStartup.CutsceneViewType;
+
+            if (isStart)
+            {
+                modStartup.ConfigureBinaryFormatterStore(_binaryFormatterStore);
+            }
+        }
+
+        private async Task LoadAssemblyAsync(PluginDetails details)
+        {
             if (string.IsNullOrEmpty(details.PluginDirectoryPath) || string.IsNullOrEmpty(details.StartupDll))
                 throw new ArgumentNullException("Mod详情中的路径或启动DLL不能为空");
 
@@ -192,30 +168,19 @@ namespace ExtenderApp.Services
             string packPath = Path.Combine(details.PluginDirectoryPath, packName);
             if (Directory.Exists(packPath))
             {
-                foreach (var dir in Directory.GetFiles(packPath))
+                await Task.Run(() =>
                 {
-                    await LoadAssemblyAsync(loadContext, dir);
-                }
+                    foreach (var dir in Directory.GetFiles(packPath))
+                    {
+                        using (var stream = new FileStream(dir, FileMode.Open, FileAccess.Read))
+                        {
+                            loadContext.LoadFromStream(stream);
+                        }
+                    }
+                });
             }
 
-            var startAssembly = LoadAssembly(loadContext, dllPath);
-
-            _pluginTransform.Details = details;
-            var modStartup = _scopeExecutor.LoadScope<PluginEntityStartup>(startAssembly, _pluginTransform.AddServiceToPluginScope);
-
-            if (modStartup == null)
-                throw new InvalidOperationException(string.Format("未找到这个模组的启动项：{0}", details.Title));
-            details.StartupType = modStartup.StartType;
-            details.CutsceneViewType = modStartup.CutsceneViewType;
-            modStartup.ConfigureBinaryFormatterStore(_binaryFormatterStore);
-        }
-
-        private async Task LoadAssemblyAsync(AssemblyLoadContext loadContext, string dllPath)
-        {
-            await Task.Run(() =>
-            {
-                LoadAssembly(loadContext, dllPath);
-            });
+            details.StartAssembly = LoadAssembly(loadContext, dllPath);
         }
 
         /// <summary>
@@ -233,7 +198,6 @@ namespace ExtenderApp.Services
             }
             return reslut;
         }
-
 
         /// <summary>
         /// 用于加载插件的转换类

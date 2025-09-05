@@ -5,7 +5,7 @@ namespace AppHost.Extensions.DependencyInjection
     /// <summary>
     /// 作用域选项。
     /// </summary>
-    public class ScopeOptions : IDisposable
+    public class ScopeOptions
     {
         /// <summary>
         /// 依赖的其他作用域
@@ -37,11 +37,6 @@ namespace AppHost.Extensions.DependencyInjection
                 throw new ArgumentNullException(nameof(scope));
             }
             ReloScopes.Add(scope);
-        }
-
-        public void Dispose()
-        {
-            ReloScopes = null;
         }
     }
 }

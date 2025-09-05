@@ -1,4 +1,5 @@
 ﻿using System.IO;
+using System.Reflection;
 using System.Runtime.Loader;
 
 namespace ExtenderApp.Data
@@ -72,6 +73,11 @@ namespace ExtenderApp.Data
         /// </summary>
         /// <returns>返回插件图标路径的字符串。</returns>
         public string? PluginIcon { get; set; }
+
+        /// <summary>
+        /// 插件启动程序集
+        /// </summary>
+        public Assembly? StartAssembly { get; set; }
 
         /// <summary>
         /// 初始化一个插件详细信息实例
