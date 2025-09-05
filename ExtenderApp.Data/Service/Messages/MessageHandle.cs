@@ -9,9 +9,14 @@ namespace ExtenderApp.Data
     public struct MessageHandle
     {
         /// <summary>
+        /// 为空订阅句柄实例。
+        /// </summary>
+        public static MessageHandle Empty => new(string.Empty, Guid.Empty);
+
+        /// <summary>
         /// 订阅的消息类型。
         /// </summary>
-        public Type MessageType { get; }
+        public string MessageName { get; }
 
         /// <summary>
         /// 订阅Id,用于唯一标识一次订阅。
@@ -19,13 +24,18 @@ namespace ExtenderApp.Data
         public Guid SubscriptionId { get; }
 
         /// <summary>
+        /// 判断当前实例是否为空订阅句柄。
+        /// </summary>
+        public bool IsEmpty => string.IsNullOrEmpty(MessageName) && SubscriptionId == Guid.Empty;
+
+        /// <summary>
         /// 初始化 <see cref="MessageHandle"/> 实例。
         /// </summary>
         /// <param name="messageType">消息类型</param>
         /// <param name="subscriptionId">订阅Id</param>
-        public MessageHandle(Type messageType, Guid subscriptionId)
+        public MessageHandle(string messageName, Guid subscriptionId)
         {
-            MessageType = messageType;
+            MessageName = messageName;
             SubscriptionId = subscriptionId;
         }
     }

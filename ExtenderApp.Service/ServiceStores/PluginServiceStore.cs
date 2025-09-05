@@ -20,7 +20,8 @@ namespace ExtenderApp.Services
             IPathService pathService,
             IServiceProvider serviceProvider,
             IMainWindowService mainWindowService,
-            ISystemService systemService) :
+            ISystemService systemService,
+            IMessageService messageService) :
             base(dispatcherService,
                 navigationService,
                 cacheStore,
@@ -30,7 +31,8 @@ namespace ExtenderApp.Services
                 pathService,
                 serviceProvider,
                 mainWindowService,
-                systemService)
+                systemService,
+                messageService)
         {
             PuginDetails = modDetails;
         }

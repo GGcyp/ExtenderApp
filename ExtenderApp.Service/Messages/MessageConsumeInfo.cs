@@ -28,14 +28,21 @@ namespace ExtenderApp.Services.Messages
         public bool IsAlive => _weakReference.TryGetTarget(out var target) && target != null;
 
         /// <summary>
+        /// 目标对象的强引用
+        /// </summary>
+        public object Target { get; }
+
+        /// <summary>
         /// 初始化 MessageInfo 实例
         /// </summary>
         /// <param name="target">要引用的对象</param>
-        public MessageConsumeInfo(EventHandler<TMessage> handleMessage, object target)
+        /// <param name="handleMessage">消息处理委托</param>
+        public MessageConsumeInfo(object target, EventHandler<TMessage> handleMessage)
         {
             HandleMessage = handleMessage;
             // 创建对目标对象的弱引用
             _weakReference = new(target);
+            Target = target;
             ConsumeId = Guid.NewGuid();
         }
 

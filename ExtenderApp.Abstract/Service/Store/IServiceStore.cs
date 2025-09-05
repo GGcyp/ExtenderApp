@@ -58,5 +58,10 @@
         /// 获取系统服务接口。
         /// </summary>
         ISystemService SystemService { get; }
+
+        /// <summary>
+        /// 消息服1务接口。
+        /// </summary>
+        IMessageService MessageService { get; }
     }
 }

@@ -25,6 +25,9 @@ namespace ExtenderApp.ViewModels
         /// </summary>
         private readonly string _viewModelName;
 
+        /// <summary>
+        /// 当前视图模型的插件详细信息
+        /// </summary>
         protected PluginDetails? Details { get; set; }
 
         /// <summary>
@@ -558,6 +561,40 @@ namespace ExtenderApp.ViewModels
         protected void ClipboardSetText(string text)
         {
             _serviceStore.SystemService.Clipboard.SetText(text);
+        }
+
+        #endregion
+
+        #region Message
+
+        /// <summary>
+        /// 订阅消息
+        /// </summary>
+        /// <typeparam name="TMessage">订阅消息类型</typeparam>
+        /// <param name="handleMessage">订阅消息委托</param>
+        protected void SubscribeMessage<TMessage>(EventHandler<TMessage> handleMessage)
+        {
+            _serviceStore.MessageService.Subscribe(this, handleMessage);
+        }
+
+        /// <summary>
+        /// 发布消息
+        /// </summary>
+        /// <typeparam name="TMessage">发布消息类型</typeparam>
+        /// <param name="message">发布的消息</param>
+        protected void PublishMessage<TMessage>(TMessage message)
+        {
+            _serviceStore.MessageService.Publish(this, message);
+        }
+
+        /// <summary>
+        /// 取消订阅消息
+        /// </summary>
+        /// <typeparam name="TMessage">被取消的消息类型</typeparam>
+        /// <param name="handleMessage">取消的委托</param>
+        protected void UnsubscribeMessage<TMessage>(EventHandler<TMessage> handleMessage)
+        {
+            _serviceStore.MessageService.Unsubscribe(this, handleMessage);
         }
 
         #endregion

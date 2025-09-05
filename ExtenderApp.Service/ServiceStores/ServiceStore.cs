@@ -27,6 +27,8 @@ namespace ExtenderApp.Services
 
         public ISystemService SystemService { get; }
 
+        public IMessageService MessageService { get; }
+
         public ServiceStore(IDispatcherService dispatcherService,
             INavigationService navigationService,
             ICacheService cacheStore,
@@ -36,7 +38,8 @@ namespace ExtenderApp.Services
             IPathService pathService,
             IServiceProvider serviceProvider,
             IMainWindowService mainWindowService,
-            ISystemService systemService)
+            ISystemService systemService,
+            IMessageService messageService)
         {
             DispatcherService = dispatcherService;
             NavigationService = navigationService;
@@ -48,6 +51,7 @@ namespace ExtenderApp.Services
             ServiceProvider = serviceProvider;
             MainWindowService = mainWindowService;
             SystemService = systemService;
+            MessageService = messageService;
         }
     }
 }
