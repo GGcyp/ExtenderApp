@@ -146,7 +146,7 @@ namespace ExtenderApp.Torrents
             {
                 Trackers = new ObservableCollection<Uri>();
 
-                string path = store.PuginDetails.PluginDirectoryPath;
+                string path = store.PuginDetails.PluginFolderPath;
                 if (File.Exists(path))
                 {
                     using (StreamReader reader = new(path))

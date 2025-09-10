@@ -12,13 +12,13 @@ namespace ExtenderApp.Mod.PPR
     /// </summary>
     public partial class PPRMainView : Window
     {
-        private readonly PPRViewModel _viewModel;
+        private readonly PPRViewModel ;
 
         public PPRMainView(PPRViewModel viewModel)
         {
             InitializeComponent();
             DataContext = viewModel;
-            _viewModel = viewModel;
+             = viewModel;
             Init();
         }
 
@@ -31,8 +31,8 @@ namespace ExtenderApp.Mod.PPR
         private void PprDataGrid_SizeChanged(object sender, SizeChangedEventArgs e)
         {
             var pageSize = (int)((PPRDataGrid)sender).ActualHeight / 25;
-            _viewModel.Inventories.UpdatePageSize(pageSize);
-            _viewModel.Inventories.Refresh();
+            .Inventories.UpdatePageSize(pageSize);
+            .Inventories.Refresh();
         }
 
         private void OnEntityNodeSelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
@@ -40,9 +40,9 @@ namespace ExtenderApp.Mod.PPR
             if (e.NewValue is not PPRDto dto) return;
 
 
-            _viewModel.OnSelectedPPRDtoChanged(dto);
+            .OnSelectedPPRDtoChanged(dto);
 
-            int allcount = _viewModel.Inventories.GetAllEntitiesCount();
+            int allcount = .Inventories.GetAllEntitiesCount();
             entityDetailsSlider.SetValue(0, allcount, allcount, 10);
         }
 
@@ -50,7 +50,7 @@ namespace ExtenderApp.Mod.PPR
         {
             //viewModel.Inventories.PageIndex = viewModel.Inventories.GetAllEntitiesCount() - (int)entityDetailsSlider.Value;
 
-            _viewModel.Inventories.Refresh(_viewModel.Inventories.GetAllEntitiesCount() - (int)entityDetailsSlider.Value);
+            .Inventories.Refresh(.Inventories.GetAllEntitiesCount() - (int)entityDetailsSlider.Value);
         }
 
         private void MessageShow(string message)
@@ -62,31 +62,31 @@ namespace ExtenderApp.Mod.PPR
         {
             fileButton.IsChecked = false;
 
-            if(_viewModel.Root is not null)
+            if(.Root is not null)
             {
                 MessageBox.Show("已经打开预算工程文件,不能重复打开");
                 return;
             }
 
             OpenFileDialog openFileDialog = new OpenFileDialog();
-            openFileDialog.Filter = _viewModel.Filer;
+            openFileDialog.Filter = .Filer;
             openFileDialog.Title = "打开预算工程文件";
             //if ((bool)openFileDialog.ShowDialog()!)
             //{
-            //    _viewModel.Read(openFileDialog.FileName);
+            //    .Read(openFileDialog.FileName);
             //}
         }
 
         private void AddFileClick(object sender, RoutedEventArgs e)
         {
             fileButton.IsChecked = false;
-            if (_viewModel.Root is null)
+            if (.Root is null)
             {
                 MessageBox.Show("请先加载一个预算工程");
                 return;
             }
             OpenFileDialog openFileDialog = new OpenFileDialog();
-            openFileDialog.Filter = _viewModel.Filer;
+            openFileDialog.Filter = .Filer;
             openFileDialog.Title = "打开预算工程文件";
             if ((bool)openFileDialog.ShowDialog()!)
             {
@@ -95,7 +95,7 @@ namespace ExtenderApp.Mod.PPR
                     if (string.IsNullOrEmpty(frequency)) return;
 
                     if (!int.TryParse(frequency, out int index)) return;
-                    _viewModel.AddPeriodQuantityEntity(openFileDialog.FileName, index);
+                    .AddPeriodQuantityEntity(openFileDialog.FileName, index);
                 });
                 frequencyView.ShowDialog();
             }
@@ -104,7 +104,7 @@ namespace ExtenderApp.Mod.PPR
         private void AddFolderClick(object sender, RoutedEventArgs e)
         {
             fileButton.IsChecked = false;
-            if (_viewModel.Root is null)
+            if (.Root is null)
             {
                 MessageBox.Show("请先加载一个预算工程");
                 return;
@@ -118,11 +118,11 @@ namespace ExtenderApp.Mod.PPR
                     if (string.IsNullOrEmpty(frequency)) return;
 
                     if (!int.TryParse(frequency, out int index)) return;
-                    _viewModel.AddPeriodQuantityEntities(openFileDialog.FolderName, index);
+                    .AddPeriodQuantityEntities(openFileDialog.FolderName, index);
                 });
                 frequencyView.ShowDialog();
             }
-            //_viewModel.Write("E:\\工程文件\\海口市秀英区西秀中心小学重建项目\\工程进度记录\\进度文件.xml");
+            //.Write("E:\\工程文件\\海口市秀英区西秀中心小学重建项目\\工程进度记录\\进度文件.xml");
         }
     }
 }

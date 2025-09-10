@@ -5,13 +5,14 @@
     <Nullable>enable</Nullable>
     <UseWPF>true</UseWPF>
     <ImplicitUsings>enable</ImplicitUsings>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Update="View\MediaMainView.xaml.cs">
+    <Compile Update="Views\MediaMainView.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Update="View\VideoView.xaml.cs">
+    <Compile Update="Views\VideoView.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
   </ItemGroup>
@@ -21,7 +22,7 @@
 		<PackageReference Include="PropertyChanged.Fody" Version="4.1.0" />
 	</ItemGroup>
 
-	<Target Name="CopyFilesAfterBuild" AfterTargets="PostBuildEvent">
+	<Target Name="CopyFilesAfterBuild" AfterTargets="Build">
 		<!-- 收集要复制的动态库文件（.dll） -->
 		<ItemGroup>
 			<DllFiles Include="$(TargetDir)\$(ProjectName).dll" />
@@ -30,13 +31,20 @@
 		<ItemGroup>
 			<JsonFiles Include="$(TargetDir)\init.json" />
 		</ItemGroup>
+		<!--需要复制的ffmpeg动态库-->
 		<ItemGroup>
-			<TargetFolder Include="E:\WPF_Project\ExtenderApp\ExtenderApp\bin\Debug\net8.0-windows\mods" />
+			<FFmpegFiles Include="$(TargetDir)\ffmpegLibs\*.dll" />
+		</ItemGroup>
+		<ItemGroup>
+			<TargetFolder Include="$(SolutionDir)ExtenderApp\bin\$(Configuration)\net8.0-windows\plugins" />
 		</ItemGroup>
 		<!-- 创建目标文件夹（如果不存在）并复制动态库文件和init.json -->
 		<MakeDir Directories="%(TargetFolder.Identity)\$(ProjectName)" Condition="!Exists('%(TargetFolder.Identity)\$(ProjectName)')" />
 		<Copy SourceFiles="@(DllFiles)" DestinationFolder="%(TargetFolder.Identity)\$(ProjectName)" SkipUnchangedFiles="true" />
 		<Copy SourceFiles="@(JsonFiles)" DestinationFolder="%(TargetFolder.Identity)\$(ProjectName)" SkipUnchangedFiles="true" />
+		
+		<MakeDir Directories="%(TargetFolder.Identity)\$(ProjectName)\ffmpegLibs" Condition="!Exists('%(TargetFolder.Identity)\$(ProjectName)\ffmpegLibs')" />
+		<Copy SourceFiles="@(FFmpegFiles)" DestinationFolder="%(TargetFolder.Identity)\$(ProjectName)\ffmpegLibs" SkipUnchangedFiles="true" />
 
 		<!-- 获取所有包引用的路径 -->
 		<ItemGroup>
@@ -54,7 +62,34 @@
 	</ItemGroup>
 	
   <ItemGroup>
+    <None Update="ffmpegLibs\avcodec-61.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="ffmpegLibs\avdevice-61.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="ffmpegLibs\avfilter-10.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="ffmpegLibs\avformat-61.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="ffmpegLibs\avutil-59.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="ffmpegLibs\postproc-58.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="ffmpegLibs\swresample-5.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="ffmpegLibs\swscale-8.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="init.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="libvlccore.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>

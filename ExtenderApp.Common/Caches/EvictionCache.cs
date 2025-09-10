@@ -6,12 +6,14 @@ namespace ExtenderApp.Common.Caches
     /// 抽象缓存类，用于实现具有逐出机制的缓存系统。
     /// </summary>
     /// <typeparam name="TValue">缓存项的类型，必须为类类型。</typeparam>
-    public class EvictionCache<Tkey, TValue> : DisposableObject where TValue : class
+    public class EvictionCache<Tkey, TValue> : DisposableObject
+        where Tkey : notnull
+        where TValue : class
     {
         /// <summary>
         /// 存储缓存项的字典，键为整数类型，值为<see cref="EvictionCacheInfo"/>类型。
         /// </summary>
-        private readonly ConcurrentDictionary<Tkey, EvictionCacheInfo> _dict;
+        private readonly ConcurrentDictionary<Tkey, EvictionCacheInfo<TValue>> _dict;
 
         /// <summary>
         /// 定时任务，用于定期检查并逐出缓存项。
@@ -56,7 +58,7 @@ namespace ExtenderApp.Common.Caches
             }
             else
             {
-                var cacheInfo = EvictionCacheInfo.Get();
+                var cacheInfo = EvictionCacheInfo<TValue>.Get();
                 cacheInfo.Value = value!;
                 cacheInfo.LastVisitTime = DateTime.UtcNow;
                 _dict[key] = cacheInfo;
@@ -74,7 +76,7 @@ namespace ExtenderApp.Common.Caches
             if (_dict.TryGetValue(key, out var info))
             {
                 info.LastVisitTime = DateTime.UtcNow;
-                value = (TValue?)info.Value;
+                value = info.Value;
                 return true;
             }
             value = default;
@@ -103,7 +105,7 @@ namespace ExtenderApp.Common.Caches
             value = default;
             if (_dict.Remove(key, out var info))
             {
-                value = info.Value as TValue;
+                value = info.Value;
                 info.Release();
                 return true;
             }
@@ -136,7 +138,7 @@ namespace ExtenderApp.Common.Caches
                 if (pair.Value.LastVisitTime - now > checkInterval)
                     continue;
 
-                if (ShouldEvict(pair.Value.GetValue<TValue>(), now))
+                if (ShouldEvict(pair.Value.Value, now))
                 {
                     toRemove.Add(pair.Key);
                 }
@@ -194,7 +196,7 @@ namespace ExtenderApp.Common.Caches
             {
                 foreach (var info in _dict.Values)
                 {
-                    yield return info.GetValue<TValue>();
+                    yield return info.Value;
                 }
             }
         }

@@ -55,7 +55,7 @@ namespace ExtenderApp.Torrents.ViewModels
                 {
                     Task.Run(async () =>
                     {
-                        CurrentTorrentInfo = await Model.LoadTorrentAsync(filePath, _serviceStore.DispatcherService);
+                        CurrentTorrentInfo = await Model.LoadTorrentAsync(filePath, ServiceStore.DispatcherService);
                         DispatcherInvoke(() =>
                         {
                             var window = NavigateToWindow<TorrentAddFileInfoView>()!;

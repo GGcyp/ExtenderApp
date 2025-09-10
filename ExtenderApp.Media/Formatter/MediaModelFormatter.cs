@@ -2,10 +2,11 @@
 using ExtenderApp.Abstract;
 using ExtenderApp.Common.IO.Binaries.Formatters;
 using ExtenderApp.Data;
+using ExtenderApp.Media.Models;
 
 namespace ExtenderApp.Media
 {
-    internal class MediaModelFormatter : ResolverFormatter<MediaModel>
+    internal class MediaModelFormatter : VersionDataFormatter<MediaModel>
     {
         private readonly IBinaryFormatter<bool> _boolFormatter;
         private readonly IBinaryFormatter<double> _doubleFormatter;
@@ -14,6 +15,8 @@ namespace ExtenderApp.Media
         public override MediaModel Default => new MediaModel() { VideoInfos = _videoInfoFormatter.Default };
 
         public override int DefaultLength => _boolFormatter.DefaultLength * 2 + _doubleFormatter.DefaultLength + _videoInfoFormatter.DefaultLength;
+
+        public override Version FormatterVersion => new Version(0, 0, 0, 1);
 
         public MediaModelFormatter(IBinaryFormatterResolver resolver) : base(resolver)
         {
@@ -25,9 +28,6 @@ namespace ExtenderApp.Media
         public override MediaModel Deserialize(ref ExtenderBinaryReader reader)
         {
             MediaModel mediaData = new();
-            mediaData.VideoNotExist = _boolFormatter.Deserialize(ref reader);
-            mediaData.RecordWatchingTime = _boolFormatter.Deserialize(ref reader);
-            mediaData.Volume = _doubleFormatter.Deserialize(ref reader);
             mediaData.VideoInfos = _videoInfoFormatter.Deserialize(ref reader);
             mediaData.VideoInfos = mediaData.VideoInfos ?? new();
             return mediaData;
@@ -40,9 +40,6 @@ namespace ExtenderApp.Media
                 throw new ArgumentNullException(nameof(value));
             }
 
-            _boolFormatter.Serialize(ref writer, value.VideoNotExist);
-            _boolFormatter.Serialize(ref writer, value.RecordWatchingTime);
-            _doubleFormatter.Serialize(ref writer, value.Volume);
             _videoInfoFormatter.Serialize(ref writer, value.VideoInfos);
         }
 

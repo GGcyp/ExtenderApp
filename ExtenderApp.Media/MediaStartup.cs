@@ -2,13 +2,18 @@
 using ExtenderApp.Abstract;
 using ExtenderApp.Services;
 using ExtenderApp.Common;
-using ExtenderApp.Media.Model;
+using ExtenderApp.Media.Models;
+using ExtenderApp.Media.ViewModels;
+using ExtenderApp.Data;
+using System.IO;
 
 
 namespace ExtenderApp.Media
 {
     internal class MedaiStartup : PluginEntityStartup
     {
+        private const string ffmpegFolderName = "ffmpegLibs";
+
         public override Type StartType => typeof(MediaMainView);
 
         public override void AddService(IServiceCollection services)
@@ -21,14 +26,32 @@ namespace ExtenderApp.Media
 
             //ViewModel
             services.AddTransient<MediaMainViewModel>();
-            services.AddTransient<VideoViewModle>();
-            services.AddTransient<VideoListViewModle>();
+            services.AddTransient<VideoViewModel>();
+            services.AddTransient<VideoListViewModel>();
+
+
+            //FFmpegEngine
+            AddFFmpegEngines(services);
         }
 
         public override void ConfigureBinaryFormatterStore(IBinaryFormatterStore store)
         {
             store.Add<VideoInfo, VideoInfoFormatter>();
-            store.Add<MediaModel, MediaModelFormatter>();
+            store.AddLocalDataFormatter<MediaModel, MediaModelFormatter>();
+        }
+
+        private static IServiceCollection AddFFmpegEngines(IServiceCollection services)
+        {
+            services.AddSingleton<FFmpegEngine>((p) =>
+            {
+                var details = p.GetRequiredService<PluginDetails>();
+                var ffmpegPath = Path.Combine(details.PluginFolderPath!, ffmpegFolderName);
+
+                FFmpegEngine engine = new(ffmpegPath);
+
+                return engine;
+            });
+            return services;
         }
     }
 }

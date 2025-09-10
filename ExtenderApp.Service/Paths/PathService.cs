@@ -23,9 +23,9 @@ namespace ExtenderApp.Services
         private const string LIBNAME = "lib";
 
         /// <summary>
-        /// 模块文件的存储路径
+        /// 插件文件的存储路径
         /// </summary>
-        private const string MODSNAME = "mods";
+        private const string PLUGINSNAME = "plugins";
 
         /// <summary>
         /// 依赖包的存储路径
@@ -42,10 +42,10 @@ namespace ExtenderApp.Services
         public PathService(IHostEnvironment environment)
         {
             _environment = environment;
-
+            AppRootPath = environment.ContentRootPath;
             LoggingPath = ChekAndCreateFolder(LOOGINGNAME);
             LibPath = ChekAndCreateFolder(LIBNAME);
-            ModsPath = ChekAndCreateFolder(MODSNAME);
+            ModsPath = ChekAndCreateFolder(PLUGINSNAME);
             DataPath = ChekAndCreateFolder(DATANAME);
 
             PackFolderName = PACKNAME;
@@ -104,5 +104,7 @@ namespace ExtenderApp.Services
         public string DataPath { get; }
 
         public string PackFolderName { get; }
+
+        public string AppRootPath { get; }
     }
 }

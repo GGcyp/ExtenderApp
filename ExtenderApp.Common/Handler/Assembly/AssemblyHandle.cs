@@ -1,4 +1,5 @@
 ﻿using System.Reflection;
+using System.Runtime.InteropServices;
 
 namespace Communal.Handles
 {
@@ -7,6 +8,14 @@ namespace Communal.Handles
     /// </summary>
     public static class AssemblyHandle
     {
+        /// <summary>
+        /// 加载指定的动态链接库
+        /// </summary>
+        /// <param name="filePath">动态链接库的地址</param>
+        /// <returns>加载地址</returns>
+        [DllImport("kernel32.dll", SetLastError = true)]
+        public static extern IntPtr LoadLibrary(string filePath);
+
         /// <summary>
         /// 加载指定目录下的所有程序集
         /// </summary>

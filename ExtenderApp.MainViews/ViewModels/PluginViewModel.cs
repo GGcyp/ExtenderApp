@@ -26,7 +26,7 @@ namespace ExtenderApp.MainViews.ViewModels
             Task.Run(async () =>
             {
                 await LoadPluginAsync(details);
-                _serviceStore.DispatcherService.Invoke(() =>
+                ServiceStore.DispatcherService.Invoke(() =>
                 {
                     Model.CurrentMainView = NavigateTo<MainView_RunView>();
                     Model.CurrentView = NavigateTo(details);

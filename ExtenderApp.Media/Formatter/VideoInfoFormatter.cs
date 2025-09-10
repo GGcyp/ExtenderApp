@@ -3,7 +3,7 @@ using ExtenderApp.Common.IO.Binaries;
 using ExtenderApp.Data;
 using ExtenderApp.Abstract;
 
-namespace ExtenderApp.Media.Model
+namespace ExtenderApp.Media.Models
 {
     /// <summary>
     /// VideoInfoFormatter 类是一个扩展格式化器，用于格式化 VideoInfo 对象。

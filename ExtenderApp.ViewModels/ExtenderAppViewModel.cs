@@ -18,7 +18,7 @@ namespace ExtenderApp.ViewModels
         /// <summary>
         /// 服务存储接口实例
         /// </summary>
-        protected readonly IServiceStore _serviceStore;
+        protected readonly IServiceStore ServiceStore;
 
         /// <summary>
         /// 视图模型名称（只读）
@@ -33,7 +33,7 @@ namespace ExtenderApp.ViewModels
         /// <summary>
         /// 返回当前的主窗口实例
         /// </summary>
-        protected IMainWindow? CurrrentMainWindow => _serviceStore.MainWindowService.CurrentMainWindow;
+        protected IMainWindow? CurrrentMainWindow => ServiceStore.MainWindowService.CurrentMainWindow;
 
         /// <summary>
         /// 当属性更改时发生的事件
@@ -55,8 +55,9 @@ namespace ExtenderApp.ViewModels
         /// <param name="serviceStore">服务存储对象</param>
         public ExtenderAppViewModel(IServiceStore serviceStore)
         {
-            _serviceStore = serviceStore;
+            ServiceStore = serviceStore;
             _viewModelName = GetType().Name;
+            Details = GetCurrentPluginDetails();
         }
 
         public virtual void InjectView(IView view)
@@ -79,6 +80,13 @@ namespace ExtenderApp.ViewModels
 
         }
 
+        private PluginDetails? GetCurrentPluginDetails()
+        {
+            if (ServiceStore is IPuginServiceStore store)
+                return store.PuginDetails;
+            return null;
+        }
+
         #region Navigate
 
         /// <summary>
@@ -89,8 +97,7 @@ namespace ExtenderApp.ViewModels
         protected TView? NavigateTo<TView>()
             where TView : class, IView
         {
-            var details = GetCurrentModDetails();
-            string scope = details is null ? string.Empty : details.PluginScope;
+            string scope = Details is null ? string.Empty : Details.PluginScope;
             return NavigateTo(typeof(TView), scope) as TView;
         }
 
@@ -103,8 +110,7 @@ namespace ExtenderApp.ViewModels
         protected TView? NavigateTo<TView>(IView oldView)
             where TView : class, IView
         {
-            var details = GetCurrentModDetails();
-            string scope = details is null ? string.Empty : details.PluginScope;
+            string scope = Details is null ? string.Empty : Details.PluginScope;
             return NavigateTo(typeof(TView), scope, oldView) as TView;
         }
 
@@ -162,7 +168,7 @@ namespace ExtenderApp.ViewModels
             IView? view = null;
             try
             {
-                view = _serviceStore.NavigationService.NavigateTo(targetView, scope);
+                view = ServiceStore.NavigationService.NavigateTo(targetView, scope);
             }
             catch (Exception ex)
             {
@@ -183,7 +189,7 @@ namespace ExtenderApp.ViewModels
             IView? view = null;
             try
             {
-                view = _serviceStore.NavigationService.NavigateTo(targetView, scope, oldView);
+                view = ServiceStore.NavigationService.NavigateTo(targetView, scope, oldView);
             }
             catch (Exception ex)
             {
@@ -203,9 +209,8 @@ namespace ExtenderApp.ViewModels
             IWindow window = null;
             try
             {
-                var details = GetCurrentModDetails();
-                string scope = details is null ? string.Empty : details.PluginScope;
-                window = _serviceStore.NavigationService.NavigateToWindow<TView>(scope, null);
+                string scope = Details is null ? string.Empty : Details.PluginScope;
+                window = ServiceStore.NavigationService.NavigateToWindow<TView>(scope, null);
             }
             catch (Exception ex)
             {
@@ -261,7 +266,7 @@ namespace ExtenderApp.ViewModels
         /// <param name="message">要记录的信息内容。</param>
         public void Info(string message)
         {
-            _serviceStore.LogingService.Info(message, _viewModelName);
+            ServiceStore.LogingService.Info(message, _viewModelName);
         }
 
         /// <summary>
@@ -270,7 +275,7 @@ namespace ExtenderApp.ViewModels
         /// <param name="message">要记录的调试信息内容。</param>
         public void Debug(string message)
         {
-            _serviceStore.LogingService.Debug(message, _viewModelName);
+            ServiceStore.LogingService.Debug(message, _viewModelName);
         }
 
         /// <summary>
@@ -280,7 +285,7 @@ namespace ExtenderApp.ViewModels
         /// <param name="exception">引发的异常。</param>
         public void Error(string message, Exception exception)
         {
-            _serviceStore.LogingService.Error(message, _viewModelName, exception);
+            ServiceStore.LogingService.Error(message, _viewModelName, exception);
         }
 
         /// <summary>
@@ -289,7 +294,7 @@ namespace ExtenderApp.ViewModels
         /// <param name="message">要记录的警告信息内容。</param>
         public void Warning(string message)
         {
-            _serviceStore.LogingService.Warning(message, _viewModelName);
+            ServiceStore.LogingService.Warning(message, _viewModelName);
         }
 
         #endregion
@@ -305,7 +310,7 @@ namespace ExtenderApp.ViewModels
         protected bool LoadLocalData<T>(out T? data, Action<LocalData<T>> checkAction = null) where T : class
         {
             data = default;
-            if (!_serviceStore.LocalDataService.LoadData(GetCurrentModDetails(), out LocalData<T> localData))
+            if (!ServiceStore.LocalDataService.LoadData(Details, out LocalData<T> localData))
                 return false;
 
             data = localData.Data;
@@ -321,14 +326,10 @@ namespace ExtenderApp.ViewModels
         /// <returns>如果成功设置数据则返回true，否则返回false</returns>
         protected bool SaveLocalData<T>(T? data) where T : class
         {
-            if (data is null)
+            if (data is null || Details is null)
                 return false;
 
-            var details = GetCurrentModDetails();
-            if (details is null)
-                return false;
-
-            return _serviceStore.LocalDataService.SaveData(details, data);
+            return ServiceStore.LocalDataService.SaveData(Details, data);
         }
 
         /// <summary>
@@ -343,22 +344,12 @@ namespace ExtenderApp.ViewModels
         protected bool SaveLocalData<T>(T? data, Version version)
             where T : class
         {
-            if (data is null)
+            if (data is null || Details is null)
                 return false;
 
-            var details = GetCurrentModDetails();
-            if (details is null)
-                return false;
-
-            return _serviceStore.LocalDataService.SaveData(details.Title, data, version);
+            return ServiceStore.LocalDataService.SaveData(Details.Title, data, version);
         }
 
-        protected PluginDetails? GetCurrentModDetails()
-        {
-            if (_serviceStore is IPuginServiceStore store)
-                return store.PuginDetails;
-            return null;
-        }
 
         #endregion
 
@@ -444,7 +435,7 @@ namespace ExtenderApp.ViewModels
         protected void DispatcherInvoke(Action callback)
         {
             if (callback is null) return;
-            _serviceStore.DispatcherService.Invoke(callback);
+            ServiceStore.DispatcherService.Invoke(callback);
         }
 
         /// <summary>
@@ -458,7 +449,7 @@ namespace ExtenderApp.ViewModels
         protected void DispatcherBeginInvoke(Action callback)
         {
             if (callback is null) return;
-            _serviceStore.DispatcherService.BeginInvoke(callback);
+            ServiceStore.DispatcherService.BeginInvoke(callback);
         }
 
         #endregion
@@ -471,7 +462,7 @@ namespace ExtenderApp.ViewModels
         /// <returns>主窗口实例</returns>
         protected IMainWindow CreateMainWindow()
         {
-            return _serviceStore.MainWindowService.CreateMainWindow();
+            return ServiceStore.MainWindowService.CreateMainWindow();
         }
 
         /// <summary>
@@ -511,7 +502,7 @@ namespace ExtenderApp.ViewModels
         {
             try
             {
-                _serviceStore.PathService.OpenFolderInExplorer(path);
+                ServiceStore.PathService.OpenFolderInExplorer(path);
             }
             catch (Exception ex)
             {
@@ -527,7 +518,7 @@ namespace ExtenderApp.ViewModels
         {
             try
             {
-                return _serviceStore.PathService.CreateFolderPathForAppRootFolder(folderPath);
+                return ServiceStore.PathService.CreateFolderPathForAppRootFolder(folderPath);
             }
             catch (Exception ex)
             {
@@ -536,18 +527,35 @@ namespace ExtenderApp.ViewModels
             }
         }
 
+        /// <summary>
+        /// 打开插件目录下的指定文件夹
+        /// </summary>
+        /// <param name="folderPath">指定文件目录</param>
+        /// <returns>返回指定目录在插件文件夹下的地址</returns>
+        protected string? GetPluginFolder(string folderPath)
+        {
+            if (Details == null)
+                return string.Empty;
+
+            string path = Details.PluginFolderPath;
+            if (string.IsNullOrEmpty(path))
+                return string.Empty;
+
+            return Path.Combine(path, folderPath);
+        }
+
         #endregion
 
         #region  Plugin
 
         protected async Task LoadPluginAsync(PluginDetails plugin)
         {
-            await _serviceStore.PluginService.LoadPluginAsync(plugin);
+            await ServiceStore.PluginService.LoadPluginAsync(plugin);
         }
 
         protected void UnLoadPlugin(PluginDetails plugin)
         {
-            _serviceStore.PluginService.UnloadPlugin(plugin);
+            ServiceStore.PluginService.UnloadPlugin(plugin);
         }
 
         #endregion
@@ -560,7 +568,7 @@ namespace ExtenderApp.ViewModels
         /// <param name="text">需要写入的文本.</param>
         protected void ClipboardSetText(string text)
         {
-            _serviceStore.SystemService.Clipboard.SetText(text);
+            ServiceStore.SystemService.Clipboard.SetText(text);
         }
 
         #endregion
@@ -574,7 +582,7 @@ namespace ExtenderApp.ViewModels
         /// <param name="handleMessage">订阅消息委托</param>
         protected void SubscribeMessage<TMessage>(EventHandler<TMessage> handleMessage)
         {
-            _serviceStore.MessageService.Subscribe(this, handleMessage);
+            ServiceStore.MessageService.Subscribe(this, handleMessage);
         }
 
         /// <summary>
@@ -584,7 +592,7 @@ namespace ExtenderApp.ViewModels
         /// <param name="message">发布的消息</param>
         protected void PublishMessage<TMessage>(TMessage message)
         {
-            _serviceStore.MessageService.Publish(this, message);
+            ServiceStore.MessageService.Publish(this, message);
         }
 
         /// <summary>
@@ -594,7 +602,7 @@ namespace ExtenderApp.ViewModels
         /// <param name="handleMessage">取消的委托</param>
         protected void UnsubscribeMessage<TMessage>(EventHandler<TMessage> handleMessage)
         {
-            _serviceStore.MessageService.Unsubscribe(this, handleMessage);
+            ServiceStore.MessageService.Unsubscribe(this, handleMessage);
         }
 
         #endregion
@@ -641,7 +649,7 @@ namespace ExtenderApp.ViewModels
             IView view = null;
             try
             {
-                view = _serviceStore.NavigationService.NavigateTo(targetView, scope, View);
+                view = ServiceStore.NavigationService.NavigateTo(targetView, scope, View);
             }
             catch (Exception ex)
             {
@@ -655,9 +663,8 @@ namespace ExtenderApp.ViewModels
             IWindow? window = null;
             try
             {
-                var details = GetCurrentModDetails();
-                string scope = details is null ? string.Empty : details.PluginScope;
-                window = _serviceStore.NavigationService.NavigateToWindow<T>(scope, View);
+                string scope = Details is null ? string.Empty : Details.PluginScope;
+                window = ServiceStore.NavigationService.NavigateToWindow<T>(scope, View);
             }
             catch (Exception ex)
             {
@@ -691,7 +698,7 @@ namespace ExtenderApp.ViewModels
                 if (model is null)
                 {
                     if (!LoadModel() || model is null)
-                        model = _serviceStore.ServiceProvider.GetRequiredService<TModle>();
+                        model = ServiceStore.ServiceProvider.GetRequiredService<TModle>();
                 }
                 return model;
             }
@@ -737,7 +744,7 @@ namespace ExtenderApp.ViewModels
         protected bool LoadModel()
         {
             var loadState = LoadLocalData(out model);
-            model.Initialize(_serviceStore as IPuginServiceStore);
+            model.Initialize(ServiceStore as IPuginServiceStore);
             return loadState;
         }
 
@@ -758,7 +765,7 @@ namespace ExtenderApp.ViewModels
         protected bool SaveModel(string saveName)
         {
             // 调用本地数据服务保存数据，版本参数传null表示使用默认版本
-            return _serviceStore.LocalDataService.SaveData(saveName, model, null);
+            return ServiceStore.LocalDataService.SaveData(saveName, model, null);
         }
 
         /// <summary>
@@ -781,7 +788,7 @@ namespace ExtenderApp.ViewModels
         protected bool SaveModel(string saveName, Version version)
         {
             // 调用本地数据服务保存数据，同时指定名称和版本
-            return _serviceStore.LocalDataService.SaveData(saveName, model, version);
+            return ServiceStore.LocalDataService.SaveData(saveName, model, version);
         }
 
         public override void Close()

@@ -116,7 +116,7 @@ namespace ExtenderApp.MainViews.ViewModels
                 // 清除当前插件详细信息
                 Model.CurrentPluginDetails = null;
                 // 使用 DispatcherService 在 UI 线程上执行操作
-                _serviceStore.DispatcherService.Invoke(() =>
+                ServiceStore.DispatcherService.Invoke(() =>
                 {
                     // 导航到 MainView 并设置为当前主视图
                     Model.CurrentMainView = NavigateTo<MainView>(Model.CurrentView);

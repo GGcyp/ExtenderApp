@@ -121,7 +121,7 @@ namespace ExtenderApp.Test
 
         public void ShowMessage()
         {
-            _serviceStore.MainWindowService.CurrentMainWindow.DisplayMessageToMainWindow("打开", ExHorizontalAlignment.Center, ExVerticalAlignment.Center, new ExThickness(0));
+            ServiceStore.MainWindowService.CurrentMainWindow.DisplayMessageToMainWindow("打开", ExHorizontalAlignment.Center, ExVerticalAlignment.Center, new ExThickness(0));
         }
 
         private async void TcpListener()
@@ -162,7 +162,7 @@ namespace ExtenderApp.Test
 
         private ExpectLocalFileInfo CreatTestExpectLocalFileInfo(string fileName)
         {
-            return new ExpectLocalFileInfo(_serviceStore.PathService.CreateFolderPathForAppRootFolder("test"), fileName);
+            return new ExpectLocalFileInfo(ServiceStore.PathService.CreateFolderPathForAppRootFolder("test"), fileName);
         }
     }
 }

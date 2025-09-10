@@ -22,7 +22,7 @@
     </UserControl.Resources>
     <ScrollViewer>
         <ListBox ItemsSource="{Binding Model.PluginStore}"
-                 SelectedItem="{Binding Model.SelectedModDetails}"
+                 SelectedItem="{Binding Model.CurrentPluginDetails}"
                  vt:ThemeProps.Background="{DynamicResource GlobalBackgroundBrush}">
             <ListBox.ItemContainerStyle>
                 <Style TargetType="ListBoxItem">

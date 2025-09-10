@@ -120,7 +120,9 @@ namespace ExtenderApp.Common.IO.Binaries.Formatters
             DataBuffer<long> dataBuffer = DataBuffer<long>.GetDataBuffer();
             ProtectedGetLength(value, dataBuffer);
             value.LoopAllChildNodes(ProtectedGetLength, dataBuffer);
-            return dataBuffer.Item1;
+            long length = dataBuffer.Item1;
+            dataBuffer.Release();
+            return length;
         }
 
         /// <summary>

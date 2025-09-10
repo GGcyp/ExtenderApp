@@ -6,12 +6,17 @@
     public interface IPathService
     {
         /// <summary>
+        /// 程序所在的根目录
+        /// </summary>
+        string AppRootPath { get; }
+
+        /// <summary>
         /// 获取日志路径
         /// </summary>
         string LoggingPath { get; }
 
         /// <summary>
-        /// 获取主程序文件路径
+        /// 获取主程序动态库文件路径
         /// </summary>
         string LibPath { get; }
 

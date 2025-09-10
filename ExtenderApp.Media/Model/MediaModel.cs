@@ -1,8 +1,9 @@
 ﻿using System.Collections.ObjectModel;
 using System.Windows;
+using ExtenderApp.Abstract;
 using ExtenderApp.Models;
 
-namespace ExtenderApp.Media
+namespace ExtenderApp.Media.Models
 {
     /// <summary>
     /// 媒体数据类
@@ -14,25 +15,17 @@ namespace ExtenderApp.Media
         /// </summary>
         public ObservableCollection<VideoInfo> VideoInfos { get; set; }
 
-        /// <summary>
-        /// 音量
-        /// </summary>
-        public double Volume { get; set; }
+        public MediaSettings MediaSettings { get; set; }
 
-        /// <summary>
-        /// 是否记录观看时间
-        /// </summary>
-        public bool RecordWatchingTime { get; set; }
+        public IView CurrentVideoView { get; set; }
 
-        /// <summary>
-        /// 视频文件不存在则删除
-        /// </summary>
-        public bool VideoNotExist { get; set; }
+        public IView CurrentVideoListView { get; set; }
+
 
         public MediaModel()
         {
             VideoInfos = new ObservableCollection<VideoInfo>();
-            Volume = 0;
+            MediaSettings = new MediaSettings();
         }
 
         #region 视频列表操作相关属性和方法
