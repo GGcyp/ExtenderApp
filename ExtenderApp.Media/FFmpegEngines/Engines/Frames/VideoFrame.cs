@@ -14,14 +14,9 @@ namespace ExtenderApp.Media.FFmpegEngines
         public byte[] Data { get; }
 
         /// <summary>
-        /// 视频帧数据的长度（以字节为单位）。
-        /// </summary>
-        public int DataLength { get; }
-
-        /// <summary>
         /// 视频帧在视频流中的索引（从0开始）。
         /// </summary>
-        public long PTS { get; }
+        public long Pts { get; }
 
         /// <summary>
         /// 当前视频帧的宽度。
@@ -43,11 +38,10 @@ namespace ExtenderApp.Media.FFmpegEngines
         /// </summary>
         public bool IsEmpty => Data == null;
 
-        public VideoFrame(byte[] data, int dataLength, long pts, int width, int height, int stride)
+        public VideoFrame(byte[] data, long pts, int width, int height, int stride)
         {
             Data = data;
-            DataLength = dataLength;
-            PTS = pts;
+            Pts = pts;
             Width = width;
             Height = height;
             Stride = stride;

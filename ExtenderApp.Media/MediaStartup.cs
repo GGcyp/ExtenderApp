@@ -6,11 +6,12 @@ using ExtenderApp.Media.Models;
 using ExtenderApp.Media.ViewModels;
 using ExtenderApp.Data;
 using System.IO;
+using ExtenderApp.Media.FFmpegEngines;
 
 
 namespace ExtenderApp.Media
 {
-    internal class MedaiStartup : PluginEntityStartup
+    internal class MediaStartup : PluginEntityStartup
     {
         private const string ffmpegFolderName = "ffmpegLibs";
 
@@ -32,6 +33,7 @@ namespace ExtenderApp.Media
 
             //FFmpegEngine
             AddFFmpegEngines(services);
+            services.AddSingleton<MediaEngine>();
         }
 
         public override void ConfigureBinaryFormatterStore(IBinaryFormatterStore store)

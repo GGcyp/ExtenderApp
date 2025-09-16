@@ -29,20 +29,9 @@ namespace ExtenderApp.Media.FFmpegEngines
             set => Ptr = (IntPtr)value;
         }
 
-        /// <summary>
-        /// 获取或设置指向指针的指针（T**），常用于需要二级指针参数的场景。
-        /// </summary>
         public T** ValuePtr
         {
-            get
-            {
-                var p = (T*)Ptr;
-                return &p;
-            }
-            set
-            {
-                Ptr = (IntPtr)(*value);
-            }
+            set => Ptr = (IntPtr)(*value);
         }
 
         /// <summary>
@@ -54,7 +43,7 @@ namespace ExtenderApp.Media.FFmpegEngines
         /// 通过指针的指针初始化 <see cref="NativeIntPtr{T}"/>。
         /// </summary>
         /// <param name="value">指向指针的指针。</param>
-        public NativeIntPtr(T** value) : this(*value)
+        public NativeIntPtr(T** value) : this(value == null ? IntPtr.Zero : (IntPtr)(*value))
         {
         }
 
@@ -117,7 +106,6 @@ namespace ExtenderApp.Media.FFmpegEngines
         public static implicit operator T*(NativeIntPtr<T> value) => value.Value;
         public static implicit operator NativeIntPtr<T>(T* value) => new NativeIntPtr<T>(value);
 
-        public static implicit operator T**(NativeIntPtr<T> value) => value.ValuePtr;
         public static implicit operator NativeIntPtr<T>(T** value) => new NativeIntPtr<T>(value);
 
         public static implicit operator nint(NativeIntPtr<T> value) => value.Ptr;

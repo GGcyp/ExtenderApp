@@ -9,21 +9,21 @@ namespace ExtenderApp.Media.FFmpegEngines
     /// </summary>
     public class CacheStateController : DisposableObject
     {
-        private readonly int _maxCacheLength; // 最大缓存长度（如100帧）
-        private int _currentCacheCount; // 当前缓存帧数量（线程安全访问）
         private readonly AutoResetEvent _cacheAvailableEvent; // 缓存可用信号（用于唤醒等待的解码线程）
+        private int maxCacheLength; // 最大缓存长度（如100帧）
+        private int currentCacheCount; // 当前缓存帧数量（线程安全访问）
 
         public CacheStateController(int maxCacheLength)
         {
-            _maxCacheLength = maxCacheLength;
-            _currentCacheCount = 0;
-            _cacheAvailableEvent = new AutoResetEvent(initialState: true); // 初始状态：缓存可用
+            this.maxCacheLength = maxCacheLength;
+            currentCacheCount = 0;
+            _cacheAvailableEvent = new(true); // 初始状态：缓存可用
         }
 
         /// <summary>
         /// 检查缓存是否有剩余空间（可继续解码）
         /// </summary>
-        public bool HasCacheSpace => Volatile.Read(ref _currentCacheCount) < _maxCacheLength;
+        public bool HasCacheSpace => Volatile.Read(ref currentCacheCount) < maxCacheLength;
 
         /// <summary>
         /// 等待缓存空间（非阻塞，支持取消）
@@ -50,7 +50,7 @@ namespace ExtenderApp.Media.FFmpegEngines
         /// </summary>
         public void OnFrameAdded()
         {
-            Interlocked.Increment(ref _currentCacheCount);
+            Interlocked.Increment(ref currentCacheCount);
             // 若缓存仍有空间，继续通知（可选，避免频繁唤醒）
             if (HasCacheSpace)
             {
@@ -63,9 +63,36 @@ namespace ExtenderApp.Media.FFmpegEngines
         /// </summary>
         public void OnFrameRemoved()
         {
-            Interlocked.Decrement(ref _currentCacheCount);
+            if (currentCacheCount <= 0)
+            {
+                Interlocked.Exchange(ref currentCacheCount, 0);
+            }
+            else
+            {
+                Interlocked.Decrement(ref currentCacheCount);
+            }
+
             // 缓存有空间了，唤醒解码线程继续解码
             _cacheAvailableEvent.Set();
+        }
+
+        /// <summary>
+        /// 更新最大缓存长度
+        /// </summary>
+        /// <param name="newLength">新的最大缓存长度</param>
+        public void UpdateMaxCacheLength(int newLength)
+        {
+            if (newLength <= 0)
+            {
+                //throw new ArgumentOutOfRangeException(nameof(newLength), "最大缓存长度必须大于0");
+                return;
+            }
+            Volatile.Write(ref maxCacheLength, newLength);
+            // 如果当前缓存小于新长度，唤醒等待的解码线程
+            if (HasCacheSpace)
+            {
+                _cacheAvailableEvent.Set();
+            }
         }
 
         /// <summary>
@@ -73,7 +100,22 @@ namespace ExtenderApp.Media.FFmpegEngines
         /// </summary>
         public void Reset()
         {
-            Volatile.Write(ref _currentCacheCount, 0);
+            Reset(maxCacheLength);
+        }
+
+        /// <summary>
+        /// 重置缓存状态并设置新的最大缓存长度
+        /// </summary>
+        /// <param name="newLength">新的最大缓存长度</param>
+        public void Reset(int newLength)
+        {
+            if (newLength <= 0)
+            {
+                //throw new ArgumentOutOfRangeException(nameof(newLength), "最大缓存长度必须大于0");
+                return;
+            }
+            Volatile.Write(ref maxCacheLength, newLength);
+            Volatile.Write(ref currentCacheCount, 0);
             _cacheAvailableEvent.Set(); // 重置后允许解码
         }
 

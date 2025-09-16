@@ -331,6 +331,8 @@ namespace ExtenderApp.Common.DataBuffers
             callback?.Invoke(this, varule);
         }
 
+        public (T1, T2) ToValueTuple() => (Item1, Item2);
+
         /// <summary>
         /// 释放当前实例到对象池。
         /// </summary>
