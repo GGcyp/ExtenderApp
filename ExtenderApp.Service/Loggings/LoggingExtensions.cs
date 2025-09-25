@@ -61,6 +61,7 @@ namespace ExtenderApp.Services
             {
                 Time = DateTime.UtcNow,
                 Message = message,
+                ThreadId = Thread.CurrentThread.ManagedThreadId,
                 Source = source,
                 LogLevel = LogLevel.INFO,
             };
@@ -90,6 +91,7 @@ namespace ExtenderApp.Services
             {
                 Time = DateTime.UtcNow,
                 Message = message,
+                ThreadId = Thread.CurrentThread.ManagedThreadId,
                 Source = source,
                 LogLevel = LogLevel.WARNING,
             };

@@ -20,8 +20,6 @@ namespace ExtenderApp.Common.IO.Binaries.Formatters
 
         public override int DefaultLength => Formatters.Last().DefaultLength;
 
-        T IBinaryFormatter<T>.Default => throw new NotImplementedException();
-
         public VersionDataFormatterMananger(IBinaryFormatterResolver resolver) : base(resolver)
         {
             Formatters = new();

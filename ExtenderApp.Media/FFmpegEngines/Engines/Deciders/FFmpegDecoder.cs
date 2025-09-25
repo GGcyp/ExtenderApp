@@ -9,6 +9,8 @@ namespace ExtenderApp.Media.FFmpegEngines
     /// </summary>
     public abstract class FFmpegDecoder : DisposableObject
     {
+        private const int WaitCacheTimeout = 10;
+
         /// <summary>
         /// FFmpeg 引擎实例，用于底层解码操作和资源管理。
         /// </summary>
@@ -57,12 +59,12 @@ namespace ExtenderApp.Media.FFmpegEngines
         /// <param name="info">媒体基础信息。</param>
         /// <param name="maxCacheLength">最大缓存长度。</param>
         /// <param name="settings">解码器设置。</param>
-        public FFmpegDecoder(FFmpegEngine engine, FFmpegDecoderContext context, FFmpegInfo info, CancellationToken allToken, FFmpegDecoderSettings settings)
+        public FFmpegDecoder(FFmpegEngine engine, FFmpegDecoderContext context, FFmpegInfo info, CancellationToken allToken, FFmpegDecoderSettings settings, int maxCacheLength)
         {
             Settings = settings;
             Engine = engine;
             Context = context;
-            CacheStateController = new(settings.MaxCacheLength);
+            CacheStateController = new(maxCacheLength);
             Info = info;
             AllToken = allToken;
             Source = CancellationTokenSource.CreateLinkedTokenSource(AllToken);
@@ -83,7 +85,7 @@ namespace ExtenderApp.Media.FFmpegEngines
 
             while (!AllToken.IsCancellationRequested && !Source.IsCancellationRequested)
             {
-                if (!CacheStateController.WaitForCacheSpace(AllToken))
+                if (!CacheStateController.WaitForCacheSpace(AllToken, WaitCacheTimeout))
                 {
                     continue;
                 }

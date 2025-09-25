@@ -67,35 +67,28 @@ namespace ExtenderApp.Media
             {
                 // 使用GetData方法获取文件路径数组（因为可以一次拖拽多个文件，所以是数组形式）
                 string[] filePaths = e.Data.GetData(DataFormats.FileDrop) as string[];
-                foreach (string filePath in filePaths)
-                {
-                    ViewModel<MediaMainViewModel>().AddVideoPath(filePath);
+                //foreach (string filePath in filePaths)
+                //{
+                //    ViewModel<MediaMainViewModel>().AddVideoPath(filePath);
 
-                }
+                //}
             }
             e.Handled = true;
         }
 
         private void MediaMainView_SizeChanged(object sender, SizeChangedEventArgs e)
         {
-            ViewModel<MediaMainViewModel>().WindowWidth = e.NewSize.Width;
+
         }
 
         private void VolumeSlider_ValueChanged()
         {
-            ViewModel<MediaMainViewModel>().UpdateVolume();
+
         }
 
         private void MediaSlider_DragCompleted()
         {
-            // 更新 ViewModel 中的 CurrentTime 属性
-            ViewModel<MediaMainViewModel>().UpdateVoideoTime(TimeSpan.FromSeconds(mediaSlider.Value));
-        }
 
-
-        public override void Exit(ViewInfo newViewInfo)
-        {
-            ViewModel<MediaMainViewModel>().Close();
         }
 
         #region 动画控制

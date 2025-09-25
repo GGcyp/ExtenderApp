@@ -28,7 +28,6 @@ namespace ExtenderApp.Media.ViewModels
         {
             _medaiPathHash = new();
 
-            Model.AddVideoPathAction = AddVideoPath;
             for (int i = 0; i < Videos.Count; i++)
             {
                 _medaiPathHash.Add(Videos[i].VideoUri);
@@ -102,15 +101,6 @@ namespace ExtenderApp.Media.ViewModels
                 }
             }
             SaveModel();
-        }
-
-        /// <summary>
-        /// 打开视频
-        /// </summary>
-        /// <param name="videoInfo">视频信息对象</param>
-        public void SelectedVideo(VideoInfo videoInfo)
-        {
-            Model.SelectedVideoAction?.Invoke(videoInfo);
         }
     }
 }

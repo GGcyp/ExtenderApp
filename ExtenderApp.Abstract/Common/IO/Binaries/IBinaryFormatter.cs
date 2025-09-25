@@ -38,12 +38,6 @@ namespace ExtenderApp.Abstract
         T Deserialize(ref ExtenderBinaryReader reader);
 
         /// <summary>
-        /// 获取默认值。
-        /// </summary>
-        /// <value>返回类型T的默认值。</value>
-        T Default { get; }
-
-        /// <summary>
         /// 获取需要转换类型需要的字节数量。
         /// 如果引用类型为null，返回1。
         /// </summary>

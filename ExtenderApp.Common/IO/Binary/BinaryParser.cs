@@ -533,10 +533,7 @@ namespace ExtenderApp.Common.IO.Binaries
             if (reader.Remaining == 0)
             {
                 var formatter = _resolver.GetFormatter<T>();
-                if (formatter == null)
-                    return default;
-
-                return formatter.Default;
+                return default;
             }
 
             if (TryDecompress(ref reader, out var writer))

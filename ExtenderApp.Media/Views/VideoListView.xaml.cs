@@ -37,7 +37,6 @@ namespace ExtenderApp.Media
         {
             if (sender is TextBlock textBlock && textBlock.DataContext is VideoInfo videoInfo)
             {
-                ViewModel<VideoListViewModel>()!.SelectedVideo(videoInfo);
             }
         }
 

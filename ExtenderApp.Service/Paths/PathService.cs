@@ -70,7 +70,7 @@ namespace ExtenderApp.Services
         /// 在文件资源管理器中打开指定路径的文件夹
         /// </summary>
         /// <param name="folderPath">要打开的文件夹路径</param>
-        public void OpenFolderInExplorer(string folderPath)
+        public void OpenFolder(string folderPath)
         {
             if (Directory.Exists(folderPath))
             {
@@ -93,6 +93,11 @@ namespace ExtenderApp.Services
             {
                 throw new DirectoryNotFoundException("指定的文件夹路径不存在。");
             }
+        }
+
+        public string OpenFile(string filter, string? targetPath = null)
+        {
+            throw new NotImplementedException();
         }
 
         public string LoggingPath { get; }

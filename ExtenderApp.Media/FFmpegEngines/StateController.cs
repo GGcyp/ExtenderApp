@@ -81,6 +81,11 @@ namespace ExtenderApp.Media.FFmpegEngines
         /// <returns>是否成功达到目标状态。</returns>
         public bool WaitForTargetState(CancellationToken token, int timeoutMs = 50)
         {
+            if (UpdateStateFunc != null)
+            {
+                State = UpdateStateFunc.Invoke();
+            }
+
             while (!IsInTargetState && !token.IsCancellationRequested)
             {
                 if (!_cacheAvailableEvent.WaitOne(timeoutMs, !token.IsCancellationRequested))
@@ -92,7 +97,7 @@ namespace ExtenderApp.Media.FFmpegEngines
                     continue;
                 }
             }
-            return IsInTargetState && !token.IsCancellationRequested;
+            return !token.IsCancellationRequested;
         }
 
         /// <summary>

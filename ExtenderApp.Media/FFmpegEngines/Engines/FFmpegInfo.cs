@@ -41,7 +41,7 @@ namespace ExtenderApp.Media.FFmpegEngines
         /// <summary>
         /// 视频帧率（FPS）。
         /// </summary>
-        public double FrameRate { get; internal set; }
+        public double Rate { get; internal set; }
 
         /// <summary>
         /// 媒体时长（TimeSpan 格式）。
@@ -103,7 +103,7 @@ namespace ExtenderApp.Media.FFmpegEngines
             SampleRate = DefaultValue;
             Channels = DefaultValue;
             Duration = DefaultValue;
-            FrameRate = DefaultValue;
+            Rate = DefaultValue;
             BitRate = DefaultValue;
         }
     }

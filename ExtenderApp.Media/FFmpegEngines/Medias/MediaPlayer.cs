@@ -1,31 +1,92 @@
 ﻿using System.Collections.Concurrent;
+using System.Windows.Controls;
 using ExtenderApp.Common;
-using ExtenderApp.Common.DataBuffers;
 
 namespace ExtenderApp.Media.FFmpegEngines
 {
+    /// <summary>
+    /// FFmpeg 媒体播放器，负责音视频解码、播放、暂停、停止、跳转等控制。
+    /// 支持多线程解码和帧调度，适用于 WPF 播放场景。
+    /// </summary>
     public class MediaPlayer : DisposableObject
     {
-        private FFmpegDecoderSettings _settings;
-        private readonly ConcurrentQueue<VideoFrame> _videoFrameQueue;
-        private readonly ConcurrentQueue<AudioFrame> _audioFrameQueue;
-        private readonly FFmpegDecoderController _controller;
-        private readonly CancellationTokenSource _allSource;
-        public long CurrentPts { get; private set; }
+        /// <summary>
+        /// 跳帧等待阈值（毫秒），用于控制播放节奏。
+        /// </summary>
+        private const int SkipWaitingTime = 15;
+        private const int FrameOutTime = 15;
 
+        /// <summary>
+        /// 解码器设置参数。
+        /// </summary>
+        private readonly FFmpegDecoderSettings _settings;
+
+        /// <summary>
+        /// 视频帧队列，缓存待播放的视频帧。
+        /// </summary>
+        private readonly ConcurrentQueue<VideoFrame> _videoFrameQueue;
+
+        /// <summary>
+        /// 音频帧队列，缓存待播放的音频帧。
+        /// </summary>
+        private readonly ConcurrentQueue<AudioFrame> _audioFrameQueue;
+
+        /// <summary>
+        /// 解码控制器，负责解码流程的启动、停止和跳转。
+        /// </summary>
+        private readonly FFmpegDecoderController _controller;
+
+        /// <summary>
+        /// 全局取消令牌源，用于控制播放流程的终止。
+        /// </summary>
+        private readonly CancellationTokenSource _allSource;
+
+        /// <summary>
+        /// 当前播放时间（微秒）。
+        /// </summary>
+        public long CurrentTime { get; private set; }
+
+        /// <summary>
+        /// 媒体播放任务。
+        /// </summary>
         private Task? mediaTask;
+
+        /// <summary>
+        /// 媒体播放流程的取消令牌源。
+        /// </summary>
         private CancellationTokenSource? mediaSource;
 
+        /// <summary>
+        /// 媒体流基本信息（如时长、帧率等）。
+        /// </summary>
         public FFmpegInfo Info => _controller.Info;
 
         #region Events
 
+        /// <summary>
+        /// 视频帧回调事件，每次播放视频帧时触发。
+        /// </summary>
         public event Action<VideoFrame>? OnVideoFrame;
+
+        /// <summary>
+        /// 音频帧回调事件，每次播放音频帧时触发。
+        /// </summary>
         public event Action<AudioFrame>? OnAudioFrame;
+
+        /// <summary>
+        /// 每次播放进度更新时触发，传递当前播放时间（微秒）。
+        /// </summary>
+        public event Action<long>? OnPlayback;
 
         #endregion
 
-        public MediaPlayer(FFmpegDecoderController collection, CancellationTokenSource allSource, FFmpegDecoderSettings settings, int maxFrameCount, int minframeCount)
+        /// <summary>
+        /// 初始化 MediaPlayer 实例。
+        /// </summary>
+        /// <param name="collection">解码控制器。</param>
+        /// <param name="allSource">全局取消令牌源。</param>
+        /// <param name="settings">解码器设置。</param>
+        public MediaPlayer(FFmpegDecoderController collection, CancellationTokenSource allSource, FFmpegDecoderSettings settings)
         {
             _videoFrameQueue = new();
             _audioFrameQueue = new();
@@ -36,61 +97,169 @@ namespace ExtenderApp.Media.FFmpegEngines
             settings.AudioScheduling += AudioSchedule;
         }
 
-        private void AudioSchedule(AudioFrame obj)
-        {
-            if (obj.IsEmpty)
-                throw new Exception("传入音频帧不能为空");
-            _audioFrameQueue.Enqueue(obj);
-            _controller.OnAudioFrameAdded();
-        }
-
+        /// <summary>
+        /// 启动媒体播放流程，开始解码和播放。
+        /// </summary>
         public void Play()
         {
             _controller.StartDecode();
             mediaTask = Task.Run(PlaybackLoop, _allSource.Token);
         }
 
+        /// <summary>
+        /// 停止媒体播放流程，取消任务并释放资源。
+        /// </summary>
+        public void Stop()
+        {
+            mediaSource?.Cancel();
+            mediaTask?.Wait();
+            mediaSource?.Dispose();
+            mediaTask?.Dispose();
+            mediaTask = null;
+            mediaSource = null;
+            _controller.StopDecode();
+        }
+
+        /// <summary>
+        /// 暂停媒体播放流程，仅取消播放任务，不释放解码资源。
+        /// </summary>
+        public void Pause()
+        {
+            mediaSource?.Cancel();
+            mediaTask?.Wait();
+            mediaTask?.Dispose();
+            mediaTask = null;
+            mediaSource?.Dispose();
+            mediaSource = null;
+        }
+
+        /// <summary>
+        /// 跳转到指定时间点（TimeSpan），重置解码和播放状态。
+        /// </summary>
+        /// <param name="timeSpan">目标时间点。</param>
+        public void Seek(TimeSpan timeSpan)
+        {
+            Seek((long)timeSpan.TotalMicroseconds);
+        }
+
+        /// <summary>
+        /// 跳转到指定时间点（微秒），重置解码和播放状态。
+        /// </summary>
+        /// <param name="position">目标时间点（微秒）。</param>
+        public void Seek(long position)
+        {
+            if (position > Info.DurationTimeSpan.TotalMicroseconds)
+            {
+                position = (long)Info.DurationTimeSpan.TotalMicroseconds;
+            }
+            else if (position < 0)
+            {
+                position = 0;
+            }
+
+            CurrentTime = position;
+            _controller.SeekDecoder(position);
+            Clear();
+            OnPlayback?.Invoke(CurrentTime);
+        }
+
+        /// <summary>
+        /// 媒体播放主循环任务，负责音视频帧的调度与播放。
+        /// </summary>
         private async Task PlaybackLoop()
         {
             mediaSource = mediaSource ?? CancellationTokenSource.CreateLinkedTokenSource(_allSource.Token);
             var token = mediaSource.Token;
             var allToken = _allSource.Token;
-            int frameInterval = (int)(Info.FrameRate > 0 ? 1000.0 / Info.FrameRate : 20); // 毫秒
+            int frameInterval = (int)(Info.Rate > 0 ? 1000.0 / Info.Rate : 25); // 毫秒
+            int lastDelay = frameInterval;
+
             while (!token.IsCancellationRequested && !allToken.IsCancellationRequested)
             {
-                if (_videoFrameQueue.Count == 0 || !_videoFrameQueue.TryDequeue(out var videoFrame))
+                bool hasAudio = _audioFrameQueue.Count > 0;
+                bool hasVideo = _videoFrameQueue.Count > 0;
+                if (!hasAudio && !hasVideo)
                 {
-                    await Task.Delay(frameInterval, token);
+                    await Task.Delay(lastDelay, token);
                     continue;
                 }
 
-                OnVideoFrame?.Invoke(videoFrame);
-                videoFrame.Dispose();
-                CurrentPts = videoFrame.Pts;
-
-                while (_audioFrameQueue.Count > 0)
+                int audioDelay = 0;
+                while (_audioFrameQueue.TryPeek(out var audioFrame))
                 {
-                    if (!_audioFrameQueue.TryPeek(out var audioFrame))
-                    {
-                        break;
-                    }
+                    long timeDiff = audioFrame.Pts - CurrentTime;
 
-                    if (audioFrame.Pts > CurrentPts)
+                    if (timeDiff <= 0)
                     {
+                        _audioFrameQueue.TryDequeue(out audioFrame);
+                        OnAudioFrame?.Invoke(audioFrame);
+                        _controller.OnAudioFrameRemoved();
+
+                        CurrentTime = audioFrame.Pts;
+
+                        audioFrame.Dispose();
+                    }
+                    else
+                    {
+                        audioDelay = (int)timeDiff;
                         break;
                     }
-                    _audioFrameQueue.TryDequeue(out audioFrame);
-                    OnAudioFrame?.Invoke(audioFrame);
-                    _controller.OnAudioFrameRemoved();
-                    audioFrame.Dispose();
                 }
 
-                _controller.OnVideoFrameRemoved();
-                await Task.Delay(frameInterval, token);
+                while (_videoFrameQueue.TryPeek(out var videoFrame))
+                {
+                    long videoTimeDiff = videoFrame.Pts - CurrentTime;
+
+                    if (Math.Abs(videoTimeDiff) <= FrameOutTime)
+                    {
+                        _videoFrameQueue.TryDequeue(out videoFrame);
+                        OnVideoFrame?.Invoke(videoFrame);
+                        _controller.OnVideoFrameRemoved();
+                        videoFrame.Dispose();
+                    }
+                    else if (videoTimeDiff < -FrameOutTime)
+                    {
+                        _videoFrameQueue.TryDequeue(out videoFrame);
+                        _controller.OnVideoFrameRemoved();
+                        videoFrame.Dispose();
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+
+                int waitTime = hasAudio ? audioDelay : frameInterval;
+                CurrentTime += waitTime;
+                lastDelay = waitTime;
+
+                OnPlayback?.Invoke(CurrentTime);
+
+                if (waitTime >= SkipWaitingTime)
+                {
+                    await Task.Delay(waitTime, token);
+                }
             }
         }
 
-        public void VideoSchedule(VideoFrame item)
+        /// <summary>
+        /// 音频帧调度回调，将音频帧加入队列并通知解码器。
+        /// </summary>
+        /// <param name="audioFrame">待调度的音频帧。</param>
+        private void AudioSchedule(AudioFrame audioFrame)
+        {
+            if (audioFrame.IsEmpty)
+                throw new Exception("传入音频帧不能为空");
+
+            _audioFrameQueue.Enqueue(audioFrame);
+            _controller.OnAudioFrameAdded();
+        }
+
+        /// <summary>
+        /// 视频帧调度回调，将视频帧加入队列并通知解码器。
+        /// </summary>
+        /// <param name="item">待调度的视频帧。</param>
+        private void VideoSchedule(VideoFrame item)
         {
             if (item.IsEmpty)
                 throw new Exception("传入视频帧不能为空");
@@ -99,9 +268,29 @@ namespace ExtenderApp.Media.FFmpegEngines
             _controller.OnVideoFrameAdded();
         }
 
+        /// <summary>
+        /// 清空音视频帧队列，释放所有帧资源。
+        /// </summary>
+        private void Clear()
+        {
+            while (_videoFrameQueue.TryDequeue(out var videoFrame))
+            {
+                videoFrame.Dispose();
+            }
+            while (_audioFrameQueue.TryDequeue(out var audioFrame))
+            {
+                audioFrame.Dispose();
+            }
+        }
+
+        /// <summary>
+        /// 释放播放器相关资源，包括解码器和帧队列。
+        /// </summary>
+        /// <param name="disposing">指示是否由 Dispose 方法调用。</param>
         protected override void Dispose(bool disposing)
         {
-            //ffmpeg.avformat_close_input(formatContextIntPtr.ValuePtr);
+            _controller.Dispose();
+            Clear();
         }
     }
 }

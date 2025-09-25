@@ -502,11 +502,30 @@ namespace ExtenderApp.ViewModels
         {
             try
             {
-                ServiceStore.PathService.OpenFolderInExplorer(path);
+                ServiceStore.PathService.OpenFolder(path);
             }
             catch (Exception ex)
             {
                 Error($"打开路径失败：{path}", ex);
+            }
+        }
+
+        /// <summary>
+        /// 打开文件选择对话框，允许用户选择指定类型的文件。
+        /// </summary>
+        /// <param name="filter">文件筛选器，例如 "文本文件 (*.txt)|*.txt"</param>
+        /// <param name="targetPath">对话框初始打开的文件夹路径，默认为空（使用系统默认路径）</param>
+        /// <returns>用户选择的文件完整路径，若未选择则返回空字符串或 null</returns>
+        protected string OpenFile(string filter, string? targetPath = null)
+        {
+            try
+            {
+                return ServiceStore.PathService.OpenFile(filter, targetPath);
+            }
+            catch (Exception ex)
+            {
+                Error($"打开文件失败：{filter} :{targetPath}", ex);
+                return string.Empty;
             }
         }
 

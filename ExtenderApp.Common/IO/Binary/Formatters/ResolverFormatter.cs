@@ -13,6 +13,7 @@ namespace ExtenderApp.Common.IO.Binaries.Formatters
         /// 二进制格式化解析器。
         /// </summary>
         private readonly IBinaryFormatterResolver _resolver;
+
         /// <summary>
         /// 用于序列化和反序列化Nil类型的二进制格式化器
         /// Nil类型通常表示空值或无效值的特殊标记
@@ -23,8 +24,6 @@ namespace ExtenderApp.Common.IO.Binaries.Formatters
         /// 3. 在解析器中用于处理特殊空值标记场景
         /// </remarks>
         protected readonly IBinaryFormatter<Nil> _nil;
-
-        public virtual T Default => default;
 
         public abstract int DefaultLength { get; }
 

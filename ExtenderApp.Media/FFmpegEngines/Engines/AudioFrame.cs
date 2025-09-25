@@ -46,6 +46,11 @@ namespace ExtenderApp.Media.FFmpegEngines
         public bool IsEmpty => Data == null || Length == 0;
 
         /// <summary>
+        /// 音频帧的持续时间（微秒），根据采样率、声道数和位深度计算得出。
+        /// </summary>
+        public long Duration { get; }
+
+        /// <summary>
         /// 构造音频帧实例。
         /// </summary>
         /// <param name="data">PCM数据缓冲区。</param>
@@ -54,7 +59,7 @@ namespace ExtenderApp.Media.FFmpegEngines
         /// <param name="channelCount">声道数。</param>
         /// <param name="bitsPerSample">位深度。</param>
         /// <param name="pts">时间戳。</param>
-        public AudioFrame(byte[] data, int length, int sampleRate, int channelCount, int bitsPerSample, long pts)
+        public AudioFrame(byte[] data, int length, int sampleRate, int channelCount, int bitsPerSample, long pts, long duration)
         {
             Data = data;
             Length = length;
@@ -62,6 +67,7 @@ namespace ExtenderApp.Media.FFmpegEngines
             ChannelCount = channelCount;
             BitsPerSample = bitsPerSample;
             Pts = pts;
+            Duration = duration;
         }
 
         /// <summary>

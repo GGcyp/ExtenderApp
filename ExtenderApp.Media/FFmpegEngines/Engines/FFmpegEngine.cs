@@ -1,5 +1,6 @@
 ﻿using System.Buffers;
 using System.Collections.Concurrent;
+using System.IO;
 using System.Runtime.InteropServices;
 using FFmpeg.AutoGen;
 
@@ -179,25 +180,27 @@ namespace ExtenderApp.Media.FFmpegEngines
         {
             var formatContext = CreateFormatContext().Value;
             AVFormatContext** formatContextPtr = &formatContext;
-            var optionsIntPtr = CreateOptions(options);
-            int result = ffmpeg.avformat_open_input(formatContextPtr, uri, inputFormat, null);
+            var nOptions = CreateOptions(options);
+            var inputOptions = nOptions.Value;
+            AVDictionary** inputOptionsIntPtr = &inputOptions;
+            int result = ffmpeg.avformat_open_input(formatContextPtr, uri, inputFormat, inputOptionsIntPtr);
 
             if (result < 0)
             {
-                throw new FFmpegException($"未找到指定uri：{uri}");
+                ShowError($"未找到指定uri：{uri}", result);
             }
 
-            result = ffmpeg.avformat_find_stream_info(formatContext, null);
+            result = ffmpeg.avformat_find_stream_info(formatContext, inputOptionsIntPtr);
             if (result < 0)
             {
                 throw new FFmpegException($"无法获取流信息:{uri}");
             }
 
-            FFmpegDecoderContextCollection collection = CreateDecoderContextCollection(formatContext, optionsIntPtr, uri);
+            FFmpegDecoderContextCollection collection = CreateDecoderContextCollection(formatContext, nOptions, uri);
 
             var info = CreateFFmpegInfo(uri, collection);
 
-            return new FFmpegContext(this, formatContext, optionsIntPtr, info, collection);
+            return new FFmpegContext(this, formatContext, nOptions, info, collection);
         }
 
         #endregion
@@ -219,6 +222,7 @@ namespace ExtenderApp.Media.FFmpegEngines
             info.Width = videoContext.CodecParameters.Value->width;
             info.Height = videoContext.CodecParameters.Value->height;
             info.Duration = videoContext.CodecStream.Value->duration;
+            info.Rate = videoContext.CodecStream.Value->avg_frame_rate.num != 0 ? (double)videoContext.CodecStream.Value->avg_frame_rate.num / videoContext.CodecStream.Value->avg_frame_rate.den : DefaultFrameRate;
 
             info.SampleRate = audioContext.CodecParameters.Value->sample_rate;
             info.Channels = audioContext.CodecParameters.Value->ch_layout.nb_channels;
@@ -591,6 +595,45 @@ namespace ExtenderApp.Media.FFmpegEngines
             }
 
             return videoIndex != DefaultStreamIndex || audioIndex != DefaultStreamIndex;
+        }
+
+        #endregion
+
+        #region Seek    
+
+        /// <summary>
+        /// 跳转到指定时间戳（毫秒）的位置。
+        /// 根据给定的 AVStream 指针，自动获取流索引和时间基准，调用重载方法完成跳转。
+        /// 适用于需要按流类型（如视频或音频）精确定位的场景。
+        /// </summary>
+        /// <param name="context">格式上下文指针（AVFormatContext），包含媒体流信息。</param>
+        /// <param name="targetTime">目标跳转时间（毫秒）。</param>
+        /// <param name="streamPtr">目标流指针（AVStream），用于获取流索引和时间基准。</param>
+        public void Seek(NativeIntPtr<AVFormatContext> context, long targetTime, NativeIntPtr<AVStream> streamPtr)
+        {
+            Seek(context, streamPtr.Value->index, targetTime, streamPtr.Value->time_base);
+        }
+
+        /// <summary>
+        /// 跳转到指定时间戳（毫秒）的位置。
+        /// 通过指定流索引和时间基准，将媒体流定位到目标时间点（通常为关键帧）。
+        /// 内部调用 FFmpeg 的 av_seek_frame 实现跳转，跳转后建议刷新解码器缓冲区（avcodec_flush_buffers）。
+        /// 跳转失败时会抛出详细异常。
+        /// </summary>
+        /// <param name="context">格式上下文指针（AVFormatContext），包含媒体流信息。</param>
+        /// <param name="streamIndex">目标流索引（如视频流或音频流）。</param>
+        /// <param name="targetTime">目标跳转时间（毫秒）。</param>
+        /// <param name="timeBase">流的时间基准（AVRational），用于时间戳换算。</param>
+        /// <exception cref="FFmpegException">跳转失败时抛出，包含详细错误信息。</exception>
+        public void Seek(NativeIntPtr<AVFormatContext> context, int streamIndex, long targetTime, AVRational timeBase)
+        {
+            long timestamp = ffmpeg.av_rescale_q(targetTime, ffmpeg.av_make_q(1, 1000), timeBase);
+
+            int ret = ffmpeg.av_seek_frame(context, streamIndex, timestamp, ffmpeg.AVSEEK_FLAG_BACKWARD);
+            if (ret < 0)
+            {
+                ShowError($"跳转到指定时间失败{targetTime}", ret);
+            }
         }
 
         #endregion
@@ -1021,45 +1064,6 @@ namespace ExtenderApp.Media.FFmpegEngines
 
         /// <summary>
         /// 获取指定帧的时间戳（毫秒）。
-        /// 此方法会根据解码器上下文中的流信息，优先使用帧的 PTS（显示时间戳），如果无效则使用 DTS（解码时间戳）。
-        /// 时间戳会根据流的 time_base 转换为毫秒，便于音视频同步和显示。
-        /// </summary>
-        /// <param name="framePtr">AVFrame 指针封装，包含帧的原始数据。</param>
-        /// <param name="context">解码器上下文，提供流的时间基准。</param>
-        /// <returns>当前帧的时间戳（单位：毫秒）。</returns>
-        public long GetFrameTimestampMs(NativeIntPtr<AVFrame> framePtr, FFmpegDecoderContext context)
-        {
-            return GetFrameTimestampMs(framePtr, context.CodecStream);
-        }
-
-        /// <summary>
-        /// 获取指定帧的时间戳（毫秒）。
-        /// 优先使用 PTS（显示时间戳），如果无效则使用 DTS（解码时间戳）。
-        /// 时间戳会根据流的 time_base 转换为毫秒，便于同步和显示。
-        /// </summary>
-        /// <param name="framePtr">AVFrame 指针封装，包含帧的原始数据。</param>
-        /// <param name="streamPtr">AVStream 指针封装，包含流的时间基准。</param>
-        /// <returns>当前帧的时间戳（单位：毫秒）。</returns>
-        /// <exception cref="ArgumentNullException">framePtr 或 streamPtr 为空时抛出。</exception>
-        public long GetFrameTimestampMs(NativeIntPtr<AVFrame> framePtr, NativeIntPtr<AVStream> streamPtr)
-        {
-            if (framePtr.IsEmpty)
-            {
-                throw new ArgumentNullException(nameof(framePtr));
-            }
-            if (streamPtr.IsEmpty)
-            {
-                throw new ArgumentNullException(nameof(streamPtr));
-            }
-            AVFrame* frame = framePtr;
-            AVStream* stream = streamPtr;
-            long timestamp = frame->pts != ffmpeg.AV_NOPTS_VALUE ? frame->pts : frame->pkt_dts;
-            AVRational timeBase = stream->time_base;
-            return ffmpeg.av_rescale_q(timestamp, timeBase, ffmpeg.av_make_q(1, 1000));
-        }
-
-        /// <summary>
-        /// 获取指定帧的时间戳（毫秒）。
         /// </summary>
         /// <param name="framePtr">指定的帧</param>
         /// <returns>帧的时间戳</returns>
@@ -1453,8 +1457,6 @@ namespace ExtenderApp.Media.FFmpegEngines
             }
 
             Free(ref decoder.CodecContext);
-            Free(ref decoder.CodecParameters);
-            Free(ref decoder.CodecStream);
         }
 
         /// <summary>
@@ -1499,20 +1501,6 @@ namespace ExtenderApp.Media.FFmpegEngines
                 var valure = ptr.Value;
                 var vptr = &valure;
                 ffmpeg.avcodec_parameters_free(vptr);
-                ptr.Dispose();
-            }
-        }
-
-        /// <summary>
-        /// 释放 AVStream 指针资源。
-        /// </summary>
-        /// <param name="ptr">待释放的 AVStream 指针封装。</param>
-        public void Free(ref NativeIntPtr<AVStream> ptr)
-        {
-            if (CheckIntPtrAndRemove(ptr))
-            {
-                var stream = (void*)ptr;
-                ffmpeg.av_free(stream);
                 ptr.Dispose();
             }
         }
@@ -1866,10 +1854,115 @@ namespace ExtenderApp.Media.FFmpegEngines
                 1);
         }
 
+        /// <summary>
+        /// 获取指定帧的时间戳（毫秒）。
+        /// 此方法会根据解码器上下文中的流信息，优先使用帧的 PTS（显示时间戳），如果无效则使用 DTS（解码时间戳）。
+        /// 时间戳会根据流的 time_base 转换为毫秒，便于音视频同步和显示。
+        /// </summary>
+        /// <param name="framePtr">AVFrame 指针封装，包含帧的原始数据。</param>
+        /// <param name="context">解码器上下文，提供流的时间基准。</param>
+        /// <returns>当前帧的时间戳（单位：毫秒）。</returns>
+        public long GetFrameTimestampMs(NativeIntPtr<AVFrame> framePtr, FFmpegDecoderContext context)
+        {
+            return GetFrameTimestampMs(framePtr, context.CodecStream);
+        }
+
+        /// <summary>
+        /// 获取指定帧的时间戳（毫秒）。
+        /// 优先使用 PTS（显示时间戳），如果无效则使用 DTS（解码时间戳）。
+        /// 时间戳会根据流的 time_base 转换为毫秒，便于同步和显示。
+        /// </summary>
+        /// <param name="framePtr">AVFrame 指针封装，包含帧的原始数据。</param>
+        /// <param name="streamPtr">AVStream 指针封装，包含流的时间基准。</param>
+        /// <returns>当前帧的时间戳（单位：毫秒）。</returns>
+        /// <exception cref="ArgumentNullException">framePtr 或 streamPtr 为空时抛出。</exception>
+        public long GetFrameTimestampMs(NativeIntPtr<AVFrame> framePtr, NativeIntPtr<AVStream> streamPtr)
+        {
+            AVStream* stream = streamPtr;
+            AVRational timeBase = stream->time_base;
+            return GetFrameTimestampMs(framePtr, timeBase);
+        }
+
+        /// <summary>
+        /// 获取指定帧的时间戳（毫秒）。
+        /// 优先使用 PTS（显示时间戳），如果无效则使用 DTS（解码时间戳）。
+        /// 时间戳会根据传入的 time_base（流的时间基准）转换为毫秒，便于音视频同步和显示。
+        /// 注意：视频流和音频流的 time_base 可以不同，需根据各自流的 time_base 进行换算，最终统一为标准时间单位（如毫秒）。
+        /// </summary>
+        /// <param name="framePtr">AVFrame 指针封装，包含帧的原始数据。</param>
+        /// <param name="timeBase">流的时间基准（AVRational），用于时间戳换算。</param>
+        /// <returns>当前帧的时间戳（单位：毫秒）。</returns>
+        public long GetFrameTimestampMs(NativeIntPtr<AVFrame> framePtr, AVRational timeBase)
+        {
+            AVFrame* frame = framePtr;
+            long timestamp = frame->pts != ffmpeg.AV_NOPTS_VALUE ? frame->pts : frame->pkt_dts;
+            return ffmpeg.av_rescale_q(timestamp, timeBase, ffmpeg.av_make_q(1, 1000));
+        }
+
+        /// <summary>
+        /// 获取指定 AVFrame 的持续时间（以毫秒为单位）。
+        /// 持续时间原始值为流的时间基（time_base）单位，需结合流的时间基进行换算。
+        /// 推荐使用本方法获取标准时间单位（毫秒），便于音视频同步和显示。
+        /// </summary>
+        /// <param name="framePtr">帧指针封装。</param>
+        /// <param name="context">解码器上下文，提供流的时间基准。</param>
+        /// <returns>帧的持续时间（单位：毫秒）。</returns>
+        public long GetFrameDuration(NativeIntPtr<AVFrame> framePtr, FFmpegDecoderContext context)
+        {
+            return GetFrameDuration(framePtr, context.CodecStream);
+        }
+
+        /// <summary>
+        /// 获取指定 AVFrame 的持续时间（以毫秒为单位）。
+        /// 持续时间原始值为流的时间基（time_base）单位，需结合流的时间基进行换算。
+        /// 推荐使用本方法获取标准时间单位（毫秒），便于音视频同步和显示。
+        /// </summary>
+        /// <param name="framePtr">帧指针封装。</param>
+        /// <param name="streamPtr">流指针封装，包含时间基准。</param>
+        /// <returns>帧的持续时间（单位：毫秒）。</returns>
+        public long GetFrameDuration(NativeIntPtr<AVFrame> framePtr, NativeIntPtr<AVStream> streamPtr)
+        {
+            return GetFrameDuration(framePtr, streamPtr.Value->time_base);
+        }
+
+        /// <summary>
+        /// 获取指定 AVFrame 的持续时间，并将其从流的时间基（time_base）单位转换为毫秒。
+        /// 持续时间原始值为 time_base 单位，需通过 av_rescale_q 换算为标准时间单位（毫秒）。
+        /// </summary>
+        /// <param name="framePtr">帧指针封装。</param>
+        /// <param name="timeBase">流的时间基准（AVRational）。</param>
+        /// <returns>帧的持续时间（单位：毫秒）。</returns>
+        public long GetFrameDuration(NativeIntPtr<AVFrame> framePtr, AVRational timeBase)
+        {
+            long duration = framePtr.Value->duration;
+            // 转换为毫秒
+            long durationMs = ffmpeg.av_rescale_q(duration, timeBase, ffmpeg.av_make_q(1, 1000));
+            return durationMs;
+        }
+
         #endregion
 
         #region Error
 
+        /// <summary>
+        /// 显示并抛出 FFmpeg 错误信息（支持延迟格式化）。
+        /// 接收一个可延迟格式化的字符串（FormattableString），在需要时转换为普通字符串并调用重载方法。
+        /// 常用于日志、异常处理等场景，便于国际化和性能优化。
+        /// </summary>
+        /// <param name="message">可延迟格式化的错误信息（FormattableString），如 $"跳转到指定时间失败{targetTime}"。</param>
+        /// <param name="errorCode">FFmpeg 返回的错误码。</param>
+        public void ShowError(FormattableString message, int errorCode)
+        {
+            ShowError(message.ToString(), errorCode);
+        }
+
+        /// <summary>
+        /// 显示并抛出 FFmpeg 错误信息。
+        /// 根据 FFmpeg 错误码获取详细错误描述，并抛出自定义异常（FFmpegException）。
+        /// </summary>
+        /// <param name="message">错误信息字符串。</param>
+        /// <param name="errorCode">FFmpeg 返回的错误码。</param>
+        /// <exception cref="FFmpegException">始终抛出，包含详细错误描述和错误码。</exception>
         public void ShowError(string message, int errorCode)
         {
             ulong errorBufferLength = 1024;

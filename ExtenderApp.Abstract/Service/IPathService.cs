@@ -46,6 +46,14 @@
         /// 在文件资源管理器中打开指定路径的文件夹
         /// </summary>
         /// <param name="folderPath">要打开的文件夹路径</param>
-        void OpenFolderInExplorer(string folderPath);
+        void OpenFolder(string folderPath);
+
+        /// <summary>
+        /// 打开文件选择对话框，允许用户选择指定类型的文件。
+        /// </summary>
+        /// <param name="filter">文件筛选器，例如 "文本文件 (*.txt)|*.txt"</param>
+        /// <param name="targetPath">对话框初始打开的文件夹路径，默认为空（使用系统默认路径）</param>
+        /// <returns>用户选择的文件完整路径，若未选择则返回空字符串或 null</returns>
+        string OpenFile(string filter, string? targetPath = null);
     }
 }

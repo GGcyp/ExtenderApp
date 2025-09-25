@@ -52,12 +52,12 @@ namespace ExtenderApp.Services
             catch (Exception ex)
             {
                 _logingService.Error(string.Format("导航到视图时发生错误，目标视图类型：{0}，作用域：{1}，错误信息：{2}", targetViewType.Name, scope, ex.Message), nameof(INavigationService), ex);
-                throw;
+                return null;
             }
 
 
-            oldView?.Exit(newView.ViewInfo);
-            newView.Enter(oldView is null ? default : oldView.ViewInfo);
+            oldView?.Exit(newView!.ViewInfo);
+            newView!.Enter(oldView is null ? default : oldView.ViewInfo);
 
             return newView;
         }

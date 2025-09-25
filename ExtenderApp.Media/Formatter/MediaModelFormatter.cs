@@ -12,8 +12,6 @@ namespace ExtenderApp.Media
         private readonly IBinaryFormatter<double> _doubleFormatter;
         private readonly IBinaryFormatter<ObservableCollection<VideoInfo>> _videoInfoFormatter;
 
-        public override MediaModel Default => new MediaModel() { VideoInfos = _videoInfoFormatter.Default };
-
         public override int DefaultLength => _boolFormatter.DefaultLength * 2 + _doubleFormatter.DefaultLength + _videoInfoFormatter.DefaultLength;
 
         public override Version FormatterVersion => new Version(0, 0, 0, 1);
@@ -40,7 +38,7 @@ namespace ExtenderApp.Media
                 throw new ArgumentNullException(nameof(value));
             }
 
-            _videoInfoFormatter.Serialize(ref writer, value.VideoInfos);
+            //_videoInfoFormatter.Serialize(ref writer, value.VideoInfos);
         }
 
         public override long GetLength(MediaModel value)
@@ -50,7 +48,9 @@ namespace ExtenderApp.Media
                 throw new ArgumentNullException(nameof(value));
             }
 
-            return _boolFormatter.DefaultLength * 2 + _doubleFormatter.DefaultLength + _videoInfoFormatter.GetLength(value.VideoInfos);
+            return _boolFormatter.DefaultLength * 2 + 
+                _doubleFormatter.DefaultLength + 
+                _videoInfoFormatter.GetLength(value.VideoInfos);
         }
     }
 }

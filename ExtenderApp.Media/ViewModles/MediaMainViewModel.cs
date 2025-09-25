@@ -1,5 +1,6 @@
 ﻿using ExtenderApp.Abstract;
 using ExtenderApp.Common;
+using ExtenderApp.Data;
 using ExtenderApp.Media.Models;
 using ExtenderApp.ViewModels;
 using ExtenderApp.Views.Commands;
@@ -84,102 +85,10 @@ namespace ExtenderApp.Media.ViewModels
 
         public MediaMainViewModel(IServiceStore serviceStore) : base(serviceStore)
         {
-            InitVideoCommand();
-            InitData();
-
             Model.CurrentVideoView = NavigateTo<VideoView>();
             Model.CurrentVideoListView = NavigateTo<VideoListView>();
 
             _task = new ScheduledTask();
-        }
-
-        /// <summary>
-        /// 初始化视频命令
-        /// </summary>
-        private void InitVideoCommand()
-        {
-            Model.SelectedVideoAction = SelectedVideo;
-        }
-
-        private void InitData()
-        {
-            JumpTime = 10;
-            CurrentTime = TimeSpan.Zero;
-            TotalTime = TimeSpan.Zero;
-        }
-
-        private void CheckVideoPath()
-        {
-            var intList = new List<int>();
-            var list = Model.VideoInfos;
-            for (int i = 0; i < list.Count; i++)
-            {
-                if (!list[i].VideoFileInfo.Exists)
-                    intList.Add(i);
-            }
-
-            for (int i = 0; i < intList.Count; i++)
-            {
-                list.RemoveAt(i);
-            }
-        }
-
-        /// <summary>
-        /// 添加视频路径
-        /// </summary>
-        /// <param name="videoPath">视频文件的路径</param>
-        public void AddVideoPath(string videoPath)
-        {
-            //不可以重复加载相同地址的视频
-            var videoInfo = Model.AddVideoPathAction.Invoke(videoPath);
-            if (videoInfo == null)
-                return;
-
-            Model.CurrentVideoInfo = videoInfo;
-
-            SaveModel();
-        }
-
-        public override void Close()
-        {
-            base.Close();
-
-
-            if (Model.CurrentVideoInfo is null)
-                return;
-            Model.CurrentVideoInfo = null;
-            SaveModel();
-        }
-
-        #region 更新
-
-        public void UpdateVoideoTime(TimeSpan newTimeSpan)
-        {
-            CurrentTime = newTimeSpan;
-        }
-
-        public void UpdateVolume()
-        {
-            SaveModel();
-        }
-
-        #endregion
-
-
-        /// <summary>
-        /// 打开视频。
-        /// </summary>
-        /// <param name="videoInfo">视频信息对象。</param>
-        /// <remarks>
-        /// 如果传入的视频信息为空，或者当前已打开的视频信息与传入的视频信息相同，则不进行任何操作。
-        /// 否则，更新当前视频信息，并调用OpenVideo和Play方法。
-        /// </remarks>
-        public void SelectedVideo(VideoInfo videoInfo)
-        {
-            if (videoInfo is null || Model.CurrentVideoInfo == videoInfo)
-                return;
-
-            Model.CurrentVideoInfo = videoInfo;
         }
     }
 }

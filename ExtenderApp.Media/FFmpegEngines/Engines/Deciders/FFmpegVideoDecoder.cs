@@ -14,7 +14,7 @@ namespace ExtenderApp.Media.FFmpegEngines
 
         private int rgbBufferLength;
 
-        public FFmpegVideoDecoder(FFmpegEngine engine, FFmpegDecoderContext context, FFmpegInfo info, CancellationToken allToken, FFmpegDecoderSettings settings) : base(engine, context, info, allToken, settings)
+        public FFmpegVideoDecoder(FFmpegEngine engine, FFmpegDecoderContext context, FFmpegInfo info, CancellationToken allToken, FFmpegDecoderSettings settings) : base(engine, context, info, allToken, settings, settings.VideoMaxCacheLength)
         {
             //分配帧和RGB帧
             rgbFrame = engine.CreateFrame();
@@ -35,6 +35,7 @@ namespace ExtenderApp.Media.FFmpegEngines
 
         protected override void Dispose(bool disposing)
         {
+            base.Dispose(disposing);
             Engine.Free(ref swsContext);
             Engine.ReturnFrame(ref rgbFrame);
             Marshal.FreeHGlobal(rgbBuffer);

@@ -1,4 +1,5 @@
-﻿using ExtenderApp.Common;
+﻿using System.Collections.Concurrent;
+using ExtenderApp.Common;
 using FFmpeg.AutoGen;
 
 namespace ExtenderApp.Media.FFmpegEngines
@@ -10,6 +11,11 @@ namespace ExtenderApp.Media.FFmpegEngines
     /// </summary>
     public class FFmpegDecoderController : DisposableObject
     {
+        /// <summary>
+        /// 最大等待超时时间（毫秒），用于控制解码节奏。
+        /// </summary>
+        private const int MaxTimeout = 10;
+
         /// <summary>
         /// FFmpeg 引擎实例。
         /// </summary>
@@ -41,9 +47,33 @@ namespace ExtenderApp.Media.FFmpegEngines
         private Task? processTask;
 
         /// <summary>
+        /// 音频解码任务。
+        /// </summary>
+        private Task? audioTask;
+
+        /// <summary>
+        /// 视频解码任务。
+        /// </summary>
+        private Task? videoTask;
+
+        /// <summary>
         /// 当前解码流程的取消令牌源。
         /// </summary>
         private CancellationTokenSource? source;
+
+        /// <summary>
+        /// 音频数据包队列。
+        /// 用于缓存待解码的音频 AVPacket，支持多线程安全入队和出队。
+        /// 解码主循环将音频包分发到该队列，由音频解码器异步处理。
+        /// </summary>
+        private readonly ConcurrentQueue<NativeIntPtr<AVPacket>> _audioQueue;
+
+        /// <summary>
+        /// 视频数据包队列。
+        /// 用于缓存待解码的视频 AVPacket，支持多线程安全入队和出队。
+        /// 解码主循环将视频包分发到该队列，由视频解码器异步处理。
+        /// </summary>
+        private readonly ConcurrentQueue<NativeIntPtr<AVPacket>> _videoQueue;
 
         #region Events
 
@@ -68,11 +98,14 @@ namespace ExtenderApp.Media.FFmpegEngines
         /// <param name="source">全局取消令牌源。</param>
         public FFmpegDecoderController(FFmpegEngine engine, FFmpegContext context, FFmpegDecoderCollection collection, CancellationTokenSource source)
         {
+            _audioQueue = new();
+            _videoQueue = new();
+
             _engine = engine;
             _allSource = source;
             _decoderCollection = collection;
             _context = context;
-            _decodingController = new(true, () => _decoderCollection.VideoDecoder.CacheStateController.HasCacheSpace);
+            _decodingController = new(false, () => _videoQueue.Count > 1 && _audioQueue.Count > 1);
         }
 
         /// <summary>
@@ -81,24 +114,50 @@ namespace ExtenderApp.Media.FFmpegEngines
         /// </summary>
         public void StartDecode()
         {
+            ThrowIfDisposed();
             if (processTask != null)
             {
                 throw new InvalidOperationException($"不能重复解析:{_context.Info.Uri}");
             }
             source = source ?? CancellationTokenSource.CreateLinkedTokenSource(_allSource.Token);
             processTask = Task.Run(() => Decoding(source.Token), _allSource.Token);
+            videoTask = Task.Run(() => ProcessPacket(_videoQueue, _decoderCollection.VideoDecoder), _allSource.Token);
+            audioTask = Task.Run(() => ProcessPacket(_audioQueue, _decoderCollection.AudioDecoder), _allSource.Token);
         }
 
         /// <summary>
         /// 停止解码流程，取消任务并释放相关资源。
         /// </summary>
-        public void Stop()
+        public void StopDecode()
         {
+            ThrowIfDisposed();
             source?.Cancel();
             source?.Dispose();
+            processTask?.Wait();
+            audioTask?.Wait();
+            videoTask?.Wait();
             processTask?.Dispose();
+            audioTask?.Dispose();
+            videoTask?.Dispose();
             processTask = null;
+            audioTask = null;
+            videoTask = null;
             source = null;
+        }
+
+        /// <summary>
+        /// 跳转解码器到指定时间戳（毫秒）。
+        /// 先停止当前解码流程，调用 FFmpegEngine 的 Seek 方法将媒体流定位到目标时间点，
+        /// 然后重新启动解码流程，实现解码器的时间跳转和状态重置。
+        /// 适用于音视频播放进度跳转、快进/快退等场景。
+        /// </summary>
+        /// <param name="timestamp">目标跳转时间（毫秒）。</param>
+        public void SeekDecoder(long timestamp)
+        {
+            StopDecode();
+            _engine.Seek(_context.FormatContext, timestamp, _context);
+            Clear();
+            StartDecode();
         }
 
         /// <summary>
@@ -112,9 +171,9 @@ namespace ExtenderApp.Media.FFmpegEngines
         {
             while (!token.IsCancellationRequested && !_allSource.IsCancellationRequested)
             {
-                if (!_decodingController.WaitForTargetState(token))
+                if (!_decodingController.WaitForTargetState(token, MaxTimeout))
                 {
-                    break;
+                    continue;
                 }
 
                 NativeIntPtr<AVPacket> packet = _engine.GetPacket();
@@ -139,9 +198,8 @@ namespace ExtenderApp.Media.FFmpegEngines
                 }
 
                 int index = _engine.GetPacketStreamIndex(packet);
-                var decoder = GetDecoder(index);
-                decoder?.Decoding(packet);
-                _engine.ReturnPacket(ref packet);
+                var queue = GetQueue(index);
+                queue?.Enqueue(packet);
             }
 
             return Task.CompletedTask;
@@ -153,38 +211,98 @@ namespace ExtenderApp.Media.FFmpegEngines
         /// <param name="streamIndex">流索引。</param>
         /// <returns>对应的 FFmpegDecoder 实例。</returns>
         /// <exception cref="ArgumentOutOfRangeException">流索引无效时抛出异常。</exception>
-        public FFmpegDecoder? GetDecoder(int streamIndex)
+        public ConcurrentQueue<NativeIntPtr<AVPacket>>? GetQueue(int streamIndex)
         {
             if (_decoderCollection.VideoDecoder?.StreamIndex == streamIndex)
             {
-                return _decoderCollection.VideoDecoder;
+                return _videoQueue;
             }
             else if (_decoderCollection.AudioDecoder?.StreamIndex == streamIndex)
             {
-                return _decoderCollection.AudioDecoder;
+                return _audioQueue;
             }
             return null;
             //throw new ArgumentOutOfRangeException(nameof(streamIndex), $"无法识别的流索引:{streamIndex}");
         }
 
+        /// <summary>
+        /// 通知视频解码器缓存已添加新帧。
+        /// 用于更新视频解码器的缓存状态，唤醒等待的解码线程或调整解码节奏。
+        /// 适用于帧解码完成后调用，确保缓存计数准确。
+        /// </summary>
         public void OnVideoFrameAdded()
         {
             _decoderCollection.VideoDecoder?.CacheStateController.OnFrameAdded();
         }
 
+        /// <summary>
+        /// 通知音频解码器缓存已添加新帧。
+        /// 用于更新音频解码器的缓存状态，唤醒等待的解码线程或调整解码节奏。
+        /// 适用于帧解码完成后调用，确保缓存计数准确。
+        /// </summary>
         public void OnAudioFrameAdded()
         {
             _decoderCollection.AudioDecoder?.CacheStateController.OnFrameAdded();
         }
 
+        /// <summary>
+        /// 通知视频解码器缓存已移除帧。
+        /// 用于更新视频解码器的缓存状态，唤醒等待的解码线程或调整解码节奏。
+        /// 适用于帧被消费或回收后调用，确保缓存计数准确。
+        /// </summary>
         public void OnVideoFrameRemoved()
         {
             _decoderCollection.VideoDecoder?.CacheStateController.OnFrameRemoved();
         }
 
+        /// <summary>
+        /// 通知音频解码器缓存已移除帧。
+        /// 用于更新音频解码器的缓存状态，唤醒等待的解码线程或调整解码节奏。
+        /// 适用于帧被消费或回收后调用，确保缓存计数准确。
+        /// </summary>
         public void OnAudioFrameRemoved()
         {
             _decoderCollection.AudioDecoder?.CacheStateController.OnFrameRemoved();
+        }
+
+        /// <summary>
+        /// 解码器数据包处理任务。
+        /// 持续从指定队列中取出 AVPacket 并交由解码器进行解码，
+        /// 解码完成后回收数据包资源。支持异步等待和取消。
+        /// 适用于音视频解码的多线程处理场景。
+        /// </summary>
+        /// <param name="queue">待处理的数据包队列（音频或视频）。</param>
+        /// <param name="decoder">对应的解码器实例。</param>
+        private async Task ProcessPacket(ConcurrentQueue<NativeIntPtr<AVPacket>> queue, FFmpegDecoder decoder)
+        {
+            if (source == null)
+                throw new Exception("解码未启动");
+
+            while (!source.IsCancellationRequested)
+            {
+                if (!queue.TryDequeue(out var packet))
+                {
+                    await Task.Delay(MaxTimeout);
+                    continue;
+                }
+                decoder.Decoding(packet);
+                _engine.ReturnPacket(ref packet);
+            }
+        }
+
+        /// <summary>
+        /// 清除音视频数据包队列，释放所有未处理的 AVPacket 资源。
+        /// </summary>
+        private void Clear()
+        {
+            while (_audioQueue.TryDequeue(out var packet))
+            {
+                _engine.ReturnPacket(ref packet);
+            }
+            while (_videoQueue.TryDequeue(out var packet))
+            {
+                _engine.ReturnPacket(ref packet);
+            }
         }
 
         /// <summary>
@@ -194,11 +312,23 @@ namespace ExtenderApp.Media.FFmpegEngines
         /// <param name="disposing">指示是否由 Dispose 方法调用。</param>
         protected override void Dispose(bool disposing)
         {
+            _allSource.Cancel();
+            _allSource.Dispose();
             source?.Cancel();
             source?.Dispose();
             processTask?.Wait();
+            audioTask?.Wait();
+            videoTask?.Wait();
+            Clear();
             processTask?.Dispose();
+            audioTask?.Dispose();
+            videoTask?.Dispose();
+            processTask = null;
+            audioTask = null;
+            videoTask = null;
+            source = null;
             _context.Dispose();
+            _decoderCollection.Dispose();
         }
     }
 }
