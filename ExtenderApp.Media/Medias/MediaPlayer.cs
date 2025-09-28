@@ -1,5 +1,4 @@
 ﻿using System.Collections.Concurrent;
-using System.Windows.Controls;
 using ExtenderApp.Common;
 
 namespace ExtenderApp.Media.FFmpegEngines
@@ -8,13 +7,17 @@ namespace ExtenderApp.Media.FFmpegEngines
     /// FFmpeg 媒体播放器，负责音视频解码、播放、暂停、停止、跳转等控制。
     /// 支持多线程解码和帧调度，适用于 WPF 播放场景。
     /// </summary>
-    public class MediaPlayer : DisposableObject
+    public class MediaPlayer : DisposableObject, IMediaPlayer
     {
         /// <summary>
         /// 跳帧等待阈值（毫秒），用于控制播放节奏。
         /// </summary>
         private const int SkipWaitingTime = 15;
-        private const int FrameOutTime = 15;
+
+        /// <summary>
+        /// 每个视频帧的最大允许输出时间差（毫秒），用于同步音视频。
+        /// </summary>
+        private const int VideoFrameOutTime = 15;
 
         /// <summary>
         /// 解码器设置参数。
@@ -45,6 +48,11 @@ namespace ExtenderApp.Media.FFmpegEngines
         /// 当前播放时间（微秒）。
         /// </summary>
         public long CurrentTime { get; private set; }
+
+        /// <summary>
+        /// 播放速率，1表示正常速度，2表示两倍速，0.5表示半速。
+        /// </summary>
+        public double RateSpeed { get; set; }
 
         /// <summary>
         /// 媒体播放任务。
@@ -78,7 +86,7 @@ namespace ExtenderApp.Media.FFmpegEngines
         /// </summary>
         public event Action<long>? OnPlayback;
 
-        #endregion
+        #endregion Events
 
         /// <summary>
         /// 初始化 MediaPlayer 实例。
@@ -95,6 +103,7 @@ namespace ExtenderApp.Media.FFmpegEngines
             _settings = settings;
             settings.VideoScheduling += VideoSchedule;
             settings.AudioScheduling += AudioSchedule;
+            RateSpeed = 1;
         }
 
         /// <summary>
@@ -210,14 +219,14 @@ namespace ExtenderApp.Media.FFmpegEngines
                 {
                     long videoTimeDiff = videoFrame.Pts - CurrentTime;
 
-                    if (Math.Abs(videoTimeDiff) <= FrameOutTime)
+                    if (Math.Abs(videoTimeDiff) <= VideoFrameOutTime)
                     {
                         _videoFrameQueue.TryDequeue(out videoFrame);
                         OnVideoFrame?.Invoke(videoFrame);
                         _controller.OnVideoFrameRemoved();
                         videoFrame.Dispose();
                     }
-                    else if (videoTimeDiff < -FrameOutTime)
+                    else if (videoTimeDiff < -VideoFrameOutTime)
                     {
                         _videoFrameQueue.TryDequeue(out videoFrame);
                         _controller.OnVideoFrameRemoved();
@@ -232,7 +241,7 @@ namespace ExtenderApp.Media.FFmpegEngines
                 int waitTime = hasAudio ? audioDelay : frameInterval;
                 CurrentTime += waitTime;
                 lastDelay = waitTime;
-
+                waitTime = (int)(waitTime / RateSpeed);
                 OnPlayback?.Invoke(CurrentTime);
 
                 if (waitTime >= SkipWaitingTime)

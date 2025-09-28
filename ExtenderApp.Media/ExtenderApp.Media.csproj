@@ -27,6 +27,7 @@
 		<PackageReference Include="NAudio.WinForms" Version="2.2.1" />
 		<PackageReference Include="NAudio.WinMM" Version="2.2.1" />
 		<PackageReference Include="PropertyChanged.Fody" Version="4.1.0" />
+		<PackageReference Include="SoundTouch.Net" Version="2.3.2" />
 	</ItemGroup>
 
 	<Target Name="CopyFilesAfterBuild" AfterTargets="Build">

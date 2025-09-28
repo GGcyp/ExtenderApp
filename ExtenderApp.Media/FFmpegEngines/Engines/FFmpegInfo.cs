@@ -3,8 +3,7 @@
 namespace ExtenderApp.Media.FFmpegEngines
 {
     /// <summary>
-    /// 媒体基础信息封装类，包含视频或音频流的关键参数。
-    /// 用于描述媒体文件的格式、时长、编解码器等元数据，便于界面展示和业务逻辑处理。
+    /// 媒体基础信息封装类，包含视频或音频流的关键参数。 用于描述媒体文件的格式、时长、编解码器等元数据，便于界面展示和业务逻辑处理。
     /// </summary>
     public struct FFmpegInfo
     {
@@ -66,7 +65,7 @@ namespace ExtenderApp.Media.FFmpegEngines
         /// <summary>
         /// 视频的像素格式。
         /// </summary>
-        public AVPixelFormat PixelFormat { get; }
+        public FFmpegPixelFormat PixelFormat { get; }
 
         /// <summary>
         /// 媒体源 URI 或文件路径。
@@ -76,7 +75,7 @@ namespace ExtenderApp.Media.FFmpegEngines
         /// <summary>
         /// 声音采样格式。
         /// </summary>
-        public AVSampleFormat SampleFormat { get; }
+        public FFmpegSampleFormat SampleFormat { get; }
 
         /// <summary>
         /// 是否为流媒体（时长小于等于0视为流媒体）。
@@ -87,14 +86,14 @@ namespace ExtenderApp.Media.FFmpegEngines
         /// 构造函数，初始化媒体信息各字段。
         /// </summary>
         /// <param name="uri">媒体源 URI 或文件路径。</param>
-        /// <param name="format">视频像素格式。</param>
+        /// <param name="pixelFormat">视频像素格式。</param>
         /// <param name="sampleFormat">声音采样格式。</param>
         /// <param name="videoCodecName">视频编解码器名称。</param>
         /// <param name="audioCodecName">音频编解码器名称。</param>
-        public FFmpegInfo(string uri, AVPixelFormat format, AVSampleFormat sampleFormat, string videoCodecName, string audioCodecName)
+        public FFmpegInfo(string uri, FFmpegPixelFormat pixelFormat, FFmpegSampleFormat sampleFormat, string videoCodecName, string audioCodecName)
         {
             Uri = uri;
-            PixelFormat = format;
+            PixelFormat = pixelFormat;
             SampleFormat = sampleFormat;
             VideoCodecName = videoCodecName;
             AudioCodecName = audioCodecName;

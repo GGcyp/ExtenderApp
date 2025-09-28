@@ -1,6 +1,4 @@
-﻿
-
-using ExtenderApp.Common;
+﻿using ExtenderApp.Common;
 
 namespace ExtenderApp.Media.FFmpegEngines
 {

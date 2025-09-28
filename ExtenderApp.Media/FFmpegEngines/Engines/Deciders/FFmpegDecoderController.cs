@@ -82,7 +82,7 @@ namespace ExtenderApp.Media.FFmpegEngines
         /// </summary>
         public EventHandler? OnCompletedDecoded;
 
-        #endregion
+        #endregion Events
 
         /// <summary>
         /// 包含媒体流的基本信息（如时长、格式等）。

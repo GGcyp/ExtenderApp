@@ -218,7 +218,7 @@ namespace ExtenderApp.Media.FFmpegEngines
             var videoContext = collection.VideoContext;
             var audioContext = collection.AudioContext;
 
-            FFmpegInfo info = new(uri, videoContext.CodecContext.Value->pix_fmt, audioContext.CodecContext.Value->sample_fmt, GetCodecNameOrDefault(videoContext), GetCodecNameOrDefault(audioContext));
+            FFmpegInfo info = new(uri, videoContext.CodecContext.Value->pix_fmt.Convert(), audioContext.CodecContext.Value->sample_fmt.Convert(), GetCodecNameOrDefault(videoContext), GetCodecNameOrDefault(audioContext));
             info.Width = videoContext.CodecParameters.Value->width;
             info.Height = videoContext.CodecParameters.Value->height;
             info.Duration = videoContext.CodecStream.Value->duration;
@@ -1415,7 +1415,7 @@ namespace ExtenderApp.Media.FFmpegEngines
 
         public int GetBytesPerSample(FFmpegInfo info)
         {
-            return GetBytesPerSample(info.SampleFormat);
+            return GetBytesPerSample(info.SampleFormat.Convert());
         }
 
         public int GetBytesPerSample(AVSampleFormat format)

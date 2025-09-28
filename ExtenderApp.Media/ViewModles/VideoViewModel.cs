@@ -1,12 +1,9 @@
-﻿using System.Numerics;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
+﻿using System.Buffers;
 using ExtenderApp.Abstract;
-using ExtenderApp.Data;
 using ExtenderApp.Media.Models;
 using ExtenderApp.ViewModels;
 using Microsoft.Win32;
-using NAudio.Wave;
+using SoundTouch;
 
 namespace ExtenderApp.Media.ViewModels
 {
@@ -47,21 +44,64 @@ namespace ExtenderApp.Media.ViewModels
                 });
             };
 
-            player.OnAudioFrame += f =>
-            {
-                try
-                {
-                    Model.BufferedWave?.AddSamples(f.Data, 0, f.Length);
-                }
-                catch (Exception ex)
-                {
-                    Model.BufferedWave?.ClearBuffer();
-                    Error("音频播放出错，已清空缓冲区", ex);
-                }
-            };
+            var _soundTouch = new SoundTouchProcessor();
+            _soundTouch.SampleRate = 44100;
+            _soundTouch.Channels = 2;
+            _soundTouch.Tempo = 0.5f * 100;           // 保持原速
 
-            Model.WaveOut!.Play();
+            //player.OnAudioFrame += f =>
+            //{
+            //    try
+            //    {
+            //        float[] floatSamples = ConvertPcm16BytesToFloat(f.Data);
+
+            //        int numSamples = floatSamples.Length / _soundTouch.Channels;
+            //        _soundTouch.PutSamples(floatSamples, numSamples);
+
+            //        // 获取可输出样本数
+            //        int available = _soundTouch.AvailableSamples;
+            //        if (available > 0)
+            //        {
+            //            float[] processed = ArrayPool<float>.Shared.Rent(available * _soundTouch.Channels);
+            //            int samplesProcessed = _soundTouch.ReceiveSamples(processed, available);
+
+            //            // 将 float 数组转换回 byte 数组
+            //            int length = samplesProcessed * _soundTouch.Channels * 2;
+            //            byte[] processedBytes = ArrayPool<byte>.Shared.Rent(length);
+            //            for (int i = 0; i < samplesProcessed * _soundTouch.Channels; i++)
+            //            {
+            //                short s = (short)(Math.Clamp(processed[i], -1f, 1f) * 32767);
+            //                processedBytes[i * 2] = (byte)(s & 0xFF);
+            //                processedBytes[i * 2 + 1] = (byte)((s >> 8) & 0xFF);
+            //            }
+
+            //            ArrayPool<float>.Shared.Return(processed);
+            //            Model.BufferedWave?.AddSamples(processedBytes, 0, length);
+            //            ArrayPool<byte>.Shared.Return(processedBytes);
+            //        }
+            //    }
+            //    catch (Exception ex)
+            //    {
+            //        Model.BufferedWave?.ClearBuffer();
+            //        Error("音频播放出错，已清空缓冲区", ex);
+            //    }
+            //};
+
+            //Model.WaveOut!.Play();
             player.Play();
+            player.RateSpeed = 1.5f;
+        }
+
+        public static float[] ConvertPcm16BytesToFloat(byte[] pcmBytes)
+        {
+            int samples = pcmBytes.Length / 2;
+            float[] floatSamples = new float[samples];
+            for (int i = 0; i < samples; i++)
+            {
+                short sample = BitConverter.ToInt16(pcmBytes, i * 2);
+                floatSamples[i] = sample / 32768f; // 归一化到[-1,1]
+            }
+            return floatSamples;
         }
     }
 }

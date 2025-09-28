@@ -1,9 +1,9 @@
 ﻿using System.Collections.ObjectModel;
 using System.Windows.Media.Imaging;
 using ExtenderApp.Abstract;
+using ExtenderApp.Media.Audios;
 using ExtenderApp.Media.FFmpegEngines;
 using ExtenderApp.Models;
-using NAudio.Wave;
 
 namespace ExtenderApp.Media.Models
 {
@@ -17,15 +17,15 @@ namespace ExtenderApp.Media.Models
         /// </summary>
         public ObservableCollection<VideoInfo>? VideoInfos { get; set; }
 
-        public MediaPlayer? MediaPlayer { get; set; }
-        public WaveOutEvent? WaveOut { get; set; }
-        public BufferedWaveProvider? BufferedWave { get; set; }
+        public MediaPlayer? MPlayer { get; set; }
+        public AudioPlayer? APlayer { get; set; }
         public WriteableBitmap Bitmap { get; set; }
         public IView? CurrentVideoView { get; set; }
 
         public IView? CurrentVideoListView { get; set; }
 
         private float volume;
+
         /// <summary>
         /// 音量
         /// </summary>
@@ -35,9 +35,9 @@ namespace ExtenderApp.Media.Models
             set
             {
                 volume = value;
-                if (WaveOut != null)
+                if (APlayer != null)
                 {
-                    WaveOut.Volume = volume;
+                    APlayer.Volume = volume;
                 }
             }
         }
@@ -64,11 +64,7 @@ namespace ExtenderApp.Media.Models
             if (player == null)
                 throw new ArgumentNullException(nameof(player));
 
-            var waveFormat = new WaveFormat(44100, 16, 2);
-            BufferedWave = new(waveFormat);
-            WaveOut = new WaveOutEvent();
-            WaveOut.Volume = Volume;
-            WaveOut.Init(BufferedWave);
+            APlayer = new AudioPlayer(player.Info, 0);
             Bitmap = new(player.Info.Width, player.Info.Height, 96, 96, System.Windows.Media.PixelFormats.Bgr24, null);
         }
     }
