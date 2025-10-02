@@ -8,5 +8,5 @@
                    xmlns:vm="clr-namespace:ExtenderApp.Media.ViewModels;assembly=ExtenderApp.Media"
                    mc:Ignorable="d"
                    d:DataContext="{d:DesignInstance Type=vm:VideoViewModel}">
-    <Image x:Name="videoImage" Stretch="Uniform" Source="{Binding Model.Bitmap}"/>
+    <Image Stretch="Uniform" Source="{Binding Model.Bitmap}"/>
 </v:ExtenderAppView>

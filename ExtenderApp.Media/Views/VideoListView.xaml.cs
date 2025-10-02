@@ -35,9 +35,9 @@ namespace ExtenderApp.Media
         /// <param name="e">事件参数</param>
         private void OpenVideoForList(object sender, MouseButtonEventArgs e)
         {
-            if (sender is TextBlock textBlock && textBlock.DataContext is VideoInfo videoInfo)
-            {
-            }
+            //if (sender is TextBlock textBlock && textBlock.DataContext is VideoInfo videoInfo)
+            //{
+            //}
         }
 
         private void AddLocalVideo_Click(object sender, RoutedEventArgs e)

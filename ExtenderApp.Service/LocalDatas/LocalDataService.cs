@@ -140,6 +140,16 @@ namespace ExtenderApp.Services
             }
         }
 
+        public bool DeleteData(string? dataName)
+        {
+            if (string.IsNullOrEmpty(dataName))
+            {
+                return false;
+            }
+
+            return _localDataDict.Remove(dataName);
+        }
+
         private void SaveLocalData<T>(ExpectLocalFileInfo info, Version version, T data)
         {
             _parser.Write(info, new VersionData<T>(version, data), CompressionType.Lz4Block);

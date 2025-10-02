@@ -1,4 +1,4 @@
-﻿namespace ExtenderApp.Media.FFmpegEngines
+﻿namespace ExtenderApp.FFmpegEngines
 {
     /// <summary>
     /// FFmpeg 像素格式枚举。 定义了常见的像素格式类型，涵盖

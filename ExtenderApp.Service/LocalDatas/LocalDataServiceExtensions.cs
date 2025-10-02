@@ -70,5 +70,20 @@ namespace ExtenderApp.Services
         {
             return service.SaveData(dataName, new LocalData<T>(data, null, version));
         }
+
+        /// <summary>
+        /// 从本地数据服务中删除指定插件的数据。
+        /// 通过 PluginDetails 的 Title 属性定位要删除的数据项。
+        /// </summary>
+        /// <param name="service">ILocalDataService 接口的实现实例。</param>
+        /// <param name="details">包含插件标题的 PluginDetails 实例。</param>
+        /// <returns>如果删除成功则返回 true，否则返回 false。</returns>
+        /// <exception cref="ArgumentNullException">如果 details 参数为 null，则抛出异常。</exception>
+        public static bool DeleteData(this ILocalDataService service, PluginDetails details)
+        {
+            if (details is null)
+                throw new ArgumentNullException(nameof(details));
+            return service.DeleteData(details.Title);
+        }
     }
 }

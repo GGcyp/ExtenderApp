@@ -1,9 +1,10 @@
-﻿using FFmpeg.AutoGen;
+﻿using ExtenderApp.Data;
+using FFmpeg.AutoGen;
 
-namespace ExtenderApp.Media.FFmpegEngines
+namespace ExtenderApp.FFmpegEngines
 {
     /// <summary>
-    /// FFmpegEngine 扩展方法类，提供便捷的 Seek 操作。 支持对
+    /// FFmpegEngine 扩展方法类，提供便捷的 SeekAsync 操作。 支持对
     /// FFmpegContext、FFmpegDecoderContextCollection、FFmpegDecoderContext
     /// 进行统一跳转和缓冲区刷新。 适用于多流同步跳转、单流跳转及解码器状态重置等场景。
     /// </summary>
@@ -11,7 +12,7 @@ namespace ExtenderApp.Media.FFmpegEngines
     {
         /// <summary>
         /// 对整个 FFmpegContext 进行跳转操作。
-        /// 实际会对其包含的所有解码器上下文集合（视频/音频）执行 Seek。
+        /// 实际会对其包含的所有解码器上下文集合（视频/音频）执行 SeekAsync。
         /// </summary>
         /// <param name="engine">
         /// FFmpegEngine 实例。

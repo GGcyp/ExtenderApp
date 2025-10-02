@@ -1,7 +1,8 @@
 ﻿using ExtenderApp.Common;
+using ExtenderApp.Data;
 using FFmpeg.AutoGen;
 
-namespace ExtenderApp.Media.FFmpegEngines
+namespace ExtenderApp.FFmpegEngines
 {
     /// <summary>
     /// FFmpeg 解码器抽象基类。
@@ -32,19 +33,9 @@ namespace ExtenderApp.Media.FFmpegEngines
         protected FFmpegDecoderSettings Settings { get; private set; }
 
         /// <summary>
-        /// 获取用于取消解码操作的取消令牌。
-        /// </summary>
-        protected CancellationToken AllToken { get; }
-
-        /// <summary>
         /// 缓存状态控制器，用于管理解码缓存和节奏。
         /// </summary>
         public CacheStateController CacheStateController { get; }
-
-        /// <summary>
-        /// 当前解码操作的取消令牌源。
-        /// </summary>
-        public CancellationTokenSource Source;
 
         /// <summary>
         /// 当前解码器对应的流索引。
@@ -59,33 +50,34 @@ namespace ExtenderApp.Media.FFmpegEngines
         /// <param name="info">媒体基础信息。</param>
         /// <param name="maxCacheLength">最大缓存长度。</param>
         /// <param name="settings">解码器设置。</param>
-        public FFmpegDecoder(FFmpegEngine engine, FFmpegDecoderContext context, FFmpegInfo info, CancellationToken allToken, FFmpegDecoderSettings settings, int maxCacheLength)
+        public FFmpegDecoder(FFmpegEngine engine, FFmpegDecoderContext context, FFmpegInfo info, FFmpegDecoderSettings settings, int maxCacheLength)
         {
             Settings = settings;
             Engine = engine;
             Context = context;
             CacheStateController = new(maxCacheLength);
             Info = info;
-            AllToken = allToken;
-            Source = CancellationTokenSource.CreateLinkedTokenSource(AllToken);
         }
 
         /// <summary>
         /// 解码指定的数据包（AVPacket），具体解码逻辑由子类实现。
         /// </summary>
         /// <param name="packet">待解码的数据包指针。</param>
-        public void Decoding(NativeIntPtr<AVPacket> packet)
+        public void Decoding(NativeIntPtr<AVPacket> packet, CancellationToken token)
         {
-            Source = Source ?? CancellationTokenSource.CreateLinkedTokenSource(AllToken);
+            if (token.IsCancellationRequested)
+            {
+                return;
+            }
             int result = Engine.SendPacket(Context.CodecContext, ref packet);
             if (result < 0)
             {
                 return;
             }
 
-            while (!AllToken.IsCancellationRequested && !Source.IsCancellationRequested)
+            while (!token.IsCancellationRequested)
             {
-                if (!CacheStateController.WaitForCacheSpace(AllToken, WaitCacheTimeout))
+                if (!CacheStateController.WaitForCacheSpace(token, WaitCacheTimeout))
                 {
                     continue;
                 }

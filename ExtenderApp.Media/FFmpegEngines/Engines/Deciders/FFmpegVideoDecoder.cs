@@ -1,8 +1,9 @@
 ﻿using System.Buffers;
 using System.Runtime.InteropServices;
+using ExtenderApp.Data;
 using FFmpeg.AutoGen;
 
-namespace ExtenderApp.Media.FFmpegEngines
+namespace ExtenderApp.FFmpegEngines
 {
     /// <summary>
     /// FFmpeg 视频解码器。
@@ -39,15 +40,15 @@ namespace ExtenderApp.Media.FFmpegEngines
         /// <param name="info">媒体基础信息。</param>
         /// <param name="allToken">全局取消令牌。</param>
         /// <param name="settings">解码器设置参数。</param>
-        public FFmpegVideoDecoder(FFmpegEngine engine, FFmpegDecoderContext context, FFmpegInfo info, CancellationToken allToken, FFmpegDecoderSettings settings)
-            : base(engine, context, info, allToken, settings, settings.VideoMaxCacheLength)
+        public FFmpegVideoDecoder(FFmpegEngine engine, FFmpegDecoderContext context, FFmpegInfo info, FFmpegDecoderSettings settings)
+            : base(engine, context, info, settings, settings.VideoMaxCacheLength)
         {
             // 分配 RGB 帧和缓冲区
             rgbFrame = engine.CreateFrame();
-            rgbBufferLength = engine.GetBufferSizeForImage(settings.PixelFormat, info.Width, info.Height);
-            rgbBuffer = engine.CreateRGBBuffer(ref rgbFrame, rgbBufferLength, settings.PixelFormat, info.Width, info.Height);
+            rgbBufferLength = engine.GetBufferSizeForImage(settings.PixelFormat.Convert(), info.Width, info.Height);
+            rgbBuffer = engine.CreateRGBBuffer(ref rgbFrame, rgbBufferLength, settings.PixelFormat.Convert(), info.Width, info.Height);
             // 创建像素格式转换上下文
-            swsContext = engine.CreateSwsContext(info.Width, info.Height, info.PixelFormat.Convert(), info.Width, info.Height, settings.PixelFormat);
+            swsContext = engine.CreateSwsContext(info.Width, info.Height, info.PixelFormat.Convert(), info.Width, info.Height, settings.PixelFormat.Convert());
         }
 
         /// <summary>

@@ -1,6 +1,7 @@
-﻿using FFmpeg.AutoGen;
+﻿using ExtenderApp.Data;
+using FFmpeg.AutoGen;
 
-namespace ExtenderApp.Media.FFmpegEngines
+namespace ExtenderApp.FFmpegEngines
 {
     /// <summary>
     /// 表示一个FFmpeg上下文结构。

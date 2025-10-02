@@ -1,6 +1,6 @@
 ﻿
 
-namespace ExtenderApp.Media.FFmpegEngines
+namespace ExtenderApp.FFmpegEngines
 {
     /// <summary>
     /// FFmpeg媒体类型枚举

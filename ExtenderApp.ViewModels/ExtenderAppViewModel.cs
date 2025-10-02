@@ -203,7 +203,7 @@ namespace ExtenderApp.ViewModels
         /// </summary>
         /// <typeparam name="TView">目标视图类型，必须实现IView接口。</typeparam>
         /// <returns>返回窗口实例，如果导航失败则返回null。</returns>
-        protected virtual IWindow NavigateToWindow<TView>()
+        protected virtual IWindow? NavigateToWindow<TView>()
             where TView : class, IView
         {
             IWindow window = null;
@@ -350,6 +350,18 @@ namespace ExtenderApp.ViewModels
             return ServiceStore.LocalDataService.SaveData(Details.Title, data, version);
         }
 
+        /// <summary>
+        /// 删除当前插件的本地数据。
+        /// 根据当前视图模型的插件详情（Details）调用本地数据服务进行数据删除。
+        /// 如果插件详情为 null，则不执行删除操作并返回 false。
+        /// </summary>
+        /// <returns>删除成功返回 true，否则返回 false。</returns>
+        protected bool DeleteLocalData()
+        {
+            if (Details is null)
+                return false;
+            return ServiceStore.LocalDataService.DeleteData(Details);
+        }
 
         #endregion
 
@@ -724,6 +736,11 @@ namespace ExtenderApp.ViewModels
         }
 
         /// <summary>
+        /// 是否为常驻模型
+        /// </summary>
+        protected bool IsStandingModel { get; set; }
+
+        /// <summary>
         /// 初始化<see cref="ExtenderAppViewModel{TView, TModle}"/>的新实例
         /// </summary>
         /// <param name="serviceStore">服务存储</param>
@@ -744,6 +761,12 @@ namespace ExtenderApp.ViewModels
         public override void Exit(ViewInfo newViewInfo)
         {
             SaveModel();
+            if (!IsStandingModel)
+            {
+                DeleteLocalData();
+                if (model is IDisposable disposable)
+                    disposable.Dispose();
+            }
         }
 
         /// <summary>

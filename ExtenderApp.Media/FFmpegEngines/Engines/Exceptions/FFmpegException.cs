@@ -1,6 +1,6 @@
 ﻿
 
-namespace ExtenderApp.Media.FFmpegEngines
+namespace ExtenderApp.FFmpegEngines
 {
     public class FFmpegException : Exception
     {

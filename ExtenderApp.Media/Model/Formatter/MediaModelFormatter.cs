@@ -8,26 +8,28 @@ namespace ExtenderApp.Media
 {
     internal class MediaModelFormatter : VersionDataFormatter<MediaModel>
     {
+        private readonly IDispatcherService _dispatcherService;
         private readonly IBinaryFormatter<bool> _boolFormatter;
         private readonly IBinaryFormatter<double> _doubleFormatter;
-        private readonly IBinaryFormatter<ObservableCollection<VideoInfo>> _videoInfoFormatter;
+        private readonly IBinaryFormatter<ObservableCollection<MediaInfo>> _videoInfoFormatter;
 
         public override int DefaultLength => _boolFormatter.DefaultLength * 2 + _doubleFormatter.DefaultLength + _videoInfoFormatter.DefaultLength;
 
         public override Version FormatterVersion => new Version(0, 0, 0, 1);
 
-        public MediaModelFormatter(IBinaryFormatterResolver resolver) : base(resolver)
+        public MediaModelFormatter(IBinaryFormatterResolver resolver, IDispatcherService dispatcherService) : base(resolver)
         {
             _boolFormatter = GetFormatter<bool>();
             _doubleFormatter = GetFormatter<double>();
-            _videoInfoFormatter = GetFormatter<ObservableCollection<VideoInfo>>();
+            _videoInfoFormatter = GetFormatter<ObservableCollection<MediaInfo>>();
+            _dispatcherService = dispatcherService;
         }
 
         public override MediaModel Deserialize(ref ExtenderBinaryReader reader)
         {
-            MediaModel mediaData = new();
-            mediaData.VideoInfos = _videoInfoFormatter.Deserialize(ref reader);
-            mediaData.VideoInfos = mediaData.VideoInfos ?? new();
+            MediaModel mediaData = new(_dispatcherService);
+            mediaData.MediaInfos = _videoInfoFormatter.Deserialize(ref reader);
+            mediaData.MediaInfos = mediaData.MediaInfos ?? new();
             return mediaData;
         }
 
@@ -38,7 +40,7 @@ namespace ExtenderApp.Media
                 throw new ArgumentNullException(nameof(value));
             }
 
-            //_videoInfoFormatter.Serialize(ref writer, value.VideoInfos);
+            //_videoInfoFormatter.Serialize(ref writer, value.MediaInfos);
         }
 
         public override long GetLength(MediaModel value)
@@ -48,9 +50,9 @@ namespace ExtenderApp.Media
                 throw new ArgumentNullException(nameof(value));
             }
 
-            return _boolFormatter.DefaultLength * 2 + 
-                _doubleFormatter.DefaultLength + 
-                _videoInfoFormatter.GetLength(value.VideoInfos);
+            return _boolFormatter.DefaultLength * 2 +
+                _doubleFormatter.DefaultLength +
+                _videoInfoFormatter.GetLength(value.MediaInfos);
         }
     }
 }

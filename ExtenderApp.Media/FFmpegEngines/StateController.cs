@@ -1,5 +1,5 @@
 ﻿
-namespace ExtenderApp.Media.FFmpegEngines
+namespace ExtenderApp.FFmpegEngines
 {
     /// <summary>
     /// 泛型状态控制器，用于管理状态的变更与同步。

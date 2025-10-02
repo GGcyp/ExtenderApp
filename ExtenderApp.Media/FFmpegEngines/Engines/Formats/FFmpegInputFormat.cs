@@ -1,6 +1,7 @@
-﻿using FFmpeg.AutoGen;
+﻿using ExtenderApp.Data;
+using FFmpeg.AutoGen;
 
-namespace ExtenderApp.Media.FFmpegEngines
+namespace ExtenderApp.FFmpegEngines
 {
     /// <summary>
     /// FFmpeg 输入格式信息封装，便于托管代码访问 AVInputFormat 相关字段。

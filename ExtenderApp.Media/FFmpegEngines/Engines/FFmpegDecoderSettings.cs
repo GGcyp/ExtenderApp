@@ -1,6 +1,6 @@
 ﻿using FFmpeg.AutoGen;
 
-namespace ExtenderApp.Media.FFmpegEngines
+namespace ExtenderApp.FFmpegEngines
 {
     /// <summary>
     /// FFmpeg 解码器参数设置类。
@@ -11,7 +11,7 @@ namespace ExtenderApp.Media.FFmpegEngines
         /// <summary>
         /// 视频像素格式，默认 BGR24。
         /// </summary>
-        public AVPixelFormat PixelFormat { get; } = AVPixelFormat.AV_PIX_FMT_BGR24;
+        public FFmpegPixelFormat PixelFormat { get; } = FFmpegPixelFormat.PIX_FMT_BGR24;
 
         /// <summary>
         /// 视频帧最大缓存数量。
@@ -25,12 +25,12 @@ namespace ExtenderApp.Media.FFmpegEngines
         /// <summary>
         /// 音频通道布局（如立体声=2）。
         /// </summary>
-        public ulong ChannelLayout { get; } = 2;
+        public int Channels { get; } = 2;
 
         /// <summary>
         /// 音频采样格式（如 S16）。
         /// </summary>
-        public int SampleFormat { get; } = (int)AVSampleFormat.AV_SAMPLE_FMT_S16;
+        public FFmpegSampleFormat SampleFormat { get; } = FFmpegSampleFormat.SAMPLE_FMT_S16;
 
         /// <summary>
         /// 音频采样率（Hz），默认 44100。

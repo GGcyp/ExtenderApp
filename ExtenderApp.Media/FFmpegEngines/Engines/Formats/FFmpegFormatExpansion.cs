@@ -1,6 +1,6 @@
 ﻿
 
-namespace ExtenderApp.Media.FFmpegEngines
+namespace ExtenderApp.FFmpegEngines
 {
     /// <summary>
     /// FFmpeg 格式相关的扩展方法和工具类。

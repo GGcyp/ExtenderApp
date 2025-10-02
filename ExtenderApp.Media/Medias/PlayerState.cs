@@ -1,14 +1,19 @@
-﻿namespace ExtenderApp.Media.FFmpegEngines
+﻿namespace ExtenderApp.FFmpegEngines
 {
     /// <summary>
     /// 表示视频播放的状态。
     /// </summary>
-    public enum FFmpegState
+    public enum PlayerState
     {
         /// <summary>
         /// 未初始化，视频尚未加载或准备。
         /// </summary>
         Uninitialized,
+
+        /// <summary>
+        /// 已经初始化，但尚未开始播放。
+        /// </summary>
+        Initializing,
 
         /// <summary>
         /// 正在播放视频。

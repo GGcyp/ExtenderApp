@@ -1,6 +1,7 @@
 ﻿using FFmpeg.AutoGen;
+using ExtenderApp.Data;
 
-namespace ExtenderApp.Media.FFmpegEngines
+namespace ExtenderApp.FFmpegEngines
 {
     /// <summary>
     /// FFmpeg 音频解码器。
@@ -27,8 +28,8 @@ namespace ExtenderApp.Media.FFmpegEngines
         /// <param name="info">媒体基础信息。</param>
         /// <param name="allToken">全局取消令牌。</param>
         /// <param name="settings">解码器设置参数。</param>
-        public FFmpegAudioDecoder(FFmpegEngine engine, FFmpegDecoderContext context, FFmpegInfo info, CancellationToken allToken, FFmpegDecoderSettings settings)
-            : base(engine, context, info, allToken, settings, settings.AudioMaxCacheLength)
+        public FFmpegAudioDecoder(FFmpegEngine engine, FFmpegDecoderContext context, FFmpegInfo info, FFmpegDecoderSettings settings)
+            : base(engine, context, info, settings, settings.AudioMaxCacheLength)
         {
             // 创建 PCM 输出帧并设置参数
             pcmFrame = engine.CreateFrame();
@@ -50,13 +51,13 @@ namespace ExtenderApp.Media.FFmpegEngines
             Engine.SwrConvert(swrContext, pcmFrame, frame);
 
             // 拷贝 PCM 数据到托管缓冲区
-            var buffer = Engine.CopyFrameToBuffer(pcmFrame, (long)Settings.ChannelLayout, out int length);
+            var buffer = Engine.CopyFrameToBuffer(pcmFrame, (long)Settings.Channels, out int length);
 
             // 获取帧持续时间
             long duration = Engine.GetFrameDuration(frame, Context);
 
             // 构造音频帧并调度到上层
-            AudioFrame audioFrame = new AudioFrame(buffer, length, Settings.SampleRate, (int)Settings.ChannelLayout, 16, framePts, duration);
+            AudioFrame audioFrame = new AudioFrame(buffer, length, Settings.SampleRate, (int)Settings.Channels, 16, framePts, duration);
             Settings.OnAudioScheduling(audioFrame);
         }
 

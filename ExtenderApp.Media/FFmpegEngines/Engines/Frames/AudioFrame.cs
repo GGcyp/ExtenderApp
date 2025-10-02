@@ -2,7 +2,7 @@
 
 using System.Buffers;
 
-namespace ExtenderApp.Media.FFmpegEngines
+namespace ExtenderApp.FFmpegEngines
 {
     /// <summary>
     /// 表示一帧音频数据，包含PCM数据及相关音频参数。

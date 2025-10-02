@@ -1,6 +1,6 @@
 ﻿
 
-namespace ExtenderApp.Media.FFmpegEngines
+namespace ExtenderApp.FFmpegEngines
 {
     /// <summary>
     /// 表示包含视频和音频解码器上下文的集合

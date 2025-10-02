@@ -1,8 +1,9 @@
 ﻿using System.Collections.ObjectModel;
+using System.Numerics;
 using System.Windows.Media.Imaging;
 using ExtenderApp.Abstract;
+using ExtenderApp.FFmpegEngines;
 using ExtenderApp.Media.Audios;
-using ExtenderApp.Media.FFmpegEngines;
 using ExtenderApp.Models;
 
 namespace ExtenderApp.Media.Models
@@ -12,24 +13,28 @@ namespace ExtenderApp.Media.Models
     /// </summary>
     public class MediaModel : ExtenderAppModel
     {
+        private readonly IDispatcherService _dispatcherService;
+        private readonly Action<VideoFrame> _videoFrameAction;
+        private readonly Action<long> _playbackAction;
+
         /// <summary>
         /// 视频信息集合
         /// </summary>
-        public ObservableCollection<VideoInfo>? VideoInfos { get; set; }
+        public ObservableCollection<MediaInfo>? MediaInfos { get; set; }
 
         public MediaPlayer? MPlayer { get; set; }
         public AudioPlayer? APlayer { get; set; }
-        public WriteableBitmap Bitmap { get; set; }
+        public WriteableBitmap? Bitmap { get; set; }
         public IView? CurrentVideoView { get; set; }
-
         public IView? CurrentVideoListView { get; set; }
 
-        private float volume;
+        public MediaInfo? SelectedVideoInfo { get; set; }
 
+        private double volume;
         /// <summary>
         /// 音量
         /// </summary>
-        public float Volume
+        public double Volume
         {
             get => volume;
             set
@@ -37,7 +42,7 @@ namespace ExtenderApp.Media.Models
                 volume = value;
                 if (APlayer != null)
                 {
-                    APlayer.Volume = volume;
+                    APlayer.Volume = (float)volume;
                 }
             }
         }
@@ -52,11 +57,21 @@ namespace ExtenderApp.Media.Models
         /// </summary>
         public bool VideoNotExist { get; set; }
 
-        public MediaModel()
+        /// <summary>
+        /// 当前时间
+        /// </summary>
+        public TimeSpan Position { get; set; }
+
+        /// <summary>
+        /// 总时间
+        /// </summary>
+        public TimeSpan TotalTime { get; set; }
+
+        public MediaModel(IDispatcherService dispatcherService)
         {
-            //VideoInfos = new ObservableCollection<VideoInfo>();
-            //MediaSettings = new MediaSettings();
-            //Bitmap = new WriteableBitmap(1920, 1080, 96, 96, PixelFormats.Bgr24, null);
+            _dispatcherService = dispatcherService;
+            _videoFrameAction = OnVideoFrame;
+            _playbackAction = OnPlayback;
         }
 
         public void SetPlayer(MediaPlayer player)
@@ -64,8 +79,83 @@ namespace ExtenderApp.Media.Models
             if (player == null)
                 throw new ArgumentNullException(nameof(player));
 
-            APlayer = new AudioPlayer(player.Info, 0);
+
+            APlayer = new AudioPlayer(player.Settings, (float)volume);
+            MPlayer = player;
+
+            TotalTime = MPlayer.Info.DurationTimeSpan;
+
             Bitmap = new(player.Info.Width, player.Info.Height, 96, 96, System.Windows.Media.PixelFormats.Bgr24, null);
+
+            player.OnAudioFrame += APlayer.AddSamples;
+            player.OnPlayback += _playbackAction;
+        }
+
+        public void Play()
+        {
+            if (MPlayer == null) return;
+
+            MPlayer.OnVideoFrame += _videoFrameAction;
+
+            MPlayer?.Play();
+            APlayer?.Play();
+        }
+
+        public void Pause()
+        {
+            if (MPlayer == null) return;
+
+            MPlayer.OnVideoFrame -= _videoFrameAction;
+            MPlayer?.Pause();
+            APlayer?.Pause();
+        }
+
+        public void Stop()
+        {
+            MPlayer?.Stop();
+            APlayer?.Stop();
+        }
+
+        public void Seek(TimeSpan position)
+        {
+            Seek((long)position.TotalMilliseconds);
+        }
+
+        public void Seek(long position)
+        {
+            APlayer?.Pause();
+
+            if (MPlayer == null) return;
+
+            Task.Run(async () =>
+            {
+                await MPlayer.SeekAsync(position);
+                APlayer?.Clear();
+                Play();
+            });
+        }
+
+        private void OnVideoFrame(VideoFrame frame)
+        {
+            _dispatcherService.Invoke(() =>
+            {
+                Bitmap?.WritePixels(new System.Windows.Int32Rect(0, 0, frame.Width, frame.Height), frame.Data, frame.Stride, 0);
+            });
+        }
+
+        private void OnPlayback(long current)
+        {
+            _dispatcherService.Invoke(() =>
+            {
+                Position = TimeSpan.FromMilliseconds(current);
+            });
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            Stop();
+            MPlayer?.Dispose();
+            APlayer?.Dispose();
         }
     }
 }

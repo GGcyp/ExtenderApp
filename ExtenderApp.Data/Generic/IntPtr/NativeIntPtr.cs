@@ -1,6 +1,6 @@
 ﻿
 
-namespace ExtenderApp.Media.FFmpegEngines
+namespace ExtenderApp.Data
 {
     /// <summary>
     /// 通用的非托管指针封装结构体，支持 <see cref="IntPtr"/> 与原生指针类型之间的转换。

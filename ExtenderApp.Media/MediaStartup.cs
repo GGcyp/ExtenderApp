@@ -6,7 +6,7 @@ using ExtenderApp.Media.Models;
 using ExtenderApp.Media.ViewModels;
 using ExtenderApp.Data;
 using System.IO;
-using ExtenderApp.Media.FFmpegEngines;
+using ExtenderApp.FFmpegEngines;
 
 
 namespace ExtenderApp.Media
@@ -38,7 +38,7 @@ namespace ExtenderApp.Media
 
         public override void ConfigureBinaryFormatterStore(IBinaryFormatterStore store)
         {
-            store.Add<VideoInfo, VideoInfoFormatter>();
+            store.Add<MediaInfo, MediaInfoFormatter>();
             store.AddLocalDataFormatter<MediaModel, MediaModelFormatter>();
         }
 

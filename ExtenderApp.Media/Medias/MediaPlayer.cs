@@ -1,18 +1,18 @@
 ﻿using System.Collections.Concurrent;
 using ExtenderApp.Common;
 
-namespace ExtenderApp.Media.FFmpegEngines
+namespace ExtenderApp.FFmpegEngines
 {
     /// <summary>
     /// FFmpeg 媒体播放器，负责音视频解码、播放、暂停、停止、跳转等控制。
     /// 支持多线程解码和帧调度，适用于 WPF 播放场景。
     /// </summary>
-    public class MediaPlayer : DisposableObject, IMediaPlayer
+    public class MediaPlayer : DisposableObject
     {
         /// <summary>
         /// 跳帧等待阈值（毫秒），用于控制播放节奏。
         /// </summary>
-        private const int SkipWaitingTime = 15;
+        private const int SkipWaitingTime = 5;
 
         /// <summary>
         /// 每个视频帧的最大允许输出时间差（毫秒），用于同步音视频。
@@ -22,7 +22,7 @@ namespace ExtenderApp.Media.FFmpegEngines
         /// <summary>
         /// 解码器设置参数。
         /// </summary>
-        private readonly FFmpegDecoderSettings _settings;
+        public FFmpegDecoderSettings Settings { get; }
 
         /// <summary>
         /// 视频帧队列，缓存待播放的视频帧。
@@ -47,7 +47,7 @@ namespace ExtenderApp.Media.FFmpegEngines
         /// <summary>
         /// 当前播放时间（微秒）。
         /// </summary>
-        public long CurrentTime { get; private set; }
+        public long Position { get; private set; }
 
         /// <summary>
         /// 播放速率，1表示正常速度，2表示两倍速，0.5表示半速。
@@ -68,6 +68,11 @@ namespace ExtenderApp.Media.FFmpegEngines
         /// 媒体流基本信息（如时长、帧率等）。
         /// </summary>
         public FFmpegInfo Info => _controller.Info;
+
+        /// <summary>
+        /// 媒体播放器当前状态。
+        /// </summary>
+        public PlayerState State { get; private set; }
 
         #region Events
 
@@ -96,14 +101,16 @@ namespace ExtenderApp.Media.FFmpegEngines
         /// <param name="settings">解码器设置。</param>
         public MediaPlayer(FFmpegDecoderController collection, CancellationTokenSource allSource, FFmpegDecoderSettings settings)
         {
+            State = PlayerState.Uninitialized;
             _videoFrameQueue = new();
             _audioFrameQueue = new();
             _controller = collection;
             _allSource = allSource;
-            _settings = settings;
+            Settings = settings;
             settings.VideoScheduling += VideoSchedule;
             settings.AudioScheduling += AudioSchedule;
             RateSpeed = 1;
+            State = PlayerState.Initializing;
         }
 
         /// <summary>
@@ -111,65 +118,133 @@ namespace ExtenderApp.Media.FFmpegEngines
         /// </summary>
         public void Play()
         {
+            if (State == PlayerState.Playing)
+            {
+                return;
+            }
+            State = PlayerState.Playing;
             _controller.StartDecode();
             mediaTask = Task.Run(PlaybackLoop, _allSource.Token);
         }
 
         /// <summary>
-        /// 停止媒体播放流程，取消任务并释放资源。
+        /// 停止媒体播放流程。
+        /// 以异步方式调用 StopAsync，终止解码和播放任务，释放相关资源并清空帧队列。
         /// </summary>
         public void Stop()
         {
-            mediaSource?.Cancel();
-            mediaTask?.Wait();
-            mediaSource?.Dispose();
-            mediaTask?.Dispose();
-            mediaTask = null;
-            mediaSource = null;
-            _controller.StopDecode();
+            Task.Run(StopAsync);
         }
 
         /// <summary>
-        /// 暂停媒体播放流程，仅取消播放任务，不释放解码资源。
+        /// 停止媒体播放流程，终止解码和播放任务，释放相关资源并清空帧队列。
+        /// 若当前已处于停止状态则直接返回。
+        /// </summary>
+        public async Task StopAsync()
+        {
+            if (State == PlayerState.Stopped)
+            {
+                return;
+            }
+
+            await _controller.StopDecodeAsync(); // 停止解码流程
+            State = PlayerState.Stopped;
+            await ReleaseAsync();                // 释放播放任务资源
+            Clear();                             // 清空音视频帧队列
+        }
+
+        /// <summary>
+        /// 暂停媒体播放流程。
+        /// 以异步方式调用 PauseAsync，终止解码和播放任务，释放相关资源。
         /// </summary>
         public void Pause()
         {
-            mediaSource?.Cancel();
-            mediaTask?.Wait();
-            mediaTask?.Dispose();
-            mediaTask = null;
-            mediaSource?.Dispose();
-            mediaSource = null;
+            Task.Run(PauseAsync);
         }
 
         /// <summary>
-        /// 跳转到指定时间点（TimeSpan），重置解码和播放状态。
+        /// 暂停媒体播放流程，终止解码和播放任务，释放相关资源。
+        /// 若当前已处于暂停状态则直接返回。
         /// </summary>
-        /// <param name="timeSpan">目标时间点。</param>
-        public void Seek(TimeSpan timeSpan)
+        public async Task PauseAsync()
         {
-            Seek((long)timeSpan.TotalMicroseconds);
-        }
-
-        /// <summary>
-        /// 跳转到指定时间点（微秒），重置解码和播放状态。
-        /// </summary>
-        /// <param name="position">目标时间点（微秒）。</param>
-        public void Seek(long position)
-        {
-            if (position > Info.DurationTimeSpan.TotalMicroseconds)
+            if (State == PlayerState.Paused)
             {
-                position = (long)Info.DurationTimeSpan.TotalMicroseconds;
+                return;
+            }
+
+            await _controller.StopDecodeAsync(); // 停止解码流程
+            State = PlayerState.Paused;
+            await ReleaseAsync();                // 释放播放任务资源
+        }
+
+        /// <summary>
+        /// 跳转到指定时间点（TimeSpan），内部按毫秒处理。
+        /// </summary>
+        /// <param name="timeSpan">目标跳转时间（TimeSpan）。</param>
+        public async Task SeekAsync(TimeSpan timeSpan)
+        {
+            await SeekAsync((long)timeSpan.TotalMilliseconds);
+        }
+
+        /// <summary>
+        /// 跳转到指定时间点（毫秒），重置解码器和播放状态，清空帧队列并触发进度回调。
+        /// 若未初始化则直接返回，跳转超出范围时自动修正。
+        /// </summary>
+        /// <param name="position">目标跳转时间（毫秒）。</param>
+        public async Task SeekAsync(long position)
+        {
+            if (State == PlayerState.Uninitialized)
+            {
+                return;
+            }
+
+            if (position > Info.Duration)
+            {
+                position = Info.Duration;
             }
             else if (position < 0)
             {
                 position = 0;
             }
+            await ReleaseAsync();                   // 释放播放任务资源
+            await _controller.SeekDecoderAsync(position); // 跳转解码器
 
-            CurrentTime = position;
-            _controller.SeekDecoder(position);
-            Clear();
-            OnPlayback?.Invoke(CurrentTime);
+            Position = position;
+            Clear();                               // 清空音视频帧队列
+            OnPlayback?.Invoke(Position);          // 触发进度回调
+            State = PlayerState.Initializing;
+        }
+
+        /// <summary>
+        /// 释放媒体播放任务相关资源，取消并等待播放任务完成，释放取消令牌。
+        /// 若播放任务不存在则直接返回。
+        /// </summary>
+        private async Task ReleaseAsync()
+        {
+            mediaSource?.Cancel();
+            mediaSource?.Dispose();
+            mediaSource = null;
+            if (mediaTask == null)
+            {
+                return;
+            }
+
+            Task task = mediaTask;
+            mediaTask = null;
+
+            await task;      // 等待播放任务完成
+            task.Dispose();  // 释放任务资源
+
+            //try
+            //{
+            //    Task.WaitAll(task);
+            //    task.Dispose();
+            //}
+            //catch (AggregateException ex)
+            //{
+            //    // 忽略任务取消异常
+            //}
         }
 
         /// <summary>
@@ -177,26 +252,33 @@ namespace ExtenderApp.Media.FFmpegEngines
         /// </summary>
         private async Task PlaybackLoop()
         {
-            mediaSource = mediaSource ?? CancellationTokenSource.CreateLinkedTokenSource(_allSource.Token);
-            var token = mediaSource.Token;
             var allToken = _allSource.Token;
+            mediaSource = mediaSource ?? CancellationTokenSource.CreateLinkedTokenSource(allToken);
+            var token = mediaSource.Token;
             int frameInterval = (int)(Info.Rate > 0 ? 1000.0 / Info.Rate : 25); // 毫秒
             int lastDelay = frameInterval;
 
             while (!token.IsCancellationRequested && !allToken.IsCancellationRequested)
             {
-                bool hasAudio = _audioFrameQueue.Count > 0;
-                bool hasVideo = _videoFrameQueue.Count > 0;
+                bool hasAudio = !_audioFrameQueue.IsEmpty;
+                bool hasVideo = !_videoFrameQueue.IsEmpty;
                 if (!hasAudio && !hasVideo)
                 {
-                    await Task.Delay(lastDelay, token);
+                    try
+                    {
+                        await Task.Delay(lastDelay, token);
+                    }
+                    catch (TaskCanceledException ex)
+                    {
+
+                    }
                     continue;
                 }
 
                 int audioDelay = 0;
                 while (_audioFrameQueue.TryPeek(out var audioFrame))
                 {
-                    long timeDiff = audioFrame.Pts - CurrentTime;
+                    long timeDiff = audioFrame.Pts - Position;
 
                     if (timeDiff <= 0)
                     {
@@ -204,7 +286,7 @@ namespace ExtenderApp.Media.FFmpegEngines
                         OnAudioFrame?.Invoke(audioFrame);
                         _controller.OnAudioFrameRemoved();
 
-                        CurrentTime = audioFrame.Pts;
+                        Position = audioFrame.Pts;
 
                         audioFrame.Dispose();
                     }
@@ -217,7 +299,7 @@ namespace ExtenderApp.Media.FFmpegEngines
 
                 while (_videoFrameQueue.TryPeek(out var videoFrame))
                 {
-                    long videoTimeDiff = videoFrame.Pts - CurrentTime;
+                    long videoTimeDiff = videoFrame.Pts - Position;
 
                     if (Math.Abs(videoTimeDiff) <= VideoFrameOutTime)
                     {
@@ -239,14 +321,21 @@ namespace ExtenderApp.Media.FFmpegEngines
                 }
 
                 int waitTime = hasAudio ? audioDelay : frameInterval;
-                CurrentTime += waitTime;
+                Position += waitTime;
                 lastDelay = waitTime;
                 waitTime = (int)(waitTime / RateSpeed);
-                OnPlayback?.Invoke(CurrentTime);
+                OnPlayback?.Invoke(Position);
 
                 if (waitTime >= SkipWaitingTime)
                 {
-                    await Task.Delay(waitTime, token);
+                    try
+                    {
+                        await Task.Delay(waitTime, token);
+                    }
+                    catch (TaskCanceledException ex)
+                    {
+
+                    }
                 }
             }
         }

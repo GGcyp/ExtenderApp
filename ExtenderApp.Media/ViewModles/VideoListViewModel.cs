@@ -18,7 +18,7 @@ namespace ExtenderApp.Media.ViewModels
         /// <summary>
         /// 视频列表集合
         /// </summary>
-        public ObservableCollection<VideoInfo> Videos => Model.VideoInfos;
+        public ObservableCollection<MediaInfo> Videos => Model.MediaInfos;
 
         /// <summary>
         /// 初始化 VideoListViewModle 类的新实例。
@@ -30,7 +30,7 @@ namespace ExtenderApp.Media.ViewModels
 
             for (int i = 0; i < Videos.Count; i++)
             {
-                _medaiPathHash.Add(Videos[i].VideoUri);
+                _medaiPathHash.Add(Videos[i].MediaUri);
             }
         }
 
@@ -39,7 +39,7 @@ namespace ExtenderApp.Media.ViewModels
         /// </summary>
         /// <param name="videoPath">视频路径</param>
         /// <returns>如果视频路径已存在，则返回 false；否则返回 true。</returns>
-        private VideoInfo AddVideoPath(string videoPath)
+        private MediaInfo AddVideoPath(string videoPath)
         {
             Uri uri = new Uri(videoPath);
             if (_medaiPathHash.Contains(uri))
@@ -47,7 +47,7 @@ namespace ExtenderApp.Media.ViewModels
                 return null;
             }
 
-            var videoInfo = new VideoInfo(uri);
+            var videoInfo = new MediaInfo(null);
             Videos.Add(videoInfo);
             _medaiPathHash.Add(uri);
             SaveModel();
@@ -70,7 +70,7 @@ namespace ExtenderApp.Media.ViewModels
                     return;
                 }
 
-                var videoInfo = new VideoInfo(uri);
+                var videoInfo = new MediaInfo(null);
                 Videos.Add(videoInfo);
                 _medaiPathHash.Add(uri);
             }
@@ -93,7 +93,7 @@ namespace ExtenderApp.Media.ViewModels
                         Uri uri = new Uri(videoFile);
                         if (!_medaiPathHash.Contains(uri))
                         {
-                            var videoInfo = new VideoInfo(uri);
+                            var videoInfo = new MediaInfo(null);
                             Videos.Add(videoInfo);
                             _medaiPathHash.Add(uri);
                         }

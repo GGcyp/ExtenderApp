@@ -1,4 +1,4 @@
-﻿namespace ExtenderApp.Media.FFmpegEngines
+﻿namespace ExtenderApp.FFmpegEngines
 {
     /// <summary>
     /// FFmpeg 音频采样格式枚举。 对应 FFmpeg 的

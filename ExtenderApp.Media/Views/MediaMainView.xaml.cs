@@ -90,29 +90,5 @@ namespace ExtenderApp.Media
         {
 
         }
-
-        #region 动画控制
-
-        private void Grid_Click(object sender, RoutedEventArgs e)
-        {
-            double width = videoListGrid.Width.Value == 0 ? 200 : 0;
-
-            AnimateGridWidth(width);
-        }
-
-        private void AnimateGridWidth(double targetWidth)
-        {
-            var animation = new GridLengthAnimation
-            {
-                From = videoListGrid.Width,
-                To = new GridLength(targetWidth),
-                Duration = TimeSpan.FromSeconds(0.5),
-                EasingFunction = new SineEase { EasingMode = EasingMode.EaseOut }
-            };
-
-            videoListGrid.BeginAnimation(ColumnDefinition.WidthProperty, animation);
-        }
-
-        #endregion
     }
 }

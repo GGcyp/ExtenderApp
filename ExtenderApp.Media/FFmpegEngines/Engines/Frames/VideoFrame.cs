@@ -1,6 +1,6 @@
 ﻿using System.Buffers;
 
-namespace ExtenderApp.Media.FFmpegEngines
+namespace ExtenderApp.FFmpegEngines
 {
     /// <summary>
     /// 表示单个视频帧的数据结构。

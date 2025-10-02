@@ -1,6 +1,6 @@
 ﻿using ExtenderApp.Common;
 
-namespace ExtenderApp.Media.FFmpegEngines
+namespace ExtenderApp.FFmpegEngines
 {
     /// <summary>
     /// 线程安全的缓存状态控制器（用于手动控制解码节奏）
