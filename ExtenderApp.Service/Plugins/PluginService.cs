@@ -117,6 +117,7 @@ namespace ExtenderApp.Services
         /// <param name="details">插件详细信息</param>
         public void UnloadPlugin(PluginDetails details)
         {
+            if (details.IsStandingModel) return;
             _scopeExecutor.UnLoadScope(details.PluginScope);
         }
 
@@ -142,6 +143,7 @@ namespace ExtenderApp.Services
 
             _pluginTransform.Details = details;
             var modStartup = _scopeExecutor.LoadScope<PluginEntityStartup>(startAssembly, _pluginTransform.AddServiceToPluginScope);
+            modStartup.ConfigureDetails(details);
 
             if (modStartup == null)
                 throw new InvalidOperationException(string.Format("未找到这个模组的启动项：{0}", details.Title));

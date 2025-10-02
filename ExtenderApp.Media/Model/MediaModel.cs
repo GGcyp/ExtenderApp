@@ -13,9 +13,9 @@ namespace ExtenderApp.Media.Models
     /// </summary>
     public class MediaModel : ExtenderAppModel
     {
-        private readonly IDispatcherService _dispatcherService;
         private readonly Action<VideoFrame> _videoFrameAction;
         private readonly Action<long> _playbackAction;
+        private IDispatcherService? dispatcherService;
 
         /// <summary>
         /// 视频信息集合
@@ -67,11 +67,21 @@ namespace ExtenderApp.Media.Models
         /// </summary>
         public TimeSpan TotalTime { get; set; }
 
-        public MediaModel(IDispatcherService dispatcherService)
+        /// <summary>
+        /// 获取或设置一个值，该值指示媒体是否正在寻求新的播放位置。
+        /// </summary>
+        public bool IsSeeking { get; set; }
+
+        public MediaModel()
         {
-            _dispatcherService = dispatcherService;
             _videoFrameAction = OnVideoFrame;
             _playbackAction = OnPlayback;
+        }
+
+        protected override void Init(IPuginServiceStore store)
+        {
+            dispatcherService = store.DispatcherService;
+            MediaInfos ??= new();
         }
 
         public void SetPlayer(MediaPlayer player)
@@ -116,13 +126,16 @@ namespace ExtenderApp.Media.Models
             APlayer?.Stop();
         }
 
-        public void Seek(TimeSpan position)
+        public void Seek(TimeSpan position, bool auotPlay = true)
         {
-            Seek((long)position.TotalMilliseconds);
+            Seek((long)position.TotalMilliseconds, auotPlay);
         }
 
-        public void Seek(long position)
+        public void Seek(long position, bool auotPlay = true)
         {
+            if (position > TotalTime.TotalMilliseconds)
+                position = (long)TotalTime.TotalMilliseconds;
+
             APlayer?.Pause();
 
             if (MPlayer == null) return;
@@ -131,13 +144,17 @@ namespace ExtenderApp.Media.Models
             {
                 await MPlayer.SeekAsync(position);
                 APlayer?.Clear();
+
+                if (!auotPlay)
+                    return;
+
                 Play();
             });
         }
 
         private void OnVideoFrame(VideoFrame frame)
         {
-            _dispatcherService.Invoke(() =>
+            dispatcherService.Invoke(() =>
             {
                 Bitmap?.WritePixels(new System.Windows.Int32Rect(0, 0, frame.Width, frame.Height), frame.Data, frame.Stride, 0);
             });
@@ -145,7 +162,10 @@ namespace ExtenderApp.Media.Models
 
         private void OnPlayback(long current)
         {
-            _dispatcherService.Invoke(() =>
+            if (IsSeeking)
+                return;
+
+            dispatcherService.Invoke(() =>
             {
                 Position = TimeSpan.FromMilliseconds(current);
             });

@@ -69,5 +69,11 @@ namespace ExtenderApp.Media.ViewModels
                 Model.Pause();
             }
         }
+
+        internal void Seek(TimeSpan timeSpan)
+        {
+            Model.Seek(timeSpan);
+            //Model.Play();
+        }
     }
 }

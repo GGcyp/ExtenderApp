@@ -79,6 +79,16 @@ namespace ExtenderApp.Data
         /// </summary>
         public Assembly? StartAssembly { get; set; }
 
+        #region 设置属性
+
+        /// <summary>
+        /// 是否为常驻模型
+        /// </summary>
+        public bool IsStandingModel { get; set; }
+
+        #endregion
+
+
         /// <summary>
         /// 初始化一个插件详细信息实例
         /// </summary>

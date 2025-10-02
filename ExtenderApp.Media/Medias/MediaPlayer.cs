@@ -233,8 +233,15 @@ namespace ExtenderApp.FFmpegEngines
             Task task = mediaTask;
             mediaTask = null;
 
-            await task;      // 等待播放任务完成
-            task.Dispose();  // 释放任务资源
+            try
+            {
+                await task;      // 等待播放任务完成
+                task.Dispose();  // 释放任务资源
+            }
+            catch (Exception ex)
+            {
+                // 忽略任务取消异常
+            }
 
             //try
             //{
@@ -387,7 +394,14 @@ namespace ExtenderApp.FFmpegEngines
         /// <param name="disposing">指示是否由 Dispose 方法调用。</param>
         protected override void Dispose(bool disposing)
         {
-            _controller.Dispose();
+            try
+            {
+                _controller.Dispose();
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
             Clear();
         }
     }

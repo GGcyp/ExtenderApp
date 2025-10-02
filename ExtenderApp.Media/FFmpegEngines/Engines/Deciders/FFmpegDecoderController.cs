@@ -154,14 +154,15 @@ namespace ExtenderApp.FFmpegEngines
                 if (vtask != null) tasks.Add(vtask);
                 if (tasks.Count > 0)
                     await Task.WhenAll(tasks);
+
+                ptask?.Dispose();
+                atask?.Dispose();
+                vtask?.Dispose();
             }
-            catch (AggregateException ex)
+            catch (Exception ex)
             {
                 // 忽略任务取消引发的异常
             }
-            ptask?.Dispose();
-            atask?.Dispose();
-            vtask?.Dispose();
 
             //Task.Run(async () =>
             //{
@@ -323,13 +324,7 @@ namespace ExtenderApp.FFmpegEngines
                     }
                     continue;
                 }
-                try
-                {
-                    decoder.Decoding(packet, token);
-                }
-                catch (Exception ex)
-                {
-                }
+                decoder.Decoding(packet, token);
                 _engine.ReturnPacket(ref packet);
             }
         }

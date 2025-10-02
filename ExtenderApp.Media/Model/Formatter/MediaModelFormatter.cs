@@ -8,7 +8,6 @@ namespace ExtenderApp.Media
 {
     internal class MediaModelFormatter : VersionDataFormatter<MediaModel>
     {
-        private readonly IDispatcherService _dispatcherService;
         private readonly IBinaryFormatter<bool> _boolFormatter;
         private readonly IBinaryFormatter<double> _doubleFormatter;
         private readonly IBinaryFormatter<ObservableCollection<MediaInfo>> _videoInfoFormatter;
@@ -17,19 +16,18 @@ namespace ExtenderApp.Media
 
         public override Version FormatterVersion => new Version(0, 0, 0, 1);
 
-        public MediaModelFormatter(IBinaryFormatterResolver resolver, IDispatcherService dispatcherService) : base(resolver)
+        public MediaModelFormatter(IBinaryFormatterResolver resolver) : base(resolver)
         {
             _boolFormatter = GetFormatter<bool>();
             _doubleFormatter = GetFormatter<double>();
             _videoInfoFormatter = GetFormatter<ObservableCollection<MediaInfo>>();
-            _dispatcherService = dispatcherService;
         }
 
         public override MediaModel Deserialize(ref ExtenderBinaryReader reader)
         {
-            MediaModel mediaData = new(_dispatcherService);
-            mediaData.MediaInfos = _videoInfoFormatter.Deserialize(ref reader);
-            mediaData.MediaInfos = mediaData.MediaInfos ?? new();
+            MediaModel mediaData = new();
+            //mediaData.MediaInfos = _videoInfoFormatter.Deserialize(ref reader);
+            //mediaData.MediaInfos = mediaData.MediaInfos ?? new();
             return mediaData;
         }
 

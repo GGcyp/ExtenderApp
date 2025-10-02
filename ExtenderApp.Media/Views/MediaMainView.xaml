@@ -46,12 +46,17 @@
                                 Minimum="0"
                                 Maximum="{Binding Model.TotalTime.TotalSeconds,Mode=OneWay}"
                                 Value="{Binding Model.Position.TotalSeconds,Mode=OneWay}"
-                                Height="20"
+                                TrackHeight="5"
                                 ThumbSize="18"
                                 ThumbColor="White"
                                 TrackBackground="Transparent"
                                 LeftBackground="LightBlue"
-                                RightBackground="Gray" />
+                                RightBackground="Gray"
+                                Mouse.PreviewMouseDown="mediaSlider_PreviewMouseDown"
+                                Mouse.PreviewMouseUp="mediaSlider_PreviewMouseUp"
+                                Thumb.DragStarted="mediaSlider_DragStarted"
+                                Thumb.DragDelta="mediaSlider_DragDelta"
+                                Thumb.DragCompleted="mediaSlider_DragCompleted"/>
             </Grid>
             <Grid Grid.Row="1">
                 <Grid.ColumnDefinitions>
@@ -84,7 +89,7 @@
                                 Minimum="0"
                                 Maximum="1"
                                 Value="{Binding Model.Volume}"
-                                Height="20"
+                                TrackHeight="5"
                                 ThumbSize="18"
                                 ThumbColor="White"
                                 TrackBackground="Transparent"

@@ -11,7 +11,7 @@ using ExtenderApp.Models;
 namespace ExtenderApp.ViewModels
 {
     /// <summary>
-    /// 扩展应用程序视图模型基类，继承自<see cref="IViewModel"/>
+    /// 扩展应用程序视图模型基类，继承自 <see cref="IViewModel"/>
     /// </summary>
     public abstract class ExtenderAppViewModel : DisposableObject, IViewModel, INotifyPropertyChanged
     {
@@ -62,22 +62,18 @@ namespace ExtenderApp.ViewModels
 
         public virtual void InjectView(IView view)
         {
-
         }
 
         public virtual void Enter(ViewInfo oldViewInfo)
         {
-
         }
 
         public virtual void Exit(ViewInfo newViewInfo)
         {
-
         }
 
         public virtual void Close()
         {
-
         }
 
         private PluginDetails? GetCurrentPluginDetails()
@@ -219,7 +215,7 @@ namespace ExtenderApp.ViewModels
             return window;
         }
 
-        #endregion
+        #endregion Navigate
 
         #region Log
 
@@ -297,7 +293,7 @@ namespace ExtenderApp.ViewModels
             ServiceStore.LogingService.Warning(message, _viewModelName);
         }
 
-        #endregion
+        #endregion Log
 
         #region LocalData
 
@@ -307,7 +303,8 @@ namespace ExtenderApp.ViewModels
         /// <typeparam name="T">数据类型</typeparam>
         /// <param name="data">输出参数，用于存储获取的数据</param>
         /// <returns>如果成功获取到数据则返回true，否则返回false</returns>
-        protected bool LoadLocalData<T>(out T? data, Action<LocalData<T>> checkAction = null) where T : class
+        protected bool LoadLocalData<T>(out T? data, Action<LocalData<T>> checkAction = null)
+            where T : class
         {
             data = default;
             if (!ServiceStore.LocalDataService.LoadData(Details, out LocalData<T> localData))
@@ -324,7 +321,8 @@ namespace ExtenderApp.ViewModels
         /// <typeparam name="T">数据类型</typeparam>
         /// <param name="data">要设置的数据</param>
         /// <returns>如果成功设置数据则返回true，否则返回false</returns>
-        protected bool SaveLocalData<T>(T? data) where T : class
+        protected bool SaveLocalData<T>(T? data)
+            where T : class
         {
             if (data is null || Details is null)
                 return false;
@@ -338,9 +336,7 @@ namespace ExtenderApp.ViewModels
         /// <typeparam name="T">要保存的数据类型，必须是引用类型</typeparam>
         /// <param name="data">要保存的数据实例，如果为null则会尝试从服务容器解析</param>
         /// <param name="version">要保存的数据版本信息</param>
-        /// <returns>
-        /// 返回保存操作是否成功：
-        /// </returns>
+        /// <returns>返回保存操作是否成功：</returns>
         protected bool SaveLocalData<T>(T? data, Version version)
             where T : class
         {
@@ -363,7 +359,7 @@ namespace ExtenderApp.ViewModels
             return ServiceStore.LocalDataService.DeleteData(Details);
         }
 
-        #endregion
+        #endregion LocalData
 
         #region ScheduledTask
 
@@ -374,7 +370,9 @@ namespace ExtenderApp.ViewModels
         /// <param name="state">传递给回调函数的状态对象。</param>
         /// <param name="dueTime">任务开始执行前的延迟时间。</param>
         /// <param name="period">任务执行的周期。</param>
-        /// <returns>返回用于控制任务的 ExtenderCancellationToken 对象。</returns>
+        /// <returns>
+        /// 返回用于控制任务的 ExtenderCancellationToken 对象。
+        /// </returns>
         protected ScheduledTask Start(Action<object> callback, object state, TimeSpan dueTime, TimeSpan period)
         {
             ScheduledTask task = new ScheduledTask();
@@ -387,7 +385,9 @@ namespace ExtenderApp.ViewModels
         /// </summary>
         /// <param name="callback">任务执行时的回调函数。</param>
         /// <param name="period">任务执行的周期。</param>
-        /// <returns>返回用于控制任务的 ExtenderCancellationToken 对象。</returns>
+        /// <returns>
+        /// 返回用于控制任务的 ExtenderCancellationToken 对象。
+        /// </returns>
         protected ScheduledTask StartCycle(Action<object> callback, TimeSpan period)
         {
             return StartCycle(callback, null, period);
@@ -399,7 +399,9 @@ namespace ExtenderApp.ViewModels
         /// <param name="callback">任务执行时的回调函数。</param>
         /// <param name="state">传递给回调函数的状态对象。</param>
         /// <param name="period">任务执行的周期。</param>
-        /// <returns>返回用于控制任务的 ExtenderCancellationToken 对象。</returns>
+        /// <returns>
+        /// 返回用于控制任务的 ExtenderCancellationToken 对象。
+        /// </returns>
         protected ScheduledTask StartCycle(Action<object> callback, object state, TimeSpan period)
         {
             ScheduledTask task = new ScheduledTask();
@@ -412,7 +414,9 @@ namespace ExtenderApp.ViewModels
         /// </summary>
         /// <param name="callback">任务执行时的回调函数。</param>
         /// <param name="dueTime">任务开始执行前的延迟时间。</param>
-        /// <returns>返回用于控制任务的 ExtenderCancellationToken 对象。</returns>
+        /// <returns>
+        /// 返回用于控制任务的 ExtenderCancellationToken 对象。
+        /// </returns>
         protected ScheduledTask StartDelay(Action<object> callback, TimeSpan dueTime)
         {
             return StartDelay(callback, null, dueTime);
@@ -424,7 +428,9 @@ namespace ExtenderApp.ViewModels
         /// <param name="callback">任务执行时的回调函数。</param>
         /// <param name="state">传递给回调函数的状态对象。</param>
         /// <param name="dueTime">任务开始执行前的延迟时间。</param>
-        /// <returns>返回用于控制任务的 ExtenderCancellationToken 对象。</returns>
+        /// <returns>
+        /// 返回用于控制任务的 ExtenderCancellationToken 对象。
+        /// </returns>
         protected ScheduledTask StartDelay(Action<object> callback, object state, TimeSpan dueTime)
         {
             ScheduledTask task = new ScheduledTask();
@@ -432,7 +438,7 @@ namespace ExtenderApp.ViewModels
             return task;
         }
 
-        #endregion
+        #endregion ScheduledTask
 
         #region Dispatcher
 
@@ -441,8 +447,7 @@ namespace ExtenderApp.ViewModels
         /// </summary>
         /// <param name="callback">要在UI线程上执行的操作。</param>
         /// <remarks>
-        /// 如果传入的操作为null，则方法直接返回而不执行任何操作。
-        /// 使用DispatcherService的Invoke方法确保操作在UI线程上执行。
+        /// 如果传入的操作为null，则方法直接返回而不执行任何操作。 使用DispatcherService的Invoke方法确保操作在UI线程上执行。
         /// </remarks>
         protected void DispatcherInvoke(Action callback)
         {
@@ -455,8 +460,7 @@ namespace ExtenderApp.ViewModels
         /// </summary>
         /// <param name="callback">要在UI线程上执行的操作。</param>
         /// <remarks>
-        /// 如果传入的操作为null，则方法直接返回而不执行任何操作。
-        /// 使用DispatcherService的BeginInvoke方法异步确保操作在UI线程上执行。
+        /// 如果传入的操作为null，则方法直接返回而不执行任何操作。 使用DispatcherService的BeginInvoke方法异步确保操作在UI线程上执行。
         /// </remarks>
         protected void DispatcherBeginInvoke(Action callback)
         {
@@ -464,7 +468,7 @@ namespace ExtenderApp.ViewModels
             ServiceStore.DispatcherService.BeginInvoke(callback);
         }
 
-        #endregion
+        #endregion Dispatcher
 
         #region MainWindow
 
@@ -482,8 +486,7 @@ namespace ExtenderApp.ViewModels
         /// </summary>
         /// <remarks>
         /// 该方法通过先设置窗口Topmost=true，短暂延迟后再设置Topmost=false，
-        /// 实现窗口短暂置顶的效果，常用于吸引用户注意或窗口激活提示。
-        /// 注意：该方法会在后台线程启动任务，但通过DispatcherInvoke确保UI操作在UI线程执行。
+        /// 实现窗口短暂置顶的效果，常用于吸引用户注意或窗口激活提示。 注意：该方法会在后台线程启动任务，但通过DispatcherInvoke确保UI操作在UI线程执行。
         /// </remarks>
         protected void MainWindowTopmost()
         {
@@ -502,7 +505,7 @@ namespace ExtenderApp.ViewModels
             });
         }
 
-        #endregion
+        #endregion MainWindow
 
         #region Path
 
@@ -525,9 +528,13 @@ namespace ExtenderApp.ViewModels
         /// <summary>
         /// 打开文件选择对话框，允许用户选择指定类型的文件。
         /// </summary>
-        /// <param name="filter">文件筛选器，例如 "文本文件 (*.txt)|*.txt"</param>
+        /// <param name="filter">
+        /// 文件筛选器，例如 "文本文件 (*.txt)|*.txt"
+        /// </param>
         /// <param name="targetPath">对话框初始打开的文件夹路径，默认为空（使用系统默认路径）</param>
-        /// <returns>用户选择的文件完整路径，若未选择则返回空字符串或 null</returns>
+        /// <returns>
+        /// 用户选择的文件完整路径，若未选择则返回空字符串或 null
+        /// </returns>
         protected string OpenFile(string filter, string? targetPath = null)
         {
             try
@@ -575,9 +582,9 @@ namespace ExtenderApp.ViewModels
             return Path.Combine(path, folderPath);
         }
 
-        #endregion
+        #endregion Path
 
-        #region  Plugin
+        #region Plugin
 
         protected async Task LoadPluginAsync(PluginDetails plugin)
         {
@@ -589,7 +596,7 @@ namespace ExtenderApp.ViewModels
             ServiceStore.PluginService.UnloadPlugin(plugin);
         }
 
-        #endregion
+        #endregion Plugin
 
         #region System
 
@@ -602,7 +609,7 @@ namespace ExtenderApp.ViewModels
             ServiceStore.SystemService.Clipboard.SetText(text);
         }
 
-        #endregion
+        #endregion System
 
         #region Message
 
@@ -636,11 +643,11 @@ namespace ExtenderApp.ViewModels
             ServiceStore.MessageService.Unsubscribe(this, handleMessage);
         }
 
-        #endregion
+        #endregion Message
     }
 
     /// <summary>
-    /// 泛型扩展应用程序视图模型基类，继承自<see cref="ExtenderAppViewModel"/>
+    /// 泛型扩展应用程序视图模型基类，继承自 <see cref="ExtenderAppViewModel"/>
     /// </summary>
     /// <typeparam name="TView">视图接口</typeparam>
     public abstract class ExtenderAppViewModel<TView> : ExtenderAppViewModel, IViewModel<TView> where TView : class, IView
@@ -652,7 +659,6 @@ namespace ExtenderApp.ViewModels
 
         public ExtenderAppViewModel(IServiceStore serviceStore) : base(serviceStore)
         {
-
         }
 
         public override void InjectView(IView view)
@@ -706,7 +712,7 @@ namespace ExtenderApp.ViewModels
     }
 
     /// <summary>
-    /// 泛型扩展应用程序视图模型基类，继承自<see cref="ExtenderAppViewModel{TView}"/>
+    /// 泛型扩展应用程序视图模型基类，继承自 <see cref="ExtenderAppViewModel{TView}"/>
     /// </summary>
     /// <typeparam name="TView">视图接口</typeparam>
     /// <typeparam name="TModle">模型类型</typeparam>
@@ -736,12 +742,9 @@ namespace ExtenderApp.ViewModels
         }
 
         /// <summary>
-        /// 是否为常驻模型
-        /// </summary>
-        protected bool IsStandingModel { get; set; }
-
-        /// <summary>
-        /// 初始化<see cref="ExtenderAppViewModel{TView, TModle}"/>的新实例
+        /// 初始化 <see
+        /// cref="ExtenderAppViewModel{TView,
+        /// TModle}"/> 的新实例
         /// </summary>
         /// <param name="serviceStore">服务存储</param>
         protected ExtenderAppViewModel(IServiceStore serviceStore) : base(serviceStore)
@@ -755,13 +758,12 @@ namespace ExtenderApp.ViewModels
 
         public override void Enter(ViewInfo oldViewInfo)
         {
-
         }
 
         public override void Exit(ViewInfo newViewInfo)
         {
             SaveModel();
-            if (!IsStandingModel)
+            if (Details != null && !Details.IsStandingModel)
             {
                 DeleteLocalData();
                 if (model is IDisposable disposable)

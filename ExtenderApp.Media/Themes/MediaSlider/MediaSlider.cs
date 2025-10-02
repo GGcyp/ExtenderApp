@@ -129,14 +129,14 @@ namespace ExtenderApp.Media.Themes
         /// <summary>
         /// 滑动条高度
         /// </summary>
-        public double Height
+        public double TrackHeight
         {
-            get => (double)GetValue(SliderHeightProperty);
-            set => SetValue(SliderHeightProperty, value);
+            get => (double)GetValue(TrackHeightProperty);
+            set => SetValue(TrackHeightProperty, value);
         }
 
-        public static readonly DependencyProperty SliderHeightProperty =
-            DependencyProperty.Register(nameof(Height),
+        public static readonly DependencyProperty TrackHeightProperty =
+            DependencyProperty.Register(nameof(TrackHeight),
                 typeof(double),
                 typeof(MediaSlider),
                 new PropertyMetadata(5d));

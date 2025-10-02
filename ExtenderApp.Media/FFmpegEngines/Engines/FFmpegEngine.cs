@@ -1,6 +1,7 @@
 ﻿using System.Buffers;
 using System.Collections.Concurrent;
 using System.Runtime.InteropServices;
+using System.Windows;
 using ExtenderApp.Data;
 using FFmpeg.AutoGen;
 
@@ -305,7 +306,7 @@ namespace ExtenderApp.FFmpegEngines
             FFmpegInfo info = new(uri, videoContext.CodecContext.Value->pix_fmt.Convert(), audioContext.CodecContext.Value->sample_fmt.Convert(), GetCodecNameOrDefault(videoContext), GetCodecNameOrDefault(audioContext));
             info.Width = videoContext.CodecParameters.Value->width;
             info.Height = videoContext.CodecParameters.Value->height;
-            info.Duration = videoContext.CodecStream.Value->duration;
+            info.Duration = ffmpeg.av_rescale_q(videoContext.CodecStream.Value->duration, videoContext.CodecStream.Value->time_base, ffmpeg.av_make_q(1, 1000));
             info.Rate = videoContext.CodecStream.Value->avg_frame_rate.num != 0 ? (double)videoContext.CodecStream.Value->avg_frame_rate.num / videoContext.CodecStream.Value->avg_frame_rate.den : DefaultFrameRate;
 
             info.SampleRate = audioContext.CodecParameters.Value->sample_rate;

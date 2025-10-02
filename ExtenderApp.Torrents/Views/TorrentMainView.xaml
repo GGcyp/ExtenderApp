@@ -65,7 +65,7 @@
                                 VerticalAlignment="Top"
                                 Padding="10,0"
                                 Command="{Binding ToDownloadListCommand}">
-                            <Grid>
+                            <Grid Background="{Binding}">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition SharedSizeGroup="Tile" />
                                     <ColumnDefinition SharedSizeGroup="Count" />
@@ -85,7 +85,7 @@
                                 VerticalAlignment="Top"
                                 Padding="10,0"
                                 Command="{Binding ToDownloadCompletedListdCommand}">
-                            <Grid>
+                            <Grid Background="{Binding}">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition SharedSizeGroup="Tile" />
                                     <ColumnDefinition SharedSizeGroup="Count" />
@@ -105,7 +105,7 @@
                                 VerticalAlignment="Top"
                                 Padding="10,0"
                                 Command="{Binding ToDownloadCompletedListdCommand}">
-                            <Grid>
+                            <Grid Background="{Binding}">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition SharedSizeGroup="Tile" />
                                     <ColumnDefinition SharedSizeGroup="Count" />
@@ -125,7 +125,7 @@
                                 VerticalAlignment="Top"
                                 Padding="10,0"
                                 Command="{Binding ToRecyclebinListCommand}">
-                            <Grid>
+                            <Grid Background="{Binding}">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition SharedSizeGroup="Tile" />
                                     <ColumnDefinition SharedSizeGroup="Count" />

@@ -51,5 +51,10 @@ namespace ExtenderApp.Torrents
             store.Add<EngineSettingsBuilderModel, EngineSettingsFormatter>();
             store.Add<TorrentSettingsBuilderModel, TorrentSettingsFormatter>();
         }
+
+        public override void ConfigureDetails(PluginDetails details)
+        {
+            details.IsStandingModel = true;
+        }
     }
 }

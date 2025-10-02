@@ -29,6 +29,8 @@ namespace ExtenderApp.Media
     /// </summary>
     public partial class MediaMainView : ExtenderAppView
     {
+        private bool isUserDragging = false;
+
         public MediaMainView(MediaMainViewModel viewModel) : base(viewModel)
         {
             InitializeComponent();
@@ -37,13 +39,6 @@ namespace ExtenderApp.Media
             AllowDrop = true;
             Drop += MediaMainView_Drop;
             DragEnter += MediaMainView_DragEnter;
-
-            // 监听窗口大小变化事件
-            SizeChanged += MediaMainView_SizeChanged;
-
-            //监听视频进度条更改
-            mediaSlider.ThumbDragCompleted += MediaSlider_DragCompleted;
-            volumeSlider.ThumbDragCompleted += VolumeSlider_ValueChanged;
         }
 
         private void MediaMainView_DragEnter(object sender, DragEventArgs e)
@@ -76,19 +71,50 @@ namespace ExtenderApp.Media
             e.Handled = true;
         }
 
-        private void MediaMainView_SizeChanged(object sender, SizeChangedEventArgs e)
-        {
+        #region MediaSlider滑块位置
 
+        private void mediaSlider_DragStarted(object sender, DragStartedEventArgs e)
+        {
+            ViewModel<MediaMainViewModel>()!.Model.IsSeeking = true;
+            e.Handled = true;
         }
 
-        private void VolumeSlider_ValueChanged()
+        private void mediaSlider_DragDelta(object sender, DragDeltaEventArgs e)
         {
-
+            var slider = sender as Slider;
+            double value = slider?.Value ?? 0;
+            var viewModel = ViewModel<MediaMainViewModel>()!;
+            viewModel.Model.Position = TimeSpan.FromSeconds(value);
+            e.Handled = true;
         }
 
-        private void MediaSlider_DragCompleted()
+        private void mediaSlider_DragCompleted(object sender, DragCompletedEventArgs e)
         {
-
+            var slider = sender as Slider;
+            double value = slider?.Value ?? 0;
+            var viewModel = ViewModel<MediaMainViewModel>()!;
+            viewModel.Seek(TimeSpan.FromSeconds(value));
+            viewModel.Model.IsSeeking = false;
+            e.Handled = true;
         }
+
+        private void mediaSlider_PreviewMouseUp(object sender, MouseButtonEventArgs e)
+        {
+            var slider = sender as Slider;
+            //double value = slider?.Value ?? 0;
+
+            // 获取鼠标在Slider上的位置
+            var pos = e.GetPosition(slider);
+            double percent = Math.Max(0, Math.Min(1, pos.X / slider.ActualWidth));
+            double newValue = slider.Minimum + percent * (slider.Maximum - slider.Minimum);
+
+            //slider.Value = newValue;
+
+            var viewModel = ViewModel<MediaMainViewModel>()!;
+            viewModel.Seek(TimeSpan.FromSeconds(newValue));
+            e.Handled = true;
+        }
+
+        #endregion MediaSlider动画
     }
 }

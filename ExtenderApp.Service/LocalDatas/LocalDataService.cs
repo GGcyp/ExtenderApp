@@ -1,4 +1,5 @@
-﻿using ExtenderApp.Abstract;
+﻿using AppHost.Extensions.DependencyInjection;
+using ExtenderApp.Abstract;
 using ExtenderApp.Common;
 using ExtenderApp.Data;
 
@@ -30,6 +31,15 @@ namespace ExtenderApp.Services
         /// </summary>
         private readonly ILogingService _logingService;
 
+        /// <summary>
+        /// 服务提供者实例，用于解析依赖服务。
+        /// </summary>
+        private readonly IServiceProvider _serviceProvider;
+
+        /// <summary>
+        /// 默认数据版本号。
+        /// 用于初始化本地数据的版本信息，未指定时采用此版本。
+        /// </summary>
         private readonly Version _version;
 
         /// <summary>
@@ -37,7 +47,7 @@ namespace ExtenderApp.Services
         /// </summary>
         private ScheduledTask autosaveTokn;
 
-        public LocalDataService(IPathService pathService, ISplitterParser splitter, IBinaryParser parser, IBinaryFormatterStore store, ILogingService logingService)
+        public LocalDataService(IPathService pathService, ISplitterParser splitter, IBinaryParser parser, IBinaryFormatterStore store, ILogingService logingService, IServiceProvider serviceProvider)
         {
             _parser = parser;
             _pathService = pathService;
@@ -48,22 +58,17 @@ namespace ExtenderApp.Services
 
             autosaveTokn = new ScheduledTask();
             autosaveTokn.StartCycle(o => SaveAllData(), TimeSpan.FromMinutes(5));
+            _serviceProvider = serviceProvider;
         }
 
-        public bool LoadData<T>(string? dataName, out LocalData<T>? data) where T : class
+        public bool LoadData<T>(string? dataName, out LocalData<T>? data)
+            where T : class
         {
             data = default;
 
-            try
+            if (string.IsNullOrEmpty(dataName))
             {
-                if (string.IsNullOrEmpty(dataName))
-                {
-                    throw new ArgumentNullException("获取本地数据名字不能为空");
-                }
-            }
-            catch (Exception ex)
-            {
-                _logingService.Error(ex.Message, nameof(ILocalDataService), ex);
+                _logingService.Error("获取本地数据名字不能为空", nameof(ILocalDataService), null);
                 return false;
             }
 
@@ -75,7 +80,7 @@ namespace ExtenderApp.Services
                     ExpectLocalFileInfo fileInfo = new(_pathService.DataPath, dataName);
                     var tempdata = _parser.Read<VersionData<T>>(fileInfo);
 
-                    localData = new LocalData<T>(tempdata.Data ?? Activator.CreateInstance(typeof(T)) as T, SaveLocalData, tempdata.DataVersion ?? _version);
+                    localData = new LocalData<T>(tempdata.Data ?? _serviceProvider.GetRequiredService<T>(), SaveLocalData, tempdata.DataVersion ?? _version);
 
                     info = new LocalDataInfo(_pathService.DataPath, dataName, localData);
                     _localDataDict.Add(dataName, info);
@@ -102,7 +107,8 @@ namespace ExtenderApp.Services
             }
         }
 
-        public bool SaveData<T>(string? dataName, LocalData<T>? data) where T : class
+        public bool SaveData<T>(string? dataName, LocalData<T>? data)
+            where T : class
         {
             try
             {
