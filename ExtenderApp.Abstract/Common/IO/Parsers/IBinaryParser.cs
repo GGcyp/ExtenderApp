@@ -1,5 +1,4 @@
-﻿
-using System.Buffers;
+﻿using System.Buffers;
 using ExtenderApp.Data;
 
 namespace ExtenderApp.Abstract
@@ -37,8 +36,8 @@ namespace ExtenderApp.Abstract
         /// <param name="stream">包含要反序列化的数据的流。</param>
         /// <param name="token">用于取消操作的取消令牌。</param>
         /// <returns>反序列化后的对象，如果反序列化失败则返回null。</returns>
-        Task<T?> DeserializeAsync<T>(Stream stream, CancellationToken token);
-        
+        Task<T?> DeserializeAsync<T>(Stream stream, CancellationToken token = default);
+
         /// <summary>
         /// 从给定的字节序列中异步反序列化对象。
         /// </summary>
@@ -46,10 +45,9 @@ namespace ExtenderApp.Abstract
         /// <param name="span">包含要反序列化的数据的字节序列。</param>
         /// <param name="token">用于取消操作的取消令牌。</param>
         /// <returns>返回一个包含反序列化对象的Task。</returns>
-        Task<T?> DeserializeAsync<T>(ReadOnlyMemory<byte> span, CancellationToken token);
+        Task<T?> DeserializeAsync<T>(ReadOnlyMemory<byte> span, CancellationToken token = default);
 
-
-        #endregion
+        #endregion Deserialize
 
         #region Serialize
 
@@ -130,7 +128,7 @@ namespace ExtenderApp.Abstract
         /// <typeparam name="T">要序列化的对象的类型。</typeparam>
         /// <param name="value">要序列化的对象。</param>
         /// <returns>返回一个包含序列化后字节的Task。</returns>
-        Task<byte[]> SerializeAsync<T>(T value, CancellationToken token);
+        Task<byte[]> SerializeAsync<T>(T value, CancellationToken token = default);
 
         /// <summary>
         /// 异步地将对象序列化为字节流。
@@ -139,9 +137,9 @@ namespace ExtenderApp.Abstract
         /// <param name="stream">要写入序列化数据的流。</param>
         /// <param name="value">要序列化的对象。</param>
         /// <returns>返回一个Task。</returns>
-        Task SerializeAsync<T>(Stream stream, T value, CancellationToken token);
+        Task SerializeAsync<T>(Stream stream, T value, CancellationToken token = default);
 
-        #endregion
+        #endregion Serialize
 
         #region LZ4
 
@@ -188,7 +186,7 @@ namespace ExtenderApp.Abstract
         /// <param name="value">要写入的数据</param>
         /// <param name="compression">压缩类型</param>
         /// <param name="callback">回调函数</param>
-        void WriteAsync<T>(ExpectLocalFileInfo info, T value, CompressionType compression, Action? callback = null);
+        Task WriteAsync<T>(ExpectLocalFileInfo info, T value, CompressionType compression, CancellationToken token = default);
 
         /// <summary>
         /// 异步地将数据写入LZ4压缩块
@@ -198,7 +196,7 @@ namespace ExtenderApp.Abstract
         /// <param name="value">要写入的数据</param>
         /// <param name="compression">压缩类型</param>
         /// <param name="callback">回调函数</param>
-        void WriteAsync<T>(FileOperateInfo info, T value, CompressionType compression, Action? callback = null);
+        Task WriteAsync<T>(FileOperateInfo info, T value, CompressionType compression, CancellationToken token = default);
 
         /// <summary>
         /// 异步地将数据写入LZ4压缩格式
@@ -208,7 +206,7 @@ namespace ExtenderApp.Abstract
         /// <param name="value">要写入的数据</param>
         /// <param name="compression">压缩类型</param>
         /// <param name="callback">回调函数</param>
-        void WriteAsync<T>(IFileOperate fileOperate, T value, CompressionType compression, Action? callback = null);
+        Task WriteAsync<T>(IFileOperate fileOperate, T value, CompressionType compression, CancellationToken token = default);
 
         /// <summary>
         /// 对指定类型的数据进行压缩。
@@ -235,7 +233,7 @@ namespace ExtenderApp.Abstract
         /// <returns>压缩后的字节数组。</returns>
         byte[] Compression(in ReadOnlySequence<byte> readOnlyMemories, CompressionType compression);
 
-        #endregion
+        #endregion LZ4
 
         /// <summary>
         /// 获取指定类型对象中的序列化后的长度。

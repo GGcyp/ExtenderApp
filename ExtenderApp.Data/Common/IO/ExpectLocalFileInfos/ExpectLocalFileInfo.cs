@@ -54,7 +54,7 @@
         /// <param name="fileMode">文件打开模式，默认为FileMode.Open。</param>
         /// <param name="fileAccess">文件访问模式，默认为FileAccess.Read。</param>
         /// <returns>返回一个FileOperate对象。</returns>
-        public FileOperateInfo CreateFileOperate(string extension, FileMode fileMode = FileMode.Open, FileAccess fileAccess = FileAccess.Read)
+        public FileOperateInfo CreateFileOperate(string extension, FileMode fileMode = FileMode.Open, ExtenderFileAccess fileAccess = ExtenderFileAccess.Read)
         {
             return CreatLocalFileInfo(extension).CreateFileOperate(fileMode, fileAccess);
         }
@@ -66,7 +66,7 @@
         /// <returns>返回一个FileOperate对象，用于执行文件写入操作。</returns>
         public FileOperateInfo CreateReadWriteOperate(string extension)
         {
-            return CreateFileOperate(extension, FileMode.OpenOrCreate, FileAccess.ReadWrite);
+            return CreateFileOperate(extension, FileMode.OpenOrCreate, ExtenderFileAccess.ReadWrite);
         }
 
         /// <summary>

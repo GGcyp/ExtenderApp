@@ -26,16 +26,13 @@ namespace ExtenderApp.MainViews.ViewModels
             Task.Run(async () =>
             {
                 await LoadPluginAsync(details);
-                ServiceStore.DispatcherService.Invoke(() =>
+                await ToMainThreadAsync();
+                Model.CurrentMainView = NavigateTo<MainView_RunView>();
+                Model.CurrentView = NavigateTo(details);
+                cutscene.End(() =>
                 {
-                    Model.CurrentMainView = NavigateTo<MainView_RunView>();
-                    Model.CurrentView = NavigateTo(details);
-                    cutscene.End(() =>
-                    {
-                        Model.CurrentCutsceneView = null;
-                    });
+                    Model.CurrentCutsceneView = null;
                 });
-                await Task.Delay(300);
             });
         }
     }

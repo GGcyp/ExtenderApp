@@ -16,9 +16,9 @@ namespace AppHost.Extensions.DependencyInjection
         /// <summary>
         /// 加载作用域。
         /// </summary>
-        /// <param name="options">作用域选项。</param>
         /// <param name="collection">服务集合。</param>
-        void LoadScope(ScopeOptions options, IServiceCollection collection);
+        /// <param name="options">作用域选项。</param>
+        void LoadScope(IServiceCollection collection, ScopeOptions options);
 
         /// <summary>
         /// 卸载作用域。

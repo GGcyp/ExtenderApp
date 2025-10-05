@@ -12,7 +12,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\ExtenderApp.DbEntities\ExtenderApp.DbEntities.csproj" />
-    <ProjectReference Include="..\ExtenderApp.DbEntity\ExtenderApp.DbEntities.csproj" />
   </ItemGroup>
 
 </Project>

@@ -10,7 +10,7 @@ namespace AppHost.Extensions.Hosting
         /// <summary>
         /// 所有存储的服务
         /// </summary>
-        public IServiceProvider Service { get; }
+        public IServiceProvider ServiceProvider { get; }
 
         /// <summary>
         /// 启动所有注册的托管服务 <see cref="IHostedService" />

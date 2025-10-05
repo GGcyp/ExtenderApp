@@ -47,7 +47,7 @@ namespace ExtenderApp.Services
         /// </summary>
         private ScheduledTask autosaveTokn;
 
-        public LocalDataService(IPathService pathService, ISplitterParser splitter, IBinaryParser parser, IBinaryFormatterStore store, ILogingService logingService, IServiceProvider serviceProvider)
+        public LocalDataService(IPathService pathService, IBinaryParser parser, IBinaryFormatterStore store, ILogingService logingService, IServiceProvider serviceProvider)
         {
             _parser = parser;
             _pathService = pathService;

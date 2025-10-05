@@ -27,7 +27,7 @@
         ///// </summary>
         //public ExcelBorderStyle borderStyle;
 
-        //public ExcelCellFormat(ExcelNumberFormat numberFormat = null, Color fontColor = default, bool bold = false, bool italic = false, Color fillColor = default, ExcelBorderStyle borderStyle = ExcelBorderStyle.None)
+        //public ExcelCellFormat(ExcelNumberFormat numberFormat = null, Color fontColor = default, bool bold = false, bool italic = false, Color fillColor = default, ExcelBorderStyle borderStyle = ExcelBorderStyle.FileStream)
         //{
         //    this.numberFormat = numberFormat;
         //    this.fontColor = fontColor.IsEmpty ? Color.Black : fontColor; // 默认黑色

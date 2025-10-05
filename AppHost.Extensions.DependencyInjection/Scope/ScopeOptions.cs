@@ -1,42 +1,27 @@
-﻿
-
-namespace AppHost.Extensions.DependencyInjection
+﻿namespace AppHost.Extensions.DependencyInjection
 {
     /// <summary>
     /// 作用域选项。
     /// </summary>
+    /// <remarks>
+    /// 用于在创建作用域（Scope）时传递可选的命名信息，便于记录、诊断或区分不同的作用域实例。
+    /// 建议通过 <see cref="ScopeOptionsBuilder"/> 构建本类型。
+    /// </remarks>
     public class ScopeOptions
     {
         /// <summary>
-        /// 依赖的其他作用域
+        /// 作用域名（可选）。
+        /// 用于标识或区分子容器/命名 Scope；为 <c>null</c> 表示未命名作用域。
         /// </summary>
-        internal List<string> ReloScopes { get; set; }
+        public string? ScopeName { get; }
 
         /// <summary>
-        /// 作用域名
+        /// 使用指定的作用域名创建 <see cref="ScopeOptions"/>。
         /// </summary>
-        public string ScopeName { get; set; }
-
-        /// <summary>
-        /// ScopeOptions 类的构造函数。
-        /// </summary>
-        public ScopeOptions()
+        /// <param name="scopeName">作用域名；可为 <c>null</c> 表示未命名。</param>
+        internal ScopeOptions(string? scopeName)
         {
-            ReloScopes = new List<string>();
-        }
-
-        /// <summary>
-        /// 向 ReloScopes 列表中添加一个作用域。
-        /// </summary>
-        /// <param name="scope">要添加的作用域名称。</param>
-        /// <exception cref="ArgumentNullException">如果传入的 scope 参数为空或仅包含空白字符，则抛出此异常。</exception>
-        public void AddReloScope(string scope)
-        {
-            if (string.IsNullOrEmpty(scope))
-            {
-                throw new ArgumentNullException(nameof(scope));
-            }
-            ReloScopes.Add(scope);
+            ScopeName = scopeName;
         }
     }
 }

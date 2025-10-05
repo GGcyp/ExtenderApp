@@ -1,7 +1,6 @@
 ﻿using System.Buffers;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using ExtenderApp.Data;
 
 
 namespace ExtenderApp.Data
@@ -52,7 +51,19 @@ namespace ExtenderApp.Data
         /// </summary>
         public SequencePool<byte>.Rental Rental;
 
+        /// <summary>
+        /// 检查当前实例是否为空。
+        /// </summary>
         public bool IsEmpty => Output == null && _segment == null;
+
+        /// <summary>
+        /// 使用指定的 <see cref="SequencePool{byte}"/> 对象初始化 <see cref="ExtenderBinaryWriter"/> 类的新实例
+        /// </summary>
+        /// <param name="pool">要使用的 <see cref="SequencePool{byte}"/> 对象。</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public ExtenderBinaryWriter(SequencePool<byte> pool) : this(pool.Rent())
+        {
+        }
 
         /// <summary>
         /// 使用指定的 <see cref="SequencePool{byte}.Rental"/> 对象初始化 <see cref="ExtenderBinaryWriter"/> 类的新实例。

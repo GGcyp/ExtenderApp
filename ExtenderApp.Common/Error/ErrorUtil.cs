@@ -364,7 +364,7 @@ namespace ExtenderApp.Common.Error
             if (fileInfo.FileInfo.Exists)
                 return;
 
-            FileNotFound(fileInfo.FilePath);
+            FileNotFound(fileInfo.FullPath);
         }
 
         #endregion

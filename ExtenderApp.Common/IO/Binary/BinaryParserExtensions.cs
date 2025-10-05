@@ -4,13 +4,11 @@ using System.Reflection;
 using AppHost.Extensions.DependencyInjection;
 using ExtenderApp.Abstract;
 using ExtenderApp.Common.IO.Binaries.Formatters;
-using ExtenderApp.Common.IO.Binaries.Formatters;
 using ExtenderApp.Common.IO.Binaries.Formatters.Collection;
 using ExtenderApp.Common.IO.Binaries.Formatters.Struct;
 using ExtenderApp.Common.IO.Binary.Formatters;
 using ExtenderApp.Common.IO.Binary.Formatters.Class;
 using ExtenderApp.Common.IO.Binary.Formatters.Struct;
-using ExtenderApp.Common.IO.Local;
 using ExtenderApp.Data;
 
 
@@ -88,7 +86,6 @@ namespace ExtenderApp.Common.IO.Binaries
             store.AddClassFormatter<BitFieldData, BitFieldDataFormatter>();
 
             store.AddStructFormatter<LocalFileInfo, LocalFileInfoFormatter>();
-            store.AddStructFormatter<FileOperateInfo, FileOperateInfoFormatter>();
             store.AddStructFormatter<ExtensionHeader, ExtensionHeaderFormatter>();
 
             store.AddByteArrayFormatter();

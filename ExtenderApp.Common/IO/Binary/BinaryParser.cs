@@ -1,6 +1,5 @@
 ﻿using System.Buffers;
 using ExtenderApp.Abstract;
-using ExtenderApp.Common.DataBuffers;
 using ExtenderApp.Common.Error;
 using ExtenderApp.Common.IO.Binaries.LZ4;
 using ExtenderApp.Common.IO.FileParsers;
@@ -66,17 +65,14 @@ namespace ExtenderApp.Common.IO.Binaries
         /// </summary>
         private readonly ExtenderBinaryReaderConvert _readerConvert;
 
-        /// <summary>
-        /// 二进制文件扩展名
-        /// </summary>
-        private readonly string _binaryFileExtensions;
+        protected override string FileExtension { get; }
 
         public BinaryParser(IBinaryFormatterResolver binaryFormatterResolver, SequencePool<byte> sequencePool, ExtenderBinaryReaderConvert readerConvert, ExtenderBinaryWriterConvert writerConvert, BinaryOptions options, IFileOperateProvider provider) : base(provider)
         {
             _resolver = binaryFormatterResolver;
             _sequencePool = sequencePool;
 
-            _binaryFileExtensions = FileExtensions.BinaryFileExtensions;
+            FileExtension = FileExtensions.BinaryFileExtensions;
             _readerConvert = readerConvert;
             _writerConvert = writerConvert;
             _binaryOptions = options;
@@ -89,288 +85,7 @@ namespace ExtenderApp.Common.IO.Binaries
             return _resolver.GetFormatterWithVerify<T>();
         }
 
-        #endregion
-
-        #region Read
-
-        public override T? Read<T>(ExpectLocalFileInfo info) where T : default
-        {
-            if (info.IsEmpty)
-            {
-                ErrorUtil.ArgumentNull(nameof(info));
-            }
-
-            return Read<T>(info.CreateReadWriteOperate(_binaryFileExtensions));
-        }
-
-        public override T? Read<T>(FileOperateInfo info) where T : default
-        {
-            if (info.IsEmpty || !info.LocalFileInfo.Exists || !info.IsRead())
-            {
-                //var formatter = _resolver.GetFormatter<T>();
-                //if (formatter == null)
-                //    return default;
-
-                //return formatter.Default;
-                return default;
-            }
-
-            return PrivateRead<T>(GetOperate(info));
-        }
-
-        public override T? Read<T>(IFileOperate fileOperate) where T : default
-        {
-            return PrivateRead<T>(fileOperate);
-        }
-
-        public override T? Read<T>(ExpectLocalFileInfo info, long position, int length) where T : default
-        {
-            if (info.IsEmpty)
-            {
-                ErrorUtil.ArgumentNull(nameof(info));
-            }
-
-            return Read<T>(info.CreateReadWriteOperate(_binaryFileExtensions), position, length);
-        }
-
-        public override T? Read<T>(FileOperateInfo info, long position, int length) where T : default
-        {
-            if (info.IsEmpty || !info.LocalFileInfo.Exists || !info.IsRead())
-            {
-                //var formatter = _resolver.GetFormatter<T>();
-                //if (formatter == null)
-                //    return default;
-
-                //return formatter.Default;
-                return default;
-            }
-
-            return PrivateRead<T>(GetOperate(info), position, length);
-        }
-
-        public override T? Read<T>(IFileOperate fileOperate, long position, int length) where T : default
-        {
-            return PrivateRead<T>(fileOperate, position, length);
-        }
-
-        /// <summary>
-        /// 私有方法，用于从指定的并发操作接口中读取指定类型的数据。
-        /// </summary>
-        /// <typeparam name="T">需要读取的数据类型。</typeparam>
-        /// <param name="operate">并发操作接口。</param>
-        /// <param name="position">开始读取的位置。</param>
-        /// <param name="length">需要读取的长度，默认为-1，表示读取到文件末尾。</param>
-        /// <returns>读取到的数据。</returns>
-        private T? PrivateRead<T>(IFileOperate operate, long position = 0, int length = -1)
-        {
-            length = length == -1 ? (int)operate.Info.FileInfo.Length : length;
-            var bytes = operate.ReadForArrayPool(position, length);
-
-            var reader = new ExtenderBinaryReader(new Memory<byte>(bytes, 0, length));
-
-            var result = Deserialize<T>(ref reader);
-            ArrayPool<byte>.Shared.Return(bytes);
-            return result;
-        }
-
-        #endregion
-
-        #region ReadAsync
-
-        public override void ReadAsync<T>(ExpectLocalFileInfo info, Action<T?> callback) where T : default
-        {
-            if (info.IsEmpty)
-            {
-                ErrorUtil.ArgumentNull(nameof(info));
-            }
-
-            ReadAsync(info.CreateReadWriteOperate(_binaryFileExtensions), callback);
-        }
-
-        public override void ReadAsync<T>(FileOperateInfo info, Action<T?> callback) where T : default
-        {
-            if (info.IsEmpty || !info.IsRead())
-            {
-                ErrorUtil.ArgumentNull(nameof(info));
-            }
-
-            var operate = GetOperate(info);
-            PrivateReadAsync(operate, callback);
-        }
-
-        public override void ReadAsync<T>(IFileOperate fileOperate, Action<T?> callback) where T : default
-        {
-            PrivateReadAsync(fileOperate, callback);
-        }
-
-        public override void ReadAsync<T>(ExpectLocalFileInfo info, long position, int length, Action<T?> callback) where T : default
-        {
-            if (info.IsEmpty)
-            {
-                ErrorUtil.ArgumentNull(nameof(info));
-            }
-            ReadAsync(info.CreateReadWriteOperate(_binaryFileExtensions), position, length, callback);
-        }
-
-        public override void ReadAsync<T>(FileOperateInfo info, long position, int length, Action<T?> callback) where T : default
-        {
-            if (info.IsEmpty || !info.IsRead())
-            {
-                ErrorUtil.ArgumentNull(nameof(info));
-            }
-
-            PrivateReadAsync(GetOperate(info), callback, position, length);
-        }
-
-        public override void ReadAsync<T>(IFileOperate fileOperate, long position, int length, Action<T?> callback) where T : default
-        {
-            PrivateReadAsync(fileOperate, callback, position, length);
-        }
-
-        /// <summary>
-        /// 异步读取数据，将数据反序列化为泛型类型T，并调用回调函数处理结果。
-        /// </summary>
-        /// <typeparam name="T">要反序列化的类型</typeparam>
-        /// <param name="operate">并发操作接口</param>
-        /// <param name="callback">处理结果的回调函数</param>
-        /// <param name="position">开始读取的位置</param>
-        /// <param name="length">要读取的长度</param>
-        private void PrivateReadAsync<T>(IFileOperate operate, Action<T?> callback, long position = 0, int length = -1)
-        {
-            DataBuffer<Delegate> buffer = DataBuffer<Delegate>.GetDataBuffer();
-            buffer.Item1 = callback;
-            var action = buffer.GetProcessAction<byte[]>((d, b) =>
-            {
-                var callback = d.Item1 as Action<T>;
-                var reader = new ExtenderBinaryReader(b);
-
-                T? result = Deserialize<T>(ref reader);
-                callback?.Invoke(result);
-            });
-            operate.ReadAsync(position, length, action);
-        }
-
-        #endregion
-
-        #region Write
-
-        public override void Write<T>(ExpectLocalFileInfo info, T value)
-        {
-            if (info.IsEmpty)
-            {
-                ErrorUtil.ArgumentNull(nameof(info));
-            }
-            Write(info.CreateReadWriteOperate(_binaryFileExtensions), value);
-        }
-
-        public override void Write<T>(FileOperateInfo info, T value)
-        {
-            if (info.IsEmpty || !info.IsWrite())
-            {
-                ErrorUtil.ArgumentNull(nameof(info));
-            }
-            PrivateWrite(GetOperate(info), value);
-        }
-
-        public override void Write<T>(IFileOperate fileOperate, T value)
-        {
-            PrivateWrite(fileOperate, value);
-        }
-
-        public override void Write<T>(ExpectLocalFileInfo info, T value, long position)
-        {
-            if (info.IsEmpty)
-            {
-                ErrorUtil.ArgumentNull(nameof(info));
-            }
-            Write(info.CreateReadWriteOperate(_binaryFileExtensions), value, position);
-        }
-
-        public override void Write<T>(FileOperateInfo info, T value, long position)
-        {
-            if (!info.IsEmpty || !info.IsWrite())
-            {
-                ErrorUtil.ArgumentNull(nameof(info));
-            }
-            PrivateWrite(GetOperate(info), value, position);
-        }
-
-        public override void Write<T>(IFileOperate fileOperate, T value, long position)
-        {
-            PrivateWrite(fileOperate, value, position);
-        }
-
-        private void PrivateWrite<T>(IFileOperate operate, T value, long filePosition = 0)
-        {
-            var writer = new ExtenderBinaryWriter(_sequencePool.Rent());
-            Serialize(ref writer, value);
-            operate.Write(writer, filePosition);
-            writer.Dispose();
-        }
-
-        #endregion
-
-        #region WriteAsync
-
-        public override void WriteAsync<T>(ExpectLocalFileInfo info, T value, Action? callback = null)
-        {
-            if (info.IsEmpty)
-            {
-                ErrorUtil.ArgumentNull(nameof(info));
-            }
-            WriteAsync(info.CreateReadWriteOperate(_binaryFileExtensions), value, callback);
-        }
-
-        public override void WriteAsync<T>(FileOperateInfo info, T value, Action? callback = null)
-        {
-            if (info.IsEmpty || !info.IsWrite())
-            {
-                ErrorUtil.ArgumentNull(nameof(info));
-            }
-
-            PrivateWriteAsync(GetOperate(info), value, 0, callback);
-        }
-
-        public override void WriteAsync<T>(IFileOperate fileOperate, T value, Action? callback = null)
-        {
-            PrivateWriteAsync(fileOperate, value, 0, callback);
-        }
-
-        public override void WriteAsync<T>(ExpectLocalFileInfo info, T value, long position, Action? callback = null)
-        {
-            if (info.IsEmpty)
-            {
-                ErrorUtil.ArgumentNull(nameof(info));
-            }
-            WriteAsync(info.CreateReadWriteOperate(_binaryFileExtensions), value, position, callback);
-        }
-
-        public override void WriteAsync<T>(FileOperateInfo info, T value, long position, Action? callback = null)
-        {
-            if (info.IsEmpty || !info.IsWrite())
-            {
-                ErrorUtil.ArgumentNull(nameof(info));
-            }
-            PrivateWriteAsync(GetOperate(info), value, position, callback);
-        }
-
-        public override void WriteAsync<T>(IFileOperate fileOperate, T value, long position, Action? callback = null)
-        {
-            PrivateWriteAsync(fileOperate, value, position, callback);
-        }
-
-        private void PrivateWriteAsync<T>(IFileOperate operate, T value, long filePosition = 0, Action? callback = null)
-        {
-            Task.Run(() =>
-            {
-                var writer = new ExtenderBinaryWriter(_sequencePool.Rent());
-                var formatter = _resolver.GetFormatterWithVerify<T>();
-                formatter.Serialize(ref writer, value);
-                operate.WriteAsync(writer, filePosition, callback);
-            }).ConfigureAwait(false);
-        }
-
-        #endregion
+        #endregion Get
 
         #region Serialize
 
@@ -437,7 +152,7 @@ namespace ExtenderApp.Common.IO.Binaries
         public void Serialize<T>(Stream stream, T value)
         {
             var rent = _sequencePool.Rent();
-            var writer = new ExtenderBinaryWriter(rent.Value);
+            var writer = new ExtenderBinaryWriter(rent);
             Serialize(ref writer, value);
             writer.Commit();
 
@@ -469,7 +184,7 @@ namespace ExtenderApp.Common.IO.Binaries
         public Task SerializeAsync<T>(Stream stream, T value, CancellationToken token)
         {
             var rent = _sequencePool.Rent();
-            var writer = new ExtenderBinaryWriter(rent.Value);
+            var writer = new ExtenderBinaryWriter(rent);
             Serialize(ref writer, value);
             writer.Commit();
             return Task.Run(() =>
@@ -508,7 +223,7 @@ namespace ExtenderApp.Common.IO.Binaries
             return bytes;
         }
 
-        #endregion
+        #endregion Serialize
 
         #region Deserialize
 
@@ -516,7 +231,6 @@ namespace ExtenderApp.Common.IO.Binaries
         {
             if (span.IsEmpty)
                 throw new ArgumentNullException(nameof(span));
-
 
             ExtenderBinaryReader reader = new ExtenderBinaryReader(span);
             return Deserialize<T>(ref reader);
@@ -574,7 +288,6 @@ namespace ExtenderApp.Common.IO.Binaries
         {
             if (span.IsEmpty)
                 throw new ArgumentNullException(nameof(span));
-
 
             return await Task.Run(() =>
             {
@@ -666,17 +379,85 @@ namespace ExtenderApp.Common.IO.Binaries
             return false;
         }
 
-        #endregion
+        #endregion Deserialize
 
-        #region Delete
+        #region Execute
 
-        public override void Delete(ExpectLocalFileInfo info)
+        protected override T? ExecuteRead<T>(IFileOperate fileOperate) where T : default
         {
-            var binaryFileInfo = info.CreatLocalFileInfo(FileExtensions.BinaryFileExtensions);
-            Delete(binaryFileInfo);
+            byte[] bytes = fileOperate.ReadForArrayPool(out int length);
+            T? result = Deserialize<T>(bytes);
+            ArrayPool<byte>.Shared.Return(bytes);
+            return result;
         }
 
-        #endregion
+        protected override T? ExecuteRead<T>(IFileOperate fileOperate, long position, int length) where T : default
+        {
+            byte[] bytes = fileOperate.ReadForArrayPool(position, length);
+            T? result = Deserialize<T>(bytes.AsMemory(0, length));
+            ArrayPool<byte>.Shared.Return(bytes);
+            return result;
+        }
+
+        protected override async Task<T?> ExecuteReadAsync<T>(IFileOperate fileOperate, CancellationToken token) where T : default
+        {
+            byte[] bytes = await fileOperate.ReadForArrayPoolAsync(out int length, token);
+            T? result = await DeserializeAsync<T>(bytes.AsMemory(0, length), token);
+            ArrayPool<byte>.Shared.Return(bytes);
+            return result;
+        }
+
+        protected override async Task<T?> ExecuteReadAsync<T>(IFileOperate fileOperate, long position, int length, CancellationToken token) where T : default
+        {
+            byte[] bytes = await fileOperate.ReadForArrayPoolAsync(position, length);
+            T? result = await DeserializeAsync<T>(bytes.AsMemory(0, length), token);
+            ArrayPool<byte>.Shared.Return(bytes);
+            return result;
+        }
+
+        protected override void ExecuteWrite<T>(IFileOperate fileOperate, T value)
+        {
+            ExtenderBinaryWriter writer = new ExtenderBinaryWriter(_sequencePool);
+            Serialize(ref writer, value);
+            writer.Commit();
+            fileOperate.Write(writer);
+            writer.Dispose();
+        }
+
+        protected override void ExecuteWrite<T>(IFileOperate fileOperate, T value, long position)
+        {
+            ExtenderBinaryWriter writer = new ExtenderBinaryWriter(_sequencePool);
+            Serialize(ref writer, value);
+            writer.Commit();
+            fileOperate.Write(position, writer);
+            writer.Dispose();
+        }
+
+        protected override Task ExecuteWriteAsync<T>(IFileOperate fileOperate, T value, CancellationToken token = default)
+        {
+            return Task.Run(() =>
+            {
+                ExtenderBinaryWriter writer = new ExtenderBinaryWriter(_sequencePool);
+                Serialize(ref writer, value);
+                writer.Commit();
+                fileOperate.Write(writer);
+                writer.Dispose();
+            }, token);
+        }
+
+        protected override Task ExecuteWriteAsync<T>(IFileOperate fileOperate, T value, long position, CancellationToken token = default)
+        {
+            return Task.Run(() =>
+            {
+                ExtenderBinaryWriter writer = new ExtenderBinaryWriter(_sequencePool);
+                Serialize(ref writer, value);
+                writer.Commit();
+                fileOperate.Write(position, writer);
+                writer.Dispose();
+            }, token);
+        }
+
+        #endregion Execute
 
         #region Count
 
@@ -690,11 +471,12 @@ namespace ExtenderApp.Common.IO.Binaries
             return _resolver.GetFormatterWithVerify<T>().DefaultLength;
         }
 
-        #endregion
+        #endregion Count
 
         #region LZ4
 
         private delegate int LZ4Transform(ReadOnlySpan<byte> input, Span<byte> output);
+
         private static readonly LZ4Transform LZ4CodecEncode = LZ4Codec.Encode;
         private static readonly LZ4Transform LZ4CodecDecode = LZ4Codec.Decode;
 
@@ -738,7 +520,6 @@ namespace ExtenderApp.Common.IO.Binaries
             var scratchWriter = new ExtenderBinaryWriter(_sequencePool.Rent());
             Serialize(ref scratchWriter, value);
 
-
             var writer = new ExtenderBinaryWriter(_sequencePool.Rent());
             ToLz4(scratchWriter.Rental.Value, ref writer, compression);
 
@@ -776,7 +557,7 @@ namespace ExtenderApp.Common.IO.Binaries
             {
                 ErrorUtil.ArgumentNull(nameof(info));
             }
-            Write(info.CreateReadWriteOperate(_binaryFileExtensions), value, compression);
+            Write(info.CreateReadWriteOperate(FileExtension), value, compression);
         }
 
         public void Write<T>(FileOperateInfo info, T value, CompressionType compression)
@@ -799,12 +580,11 @@ namespace ExtenderApp.Common.IO.Binaries
             var scratchWriter = new ExtenderBinaryWriter(_sequencePool.Rent());
             Serialize(ref scratchWriter, value);
 
-
             var writer = new ExtenderBinaryWriter(_sequencePool.Rent());
             ToLz4(scratchWriter.Rental.Value, ref writer, compression);
             writer.Commit();
 
-            fileOperate.Write(writer, 0);
+            fileOperate.Write(writer);
 
             scratchWriter.Dispose();
             writer.Dispose();
@@ -837,6 +617,7 @@ namespace ExtenderApp.Common.IO.Binaries
                         ArrayPool<byte>.Shared.Return(lz4Bytes);
                     }
                     break;
+
                 case CompressionType.Lz4BlockArray:
                     var sequenceCount = 0;
                     var extHeaderSize = 0;
@@ -867,48 +648,43 @@ namespace ExtenderApp.Common.IO.Binaries
             }
         }
 
-        public void WriteAsync<T>(ExpectLocalFileInfo info, T value, CompressionType compression, Action? callback = null)
+        public Task WriteAsync<T>(ExpectLocalFileInfo info, T value, CompressionType compression, CancellationToken token = default)
         {
             if (info.IsEmpty)
             {
-                ErrorUtil.ArgumentNull(nameof(info));
+                throw new ArgumentNullException(nameof(info));
             }
-            WriteAsync(info.CreateReadWriteOperate(_binaryFileExtensions), value, compression, callback);
+            return WriteAsync(info.CreateReadWriteOperate(FileExtension), value, compression, token);
         }
 
-        public void WriteAsync<T>(FileOperateInfo info, T value, CompressionType compression, Action? callback = null)
+        public Task WriteAsync<T>(FileOperateInfo info, T value, CompressionType compression, CancellationToken token = default)
         {
             if (info.IsEmpty || !info.IsWrite())
             {
-                ErrorUtil.ArgumentNull(nameof(info));
+                throw new ArgumentNullException(nameof(info));
             }
-            WriteAsync(GetOperate(info), value, compression, callback);
+            return WriteAsync(GetOperate(info), value, compression, token);
         }
 
-        public void WriteAsync<T>(IFileOperate fileOperate, T value, CompressionType compression, Action? callback = null)
+        public Task WriteAsync<T>(IFileOperate fileOperate, T value, CompressionType compression, CancellationToken token = default)
         {
-            Task.Run(() =>
-           {
-               if (fileOperate == null)
-               {
-                   ErrorUtil.ArgumentNull(nameof(fileOperate));
-                   return;
-               }
+            if (fileOperate == null)
+            {
+                throw new ArgumentNullException(nameof(fileOperate));
+            }
+            return Task.Run(() =>
+            {
+                var scratchWriter = new ExtenderBinaryWriter(_sequencePool.Rent());
+                Serialize(ref scratchWriter, value);
 
-               var scratchWriter = new ExtenderBinaryWriter(_sequencePool.Rent());
-               Serialize(ref scratchWriter, value);
+                var writer = new ExtenderBinaryWriter(_sequencePool.Rent());
+                ToLz4(scratchWriter.Rental.Value, ref writer, compression);
+                writer.Commit();
 
-
-               var writer = new ExtenderBinaryWriter(_sequencePool.Rent());
-               ToLz4(scratchWriter.Rental.Value, ref writer, compression);
-               writer.Commit();
-
-               fileOperate.WriteAsync(writer, 0, () =>
-               {
-                   callback?.Invoke();
-               });
-               scratchWriter.Dispose();
-           }).ConfigureAwait(false);
+                fileOperate.Write(writer);
+                scratchWriter.Dispose();
+                writer.Dispose();
+            }, token);
         }
 
         private bool TryDecompress(ref ExtenderBinaryReader reader, out ExtenderBinaryWriter writer)
@@ -945,7 +721,6 @@ namespace ExtenderApp.Common.IO.Binaries
                 writer.Commit();
                 return true;
             }
-
 
             var peekReader = reader.CreatePeekReader();
             var arrayLength = _readerConvert.ReadArrayHeader(ref peekReader);
@@ -1025,6 +800,6 @@ namespace ExtenderApp.Common.IO.Binaries
             }
         }
 
-        #endregion
+        #endregion LZ4
     }
 }

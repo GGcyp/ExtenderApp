@@ -23,12 +23,12 @@ namespace ExtenderApp.Data
                 throw new ArgumentNullException(nameof(targetOperate));
             }
 
-            if (targetOperate.LocalFileInfo.Exists)
-            {
-                throw new InvalidOperationException("目标文件已存在");
-            }
+            //if (targetOperate.LocalFileInfo.Exists)
+            //{
+            //    throw new InvalidOperationException("目标文件已存在");
+            //}
 
-            operate.Move(targetOperate.LocalFileInfo.FilePath);
+            operate.Move(targetOperate.LocalFileInfo.FullPath);
         }
 
 
@@ -51,7 +51,7 @@ namespace ExtenderApp.Data
             //    throw new InvalidOperationException("目标文件已存在");
             //}
 
-            operate.Move(localFileInfo.FilePath);
+            operate.Move(localFileInfo.FullPath);
         }
 
 
@@ -73,7 +73,7 @@ namespace ExtenderApp.Data
                 throw new InvalidOperationException();
             }
 
-            System.IO.File.Move(operate.LocalFileInfo.FilePath, targetPath);
+            System.IO.File.Move(operate.LocalFileInfo.FullPath, targetPath);
         }
 
         #endregion
@@ -92,7 +92,7 @@ namespace ExtenderApp.Data
                 throw new ArgumentNullException(nameof(operate.LocalFileInfo));
             }
 
-            System.IO.File.Delete(operate.LocalFileInfo.FilePath);
+            System.IO.File.Delete(operate.LocalFileInfo.FullPath);
         }
 
         #endregion
@@ -111,7 +111,7 @@ namespace ExtenderApp.Data
                 return false;
             }
 
-            return operate.FileAccess == (FileAccess.ReadWrite | FileAccess.Read);
+            return operate.FileAccess.ToFileAccess() == (FileAccess.ReadWrite | FileAccess.Read);
         }
 
         /// <summary>
@@ -126,7 +126,7 @@ namespace ExtenderApp.Data
                 return false;
             }
 
-            return operate.FileAccess == (FileAccess.ReadWrite | FileAccess.Write);
+            return operate.FileAccess.ToFileAccess() == (FileAccess.ReadWrite | FileAccess.Write);
         }
 
         /// <summary>
@@ -141,7 +141,7 @@ namespace ExtenderApp.Data
                 return false;
             }
 
-            return operate.FileAccess == FileAccess.ReadWrite;
+            return operate.FileAccess.ToFileAccess() == FileAccess.ReadWrite;
         }
 
         #endregion

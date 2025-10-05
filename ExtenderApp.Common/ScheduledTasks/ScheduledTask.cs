@@ -1,11 +1,11 @@
-﻿using ExtenderApp.Data;
+﻿using ExtenderApp.Common.ScheduledTasks;
 
 namespace ExtenderApp.Common
 {
     /// <summary>
     /// 增强型计划任务（支持精确时间补偿）
     /// </summary>
-    public sealed class ScheduledTask : ExtenderCancellationTokenSource
+    public sealed class ScheduledTask : ExtenderOperationController
     {
         #region 内部状态
 

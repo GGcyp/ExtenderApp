@@ -24,5 +24,10 @@ namespace AppHost.Builder
         /// 主机配置信息
         /// </summary>
         IHostEnvironment HostEnvironment { get; }
+
+        /// <summary>
+        /// 程序主线程上下文
+        /// </summary>
+        IMainThreadContext MainThreadContext { get; }
     }
 }

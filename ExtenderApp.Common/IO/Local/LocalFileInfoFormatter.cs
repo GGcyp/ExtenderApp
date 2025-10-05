@@ -17,6 +17,9 @@ namespace ExtenderApp.Common.IO
 
         public override LocalFileInfo Deserialize(ref ExtenderBinaryReader reader)
         {
+            if(TryReadNil(ref reader))
+                return LocalFileInfo.Empty;
+
             var result = _string.Deserialize(ref reader);
             if (string.IsNullOrEmpty(result))
                 return LocalFileInfo.Empty;
@@ -28,17 +31,17 @@ namespace ExtenderApp.Common.IO
         {
             if (value.IsEmpty)
             {
-                _string.Serialize(ref writer, string.Empty);
+                WriteNil(ref writer);
                 return;
             }
-            _string.Serialize(ref writer, value.FilePath);
+            _string.Serialize(ref writer, value.FullPath);
         }
 
         public override long GetLength(LocalFileInfo value)
         {
             if (value.IsEmpty)
                 return 1;
-            return _string.GetLength(value.FilePath);
+            return _string.GetLength(value.FullPath);
         }
     }
 }

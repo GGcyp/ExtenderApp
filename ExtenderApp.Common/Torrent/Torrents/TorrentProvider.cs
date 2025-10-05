@@ -110,7 +110,7 @@ namespace ExtenderApp.Common.Torrent
                 throw new ArgumentException("无法解析Torrent文件内容。");
 
             Torrent torrent = GetTorrent(torrentFile);
-            torrent.InfoNodeParent.TorrentFileInfo = fileOperate.Info.FilePath;
+            torrent.InfoNodeParent.TorrentFileInfo = fileOperate.Info.FullPath;
             return torrent;
         }
 

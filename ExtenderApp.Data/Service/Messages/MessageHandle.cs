@@ -6,7 +6,7 @@ namespace ExtenderApp.Data
     /// 消息订阅句柄，用于标识一次消息订阅。
     /// 包含消息类型和订阅者对象，可用于取消订阅等操作。
     /// </summary>
-    public struct MessageHandle
+    public readonly struct MessageHandle
     {
         /// <summary>
         /// 为空订阅句柄实例。

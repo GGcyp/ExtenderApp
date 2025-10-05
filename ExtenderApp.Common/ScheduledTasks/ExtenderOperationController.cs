@@ -1,9 +1,9 @@
-﻿namespace ExtenderApp.Data
+﻿namespace ExtenderApp.Common.ScheduledTasks
 {
     /// <summary>
-    /// 增强型取消令牌源（线程安全版本）
+    /// 操作控制器（可暂停/恢复/停止，带定时调度，线程安全）。
     /// </summary>
-    public abstract class ExtenderCancellationTokenSource : IDisposable
+    public abstract class ExtenderOperationController : DisposableObject
     {
         #region 线程安全字段
 
@@ -16,11 +16,6 @@
         /// 定时器对象，用于执行定时任务
         /// </summary>
         private Timer? _timer;
-
-        /// <summary>
-        /// 标记对象是否已被释放
-        /// </summary>
-        private volatile int _disposed;
 
         #endregion
 
@@ -104,9 +99,10 @@
         /// <returns>如果对象可操作且操作成功执行，则返回true；否则返回false。</returns>
         protected bool ExecuteIfOperable(Action action)
         {
+            ThrowIfDisposed();
             lock (_syncRoot)
             {
-                if (!_canOperate || _disposed == 1) return false;
+                if (!_canOperate) return false;
 
                 action();
                 return true;
@@ -271,12 +267,9 @@
             }
         }
 
-        /// <summary>
-        /// 释放此实例使用的资源。
-        /// </summary>
-        public void Dispose()
+        protected override void Dispose(bool disposing)
         {
-            if (Interlocked.Exchange(ref _disposed, 1) != 0) return;
+            if (!disposing) return;
 
             lock (_syncRoot)
             {

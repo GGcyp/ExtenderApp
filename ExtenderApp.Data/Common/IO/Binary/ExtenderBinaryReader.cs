@@ -93,6 +93,11 @@ namespace ExtenderApp.Data
         }
 
         /// <summary>
+        /// 获取当前读取器是否为空
+        /// </summary>
+        public bool IsEmpty => reader.Sequence.IsEmpty || Remaining == 0;
+
+        /// <summary>
         /// 使用指定的内存块初始化 <see cref="ExtenderBinaryReader"/> 的新实例
         /// </summary>
         /// <param name="memory">要读取的内存块</param>
@@ -196,7 +201,7 @@ namespace ExtenderApp.Data
         public static implicit operator ExtenderBinaryReader(ExtenderBinaryWriter writer)
         {
             if (writer.IsEmpty)
-                return new ExtenderBinaryReader();
+                return Empty;
 
             writer.Commit();
             return new ExtenderBinaryReader(writer.Rental.Value);

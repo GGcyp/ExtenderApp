@@ -7,7 +7,7 @@ namespace AppHost
     {
         private readonly IHost _host;
 
-        public IServiceProvider Service => _host.Service;
+        public IServiceProvider ServiceProvider => _host.ServiceProvider;
 
         public AppHostApplication(IHost host)
         {
@@ -21,7 +21,7 @@ namespace AppHost
 
         public async Task StartAsync(CancellationToken cancellationToken = default)
         {
-             await _host.StartAsync(cancellationToken).ConfigureAwait(false);
+            await _host.StartAsync(cancellationToken).ConfigureAwait(false);
         }
 
         public async Task StopAsync(CancellationToken cancellationToken = default)

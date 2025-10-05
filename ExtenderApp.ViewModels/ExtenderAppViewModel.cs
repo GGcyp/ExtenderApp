@@ -457,7 +457,9 @@ namespace ExtenderApp.ViewModels
         /// </remarks>
         protected void DispatcherInvoke(Action callback)
         {
-            if (callback is null) return;
+            if (callback is null)
+                return;
+
             ServiceStore.DispatcherService.Invoke(callback);
         }
 
@@ -472,6 +474,21 @@ namespace ExtenderApp.ViewModels
         {
             if (callback is null) return;
             ServiceStore.DispatcherService.BeginInvoke(callback);
+        }
+
+        protected bool CheckAccess()
+        {
+            return ServiceStore.DispatcherService.CheckAccess();
+        }
+
+        protected ExtenderThreadSwitchAwaitable ToMainThreadAsync(CancellationToken token = default)
+        {
+            return ServiceStore.DispatcherService.ToMainThreadAsync(token);
+        }
+
+        protected ExtenderThreadSwitchAwaitable AwayMainThreadAsync(CancellationToken token = default)
+        {
+            return ServiceStore.DispatcherService.AwayMainThreadAsync(token);
         }
 
         #endregion Dispatcher
@@ -499,15 +516,12 @@ namespace ExtenderApp.ViewModels
             Task.Run(async () =>
             {
                 if (CurrrentMainWindow == null) return;
-                DispatcherInvoke(() =>
-                {
-                    CurrrentMainWindow.Topmost = true;
-                });
-                await Task.Delay(300);
-                DispatcherInvoke(() =>
-                {
-                    CurrrentMainWindow.Topmost = false;
-                });
+
+                await ToMainThreadAsync();
+
+                CurrrentMainWindow.Topmost = true;
+                await Task.Delay(300).ConfigureAwait(true);
+                CurrrentMainWindow.Topmost = false;
             });
         }
 

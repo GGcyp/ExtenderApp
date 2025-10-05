@@ -214,9 +214,9 @@ namespace ExtenderApp.Services
             /// <summary>
             /// 将服务添加到插件的作用域
             /// </summary>
-            /// <param name="options">作用域选项</param>
             /// <param name="services">服务集合</param>
-            public void AddServiceToPluginScope(ScopeOptions options, IServiceCollection services)
+            /// <param name="options">作用域选项</param>
+            public void AddServiceToPluginScope(IServiceCollection services, ScopeOptions options)
             {
                 Details.PluginScope = options.ScopeName;
 

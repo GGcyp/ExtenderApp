@@ -24,7 +24,7 @@ namespace ExtenderApp.Common.Networks
 
         private SplitterInfo currentSplitterInfo;
         private LocalFileInfo currentLocalFileInfo;
-        private FileConcurrentOperate currentFileOperate;
+        private FileOperate currentFileOperate;
         private ILinker mainLinker;
         private volatile int isGetFileing;
         private int linkerCount;
