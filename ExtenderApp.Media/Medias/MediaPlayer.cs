@@ -52,7 +52,7 @@ namespace ExtenderApp.FFmpegEngines
         /// <summary>
         /// 播放速率，1表示正常速度，2表示两倍速，0.5表示半速。
         /// </summary>
-        public double RateSpeed { get; set; }
+        public double Rate { get; set; }
 
         /// <summary>
         /// 媒体播放任务。
@@ -109,7 +109,7 @@ namespace ExtenderApp.FFmpegEngines
             Settings = settings;
             settings.VideoScheduling += VideoSchedule;
             settings.AudioScheduling += AudioSchedule;
-            RateSpeed = 1;
+            Rate = 1;
             State = PlayerState.Initializing;
         }
 
@@ -330,7 +330,7 @@ namespace ExtenderApp.FFmpegEngines
                 int waitTime = hasAudio ? audioDelay : frameInterval;
                 Position += waitTime;
                 lastDelay = waitTime;
-                waitTime = (int)(waitTime / RateSpeed);
+                waitTime = (int)(waitTime / Rate);
                 OnPlayback?.Invoke(Position);
 
                 if (waitTime >= SkipWaitingTime)

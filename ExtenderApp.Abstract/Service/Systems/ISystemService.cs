@@ -14,5 +14,13 @@ namespace ExtenderApp.Abstract
         /// 返回 <see cref="IClipboard"/> 接口的实现实例，用于操作剪贴板内容。
         /// </value>
         IClipboard Clipboard { get; }
+
+        /// <summary>
+        /// 获取键盘捕获服务的实例。
+        /// </summary>
+        /// <value>
+        /// 返回 <see cref="IKeyCapture"/> 接口的实现实例，用于捕获和处理键盘输入事件。
+        /// </value>
+        IKeyCapture KeyCapture { get; }
     }
 }

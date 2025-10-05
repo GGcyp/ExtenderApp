@@ -51,12 +51,13 @@ namespace ExtenderApp.Views
         {
             var viewModel = DataContext as IViewModel;
             viewModel?.InjectView(this);
+            viewModel?.Enter(oldViewInfo);
         }
 
         public virtual void Exit(ViewInfo newViewInfo)
         {
             var viewModel = DataContext as IViewModel;
-            viewModel?.Close();
+            viewModel?.Exit(newViewInfo);
         }
 
         public virtual void ShowView(IView view)
@@ -69,7 +70,7 @@ namespace ExtenderApp.Views
 
         public void InjectWindow(IWindow window)
         {
-            throw new NotImplementedException();
+
         }
     }
 }

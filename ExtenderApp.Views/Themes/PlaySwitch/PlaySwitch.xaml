@@ -28,11 +28,11 @@
                               Data="{StaticResource PlayGeometry}"
                               Stretch="Uniform"/>
                     </Grid>
-                    <!--<ControlTemplate.Triggers>
-                    <Trigger Property="IsPaly" Value="True">
-                    <Setter TargetName="Expand"  Property="Data" Value="{StaticResource PauseGeometry}"/>
-                    </Trigger>
-                    </ControlTemplate.Triggers>-->
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsPlay" Value="True">
+                            <Setter TargetName="Expand"  Property="Data" Value="{StaticResource PauseGeometry}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>

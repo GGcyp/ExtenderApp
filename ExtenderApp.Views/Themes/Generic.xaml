@@ -4,5 +4,6 @@
         <ResourceDictionary Source="/ExtenderApp.Views;component/Themes/ExpandSwitchs/ExpandSwitch.xaml" />
         <ResourceDictionary Source="/ExtenderApp.Views;component/Themes/StartSwitch/StartSwitch.xaml"/>
         <ResourceDictionary Source="/ExtenderApp.Views;component/Themes/PlaySwitch/PlaySwitch.xaml"/>
+        <ResourceDictionary Source="/ExtenderApp.Views;component/Themes/SwitchButtons/SwitchButton.xaml"/>
     </ResourceDictionary.MergedDictionaries>
 </ResourceDictionary>

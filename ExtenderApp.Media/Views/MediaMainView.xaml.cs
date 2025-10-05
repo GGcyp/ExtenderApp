@@ -17,7 +17,6 @@ using System.Windows.Navigation;
 using System.Windows.Shapes;
 using ExtenderApp.Abstract;
 using ExtenderApp.Common;
-using ExtenderApp.Data;
 using ExtenderApp.Media.ViewModels;
 using ExtenderApp.Views;
 using ExtenderApp.Views.Animation;
@@ -29,8 +28,6 @@ namespace ExtenderApp.Media
     /// </summary>
     public partial class MediaMainView : ExtenderAppView
     {
-        private bool isUserDragging = false;
-
         public MediaMainView(MediaMainViewModel viewModel) : base(viewModel)
         {
             InitializeComponent();
@@ -68,6 +65,73 @@ namespace ExtenderApp.Media
 
                 //}
             }
+            e.Handled = true;
+        }
+
+        //private void InitInput()
+        //{
+        //    MediaMainViewModel viewModel = ViewModel<MediaMainViewModel>()!;
+        //    //AddKey(viewModel.MediaStateChangeCommand, Key.Space);
+        //    //AddKey(viewModel.FastForwardCommand, Key.Right);
+        //    //AddKey(viewModel.RewindCommand, Key.Left);
+        //}
+
+        bool isRate = false;
+        protected override void OnKeyDown(KeyEventArgs e)
+        {
+            base.OnKeyDown(e);
+            var viewModel = ViewModel<MediaMainViewModel>()!;
+            if (e.Key == Key.Right)
+            {
+                if (e.IsRepeat)
+                {
+                    viewModel.OnRate(2);
+                    isRate = true;
+                }
+            }
+            e.Handled = true;
+        }
+
+        protected override void OnKeyUp(KeyEventArgs e)
+        {
+            base.OnKeyUp(e);
+            var viewModel = ViewModel<MediaMainViewModel>()!;
+            if (e.Key == Key.Left || e.Key == Key.Right)
+            {
+                if (isRate)
+                {
+                    viewModel.OnRate(1);
+                }
+                else
+                {
+                    viewModel.OnReverseOrForward(e.Key == Key.Right);
+                }
+                isRate = false;
+            }
+            e.Handled = true;
+        }
+
+        protected override void OnLoaded()
+        {
+            Focus();
+        }
+
+        protected override void OnGotKeyboardFocus(KeyboardFocusChangedEventArgs e)
+        {
+            base.OnGotKeyboardFocus(e);
+            if (e.NewFocus != this)
+            {
+                Focus();
+                Keyboard.Focus(this);
+                e.Handled = true;
+            }
+        }
+
+        protected override void OnLostKeyboardFocus(KeyboardFocusChangedEventArgs e)
+        {
+            base.OnLostKeyboardFocus(e);
+            Focus();
+            Keyboard.Focus(this);
             e.Handled = true;
         }
 

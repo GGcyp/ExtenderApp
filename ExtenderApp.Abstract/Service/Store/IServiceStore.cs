@@ -60,7 +60,7 @@
         ISystemService SystemService { get; }
 
         /// <summary>
-        /// 消息服1务接口。
+        /// 消息服务接口。
         /// </summary>
         IMessageService MessageService { get; }
     }

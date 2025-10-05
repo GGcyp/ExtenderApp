@@ -28,9 +28,16 @@ namespace ExtenderApp.Abstract
         void Exit(ViewInfo newViewInfo);
 
         /// <summary>
-        /// 关闭资源。
+        /// 当视图加载完成时调用此方法。
+        /// 通常用于初始化数据、注册事件或执行与视图显示相关的操作。
         /// </summary>
-        void Close();
+        void OnViewloaded();
+
+        /// <summary>
+        /// 当视图卸载时调用此方法。
+        /// 通常用于释放资源、注销事件或执行与视图关闭相关的清理操作。
+        /// </summary>
+        void OnViewUnloaded();
     }
 
     /// <summary>

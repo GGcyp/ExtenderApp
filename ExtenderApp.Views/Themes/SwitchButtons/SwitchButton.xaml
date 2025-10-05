@@ -1,0 +1,28 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:local="clr-namespace:ExtenderApp.Views.Themes">
+
+    <Style TargetType="local:SwitchButton">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="local:SwitchButton">
+                    <Grid Background="{TemplateBinding Background}">
+                        <Path x:Name="Expand"
+                              Width="{TemplateBinding Width}"
+                              Height="{TemplateBinding Height}"
+                              Fill="{TemplateBinding Fill}"
+                              Stroke="{TemplateBinding Stroke}"
+                              Data="{Binding DefaultGeometry, RelativeSource={RelativeSource TemplatedParent}}"
+                              Stretch="Uniform" />
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsSwitch" Value="True">
+                            <Setter TargetName="Expand"  Property="Data" Value="{Binding TargetGeometry, RelativeSource={RelativeSource TemplatedParent}}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+</ResourceDictionary>

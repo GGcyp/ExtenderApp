@@ -72,15 +72,21 @@ namespace ExtenderApp.ViewModels
         {
         }
 
-        public virtual void Close()
-        {
-        }
-
         private PluginDetails? GetCurrentPluginDetails()
         {
             if (ServiceStore is IPuginServiceStore store)
                 return store.PuginDetails;
             return null;
+        }
+
+        public virtual void OnViewloaded()
+        {
+
+        }
+
+        public virtual void OnViewUnloaded()
+        {
+
         }
 
         #region Navigate
@@ -609,6 +615,90 @@ namespace ExtenderApp.ViewModels
             ServiceStore.SystemService.Clipboard.SetText(text);
         }
 
+        #region KeyCapture
+
+        /// <summary>
+        /// 启动键盘捕获服务。
+        /// 调用后实现应安装底层钩子或开始监听系统键盘事件。
+        /// </summary>
+        /// <remarks>
+        /// - 若服务已启动，应为幂等操作，不应抛出异常。
+        /// - 回调可能在非 UI 线程触发，请在事件处理器内自行调度到 UI 线程。
+        /// </remarks>
+        protected void StartKeyCapture()
+        {
+            ServiceStore.SystemService.KeyCapture.Start();
+        }
+
+        /// <summary>
+        /// 停止键盘捕获服务。
+        /// 调用后实现应卸载底层钩子或停止监听，但通常保留已注册的回调以便后续再次启动。
+        /// </summary>
+        /// <remarks>
+        /// 若服务未启动，应为幂等操作，不产生副作用。
+        /// </remarks>
+        protected void StopKeyCapture()
+        {
+            ServiceStore.SystemService.KeyCapture.Stop();
+        }
+
+        /// <summary>
+        /// 注册指定键与修饰键组合的“按下/抬起”事件处理器。
+        /// </summary>
+        /// <param name="key">要监听的主键。</param>
+        /// <param name="downHandle">按下事件处理器。</param>
+        /// <param name="upHandler">抬起事件处理器。</param>
+        /// <param name="modifier">匹配所需的修饰键组合（默认无）。</param>
+        /// <remarks>
+        /// - 使用当前 ViewModel 作为订阅者标识，用于后续注销。
+        /// - 同一键与修饰键组合可多次注册，处理器将累加至委托链。
+        /// </remarks>
+        protected void RegisterKeyCapture(Key key, EventHandler<KeyEvent> downHandle, EventHandler<KeyEvent> upHandler, ModifierKeys modifier = ModifierKeys.None)
+        {
+            ServiceStore.SystemService.KeyCapture.Register(key, this, downHandle, upHandler, modifier);
+        }
+
+        /// <summary>
+        /// 仅为指定键注册“按下（KeyDown）”事件处理器。
+        /// </summary>
+        /// <param name="key">要监听的主键。</param>
+        /// <param name="downHandle">按下事件处理器。</param>
+        /// <param name="modifier">匹配所需的修饰键组合（默认无）。</param>
+        protected void RegisterKeyCaptureDown(Key key, EventHandler<KeyEvent> downHandle, ModifierKeys modifier = ModifierKeys.None)
+        {
+            ServiceStore.SystemService.KeyCapture.Register(key, this, downHandle, null, modifier);
+        }
+
+        /// <summary>
+        /// 仅为指定键注册“抬起（KeyUp）”事件处理器。
+        /// </summary>
+        /// <param name="key">要监听的主键。</param>
+        /// <param name="upHandler">抬起事件处理器。</param>
+        /// <param name="modifier">匹配所需的修饰键组合（默认无）。</param>
+        protected void RegisterKeyCaptureUp(Key key, EventHandler<KeyEvent> upHandler, ModifierKeys modifier = ModifierKeys.None)
+        {
+            ServiceStore.SystemService.KeyCapture.Register(key, this, null, upHandler, modifier);
+        }
+
+        /// <summary>
+        /// 注销当前 ViewModel 在某主键上的所有回调（无论修饰键）。
+        /// </summary>
+        /// <param name="key">目标主键。</param>
+        protected void UnRegisterKeyCapture(Key key)
+        {
+            ServiceStore.SystemService.KeyCapture.UnRegister(key, this);
+        }
+
+        /// <summary>
+        /// 注销当前 ViewModel 在所有主键上的所有回调。
+        /// </summary>
+        protected void UnRegisterKeyCapture()
+        {
+            ServiceStore.SystemService.KeyCapture.UnRegister(this);
+        }
+
+        #endregion KeyCapture
+
         #endregion System
 
         #region Message
@@ -833,11 +923,6 @@ namespace ExtenderApp.ViewModels
         {
             // 调用本地数据服务保存数据，同时指定名称和版本
             return ServiceStore.LocalDataService.SaveData(saveName, model, version);
-        }
-
-        public override void Close()
-        {
-            SaveModel();
         }
     }
 }

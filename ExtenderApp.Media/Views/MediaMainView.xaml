@@ -11,18 +11,21 @@
                    mc:Ignorable="d"
                    d:DataContext="{d:DesignInstance Type=vm:MediaMainViewModel}"
                    d:DesignHeight="450" d:DesignWidth="800">
-    <UserControl.Resources>
+    <v:ExtenderAppView.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="/ExtenderApp.Media;component/Themes/Generic.xaml" />
                 <ResourceDictionary Source="/ExtenderApp.Views;component/ViewStyles.xaml" />
+                <ResourceDictionary Source="/ExtenderApp.Views;component/Themes/SwitchButtons/SwitchButton.xaml" />
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
-    </UserControl.Resources>
-    <Grid Background="{DynamicResource GlobalBackgroundBrush}">
+    </v:ExtenderAppView.Resources>
+    <Grid Background="{DynamicResource GlobalBackgroundBrush}"
+          Focusable="False">
         <Grid.RowDefinitions>
             <RowDefinition />
-            <RowDefinition Height="50" />
+            <RowDefinition Height="5" />
+            <RowDefinition Height="80" />
         </Grid.RowDefinitions>
         <Grid>
             <Grid.ColumnDefinitions>
@@ -36,55 +39,79 @@
                 <ContentControl Content="{Binding Model.CurrentVideoListView}" />
             </Grid>
         </Grid>
-        <Grid Grid.Row="1">
-            <Grid.RowDefinitions>
-                <RowDefinition />
-                <RowDefinition />
-            </Grid.RowDefinitions>
-            <Grid Grid.Row="0">
-                <mt:MediaSlider x:Name="mediaSlider"
+        <mt:MediaSlider x:Name="mediaSlider"
+                                Grid.Row="1"
                                 Minimum="0"
                                 Maximum="{Binding Model.TotalTime.TotalSeconds,Mode=OneWay}"
                                 Value="{Binding Model.Position.TotalSeconds,Mode=OneWay}"
                                 TrackHeight="5"
-                                ThumbSize="18"
+                                ThumbSize="0"
                                 ThumbColor="White"
                                 TrackBackground="Transparent"
                                 LeftBackground="LightBlue"
                                 RightBackground="Gray"
-                                Mouse.PreviewMouseDown="mediaSlider_PreviewMouseDown"
                                 Mouse.PreviewMouseUp="mediaSlider_PreviewMouseUp"
                                 Thumb.DragStarted="mediaSlider_DragStarted"
                                 Thumb.DragDelta="mediaSlider_DragDelta"
                                 Thumb.DragCompleted="mediaSlider_DragCompleted"/>
-            </Grid>
-            <Grid Grid.Row="1">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="200" />
-                    <ColumnDefinition />
-                    <ColumnDefinition />
-                </Grid.ColumnDefinitions>
-                <!--视频控制区-->
-                <StackPanel Orientation="Horizontal">
-                    <TextBlock Text="{Binding Model.Position,StringFormat={}{0:hh\\:mm\\:ss}}"
-                               Foreground="{DynamicResource GlobalForegroundBrush}" />
-                    <TextBlock Text="/"
-                               Foreground="{DynamicResource GlobalForegroundBrush}" />
-                    <TextBlock Text="{Binding Model.TotalTime,StringFormat={}{0:hh\\:mm\\:ss}}"
-                               Foreground="{DynamicResource GlobalForegroundBrush}" />
-                </StackPanel>
-                <StackPanel Grid.Column="1" Orientation="Horizontal">
-                    <vt:PlaySwitch Fill="White"
-                                   Command="{Binding MediaStateChangeCommand}"
-                                   Width="20"
-                                   Height="20" />
-                    <Button Content="前进10秒"
-                            Command="{Binding FastForwardCommand}" />
-                    <!--<Button Content="暂停" Command="{Binding PauseCommand}" Width="20" />
-                    <Button Content="停止" Command="{Binding StopCommand}" Width="20" />
-                    <Button Content="快进10秒" Command="{Binding FastForwardCommand}" Width="20" />-->
-                </StackPanel>
-                <mt:MediaSlider x:Name="volumeSlider"
+        <Grid Grid.Row="2" VerticalAlignment="Center">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="200"/>
+                <ColumnDefinition Width="300"/>
+                <ColumnDefinition />
+            </Grid.ColumnDefinitions>
+            <!--视频控制区-->
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                <TextBlock Text="{Binding Model.Position,StringFormat={}{0:hh\\:mm\\:ss}}"
+                           Foreground="{DynamicResource GlobalForegroundBrush}"
+                           FontSize="20"/>
+                <TextBlock Text="/"
+                           Foreground="{DynamicResource GlobalForegroundBrush}" 
+                           FontSize="20"/>
+                <TextBlock Text="{Binding Model.TotalTime,StringFormat={}{0:hh\\:mm\\:ss}}"
+                           Foreground="{DynamicResource GlobalForegroundBrush}" 
+                           FontSize="20"/>
+            </StackPanel>
+            <StackPanel Grid.Column="1"
+                      HorizontalAlignment="Center"
+                      VerticalAlignment="Center"
+                      Orientation="Horizontal">
+                <Button Margin="5 0 0 0"
+                        Command="{Binding StopCommand}"
+                        Width="35"
+                        Height="35"
+                        Padding="0"
+                        Background="Transparent"
+                        HorizontalContentAlignment="Stretch"
+                        VerticalContentAlignment="Stretch">
+                    <Border Background="White"
+                            BorderBrush="White"
+                            BorderThickness="10"
+                            HorizontalAlignment="Stretch"
+                            VerticalAlignment="Stretch"
+                            Height="30"
+                            Width="30"
+                            Margin="0"
+                            CornerRadius="2"/>
+                </Button>
+                <vt:SwitchButton Command="{Binding MediaStateChangeCommand}"
+                                     DefaultGeometry="{DynamicResource PlayGemetry}"
+                                     TargetGeometry="{DynamicResource PauseGemetry}"
+                                     Fill="White"
+                                     Stroke="White"
+                                     Width="60"
+                                     Margin="5 0 0 0"
+                                     Height="50" />
+                <vt:SwitchButton Margin="10 0 0 0"
+                                    Command="{Binding FastForwardCommand}" 
+                                    Fill="White"
+                                    Stroke="White"
+                                    DefaultGeometry="{DynamicResource ForwardGemetry}"
+                                    TargetGeometry="{DynamicResource ForwardGemetry}"
+                                    Width="30"
+                                    Height="30" />
+            </StackPanel>
+            <mt:MediaSlider x:Name="volumeSlider"
                                 Grid.Column="2"
                                 Minimum="0"
                                 Maximum="1"
@@ -99,7 +126,6 @@
                                 TickFrequency="0.01"
                                 HorizontalAlignment="Stretch"
                                 VerticalAlignment="Stretch" />
-            </Grid>
         </Grid>
     </Grid>
 </v:ExtenderAppView>

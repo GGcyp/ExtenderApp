@@ -19,10 +19,17 @@ namespace ExtenderApp.Media.ViewModels
         /// </summary>
         public NoValueCommand MediaStateChangeCommand { get; private set; }
 
+        public NoValueCommand StopCommand { get; private set; }
+
         /// <summary>
         /// 快进命令。
         /// </summary>
         public NoValueCommand FastForwardCommand { get; private set; }
+
+        /// <summary>
+        /// 快退命令。
+        /// </summary>
+        public NoValueCommand RewindCommand { get; private set; }
 
         #endregion
 
@@ -33,8 +40,8 @@ namespace ExtenderApp.Media.ViewModels
             Model.CurrentVideoView = NavigateTo<VideoView>();
             Model.CurrentVideoListView = NavigateTo<VideoListView>();
 
-            MediaStateChangeCommand = new NoValueCommand(OnMediaStateChange);
-            FastForwardCommand = new NoValueCommand(OnFastForward);
+            MediaStateChangeCommand = new(OnMediaStateChange);
+            FastForwardCommand = new(OnFastForward);
 
             OpenFileDialog openFileDialog = new OpenFileDialog
             {
@@ -43,19 +50,43 @@ namespace ExtenderApp.Media.ViewModels
                 Multiselect = true
             };
             openFileDialog.ShowDialog();
-            Model.SelectedVideoInfo = new MediaInfo(new Uri(openFileDialog.FileName));
+            try
+            {
+                Model.SelectedVideoInfo = new MediaInfo(new Uri(openFileDialog.FileName));
+
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show("未选择文件或选择的文件无法打开！" + ex.Message);
+                return;
+            }
             var player = _engine.OpenMedia(Model.SelectedVideoInfo.MediaUri);
             Model.SetPlayer(player);
+
+            RegisterKeyCaptureDown(Data.Key.Space, (s, e) => OnMediaStateChange());
+            StartKeyCapture();
         }
 
-        private void OnFastForward()
+        public void OnFastForward()
         {
-            Model.Seek(Model.Position + TimeSpan.FromSeconds(10));
+            Model.Seek(Model.Position + TimeSpan.FromSeconds(Model.JumpTime));
+        }
+
+        public void OnReverseOrForward(bool isForward)
+        {
+            TimeSpan jumpTime = TimeSpan.FromSeconds(Model.JumpTime);
+            TimeSpan targetTime = isForward ? Model.Position + jumpTime : Model.Position - jumpTime;
+            Model.Seek(targetTime);
+        }
+
+        internal void OnRate(double rate)
+        {
+            Model.Rate = rate;
         }
 
         private void OnMediaStateChange()
         {
-            if (Model.SelectedVideoInfo == null || Model.MPlayer == null)
+             if (Model.SelectedVideoInfo == null || Model.MPlayer == null)
             {
                 return;
             }

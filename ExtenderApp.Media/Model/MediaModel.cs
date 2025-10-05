@@ -47,6 +47,24 @@ namespace ExtenderApp.Media.Models
             }
         }
 
+        private double rate;
+        public double Rate
+        {
+            get => rate;
+            set
+            {
+                if (MPlayer != null)
+                {
+                    MPlayer.Rate = value;
+                }
+                if (APlayer != null)
+                {
+                    APlayer.Tempo = value;
+                }
+                rate = value;
+            }
+        }
+
         /// <summary>
         /// 是否记录观看时间
         /// </summary>
@@ -58,7 +76,7 @@ namespace ExtenderApp.Media.Models
         public bool VideoNotExist { get; set; }
 
         /// <summary>
-        /// 当前时间
+        /// 播放进度
         /// </summary>
         public TimeSpan Position { get; set; }
 
@@ -72,10 +90,14 @@ namespace ExtenderApp.Media.Models
         /// </summary>
         public bool IsSeeking { get; set; }
 
+        public int JumpTime { get; set; }
+
         public MediaModel()
         {
             _videoFrameAction = OnVideoFrame;
             _playbackAction = OnPlayback;
+            JumpTime = 10;
+            rate = 1.0;
         }
 
         protected override void Init(IPuginServiceStore store)
@@ -122,6 +144,8 @@ namespace ExtenderApp.Media.Models
 
         public void Stop()
         {
+            if (MPlayer == null) return;
+
             MPlayer?.Stop();
             APlayer?.Stop();
         }
@@ -133,8 +157,12 @@ namespace ExtenderApp.Media.Models
 
         public void Seek(long position, bool auotPlay = true)
         {
+            if (MPlayer == null) return;
+
             if (position > TotalTime.TotalMilliseconds)
                 position = (long)TotalTime.TotalMilliseconds;
+            else if (position < 0)
+                position = 0;
 
             APlayer?.Pause();
 
@@ -150,6 +178,18 @@ namespace ExtenderApp.Media.Models
 
                 Play();
             });
+        }
+
+        public void Forward(double rate)
+        {
+            if (MPlayer == null) return;
+
+            MPlayer.Rate = rate;
+
+            if (APlayer != null)
+            {
+                APlayer.Tempo = rate;
+            }
         }
 
         private void OnVideoFrame(VideoFrame frame)
