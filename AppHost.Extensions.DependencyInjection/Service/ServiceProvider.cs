@@ -7,7 +7,7 @@ namespace AppHost.Extensions.DependencyInjection
     /// <summary>
     /// 服务提供者类，用于实现IServiceProvider接口，提供依赖注入服务。
     /// </summary>
-    internal class ServiceProvider : IServiceProvider, IDisposable
+    internal class ServiceProvider : IServiceProvider, IDisposable, IAsyncDisposable
     {
         /// <summary>
         /// 所有依赖注入关系字典
@@ -22,6 +22,7 @@ namespace AppHost.Extensions.DependencyInjection
         public ServiceProvider(IServiceCollection services)
         {
             services.AddSingleton<IServiceProvider>(this);
+            services.AddSingleton(this.CreateCloser());
             _serviceDescriptorDict = services.ToDictionary(sd => sd.ServiceType, sd => sd).ToFrozenDictionary();
             _serviceConstructorDetailsDict = new();
         }
@@ -233,7 +234,56 @@ namespace AppHost.Extensions.DependencyInjection
 
         public virtual void Dispose()
         {
+            foreach (var item in _serviceConstructorDetailsDict.Values)
+            {
+                var instance = item.ServiceInstance;
+                switch (instance)
+                {
+                    case null:
+                        continue;
+                    case IDisposable disposable:
+                        disposable.Dispose();
+                        break;
+                    case IAsyncDisposable asyncDisposable:
+                        // 同步上下文下优先保证资源释放到位
+                        asyncDisposable.DisposeAsync().AsTask().GetAwaiter().GetResult();
+                        break;
+                }
+            }
             _serviceConstructorDetailsDict.Clear();
+            GC.SuppressFinalize(this);
+        }
+
+        public async ValueTask DisposeAsync()
+        {
+            List<Task>? asyncTasks = null;
+
+            foreach (var item in _serviceConstructorDetailsDict.Values)
+            {
+                var instance = item.ServiceInstance;
+                if (instance is null) continue;
+
+                if (instance is IAsyncDisposable asyncDisposable)
+                {
+                    var vt = asyncDisposable.DisposeAsync();
+                    if (!vt.IsCompletedSuccessfully)
+                    {
+                        (asyncTasks ??= new List<Task>()).Add(vt.AsTask());
+                    }
+                }
+                else if (instance is IDisposable disposable)
+                {
+                    disposable.Dispose();
+                }
+            }
+
+            if (asyncTasks is not null)
+            {
+                await Task.WhenAll(asyncTasks);
+            }
+
+            _serviceConstructorDetailsDict.Clear();
+            GC.SuppressFinalize(this);
         }
     }
 }

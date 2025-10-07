@@ -1,8 +1,4 @@
-﻿using System.Diagnostics;
-using AppHost;
-using AppHost.Builder;
-using AppHost.Extensions.DependencyInjection;
-using ExtenderApp.Abstract;
+﻿
 
 namespace ExtenderApp
 {

@@ -11,10 +11,12 @@ namespace AppHost.Extensions.DependencyInjection
         /// 主作用域的提供者
         /// </summary>
         private readonly ServiceProvider _serviceProvider;
+
         /// <summary>
         /// 作用域执行器
         /// </summary>
         private readonly IScopeExecutor _scopeExecutor;
+
         /// <summary>
         /// 作用域选项
         /// </summary>
@@ -162,13 +164,6 @@ namespace AppHost.Extensions.DependencyInjection
             foreach (var scope in ScopeOptions.ReloScopes)
             {
                 _scopeExecutor.UnLoadScope(scope);
-            }
-            foreach (var item in _serviceConstructorDetailsDict.Values)
-            {
-                if (item.ServiceInstance is IDisposable disposable)
-                {
-                    disposable.Dispose();
-                }
             }
         }
     }

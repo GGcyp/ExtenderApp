@@ -29,7 +29,7 @@ namespace AppHost.Builder.Extensions
         /// <param name="callback">可选的回调函数，用于配置作用域选项和服务集合。</param>
         /// <returns>加载的启动类实例，如果未找到匹配的启动类则返回 null。</returns>
         /// <exception cref="ArgumentNullException">如果 assembly 参数为 null，则抛出此异常。</exception>
-        public static TStartup? LoadScope<TStartup>(this IScopeExecutor executor, string assemblyPath, Action<ScopeOptions, IServiceCollection> callback = null) where TStartup : ScopeStartup
+        public static TStartup? LoadScope<TStartup>(this IScopeExecutor executor, string assemblyPath, Action<IServiceCollection, ScopeOptions> callback = null) where TStartup : ScopeStartup
         {
             var assembly = Assembly.LoadFrom(assemblyPath);
             return executor.LoadScope<TStartup>(assembly, callback);
@@ -44,7 +44,7 @@ namespace AppHost.Builder.Extensions
         /// <param name="callback">可选的回调函数，用于配置作用域选项和服务集合。</param>
         /// <returns>加载的启动类实例，如果未找到匹配的启动类则返回 null。</returns>
         /// <exception cref="ArgumentNullException">如果 assembly 参数为 null，则抛出此异常。</exception>
-        public static TStartup? LoadScope<TStartup>(this IScopeExecutor executor, Assembly assembly, Action<ScopeOptions, IServiceCollection> callback = null) where TStartup : ScopeStartup
+        public static TStartup? LoadScope<TStartup>(this IScopeExecutor executor, Assembly assembly, Action<IServiceCollection, ScopeOptions> callback = null) where TStartup : ScopeStartup
         {
             if (assembly == null) throw new ArgumentNullException(nameof(assembly));
             var startType = assembly.GetTypes().FirstOrDefault(t => !t.IsAbstract && ScopeStartup.Type.IsAssignableFrom(t));
@@ -56,8 +56,8 @@ namespace AppHost.Builder.Extensions
             startup.AddService(services);
             ScopeOptions options = new ScopeOptions();
             startup.ConfigureScopeOptions(options);
-            callback?.Invoke(options, services);
-            executor.LoadScope(options, services);
+            callback?.Invoke(services, options);
+            executor.LoadScope(services, options);
 
             return startup;
         }

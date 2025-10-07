@@ -12,6 +12,7 @@ namespace ExtenderApp
         private readonly AppHostBuilder _builder;
         private AppHostApplication application;
         private ILogingService logingService;
+        private IServiceProvider serviceProvider;
 
         public ExtenderApplication_WPF()
         {
@@ -27,6 +28,7 @@ namespace ExtenderApp
             application = _builder.Builde();
             DebugMessage($"生成服务成功 : {DateTime.Now}");
 
+            serviceProvider = application.ServiceProvider;
             logingService = application.ServiceProvider.GetRequiredService<ILogingService>();
             application.Run();
             sw.Stop();
@@ -51,6 +53,7 @@ namespace ExtenderApp
         {
             base.OnExit(e);
             application.StopAsync().ConfigureAwait(false);
+            serviceProvider.GetRequiredService<IServiceProviderCloser>().DisposeAsync().ConfigureAwait(false);
         }
 
         public void Eorrer(Exception ex)

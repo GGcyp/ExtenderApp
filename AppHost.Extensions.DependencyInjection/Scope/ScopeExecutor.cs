@@ -22,7 +22,7 @@ namespace AppHost.Extensions.DependencyInjection
             _scopesProviderDict = new();
         }
 
-        public void LoadScope(ScopeOptions options, IServiceCollection collection)
+        public void LoadScope(IServiceCollection collection, ScopeOptions options)
         {
             if (_scopesProviderDict.ContainsKey(options.ScopeName))
             {
@@ -35,13 +35,13 @@ namespace AppHost.Extensions.DependencyInjection
 
         public void UnLoadScope(string scope)
         {
-            if(string.IsNullOrEmpty(scope))
+            if (string.IsNullOrEmpty(scope))
             {
                 return;
             }
 
             _scopesProviderDict.Remove(scope, out var scopeService);
-            scopeService?.Dispose();
+            scopeService?.DisposeAsync().ConfigureAwait(false);
         }
 
         public IScopeServiceProvider? GetServiceProvider(string scope)
