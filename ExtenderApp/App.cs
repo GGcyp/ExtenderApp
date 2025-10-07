@@ -1,15 +1,21 @@
 ﻿using System.Windows;
+using AppHost.Extensions.Hosting;
 
 namespace ExtenderApp
 {
     internal class App : Application
     {
+        private IMainThreadContext? mainThreadContext;
+
+        public App(IMainThreadContext? mainThreadContext)
+        {
+            this.mainThreadContext = mainThreadContext;
+        }
+
         protected override void OnStartup(StartupEventArgs e)
         {
-            //this.Resources.MergedDictionaries.Add(new() { Source = new("pack://application:,,,/HandyControl;component/Themes/SkinDefault.xaml") });
-            //this.Resources.MergedDictionaries.Add(new() { Source = new("pack://application:,,,/HandyControl;component/Themes/Theme.xaml") });
-            //this.Resources.MergedDictionaries.Add(new() { Source = new("pack://application:,,,/MainApp.Mods.PPR;PPRDictionary.xaml") });
-            Resources.MergedDictionaries.Add(new() { Source = new("pack://application:,,,/ExtenderApp.Views;component/Themes/Global/DarkTheme.xaml") });
+            mainThreadContext.InitMainThreadContext();
+            //Resources.MergedDictionaries.Add(new() { Source = new("pack://application:,,,/ExtenderApp.Views;component/Themes/Global/DarkTheme.xaml") });
         }
     }
 }

@@ -6,39 +6,37 @@ namespace AppHost.Extensions.Hosting
     {
         private readonly IServiceCollection _serviceDescriptors;
 
-        private IServiceProvider m_ServiceProvider;
-        private HostedServiceExecutor? m_hostedServiceExecutor;
+        private HostedServiceExecutor? hostedServiceExecutor;
 
-        public IServiceProvider Service => m_ServiceProvider;
+        public IServiceProvider ServiceProvider { get; private set; }
 
         public Host(IServiceCollection services)
         {
             _serviceDescriptors = services;
-            m_ServiceProvider = _serviceDescriptors.BuildServiceProvider();
-
-            m_hostedServiceExecutor = m_ServiceProvider.GetService<HostedServiceExecutor>();
+            ServiceProvider = _serviceDescriptors.BuildServiceProvider();
+            hostedServiceExecutor = ServiceProvider.GetService<HostedServiceExecutor>();
         }
 
         public async Task StartAsync(CancellationToken cancellationToken = default)
         {
-            if (m_hostedServiceExecutor != null)
+            if (hostedServiceExecutor != null)
             {
-                await m_hostedServiceExecutor.StartAsync(cancellationToken);
+                await hostedServiceExecutor.StartAsync(cancellationToken);
             }
         }
 
         public async Task StopAsync(CancellationToken cancellationToken = default)
         {
-            if (m_hostedServiceExecutor != null)
+            if (hostedServiceExecutor != null)
             {
-                await m_hostedServiceExecutor.StopAsync(cancellationToken);
+                await hostedServiceExecutor.StopAsync(cancellationToken);
             }
         }
 
         public void Dispose()
         {
-            m_hostedServiceExecutor?.Dispose();
-            m_ServiceProvider = null;
+            hostedServiceExecutor?.Dispose();
+            ServiceProvider = null;
         }
     }
 }

@@ -17,10 +17,13 @@ namespace AppHost.Builder
 
         public IHostEnvironment HostEnvironment { get; }
 
+        public IMainThreadContext Context { get; }
+
         public AppHostBuilder()
         {
             Services = ServiceBuilder.CreateServiceCollection();
             HostEnvironment = HostEnvironmentBuilder.CreateEnvironment();
+            Context = HostEnvironmentBuilder.CreateMainThreadContext();
             Properties = new Dictionary<object, object>();
 
             AddHostService();
@@ -33,6 +36,7 @@ namespace AppHost.Builder
         {
             Services.AddSingleton(Services);
             Services.AddSingleton(HostEnvironment);
+            Services.AddSingleton(Context);
 
             this.AddHostedServiceExecutor();
             this.AddScopeExecutor();

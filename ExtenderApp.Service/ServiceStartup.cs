@@ -17,6 +17,7 @@ namespace ExtenderApp.Services
         {
             services.AddSingleton<IServiceStore, ServiceStore>();
             services.AddSingleton<INavigationService, NavigationService>();
+            services.AddSingleton<IDispatcherService, DispatcherService>();
             services.AddSingleton<ICacheService, CacheService>();
             services.AddSingleton<ILogingService, LoggingService>();
             services.AddSingleton<IPathService, PathService>();

@@ -116,16 +116,16 @@ namespace ExtenderApp.MainViews.ViewModels
                 // 清除当前插件详细信息
                 Model.CurrentPluginDetails = null;
                 // 使用 DispatcherService 在 UI 线程上执行操作
-                DispatcherInvoke(() =>
-                {
-                    // 导航到 MainView 并设置为当前主视图
-                    Model.CurrentMainView = NavigateTo<MainView>(Model.CurrentView);
 
-                    // 当过场动画结束时，将当前过场动画视图设置为 null
-                    cutscene.End(() =>
-                    {
-                        Model.CurrentCutsceneView = null;
-                    });
+                await ToMainThreadAsync();
+
+                // 导航到 MainView 并设置为当前主视图
+                Model.CurrentMainView = NavigateTo<MainView>(Model.CurrentView);
+
+                // 当过场动画结束时，将当前过场动画视图设置为 null
+                cutscene.End(() =>
+                {
+                    Model.CurrentCutsceneView = null;
                 });
             });
         }

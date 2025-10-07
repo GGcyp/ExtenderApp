@@ -1,28 +1,20 @@
-﻿
+﻿using System.Reflection;
 
 namespace AppHost.Extensions.Hosting
 {
     internal class HostEnvironment : IHostEnvironment
     {
-        private string _applicationName;
-        public string ApplicationName
-        {
-            get => _applicationName;
-            set => _applicationName = value;
-        }
+        public string ApplicationName { get; set; }
 
-        private string _contentRootPath;
-        public string ContentRootPath
-        {
-            get => _contentRootPath;
-            set => _contentRootPath = value;
-        }
+        public string ContentRootPath { get; set; }
 
-        private string _environmentName;
-        public string EnvironmentName
+        public string EnvironmentName { get; set; }
+
+        public HostEnvironment(string applicationName, string contentRootPath, string environmentName)
         {
-            get => _environmentName;
-            set => _environmentName = value;
+            ApplicationName = applicationName;
+            ContentRootPath = contentRootPath;
+            EnvironmentName = environmentName;
         }
     }
 }

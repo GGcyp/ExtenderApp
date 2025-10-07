@@ -18,9 +18,9 @@ namespace ExtenderApp
             Stopwatch sw = new Stopwatch();
             sw.Start();
             DebugMessage($"开始启动 : {DateTime.Now}");
-            app = new App();
 
             var builder = AppHostApplication.CreateBuilder();
+            app = new App(builder.Context);
 
             //builder.FindStarupForFolder(AppSetting.AppBinFolderName);
             builder.LoadAssembliesForFolder("pack");
@@ -31,7 +31,7 @@ namespace ExtenderApp
             application = builder.Builde();
             DebugMessage($"生成服务成功 : {DateTime.Now}");
 
-            ILogingService? logingService = application.Service.GetService<ILogingService>();
+            ILogingService? logingService = application.ServiceProvider.GetService<ILogingService>();
             try
             {
                 sw.Stop();

@@ -52,7 +52,6 @@
                                 TrackBackground="Transparent"
                                 LeftBackground="LightBlue"
                                 RightBackground="Gray"
-                                Mouse.PreviewMouseDown="mediaSlider_PreviewMouseDown"
                                 Mouse.PreviewMouseUp="mediaSlider_PreviewMouseUp"
                                 Thumb.DragStarted="mediaSlider_DragStarted"
                                 Thumb.DragDelta="mediaSlider_DragDelta"
