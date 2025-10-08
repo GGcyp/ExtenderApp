@@ -1,4 +1,5 @@
-﻿using System.Reflection;
+﻿using System.Collections;
+using System.Reflection;
 
 namespace AppHost.Extensions.DependencyInjection
 {
@@ -43,18 +44,26 @@ namespace AppHost.Extensions.DependencyInjection
                 // 使用反射创建 List<T> 的实例
                 object listInstance = Activator.CreateInstance(listType);
                 //向 List<T> 添加元素（使用反射调用 Add 方法）
-                MethodInfo addMethod = listType.GetMethod("Add");
-
+                //MethodInfo addMethod = listType.GetMethod("Add");
+                //var collection = p.GetRequiredService<IServiceCollection>();
+                //object?[] objects = new object?[1];
+                //foreach (var item in collection)
+                //{
+                //    if (elementType.IsAssignableFrom(item.ServiceType))
+                //    {
+                //        objects[0] = p.GetRequiredService(item.ServiceType);
+                //        addMethod!.Invoke(listInstance, objects);
+                //    }
+                //}
 
                 var collection = p.GetRequiredService<IServiceCollection>();
-
-                object?[] objects = new object?[1];
+                IList list = listInstance as IList;
                 foreach (var item in collection)
                 {
                     if (elementType.IsAssignableFrom(item.ServiceType))
                     {
-                        objects[0] = p.GetRequiredService(item.ServiceType);
-                        addMethod!.Invoke(listInstance, objects);
+                        var t = p.GetRequiredService(item.ServiceType);
+                        list.Add(t);
                     }
                 }
 
@@ -83,17 +92,28 @@ namespace AppHost.Extensions.DependencyInjection
                 // 使用反射创建 List<T> 的实例
                 object listInstance = Activator.CreateInstance(listType);
                 //向 List<T> 添加元素（使用反射调用 Add 方法）
-                MethodInfo addMethod = listType.GetMethod("Add");
+                //MethodInfo addMethod = listType.GetMethod("Add");
+
+                //var collection = p.GetRequiredService<IServiceCollection>();
+
+                //object?[] objects = new object?[1];
+                //foreach (var item in collection)
+                //{
+                //    if (elementType.IsAssignableFrom(item.ServiceType))
+                //    {
+                //        objects[0] = p.GetRequiredService(item.ServiceType);
+                //        addMethod!.Invoke(listInstance, objects);
+                //    }
+                //}
 
                 var collection = p.GetRequiredService<IServiceCollection>();
-
-                object?[] objects = new object?[1];
+                IList list = listInstance as IList;
                 foreach (var item in collection)
                 {
                     if (elementType.IsAssignableFrom(item.ServiceType))
                     {
-                        objects[0] = p.GetRequiredService(item.ServiceType);
-                        addMethod!.Invoke(listInstance, objects);
+                        var t = p.GetRequiredService(item.ServiceType);
+                        list.Add(t);
                     }
                 }
 
