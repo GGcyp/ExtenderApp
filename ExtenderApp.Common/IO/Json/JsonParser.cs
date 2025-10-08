@@ -100,22 +100,22 @@ namespace ExtenderApp.Common.IO
         }
 
 
-        public async ValueTask<T?> ReadAsync<T>(FileOperateInfo operate)
-        {
-            //var jsonOptions = options as JsonSerializerOptions ?? _jsonSerializerOptions;
-            var jsonOptions = _jsonSerializerOptions;
-            T? result = default;
-            using (FileStream stream = operate.OpenFile())
-            {
-                result = await JsonSerializer.DeserializeAsync<T>(stream, jsonOptions);
-            }
-            return result;
-        }
+        //public async ValueTask<T?> ReadAsync<T>(FileOperateInfo operate)
+        //{
+        //    //var jsonOptions = options as JsonSerializerOptions ?? _jsonSerializerOptions;
+        //    var jsonOptions = _jsonSerializerOptions;
+        //    T? result = default;
+        //    using (FileStream stream = operate.OpenFile())
+        //    {
+        //        result = await JsonSerializer.DeserializeAsync<T>(stream, jsonOptions);
+        //    }
+        //    return result;
+        //}
 
-        public ValueTask<T?> ReadAsync<T>(ExpectLocalFileInfo info)
-        {
-            return ReadAsync<T>(info.CreateFileOperate(FileExtensions.JsonFileExtensions));
-        }
+        //public ValueTask<T?> ReadAsync<T>(ExpectLocalFileInfo info)
+        //{
+        //    return ReadAsync<T>(info.CreateFileOperate(FileExtensions.JsonFileExtensions));
+        //}
 
         #endregion
 
@@ -129,23 +129,23 @@ namespace ExtenderApp.Common.IO
             return JsonSerializer.Serialize(value, jsonOptions);
         }
 
-        public async ValueTask<bool> WriteAsync<T>(FileOperateInfo operate, T value)
-        {
-            try
-            {
-                //var jsonOptions = options as JsonSerializerOptions ?? _jsonSerializerOptions;
-                var jsonOptions = _jsonSerializerOptions;
-                using (FileStream stream = operate.OpenFile())
-                {
-                    await JsonSerializer.SerializeAsync(stream, value, jsonOptions);
-                }
-                return true; // 表示序列化成功
-            }
-            catch (Exception ex)
-            {
-                throw;
-            }
-        }
+        //public async ValueTask<bool> WriteAsync<T>(FileOperateInfo operate, T value)
+        //{
+        //    try
+        //    {
+        //        //var jsonOptions = options as JsonSerializerOptions ?? _jsonSerializerOptions;
+        //        var jsonOptions = _jsonSerializerOptions;
+        //        using (FileStream stream = operate.OpenFile())
+        //        {
+        //            await JsonSerializer.SerializeAsync(stream, value, jsonOptions);
+        //        }
+        //        return true; // 表示序列化成功
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        throw;
+        //    }
+        //}
 
         //public override T? Read<T>(ExpectLocalFileInfo info, IFileOperate fileOperate = null) where T : default
         //{
@@ -175,34 +175,32 @@ namespace ExtenderApp.Common.IO
             jsonFileInfo.Delete();
         }
 
-
-
-        public override void ReadAsync<T>(ExpectLocalFileInfo info, Action<T?> callback) where T : default
+        public override Task<T?> ReadAsync<T>(ExpectLocalFileInfo info) where T : default
         {
             throw new NotImplementedException();
         }
 
-        public override void ReadAsync<T>(FileOperateInfo info, Action<T?> callback) where T : default
+        public override Task<T?> ReadAsync<T>(FileOperateInfo info) where T : default
         {
             throw new NotImplementedException();
         }
 
-        public override void ReadAsync<T>(IFileOperate fileOperate, Action<T?> callback) where T : default
+        public override Task<T?> ReadAsync<T>(IFileOperate fileOperate) where T : default
         {
             throw new NotImplementedException();
         }
 
-        public override void ReadAsync<T>(ExpectLocalFileInfo info, long position, int length, Action<T?> callback) where T : default
+        public override Task<T?> ReadAsync<T>(ExpectLocalFileInfo info, long position, int length) where T : default
         {
             throw new NotImplementedException();
         }
 
-        public override void ReadAsync<T>(FileOperateInfo info, long position, int length, Action<T?> callback) where T : default
+        public override Task<T?> ReadAsync<T>(FileOperateInfo info, long position, int length) where T : default
         {
             throw new NotImplementedException();
         }
 
-        public override void ReadAsync<T>(IFileOperate fileOperate, long position, int length, Action<T?> callback) where T : default
+        public override Task<T?> ReadAsync<T>(IFileOperate fileOperate, long position, int length) where T : default
         {
             throw new NotImplementedException();
         }
@@ -227,42 +225,35 @@ namespace ExtenderApp.Common.IO
             throw new NotImplementedException();
         }
 
-        public override void WriteAsync<T>(ExpectLocalFileInfo info, T value, Action? callback = null)
+        public override Task WriteAsync<T>(ExpectLocalFileInfo info, T value)
         {
             throw new NotImplementedException();
         }
 
-        public override void WriteAsync<T>(FileOperateInfo info, T value, Action? callback = null)
+        public override Task WriteAsync<T>(FileOperateInfo info, T value)
         {
             throw new NotImplementedException();
         }
 
-        public override void WriteAsync<T>(IFileOperate fileOperate, T value, Action? callback = null)
+        public override Task WriteAsync<T>(IFileOperate fileOperate, T value)
         {
             throw new NotImplementedException();
         }
 
-        public override void WriteAsync<T>(ExpectLocalFileInfo info, T value, long position, Action? callback = null)
+        public override Task WriteAsync<T>(ExpectLocalFileInfo info, T value, long position)
         {
             throw new NotImplementedException();
         }
 
-        public override void WriteAsync<T>(FileOperateInfo info, T value, long position, Action? callback = null)
+        public override Task WriteAsync<T>(FileOperateInfo info, T value, long position)
         {
             throw new NotImplementedException();
         }
 
-        public override void WriteAsync<T>(IFileOperate fileOperate, T value, long position, Action? callback = null)
+        public override Task WriteAsync<T>(IFileOperate fileOperate, T value, long position)
         {
             throw new NotImplementedException();
         }
-
-
-        //public override T? Read<T>(ExpectLocalFileInfo info) where T : default
-        //{
-        //    throw new NotImplementedException();
-        //}
-
 
         #endregion
     }

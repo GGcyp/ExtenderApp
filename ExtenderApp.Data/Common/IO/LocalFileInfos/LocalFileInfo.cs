@@ -65,6 +65,10 @@ namespace ExtenderApp.Data
         /// </summary>
         public bool Exists => FileInfo.Exists;
 
+        /// <summary>
+        /// 文件长度（单位：字节）
+        /// </summary>
+        public long Length => FileInfo.Length;
 
         /// <summary>
         /// 判断这个本地文件信息结构体是否为空

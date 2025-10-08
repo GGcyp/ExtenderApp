@@ -76,7 +76,7 @@ namespace ExtenderApp.Abstract
         /// <remarks>
         /// 提供了多种重载方式，以支持不同类型的文件信息和读取参数。
         /// </remarks>
-        void ReadAsync<T>(ExpectLocalFileInfo info, Action<T?> callback);
+        Task<T?> ReadAsync<T>(ExpectLocalFileInfo info);
 
         /// <summary>
         /// 异步读取文件内容。
@@ -84,7 +84,7 @@ namespace ExtenderApp.Abstract
         /// <typeparam name="T">回调参数的类型。</typeparam>
         /// <param name="info">文件操作信息。</param>
         /// <param name="callback">读取完成后的回调函数，参数为读取结果。</param>
-        void ReadAsync<T>(FileOperateInfo info, Action<T?> callback);
+        Task<T?> ReadAsync<T>(FileOperateInfo info);
 
         /// <summary>
         /// 异步读取文件内容。
@@ -92,7 +92,7 @@ namespace ExtenderApp.Abstract
         /// <typeparam name="T">回调参数的类型。</typeparam>
         /// <param name="fileOperate">并发文件操作接口。</param>
         /// <param name="callback">读取完成后的回调函数，参数为读取结果。</param>
-        void ReadAsync<T>(IFileOperate fileOperate, Action<T?> callback);
+        Task<T?> ReadAsync<T>(IFileOperate fileOperate);
 
         /// <summary>
         /// 异步读取文件内容，支持指定起始位置和长度。
@@ -102,7 +102,7 @@ namespace ExtenderApp.Abstract
         /// <param name="position">读取起始位置。</param>
         /// <param name="length">读取长度。</param>
         /// <param name="callback">读取完成后的回调函数，参数为读取结果。</param>
-        void ReadAsync<T>(ExpectLocalFileInfo info, long position, int length, Action<T?> callback);
+        Task<T?> ReadAsync<T>(ExpectLocalFileInfo info, long position, int length);
 
         /// <summary>
         /// 异步读取文件内容，支持指定起始位置和长度。
@@ -112,7 +112,7 @@ namespace ExtenderApp.Abstract
         /// <param name="position">读取起始位置。</param>
         /// <param name="length">读取长度。</param>
         /// <param name="callback">读取完成后的回调函数，参数为读取结果。</param>
-        void ReadAsync<T>(FileOperateInfo info, long position, int length, Action<T?> callback);
+        Task<T?> ReadAsync<T>(FileOperateInfo info, long position, int length);
 
         /// <summary>
         /// 异步读取文件内容，支持指定起始位置和长度。
@@ -122,7 +122,7 @@ namespace ExtenderApp.Abstract
         /// <param name="position">读取起始位置。</param>
         /// <param name="length">读取长度。</param>
         /// <param name="callback">读取完成后的回调函数，参数为读取结果。</param>
-        void ReadAsync<T>(IFileOperate fileOperate, long position, int length, Action<T?> callback);
+        Task<T?> ReadAsync<T>(IFileOperate fileOperate, long position, int length);
 
         #endregion
 
@@ -190,7 +190,7 @@ namespace ExtenderApp.Abstract
         /// <param name="info">文件信息对象。</param>
         /// <param name="value">要写入的数据。</param>
         /// <param name="callback">写入完成后的回调函数，可以为null。</param>
-        void WriteAsync<T>(ExpectLocalFileInfo info, T value, Action? callback = null);
+        Task WriteAsync<T>(ExpectLocalFileInfo info, T value);
 
         /// <summary>
         /// 异步写入数据到文件。
@@ -199,7 +199,7 @@ namespace ExtenderApp.Abstract
         /// <param name="info">文件操作信息对象。</param>
         /// <param name="value">要写入的数据。</param>
         /// <param name="callback">写入完成后的回调函数，可以为null。</param>
-        void WriteAsync<T>(FileOperateInfo info, T value, Action? callback = null);
+        Task WriteAsync<T>(FileOperateInfo info, T value);
 
         /// <summary>
         /// 异步写入数据到文件。
@@ -208,7 +208,7 @@ namespace ExtenderApp.Abstract
         /// <param name="fileOperate">并发操作接口。</param>
         /// <param name="value">要写入的数据。</param>
         /// <param name="callback">写入完成后的回调函数，可以为null。</param>
-        void WriteAsync<T>(IFileOperate fileOperate, T value, Action? callback = null);
+        Task WriteAsync<T>(IFileOperate fileOperate, T value);
 
         /// <summary>
         /// 异步写入数据到文件的指定位置。
@@ -218,7 +218,7 @@ namespace ExtenderApp.Abstract
         /// <param name="value">要写入的数据。</param>
         /// <param name="position">写入的位置。</param>
         /// <param name="callback">写入完成后的回调函数，可以为null。</param>
-        void WriteAsync<T>(ExpectLocalFileInfo info, T value, long position, Action? callback = null);
+        Task WriteAsync<T>(ExpectLocalFileInfo info, T value, long position);
 
         /// <summary>
         /// 异步写入数据到文件的指定位置。
@@ -228,7 +228,7 @@ namespace ExtenderApp.Abstract
         /// <param name="value">要写入的数据。</param>
         /// <param name="position">写入的位置。</param>
         /// <param name="callback">写入完成后的回调函数，可以为null。</param>
-        void WriteAsync<T>(FileOperateInfo info, T value, long position, Action? callback = null);
+        Task WriteAsync<T>(FileOperateInfo info, T value, long position);
 
         /// <summary>
         /// 异步写入数据到文件的指定位置。
@@ -238,16 +238,16 @@ namespace ExtenderApp.Abstract
         /// <param name="value">要写入的数据。</param>
         /// <param name="position">写入的位置。</param>
         /// <param name="callback">写入完成后的回调函数，可以为null。</param>
-        void WriteAsync<T>(IFileOperate fileOperate, T value, long position, Action? callback = null);
+        Task WriteAsync<T>(IFileOperate fileOperate, T value, long position);
 
         #endregion
 
         #region Delete
+
         /// <summary>
         /// 删除文件。
         /// </summary>
         /// <param name="info">要删除的文件信息。</param>
-
         void Delete(ExpectLocalFileInfo info);
 
         /// <summary>

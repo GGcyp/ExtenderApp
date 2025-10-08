@@ -164,7 +164,7 @@ namespace ExtenderApp.Common.IO.Binaries
         private T? PrivateRead<T>(IFileOperate operate, long position = 0, int length = -1)
         {
             length = length == -1 ? (int)operate.Info.FileInfo.Length : length;
-            var bytes = operate.ReadForArrayPool(position, length);
+            var bytes = operate.ReadForArrayPoolAsync(position, length);
 
             var reader = new ExtenderBinaryReader(new Memory<byte>(bytes, 0, length));
 
@@ -177,17 +177,17 @@ namespace ExtenderApp.Common.IO.Binaries
 
         #region ReadAsync
 
-        public override void ReadAsync<T>(ExpectLocalFileInfo info, Action<T?> callback) where T : default
+        public override Task<T?> ReadAsync<T>(ExpectLocalFileInfo info) where T : default
         {
             if (info.IsEmpty)
             {
                 ErrorUtil.ArgumentNull(nameof(info));
             }
 
-            ReadAsync(info.CreateReadWriteOperate(_binaryFileExtensions), callback);
+            return ReadAsync(info.CreateReadWriteOperate(_binaryFileExtensions));
         }
 
-        public override void ReadAsync<T>(FileOperateInfo info, Action<T?> callback) where T : default
+        public override Task<T?> ReadAsync<T>(FileOperateInfo info) where T : default
         {
             if (info.IsEmpty || !info.IsRead())
             {
@@ -195,36 +195,36 @@ namespace ExtenderApp.Common.IO.Binaries
             }
 
             var operate = GetOperate(info);
-            PrivateReadAsync(operate, callback);
+            return PrivateReadAsync(operate);
         }
 
-        public override void ReadAsync<T>(IFileOperate fileOperate, Action<T?> callback) where T : default
+        public override Task<T?> ReadAsync<T>(IFileOperate fileOperate) where T : default
         {
-            PrivateReadAsync(fileOperate, callback);
+            PrivateReadAsync(fileOperate);
         }
 
-        public override void ReadAsync<T>(ExpectLocalFileInfo info, long position, int length, Action<T?> callback) where T : default
+        public override Task<T?> ReadAsync<T>(ExpectLocalFileInfo info, long position, int length) where T : default
         {
             if (info.IsEmpty)
             {
                 ErrorUtil.ArgumentNull(nameof(info));
             }
-            ReadAsync(info.CreateReadWriteOperate(_binaryFileExtensions), position, length, callback);
+            ReadAsync(info.CreateReadWriteOperate(_binaryFileExtensions), position, length);
         }
 
-        public override void ReadAsync<T>(FileOperateInfo info, long position, int length, Action<T?> callback) where T : default
+        public override Task<T?> ReadAsync<T>(FileOperateInfo info, long position, int length) where T : default
         {
             if (info.IsEmpty || !info.IsRead())
             {
                 ErrorUtil.ArgumentNull(nameof(info));
             }
 
-            PrivateReadAsync(GetOperate(info), callback, position, length);
+            PrivateReadAsync(GetOperate(info), position, length);
         }
 
-        public override void ReadAsync<T>(IFileOperate fileOperate, long position, int length, Action<T?> callback) where T : default
+        public override Task<T?> ReadAsync<T>(IFileOperate fileOperate, long position, int length) where T : default
         {
-            PrivateReadAsync(fileOperate, callback, position, length);
+            PrivateReadAsync(fileOperate, position, length);
         }
 
         /// <summary>
@@ -235,7 +235,7 @@ namespace ExtenderApp.Common.IO.Binaries
         /// <param name="callback">处理结果的回调函数</param>
         /// <param name="position">开始读取的位置</param>
         /// <param name="length">要读取的长度</param>
-        private void PrivateReadAsync<T>(IFileOperate operate, Action<T?> callback, long position = 0, int length = -1)
+        private void PrivateReadAsync<T>(IFileOperate operate, long position = 0, int length = -1)
         {
             DataBuffer<Delegate> buffer = DataBuffer<Delegate>.GetDataBuffer();
             buffer.Item1 = callback;
@@ -312,61 +312,61 @@ namespace ExtenderApp.Common.IO.Binaries
 
         #region WriteAsync
 
-        public override void WriteAsync<T>(ExpectLocalFileInfo info, T value, Action? callback = null)
+        public override Task WriteAsync<T>(ExpectLocalFileInfo info, T value)
         {
             if (info.IsEmpty)
             {
                 ErrorUtil.ArgumentNull(nameof(info));
             }
-            WriteAsync(info.CreateReadWriteOperate(_binaryFileExtensions), value, callback);
+            WriteAsync(info.CreateReadWriteOperate(_binaryFileExtensions), value);
         }
 
-        public override void WriteAsync<T>(FileOperateInfo info, T value, Action? callback = null)
+        public override Task WriteAsync<T>(FileOperateInfo info, T value)
         {
             if (info.IsEmpty || !info.IsWrite())
             {
                 ErrorUtil.ArgumentNull(nameof(info));
             }
 
-            PrivateWriteAsync(GetOperate(info), value, 0, callback);
+            PrivateWriteAsync(GetOperate(info), value, 0);
         }
 
-        public override void WriteAsync<T>(IFileOperate fileOperate, T value, Action? callback = null)
+        public override Task WriteAsync<T>(IFileOperate fileOperate, T value)
         {
-            PrivateWriteAsync(fileOperate, value, 0, callback);
+            PrivateWriteAsync(fileOperate, value, 0);
         }
 
-        public override void WriteAsync<T>(ExpectLocalFileInfo info, T value, long position, Action? callback = null)
+        public override Task WriteAsync<T>(ExpectLocalFileInfo info, T value, long position)
         {
             if (info.IsEmpty)
             {
                 ErrorUtil.ArgumentNull(nameof(info));
             }
-            WriteAsync(info.CreateReadWriteOperate(_binaryFileExtensions), value, position, callback);
+            WriteAsync(info.CreateReadWriteOperate(_binaryFileExtensions), value, position);
         }
 
-        public override void WriteAsync<T>(FileOperateInfo info, T value, long position, Action? callback = null)
+        public override Task WriteAsync<T>(FileOperateInfo info, T value, long position)
         {
             if (info.IsEmpty || !info.IsWrite())
             {
                 ErrorUtil.ArgumentNull(nameof(info));
             }
-            PrivateWriteAsync(GetOperate(info), value, position, callback);
+            PrivateWriteAsync(GetOperate(info), value, position);
         }
 
-        public override void WriteAsync<T>(IFileOperate fileOperate, T value, long position, Action? callback = null)
+        public override Task WriteAsync<T>(IFileOperate fileOperate, T value, long position)
         {
-            PrivateWriteAsync(fileOperate, value, position, callback);
+            PrivateWriteAsync(fileOperate, value, position);
         }
 
-        private void PrivateWriteAsync<T>(IFileOperate operate, T value, long filePosition = 0, Action? callback = null)
+        private void PrivateWriteAsync<T>(IFileOperate operate, T value, long filePosition = 0)
         {
             Task.Run(() =>
             {
                 var writer = new ExtenderBinaryWriter(_sequencePool.Rent());
                 var formatter = _resolver.GetFormatterWithVerify<T>();
                 formatter.Serialize(ref writer, value);
-                operate.WriteAsync(writer, filePosition, callback);
+                operate.WriteAsync(writer, filePosition);
             }).ConfigureAwait(false);
         }
 
@@ -867,25 +867,25 @@ namespace ExtenderApp.Common.IO.Binaries
             }
         }
 
-        public void WriteAsync<T>(ExpectLocalFileInfo info, T value, CompressionType compression, Action? callback = null)
+        public Task WriteAsync<T>(ExpectLocalFileInfo info, T value, CompressionType compression)
         {
             if (info.IsEmpty)
             {
                 ErrorUtil.ArgumentNull(nameof(info));
             }
-            WriteAsync(info.CreateReadWriteOperate(_binaryFileExtensions), value, compression, callback);
+            WriteAsync(info.CreateReadWriteOperate(_binaryFileExtensions), value, compression);
         }
 
-        public void WriteAsync<T>(FileOperateInfo info, T value, CompressionType compression, Action? callback = null)
+        public Task WriteAsync<T>(FileOperateInfo info, T value, CompressionType compression)
         {
             if (info.IsEmpty || !info.IsWrite())
             {
                 ErrorUtil.ArgumentNull(nameof(info));
             }
-            WriteAsync(GetOperate(info), value, compression, callback);
+            WriteAsync(GetOperate(info), value, compression);
         }
 
-        public void WriteAsync<T>(IFileOperate fileOperate, T value, CompressionType compression, Action? callback = null)
+        public Task WriteAsync<T>(IFileOperate fileOperate, T value, CompressionType compression)
         {
             Task.Run(() =>
            {

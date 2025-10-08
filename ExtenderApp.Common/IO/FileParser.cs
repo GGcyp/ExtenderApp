@@ -51,17 +51,17 @@ namespace ExtenderApp.Common.IO.FileParsers
 
         #region ReadAsync
 
-        public abstract void ReadAsync<T>(ExpectLocalFileInfo info, Action<T?> callback);
+        public abstract Task<T?> ReadAsync<T>(ExpectLocalFileInfo info);
 
-        public abstract void ReadAsync<T>(FileOperateInfo info, Action<T?> callback);
+        public abstract Task<T?> ReadAsync<T>(FileOperateInfo info);
 
-        public abstract void ReadAsync<T>(IFileOperate fileOperate, Action<T?> callback);
+        public abstract Task<T?> ReadAsync<T>(IFileOperate fileOperate);
 
-        public abstract void ReadAsync<T>(ExpectLocalFileInfo info, long position, int length, Action<T?> callback);
+        public abstract Task<T?> ReadAsync<T>(ExpectLocalFileInfo info, long position, int length);
 
-        public abstract void ReadAsync<T>(FileOperateInfo info, long position, int length, Action<T?> callback);
+        public abstract Task<T?> ReadAsync<T>(FileOperateInfo info, long position, int length);
 
-        public abstract void ReadAsync<T>(IFileOperate fileOperate, long position, int length, Action<T?> callback);
+        public abstract Task<T?> ReadAsync<T>(IFileOperate fileOperate, long position, int length);
 
         #endregion
 
@@ -82,17 +82,17 @@ namespace ExtenderApp.Common.IO.FileParsers
 
         #region WriteAsync
 
-        public abstract void WriteAsync<T>(ExpectLocalFileInfo info, T value, Action? callback = null);
+        public abstract Task WriteAsync<T>(ExpectLocalFileInfo info, T value);
 
-        public abstract void WriteAsync<T>(FileOperateInfo info, T value, Action? callback = null);
+        public abstract Task WriteAsync<T>(FileOperateInfo info, T value);
 
-        public abstract void WriteAsync<T>(IFileOperate fileOperate, T value, Action? callback = null);
+        public abstract Task WriteAsync<T>(IFileOperate fileOperate, T value);
 
-        public abstract void WriteAsync<T>(ExpectLocalFileInfo info, T value, long position, Action? callback = null);
+        public abstract Task WriteAsync<T>(ExpectLocalFileInfo info, T value, long position);
 
-        public abstract void WriteAsync<T>(FileOperateInfo info, T value, long position, Action? callback = null);
+        public abstract Task WriteAsync<T>(FileOperateInfo info, T value, long position);
 
-        public abstract void WriteAsync<T>(IFileOperate fileOperate, T value, long position, Action? callback = null);
+        public abstract Task WriteAsync<T>(IFileOperate fileOperate, T value, long position);
 
         #endregion
 

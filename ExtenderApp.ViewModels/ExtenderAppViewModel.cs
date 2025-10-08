@@ -475,12 +475,12 @@ namespace ExtenderApp.ViewModels
             return ServiceStore.DispatcherService.CheckAccess();
         }
 
-        protected ExtenderAwaitable ToMainThreadAsync(CancellationToken token = default)
+        protected ExtenderThreadSwitchAwaitable ToMainThreadAsync(CancellationToken token = default)
         {
             return ServiceStore.DispatcherService.ToMainThreadAsync(token);
         }
 
-        protected ExtenderAwaitable AwayMainThreadAsync(CancellationToken token = default)
+        protected ExtenderThreadSwitchAwaitable AwayMainThreadAsync(CancellationToken token = default)
         {
             return ServiceStore.DispatcherService.AwayMainThreadAsync(token);
         }

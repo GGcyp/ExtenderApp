@@ -3,8 +3,6 @@ using ExtenderApp.Abstract;
 using ExtenderApp.Common.IO.Splitter;
 using ExtenderApp.Common.IO;
 using ExtenderApp.Common.IO.Binaries;
-using ExtenderApp.Data;
-using ExtenderApp.Common.Error;
 
 namespace ExtenderApp.Common
 {

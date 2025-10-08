@@ -1,4 +1,5 @@
 ﻿using System.Buffers;
+using System.Threading.Tasks;
 using ExtenderApp.Abstract;
 using ExtenderApp.Common.ConcurrentOperates;
 using ExtenderApp.Common.Error;
@@ -13,18 +14,14 @@ namespace ExtenderApp.Common.IO
     /// </summary>
     /// <typeparam name="FileOperatePolicy">文件操作策略类型</typeparam>
     /// <typeparam name="FileOperateData">文件操作数据类型</typeparam>
-    public class FileConcurrentOperate : ConcurrentOperate<FileOperateData>, IFileOperate
+    public class FileConcurrentOperate : IFileOperate
     {
-        private readonly ObjectPool<WriteOperation> _writeOperationPool;
-        private readonly ObjectPool<ReadOperation> _readOperationPool;
-
-        public FileConcurrentOperate()
+        public FileConcurrentOperate(LocalFileInfo info)
         {
-            _writeOperationPool = ObjectPool.Create(new SelfResetPooledObjectPolicy<WriteOperation>());
-            _readOperationPool = ObjectPool.Create(new SelfResetPooledObjectPolicy<ReadOperation>());
+            Info = info;
         }
 
-        public LocalFileInfo Info => Data.OperateInfo.LocalFileInfo;
+        public LocalFileInfo Info { get; private set; }
 
         public DateTime LastOperateTime { get; private set; }
         public bool IsHosted { get; set; }
@@ -33,7 +30,7 @@ namespace ExtenderApp.Common.IO
 
         public byte[] Read()
         {
-            return PrivateRead(0, (int)Data.CurrentCapacity, null, 0);
+            return PrivateRead(0, (int)Info.Length, null, 0);
         }
 
         public byte[] Read(long filePosition, int length)
@@ -44,6 +41,8 @@ namespace ExtenderApp.Common.IO
         public void Read(long filePosition, int length, ref ExtenderBinaryWriter writer)
         {
             var bytes = ReadForArrayPool(filePosition, length);
+            if (writer.IsEmpty)
+                throw new ArgumentNullException(nameof(writer));
             writer.Write(bytes.AsSpan(0, length));
             ArrayPool<byte>.Shared.Return(bytes); // 归还数组池
         }
@@ -57,7 +56,7 @@ namespace ExtenderApp.Common.IO
 
         public byte[] ReadForArrayPool(out int length)
         {
-            length = (int)Data.CurrentCapacity;
+            length = (int)Info.Length;
             var bytes = ArrayPool<byte>.Shared.Rent(length);
             PrivateRead(0, length, bytes, 0);
             return bytes;
@@ -74,57 +73,69 @@ namespace ExtenderApp.Common.IO
 
         private byte[] PrivateRead(long position, int length, byte[]? bytes, int bytesStart)
         {
-            var operation = _readOperationPool.Get();
+            //var operation = _readOperationPool.Get();
 
-            if (position + length > Data.CurrentCapacity)
-                ErrorUtil.ArgumentOutOfRange(nameof(length), $"读取长度超出文件长度，文件长度为{Data.CurrentCapacity}，请求读取位置为{position}，请求读取长度为{length}。");
+            //if (position + length > Data.CurrentCapacity)
+            //    ErrorUtil.ArgumentOutOfRange(nameof(length), $"读取长度超出文件长度，文件长度为{Data.CurrentCapacity}，请求读取位置为{position}，请求读取长度为{length}。");
 
-            length = length == -1 ? (int)Data.CurrentCapacity : length;
-            operation.Set(position, length, bytes, bytesStart, null);
-            Execute(operation);
+            //length = length == -1 ? (int)Data.CurrentCapacity : length;
+            //operation.Set(position, length, bytes, bytesStart, null);
+            //Execute(operation);
 
-            var result = operation.ReslutBytes;
-            operation.Release();
-            LastOperateTime = DateTime.Now;
-            return result;
+            //var result = operation.ReslutBytes;
+            //operation.Release();
+            //LastOperateTime = DateTime.Now;
+            //return result;
+            return default;
         }
 
         #endregion
 
         #region ReadAsync
 
-        public void ReadAsync(long filePosition, int length, Action<byte[]> callback)
+        public async Task ReadAsync(long filePosition, int length)
         {
-            PrivateReadAsync(callback, null, filePosition, length, 0);
+            await PrivateReadAsync(null, filePosition, length, 0);
         }
 
-        public byte[] ReadForArrayPoolAsync(long filePosition, int length, Action<byte[]> callback)
+        public async Task<byte[]> ReadForArrayPoolAsync(long filePosition, int length)
         {
             var bytes = ArrayPool<byte>.Shared.Rent(length);
-            PrivateReadAsync(callback, bytes, filePosition, length, 0);
+            await PrivateReadAsync(bytes, filePosition, length, 0);
             return bytes;
         }
 
-        public void ReadAsync(long filePosition, int length, byte[] bytes, Action<byte[]> callback, int bytesStart = 0)
+        public async Task ReadAsync(long filePosition, int length, byte[] bytes, int bytesStart = 0)
         {
             bytes = bytes ?? throw new ArgumentNullException(nameof(bytes));
             if (bytesStart < 0 || bytesStart >= bytes.Length)
                 throw new ArgumentOutOfRangeException(nameof(bytesStart));
 
-            PrivateReadAsync(callback, bytes, filePosition, length, bytesStart);
+            await PrivateReadAsync(bytes, filePosition, length, bytesStart);
         }
 
-        private void PrivateReadAsync(Action<byte[]> callback, byte[] bytes, long position = 0, int length = -1, int bytesStart = 0)
+        public Task<byte[]> ReadForArrayPoolAsync(out int length)
         {
-            if (position + length > Data.CurrentCapacity)
-                ErrorUtil.ArgumentOutOfRange(nameof(length), $"读取长度超出文件长度，文件长度为{Data.CurrentCapacity}，请求读取位置为{position}，请求读取长度为{length}。");
+            throw new NotImplementedException();
+        }
 
-            var operation = _readOperationPool.Get();
+        public Task<byte[]> ReadAsync()
+        {
+            throw new NotImplementedException();
+        }
 
-            length = length == -1 ? (int)Data.CurrentCapacity : length;
-            operation.Set(position, length, bytes, bytesStart, callback);
-            LastOperateTime = DateTime.Now;
-            ExecuteAsync(operation);
+        private Task PrivateReadAsync(byte[] bytes, long position = 0, int length = -1, int bytesStart = 0)
+        {
+            //if (position + length > Data.CurrentCapacity)
+            //    ErrorUtil.ArgumentOutOfRange(nameof(length), $"读取长度超出文件长度，文件长度为{Data.CurrentCapacity}，请求读取位置为{position}，请求读取长度为{length}。");
+
+            //var operation = _readOperationPool.Get();
+
+            //length = length == -1 ? (int)Data.CurrentCapacity : length;
+            //operation.Set(position, length, bytes, bytesStart);
+            //LastOperateTime = DateTime.Now;
+            //ExecuteAsync(operation);
+            return Task.CompletedTask;
         }
 
         #endregion
@@ -148,14 +159,14 @@ namespace ExtenderApp.Common.IO
 
         public void Write(ExtenderBinaryWriter writer, long filePosition)
         {
-            if (writer.Rental.Value is null)
-                throw new ArgumentNullException(nameof(writer));
+            //if (writer.Rental.Value is null)
+            //    throw new ArgumentNullException(nameof(writer));
 
-            var operation = _writeOperationPool.Get();
-            operation.Set(writer, filePosition, null);
-            Execute(operation);
-            LastOperateTime = DateTime.Now;
-            operation.Release();
+            //var operation = _writeOperationPool.Get();
+            //operation.Set(writer, filePosition, null);
+            //Execute(operation);
+            //LastOperateTime = DateTime.Now;
+            //operation.Release();
         }
 
         /// <summary>
@@ -167,57 +178,63 @@ namespace ExtenderApp.Common.IO
         /// <param name="length">要写入的字节长度</param>
         private void PrivateWrite(byte[] bytes, long filePosition = 0, int bytesPosition = 0, int length = -1)
         {
-            if (bytes is null)
-            {
-                ErrorUtil.ArgumentNull(nameof(bytes));
-                return;
-            }
+            //if (bytes is null)
+            //{
+            //    ErrorUtil.ArgumentNull(nameof(bytes));
+            //    return;
+            //}
 
-            if (length < 0)
-            {
-                length = (int)(bytes.LongLength - bytesPosition);
-            }
-            else if (bytes.LongLength < bytesPosition + length)
-            {
-                ErrorUtil.ArgumentOutOfRange(nameof(bytes), $"需要覆盖的数组长度小于需要长度");
-            }
+            //if (length < 0)
+            //{
+            //    length = (int)(bytes.LongLength - bytesPosition);
+            //}
+            //else if (bytes.LongLength < bytesPosition + length)
+            //{
+            //    ErrorUtil.ArgumentOutOfRange(nameof(bytes), $"需要覆盖的数组长度小于需要长度");
+            //}
 
-            var operation = _writeOperationPool.Get();
-            operation.Set(bytes, filePosition, length, bytesPosition, null);
-            Execute(operation);
-            LastOperateTime = DateTime.Now;
-            operation.Release();
+            //var operation = _writeOperationPool.Get();
+            //operation.Set(bytes, filePosition, length, bytesPosition, null);
+            //Execute(operation);
+            //LastOperateTime = DateTime.Now;
+            //operation.Release();
         }
 
         #endregion
 
         #region WriteAsync
 
-        public void WriteAsync(byte[] bytes, Action<byte[]>? callback = null)
+        public async Task WriteAsync(byte[] bytes)
         {
-            PrivateWriteAsync(bytes, callback: callback);
+            await PrivateWriteAsync(bytes);
         }
 
-        public void WriteAsync(byte[] bytes, long filePosition, Action<byte[]>? callback = null)
+        public async Task WriteAsync(byte[] bytes, long filePosition)
         {
-            PrivateWriteAsync(bytes, filePosition, callback: callback);
+            await PrivateWriteAsync(bytes, filePosition);
         }
 
-        public void WriteAsync(byte[] bytes, long filePosition, int bytesPosition, int bytesLength, Action<byte[]>? callback = null)
+        public async Task WriteAsync(byte[] bytes, long filePosition, int bytesPosition, int bytesLength)
         {
-            PrivateWriteAsync(bytes, filePosition, bytesPosition, bytesLength, callback);
+            await PrivateWriteAsync(bytes, filePosition, bytesPosition, bytesLength);
         }
 
-        public void WriteAsync(ExtenderBinaryWriter writer, long filePosition, Action callback)
+        public Task WriteAsync(ExtenderBinaryWriter writer, long filePosition, Action callback)
         {
-            if (writer.Rental.Value is null)
-                throw new ArgumentNullException(nameof(writer));
+            //if (writer.Rental.Value is null)
+            //    throw new ArgumentNullException(nameof(writer));
 
-            var operation = _writeOperationPool.Get();
-            operation.Set(writer, filePosition, callback);
-            ExecuteAsync(operation);
-            LastOperateTime = DateTime.Now;
-            operation.Release();
+            //var operation = _writeOperationPool.Get();
+            //operation.Set(writer, filePosition);
+            //ExecuteAsync(operation);
+            //LastOperateTime = DateTime.Now;
+            //operation.Release();
+            return Task.CompletedTask;
+        }
+
+        public Task WriteAsync(ExtenderBinaryWriter writer, long filePosition)
+        {
+            throw new NotImplementedException();
         }
 
         /// <summary>
@@ -228,35 +245,36 @@ namespace ExtenderApp.Common.IO
         /// <param name="bytesPosition">字节数组中的起始位置。默认为0。</param>
         /// <param name="length">要写入的字节数。默认为-1，表示写入剩余所有字节。</param>
         /// <param name="callback">写入完成后的回调函数。参数为写入的字节数组。</param>
-        private void PrivateWriteAsync(byte[] bytes, long filePosition = 0, int bytesPosition = 0, int length = -1, Action<byte[]>? callback = null)
+        private Task PrivateWriteAsync(byte[] bytes, long filePosition = 0, int bytesPosition = 0, int length = -1)
         {
-            if (bytes is null)
-            {
-                ErrorUtil.ArgumentNull(nameof(bytes));
-                return;
-            }
+            //if (bytes is null)
+            //{
+            //    ErrorUtil.ArgumentNull(nameof(bytes));
+            //    return Task.CompletedTask;
+            //}
 
-            if (length < 0)
-            {
-                length = (int)(bytes.LongLength - bytesPosition);
-            }
-            else if (bytes.LongLength < bytesPosition + length)
-            {
-                ErrorUtil.ArgumentOutOfRange(nameof(bytes), $"需要覆盖的数组长度小于需要长度");
-            }
+            //if (length < 0)
+            //{
+            //    length = (int)(bytes.LongLength - bytesPosition);
+            //}
+            //else if (bytes.LongLength < bytesPosition + length)
+            //{
+            //    ErrorUtil.ArgumentOutOfRange(nameof(bytes), $"需要覆盖的数组长度小于需要长度");
+            //}
 
-            var operation = _writeOperationPool.Get();
-            operation.Set(bytes, filePosition, length, bytesPosition, callback);
-            ExecuteAsync(operation);
-            LastOperateTime = DateTime.Now;
+            //var operation = _writeOperationPool.Get();
+            //operation.Set(bytes, filePosition, length, bytesPosition);
+            //ExecuteAsync(operation);
+            //LastOperateTime = DateTime.Now;
+            return Task.CompletedTask;
         }
 
         #endregion
 
         public void ExpandCapacity(long newCapacity)
         {
-            Data.ExpandCapacity(newCapacity);
-            LastOperateTime = DateTime.Now;
+            //Data.ExpandCapacity(newCapacity);
+            //LastOperateTime = DateTime.Now;
         }
     }
 }

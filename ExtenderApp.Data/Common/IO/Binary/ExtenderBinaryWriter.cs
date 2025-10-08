@@ -52,6 +52,9 @@ namespace ExtenderApp.Data
         /// </summary>
         public SequencePool<byte>.Rental Rental;
 
+        /// <summary>
+        /// 检查当前实例是否为空。
+        /// </summary>
         public bool IsEmpty => Output == null && _segment == null;
 
         /// <summary>

@@ -121,14 +121,14 @@ namespace ExtenderApp.Services
 
         #region SwitchThreads
 
-        public ExtenderAwaitable ToMainThreadAsync(CancellationToken token = default)
+        public ExtenderThreadSwitchAwaitable ToMainThreadAsync(CancellationToken token = default)
         {
-            return new ExtenderAwaitable(_toMainThread, null, CheckAccess(), token);
+            return new ExtenderThreadSwitchAwaitable(_toMainThread, null, CheckAccess(), token);
         }
 
-        public ExtenderAwaitable AwayMainThreadAsync(CancellationToken token = default)
+        public ExtenderThreadSwitchAwaitable AwayMainThreadAsync(CancellationToken token = default)
         {
-            return new ExtenderAwaitable(_awayMainThread, null, !CheckAccess(), token);
+            return new ExtenderThreadSwitchAwaitable(_awayMainThread, null, !CheckAccess(), token);
         }
 
         #endregion
