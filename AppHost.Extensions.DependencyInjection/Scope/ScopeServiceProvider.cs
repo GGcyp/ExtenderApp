@@ -73,14 +73,6 @@ namespace AppHost.Extensions.DependencyInjection
                         continue;
                     }
 
-                    detail = GetReloScope(parameterType);
-                    if (detail != null)
-                    {
-                        CheckService(detail, out detail);
-                        details[i] = detail;
-                        continue;
-                    }
-
                     detail = GetMainService(parameterType);
                     if (detail != null)
                     {
@@ -119,25 +111,6 @@ namespace AppHost.Extensions.DependencyInjection
         }
 
         /// <summary>
-        /// 获取重新加载作用域
-        /// </summary>
-        /// <param name="serviceType">服务类型</param>
-        /// <returns>服务构造函数详情</returns>
-        private ServiceConstructorDetail? GetReloScope(Type serviceType)
-        {
-            ServiceConstructorDetail? result = null;
-            var scopeList = ScopeOptions.ReloScopes;
-            for (int i = 0; i < scopeList.Count; i++)
-            {
-                var provider = _scopeExecutor.GetServiceProvider(scopeList[i]) as ServiceProvider;
-                if (provider is null) continue;
-                result = provider.CreateOrGetServiceConstructorDetail(serviceType);
-                if (result != null) return result;
-            }
-            return result;
-        }
-
-        /// <summary>
         /// 检查服务构造函数详细信息并返回其作用域信息。
         /// </summary>
         /// <param name="detail">服务构造函数详细信息。</param>
@@ -156,15 +129,6 @@ namespace AppHost.Extensions.DependencyInjection
             scopeDetail = new ServiceConstructorDetail(constructorInfo, details, detail.ServiceDescriptor);
 
             //scopeDetail = CreateServiceConstructorDetail(detail.ServiceDescriptor.ImplementationType!);
-        }
-
-        public override void Dispose()
-        {
-            base.Dispose();
-            foreach (var scope in ScopeOptions.ReloScopes)
-            {
-                _scopeExecutor.UnLoadScope(scope);
-            }
         }
     }
 }

@@ -1,10 +1,11 @@
-﻿using ExtenderApp.Abstract;
+﻿using System.Collections.Concurrent;
+using ExtenderApp.Abstract;
 using ExtenderApp.Common.IO.Binaries.Formatters;
 using ExtenderApp.Data;
 
 namespace ExtenderApp.Common.IO.Binaries
 {
-    internal class BinaryFormatterStore : Dictionary<Type, BinaryFormatterDetails>, IBinaryFormatterStore
+    internal class BinaryFormatterStore : ConcurrentDictionary<Type, BinaryFormatterDetails>, IBinaryFormatterStore
     {
         public void AddFormatter(Type type, Type typeFormatter, bool isVersionDataFormatter = false)
         {
@@ -30,9 +31,9 @@ namespace ExtenderApp.Common.IO.Binaries
 
             details = new BinaryFormatterDetails(type, isVersionDataFormatter);
             details.FormatterTypes.Add(typeFormatter);
-            Add(type, details);
+            TryAdd(type, details);
             if (isVersionDataFormatter && details.VersionDataBinaryType != null)
-                Add(details.VersionDataBinaryType, details);
+                TryAdd(details.VersionDataBinaryType, details);
         }
 
         public bool TryGetSingleFormatterType(Type type, out Type formatterType)

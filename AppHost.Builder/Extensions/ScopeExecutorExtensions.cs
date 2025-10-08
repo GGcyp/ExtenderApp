@@ -54,8 +54,9 @@ namespace AppHost.Builder.Extensions
 
             IServiceCollection services = ServiceBuilder.CreateServiceCollection();
             startup.AddService(services);
-            ScopeOptions options = new ScopeOptions();
-            startup.ConfigureScopeOptions(options);
+            ScopeOptionsBuilder builder = new();
+            startup.ConfigureScopeOptions(builder);
+            var options = builder.Build();
             callback?.Invoke(services, options);
             executor.LoadScope(services, options);
 

@@ -16,6 +16,6 @@ namespace AppHost.Builder
         /// 配置作用域选项。
         /// </summary>
         /// <param name="options">作用域选项实例。</param>
-        public abstract void ConfigureScopeOptions(ScopeOptions options);
+        public abstract void ConfigureScopeOptions(ScopeOptionsBuilder builder);
     }
 }

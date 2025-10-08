@@ -24,7 +24,13 @@ namespace AppHost.Extensions.DependencyInjection
 
         public void LoadScope(IServiceCollection collection, ScopeOptions options)
         {
-            if (_scopesProviderDict.ContainsKey(options.ScopeName))
+            var scopeName = options.ScopeName;
+            if (string.IsNullOrEmpty(scopeName))
+            {
+                throw new ArgumentNullException(nameof(options.ScopeName), "作用域名称不能为空");
+            }
+
+            if (_scopesProviderDict.ContainsKey(scopeName))
             {
                 throw new InvalidOperationException(string.Concat("不可以重复注册作用域: ", options.ScopeName));
             }

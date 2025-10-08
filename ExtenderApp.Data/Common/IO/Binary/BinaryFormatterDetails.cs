@@ -45,9 +45,9 @@
             }
             else
             {
+                BinaryType = binaryType;
                 if (isVersionDataFormatter)
                 {
-                    BinaryType = binaryType;
                     VersionDataBinaryType = typeof(VersionData<>).MakeGenericType(BinaryType);
                 }
             }

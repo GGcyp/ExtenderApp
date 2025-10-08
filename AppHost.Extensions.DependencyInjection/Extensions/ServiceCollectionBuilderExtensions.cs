@@ -4,8 +4,6 @@ namespace AppHost.Extensions.DependencyInjection
 {
     public static class ServiceCollectionBuilderExtensions
     {
-        private static readonly object[] _objects = new object[1];
-
         /// <summary>
         /// 用<see cref="IServiceCollection"/>创建一个服务提供器<see cref="ServiceProvider"/>
         /// </summary>
@@ -50,13 +48,13 @@ namespace AppHost.Extensions.DependencyInjection
 
                 var collection = p.GetRequiredService<IServiceCollection>();
 
-
+                object?[] objects = new object?[1];
                 foreach (var item in collection)
                 {
                     if (elementType.IsAssignableFrom(item.ServiceType))
                     {
-                        _objects[0] = p.GetRequiredService(item.ServiceType);
-                        addMethod!.Invoke(listInstance, _objects);
+                        objects[0] = p.GetRequiredService(item.ServiceType);
+                        addMethod!.Invoke(listInstance, objects);
                     }
                 }
 
@@ -89,13 +87,13 @@ namespace AppHost.Extensions.DependencyInjection
 
                 var collection = p.GetRequiredService<IServiceCollection>();
 
-
+                object?[] objects = new object?[1];
                 foreach (var item in collection)
                 {
                     if (elementType.IsAssignableFrom(item.ServiceType))
                     {
-                        _objects[0] = p.GetRequiredService(item.ServiceType);
-                        addMethod!.Invoke(listInstance, _objects);
+                        objects[0] = p.GetRequiredService(item.ServiceType);
+                        addMethod!.Invoke(listInstance, objects);
                     }
                 }
 
