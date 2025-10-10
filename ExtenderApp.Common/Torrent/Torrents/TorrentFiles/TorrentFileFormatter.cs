@@ -27,7 +27,7 @@ namespace ExtenderApp.Common.Torrent
 
         public TorrentFile Decode(IFileOperate fileOperate)
         {
-            var result = fileOperate.ReadForArrayPoolAsync(out int length);
+            var result = fileOperate.ReadForArrayPool(out int length);
             TorrentFile torrent = Decode(new Memory<byte>(result, 0, length));
             ArrayPool<byte>.Shared.Return(result);
             return torrent;

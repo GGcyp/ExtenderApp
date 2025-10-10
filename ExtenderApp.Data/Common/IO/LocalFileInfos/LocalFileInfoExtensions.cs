@@ -24,7 +24,7 @@
             {
                 throw new InvalidOperationException("目标文件已存在");
             }
-            info.Move(targetOperate.LocalFileInfo.FilePath);
+            info.Move(targetOperate.LocalFileInfo.FullPath);
         }
 
         /// <summary>
@@ -40,7 +40,7 @@
                 throw new InvalidOperationException("目标文件已存在");
             }
 
-            System.IO.File.Move(info.FilePath, targetInfo.FilePath);
+            System.IO.File.Move(info.FullPath, targetInfo.FullPath);
         }
 
         /// <summary>
@@ -56,7 +56,7 @@
                 throw new ArgumentNullException(nameof(targetPath));
             }
 
-            System.IO.File.Move(info.FilePath, targetPath);
+            System.IO.File.Move(info.FullPath, targetPath);
         }
 
         #endregion
@@ -72,7 +72,7 @@
             if (info.IsEmpty)
                 throw new ArgumentNullException(nameof(info));
 
-            //System.IO.File.Delete(info.FilePath);
+            //System.IO.File.Delete(info.FullPath);
             info.FileInfo.Delete();
         }
 

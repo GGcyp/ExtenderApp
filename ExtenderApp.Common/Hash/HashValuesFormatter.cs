@@ -46,7 +46,6 @@ namespace ExtenderApp.Common.Hash
             {
                 return 1;
             }
-
             return _ulongs.GetLength(value.ULongMemory) + _int.DefaultLength;
         }
     }

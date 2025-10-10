@@ -161,7 +161,7 @@ namespace ExtenderApp.Common.Torrent
                 }
 
                 int readLength = System.Math.Min(segmentInfo.Length, begin + length - currentOffset);
-                node.FileOperate.ReadAsync(segmentInfo.OffsetInFile, readLength, pieceData, callback);
+                //node.FileOperate.ReadAsync(segmentInfo.OffsetInFile, readLength, pieceData);
                 currentOffset += segmentInfo.Length;
             }
         }
@@ -213,7 +213,7 @@ namespace ExtenderApp.Common.Torrent
                     continue;
                 }
                 int writeLength = System.Math.Min(segmentInfo.Length, begin + length - currentOffset);
-                node.FileOperate.WriteAsync(data, segmentInfo.OffsetInFile, 0, writeLength);
+                //node.FileOperate.WriteAsync(data, segmentInfo.OffsetInFile, 0, writeLength);
                 segmentInfo.WritedLength += writeLength;
                 currentOffset += segmentInfo.Length;
             }

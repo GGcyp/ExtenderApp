@@ -1,4 +1,5 @@
-﻿using System.Linq.Expressions;
+﻿using System.Buffers;
+using System.Linq.Expressions;
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
@@ -51,11 +52,6 @@ namespace ExtenderApp.Common.Hash
         private readonly IFileOperateProvider _fileOperateProvider;
 
         /// <summary>
-        /// 文件操作对象池
-        /// </summary>
-        private readonly ObjectPool<HashFileOperation> _fileOperationPool;
-
-        /// <summary>
         /// 编码格式
         /// </summary>
         private readonly Encoding _encoding;
@@ -69,7 +65,6 @@ namespace ExtenderApp.Common.Hash
             _poolStore = poolStore;
             _fileOperateProvider = fileStore;
             _encoding = Encoding.UTF8; // 默认使用UTF8编码
-            _fileOperationPool = poolStore.GetPool<HashFileOperation>();
         }
 
         #region ComputeHash
@@ -127,20 +122,17 @@ namespace ExtenderApp.Common.Hash
             return new HashValue(reslut);
         }
 
-        public HashValue ComputeHash<T>(FileOperateInfo fileOperate) where T : HashAlgorithm
+        public HashValue ComputeHash<T>(FileOperateInfo info) where T : HashAlgorithm
         {
             var pool = GetPool<T>();
             var hashAlgorithm = pool.Get();
-            var fileConcurrent = _fileOperateProvider.GetOperate(fileOperate);
-            var operation = _fileOperationPool.Get();
+            var fileOperate = _fileOperateProvider.GetOperate(info);
 
-            operation.Set(hashAlgorithm);
-            fileConcurrent.Execute(operation);
-            var reslut = operation.HashBytes;
+            byte[] bytes = fileOperate.ReadForArrayPool(out var length);
+            var reslut = hashAlgorithm.ComputeHash(bytes);
 
+            ArrayPool<byte>.Shared.Return(bytes);
             pool.Release(hashAlgorithm);
-            _fileOperationPool.Release(operation);
-
             return new HashValue(reslut);
         }
 
@@ -158,19 +150,15 @@ namespace ExtenderApp.Common.Hash
             return new HashValue(reslut);
         }
 
-        public HashValue ComputeHashAsync<T>(FileOperateInfo fileOperate) where T : HashAlgorithm
+        public async Task<HashValue> ComputeHashAsync<T>(FileOperateInfo fileOperate) where T : HashAlgorithm
         {
             var pool = GetPool<T>();
             var hashAlgorithm = pool.Get();
             var fileConcurrent = _fileOperateProvider.GetOperate(fileOperate);
-            var operation = _fileOperationPool.Get();
 
-            operation.Set(hashAlgorithm);
-            fileConcurrent.ExecuteAsync(operation);
-            var reslut = operation.HashBytes;
-
+            byte[] bytes = await fileConcurrent.ReadForArrayPoolAsync(out var length);
+            byte[] reslut = await hashAlgorithm.ComputeHashAsync(new MemoryStream(bytes));
             pool.Release(hashAlgorithm);
-            _fileOperationPool.Release(operation);
 
             return new HashValue(reslut);
         }

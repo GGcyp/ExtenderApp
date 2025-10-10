@@ -29,6 +29,9 @@ namespace ExtenderApp.Data
             set => Ptr = (IntPtr)value;
         }
 
+        /// <summary>
+        /// 设置实际的非托管指针的指针
+        /// </summary>
         public T** ValuePtr
         {
             set => Ptr = (IntPtr)(*value);

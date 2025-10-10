@@ -38,9 +38,9 @@ namespace ExtenderApp.Abstract
         /// 计算文件的哈希值。
         /// </summary>
         /// <typeparam name="T">哈希算法类型，必须继承自HashAlgorithm。</typeparam>
-        /// <param name="fileOperate">文件操作信息。</param>
+        /// <param name="info">文件操作信息。</param>
         /// <returns>计算得到的哈希值。</returns>
-        HashValue ComputeHash<T>(FileOperateInfo fileOperate) where T : HashAlgorithm;
+        HashValue ComputeHash<T>(FileOperateInfo info) where T : HashAlgorithm;
 
         /// <summary>
         /// 计算给定文本的哈希值。
@@ -62,8 +62,8 @@ namespace ExtenderApp.Abstract
         /// 异步计算给定文件的哈希值。
         /// </summary>
         /// <typeparam name="T">指定哈希算法的类型。</typeparam>
-        /// <param name="fileOperate">包含文件操作信息的对象。</param>
+        /// <param name="info">包含文件操作信息的对象。</param>
         /// <returns>返回计算出的哈希值。</returns>
-        HashValue ComputeHashAsync<T>(FileOperateInfo fileOperate) where T : HashAlgorithm;
+        Task<HashValue> ComputeHashAsync<T>(FileOperateInfo info) where T : HashAlgorithm;
     }
 }

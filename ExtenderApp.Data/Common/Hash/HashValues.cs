@@ -5,52 +5,59 @@ using System.Runtime.InteropServices;
 namespace ExtenderApp.Data
 {
     /// <summary>
-    /// HashValues结构体，实现了IEquatable<HashValues>接口，用于比较两个HashValues实例是否相等。
+    /// 表示一组“分片哈希”的只读视图与操作集合。
+    /// 支持的单片哈希长度为 20/24/32/40 字节（如 SHA-1/192/256/320），
+    /// 内部以连续的 <see cref="ulong"/> 序列按小端方式打包存储，每片占用 ⌈Length/8⌉ 个 ulong。
+    /// 提供按索引访问、验证、查找与等值比较等功能。
     /// </summary>
     public struct HashValues : IEquatable<HashValues>
     {
+        /// <summary>
+        /// 空实例。
+        /// </summary>
         public static HashValues Empty => new HashValues();
 
-        private static int[] HashLengths = new int[] { 20, 24, 32, 40 }; // 支持的哈希长度
+        /// <summary>
+        /// 受支持的单片哈希长度（字节）。
+        /// </summary>
+        private static int[] HashLengths = new int[] { 20, 24, 32, 40 };
 
-        // 分片哈希数组（每个哈希使用3个ulong存储，最后一个ulong的后4字节为填充）
+        /// <summary>
+        /// 分片哈希的底层存储（连续的 ulong 内存）。
+        /// 每片哈希占用 <see cref="ULongsPerHash"/> 个 ulong；若长度非 8 的倍数，最后一个 ulong 的高位字节为填充（0）。
+        /// </summary>
         private readonly ReadOnlyMemory<ulong> _pieceHashes;
 
         /// <summary>
-        /// 获取哈希值的长度。
+        /// 单片哈希的字节长度（例如 20、24、32、40）。
         /// </summary>
         public int HashLength { get; }
 
         /// <summary>
-        /// 总分片数量
+        /// 分片总数。
         /// </summary>
         public int PieceCount => _pieceHashes.Length / HashLength;
 
         /// <summary>
-        /// 获取每个哈希值中无符号长整数的数量。
+        /// 单片哈希占用的 ulong 数（= ⌈<see cref="HashLength"/>/8⌉）。
         /// </summary>
-        /// <value>
-        /// 每个哈希值中无符号长整数的数量。
-        /// </value>
         private int ULongsPerHash { get; }
 
         /// <summary>
-        /// 判断当前实例是否为空。
+        /// 指示当前是否为“空”（无任何分片）。
         /// </summary>
-        /// <returns>如果实例为空，则返回true；否则返回false。</returns>
         public bool IsEmpty => _pieceHashes.IsEmpty || _pieceHashes.Length == 0;
 
         /// <summary>
-        /// 获取只读的 64 位无符号整数的内存视图
+        /// 获取底层只读的 ulong 连续内存视图（按片依次排布）。
         /// </summary>
-        /// <returns>返回一个只读的 64 位无符号整数的内存视图</returns>
         public ReadOnlyMemory<ulong> ULongMemory => _pieceHashes;
 
         /// <summary>
-        /// 通过索引获取指定分片哈希值。
+        /// 按索引获取分片哈希值。
         /// </summary>
-        /// <param name="index">分片索引。</param>
-        /// <returns>返回指定索引处的分片哈希值。</returns>
+        /// <param name="index">分片索引（从 0 开始）。</param>
+        /// <returns>对应索引的 <see cref="HashValue"/>。</returns>
         public HashValue this[int index]
         {
             get
@@ -60,13 +67,17 @@ namespace ExtenderApp.Data
         }
 
         /// <summary>
-        /// 从字节数组创建分片哈希管理器
+        /// 通过连续的分片哈希字节序列构造。
+        /// 会根据总长度自动推断单片长度（必须能被 20/24/32/40 中某个整除），
+        /// 并按“小端”方式打包至新的 ulong 数组。
         /// </summary>
+        /// <param name="pieceHashes">按片拼接的哈希字节序列。</param>
+        /// <exception cref="ArgumentException">字节序列为空或长度不合法时抛出。</exception>
         public HashValues(ReadOnlySpan<byte> pieceHashes)
         {
             HashLength = ValidateHashLength(pieceHashes);
 
-            // 转换为ulong[]存储（每个哈希占3个ulong，最后一个ulong的后4字节为0）
+            // 转换为 ulong[] 存储（每片占 ⌈HashLength/8⌉ 个 ulong；不足 8 的尾部以 0 填充）
             var ulongArray = new ulong[(pieceHashes.Length + 7) / 8];
             var span = ulongArray.AsSpan();
             ULongsPerHash = (HashLength + 7) / 8;
@@ -81,14 +92,12 @@ namespace ExtenderApp.Data
         }
 
         /// <summary>
-        /// 初始化 HashValues 类的新实例。
+        /// 使用现有的 ulong 只读内存作为底层存储创建实例（不会拷贝）。
+        /// 调用方需保证该内存遵循“每片连续 <see cref="ULongsPerHash"/> 个 <see cref="ulong"/>”的布局约定。
         /// </summary>
-        /// <param name="pieceHashes">分片哈希数组。</param>
-        /// <param name="hashLength">哈希长度。</param>
-        /// <exception cref="ArgumentException">
-        /// 如果 <paramref name="pieceHashes"/> 为空或为 0，则抛出此异常。
-        /// 如果 <paramref name="hashLength"/> 小于等于 0 或不在支持的哈希长度列表中，则抛出此异常。
-        /// </exception>
+        /// <param name="pieceHashes">连续的分片哈希存储（只读）。</param>
+        /// <param name="hashLength">单片哈希的字节长度（20/24/32/40）。</param>
+        /// <exception cref="ArgumentException">存储为空或长度不受支持时抛出。</exception>
         public HashValues(ReadOnlyMemory<ulong> pieceHashes, int hashLength)
         {
             if (pieceHashes.IsEmpty || pieceHashes.Length == 0)
@@ -102,11 +111,11 @@ namespace ExtenderApp.Data
         }
 
         /// <summary>
-        /// 获取指定分片索引的哈希值
+        /// 获取指定分片索引的哈希值。
         /// </summary>
-        /// <param name="pieceIndex">分片索引</param>
-        /// <returns>返回指定分片索引的哈希值</returns>
-        /// <exception cref="IndexOutOfRangeException">如果分片索引超出范围，则抛出此异常</exception>
+        /// <param name="pieceIndex">分片索引（从 0 开始）。</param>
+        /// <returns>对应的 <see cref="HashValue"/>。</returns>
+        /// <exception cref="IndexOutOfRangeException">索引越界时抛出。</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public HashValue GetPieceHash(int pieceIndex)
         {
@@ -118,12 +127,11 @@ namespace ExtenderApp.Data
         }
 
         /// <summary>
-        /// 验证哈希长度是否合法
+        /// 根据总字节序列推断单片哈希长度。
         /// </summary>
-        /// <param name="hashSpan">哈希字节数组</param>
-        /// <param name="hashLength">哈希长度，默认为-1</param>
-        /// <returns>返回合法的哈希长度</returns>
-        /// <exception cref="ArgumentException">如果哈希字节数组为空或哈希长度不符合要求，则抛出此异常</exception>
+        /// <param name="hashSpan">拼接后的哈希字节序列。</param>
+        /// <returns>合法的单片长度（字节）。</returns>
+        /// <exception cref="ArgumentException">序列为空或无法被任何受支持长度整除时抛出。</exception>
         public int ValidateHashLength(ReadOnlySpan<byte> hashSpan)
         {
             if (hashSpan.IsEmpty || hashSpan.Length == 0)
@@ -140,11 +148,11 @@ namespace ExtenderApp.Data
         }
 
         /// <summary>
-        /// 验证指定索引处的数据块哈希值是否匹配
+        /// 验证指定分片是否与给定哈希相等。
         /// </summary>
-        /// <param name="pieceIndex">数据块索引</param>
-        /// <param name="hash">要验证的哈希值</param>
-        /// <returns>如果哈希值匹配则返回true，否则返回false</returns>
+        /// <param name="pieceIndex">分片索引。</param>
+        /// <param name="hash">要比对的哈希。</param>
+        /// <returns>匹配返回 true；否则返回 false。</returns>
         public bool ValidatePiece(int pieceIndex, HashValue hash)
         {
             if ((uint)pieceIndex >= (uint)PieceCount || hash.IsEmpty)
@@ -155,17 +163,17 @@ namespace ExtenderApp.Data
         }
 
         /// <summary>
-        /// 验证指定索引处的数据块哈希值是否匹配
+        /// 验证指定分片是否与给定字节序列相等（长度需等于 <see cref="HashLength"/>）。
         /// </summary>
-        /// <param name="pieceIndex">数据块索引</param>
-        /// <param name="span">要验证的哈希值字节数组</param>
-        /// <returns>如果哈希值匹配则返回true，否则返回false</returns>
+        /// <param name="pieceIndex">分片索引。</param>
+        /// <param name="span">要比对的哈希字节序列。</param>
+        /// <returns>匹配返回 true；否则返回 false。</returns>
         public bool ValidatePiece(int pieceIndex, ReadOnlySpan<byte> span)
         {
             if ((uint)pieceIndex >= (uint)PieceCount || span.IsEmpty || span.Length != HashLength)
                 return false;
 
-            // 比较ulong数组
+            // 比较前 n 个完整的 ulong
             int ulongOffset = pieceIndex * ULongsPerHash;
             int remainderLength = HashLength % 8 > 0 ? HashLength % 8 : 0;
             int ulongLength = remainderLength > 0 ? ULongsPerHash - 1 : ULongsPerHash;
@@ -183,7 +191,7 @@ namespace ExtenderApp.Data
             if (ulongLength == ULongsPerHash)
                 return true;
 
-            // 最后一个ulong
+            // 处理最后不足 8 字节的部分（按小端比较低位）。
             int index = ulongOffset + ULongsPerHash;
             ulong lastStored = _pieceHashes.Span[index];
             ulong lastComputed = BinaryPrimitives.ReadUInt32LittleEndian(
@@ -193,11 +201,11 @@ namespace ExtenderApp.Data
         }
 
         /// <summary>
-        /// 通过哈希值查找对应的片段索引。
+        /// 在线性扫描中查找与给定字节序列匹配的分片索引。
         /// </summary>
-        /// <param name="hash">要查找的哈希值。</param>
-        /// <returns>如果找到匹配的哈希值，则返回对应的片段索引；否则返回-1。</returns>
-        /// <exception cref="ArgumentException">如果哈希值的长度不等于HashLength。</exception>
+        /// <param name="hash">目标哈希字节序列（长度必须等于 <see cref="HashLength"/>）。</param>
+        /// <returns>返回首个匹配的分片索引；未找到返回 -1。</returns>
+        /// <exception cref="ArgumentException">长度不等于 <see cref="HashLength"/> 时抛出。</exception>
         public int FindPieceIndex(ReadOnlySpan<byte> hash)
         {
             if (hash.Length != HashLength)
@@ -226,11 +234,11 @@ namespace ExtenderApp.Data
         }
 
         /// <summary>
-        /// 通过哈希值查找对应的片段索引。
+        /// 在线性扫描中查找与给定 <see cref="HashValue"/> 匹配的分片索引。
         /// </summary>
-        /// <param name="hash">要查找的哈希值。</param>
-        /// <returns>如果找到匹配的哈希值，则返回对应的片段索引；否则返回-1。</returns>
-        /// <exception cref="ArgumentException">如果哈希值的长度不等于HashLength。</exception>
+        /// <param name="hash">目标哈希值（长度必须等于 <see cref="HashLength"/>）。</param>
+        /// <returns>返回首个匹配的分片索引；未找到返回 -1。</returns>
+        /// <exception cref="ArgumentException">长度不等于 <see cref="HashLength"/> 时抛出。</exception>
         public int FindPieceIndex(HashValue hash)
         {
             if (hash.Length != HashLength)
@@ -257,7 +265,7 @@ namespace ExtenderApp.Data
         }
 
         /// <summary>
-        /// 比较两个分片哈希数组是否完全相同
+        /// 判断与另一实例的分片内容是否完全一致（长度与每个 <see cref="ulong"/> 均相等）。
         /// </summary>
         public bool Equals(HashValues other)
         {
@@ -267,18 +275,24 @@ namespace ExtenderApp.Data
             return _pieceHashes.Span.SequenceEqual(other._pieceHashes.Span);
         }
 
+        /// <summary>
+        /// 等值比较运算符。
+        /// </summary>
         public static bool operator ==(HashValues left, HashValues right)
         {
             return left.Equals(right);
         }
 
+        /// <summary>
+        /// 不等比较运算符。
+        /// </summary>
         public static bool operator !=(HashValues left, HashValues right)
         {
             return !(left == right);
         }
 
         /// <summary>
-        /// 计算结构体的哈希码
+        /// 计算实例的哈希码（基于前最多 4 个 <see cref="ulong"/> 与 <see cref="HashLength"/>）。
         /// </summary>
         public override int GetHashCode()
         {
@@ -295,6 +309,9 @@ namespace ExtenderApp.Data
             return HashCode.Combine(HashLength, _pieceHashes.Length);
         }
 
+        /// <summary>
+        /// 与对象进行等值比较。
+        /// </summary>
         public override bool Equals(object obj)
         {
             return obj is HashValues && Equals((HashValues)obj);

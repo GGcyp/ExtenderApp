@@ -50,7 +50,7 @@ namespace ExtenderApp.Common.Hash
         /// <param name="hashProvider">哈希提供者接口。</param>
         /// <param name="localFileInfo">包含文件信息的对象。</param>
         /// <returns>异步返回计算出的哈希值。</returns>
-        public static HashValue ComputeHashAsync<T>(this IHashProvider hashProvider, LocalFileInfo localFileInfo) where T : HashAlgorithm
+        public static Task<HashValue> ComputeHashAsync<T>(this IHashProvider hashProvider, LocalFileInfo localFileInfo) where T : HashAlgorithm
         {
             return hashProvider.ComputeHashAsync<T>(localFileInfo.CreateReadWriteOperate());
         }

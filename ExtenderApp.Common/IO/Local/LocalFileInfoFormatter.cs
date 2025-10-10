@@ -34,14 +34,14 @@ namespace ExtenderApp.Common.IO
                 WriteNil(ref writer);
                 return;
             }
-            _string.Serialize(ref writer, value.FilePath);
+            _string.Serialize(ref writer, value.FullPath);
         }
 
         public override long GetLength(LocalFileInfo value)
         {
             if (value.IsEmpty)
                 return 1;
-            return _string.GetLength(value.FilePath);
+            return _string.GetLength(value.FullPath);
         }
     }
 }

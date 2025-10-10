@@ -42,7 +42,7 @@ namespace ExtenderApp.Common
         {
             services.AddSingleton<IJsonParser, JsonParser>();
             services.AddSingleton<IBinaryParser, BinaryParser>();
-            services.AddSingleton<ISplitterParser, SplitterParser>();
+            //services.AddSingleton<ISplitterParser, SplitterParser>();
             return services;
         }
 

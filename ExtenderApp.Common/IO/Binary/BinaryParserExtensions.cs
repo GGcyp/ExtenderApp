@@ -86,7 +86,6 @@ namespace ExtenderApp.Common.IO.Binaries
             store.AddClassFormatter<BitFieldData, BitFieldDataFormatter>();
 
             store.AddStructFormatter<LocalFileInfo, LocalFileInfoFormatter>();
-            store.AddStructFormatter<FileOperateInfo, FileOperateInfoFormatter>();
             store.AddStructFormatter<ExtensionHeader, ExtensionHeaderFormatter>();
 
             store.AddByteArrayFormatter();
