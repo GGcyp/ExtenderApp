@@ -93,7 +93,6 @@ namespace ExtenderApp.Common.IO
         /// <exception cref="InvalidOperationException">当上下文为空时。</exception>
         public FileOperate(FileOperateInfo operateInfo)
         {
-            if (OperateInfo.IsEmpty)
                 throw new InvalidOperationException("文件信息为空，无法创建文件操控类。");
             OperateInfo = operateInfo;
             Capacity = Info.FileSize;
