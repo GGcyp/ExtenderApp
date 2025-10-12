@@ -16,7 +16,7 @@ namespace ExtenderApp.Torrents.Converters
 
                 return ts.ToString(@"hh\:mm\:ss");
             }
-            // 支持秒数（int/long/double）
+            // 支持秒数（int/long/Float64）
             if (value is double d)
                 return Convert(TimeSpan.FromSeconds(d), targetType, parameter, culture);
             if (value is int i)

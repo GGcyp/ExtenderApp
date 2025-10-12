@@ -1,12 +1,12 @@
 ﻿using System.Buffers;
 using ExtenderApp.Abstract;
-using ExtenderApp.Common.IO.Binaries;
-using ExtenderApp.Common.IO.Binaries.Formatters;
+using ExtenderApp.Common.IO.Binary;
+using ExtenderApp.Common.IO.Binary.Formatters;
 using ExtenderApp.Data;
 
 namespace ExtenderApp.Common.IO.Splitter
 {
-    internal class SplitterDtoFormatter : ExtenderFormatter<SplitterDto>
+    internal class SplitterDtoFormatter : BinaryFormatter<SplitterDto>
     {
         private readonly IBinaryFormatter<uint> _uint;
         private readonly IBinaryFormatter<int> _int;

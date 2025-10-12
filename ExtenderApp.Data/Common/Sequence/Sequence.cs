@@ -75,7 +75,7 @@ namespace ExtenderApp.Data
         /// <summary>
         /// 使用默认的内存池初始化Sequence类的新实例。
         /// </summary>
-        public Sequence() : this(ArrayPool<T>.Create())
+        public Sequence() : this(ArrayPool<T>.Shared)
         {
         }
 

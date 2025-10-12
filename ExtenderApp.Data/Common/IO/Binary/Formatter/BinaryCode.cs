@@ -2,6 +2,9 @@
 
 namespace ExtenderApp.Data
 {
+    /// <summary>
+    /// 二进制编码定义。
+    /// </summary>
     public struct BinaryCode
     {
         /// <summary>

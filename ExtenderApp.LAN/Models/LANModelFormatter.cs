@@ -1,5 +1,5 @@
 ﻿using ExtenderApp.Abstract;
-using ExtenderApp.Common.IO.Binaries.Formatters;
+using ExtenderApp.Common.IO.Binary.Formatters;
 using ExtenderApp.Data;
 
 namespace ExtenderApp.LAN

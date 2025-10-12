@@ -35,7 +35,7 @@ namespace ExtenderApp.Common.Networks.LinkOperates
         /// <summary>
         /// 字节序列池的租赁。
         /// </summary>
-        private SequencePool<byte>.Rental rental;
+        private SequencePool<byte>.SequenceRental rental;
 
         private EndPoint? endPoint;
 

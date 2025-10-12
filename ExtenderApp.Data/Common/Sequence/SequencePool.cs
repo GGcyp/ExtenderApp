@@ -33,7 +33,7 @@ namespace ExtenderApp.Data
         /// 使用默认的最大大小和数组池初始化SequencePool实例。
         /// </summary>
         public SequencePool()
-            : this(Environment.ProcessorCount * 2, ArrayPool<T>.Create(80 * 1024, 100))
+            : this(Environment.ProcessorCount * 2, ArrayPool<T>.Shared)
         {
         }
 
@@ -44,7 +44,7 @@ namespace ExtenderApp.Data
         /// <param name="maxArrayLength">数组池中的单个数组的最大长度，默认为 80 * 1024 字节。</param>
         /// <param name="maxArraysPerBucket">每个桶中的最大数组数量，默认为 100。</param>
         public SequencePool(int maxSize, int maxArrayLength = 80 * 1024, int maxArraysPerBucket = 100)
-            : this(maxSize, ArrayPool<T>.Create(maxArrayLength, maxArraysPerBucket))
+            : this(maxSize, ArrayPool<T>.Shared)
         {
         }
 
@@ -76,13 +76,13 @@ namespace ExtenderApp.Data
         /// 租用一个Sequence<byte>对象。
         /// </summary>
         /// <returns>包含租用Sequence<byte>对象的Rental实例。</returns>
-        public Rental Rent()
+        public SequenceRental Rent()
         {
             Sequence<T> sequence;
             if (_pool.Count > 0)
             {
                 _pool.TryPop(out sequence);
-                return new Rental(this, sequence);
+                return new SequenceRental(this, sequence);
             }
 
             sequence = _arrayPoolOrMemoryPool is ArrayPool<T> arrayPool
@@ -92,7 +92,7 @@ namespace ExtenderApp.Data
             sequence.MinimumSpanLength = MinimumSpanLength;
 
 
-            return new Rental(this, sequence);
+            return new SequenceRental(this, sequence);
         }
 
         /// <summary>
@@ -111,13 +111,12 @@ namespace ExtenderApp.Data
             _pool.Push(value);
         }
 
-
         /// <summary>
         /// 表示一个用于管理租用的序列的结构体。
         /// </summary>
-        public struct Rental : IDisposable
+        public struct SequenceRental : IDisposable
         {
-            //public static readonly Rental Empty = new Rental(null, default);
+            public static readonly SequenceRental Empty = new SequenceRental(null, default);
 
             /// <summary>
             /// 序列池所有者。
@@ -130,11 +129,16 @@ namespace ExtenderApp.Data
             public Sequence<T> Value { get; }
 
             /// <summary>
-            /// 初始化 <see cref="Rental"/> 结构体的新实例。
+            /// 获取一个值，指示当前租约是否为空（未租用任何序列）。
+            /// </summary>
+            public bool IsEmpty => _owner == null;
+
+            /// <summary>
+            /// 初始化 <see cref="SequenceRental"/> 结构体的新实例。
             /// </summary>
             /// <param name="owner">序列池所有者。</param>
             /// <param name="value">要租用的序列。</param>
-            internal Rental(SequencePool<T> owner, Sequence<T> value)
+            internal SequenceRental(SequencePool<T> owner, Sequence<T> value)
             {
                 _owner = owner;
                 Value = value;

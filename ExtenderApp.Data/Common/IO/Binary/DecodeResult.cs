@@ -1,15 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿
 
 namespace ExtenderApp.Data
 {
     /// <summary>
     /// 解码结果枚举
     /// </summary>
-    public enum DecodeResult
+    public enum DecodeResult : byte
     {
         /// <summary>
         /// 解码成功

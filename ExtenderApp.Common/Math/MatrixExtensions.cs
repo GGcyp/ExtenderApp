@@ -1634,7 +1634,7 @@ namespace ExtenderApp.Common.Math
         //private static void CrossTerm(Matrix matrix, Matrix result, int samplesIndex, int crossTermIndex, List<int> degreelist)
         //{
         //    //确定一个次幂内的一个交叉项的值
-        //    double crossTermValue = 1;
+        //    Float64 crossTermValue = 1;
         //    for (int i = 0; i < degreelist.Count; i++)
         //    {
         //        int currentFeature = degreelist[i];

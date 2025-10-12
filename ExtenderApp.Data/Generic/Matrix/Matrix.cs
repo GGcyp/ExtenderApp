@@ -95,7 +95,7 @@ namespace ExtenderApp.Data
         /// <summary>
         /// 初始化Matrix对象
         /// </summary>
-        /// <param name="doubles">一个二维List<List<double>>，用于初始化矩阵</param>
+        /// <param name="doubles">一个二维List<List<Float64>>，用于初始化矩阵</param>
         public Matrix(List<List<double>> doubles)
         {
             Row = doubles.Count;

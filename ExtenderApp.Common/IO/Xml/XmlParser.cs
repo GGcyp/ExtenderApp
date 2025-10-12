@@ -32,10 +32,10 @@ namespace ExtenderApp.Common.IO
 
         //protected override void Read(FileInfoData infoData, Action<object> processAction)
         //{
-        //    using (XmlReader reader = XmlReader.Create(infoData.Info.FullName))
+        //    using (XmlReader Reader = XmlReader.Create(infoData.Info.FullName))
         //    {
         //        // 移动到根元素
-        //        processAction?.Invoke(reader);
+        //        processAction?.Invoke(Reader);
         //    }
         //}
 

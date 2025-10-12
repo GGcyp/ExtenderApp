@@ -2,7 +2,7 @@
 using System.Xml.Linq;
 using ExtenderApp.Abstract;
 using ExtenderApp.Common.DataBuffers;
-using ExtenderApp.Common.IO.Binaries.Formatters;
+using ExtenderApp.Common.IO.Binary.Formatters;
 using ExtenderApp.Data;
 
 namespace ExtenderApp.Torrents.Models.Formatters

@@ -3,57 +3,51 @@
 namespace ExtenderApp.Abstract
 {
     /// <summary>
-    /// 定义版本化数据格式化器管理器的接口，用于管理多个版本化的数据格式化器。
+    /// 支持按版本管理的二进制格式化器管理接口。
+    /// 提供默认长度提示，并允许向管理器注册具体的格式化器实例。
     /// </summary>
-    /// <remarks>
-    /// 该接口主要用于在需要处理多个不同版本数据格式化器的场景中，
-    /// 提供统一的格式化器添加和管理功能。
-    /// </remarks>
     public interface IVersionDataFormatterMananger : IBinaryFormatter
     {
         /// <summary>
-        /// 添加一个版本化数据格式化器到管理器中。
+        /// 向管理器注册一个格式化器实例。
+        /// 具体支持的格式化器类型（如 <see cref="IBinaryFormatter"/>、<see cref="IBinaryFormatter{T}"/> 或带版本的格式化器）由实现决定。
         /// </summary>
-        /// <param name="formatter">
-        /// 要添加的版本化数据格式化器实例，必须实现 <see cref="IVersionDataFormatter"/> 接口。
-        /// </param>
-        /// <exception cref="System.ArgumentNullException">
-        /// 当传入的格式化器为 null 时抛出此异常。
-        /// </exception>
+        /// <param name="formatter">要注册的格式化器实例。</param>
         void AddFormatter(object formatter);
     }
 
-
     /// <summary>
-    /// 提供版本化数据序列化、反序列化及长度计算功能的接口。
-    /// 实现了 <see cref="IBinaryFormatter{T}"/> 和 <see cref="IVersionDataFormatterMananger"/> 接口。
+    /// 面向类型 <typeparamref name="T"/> 的按版本二进制序列化/反序列化接口。
+    /// 在 <see cref="IBinaryFormatter{T}"/> 基础上，额外提供带 <see cref="Version"/> 的读写与长度估算方法。
     /// </summary>
-    /// <typeparam name="T">需要处理的数据类型。</typeparam>
+    /// <typeparam name="T">目标序列化/反序列化的类型。</typeparam>
     public interface IVersionDataFormatterMananger<T> : IBinaryFormatter<T>, IVersionDataFormatterMananger
     {
         /// <summary>
-        /// 将指定值序列化到指定的二进制写入器中。
+        /// 将 <paramref name="value"/> 依据指定 <paramref name="version"/> 的协议写入到 <see cref="ByteBlock"/>。
+        /// 实现应在写入后推进 <paramref name="block"/> 的写入位置。
         /// </summary>
-        /// <param name="writer">要写入数据的二进制写入器，通过引用传递。</param>
+        /// <param name="block">目标写入器。</param>
         /// <param name="value">要序列化的值。</param>
-        /// <param name="version">指定的版本信息，用于控制序列化过程。</param>
-        /// <returns>序列化后的字节数。</returns>
-        void Serialize(ref ExtenderBinaryWriter writer, T value, Version version);
+        /// <param name="version">序列化所采用的协议版本。</param>
+        void Serialize(ref ByteBlock block, T value, Version version);
 
         /// <summary>
-        /// 从二进制读取器中读取数据并反序列化为指定类型的对象。
+        /// 按指定 <paramref name="version"/> 的协议从 <see cref="ByteBlock"/> 读取并构造一个 <typeparamref name="T"/> 实例。
+        /// 实现应在读取后推进 <paramref name="block"/> 的读取位置。
         /// </summary>
-        /// <param name="reader">用于读取二进制数据的 <see cref="Data.ExtenderBinaryReader"/> 实例，通过引用传递。</param>
-        /// <param name="version">指定的版本信息，用于控制反序列化过程。</param>
+        /// <param name="block">数据来源。</param>
+        /// <param name="version">反序列化所采用的协议版本。</param>
         /// <returns>反序列化得到的对象。</returns>
-        T Deserialize(ref ExtenderBinaryReader reader, Version version);
+        T Deserialize(ref ByteBlock block, Version version);
 
         /// <summary>
-        /// 计算指定值在指定版本下序列化后的字节长度。
+        /// 返回在指定 <paramref name="version"/> 下序列化 <paramref name="value"/> 预计需要的字节数，用于预留写缓冲。
+        /// 可返回精确值或合理的估算值。
         /// </summary>
-        /// <param name="value">要计算长度的值。</param>
-        /// <param name="version">指定的版本信息。</param>
-        /// <returns>序列化后的字节长度。</returns>
+        /// <param name="value">待估算长度的值。</param>
+        /// <param name="version">估算时采用的协议版本。</param>
+        /// <returns>序列化所需的字节数。</returns>
         long GetLength(T value, Version version);
     }
 }

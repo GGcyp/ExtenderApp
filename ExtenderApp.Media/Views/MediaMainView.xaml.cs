@@ -165,7 +165,7 @@ namespace ExtenderApp.Media
         private void mediaSlider_PreviewMouseUp(object sender, MouseButtonEventArgs e)
         {
             var slider = sender as Slider;
-            //double value = slider?.Value ?? 0;
+            //Float64 value = slider?.Value ?? 0;
 
             // 获取鼠标在Slider上的位置
             var pos = e.GetPosition(slider);

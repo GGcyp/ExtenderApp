@@ -11,26 +11,9 @@ namespace ExtenderApp.Common.IO
     /// 文件操作抽象基类：提供基于偏移的同步/异步读写、按策略扩容、以及容量与时间元信息维护。
     /// 具体的 IO 行为由派生类通过 ExecuteRead/ExecuteWrite* 系列抽象方法实现。
     /// </summary>
-    /// <remarks>
-    /// 设计要点：
-    /// - 偏移与长度均以字节为单位，调用方需保证参数合法性（越界将抛出异常）。<br/>
-    /// - 写入前会按策略自动扩容（EnsureCapacityForWrite），并在完成后更新 LastOperateTime。<br/>
-    /// - 异步方法返回 ValueTask，通常视为“单次消费”；若需多次等待/组合请先调用 AsTask()。<br/>
-    /// - 读写的同步/异步实现应尽量使用 Span/Memory/RandomAccess 以降低分配、提升性能。
-    /// </remarks>
     public abstract class FileOperate : DisposableObject, IFileOperate
     {
         private const int AllocationGranularity = 64 * 1024; // 保守对齐（Windows 常见）
-
-        #region Concurrency
-
-        // 全局互斥：序列化所有同步/异步读写与扩容，避免并发越界与长度竞争。
-        // 注意：
-        // - 带 Span/ReadOnlySpan 的异步方法会在锁内调用同步实现，再返回已完成的 ValueTask，避免 ref struct 跨 await。
-        // - 若需要读写区分（读并发、写独占），可后续替换为自定义 AsyncReaderWriterLock。
-        private readonly SemaphoreSlim _gate;
-
-        #endregion Concurrency
 
         /// <summary>
         /// 当前逻辑容量（字节）。通常等于底层文件长度。
@@ -100,7 +83,6 @@ namespace ExtenderApp.Common.IO
             OperateInfo = operateInfo;
             Capacity = Info.FileSize;
             Stream = operateInfo.OpenFile();
-            _gate = new(1, 1);
         }
 
         #region Read
@@ -127,16 +109,8 @@ namespace ExtenderApp.Common.IO
                 throw new InvalidOperationException("文件不支持读取操作。");
 
 
-            _gate.Wait();
-            try
-            {
-                LastOperateTime = DateTime.Now;
-                return ExecuteRead(filePosition, length);
-            }
-            finally
-            {
-                _gate.Release();
-            }
+            LastOperateTime = DateTime.Now;
+            return ExecuteRead(filePosition, length);
         }
 
         /// <summary>
@@ -162,16 +136,8 @@ namespace ExtenderApp.Common.IO
             if (!CanRead)
                 throw new InvalidOperationException("文件不支持读取操作。");
 
-            _gate.Wait();
-            try
-            {
-                LastOperateTime = DateTime.Now;
-                return ExecuteReadForArrayPool(filePosition, length);
-            }
-            finally
-            {
-                _gate.Release();
-            }
+            LastOperateTime = DateTime.Now;
+            return ExecuteReadForArrayPool(filePosition, length);
         }
 
         /// <summary>
@@ -188,16 +154,8 @@ namespace ExtenderApp.Common.IO
             if (!CanRead)
                 throw new InvalidOperationException("文件不支持读取操作。");
 
-            _gate.Wait();
-            try
-            {
-                LastOperateTime = DateTime.Now;
-                return ExecuteRead(filePosition, bytes, bytesStart, length);
-            }
-            finally
-            {
-                _gate.Release();
-            }
+            LastOperateTime = DateTime.Now;
+            return ExecuteRead(filePosition, bytes, bytesStart, length);
         }
 
         /// <summary>
@@ -220,16 +178,8 @@ namespace ExtenderApp.Common.IO
             if (!CanRead)
                 throw new InvalidOperationException("文件不支持读取操作。");
 
-            _gate.Wait();
-            try
-            {
-                LastOperateTime = DateTime.Now;
-                return ExecuteRead(filePosition, span);
-            }
-            finally
-            {
-                _gate.Release();
-            }
+            LastOperateTime = DateTime.Now;
+            return ExecuteRead(filePosition, span);
         }
 
         /// <summary>
@@ -248,16 +198,8 @@ namespace ExtenderApp.Common.IO
             if (!CanRead)
                 throw new InvalidOperationException("文件不支持读取操作。");
 
-            _gate.Wait();
-            try
-            {
-                LastOperateTime = DateTime.Now;
-                return ExecuteRead(filePosition, memory);
-            }
-            finally
-            {
-                _gate.Release();
-            }
+            LastOperateTime = DateTime.Now;
+            return ExecuteRead(filePosition, memory);
         }
 
         #endregion Read
@@ -275,50 +217,32 @@ namespace ExtenderApp.Common.IO
         /// <summary>
         /// 异步从指定位置读取指定长度的数据并返回字节数组。
         /// </summary>
-        public async ValueTask<byte[]> ReadAsync(long filePosition, int length, CancellationToken token = default)
+        public ValueTask<byte[]> ReadAsync(long filePosition, int length, CancellationToken token = default)
         {
             if (!CanRead)
                 throw new InvalidOperationException("文件不支持读取操作。");
 
-            await _gate.WaitAsync(token).ConfigureAwait(false);
-            try
-            {
-                byte[] bytes = await ExecuteReadAsync(filePosition, length, token);
-                LastOperateTime = DateTime.Now;
-                return bytes;
-            }
-            finally
-            {
-                _gate.Release();
-            }
+            LastOperateTime = DateTime.Now;
+            return ExecuteReadAsync(filePosition, length, token);
         }
 
         /// <summary>
         /// 异步从指定位置读取指定长度的数据，尽量使用数组池。
         /// </summary>
-        public async ValueTask<byte[]> ReadForArrayPoolAsync(long filePosition, int length, CancellationToken token = default)
+        public ValueTask<byte[]> ReadForArrayPoolAsync(long filePosition, int length, CancellationToken token = default)
         {
             if (!CanRead)
                 throw new InvalidOperationException("文件不支持读取操作。");
 
-            await _gate.WaitAsync(token).ConfigureAwait(false);
-            try
-            {
-                byte[] bytes = await ExecuteReadForArrayPoolAsync(filePosition, length, token);
-                LastOperateTime = DateTime.Now;
-                return bytes;
-            }
-            finally
-            {
-                _gate.Release();
-            }
+            LastOperateTime = DateTime.Now;
+            return ExecuteReadForArrayPoolAsync(filePosition, length, token);
         }
 
         /// <summary>
         /// 异步读取到目标数组。
         /// </summary>
         /// <returns>实际读取的字节数。</returns>
-        public async ValueTask<int> ReadAsync(long filePosition, int length, byte[] bytes, int bytesStart, CancellationToken token = default)
+        public ValueTask<int> ReadAsync(long filePosition, int length, byte[] bytes, int bytesStart, CancellationToken token = default)
         {
             CheckBytes(bytes);
             if (bytesStart < 0 || bytesStart >= bytes.Length)
@@ -328,17 +252,8 @@ namespace ExtenderApp.Common.IO
             if (!CanRead)
                 throw new InvalidOperationException("文件不支持读取操作。");
 
-            await _gate.WaitAsync(token).ConfigureAwait(false);
-            try
-            {
-                int result = await ExecuteReadAsync(filePosition, bytes, bytesStart, length, token);
-                LastOperateTime = DateTime.Now;
-                return result;
-            }
-            finally
-            {
-                _gate.Release();
-            }
+            LastOperateTime = DateTime.Now;
+            return ExecuteReadAsync(filePosition, bytes, bytesStart, length, token);
         }
 
         /// <summary>
@@ -361,22 +276,14 @@ namespace ExtenderApp.Common.IO
         /// <summary>
         /// 异步从指定位置读取到内存块。
         /// </summary>
-        public async ValueTask<int> ReadAsync(long filePosition, Memory<byte> memory, CancellationToken token = default)
+        public ValueTask<int> ReadAsync(long filePosition, Memory<byte> memory, CancellationToken token = default)
         {
             CheckMemory(memory);
             if (!CanRead)
                 throw new InvalidOperationException("文件不支持读取操作。");
-            await _gate.WaitAsync(token).ConfigureAwait(false);
-            try
-            {
-                int result = await ExecuteReadAsync(filePosition, memory, token);
-                LastOperateTime = DateTime.Now;
-                return result;
-            }
-            finally
-            {
-                _gate.Release();
-            }
+
+            LastOperateTime = DateTime.Now;
+            return ExecuteReadAsync(filePosition, memory, token);
         }
 
         #endregion ReadAsync
@@ -410,17 +317,9 @@ namespace ExtenderApp.Common.IO
             if (!CanWrite)
                 throw new InvalidOperationException("文件不支持写入操作。");
 
-            _gate.Wait();
-            try
-            {
-                EnsureCapacityForWrite(filePosition, bytesLength);
-                ExecuteWrite(filePosition, bytes, bytesPosition, bytesLength);
-                LastOperateTime = DateTime.Now;
-            }
-            finally
-            {
-                _gate.Release();
-            }
+            LastOperateTime = DateTime.Now;
+            EnsureCapacityForWrite(filePosition, bytesLength);
+            ExecuteWrite(filePosition, bytes, bytesPosition, bytesLength);
         }
 
         /// <summary>
@@ -440,18 +339,10 @@ namespace ExtenderApp.Common.IO
             if (!CanWrite)
                 throw new InvalidOperationException("文件不支持写入操作。");
 
-            _gate.Wait();
-            try
-            {
-                writer.Commit();
-                EnsureCapacityForWrite(filePosition, writer.BytesCommitted);
-                ExecuteWrite(filePosition, writer);
-                LastOperateTime = DateTime.Now;
-            }
-            finally
-            {
-                _gate.Release();
-            }
+            writer.Commit();
+            EnsureCapacityForWrite(filePosition, writer.BytesCommitted);
+            ExecuteWrite(filePosition, writer);
+            LastOperateTime = DateTime.Now;
         }
 
         /// <summary>
@@ -471,17 +362,9 @@ namespace ExtenderApp.Common.IO
             if (!CanWrite)
                 throw new InvalidOperationException("文件不支持写入操作。");
 
-            _gate.Wait();
-            try
-            {
-                EnsureCapacityForWrite(filePosition, reader.Remaining);
-                ExecuteWrite(filePosition, reader);
-                LastOperateTime = DateTime.Now;
-            }
-            finally
-            {
-                _gate.Release();
-            }
+            EnsureCapacityForWrite(filePosition, reader.Remaining);
+            ExecuteWrite(filePosition, reader);
+            LastOperateTime = DateTime.Now;
         }
 
         /// <summary>
@@ -501,17 +384,10 @@ namespace ExtenderApp.Common.IO
             if (!CanWrite)
                 throw new InvalidOperationException("文件不支持写入操作。");
 
-            _gate.Wait();
-            try
-            {
-                EnsureCapacityForWrite(filePosition, span.Length);
-                ExecuteWrite(filePosition, span);
-                LastOperateTime = DateTime.Now;
-            }
-            finally
-            {
-                _gate.Release();
-            }
+
+            EnsureCapacityForWrite(filePosition, span.Length);
+            ExecuteWrite(filePosition, span);
+            LastOperateTime = DateTime.Now;
         }
 
         /// <summary>
@@ -531,17 +407,9 @@ namespace ExtenderApp.Common.IO
             if (!CanWrite)
                 throw new InvalidOperationException("文件不支持写入操作。");
 
-            _gate.Wait();
-            try
-            {
-                EnsureCapacityForWrite(filePosition, memory.Length);
-                ExecuteWrite(filePosition, memory);
-                LastOperateTime = DateTime.Now;
-            }
-            finally
-            {
-                _gate.Release();
-            }
+            EnsureCapacityForWrite(filePosition, memory.Length);
+            ExecuteWrite(filePosition, memory);
+            LastOperateTime = DateTime.Now;
         }
 
         #endregion Write
@@ -567,23 +435,15 @@ namespace ExtenderApp.Common.IO
         /// <summary>
         /// 异步将字节数组的指定区间写入到指定文件偏移。
         /// </summary>
-        public async ValueTask WriteAsync(long filePosition, byte[] bytes, int bytesPosition, int bytesLength, CancellationToken token = default)
+        public ValueTask WriteAsync(long filePosition, byte[] bytes, int bytesPosition, int bytesLength, CancellationToken token = default)
         {
             CheckBytes(bytes);
             if (!CanWrite)
                 throw new InvalidOperationException("文件不支持写入操作。");
 
-            await _gate.WaitAsync(token).ConfigureAwait(false);
-            try
-            {
-                EnsureCapacityForWrite(filePosition, bytesLength);
-                await ExecuteWriteAsync(filePosition, bytes, bytesPosition, bytesLength, token);
-                LastOperateTime = DateTime.Now;
-            }
-            finally
-            {
-                _gate.Release();
-            }
+            LastOperateTime = DateTime.Now;
+            EnsureCapacityForWrite(filePosition, bytesLength);
+            return ExecuteWriteAsync(filePosition, bytes, bytesPosition, bytesLength, token);
         }
 
         /// <summary>
@@ -597,23 +457,15 @@ namespace ExtenderApp.Common.IO
         /// <summary>
         /// 异步将只读内存写入到指定文件偏移。
         /// </summary>
-        public async ValueTask WriteAsync(long filePosition, ReadOnlyMemory<byte> memory, CancellationToken token = default)
+        public ValueTask WriteAsync(long filePosition, ReadOnlyMemory<byte> memory, CancellationToken token = default)
         {
             CheckMemory(memory);
             if (!CanWrite)
                 throw new InvalidOperationException("文件不支持写入操作。");
 
-            await _gate.WaitAsync(token).ConfigureAwait(false);
-            try
-            {
-                EnsureCapacityForWrite(filePosition, memory.Length);
-                await ExecuteWriteAsync(filePosition, memory, token).ConfigureAwait(false);
-                LastOperateTime = DateTime.Now;
-            }
-            finally
-            {
-                _gate.Release();
-            }
+            LastOperateTime = DateTime.Now;
+            EnsureCapacityForWrite(filePosition, memory.Length);
+            return ExecuteWriteAsync(filePosition, memory, token);
         }
 
         #endregion WriteAsync
@@ -780,6 +632,8 @@ namespace ExtenderApp.Common.IO
         /// </summary>
         private void EnsureCapacityForWrite(long filePosition, long count)
         {
+            ThrowIfDisposed();
+
             long end = filePosition + count;
             if (end <= Capacity) return;
 
@@ -831,12 +685,13 @@ namespace ExtenderApp.Common.IO
         /// </summary>
         public void ExpandCapacity(long newCapacity)
         {
-            ChangeCapacity(newCapacity);
             LastOperateTime = DateTime.Now;
+            ChangeCapacity(newCapacity);
+            Capacity = newCapacity;
         }
 
         /// <summary>
-        /// 派生类扩容实现：应设置底层长度并同步更新 <see cref="Capacity"/>。
+        /// 派生类扩容实现：应设置底层长度。
         /// </summary>
         protected abstract void ChangeCapacity(long length);
 
@@ -848,7 +703,6 @@ namespace ExtenderApp.Common.IO
         protected override void Dispose(bool disposing)
         {
             Stream.Dispose();
-            _gate.Dispose();
         }
     }
 }

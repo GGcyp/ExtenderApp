@@ -63,7 +63,7 @@ namespace ExtenderApp.Media
 
         //// 视频信息
         //private long _videoDuration;
-        //private double _videoFrameRate;
+        //private Float64 _videoFrameRate;
         //private int _videoWidth;
         //private int _videoHeight;
 
@@ -160,7 +160,7 @@ namespace ExtenderApp.Media
         //    //}
         //}
 
-        //private void VolumeSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        //private void VolumeSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<Float64> e)
         //{
         //    // 这里可以添加音量控制逻辑
         //}
@@ -314,7 +314,7 @@ namespace ExtenderApp.Media
         //    AVRational frameRate = stream->avg_frame_rate;
         //    if (frameRate.den != 0)
         //    {
-        //        _videoFrameRate = (double)frameRate.num / frameRate.den;
+        //        _videoFrameRate = (Float64)frameRate.num / frameRate.den;
         //    }
         //    else
         //    {
@@ -539,7 +539,7 @@ namespace ExtenderApp.Media
         //            if (!_isDraggingSlider && _formatContext != IntPtr.Zero)
         //            {
         //                long currentTime = formatContext->streams[_videoStreamIndex]->index;
-        //                double position = (double)currentTime / _videoDuration;
+        //                Float64 position = (Float64)currentTime / _videoDuration;
 
         //                Dispatcher.Invoke(() =>
         //                {
@@ -691,8 +691,8 @@ namespace ExtenderApp.Media
         //private void UpdateTimeDisplay(long currentTime)
         //{
         //    //// 转换为秒
-        //    //double currentSeconds = (double)currentTime / ffmpeg.AV_TIME_BASE;
-        //    //double totalSeconds = (double)_videoDuration / ffmpeg.AV_TIME_BASE;
+        //    //Float64 currentSeconds = (Float64)currentTime / ffmpeg.AV_TIME_BASE;
+        //    //Float64 totalSeconds = (Float64)_videoDuration / ffmpeg.AV_TIME_BASE;
 
         //    //// 格式化时间
         //    //string currentTimeStr = TimeSpan.FromSeconds(currentSeconds).ToString(@"mm\:ss");

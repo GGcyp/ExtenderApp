@@ -97,7 +97,7 @@ namespace ExtenderApp.Common.Networks
             //    }
 
             //    // 计算需要等待的时间
-            //    double waitSeconds = (double)(_tokensInWindow + requiredTokens - Limit) / Limit * WindowTime.TotalSeconds;
+            //    Float64 waitSeconds = (Float64)(_tokensInWindow + requiredTokens - Limit) / Limit * WindowTime.TotalSeconds;
             //    int waitMilliseconds = System.Math.Max(1, (int)(waitSeconds * 1000));
 
             //    // 等待窗口重置

@@ -57,7 +57,7 @@ namespace ExtenderApp.Common.MachineLearning.Linear
 
             for (int i = 0; i < MaxIterations; i++)
             {
-                ////Vector<double> prevBeta = beta.Clone();
+                ////Vector<Float64> prevBeta = beta.Clone();
                 for (int j = 0; j < MatrixX.Column; j++)
                 {
                     UpdateCoefficient();

@@ -1,48 +1,45 @@
-﻿using ExtenderBinaryWriter = ExtenderApp.Data.ExtenderBinaryWriter;
-using ExtenderBinaryReader = ExtenderApp.Data.ExtenderBinaryReader;
+﻿using ExtenderApp.Data;
 
 namespace ExtenderApp.Abstract
 {
     /// <summary>
-    /// 二进制格式化器接口。
+    /// 二进制格式化器基础接口，提供序列化时的默认长度提示。
     /// </summary>
     public interface IBinaryFormatter
     {
         /// <summary>
-        /// 获取当前类型默认字节数量，用于序列化和反序列化。
-        /// 如果是Collection类型，返回的头元素中字节的数量。
+        /// 序列化的默认预估长度（字节数）。
+        /// 用于预留写缓冲的大小提示，实际写入可能与该值不同。
         /// </summary>
-        /// <returns>字节数量</returns>
         int DefaultLength { get; }
     }
 
     /// <summary>
-    /// 泛型二进制格式化器接口，继承自 <see cref="IBinaryFormatter"/>。
+    /// 针对类型 <typeparamref name="T"/> 的二进制序列化/反序列化器接口。
     /// </summary>
-    /// <typeparam name="T">需要序列化和反序列化的类型。</typeparam>
+    /// <typeparam name="T">要序列化/反序列化的类型。</typeparam>
     public interface IBinaryFormatter<T> : IBinaryFormatter
     {
         /// <summary>
-        /// 将指定值序列化到指定的二进制写入器中。
+        /// 将 <paramref name="value"/> 按实现约定的二进制格式写入到 <see cref="ByteBlock"/>。
         /// </summary>
-        /// <param name="writer">要写入数据的二进制写入器。</param>
+        /// <param name="block">目标写入器，方法应在写入后推进其写入位置。</param>
         /// <param name="value">要序列化的值。</param>
-        /// <returns>序列化后的字节数。</returns>
-        void Serialize(ref ExtenderBinaryWriter writer, T value);
+        void Serialize(ref ByteBlock block, T value);
 
         /// <summary>
-        /// 从 <see cref="Data.ExtenderBinaryReader"/> 中读取二进制数据并反序列化为指定类型的对象。
+        /// 从给定的 <see cref="ByteBlock"/> 读取并构造一个 <typeparamref name="T"/> 实例。
         /// </summary>
-        /// <param name="reader"><see cref="Data.ExtenderBinaryReader"/> 实例，用于读取二进制数据。</param>
-        /// <returns>反序列化得到的对象。</returns>
-        T Deserialize(ref ExtenderBinaryReader reader);
+        /// <param name="block">数据来源，方法应在读取后推进其读取位置。</param>
+        /// <returns>反序列化得到的 <typeparamref name="T"/> 实例。</returns>
+        T Deserialize(ref ByteBlock block);
 
         /// <summary>
-        /// 获取需要转换类型需要的字节数量。
-        /// 如果引用类型为null，返回1。
+        /// 返回序列化指定值预计需要的字节数，用于预留写缓冲。
+        /// 具体实现可返回精确值或合理的估算值。
         /// </summary>
-        /// <param name="value">要获取字节数量的值。</param>
-        /// <returns>返回所需字节数。</returns>
+        /// <param name="value">待估算长度的值。</param>
+        /// <returns>序列化所需的字节数。</returns>
         long GetLength(T value);
     }
 }

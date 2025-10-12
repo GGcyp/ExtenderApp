@@ -1,6 +1,6 @@
 ﻿using System.Collections.ObjectModel;
 using ExtenderApp.Abstract;
-using ExtenderApp.Common.IO.Binaries.Formatters;
+using ExtenderApp.Common.IO.Binary.Formatters;
 using ExtenderApp.Data;
 using ExtenderApp.Media.Models;
 
@@ -26,7 +26,7 @@ namespace ExtenderApp.Media
         public override MediaModel Deserialize(ref ExtenderBinaryReader reader)
         {
             MediaModel mediaData = new();
-            //mediaData.MediaInfos = _videoInfoFormatter.Deserialize(ref reader);
+            //mediaData.MediaInfos = _videoInfoFormatter.Deserialize(ref Reader);
             //mediaData.MediaInfos = mediaData.MediaInfos ?? new();
             return mediaData;
         }

@@ -19,9 +19,14 @@ namespace ExtenderApp.Data
         public BinaryRang BinaryRang { get; set; }
 
         /// <summary>
+        /// 获取或设置二进制长度对象
+        /// </summary>
+        public BinaryLength BinaryLength { get; set; }
+
+        /// <summary>
         /// 获取或设置日期时间常量对象
         /// </summary>
-        public DateTimeConstants DateTimeConstants { get; set; }
+        public BinaryDateTime BinaryDateTime { get; set; }
 
         /// <summary>
         /// 获取或设置最大对象图深度
@@ -39,13 +44,13 @@ namespace ExtenderApp.Data
         /// <summary>
         /// 二进制选项类的构造函数
         /// </summary>
-        public BinaryOptions()
+        public BinaryOptions(Encoding? encoder = null)
         {
             BinaryCode = new BinaryCode();
             BinaryRang = new BinaryRang();
-            DateTimeConstants = new DateTimeConstants();
+            BinaryDateTime = new BinaryDateTime();
             MaximumObjectGraphDepth = 500;
-            BinaryEncoding = Encoding.UTF8; // 使用UTF-8编码
+            BinaryEncoding = encoder ?? Encoding.UTF8; // 使用UTF-8编码
         }
     }
 }

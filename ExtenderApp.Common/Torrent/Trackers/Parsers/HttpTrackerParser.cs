@@ -66,8 +66,8 @@ namespace ExtenderApp.Common.Torrent
         //{
         //    // 实际实现需要完整的 Bencode 解析器
         //    // 简化版示例，仅演示结构
-        //    using var reader = new StreamReader(stream);
-        //    string content = reader.ReadToEnd();
+        //    using var Reader = new StreamReader(stream);
+        //    string content = Reader.ReadToEnd();
 
         //    // 注意：实际应用中需要使用完整的 Bencode 解析器
         //    // 这里仅为示例

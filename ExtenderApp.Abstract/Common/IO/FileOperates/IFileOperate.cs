@@ -133,42 +133,25 @@ namespace ExtenderApp.Abstract
         void Write(long filePosition, ReadOnlyMemory<byte> memory);
 
         /// <summary>
-        /// 使用 <see cref="ExtenderBinaryWriter"/> 将其缓冲的数据写入到指定位置。
+        /// 使用 <see cref="ByteBlock"/> 将其缓冲的数据写入到指定位置。
         /// </summary>
         /// <param name="filePosition">文件起始写入位置（字节偏移）。</param>
-        /// <param name="writer">二进制写入器（其缓冲数据将被持久化）。</param>
-        /// <remarks>调用方负责管理 <paramref name="writer"/> 及其租赁缓冲区的生命周期。</remarks>
+        /// <param name="block">二进制写入器（其缓冲数据将被持久化）。</param>
+        /// <remarks>调用方负责管理 <paramref name="block"/> 及其租赁缓冲区的生命周期。</remarks>
         /// <exception cref="ArgumentException">写入器状态不合法或无数据。</exception>
         /// <exception cref="IOException">底层 IO 错误。</exception>
         /// <exception cref="ObjectDisposedException">对象已释放。</exception>
-        void Write(long filePosition, ExtenderBinaryWriter writer);
+        void Write(long filePosition, ByteBlock block);
 
         /// <summary>
-        /// 使用 <see cref="ExtenderBinaryWriter"/> 将其缓冲的数据写入到实现定义的默认位置。
+        /// 使用 <see cref="ByteBlock"/> 将其缓冲的数据写入到实现定义的默认位置。
         /// </summary>
-        /// <param name="writer">二进制写入器（其缓冲数据将被持久化）。</param>
+        /// <param name="block">二进制写入器（其缓冲数据将被持久化）。</param>
         /// <remarks>默认位置由实现决定（如文件开头或当前 Position）。</remarks>
         /// <exception cref="ArgumentException">写入器状态不合法或无数据。</exception>
         /// <exception cref="IOException">底层 IO 错误。</exception>
         /// <exception cref="ObjectDisposedException">对象已释放。</exception>
-        void Write(ExtenderBinaryWriter writer);
-
-        /// <summary>
-        /// 将 <see cref="ExtenderBinaryReader"/> 中剩余未读数据写入到实现定义的默认位置。
-        /// </summary>
-        /// <param name="reader">二进制读取器（ref struct）。</param>
-        /// <remarks>
-        /// 由于 <see cref="ExtenderBinaryReader"/> 为 ref struct，异步期间不可直接捕获；实现若需异步写入，应先将数据复制到稳定缓冲区。
-        /// </remarks>
-        void Write(ExtenderBinaryReader reader);
-
-        /// <summary>
-        /// 从指定文件偏移开始，将 <see cref="ExtenderBinaryReader"/> 中剩余未读数据写入。
-        /// </summary>
-        /// <param name="filePosition">文件起始写入位置（字节偏移）。</param>
-        /// <param name="reader">二进制读取器（ref struct）。</param>
-        /// <remarks>实现细节同上：必要时应复制到稳定缓冲区。</remarks>
-        void Write(long filePosition, ExtenderBinaryReader reader);
+        void Write(ByteBlock block);
 
         #endregion Write
 
@@ -209,6 +192,10 @@ namespace ExtenderApp.Abstract
         /// <param name="token">取消令牌。</param>
         /// <returns>表示异步写入的任务。</returns>
         ValueTask WriteAsync(ReadOnlyMemory<byte> memory, CancellationToken token = default);
+
+        ValueTask WriteAsync(ByteBlock block, CancellationToken token = default);
+
+        ValueTask WriteAsync(long filePosition, ByteBlock block, CancellationToken token = default);
 
         #endregion WriteAsync
 
@@ -268,6 +255,9 @@ namespace ExtenderApp.Abstract
         /// <exception cref="ObjectDisposedException">对象已释放。</exception>
         int Read(long filePosition, Span<byte> span);
 
+
+        byte[]? Read(long filePosition, int length, ref ByteBlock block);
+
         /// <summary>
         /// 读取数据到给定的内存块。
         /// </summary>
@@ -319,6 +309,8 @@ namespace ExtenderApp.Abstract
         /// <param name="token">取消令牌。</param>
         /// <returns>包含读取数据的数组。</returns>
         ValueTask<byte[]> ReadAsync(long filePosition, int length, CancellationToken token = default);
+
+        ValueTask ReadAsync(long filePosition, int length, ref ByteBlock block, CancellationToken token = default);
 
         /// <summary>
         /// 异步从指定位置读取指定长度的数据到目标数组。
