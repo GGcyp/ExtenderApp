@@ -18,19 +18,19 @@ namespace ExtenderApp.Common.IO.Splitter
             _int = GetFormatter<int>();
         }
 
-        public override PieceData Deserialize(ref ExtenderBinaryReader reader)
+        public override PieceData Deserialize(ref ByteBuffer buffer)
         {
-            var length = _int.Deserialize(ref reader);
-            var trueCount = _int.Deserialize(ref reader);
-            var pieces = _byteArray.Deserialize(ref reader);
+            var length = _int.Deserialize(ref buffer);
+            var trueCount = _int.Deserialize(ref buffer);
+            var pieces = _byteArray.Deserialize(ref buffer);
             return new PieceData(pieces, length, trueCount);
         }
 
-        public override void Serialize(ref ExtenderBinaryWriter writer, PieceData value)
+        public override void Serialize(ref ByteBuffer buffer, PieceData value)
         {
-            _int.Serialize(ref writer, value.Length);
-            _int.Serialize(ref writer, value.TrueCount);
-            _byteArray.Serialize(ref writer, value.CopeToArray());
+            _int.Serialize(ref buffer, value.Length);
+            _int.Serialize(ref buffer, value.TrueCount);
+            _byteArray.Serialize(ref buffer, value.CopeToArray());
         }
 
         public override long GetLength(PieceData value)

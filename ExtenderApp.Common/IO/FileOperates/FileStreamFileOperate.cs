@@ -1,5 +1,4 @@
-﻿using System.Buffers;
-using ExtenderApp.Data;
+﻿using ExtenderApp.Data;
 
 namespace ExtenderApp.Common.IO
 {
@@ -96,6 +95,36 @@ namespace ExtenderApp.Common.IO
             }
         }
 
+        protected override int ExecuteRead(long filePosition, int length, ref ByteBuffer buffer)
+        {
+            _slim.Wait();
+            try
+            {
+                int result = RandomAccess.Read(Stream.SafeFileHandle, buffer.GetSpan(length), filePosition);
+                buffer.WriteAdvance(result);
+                return result;
+            }
+            finally
+            {
+                _slim.Release();
+            }
+        }
+
+        protected override int ExecuteRead(long filePosition, int length, ref ByteBlock block)
+        {
+            _slim.Wait();
+            try
+            {
+                int result = RandomAccess.Read(Stream.SafeFileHandle, block.GetSpan(length), filePosition);
+                block.WriteAdvance(result);
+                return result;
+            }
+            finally
+            {
+                _slim.Release();
+            }
+        }
+
         protected override ValueTask<byte[]> ExecuteReadAsync(long filePosition, int length, CancellationToken token)
         {
             _slim.Wait();
@@ -137,59 +166,12 @@ namespace ExtenderApp.Common.IO
             }
         }
 
-        protected override byte[] ExecuteReadForArrayPool(long filePosition, int length)
-        {
-            _slim.Wait();
-            try
-            {
-                byte[] bytes = ArrayPool<byte>.Shared.Rent(length);
-                RandomAccess.Read(Stream.SafeFileHandle, bytes.AsSpan(0, length), filePosition);
-                return bytes;
-            }
-            finally
-            {
-                _slim.Release();
-            }
-        }
-
-        protected override ValueTask<byte[]> ExecuteReadForArrayPoolAsync(long filePosition, int length, CancellationToken token)
-        {
-            _slim.Wait();
-            try
-            {
-                byte[] bytes = ArrayPool<byte>.Shared.Rent(length);
-                RandomAccess.ReadAsync(Stream.SafeFileHandle, bytes.AsMemory(0, length), filePosition, token);
-                return new ValueTask<byte[]>(bytes);
-            }
-            finally
-            {
-                _slim.Release();
-            }
-        }
-
         protected override void ExecuteWrite(long filePosition, byte[] bytes, int bytesPosition, int bytesLength)
         {
             _slim.Wait();
             try
             {
                 ExecuteWrite(filePosition, bytes.AsSpan(bytesPosition, bytesLength));
-            }
-            finally
-            {
-                _slim.Release();
-            }
-        }
-
-        protected override void ExecuteWrite(long filePosition, ExtenderBinaryReader reader)
-        {
-            _slim.Wait();
-            try
-            {
-                foreach (var item in reader.Sequence)
-                {
-                    RandomAccess.Write(Stream.SafeFileHandle, item.Span, filePosition);
-                    filePosition += item.Length;
-                }
             }
             finally
             {
@@ -216,6 +198,34 @@ namespace ExtenderApp.Common.IO
             try
             {
                 RandomAccess.Write(Stream.SafeFileHandle, memory.Span, filePosition);
+            }
+            finally
+            {
+                _slim.Release();
+            }
+        }
+
+        protected override void ExecuteWrite(long filePosition, ByteBuffer buffer)
+        {
+            _slim.Wait();
+            try
+            {
+                RandomAccess.Write(Stream.SafeFileHandle, buffer.UnreadSpan, filePosition);
+                buffer.ReadAdvance(buffer.UnreadSpan.Length);
+            }
+            finally
+            {
+                _slim.Release();
+            }
+        }
+
+        protected override void ExecuteWrite(long filePosition, ByteBlock block)
+        {
+            _slim.Wait();
+            try
+            {
+                RandomAccess.Write(Stream.SafeFileHandle, block, filePosition);
+                block.ReadAdvance(block.UnreadSpan.Length);
             }
             finally
             {

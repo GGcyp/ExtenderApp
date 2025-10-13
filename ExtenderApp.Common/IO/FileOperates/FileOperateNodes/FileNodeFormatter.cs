@@ -31,10 +31,10 @@ namespace ExtenderApp.Common.IO
         /// 初始化 <see cref="FileNodeFormatter{T}"/> 类的新实例。
         /// </summary>
         /// <param name="resolver">用于解析格式化器的解析器。</param>
-        /// <param name="binaryWriterConvert">用于二进制写入的转换器。</param>
-        /// <param name="binaryReaderConvert">用于二进制读取的转换器。</param>
+        /// <param name="binarybufferConvert">用于二进制写入的转换器。</param>
+        /// <param name="binarybufferConvert">用于二进制读取的转换器。</param>
         /// <param name="options">二进制选项。</param>
-        public FileNodeFormatter(IBinaryFormatterResolver resolver, ExtenderBinaryWriterConvert binaryWriterConvert, ExtenderBinaryReaderConvert binaryReaderConvert, BinaryOptions options) : base(resolver, binaryWriterConvert, binaryReaderConvert, options)
+        public FileNodeFormatter(IBinaryFormatterResolver resolver, ByteBufferConvert convert, BinaryOptions options) : base(resolver, convert, options)
         {
             _bool = resolver.GetFormatter<bool>();
             _long = resolver.GetFormatter<long>();
@@ -44,15 +44,15 @@ namespace ExtenderApp.Common.IO
         /// <summary>
         /// 反序列化二进制数据为 <see cref="T"/> 类型的对象。
         /// </summary>
-        /// <param name="reader">用于读取二进制数据的读取器。</param>
+        /// <param name="buffer">用于读取二进制数据的读取器。</param>
         /// <returns>反序列化后的 <see cref="T"/> 对象。</returns>
-        protected override T ProtectedDeserialize(ref ExtenderBinaryReader reader)
+        protected override T ProtectedDeserialize(ref ByteBuffer buffer)
         {
             T node = new();
 
-            node.IsFile = _bool.Deserialize(ref reader);
-            node.Length = _long.Deserialize(ref reader);
-            node.Name = _string.Deserialize(ref reader);
+            node.IsFile = _bool.Deserialize(ref buffer);
+            node.Length = _long.Deserialize(ref buffer);
+            node.Name = _string.Deserialize(ref buffer);
 
             return node;
         }
@@ -60,13 +60,13 @@ namespace ExtenderApp.Common.IO
         /// <summary>
         /// 序列化 <see cref="T"/> 对象为二进制数据。
         /// </summary>
-        /// <param name="writer">用于写入二进制数据的写入器。</param>
+        /// <param name="buffer">用于写入二进制数据的写入器。</param>
         /// <param name="value"><see cref="T"/> 对象。</param>
-        protected override void ProtectedSerialize(ref ExtenderBinaryWriter writer, T value)
+        protected override void ProtectedSerialize(ref ByteBuffer buffer, T value)
         {
-            _bool.Serialize(ref writer, value.IsFile);
-            _long.Serialize(ref writer, value.Length);
-            _string.Serialize(ref writer, value.Name);
+            _bool.Serialize(ref buffer, value.IsFile);
+            _long.Serialize(ref buffer, value.Length);
+            _string.Serialize(ref buffer, value.Name);
         }
 
         /// <summary>

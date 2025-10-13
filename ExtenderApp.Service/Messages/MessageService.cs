@@ -1,6 +1,5 @@
 ﻿using System.Collections.Concurrent;
 using ExtenderApp.Abstract;
-using ExtenderApp.Common.Torrent;
 using ExtenderApp.Data;
 using ExtenderApp.Services.Messages;
 

@@ -17,20 +17,20 @@ namespace ExtenderApp.Common.Networks
             _string = GetFormatter<string>();
         }
 
-        public override ErrorDto Deserialize(ref ExtenderBinaryReader reader)
+        public override ErrorDto Deserialize(ref ByteBuffer buffer)
         {
             ErrorDto dto = new ErrorDto();
 
-            dto.StatrCode = _int.Deserialize(ref reader);
-            dto.Message = _string.Deserialize(ref reader);
+            dto.StatrCode = _int.Deserialize(ref buffer);
+            dto.Message = _string.Deserialize(ref buffer);
 
             return dto;
         }
 
-        public override void Serialize(ref ExtenderBinaryWriter writer, ErrorDto value)
+        public override void Serialize(ref ByteBuffer buffer, ErrorDto value)
         {
-            _int.Serialize(ref writer, value.StatrCode);
-            _string.Serialize(ref writer, value.Message);
+            _int.Serialize(ref buffer, value.StatrCode);
+            _string.Serialize(ref buffer, value.Message);
         }
 
         public override long GetLength(ErrorDto value)

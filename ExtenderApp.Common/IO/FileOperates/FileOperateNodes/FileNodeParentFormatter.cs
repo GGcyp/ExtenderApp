@@ -19,18 +19,18 @@ namespace ExtenderApp.Common.IO
             _string = GetFormatter<string>();
         }
 
-        public override TParent Deserialize(ref ExtenderBinaryReader reader)
+        public override TParent Deserialize(ref ByteBuffer buffer)
         {
             TParent nodeParent = new TParent();
-            nodeParent.ParentPath = _string.Deserialize(ref reader);
-            nodeParent.ParentNode = _fileNode.Deserialize(ref reader);
+            nodeParent.ParentPath = _string.Deserialize(ref buffer);
+            nodeParent.ParentNode = _fileNode.Deserialize(ref buffer);
             return nodeParent;
         }
 
-        public override void Serialize(ref ExtenderBinaryWriter writer, TParent value)
+        public override void Serialize(ref ByteBuffer buffer, TParent value)
         {
-            _string.Serialize(ref writer, value.ParentPath);
-            _fileNode.Serialize(ref writer, value.ParentNode);
+            _string.Serialize(ref buffer, value.ParentPath);
+            _fileNode.Serialize(ref buffer, value.ParentNode);
         }
 
         public override long GetLength(TParent value)

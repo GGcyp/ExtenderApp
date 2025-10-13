@@ -23,7 +23,7 @@ namespace ExtenderApp.Media
             _videoInfoFormatter = GetFormatter<ObservableCollection<MediaInfo>>();
         }
 
-        public override MediaModel Deserialize(ref ExtenderBinaryReader reader)
+        public override MediaModel Deserialize(ref ByteBuffer buffer)
         {
             MediaModel mediaData = new();
             //mediaData.MediaInfos = _videoInfoFormatter.Deserialize(ref Reader);
@@ -31,7 +31,7 @@ namespace ExtenderApp.Media
             return mediaData;
         }
 
-        public override void Serialize(ref ExtenderBinaryWriter writer, MediaModel value)
+        public override void Serialize(ref ByteBuffer buffer, MediaModel value)
         {
             if (value == null)
             {

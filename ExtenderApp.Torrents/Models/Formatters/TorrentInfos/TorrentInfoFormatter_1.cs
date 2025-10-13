@@ -43,50 +43,50 @@ namespace ExtenderApp.Torrents.Models.Formatters
             _fileInfoNodeList = GetFormatter<ValueOrList<TorrentFileInfoNode>>();
         }
 
-        public override TorrentInfo Deserialize(ref ExtenderBinaryReader reader)
+        public override TorrentInfo Deserialize(ref ByteBuffer buffer)
         {
             TorrentInfo info = new TorrentInfo(_dispatcherService);
-            if (TryReadNil(ref reader))
+            if (TryReadNil(ref buffer))
                 return info;
 
-            info.Name = _string.Deserialize(ref reader);
-            info.Size = _long.Deserialize(ref reader);
-            info.PieceLength = _int.Deserialize(ref reader);
-            info.PieceCount = _int.Deserialize(ref reader);
-            info.Progress = _double.Deserialize(ref reader);
-            info.SelectedFileCount = _int.Deserialize(ref reader);
-            info.SelectedFileLength = _long.Deserialize(ref reader);
-            info.SelectedFileCompleteCount = _int.Deserialize(ref reader);
-            info.SelectedFileCompleteLength = _long.Deserialize(ref reader);
-            info.TorrentPath = _string.Deserialize(ref reader);
-            info.SavePath = _string.Deserialize(ref reader);
-            info.TorrentMagnetLink = _string.Deserialize(ref reader);
-            info.CreateTime = _dateTime.Deserialize(ref reader);
-            info.TorrentCreateTime = _dateTime.Deserialize(ref reader);
-            info.CreatedBy = _string.Deserialize(ref reader);
-            info.Comment = _string.Deserialize(ref reader);
-            info.Encoding = _string.Deserialize(ref reader);
-            info.RemainingTime = _timeSpan.Deserialize(ref reader);
-            info.Files = _fileInfoNodeList.Deserialize(ref reader);
-            info.FileCount = _int.Deserialize(ref reader);
-            info.SelecrAll = _bool.Deserialize(ref reader);
-            info.TrueCount = _int.Deserialize(ref reader);
-            info.SelectedBitfieldCount = _int.Deserialize(ref reader);
-            info.V1 = _hashValue.Deserialize(ref reader);
-            info.V2 = _hashValue.Deserialize(ref reader);
+            info.Name = _string.Deserialize(ref buffer);
+            info.Size = _long.Deserialize(ref buffer);
+            info.PieceLength = _int.Deserialize(ref buffer);
+            info.PieceCount = _int.Deserialize(ref buffer);
+            info.Progress = _double.Deserialize(ref buffer);
+            info.SelectedFileCount = _int.Deserialize(ref buffer);
+            info.SelectedFileLength = _long.Deserialize(ref buffer);
+            info.SelectedFileCompleteCount = _int.Deserialize(ref buffer);
+            info.SelectedFileCompleteLength = _long.Deserialize(ref buffer);
+            info.TorrentPath = _string.Deserialize(ref buffer);
+            info.SavePath = _string.Deserialize(ref buffer);
+            info.TorrentMagnetLink = _string.Deserialize(ref buffer);
+            info.CreateTime = _dateTime.Deserialize(ref buffer);
+            info.TorrentCreateTime = _dateTime.Deserialize(ref buffer);
+            info.CreatedBy = _string.Deserialize(ref buffer);
+            info.Comment = _string.Deserialize(ref buffer);
+            info.Encoding = _string.Deserialize(ref buffer);
+            info.RemainingTime = _timeSpan.Deserialize(ref buffer);
+            info.Files = _fileInfoNodeList.Deserialize(ref buffer);
+            info.FileCount = _int.Deserialize(ref buffer);
+            info.SelecrAll = _bool.Deserialize(ref buffer);
+            info.TrueCount = _int.Deserialize(ref buffer);
+            info.SelectedBitfieldCount = _int.Deserialize(ref buffer);
+            info.V1 = _hashValue.Deserialize(ref buffer);
+            info.V2 = _hashValue.Deserialize(ref buffer);
 
-            var dict = _intStringDict.Deserialize(ref reader);
+            var dict = _intStringDict.Deserialize(ref buffer);
 
-            var pieceCount = _int.Deserialize(ref reader);
+            var pieceCount = _int.Deserialize(ref buffer);
             List<TorrentPiece> pieces = info.Pieces = new(pieceCount);
             for (int i = 0; i < pieceCount; i++)
             {
-                TorrentPieceStateType state = (TorrentPieceStateType)_byte.Deserialize(ref reader);
-                var nameCount = _int.Deserialize(ref reader);
+                TorrentPieceStateType state = (TorrentPieceStateType)_byte.Deserialize(ref buffer);
+                var nameCount = _int.Deserialize(ref buffer);
                 ValueOrList<DataBuffer<int, string>> names = new(nameCount);
                 for (int j = 0; j < nameCount; j++)
                 {
-                    var index = _int.Deserialize(ref reader);
+                    var index = _int.Deserialize(ref buffer);
                     dict.TryGetValue(index, out var name);
                     DataBuffer<int, string> data = DataBuffer<int, string>.GetDataBuffer();
                     data.Item1 = index;
@@ -101,63 +101,63 @@ namespace ExtenderApp.Torrents.Models.Formatters
             return info;
         }
 
-        public override void Serialize(ref ExtenderBinaryWriter writer, TorrentInfo value)
+        public override void Serialize(ref ByteBuffer buffer, TorrentInfo value)
         {
             if (value == null)
             {
-                WriteNil(ref writer);
+                WriteNil(ref buffer);
                 return;
             }
 
-            _string.Serialize(ref writer, value.Name);
-            _long.Serialize(ref writer, value.Size);
-            _int.Serialize(ref writer, value.PieceLength);
-            _int.Serialize(ref writer, value.PieceCount);
-            _double.Serialize(ref writer, value.Progress);
-            _int.Serialize(ref writer, value.SelectedFileCount);
-            _long.Serialize(ref writer, value.SelectedFileLength);
-            _int.Serialize(ref writer, value.SelectedFileCompleteCount);
-            _long.Serialize(ref writer, value.SelectedFileCompleteLength);
-            _string.Serialize(ref writer, value.TorrentPath);
-            _string.Serialize(ref writer, value.SavePath);
-            _string.Serialize(ref writer, value.TorrentMagnetLink);
-            _dateTime.Serialize(ref writer, value.CreateTime);
-            _dateTime.Serialize(ref writer, value.TorrentCreateTime);
-            _string.Serialize(ref writer, value.CreatedBy);
-            _string.Serialize(ref writer, value.Comment);
-            _string.Serialize(ref writer, value.Encoding);
-            _timeSpan.Serialize(ref writer, value.RemainingTime);
-            _fileInfoNodeList.Serialize(ref writer, value.Files);
-            _int.Serialize(ref writer, value.FileCount);
-            _bool.Serialize(ref writer, value.SelecrAll);
-            _int.Serialize(ref writer, value.TrueCount);
-            _int.Serialize(ref writer, value.SelectedBitfieldCount);
-            _hashValue.Serialize(ref writer, value.V1);
-            _hashValue.Serialize(ref writer, value.V2);
+            _string.Serialize(ref buffer, value.Name);
+            _long.Serialize(ref buffer, value.Size);
+            _int.Serialize(ref buffer, value.PieceLength);
+            _int.Serialize(ref buffer, value.PieceCount);
+            _double.Serialize(ref buffer, value.Progress);
+            _int.Serialize(ref buffer, value.SelectedFileCount);
+            _long.Serialize(ref buffer, value.SelectedFileLength);
+            _int.Serialize(ref buffer, value.SelectedFileCompleteCount);
+            _long.Serialize(ref buffer, value.SelectedFileCompleteLength);
+            _string.Serialize(ref buffer, value.TorrentPath);
+            _string.Serialize(ref buffer, value.SavePath);
+            _string.Serialize(ref buffer, value.TorrentMagnetLink);
+            _dateTime.Serialize(ref buffer, value.CreateTime);
+            _dateTime.Serialize(ref buffer, value.TorrentCreateTime);
+            _string.Serialize(ref buffer, value.CreatedBy);
+            _string.Serialize(ref buffer, value.Comment);
+            _string.Serialize(ref buffer, value.Encoding);
+            _timeSpan.Serialize(ref buffer, value.RemainingTime);
+            _fileInfoNodeList.Serialize(ref buffer, value.Files);
+            _int.Serialize(ref buffer, value.FileCount);
+            _bool.Serialize(ref buffer, value.SelecrAll);
+            _int.Serialize(ref buffer, value.TrueCount);
+            _int.Serialize(ref buffer, value.SelectedBitfieldCount);
+            _hashValue.Serialize(ref buffer, value.V1);
+            _hashValue.Serialize(ref buffer, value.V2);
 
             Dictionary<int, string>? dict = CreateIntStringDict(value.Pieces);
             List<TorrentPiece> pieces = value.Pieces;
-            _intStringDict.Serialize(ref writer, dict);
+            _intStringDict.Serialize(ref buffer, dict);
 
             if (pieces != null)
             {
-                _int.Serialize(ref writer, pieces.Count);
+                _int.Serialize(ref buffer, pieces.Count);
                 for (int i = 0; i < pieces.Count; i++)
                 {
                     var piece = pieces[i];
-                    _byte.Serialize(ref writer, (byte)piece.State);
+                    _byte.Serialize(ref buffer, (byte)piece.State);
 
                     var names = piece.PieceNames;
-                    _int.Serialize(ref writer, names.Count);
+                    _int.Serialize(ref buffer, names.Count);
                     for (int j = 0; j < names.Count; j++)
                     {
-                        _int.Serialize(ref writer, names[j].Item1);
+                        _int.Serialize(ref buffer, names[j].Item1);
                     }
                 }
             }
             else
             {
-                _int.Serialize(ref writer, 0);
+                _int.Serialize(ref buffer, 0);
             }
         }
 

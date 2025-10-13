@@ -20,10 +20,6 @@ namespace ExtenderApp.Common.Networks
         public LinkerFactory(ResourceLimiter resourceLimiter)
         {
             _resourceLimiter = resourceLimiter;
-            _tcpSDataBuffer = DataBuffer.CreateDataBuffer<Socket, ResourceLimiter, TcpLinker>((s, r) => new TcpLinker(s, r));
-            _udpSDataBuffer = DataBuffer.CreateDataBuffer<Socket, ResourceLimiter, UdpLinker>((s, r) => new UdpLinker(s, r));
-            _tcpADataBuffer = DataBuffer.CreateDataBuffer<AddressFamily, ResourceLimiter, TcpLinker>((a, r) => new TcpLinker(a, r));
-            _udpADataBuffer = DataBuffer.CreateDataBuffer<AddressFamily, ResourceLimiter, UdpLinker>((a, r) => new UdpLinker(a, r));
         }
 
         public T CreateLinker<T>() where T : ILinker

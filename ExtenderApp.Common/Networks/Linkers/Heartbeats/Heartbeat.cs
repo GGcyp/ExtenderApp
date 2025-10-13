@@ -148,8 +148,8 @@ namespace ExtenderApp.Common.Networks
         private void SendHeartbeat(object? state)
         {
             ThrowIfDisposed();
-            if (!_linker.Connected || (DateTime.UtcNow - lastReceiveTime).TotalMilliseconds < heartbeatInterval)
-                return;
+            //if (!_linker.Connected || (DateTime.UtcNow - lastReceiveTime).TotalMilliseconds < heartbeatInterval)
+            //    return;
 
             //_linker.Send(HeartbeatType.Ping);
             SendHeartbeatActionEvent?.Invoke(new HearbeatResult(_linker, lastReceiveTime, HeartbeatType.Ping));

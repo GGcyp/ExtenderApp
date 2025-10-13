@@ -44,6 +44,7 @@ namespace ExtenderApp.Common.IO.FileParsers
 
         public T? Read<T>(IFileOperate fileOperate)
         {
+            CheckFileOperate(fileOperate);
             return ExecuteRead<T>(fileOperate);
         }
 
@@ -59,6 +60,7 @@ namespace ExtenderApp.Common.IO.FileParsers
 
         public T? Read<T>(IFileOperate fileOperate, long position, int length)
         {
+            CheckFileOperate(fileOperate);
             return ExecuteRead<T>(fileOperate, position, length);
         }
 
@@ -78,6 +80,7 @@ namespace ExtenderApp.Common.IO.FileParsers
 
         public Task<T?> ReadAsync<T>(IFileOperate fileOperate, CancellationToken token = default)
         {
+            CheckFileOperate(fileOperate);
             return ExecuteReadAsync<T>(fileOperate, token);
         }
 
@@ -93,6 +96,7 @@ namespace ExtenderApp.Common.IO.FileParsers
 
         public Task<T?> ReadAsync<T>(IFileOperate fileOperate, long position, int length, CancellationToken token = default)
         {
+            CheckFileOperate(fileOperate);
             return ExecuteReadAsync<T>(fileOperate, position, length, token);
         }
 
@@ -112,6 +116,7 @@ namespace ExtenderApp.Common.IO.FileParsers
 
         public void Write<T>(IFileOperate fileOperate, T value)
         {
+            CheckFileOperate(fileOperate);
             ExecuteWrite(fileOperate, value);
         }
 
@@ -127,6 +132,7 @@ namespace ExtenderApp.Common.IO.FileParsers
 
         public void Write<T>(IFileOperate fileOperate, T value, long position)
         {
+            CheckFileOperate(fileOperate);
             ExecuteWrite(fileOperate, value, position);
         }
 
@@ -146,6 +152,7 @@ namespace ExtenderApp.Common.IO.FileParsers
 
         public Task WriteAsync<T>(IFileOperate fileOperate, T value, CancellationToken token = default)
         {
+            CheckFileOperate(fileOperate);
             return ExecuteWriteAsync(fileOperate, value, token);
         }
 
@@ -161,6 +168,7 @@ namespace ExtenderApp.Common.IO.FileParsers
 
         public Task WriteAsync<T>(IFileOperate fileOperate, T value, long position, CancellationToken token = default)
         {
+            CheckFileOperate(fileOperate);
             return ExecuteWriteAsync(fileOperate, value, position, token);
         }
 
@@ -289,6 +297,14 @@ namespace ExtenderApp.Common.IO.FileParsers
         public IFileOperate GetFileOperate(ExpectLocalFileInfo info)
         {
             return _provider.GetOperate(info.CreateReadWriteOperate(FileExtension));
+        }
+
+        private void CheckFileOperate(IFileOperate fileOperate)
+        {
+            if (fileOperate == null)
+            {
+                throw new ArgumentNullException(nameof(fileOperate));
+            }
         }
 
         #endregion Operate

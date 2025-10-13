@@ -48,6 +48,7 @@ namespace ExtenderApp.Data
         {
             BinaryCode = new BinaryCode();
             BinaryRang = new BinaryRang();
+            BinaryLength = new BinaryLength();
             BinaryDateTime = new BinaryDateTime();
             MaximumObjectGraphDepth = 500;
             BinaryEncoding = encoder ?? Encoding.UTF8; // 使用UTF-8编码

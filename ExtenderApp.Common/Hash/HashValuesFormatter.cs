@@ -17,27 +17,27 @@ namespace ExtenderApp.Common.Hash
             _int = GetFormatter<int>();
         }
 
-        public override HashValues Deserialize(ref ExtenderBinaryReader reader)
+        public override HashValues Deserialize(ref ByteBuffer buffer)
         {
-            var memory = _ulongs.Deserialize(ref reader);
+            var memory = _ulongs.Deserialize(ref buffer);
             if (memory.IsEmpty)
             {
                 return HashValues.Empty;
             }
-            var hashLength = _int.Deserialize(ref reader);
+            var hashLength = _int.Deserialize(ref buffer);
             return new HashValues(memory, hashLength);
         }
 
-        public override void Serialize(ref ExtenderBinaryWriter writer, HashValues value)
+        public override void Serialize(ref ByteBuffer buffer, HashValues value)
         {
             if (value.IsEmpty)
             {
-                _ulongs.Serialize(ref writer, ReadOnlyMemory<ulong>.Empty);
+                _ulongs.Serialize(ref buffer, ReadOnlyMemory<ulong>.Empty);
                 return;
             }
 
-            _ulongs.Serialize(ref writer, value.ULongMemory);
-            _int.Serialize(ref writer, value.HashLength);
+            _ulongs.Serialize(ref buffer, value.ULongMemory);
+            _int.Serialize(ref buffer, value.HashLength);
         }
 
         public override long GetLength(HashValues value)

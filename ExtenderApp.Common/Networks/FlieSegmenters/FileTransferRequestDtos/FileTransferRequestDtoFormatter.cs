@@ -15,16 +15,16 @@ namespace ExtenderApp.Common.Networks
 
         public override int DefaultLength => _fileInfoDtos.DefaultLength;
 
-        public override FileTransferRequestDto Deserialize(ref ExtenderBinaryReader reader)
+        public override FileTransferRequestDto Deserialize(ref ByteBuffer buffer)
         {
-            var fileInfoDtos = _fileInfoDtos.Deserialize(ref reader);
+            var fileInfoDtos = _fileInfoDtos.Deserialize(ref buffer);
             var result = new FileTransferRequestDto(fileInfoDtos);
             return result;
         }
 
-        public override void Serialize(ref ExtenderBinaryWriter writer, FileTransferRequestDto value)
+        public override void Serialize(ref ByteBuffer buffer, FileTransferRequestDto value)
         {
-            _fileInfoDtos.Serialize(ref writer, value.FileInfoDtos);
+            _fileInfoDtos.Serialize(ref buffer, value.FileInfoDtos);
         }
 
         public override long GetLength(FileTransferRequestDto value)

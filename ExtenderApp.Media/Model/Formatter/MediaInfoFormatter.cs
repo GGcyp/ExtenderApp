@@ -45,37 +45,37 @@ namespace ExtenderApp.Media.Models
             _uri = GetFormatter<Uri>();
         }
 
-        public override MediaInfo Deserialize(ref ExtenderBinaryReader reader)
+        public override MediaInfo Deserialize(ref ByteBuffer buffer)
         {
             MediaInfo info = new MediaInfo(null);
 
-            info.Title = _string.Deserialize(ref reader);
+            info.Title = _string.Deserialize(ref buffer);
 
-            info.Height = _int.Deserialize(ref reader);
-            info.Width = _int.Deserialize(ref reader);
-            info.PlayCount = _int.Deserialize(ref reader);
+            info.Height = _int.Deserialize(ref buffer);
+            info.Width = _int.Deserialize(ref buffer);
+            info.PlayCount = _int.Deserialize(ref buffer);
 
-            info.TotalVideoDuration = _long.Deserialize(ref reader);
-            info.MediaWatchedPosition = _long.Deserialize(ref reader);
+            info.TotalVideoDuration = _long.Deserialize(ref buffer);
+            info.MediaWatchedPosition = _long.Deserialize(ref buffer);
 
-            info.IsFavorite = _bool.Deserialize(ref reader);
+            info.IsFavorite = _bool.Deserialize(ref buffer);
 
             return info;
         }
 
-        public override void Serialize(ref ExtenderBinaryWriter writer, MediaInfo value)
+        public override void Serialize(ref ByteBuffer buffer, MediaInfo value)
         {
-            _uri.Serialize(ref writer, value.MediaUri);
-            _string.Serialize(ref writer, value.Title);
+            _uri.Serialize(ref buffer, value.MediaUri);
+            _string.Serialize(ref buffer, value.Title);
 
-            _int.Serialize(ref writer, value.Height);
-            _int.Serialize(ref writer, value.Width);
-            _int.Serialize(ref writer, value.PlayCount);
+            _int.Serialize(ref buffer, value.Height);
+            _int.Serialize(ref buffer, value.Width);
+            _int.Serialize(ref buffer, value.PlayCount);
 
-            _long.Serialize(ref writer, value.TotalVideoDuration);
-            _long.Serialize(ref writer, value.MediaWatchedPosition);
+            _long.Serialize(ref buffer, value.TotalVideoDuration);
+            _long.Serialize(ref buffer, value.MediaWatchedPosition);
 
-            _bool.Serialize(ref writer, value.IsFavorite);
+            _bool.Serialize(ref buffer, value.IsFavorite);
         }
 
         public override long GetLength(MediaInfo value)

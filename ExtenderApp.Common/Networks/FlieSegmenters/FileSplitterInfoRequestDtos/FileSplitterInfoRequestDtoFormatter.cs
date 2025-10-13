@@ -14,20 +14,25 @@ namespace ExtenderApp.Common.Networks
             _int = GetFormatter<int>();
         }
 
-        public override FileSplitterInfoRequestDto Deserialize(ref ExtenderBinaryReader reader)
+        public override FileSplitterInfoRequestDto Deserialize(ref ByteBuffer buffer)
         {
             FileSplitterInfoRequestDto result = new FileSplitterInfoRequestDto();
 
-            result.FileHashCode = _int.Deserialize(ref reader);
-            result.SplitterSize = _int.Deserialize(ref reader);
+            result.FileHashCode = _int.Deserialize(ref buffer);
+            result.SplitterSize = _int.Deserialize(ref buffer);
 
             return result;
         }
 
-        public override void Serialize(ref ExtenderBinaryWriter writer, FileSplitterInfoRequestDto value)
+        public override void Serialize(ref ByteBuffer buffer, FileSplitterInfoRequestDto value)
         {
-            _int.Serialize(ref writer, value.FileHashCode);
-            _int.Serialize(ref writer, value.SplitterSize);
+            _int.Serialize(ref buffer, value.FileHashCode);
+            _int.Serialize(ref buffer, value.SplitterSize);
+        }
+
+        public override long GetLength(FileSplitterInfoRequestDto value)
+        {
+            return _int.GetLength(value.FileHashCode) + _int.GetLength(value.SplitterSize);
         }
     }
 }

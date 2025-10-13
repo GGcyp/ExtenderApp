@@ -24,22 +24,22 @@ namespace ExtenderApp.Abstract
     public interface IVersionDataFormatterMananger<T> : IBinaryFormatter<T>, IVersionDataFormatterMananger
     {
         /// <summary>
-        /// 将 <paramref name="value"/> 依据指定 <paramref name="version"/> 的协议写入到 <see cref="ByteBlock"/>。
+        /// 将 <paramref name="value"/> 依据指定 <paramref name="version"/> 的协议写入到 <see cref="ByteBuffer"/>。
         /// 实现应在写入后推进 <paramref name="block"/> 的写入位置。
         /// </summary>
         /// <param name="block">目标写入器。</param>
         /// <param name="value">要序列化的值。</param>
         /// <param name="version">序列化所采用的协议版本。</param>
-        void Serialize(ref ByteBlock block, T value, Version version);
+        void Serialize(ref ByteBuffer block, T value, Version version);
 
         /// <summary>
-        /// 按指定 <paramref name="version"/> 的协议从 <see cref="ByteBlock"/> 读取并构造一个 <typeparamref name="T"/> 实例。
+        /// 按指定 <paramref name="version"/> 的协议从 <see cref="ByteBuffer"/> 读取并构造一个 <typeparamref name="T"/> 实例。
         /// 实现应在读取后推进 <paramref name="block"/> 的读取位置。
         /// </summary>
         /// <param name="block">数据来源。</param>
         /// <param name="version">反序列化所采用的协议版本。</param>
         /// <returns>反序列化得到的对象。</returns>
-        T Deserialize(ref ByteBlock block, Version version);
+        T Deserialize(ref ByteBuffer block, Version version);
 
         /// <summary>
         /// 返回在指定 <paramref name="version"/> 下序列化 <paramref name="value"/> 预计需要的字节数，用于预留写缓冲。

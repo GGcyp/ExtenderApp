@@ -67,7 +67,7 @@ namespace ExtenderApp.Data
         public double PercentComplete => (double)_trueCount / Length * 100.0;
 
         /// <summary>
-        /// 以 Span 形式访问内部数据
+        /// 以 UnreadSpan 形式访问内部数据
         /// </summary>
         public ReadOnlySpan<ulong> DataSpan => _data.AsSpan();
 
@@ -321,7 +321,7 @@ namespace ExtenderApp.Data
         }
 
         /// <summary>
-        /// 将 BitField 写入到给定的字节 Span
+        /// 将 BitField 写入到给定的字节 UnreadSpan
         /// </summary>
         public void ToBytes(Span<byte> destination)
         {

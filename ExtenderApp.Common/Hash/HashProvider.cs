@@ -128,7 +128,7 @@ namespace ExtenderApp.Common.Hash
             var hashAlgorithm = pool.Get();
             var fileOperate = _fileOperateProvider.GetOperate(info);
 
-            byte[] bytes = fileOperate.ReadForArrayPool(out var length);
+            byte[] bytes = fileOperate.Read();
             var reslut = hashAlgorithm.ComputeHash(bytes);
 
             ArrayPool<byte>.Shared.Return(bytes);
@@ -150,18 +150,18 @@ namespace ExtenderApp.Common.Hash
             return new HashValue(reslut);
         }
 
-        public async Task<HashValue> ComputeHashAsync<T>(FileOperateInfo fileOperate) where T : HashAlgorithm
-        {
-            var pool = GetPool<T>();
-            var hashAlgorithm = pool.Get();
-            var fileConcurrent = _fileOperateProvider.GetOperate(fileOperate);
+        //public async Task<HashValue> ComputeHashAsync<T>(FileOperateInfo fileOperate) where T : HashAlgorithm
+        //{
+        //    var pool = GetPool<T>();
+        //    var hashAlgorithm = pool.Get();
+        //    var fileConcurrent = _fileOperateProvider.GetOperate(fileOperate);
 
-            byte[] bytes = await fileConcurrent.ReadForArrayPoolAsync(out var length);
-            byte[] reslut = await hashAlgorithm.ComputeHashAsync(new MemoryStream(bytes));
-            pool.Release(hashAlgorithm);
+        //    byte[] bytes = await fileConcurrent.ReadForArrayPoolAsync(out var length);
+        //    byte[] reslut = await hashAlgorithm.ComputeHashAsync(new MemoryStream(bytes));
+        //    pool.Release(hashAlgorithm);
 
-            return new HashValue(reslut);
-        }
+        //    return new HashValue(reslut);
+        //}
 
         #endregion
 

@@ -21,18 +21,18 @@ namespace ExtenderApp.Abstract
     public interface IBinaryFormatter<T> : IBinaryFormatter
     {
         /// <summary>
-        /// 将 <paramref name="value"/> 按实现约定的二进制格式写入到 <see cref="ByteBlock"/>。
+        /// 将 <paramref name="value"/> 按实现约定的二进制格式写入到 <see cref="ByteBuffer"/>。
         /// </summary>
-        /// <param name="block">目标写入器，方法应在写入后推进其写入位置。</param>
+        /// <param name="buffer">目标缓存。</param>
         /// <param name="value">要序列化的值。</param>
-        void Serialize(ref ByteBlock block, T value);
+        void Serialize(ref ByteBuffer buffer, T value);
 
         /// <summary>
-        /// 从给定的 <see cref="ByteBlock"/> 读取并构造一个 <typeparamref name="T"/> 实例。
+        /// 从给定的 <see cref="ByteBuffer"/> 读取并构造一个 <typeparamref name="T"/> 实例。
         /// </summary>
-        /// <param name="block">数据来源，方法应在读取后推进其读取位置。</param>
+        /// <param name="buffer">数据缓存。</param>
         /// <returns>反序列化得到的 <typeparamref name="T"/> 实例。</returns>
-        T Deserialize(ref ByteBlock block);
+        T Deserialize(ref ByteBuffer buffer);
 
         /// <summary>
         /// 返回序列化指定值预计需要的字节数，用于预留写缓冲。

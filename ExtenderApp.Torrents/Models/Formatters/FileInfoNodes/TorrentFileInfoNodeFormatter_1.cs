@@ -13,28 +13,30 @@ namespace ExtenderApp.Torrents.Models
 
         public Version FormatterVersion { get; } = TorrentFormatterVersion.Version_1;
 
-        public TorrentFileInfoNodeFormatter_1(IBinaryFormatterResolver resolver, ExtenderBinaryWriterConvert binaryWriterConvert, ExtenderBinaryReaderConvert binaryReaderConvert, BinaryOptions options) : base(resolver, binaryWriterConvert, binaryReaderConvert, options)
+
+        public TorrentFileInfoNodeFormatter_1(IBinaryFormatterResolver resolver, ByteBufferConvert convert, BinaryOptions options) : base(resolver, convert, options)
         {
             _int = resolver.GetFormatter<int>();
         }
 
-        protected override TorrentFileInfoNode ProtectedDeserialize(ref ExtenderBinaryReader reader)
+
+        protected override TorrentFileInfoNode ProtectedDeserialize(ref ByteBuffer buffer)
         {
-            var node = base.ProtectedDeserialize(ref reader);
-            node.Depth = _int.Deserialize(ref reader);
-            node.Priority = (Priority)_int.Deserialize(ref reader);
-            node.NeedDownloading = _bool.Deserialize(ref reader);
-            node.DisplayNeedDownload = _bool.Deserialize(ref reader);
+            var node = base.ProtectedDeserialize(ref buffer);
+            node.Depth = _int.Deserialize(ref buffer);
+            node.Priority = (Priority)_int.Deserialize(ref buffer);
+            node.NeedDownloading = _bool.Deserialize(ref buffer);
+            node.DisplayNeedDownload = _bool.Deserialize(ref buffer);
             return node;
         }
 
-        protected override void ProtectedSerialize(ref ExtenderBinaryWriter writer, TorrentFileInfoNode value)
+        protected override void ProtectedSerialize(ref ByteBuffer buffer, TorrentFileInfoNode value)
         {
-            base.ProtectedSerialize(ref writer, value);
-            _int.Serialize(ref writer, value.Depth);
-            _int.Serialize(ref writer, (int)value.Priority);
-            _bool.Serialize(ref writer, value.NeedDownloading);
-            _bool.Serialize(ref writer, value.DisplayNeedDownload);
+            base.ProtectedSerialize(ref buffer, value);
+            _int.Serialize(ref buffer, value.Depth);
+            _int.Serialize(ref buffer, (int)value.Priority);
+            _bool.Serialize(ref buffer, value.NeedDownloading);
+            _bool.Serialize(ref buffer, value.DisplayNeedDownload);
         }
 
         protected override void ProtectedGetLength(TorrentFileInfoNode value, DataBuffer<long> dataBuffer)

@@ -15,15 +15,15 @@ namespace ExtenderApp.Common.Networks.FlieSegmenters.FileResponseDtos
             _int = GetFormatter<int>();
         }
 
-        public override FileTransferConfigDto Deserialize(ref ExtenderBinaryReader reader)
+        public override FileTransferConfigDto Deserialize(ref ByteBuffer buffer)
         {
-            var infos = _int.Deserialize(ref reader);
+            var infos = _int.Deserialize(ref buffer);
             return new FileTransferConfigDto(infos);
         }
 
-        public override void Serialize(ref ExtenderBinaryWriter writer, FileTransferConfigDto value)
+        public override void Serialize(ref ByteBuffer buffer, FileTransferConfigDto value)
         {
-            _int.Serialize(ref writer, value.LinkerCount);
+            _int.Serialize(ref buffer, value.LinkerCount);
         }
 
         public override long GetLength(FileTransferConfigDto value)

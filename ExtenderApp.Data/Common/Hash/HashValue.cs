@@ -156,6 +156,30 @@ namespace ExtenderApp.Data
         }
 
         /// <summary>
+        /// 拷贝到目标字节缓冲区。
+        /// </summary>
+        /// <param name="destination">目标字节缓冲区</param>
+        /// <exception cref="ArgumentException">目标缓冲区长度不足</exception>
+        public void CopyTo(Span<byte> destination)
+        {
+            if (destination.Length < Length)
+                throw new ArgumentException("目标缓冲区长度不足", nameof(destination));
+            HashBytes.CopyTo(destination);
+        }
+
+        /// <summary>
+        /// 拷贝到目标字节缓冲区。
+        /// </summary>
+        /// <param name="destination">目标字节缓冲区</param>
+        /// <exception cref="ArgumentException">目标缓冲区长度不足</exception>
+        public void CopyTo(Memory<byte> destination)
+        {
+            if (destination.Length < Length)
+                throw new ArgumentException("目标缓冲区长度不足", nameof(destination));
+            HashBytes.CopyTo(destination);
+        }
+
+        /// <summary>
         /// 按内容比较两个哈希是否相等（长度相同且逐个 <see cref="ulong"/> 相等）。
         /// </summary>
         /// <remarks>两侧均为空视为相等。</remarks>

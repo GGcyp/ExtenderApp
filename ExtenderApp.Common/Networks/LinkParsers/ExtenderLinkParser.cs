@@ -12,14 +12,14 @@ namespace ExtenderApp.Common.Networks
             _binaryParser = binaryParser;
         }
 
-        protected override void Receive(ref ExtenderBinaryReader reader)
+        protected override void Receive(ref ByteBuffer buffer)
         {
 
         }
 
-        public override void Serialize<T>(ref ExtenderBinaryWriter writer, T value)
+        public override void Serialize<T>(ref ByteBuffer buffer, T value)
         {
-            _binaryParser.Serialize(ref writer, value);
+            _binaryParser.Serialize(ref buffer, value);
         }
     }
 }

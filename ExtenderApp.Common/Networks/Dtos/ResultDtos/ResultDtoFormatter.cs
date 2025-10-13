@@ -16,17 +16,17 @@ namespace ExtenderApp.Common.Networks
             _string = resolver.GetFormatter<string>();
         }
 
-        public override ResultDto Deserialize(ref ExtenderBinaryReader reader)
+        public override ResultDto Deserialize(ref ByteBuffer buffer)
         {
-            int stateCode = _int.Deserialize(ref reader);
-            string message = _string.Deserialize(ref reader);
+            int stateCode = _int.Deserialize(ref buffer);
+            string message = _string.Deserialize(ref buffer);
             return new ResultDto(stateCode, message);
         }
 
-        public override void Serialize(ref ExtenderBinaryWriter writer, ResultDto value)
+        public override void Serialize(ref ByteBuffer buffer, ResultDto value)
         {
-            _int.Serialize(ref writer, value.StateCode);
-            _string.Serialize(ref writer, value.Message);
+            _int.Serialize(ref buffer, value.StateCode);
+            _string.Serialize(ref buffer, value.Message);
         }
 
         public override long GetLength(ResultDto value)

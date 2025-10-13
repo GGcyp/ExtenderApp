@@ -85,8 +85,9 @@ namespace ExtenderApp.Common.IO.Splitter
                 chunkMaxLength = (int)length;
             }
 
-            HashValue md5 = _hashProvider.ComputeHash<MD5>(targtFileInfo);
-            return new SplitterInfo((int)length, chunkCount, 0, chunkMaxLength, targtFileInfo.Extension, md5, createLoadedChunks ? new PieceData(new byte[chunkCount]) : PieceData.Empty); ;
+            //HashValue md5 = _hashProvider.ComputeHash<MD5>(targtFileInfo);
+            //return new SplitterInfo((int)length, chunkCount, 0, chunkMaxLength, targtFileInfo.Extension, md5, createLoadedChunks ? new PieceData(new byte[chunkCount]) : PieceData.Empty); ;
+            return default;
         }
 
         #endregion

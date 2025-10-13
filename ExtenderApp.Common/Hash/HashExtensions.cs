@@ -37,23 +37,23 @@ namespace ExtenderApp.Common.Hash
         /// <typeparam name="T">哈希算法的类型，需要继承自<see cref="HashAlgorithm"/>。</typeparam>
         /// <param name="hashProvider">哈希提供者实例。</param>
         /// <param name="localFileInfo">本地文件信息。</param>
-        /// <returns>计算得到的哈希值。</returns>
-        public static HashValue ComputeHash<T>(this IHashProvider hashProvider, LocalFileInfo localFileInfo) where T : HashAlgorithm
-        {
-            return hashProvider.ComputeHash<T>(localFileInfo.CreateReadWriteOperate());
-        }
+        ///// <returns>计算得到的哈希值。</returns>
+        //public static HashValue ComputeHash<T>(this IHashProvider hashProvider, LocalFileInfo localFileInfo) where T : HashAlgorithm
+        //{
+        //    return hashProvider.ComputeHash<T>(localFileInfo.CreateReadWriteOperate());
+        //}
 
-        /// <summary>
-        /// 计算给定文件的哈希值。
-        /// </summary>
-        /// <typeparam name="T">哈希值的类型。</typeparam>
-        /// <param name="hashProvider">哈希提供者接口。</param>
-        /// <param name="localFileInfo">包含文件信息的对象。</param>
-        /// <returns>异步返回计算出的哈希值。</returns>
-        public static Task<HashValue> ComputeHashAsync<T>(this IHashProvider hashProvider, LocalFileInfo localFileInfo) where T : HashAlgorithm
-        {
-            return hashProvider.ComputeHashAsync<T>(localFileInfo.CreateReadWriteOperate());
-        }
+        ///// <summary>
+        ///// 计算给定文件的哈希值。
+        ///// </summary>
+        ///// <typeparam name="T">哈希值的类型。</typeparam>
+        ///// <param name="hashProvider">哈希提供者接口。</param>
+        ///// <param name="localFileInfo">包含文件信息的对象。</param>
+        ///// <returns>异步返回计算出的哈希值。</returns>
+        //public static Task<HashValue> ComputeHashAsync<T>(this IHashProvider hashProvider, LocalFileInfo localFileInfo) where T : HashAlgorithm
+        //{
+        //    return hashProvider.ComputeHashAsync<T>(localFileInfo.CreateReadWriteOperate());
+        //}
 
         /// <summary>
         /// 使用FNV-1a算法计算字符串的哈希值

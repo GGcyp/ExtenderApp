@@ -1,5 +1,4 @@
-﻿using System.ComponentModel;
-using System.Net;
+﻿using System.Net;
 using ExtenderApp.Models;
 using MonoTorrent.Client;
 using MonoTorrent.Connections;

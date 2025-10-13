@@ -50,38 +50,38 @@ namespace ExtenderApp.Common.IO.Splitter
         }
 
         /// <summary>
-        /// 从 ExtenderBinaryReader 中反序列化 FileSplitterInfo 对象
+        /// 从 ByteBuffer 中反序列化 FileSplitterInfo 对象
         /// </summary>
-        /// <param name="reader">ExtenderBinaryReader 对象</param>
+        /// <param name="buffer">ByteBuffer 对象</param>
         /// <returns>反序列化后的 FileSplitterInfo 对象</returns>
-        public override SplitterInfo Deserialize(ref ExtenderBinaryReader reader)
+        public override SplitterInfo Deserialize(ref ByteBuffer buffer)
         {
-            int length = _int.Deserialize(ref reader);
-            uint chunkCount = _uint.Deserialize(ref reader);
-            uint progresst = _uint.Deserialize(ref reader);
-            int maxChunkSize = _int.Deserialize(ref reader);
-            string targetExtensions = _string.Deserialize(ref reader);
-            string fileMD5HASH = _string.Deserialize(ref reader);
-            PieceData pieceData = _pieceData.Deserialize(ref reader);
-            HashValue fileHashValue = _hash.Deserialize(ref reader);
+            int length = _int.Deserialize(ref buffer);
+            uint chunkCount = _uint.Deserialize(ref buffer);
+            uint progresst = _uint.Deserialize(ref buffer);
+            int maxChunkSize = _int.Deserialize(ref buffer);
+            string targetExtensions = _string.Deserialize(ref buffer);
+            string fileMD5HASH = _string.Deserialize(ref buffer);
+            PieceData pieceData = _pieceData.Deserialize(ref buffer);
+            HashValue fileHashValue = _hash.Deserialize(ref buffer);
 
             return new SplitterInfo(length, chunkCount, progresst, maxChunkSize, targetExtensions, fileHashValue, pieceData);
         }
 
         /// <summary>
-        /// 将 FileSplitterInfo 对象序列化到 ExtenderBinaryWriter 中
+        /// 将 FileSplitterInfo 对象序列化到 ByteBuffer 中
         /// </summary>
-        /// <param name="writer">ExtenderBinaryWriter 对象</param>
+        /// <param name="buffer">ByteBuffer 对象</param>
         /// <param name="value">要序列化的 FileSplitterInfo 对象</param>
-        public override void Serialize(ref ExtenderBinaryWriter writer, SplitterInfo value)
+        public override void Serialize(ref ByteBuffer buffer, SplitterInfo value)
         {
-            _int.Serialize(ref writer, value.Length);
-            _uint.Serialize(ref writer, value.ChunkCount);
-            _uint.Serialize(ref writer, value.Progress);
-            _int.Serialize(ref writer, value.MaxChunkSize);
-            _string.Serialize(ref writer, value.TargetExtensions);
-            _hash.Serialize(ref writer, value.HashValue);
-            _pieceData.Serialize(ref writer, value.pieceData);
+            _int.Serialize(ref buffer, value.Length);
+            _uint.Serialize(ref buffer, value.ChunkCount);
+            _uint.Serialize(ref buffer, value.Progress);
+            _int.Serialize(ref buffer, value.MaxChunkSize);
+            _string.Serialize(ref buffer, value.TargetExtensions);
+            _hash.Serialize(ref buffer, value.HashValue);
+            _pieceData.Serialize(ref buffer, value.pieceData);
         }
 
         public override long GetLength(SplitterInfo value)

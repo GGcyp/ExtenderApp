@@ -26,17 +26,7 @@ namespace ExtenderApp.Common.Networks
         /// <exception cref="InvalidOperationException">如果链接未连接</exception>
         public void Send<T>(ILinker linker, T value)
         {
-            ThrowIfDisposed();
-            if (linker == null)
-                throw new ArgumentNullException(nameof(linker));
-            if (value == null)
-                throw new ArgumentNullException(nameof(value));
 
-            var rental = _sequencePool.Rent();
-            var writer = new ExtenderBinaryWriter(rental);
-            Serialize(ref writer, value);
-            writer.Commit();
-            linker.Send(writer);
         }
 
         /// <summary>
@@ -50,37 +40,27 @@ namespace ExtenderApp.Common.Networks
         /// <exception cref="InvalidOperationException">如果 <paramref name="linker"/> 未连接。</exception>
         public void SendAsync<T>(ILinker linker, T value)
         {
-            ThrowIfDisposed();
-            if (linker == null)
-                throw new ArgumentNullException(nameof(linker));
-            if (value == null)
-                throw new ArgumentNullException(nameof(value));
 
-            var rental = _sequencePool.Rent();
-            var writer = new ExtenderBinaryWriter(rental);
-            Serialize(ref writer, value);
-            writer.Commit();
-            linker.SendAsync(writer);
         }
 
         internal void Receive(byte[] bytes, int length)
         {
-            var reader = new ExtenderBinaryReader(new ReadOnlyMemory<byte>(bytes, 0, length));
-            Receive(ref reader);
+            var buffer = new ByteBuffer(new ReadOnlyMemory<byte>(bytes, 0, length));
+            Receive(ref buffer);
         }
 
         /// <summary>
         /// 接收数据。
         /// </summary>
-        /// <param name="reader">用于读取数据的二进制读取器。</param>
-        protected abstract void Receive(ref ExtenderBinaryReader reader);
+        /// <param name="buffer">用于读取数据的二进制读取器。</param>
+        protected abstract void Receive(ref ByteBuffer buffer);
 
         /// <summary>
         /// 将指定类型的值序列化为二进制格式，并写入到指定的二进制写入器中。
         /// </summary>
         /// <typeparam name="T">要序列化的值的类型。</typeparam>
-        /// <param name="writer">二进制写入器，用于写入序列化后的数据。</param>
+        /// <param name="buffer">二进制写入器，用于写入序列化后的数据。</param>
         /// <param name="value">要序列化的值。</param>
-        public abstract void Serialize<T>(ref ExtenderBinaryWriter writer, T value);
+        public abstract void Serialize<T>(ref ByteBuffer buffer, T value);
     }
 }

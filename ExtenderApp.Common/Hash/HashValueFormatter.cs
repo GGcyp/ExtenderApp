@@ -26,34 +26,34 @@ namespace ExtenderApp.Common.Hash
         /// <summary>
         /// 序列化哈希值
         /// </summary>
-        /// <param name="writer">二进制写入器</param>
+        /// <param name="buffer">二进制写入器</param>
         /// <param name="value">要序列化的哈希值</param>
-        public override void Serialize(ref ExtenderBinaryWriter writer, HashValue value)
+        public override void Serialize(ref ByteBuffer buffer, HashValue value)
         {
             if (value.IsEmpty)
             {
-                WriteNil(ref writer);
+                WriteNil(ref buffer);
                 return;
             }
 
-            _int.Serialize(ref writer, value.Length);
-            _ulongs.Serialize(ref writer, value.HashMemory);
+            _int.Serialize(ref buffer, value.Length);
+            _ulongs.Serialize(ref buffer, value.HashMemory);
         }
 
         /// <summary>
         /// 反序列化哈希值
         /// </summary>
-        /// <param name="reader">二进制读取器</param>
+        /// <param name="buffer">二进制读取器</param>
         /// <returns>反序列化后的哈希值</returns>
-        public override HashValue Deserialize(ref ExtenderBinaryReader reader)
+        public override HashValue Deserialize(ref ByteBuffer buffer)
         {
-            if (TryReadNil(ref reader))
+            if (TryReadNil(ref buffer))
             {
                 return HashValue.SHA1Empty;
             }
 
-            var length = _int.Deserialize(ref reader);
-            var memory = _ulongs.Deserialize(ref reader);
+            var length = _int.Deserialize(ref buffer);
+            var memory = _ulongs.Deserialize(ref buffer);
             return new HashValue(memory, length);
         }
 

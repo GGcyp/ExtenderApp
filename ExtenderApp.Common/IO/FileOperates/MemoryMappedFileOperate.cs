@@ -1,12 +1,6 @@
-﻿using System.Buffers;
-using System.Diagnostics.CodeAnalysis;
+﻿using System.Diagnostics.CodeAnalysis;
 using System.IO.MemoryMappedFiles;
-using System.Runtime.InteropServices;
-using System.Runtime.Versioning;
-using ExtenderApp.Abstract;
-using ExtenderApp.Common.Error;
 using ExtenderApp.Data;
-using Microsoft.Win32.SafeHandles;
 
 namespace ExtenderApp.Common.IO
 {
@@ -118,7 +112,7 @@ namespace ExtenderApp.Common.IO
             throw new NotImplementedException();
         }
 
-        protected override void ExecuteWrite(long filePosition, ExtenderBinaryReader reader)
+        protected override void ExecuteWrite(long filePosition, ByteBuffer buffer)
         {
             throw new NotImplementedException();
         }
@@ -163,11 +157,6 @@ namespace ExtenderApp.Common.IO
             throw new NotImplementedException();
         }
 
-        protected override byte[] ExecuteReadForArrayPool(long filePosition, int length)
-        {
-            throw new NotImplementedException();
-        }
-
         protected override ValueTask<byte[]> ExecuteReadAsync(long filePosition, int length, CancellationToken token)
         {
             throw new NotImplementedException();
@@ -183,12 +172,22 @@ namespace ExtenderApp.Common.IO
             throw new NotImplementedException();
         }
 
-        protected override ValueTask<byte[]> ExecuteReadForArrayPoolAsync(long filePosition, int length, CancellationToken token)
+        protected override void ChangeCapacity(long length)
         {
             throw new NotImplementedException();
         }
 
-        protected override void ChangeCapacity(long length)
+        protected override void ExecuteWrite(long filePosition, ByteBlock block)
+        {
+            throw new NotImplementedException();
+        }
+
+        protected override int ExecuteRead(long filePosition, int length, ref ByteBuffer buffer)
+        {
+            throw new NotImplementedException();
+        }
+
+        protected override int ExecuteRead(long filePosition, int length, ref ByteBlock block)
         {
             throw new NotImplementedException();
         }

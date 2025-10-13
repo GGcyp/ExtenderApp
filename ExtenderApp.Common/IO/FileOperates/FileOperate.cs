@@ -81,8 +81,8 @@ namespace ExtenderApp.Common.IO
                 throw new InvalidOperationException("文件信息为空，无法创建文件操控类。");
             }
             OperateInfo = operateInfo;
-            Capacity = Info.FileSize;
             Stream = operateInfo.OpenFile();
+            Capacity = Info.Exists ? Info.FileSize : 1;
         }
 
         #region Read
@@ -103,41 +103,16 @@ namespace ExtenderApp.Common.IO
         /// <exception cref="ArgumentOutOfRangeException">读取范围越界。</exception>
         public byte[] Read(long filePosition, int length)
         {
-            if (filePosition + length > Info.Length)
-                throw new ArgumentOutOfRangeException(nameof(length), "读取范围超出文件长度。");
-            if (!CanRead)
-                throw new InvalidOperationException("文件不支持读取操作。");
+            ThrowIfDisposed();
+            if (length == 0) return Array.Empty<byte>();
+            if (filePosition < 0) throw new ArgumentOutOfRangeException(nameof(filePosition));
+            if (length < 0) throw new ArgumentOutOfRangeException(nameof(length));
+            if (!CanRead) throw new InvalidOperationException("文件不支持读取操作。");
 
-
+            // 如需强边界，可改用 Stream.Length；或允许短读由 ExecuteRead 实现处理
+            var result = ExecuteRead(filePosition, length);
             LastOperateTime = DateTime.Now;
-            return ExecuteRead(filePosition, length);
-        }
-
-        /// <summary>
-        /// 读取整个文件，尽量使用内部数组池以减少分配。
-        /// </summary>
-        /// <param name="length">输出：实际读取长度。</param>
-        public byte[] ReadForArrayPool(out int length)
-        {
-            length = (int)Info.Length;
-            return ReadForArrayPool(0, length);
-        }
-
-        /// <summary>
-        /// 从指定位置读取指定长度的数据，尽量使用内部数组池以减少分配。
-        /// </summary>
-        /// <param name="filePosition">起始偏移。</param>
-        /// <param name="length">读取长度。</param>
-        /// <exception cref="ArgumentOutOfRangeException">读取范围越界。</exception>
-        public byte[] ReadForArrayPool(long filePosition, int length)
-        {
-            if (filePosition + length > Info.Length)
-                throw new ArgumentOutOfRangeException(nameof(length), "读取范围超出文件长度。");
-            if (!CanRead)
-                throw new InvalidOperationException("文件不支持读取操作。");
-
-            LastOperateTime = DateTime.Now;
-            return ExecuteReadForArrayPool(filePosition, length);
+            return result;
         }
 
         /// <summary>
@@ -146,16 +121,17 @@ namespace ExtenderApp.Common.IO
         /// <returns>实际读取的字节数。</returns>
         public int Read(long filePosition, byte[] bytes, int bytesStart, int length)
         {
-            CheckBytes(bytes);
-            if (bytesStart < 0 || bytesStart >= bytes.Length)
-                throw new ArgumentOutOfRangeException(nameof(bytesStart));
-            if (filePosition + length > Info.Length)
-                throw new ArgumentOutOfRangeException(nameof(length), "读取范围超出文件长度。");
-            if (!CanRead)
-                throw new InvalidOperationException("文件不支持读取操作。");
+            ThrowIfDisposed();
+            if (length == 0) return 0;
+            if (bytes is null) throw new ArgumentNullException(nameof(bytes));
+            if (bytesStart < 0 || length < 0 || bytesStart > bytes.Length - length)
+                throw new ArgumentOutOfRangeException("目标数组区间无效。");
+            if (filePosition < 0) throw new ArgumentOutOfRangeException(nameof(filePosition));
+            if (!CanRead) throw new InvalidOperationException("文件不支持读取操作。");
 
+            var read = ExecuteRead(filePosition, bytes, bytesStart, length);
             LastOperateTime = DateTime.Now;
-            return ExecuteRead(filePosition, bytes, bytesStart, length);
+            return read;
         }
 
         /// <summary>
@@ -172,6 +148,9 @@ namespace ExtenderApp.Common.IO
         /// <exception cref="ArgumentOutOfRangeException">读取范围越界。</exception>
         public int Read(long filePosition, Span<byte> span)
         {
+            if (span.Length == 0)
+                return 0;
+
             CheckSpan(span);
             if (filePosition + span.Length > Info.Length)
                 throw new ArgumentOutOfRangeException(nameof(span), "读取范围超出文件长度。");
@@ -195,11 +174,54 @@ namespace ExtenderApp.Common.IO
         /// </summary>
         public int Read(long filePosition, Memory<byte> memory)
         {
+            if (memory.Length == 0)
+                return 0;
+
             if (!CanRead)
                 throw new InvalidOperationException("文件不支持读取操作。");
 
             LastOperateTime = DateTime.Now;
             return ExecuteRead(filePosition, memory);
+        }
+
+        public int Read(ref ByteBuffer buffer)
+        {
+            return Read(0, ref buffer);
+        }
+
+        public int Read(long filePosition, ref ByteBuffer buffer)
+        {
+            return Read(filePosition, (int)(Info.Length - filePosition), ref buffer);
+        }
+
+        public int Read(long filePosition, int length, ref ByteBuffer buffer)
+        {
+            if (length == 0)
+                return 0;
+            if (length < 0)
+                throw new ArgumentOutOfRangeException(nameof(length), "读取长度必须大于零。");
+
+            return ExecuteRead(filePosition, length, ref buffer);
+        }
+
+        public int Read(ref ByteBlock block)
+        {
+            return Read(0, ref block);
+        }
+
+        public int Read(long filePosition, ref ByteBlock block)
+        {
+            return Read(filePosition, (int)(Info.Length - filePosition), ref block);
+        }
+
+        public int Read(long filePosition, int length, ref ByteBlock block)
+        {
+            if (length == 0)
+                return 0;
+            if (length < 0)
+                throw new ArgumentOutOfRangeException(nameof(length), "读取长度必须大于零。");
+
+            return ExecuteRead(filePosition, length, ref block);
         }
 
         #endregion Read
@@ -219,6 +241,11 @@ namespace ExtenderApp.Common.IO
         /// </summary>
         public ValueTask<byte[]> ReadAsync(long filePosition, int length, CancellationToken token = default)
         {
+            if (length == 0)
+                return ValueTask.FromResult(Array.Empty<byte>());
+            if (length < 0)
+                throw new ArgumentOutOfRangeException(nameof(length), "读取长度必须大于零。");
+
             if (!CanRead)
                 throw new InvalidOperationException("文件不支持读取操作。");
 
@@ -227,23 +254,16 @@ namespace ExtenderApp.Common.IO
         }
 
         /// <summary>
-        /// 异步从指定位置读取指定长度的数据，尽量使用数组池。
-        /// </summary>
-        public ValueTask<byte[]> ReadForArrayPoolAsync(long filePosition, int length, CancellationToken token = default)
-        {
-            if (!CanRead)
-                throw new InvalidOperationException("文件不支持读取操作。");
-
-            LastOperateTime = DateTime.Now;
-            return ExecuteReadForArrayPoolAsync(filePosition, length, token);
-        }
-
-        /// <summary>
         /// 异步读取到目标数组。
         /// </summary>
         /// <returns>实际读取的字节数。</returns>
         public ValueTask<int> ReadAsync(long filePosition, int length, byte[] bytes, int bytesStart, CancellationToken token = default)
         {
+            if (length == 0)
+                return ValueTask.FromResult(0);
+            if (length < 0)
+                throw new ArgumentOutOfRangeException(nameof(length), "读取长度必须大于零。");
+
             CheckBytes(bytes);
             if (bytesStart < 0 || bytesStart >= bytes.Length)
                 throw new ArgumentOutOfRangeException(nameof(bytesStart));
@@ -254,15 +274,6 @@ namespace ExtenderApp.Common.IO
 
             LastOperateTime = DateTime.Now;
             return ExecuteReadAsync(filePosition, bytes, bytesStart, length, token);
-        }
-
-        /// <summary>
-        /// 异步读取整个文件，尽量使用数组池（返回数组用后可归还）。
-        /// </summary>
-        public ValueTask<byte[]> ReadForArrayPoolAsync(out int length, CancellationToken token = default)
-        {
-            length = (int)Info.Length;
-            return ReadForArrayPoolAsync(0, length, token);
         }
 
         /// <summary>
@@ -278,6 +289,9 @@ namespace ExtenderApp.Common.IO
         /// </summary>
         public ValueTask<int> ReadAsync(long filePosition, Memory<byte> memory, CancellationToken token = default)
         {
+            if (memory.Length == 0)
+                return ValueTask.FromResult(0);
+
             CheckMemory(memory);
             if (!CanRead)
                 throw new InvalidOperationException("文件不支持读取操作。");
@@ -311,59 +325,16 @@ namespace ExtenderApp.Common.IO
         /// </summary>
         public void Write(long filePosition, byte[] bytes, int bytesPosition, int bytesLength)
         {
-            CheckBytes(bytes);
-            if (bytesPosition < 0 || bytesPosition >= bytes.Length)
-                throw new ArgumentOutOfRangeException(nameof(bytesPosition));
-            if (!CanWrite)
-                throw new InvalidOperationException("文件不支持写入操作。");
+            ThrowIfDisposed();
+            if (bytesLength == 0) return;
+            if (bytes is null) throw new ArgumentNullException(nameof(bytes));
+            if (bytesPosition < 0 || bytesLength < 0 || bytesPosition > bytes.Length - bytesLength)
+                throw new ArgumentOutOfRangeException("源数组区间无效。");
+            if (filePosition < 0) throw new ArgumentOutOfRangeException(nameof(filePosition));
+            if (!CanWrite) throw new InvalidOperationException("文件不支持写入操作。");
 
-            LastOperateTime = DateTime.Now;
             EnsureCapacityForWrite(filePosition, bytesLength);
             ExecuteWrite(filePosition, bytes, bytesPosition, bytesLength);
-        }
-
-        /// <summary>
-        /// 将 ExtenderBinaryWriter 的已提交数据写入文件起始位置。
-        /// </summary>
-        public void Write(ExtenderBinaryWriter writer)
-        {
-            Write(0, writer);
-        }
-
-        /// <summary>
-        /// 将 ExtenderBinaryWriter 的已提交数据写入到指定文件偏移。
-        /// </summary>
-        public void Write(long filePosition, ExtenderBinaryWriter writer)
-        {
-            CheckWriter(writer);
-            if (!CanWrite)
-                throw new InvalidOperationException("文件不支持写入操作。");
-
-            writer.Commit();
-            EnsureCapacityForWrite(filePosition, writer.BytesCommitted);
-            ExecuteWrite(filePosition, writer);
-            LastOperateTime = DateTime.Now;
-        }
-
-        /// <summary>
-        /// 将 ExtenderBinaryReader 中剩余未读数据写入文件起始位置。
-        /// </summary>
-        public void Write(ExtenderBinaryReader reader)
-        {
-            Write(0, reader);
-        }
-
-        /// <summary>
-        /// 将 ExtenderBinaryReader 中剩余未读数据写入到指定文件偏移。
-        /// </summary>
-        public void Write(long filePosition, ExtenderBinaryReader reader)
-        {
-            CheckReader(reader);
-            if (!CanWrite)
-                throw new InvalidOperationException("文件不支持写入操作。");
-
-            EnsureCapacityForWrite(filePosition, reader.Remaining);
-            ExecuteWrite(filePosition, reader);
             LastOperateTime = DateTime.Now;
         }
 
@@ -380,10 +351,12 @@ namespace ExtenderApp.Common.IO
         /// </summary>
         public void Write(long filePosition, ReadOnlySpan<byte> span)
         {
+            if (span.Length == 0)
+                return;
+
             CheckSpan(span);
             if (!CanWrite)
                 throw new InvalidOperationException("文件不支持写入操作。");
-
 
             EnsureCapacityForWrite(filePosition, span.Length);
             ExecuteWrite(filePosition, span);
@@ -403,6 +376,9 @@ namespace ExtenderApp.Common.IO
         /// </summary>
         public void Write(long filePosition, ReadOnlyMemory<byte> memory)
         {
+            if (memory.Length == 0)
+                return;
+
             CheckMemory(memory);
             if (!CanWrite)
                 throw new InvalidOperationException("文件不支持写入操作。");
@@ -410,6 +386,40 @@ namespace ExtenderApp.Common.IO
             EnsureCapacityForWrite(filePosition, memory.Length);
             ExecuteWrite(filePosition, memory);
             LastOperateTime = DateTime.Now;
+        }
+
+        public void Write(ByteBuffer buffer)
+        {
+            Write(0, buffer);
+        }
+
+        public void Write(long filePosition, ByteBuffer buffer)
+        {
+            if (buffer.Length == 0)
+                return;
+
+            if (buffer.IsEmpty)
+                throw new ArgumentNullException(nameof(buffer));
+            if (!CanWrite)
+                throw new InvalidOperationException("文件不支持写入操作。");
+            ExecuteWrite(filePosition, buffer);
+        }
+
+        public void Write(ByteBlock block)
+        {
+            Write(0, block);
+        }
+
+        public void Write(long filePosition, ByteBlock block)
+        {
+            if (block.Length == 0)
+                return;
+
+            if (block.IsEmpty)
+                throw new ArgumentNullException(nameof(block));
+            if (!CanWrite)
+                throw new InvalidOperationException("文件不支持写入操作。");
+            ExecuteWrite(filePosition, block);
         }
 
         #endregion Write
@@ -437,6 +447,9 @@ namespace ExtenderApp.Common.IO
         /// </summary>
         public ValueTask WriteAsync(long filePosition, byte[] bytes, int bytesPosition, int bytesLength, CancellationToken token = default)
         {
+            if (bytesLength == 0)
+                return ValueTask.CompletedTask;
+
             CheckBytes(bytes);
             if (!CanWrite)
                 throw new InvalidOperationException("文件不支持写入操作。");
@@ -459,6 +472,9 @@ namespace ExtenderApp.Common.IO
         /// </summary>
         public ValueTask WriteAsync(long filePosition, ReadOnlyMemory<byte> memory, CancellationToken token = default)
         {
+            if (memory.Length == 0)
+                return ValueTask.CompletedTask;
+
             CheckMemory(memory);
             if (!CanWrite)
                 throw new InvalidOperationException("文件不支持写入操作。");
@@ -495,28 +511,6 @@ namespace ExtenderApp.Common.IO
         }
 
         /// <summary>
-        /// 校验写入器状态合法且有数据。
-        /// </summary>
-        private void CheckWriter(ExtenderBinaryWriter writer)
-        {
-            if (writer.IsEmpty)
-            {
-                throw new ArgumentNullException(nameof(writer));
-            }
-        }
-
-        /// <summary>
-        /// 校验读取器状态合法且有数据。
-        /// </summary>
-        private void CheckReader(ExtenderBinaryReader reader)
-        {
-            if (reader.IsEmpty)
-            {
-                throw new ArgumentNullException(nameof(reader));
-            }
-        }
-
-        /// <summary>
         /// 校验只读跨度非空。
         /// </summary>
         private void CheckSpan(ReadOnlySpan<byte> span)
@@ -549,10 +543,9 @@ namespace ExtenderApp.Common.IO
         /// </summary>
         protected abstract void ExecuteWrite(long filePosition, byte[] bytes, int bytesPosition, int bytesLength);
 
-        /// <summary>
-        /// 派生类同步写入实现：将读取器剩余数据写入到 filePosition。
-        /// </summary>
-        protected abstract void ExecuteWrite(long filePosition, ExtenderBinaryReader reader);
+        protected abstract void ExecuteWrite(long filePosition, ByteBuffer buffer);
+
+        protected abstract void ExecuteWrite(long filePosition, ByteBlock block);
 
         /// <summary>
         /// 派生类同步写入实现：将 span 写入到 filePosition。
@@ -598,10 +591,9 @@ namespace ExtenderApp.Common.IO
         /// </summary>
         protected abstract int ExecuteRead(long filePosition, Memory<byte> memory);
 
-        /// <summary>
-        /// 派生类同步读取（数组池）实现：从 filePosition 读取 length 字节并返回数组（通常来自 ArrayPool）。
-        /// </summary>
-        protected abstract byte[] ExecuteReadForArrayPool(long filePosition, int length);
+        protected abstract int ExecuteRead(long filePosition, int length, ref ByteBuffer buffer);
+
+        protected abstract int ExecuteRead(long filePosition, int length, ref ByteBlock block);
 
         /// <summary>
         /// 派生类异步读取实现：从 filePosition 读取 length 字节并返回。
@@ -618,11 +610,6 @@ namespace ExtenderApp.Common.IO
         /// </summary>
         protected abstract ValueTask<int> ExecuteReadAsync(long filePosition, Memory<byte> memory, CancellationToken token);
 
-        /// <summary>
-        /// 派生类异步读取（数组池）实现：从 filePosition 读取 length 字节并返回数组（通常来自 ArrayPool）。
-        /// </summary>
-        protected abstract ValueTask<byte[]> ExecuteReadForArrayPoolAsync(long filePosition, int length, CancellationToken token);
-
         #endregion ExecuteRead
 
         #endregion Execute
@@ -633,14 +620,18 @@ namespace ExtenderApp.Common.IO
         private void EnsureCapacityForWrite(long filePosition, long count)
         {
             ThrowIfDisposed();
+            if (filePosition < 0) throw new ArgumentOutOfRangeException(nameof(filePosition));
+            if (count < 0) throw new ArgumentOutOfRangeException(nameof(count));
 
-            long end = filePosition + count;
+            long end;
+            try { end = checked(filePosition + count); }
+            catch (OverflowException) { throw new ArgumentOutOfRangeException("写入区间溢出。"); }
+
             if (end <= Capacity) return;
 
-            // 简单按需扩至 end；当策略为对齐预分配时，向上对齐到分配粒度
-            long target = end;
-            if (AllocationStrategy == AllocationStrategy.PreallocateAligned)
-                target = AlignUp(target, AllocationGranularity);
+            long target = (AllocationStrategy == AllocationStrategy.PreallocateAligned)
+                ? AlignUp(end, AllocationGranularity)
+                : end;
 
             ExpandCapacity(target);
         }
@@ -702,6 +693,7 @@ namespace ExtenderApp.Common.IO
         /// </summary>
         protected override void Dispose(bool disposing)
         {
+            if (!disposing) return;
             Stream.Dispose();
         }
     }

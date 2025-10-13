@@ -36,7 +36,7 @@ namespace ExtenderApp.Data
         public bool IsReadOnly => false;
 
         /// <summary>
-        /// 获取表示数组元素的 Span<T>。
+        /// 获取表示数组元素的 UnreadSpan<T>。
         /// </summary>
         public Span<T> SpanArray => array;
 

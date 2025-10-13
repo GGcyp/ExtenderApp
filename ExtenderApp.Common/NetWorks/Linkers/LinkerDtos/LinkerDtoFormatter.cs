@@ -15,18 +15,23 @@ namespace ExtenderApp.Common.Networks
             _bool = GetFormatter<bool>();
         }
 
-        public override LinkerDto Deserialize(ref ExtenderBinaryReader reader)
+        public override LinkerDto Deserialize(ref ByteBuffer buffer)
         {
             var result = new LinkerDto();
 
-            result.NeedHeartbeat = _bool.Deserialize(ref reader);
+            result.NeedHeartbeat = _bool.Deserialize(ref buffer);
 
             return result;
         }
 
-        public override void Serialize(ref ExtenderBinaryWriter writer, LinkerDto value)
+        public override void Serialize(ref ByteBuffer buffer, LinkerDto value)
         {
-            _bool.Serialize(ref writer, value.NeedHeartbeat);
+            _bool.Serialize(ref buffer, value.NeedHeartbeat);
+        }
+
+        public override long GetLength(LinkerDto value)
+        {
+            return _bool.GetLength(value.NeedHeartbeat);
         }
     }
 }

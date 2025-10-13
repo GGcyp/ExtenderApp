@@ -58,7 +58,7 @@ namespace ExtenderApp.Common.Networks
         /// <param name="message">要发送的消息。</param>
         public void Send(TMessage message)
         {
-            _linkClient.Send(message);
+            
         }
 
         #endregion

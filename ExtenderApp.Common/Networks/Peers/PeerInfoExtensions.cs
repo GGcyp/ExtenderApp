@@ -20,7 +20,7 @@ namespace ExtenderApp.Common.Networks
             {
                 throw new ArgumentNullException(nameof(peerInfo));
             }
-            linker.Connect(peerInfo.IP, peerInfo.Port);
+            //linker.Connect(peerInfo.IP, peerInfo.Port);
         }
 
         /// <summary>
@@ -35,7 +35,7 @@ namespace ExtenderApp.Common.Networks
             {
                 throw new ArgumentNullException(nameof(peerInfo));
             }
-            linker.ConnectAsync(peerInfo.IP, peerInfo.Port);
+            //linker.ConnectAsync(peerInfo.IP, peerInfo.Port);
         }
     }
 }

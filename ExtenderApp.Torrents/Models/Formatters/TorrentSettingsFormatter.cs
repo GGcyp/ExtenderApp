@@ -18,44 +18,44 @@ namespace ExtenderApp.Torrents.Models
             _int = GetFormatter<int>();
         }
 
-        public override void Serialize(ref ExtenderBinaryWriter writer, TorrentSettingsBuilderModel value)
+        public override void Serialize(ref ByteBuffer buffer, TorrentSettingsBuilderModel value)
         {
             if (value is null)
             {
-                WriteNil(ref writer);
+                WriteNil(ref buffer);
                 return;
             }
 
             // 按属性顺序序列化
-            _bool.Serialize(ref writer, value.AllowDht);
-            _bool.Serialize(ref writer, value.AllowInitialSeeding);
-            _bool.Serialize(ref writer, value.AllowPeerExchange);
-            _bool.Serialize(ref writer, value.CreateContainingDirectory);
-            _int.Serialize(ref writer, value.MaximumConnections);
-            _int.Serialize(ref writer, value.MaximumDownloadRate);
-            _int.Serialize(ref writer, value.MaximumUploadRate);
-            _bool.Serialize(ref writer, value.RequirePeerIdToMatch);
-            _int.Serialize(ref writer, value.UploadSlots);
+            _bool.Serialize(ref buffer, value.AllowDht);
+            _bool.Serialize(ref buffer, value.AllowInitialSeeding);
+            _bool.Serialize(ref buffer, value.AllowPeerExchange);
+            _bool.Serialize(ref buffer, value.CreateContainingDirectory);
+            _int.Serialize(ref buffer, value.MaximumConnections);
+            _int.Serialize(ref buffer, value.MaximumDownloadRate);
+            _int.Serialize(ref buffer, value.MaximumUploadRate);
+            _bool.Serialize(ref buffer, value.RequirePeerIdToMatch);
+            _int.Serialize(ref buffer, value.UploadSlots);
         }
 
-        public override TorrentSettingsBuilderModel Deserialize(ref ExtenderBinaryReader reader)
+        public override TorrentSettingsBuilderModel Deserialize(ref ByteBuffer buffer)
         {
             TorrentSettingsBuilderModel builder = new();
-            if (TryReadNil(ref reader))
+            if (TryReadNil(ref buffer))
             {
                 return builder;
             }
 
             // 按属性顺序反序列化
-            builder.AllowDht = _bool.Deserialize(ref reader);
-            builder.AllowInitialSeeding = _bool.Deserialize(ref reader);
-            builder.AllowPeerExchange = _bool.Deserialize(ref reader);
-            builder.CreateContainingDirectory = _bool.Deserialize(ref reader);
-            builder.MaximumConnections = _int.Deserialize(ref reader);
-            builder.MaximumDownloadRate = _int.Deserialize(ref reader);
-            builder.MaximumUploadRate = _int.Deserialize(ref reader);
-            builder.RequirePeerIdToMatch = _bool.Deserialize(ref reader);
-            builder.UploadSlots = _int.Deserialize(ref reader);
+            builder.AllowDht = _bool.Deserialize(ref buffer);
+            builder.AllowInitialSeeding = _bool.Deserialize(ref buffer);
+            builder.AllowPeerExchange = _bool.Deserialize(ref buffer);
+            builder.CreateContainingDirectory = _bool.Deserialize(ref buffer);
+            builder.MaximumConnections = _int.Deserialize(ref buffer);
+            builder.MaximumDownloadRate = _int.Deserialize(ref buffer);
+            builder.MaximumUploadRate = _int.Deserialize(ref buffer);
+            builder.RequirePeerIdToMatch = _bool.Deserialize(ref buffer);
+            builder.UploadSlots = _int.Deserialize(ref buffer);
             return builder;
         }
 

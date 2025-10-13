@@ -20,7 +20,7 @@ namespace AppHost.Extensions.DependencyInjection
         /// <summary>
         /// 服务描述
         /// </summary>
-        public ServiceDescriptor ServiceDescriptor { get; }
+        public ServiceDescriptor? ServiceDescriptor { get; }
 
         /// <summary>
         /// 服务实例对象
@@ -30,7 +30,7 @@ namespace AppHost.Extensions.DependencyInjection
         /// <summary>
         /// 获取服务实例
         /// </summary>
-        public object? ServiceInstance => _serviceInstance ?? ServiceDescriptor.ImplementationInstance;
+        public object? ServiceInstance => _serviceInstance ?? ServiceDescriptor?.ImplementationInstance;
 
         public ServiceConstructorDetail(ServiceDescriptor serviceDescriptor) : this(null, null, serviceDescriptor)
         {

@@ -26,39 +26,39 @@ namespace ExtenderApp.Torrents.Models
             _hash = GetFormatter<HashSet<HashValue>>();
         }
 
-        public override TorrentModel Deserialize(ref ExtenderBinaryReader reader)
+        public override TorrentModel Deserialize(ref ByteBuffer buffer)
         {
             TorrentModel model = new TorrentModel();
-            if (TryReadNil(ref reader))
+            if (TryReadNil(ref buffer))
             {
                 return model;
             }
 
-            model.SaveDirectory = _string.Deserialize(ref reader);
-            model.EngineSettingsModel = _engineSettings.Deserialize(ref reader);
-            model.TorrentSettingsModel = _torrentSettings.Deserialize(ref reader);
-            model.DowloadTorrentCollection = _torrentInfos.Deserialize(ref reader);
-            model.DowloadCompletedTorrentCollection = _torrentInfos.Deserialize(ref reader);
-            model.RecycleBinCollection = _torrentInfos.Deserialize(ref reader);
-            model.InfoHashHashSet = _hash.Deserialize(ref reader);
+            model.SaveDirectory = _string.Deserialize(ref buffer);
+            model.EngineSettingsModel = _engineSettings.Deserialize(ref buffer);
+            model.TorrentSettingsModel = _torrentSettings.Deserialize(ref buffer);
+            model.DowloadTorrentCollection = _torrentInfos.Deserialize(ref buffer);
+            model.DowloadCompletedTorrentCollection = _torrentInfos.Deserialize(ref buffer);
+            model.RecycleBinCollection = _torrentInfos.Deserialize(ref buffer);
+            model.InfoHashHashSet = _hash.Deserialize(ref buffer);
             return model;
         }
 
-        public override void Serialize(ref ExtenderBinaryWriter writer, TorrentModel value)
+        public override void Serialize(ref ByteBuffer buffer, TorrentModel value)
         {
             if (value == null)
             {
-                WriteNil(ref writer);
+                WriteNil(ref buffer);
                 return;
             }
 
-            _string.Serialize(ref writer, value.SaveDirectory);
-            _engineSettings.Serialize(ref writer, value.EngineSettingsModel);
-            _torrentSettings.Serialize(ref writer, value.TorrentSettingsModel);
-            _torrentInfos.Serialize(ref writer, value.DowloadTorrentCollection);
-            _torrentInfos.Serialize(ref writer, value.DowloadCompletedTorrentCollection);
-            _torrentInfos.Serialize(ref writer, value.RecycleBinCollection);
-            _hash.Serialize(ref writer, value.InfoHashHashSet);
+            _string.Serialize(ref buffer, value.SaveDirectory);
+            _engineSettings.Serialize(ref buffer, value.EngineSettingsModel);
+            _torrentSettings.Serialize(ref buffer, value.TorrentSettingsModel);
+            _torrentInfos.Serialize(ref buffer, value.DowloadTorrentCollection);
+            _torrentInfos.Serialize(ref buffer, value.DowloadCompletedTorrentCollection);
+            _torrentInfos.Serialize(ref buffer, value.RecycleBinCollection);
+            _hash.Serialize(ref buffer, value.InfoHashHashSet);
         }
 
         public override long GetLength(TorrentModel value)

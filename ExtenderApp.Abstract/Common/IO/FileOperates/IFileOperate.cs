@@ -133,23 +133,46 @@ namespace ExtenderApp.Abstract
         void Write(long filePosition, ReadOnlyMemory<byte> memory);
 
         /// <summary>
-        /// 使用 <see cref="ByteBlock"/> 将其缓冲的数据写入到指定位置。
+        /// 从指定文件偏移开始，将 <see cref="ByteBuffer"/> 的可读数据写入文件。
         /// </summary>
         /// <param name="filePosition">文件起始写入位置（字节偏移）。</param>
-        /// <param name="block">二进制写入器（其缓冲数据将被持久化）。</param>
-        /// <remarks>调用方负责管理 <paramref name="block"/> 及其租赁缓冲区的生命周期。</remarks>
-        /// <exception cref="ArgumentException">写入器状态不合法或无数据。</exception>
+        /// <param name="buffer">顺序缓冲；实现应写入其“可读区”。</param>
+        /// <remarks>实现可在写入成功后前进 <paramref name="buffer"/> 的读指针。</remarks>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="filePosition"/> 为负数。</exception>
         /// <exception cref="IOException">底层 IO 错误。</exception>
+        /// <exception cref="UnauthorizedAccessException">无权限。</exception>
+        /// <exception cref="ObjectDisposedException">对象已释放。</exception>
+        void Write(long filePosition, ByteBuffer buffer);
+
+        /// <summary>
+        /// 将 <see cref="ByteBuffer"/> 的可读数据写入文件（从文件起始或实现定义的位置）。
+        /// </summary>
+        /// <param name="buffer">顺序缓冲；实现应写入其“可读区”。</param>
+        /// <remarks>实现可在写入成功后前进 <paramref name="buffer"/> 的读指针。</remarks>
+        /// <exception cref="IOException">底层 IO 错误。</exception>
+        /// <exception cref="UnauthorizedAccessException">无权限。</exception>
+        /// <exception cref="ObjectDisposedException">对象已释放。</exception>
+        void Write(ByteBuffer buffer);
+
+        /// <summary>
+        /// 从指定文件偏移开始，将 <see cref="ByteBlock"/> 的可读数据写入文件。
+        /// </summary>
+        /// <param name="filePosition">文件起始写入位置（字节偏移）。</param>
+        /// <param name="block">缓冲块；实现应写入其 <c>[Position, Length)</c> 区间。</param>
+        /// <remarks>实现可在写入成功后相应推进 <paramref name="block"/>.Position。</remarks>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="filePosition"/> 为负数。</exception>
+        /// <exception cref="IOException">底层 IO 错误。</exception>
+        /// <exception cref="UnauthorizedAccessException">无权限。</exception>
         /// <exception cref="ObjectDisposedException">对象已释放。</exception>
         void Write(long filePosition, ByteBlock block);
 
         /// <summary>
-        /// 使用 <see cref="ByteBlock"/> 将其缓冲的数据写入到实现定义的默认位置。
+        /// 将 <see cref="ByteBlock"/> 的可读数据写入文件（从文件起始或实现定义的位置）。
         /// </summary>
-        /// <param name="block">二进制写入器（其缓冲数据将被持久化）。</param>
-        /// <remarks>默认位置由实现决定（如文件开头或当前 Position）。</remarks>
-        /// <exception cref="ArgumentException">写入器状态不合法或无数据。</exception>
+        /// <param name="block">缓冲块；实现应写入其 <c>[Position, Length)</c> 区间。</param>
+        /// <remarks>实现可在写入成功后相应推进 <paramref name="block"/>.Position。</remarks>
         /// <exception cref="IOException">底层 IO 错误。</exception>
+        /// <exception cref="UnauthorizedAccessException">无权限。</exception>
         /// <exception cref="ObjectDisposedException">对象已释放。</exception>
         void Write(ByteBlock block);
 
@@ -192,10 +215,6 @@ namespace ExtenderApp.Abstract
         /// <param name="token">取消令牌。</param>
         /// <returns>表示异步写入的任务。</returns>
         ValueTask WriteAsync(ReadOnlyMemory<byte> memory, CancellationToken token = default);
-
-        ValueTask WriteAsync(ByteBlock block, CancellationToken token = default);
-
-        ValueTask WriteAsync(long filePosition, ByteBlock block, CancellationToken token = default);
 
         #endregion WriteAsync
 
@@ -255,9 +274,6 @@ namespace ExtenderApp.Abstract
         /// <exception cref="ObjectDisposedException">对象已释放。</exception>
         int Read(long filePosition, Span<byte> span);
 
-
-        byte[]? Read(long filePosition, int length, ref ByteBlock block);
-
         /// <summary>
         /// 读取数据到给定的内存块。
         /// </summary>
@@ -274,21 +290,75 @@ namespace ExtenderApp.Abstract
         int Read(long filePosition, Memory<byte> memory);
 
         /// <summary>
-        /// 同步读取，并尽量使用内部数组池以减少分配。
+        /// 读取文件（或实现定义的默认范围）到 <see cref="ByteBuffer"/> 的写入端。
         /// </summary>
-        /// <param name="length">输出：实际读取的字节数。</param>
-        /// <returns>包含读取数据的数组（通常来自 <see cref="System.Buffers.ArrayPool{T}"/>）。</returns>
-        /// <remarks>返回数组可能来自 <see cref="ArrayPool{byte}.Shared"/>；调用方使用完毕后应归还。</remarks>
-        byte[] ReadForArrayPool(out int length);
+        /// <param name="buffer">顺序缓冲；实现应将数据追加到其写入区尾部。</param>
+        /// <returns>实际读取的字节数。</returns>
+        /// <remarks>实现可调用 GetSpan/GetMemory + WriteAdvance 等方式写入。</remarks>
+        /// <exception cref="IOException">底层 IO 错误。</exception>
+        /// <exception cref="UnauthorizedAccessException">无权限。</exception>
+        /// <exception cref="ObjectDisposedException">对象已释放。</exception>
+        int Read(ref ByteBuffer buffer);
 
         /// <summary>
-        /// 同步从指定位置读取指定长度的数据，并尽量使用内部数组池以减少分配。
+        /// 从指定位置读取数据到 <see cref="ByteBuffer"/> 的写入端。
+        /// </summary>
+        /// <param name="filePosition">文件起始读取位置（字节偏移）。</param>
+        /// <param name="buffer">顺序缓冲；实现应将数据追加到其写入区尾部。</param>
+        /// <returns>实际读取的字节数。</returns>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="filePosition"/> 为负数。</exception>
+        /// <exception cref="IOException">底层 IO 错误。</exception>
+        /// <exception cref="UnauthorizedAccessException">无权限。</exception>
+        /// <exception cref="ObjectDisposedException">对象已释放。</exception>
+        int Read(long filePosition, ref ByteBuffer buffer);
+
+        /// <summary>
+        /// 从指定位置读取指定长度的数据到 <see cref="ByteBuffer"/> 的写入端。
         /// </summary>
         /// <param name="filePosition">文件起始读取位置（字节偏移）。</param>
         /// <param name="length">要读取的字节数。</param>
-        /// <returns>包含读取数据的数组（通常来自 <see cref="System.Buffers.ArrayPool{T}"/>）。</returns>
-        /// <remarks>返回数组可能来自 <see cref="ArrayPool{byte}.Shared"/>；调用方使用完毕后应归还。</remarks>
-        byte[] ReadForArrayPool(long filePosition, int length);
+        /// <param name="buffer">顺序缓冲；实现应将数据追加到其写入区尾部。</param>
+        /// <returns>实际读取的字节数（可能小于 <paramref name="length"/>）。</returns>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="filePosition"/> 或 <paramref name="length"/> 非法。</exception>
+        /// <exception cref="IOException">底层 IO 错误。</exception>
+        /// <exception cref="UnauthorizedAccessException">无权限。</exception>
+        /// <exception cref="ObjectDisposedException">对象已释放。</exception>
+        int Read(long filePosition, int length, ref ByteBuffer buffer);
+
+        /// <summary>
+        /// 读取文件（或实现定义的默认范围）到 <see cref="ByteBlock"/> 的写入端（在其 <c>Length</c> 位置追加）。
+        /// </summary>
+        /// <param name="block">缓冲块；实现应写入到其可写区。</param>
+        /// <returns>实际读取的字节数。</returns>
+        /// <exception cref="IOException">底层 IO 错误。</exception>
+        /// <exception cref="UnauthorizedAccessException">无权限。</exception>
+        /// <exception cref="ObjectDisposedException">对象已释放。</exception>
+        int Read(ref ByteBlock block);
+
+        /// <summary>
+        /// 从指定位置读取数据到 <see cref="ByteBlock"/> 的写入端（在其 <c>Length</c> 位置追加）。
+        /// </summary>
+        /// <param name="filePosition">文件起始读取位置（字节偏移）。</param>
+        /// <param name="block">缓冲块；实现应写入到其可写区。</param>
+        /// <returns>实际读取的字节数。</returns>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="filePosition"/> 为负数。</exception>
+        /// <exception cref="IOException">底层 IO 错误。</exception>
+        /// <exception cref="UnauthorizedAccessException">无权限。</exception>
+        /// <exception cref="ObjectDisposedException">对象已释放。</exception>
+        int Read(long filePosition, ref ByteBlock block);
+
+        /// <summary>
+        /// 从指定位置读取指定长度的数据到 <see cref="ByteBlock"/> 的写入端（在其 <c>Length</c> 位置追加）。
+        /// </summary>
+        /// <param name="filePosition">文件起始读取位置（字节偏移）。</param>
+        /// <param name="length">要读取的字节数。</param>
+        /// <param name="block">缓冲块；实现应写入到其可写区。</param>
+        /// <returns>实际读取的字节数（可能小于 <paramref name="length"/>）。</returns>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="filePosition"/> 或 <paramref name="length"/> 非法。</exception>
+        /// <exception cref="IOException">底层 IO 错误。</exception>
+        /// <exception cref="UnauthorizedAccessException">无权限。</exception>
+        /// <exception cref="ObjectDisposedException">对象已释放。</exception>
+        int Read(long filePosition, int length, ref ByteBlock block);
 
         #endregion Read
 
@@ -309,8 +379,6 @@ namespace ExtenderApp.Abstract
         /// <param name="token">取消令牌。</param>
         /// <returns>包含读取数据的数组。</returns>
         ValueTask<byte[]> ReadAsync(long filePosition, int length, CancellationToken token = default);
-
-        ValueTask ReadAsync(long filePosition, int length, ref ByteBlock block, CancellationToken token = default);
 
         /// <summary>
         /// 异步从指定位置读取指定长度的数据到目标数组。
@@ -339,25 +407,6 @@ namespace ExtenderApp.Abstract
         /// <param name="token">取消令牌。</param>
         /// <returns>实际读取的字节数。</returns>
         ValueTask<int> ReadAsync(long filePosition, Memory<byte> memory, CancellationToken token = default);
-
-        /// <summary>
-        /// 异步读取，并尽量使用内部数组池以减少分配。
-        /// </summary>
-        /// <param name="length">输出：实际读取的字节数。</param>
-        /// <param name="token">取消令牌。</param>
-        /// <returns>包含读取数据的数组（通常来自 <see cref="System.Buffers.ArrayPool{T}"/>）。</returns>
-        /// <remarks>返回数组可能来自 <see cref="ArrayPool{byte}.Shared"/>；调用方使用完毕后应归还。</remarks>
-        ValueTask<byte[]> ReadForArrayPoolAsync(out int length, CancellationToken token = default);
-
-        /// <summary>
-        /// 异步从指定位置读取指定长度的数据，并尽量使用内部数组池以减少分配。
-        /// </summary>
-        /// <param name="filePosition">文件起始读取位置（字节偏移）。</param>
-        /// <param name="length">要读取的字节数。</param>
-        /// <param name="token">取消令牌。</param>
-        /// <returns>包含读取数据的数组（通常来自 <see cref="System.Buffers.ArrayPool{T}"/>）。</returns>
-        /// <remarks>返回数组可能来自 <see cref="ArrayPool{byte}.Shared"/>；调用方使用完毕后应归还。</remarks>
-        ValueTask<byte[]> ReadForArrayPoolAsync(long filePosition, int length, CancellationToken token = default);
 
         #endregion ReadAsync
 

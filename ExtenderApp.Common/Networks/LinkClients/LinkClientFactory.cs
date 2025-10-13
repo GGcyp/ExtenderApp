@@ -50,23 +50,25 @@ namespace ExtenderApp.Common.Networks
             where TLinker : ILinker
             where TLinkParser : LinkParser
         {
-            var linker = _linkerFactory.CreateLinker<TLinker>();
-            var parser = _serviceProvider.GetRequiredService<TLinkParser>();
-            var result = new LinkClient<TLinker, TLinkParser>(linker, parser);
-            return result;
+            //var linker = _linkerFactory.CreateLinker<TLinker>();
+            //var parser = _serviceProvider.GetRequiredService<TLinkParser>();
+            //var result = new LinkClient<TLinker, TLinkParser>(linker, parser);
+            //return result;
+            return default;
         }
 
         public LinkClient<TLinker, TLinkParser> Create<TLinker, TLinkParser>(TLinker linker)
             where TLinker : ILinker
             where TLinkParser : LinkParser
         {
-            if (linker == null)
-            {
-                throw new ArgumentNullException(nameof(linker), "链接不能为空");
-            }
-            var parser = _serviceProvider.GetRequiredService<TLinkParser>();
-            var result = new LinkClient<TLinker, TLinkParser>(linker, parser);
-            return result;
+            //if (linker == null)
+            //{
+            //    throw new ArgumentNullException(nameof(linker), "链接不能为空");
+            //}
+            //var parser = _serviceProvider.GetRequiredService<TLinkParser>();
+            //var result = new LinkClient<TLinker, TLinkParser>(linker, parser);
+            //return result;
+            return default;
         }
     }
 }

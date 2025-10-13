@@ -15,26 +15,26 @@ namespace ExtenderApp.Common.IO
             _string = resolver.GetFormatter<string>();
         }
 
-        public override LocalFileInfo Deserialize(ref ExtenderBinaryReader reader)
+        public override LocalFileInfo Deserialize(ref ByteBuffer buffer)
         {
-            if(TryReadNil(ref reader))
+            if(TryReadNil(ref buffer))
                 return LocalFileInfo.Empty;
 
-            var result = _string.Deserialize(ref reader);
+            var result = _string.Deserialize(ref buffer);
             if (string.IsNullOrEmpty(result))
                 return LocalFileInfo.Empty;
 
             return result;
         }
 
-        public override void Serialize(ref ExtenderBinaryWriter writer, LocalFileInfo value)
+        public override void Serialize(ref ByteBuffer buffer, LocalFileInfo value)
         {
             if (value.IsEmpty)
             {
-                WriteNil(ref writer);
+                WriteNil(ref buffer);
                 return;
             }
-            _string.Serialize(ref writer, value.FullPath);
+            _string.Serialize(ref buffer, value.FullPath);
         }
 
         public override long GetLength(LocalFileInfo value)

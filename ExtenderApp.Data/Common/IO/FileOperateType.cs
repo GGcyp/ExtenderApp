@@ -22,7 +22,7 @@
         ConcurrentFileStream,
 
         /// <summary>
-        /// 使用内存映射文件（Memory-Mapped File）访问。
+        /// 使用内存映射文件（UnreadMemory-Mapped File）访问。
         /// 提供接近内存的随机访问性能，可跨进程共享；适合大文件或频繁随机读写的场景。
         /// 需确保映射文件与视图正确释放以避免句柄/内存泄漏。
         /// </summary>

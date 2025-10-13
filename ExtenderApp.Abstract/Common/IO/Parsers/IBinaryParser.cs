@@ -68,12 +68,12 @@ namespace ExtenderApp.Abstract
         void Serialize<T>(T value, byte[] bytes);
 
         /// <summary>
-        /// 将指定类型的值序列化到给定的<see cref="ByteBlock"/>对象中。
+        /// 将指定类型的值序列化到给定的<see cref="ByteBuffer"/>对象中。
         /// </summary>
         /// <typeparam name="T">要序列化的值的类型。</typeparam>
-        /// <param name="block"><see cref="ByteBlock"/>对象，用于写入序列化后的数据。</param>
+        /// <param name="block"><see cref="ByteBuffer"/>对象，用于写入序列化后的数据。</param>
         /// <param name="value">要序列化的值。</param>
-        void Serialize<T>(ref ByteBlock block, T value);
+        void Serialize<T>(ref ByteBuffer block, T value);
 
         /// <summary>
         /// 将对象序列化为二进制数据并写入到流中。
@@ -176,7 +176,7 @@ namespace ExtenderApp.Abstract
         /// <param name="readOnlyMemories">只读内存序列</param>
         /// <param name="block">二进制写入器</param>
         /// <param name="compression">压缩类型</param>
-        void ToLz4(in ReadOnlySequence<byte> readOnlyMemories, ref ByteBlock block, CompressionType compression);
+        void ToLz4(in ReadOnlySequence<byte> readOnlyMemories, ref ByteBuffer block, CompressionType compression);
 
         /// <summary>
         /// 异步地将数据写入LZ4压缩块
