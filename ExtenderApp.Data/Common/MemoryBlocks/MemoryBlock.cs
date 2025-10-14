@@ -366,6 +366,8 @@ namespace ExtenderApp.Data
             }
         }
 
+        #region FormMemoryBlock
+
         /// <summary>隐式转换为已写入范围的只读 UnreadSpan。</summary>
         /// <param name="block">源块。</param>
         public static implicit operator ReadOnlySpan<T>(in MemoryBlock<T> block)
@@ -375,5 +377,24 @@ namespace ExtenderApp.Data
         /// <param name="block">源块。</param>
         public static implicit operator ReadOnlyMemory<T>(in MemoryBlock<T> block)
             => block.UnreadMemory;
+
+        public static implicit operator ReadOnlySequence<T>(in MemoryBlock<T> block)
+            => new ReadOnlySequence<T>(block.UnreadMemory);
+
+        #endregion
+
+        #region ToMemoryBlock
+
+
+        public static implicit operator MemoryBlock<T>(ReadOnlySpan<T> span)
+            => new MemoryBlock<T>(span);
+
+        public static implicit operator MemoryBlock<T>(ReadOnlyMemory<T> memory)
+            => new MemoryBlock<T>(memory);
+
+        public static implicit operator MemoryBlock<T>(in ReadOnlySequence<T> sequence)
+            => new MemoryBlock<T>(sequence);
+
+        #endregion
     }
 }

@@ -147,6 +147,11 @@ namespace ExtenderApp.Data
         /// </summary>
         public bool IsEmpty => _sequence == null && reader.Length == 0;
 
+        public SequenceBuffer(MemoryBlock<T> block) : this(readOnlySequence: new(block.UnreadMemory))
+        {
+
+        }
+
         public SequenceBuffer(in SequenceBuffer<T> other)
         {
             _sequence = other._sequence;
@@ -220,12 +225,14 @@ namespace ExtenderApp.Data
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void UpdateReader()
         {
-            if (readerDirty)
+            if (!readerDirty)
             {
-                reader = new SequenceReader<T>(_sequence);
-                reader.Advance(Consumed);
-                readerDirty = false;
+                return;
             }
+
+            reader = new SequenceReader<T>(_sequence);
+            reader.Advance(Consumed);
+            readerDirty = false;
         }
 
         /// <summary>
@@ -482,6 +489,8 @@ namespace ExtenderApp.Data
             }
         }
 
+        #region FromSequenceBuffer
+
         public static implicit operator ReadOnlySequence<T>(in SequenceBuffer<T> buffer)
             => buffer.Sequence;
 
@@ -502,5 +511,17 @@ namespace ExtenderApp.Data
                 }
             }
         }
+
+        #endregion
+
+        #region ToSequenceBuffer
+
+        public static implicit operator SequenceBuffer<T>(ReadOnlySequence<T> sequence)
+            => new SequenceBuffer<T>(sequence);
+
+        public static implicit operator SequenceBuffer<T>(ReadOnlyMemory<T> memory)
+            => new SequenceBuffer<T>(memory);
+
+        #endregion
     }
 }

@@ -218,12 +218,14 @@ namespace ExtenderApp.Data
         /// </summary>
         public void Dispose() => _block.Dispose();
 
+        #region FormByteBlock
+
         /// <summary>
         /// 隐式转换为已写入范围的只读字节 UnreadSpan。
         /// 注意：该切片引用底层缓冲，生命周期应短于本实例且不得在 <see cref="Dispose"/> 后使用。
         /// </summary>
         /// <param name="block">源实例。</param>
-        public static implicit operator ReadOnlySpan<byte>(in ByteBlock block) 
+        public static implicit operator ReadOnlySpan<byte>(in ByteBlock block)
             => block.UnreadSpan;
 
         /// <summary>
@@ -231,7 +233,19 @@ namespace ExtenderApp.Data
         /// 注意：该切片引用底层缓冲，生命周期应短于本实例且不得在 <see cref="Dispose"/> 后使用。
         /// </summary>
         /// <param name="block">源实例。</param>
-        public static implicit operator ReadOnlyMemory<byte>(in ByteBlock block) 
+        public static implicit operator ReadOnlyMemory<byte>(in ByteBlock block)
             => block.UnreadMemory;
+
+        #endregion
+
+        #region ToByteBlock
+
+        public static implicit operator ByteBlock(ReadOnlySpan<byte> span)
+            => new ByteBlock(span);
+
+        public static implicit operator ByteBlock(ReadOnlyMemory<byte> memory)
+            => new ByteBlock(memory);
+
+        #endregion
     }
 }

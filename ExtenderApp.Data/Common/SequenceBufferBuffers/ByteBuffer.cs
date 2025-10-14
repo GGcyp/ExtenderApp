@@ -91,14 +91,6 @@ namespace ExtenderApp.Data
         public bool IsEmpty => _buffer.IsEmpty;
 
         /// <summary>
-        /// 通过已有的 <see cref="ByteBuffer"/> 构造（拷贝构造）。
-        /// </summary>
-        /// <param name="other">已有的字节缓冲</param>
-        public ByteBuffer(in ByteBuffer other) : this(other._buffer)
-        {
-        }
-
-        /// <summary>
         /// 通过已有的 <see cref="SequenceBuffer{T}"/> 构造。
         /// </summary>
         /// <param name="buffer">已有的缓冲</param>
@@ -355,10 +347,27 @@ namespace ExtenderApp.Data
             _buffer.Dispose();
         }
 
+        #region FormByteBuffer
+
         public static implicit operator ReadOnlySequence<byte>(in ByteBuffer buffer)
             => buffer.Sequence;
 
         public static implicit operator SequenceReader<byte>(in ByteBuffer buffer)
             => buffer._buffer;
+
+        #endregion
+
+        #region ToByteBuffer
+
+        public static implicit operator ByteBuffer(in SequenceBuffer<byte> buffer)
+            => new ByteBuffer(buffer);
+
+        public static implicit operator ByteBuffer(ReadOnlySequence<byte> sequence)
+            => new ByteBuffer(sequence);
+
+        public static implicit operator ByteBuffer(ReadOnlyMemory<byte> memory)
+            => new ByteBuffer(memory);
+
+        #endregion
     }
 }
