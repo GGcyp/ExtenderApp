@@ -11,6 +11,8 @@ namespace ExtenderApp.Data
     /// <typeparam name="T">元素类型。</typeparam>
     public struct MemoryBlock<T>
     {
+        private const int DefaultCapacity = 256;
+
         /// <summary>
         /// 内存块使用的数组池。
         /// </summary>
@@ -34,7 +36,7 @@ namespace ExtenderApp.Data
         /// <summary>
         /// 剩余未读数据的数量（Length - Consumed）。
         /// </summary>
-        public long Remaining=> Length - Consumed;
+        public long Remaining => Length - Consumed;
 
         /// <summary>
         /// 当前底层缓冲容量。array 为空时为 0。
@@ -56,6 +58,11 @@ namespace ExtenderApp.Data
         /// </summary>
         public ReadOnlyMemory<T> UnreadMemory => array.AsMemory(Consumed, Length);
 
+        public MemoryBlock() : this(DefaultCapacity)
+        {
+
+        }
+
         /// <summary>
         /// 按指定容量租用缓冲。
         /// </summary>
@@ -71,6 +78,9 @@ namespace ExtenderApp.Data
         /// <param name="pool">数组池。</param>
         public MemoryBlock(int capacity, ArrayPool<T> pool)
         {
+            if (pool is null)
+                throw new ArgumentNullException(nameof(pool));
+
             _pool = pool;
             array = _pool.Rent(capacity);
             Consumed = 0;
@@ -92,6 +102,9 @@ namespace ExtenderApp.Data
         /// <param name="pool">数组池。</param>
         public MemoryBlock(ReadOnlyMemory<T> memory, ArrayPool<T> pool) : this(memory.Length, pool)
         {
+            if (memory.IsEmpty)
+                throw new ArgumentNullException(nameof(memory));
+
             memory.CopyTo(array);
             Length = memory.Length;
         }
@@ -111,6 +124,9 @@ namespace ExtenderApp.Data
         /// <param name="pool">数组池。</param>
         public MemoryBlock(ReadOnlySpan<T> span, ArrayPool<T> pool) : this(span.Length, pool)
         {
+            if (span.IsEmpty)
+                throw new ArgumentNullException(nameof(span));
+
             span.CopyTo(array);
             Length = span.Length;
         }
@@ -121,6 +137,9 @@ namespace ExtenderApp.Data
         /// <param name="block">源块（仅拷贝已写入范围 0..Length）。</param>
         public MemoryBlock(in MemoryBlock<T> block)
         {
+            if (block.IsEmpty)
+                throw new ArgumentNullException(nameof(block));
+
             _pool = block._pool;
             Consumed = block.Consumed;
             Length = block.Length;
@@ -219,6 +238,16 @@ namespace ExtenderApp.Data
         /// <summary>
         /// 将可读数据（Length - Consumed）复制到目标 UnreadSpan。
         /// </summary>
+        /// <param name="destination">目标缓冲</param>
+        /// <returns>若目标有足够空间则返回 true。</returns>
+        public bool TryCopyTo(Span<T> destination)
+        {
+            return TryCopyTo(destination, out _);
+        }
+
+        /// <summary>
+        /// 将可读数据（Length - Consumed）复制到目标 UnreadSpan。
+        /// </summary>
         /// <param name="destination">目标缓冲。</param>
         /// <param name="written">实际写入的元素数量。</param>
         /// <returns>若目标有足够空间则返回 true。</returns>
@@ -281,7 +310,7 @@ namespace ExtenderApp.Data
         /// 确保至少还能写入 <paramref name="sizeHint"/> 个元素；不足则扩容。
         /// </summary>
         /// <param name="sizeHint">需要预留的最小写入空间。</param>
-        private void Ensure(int sizeHint)
+        public void Ensure(int sizeHint)
         {
             int newCapacity = Length + sizeHint;
             if (newCapacity <= Capacity)

@@ -19,7 +19,7 @@ namespace ExtenderApp.Common.Networks
 
         public override void Serialize<T>(ref ByteBuffer buffer, T value)
         {
-            _binaryParser.Serialize(ref buffer, value);
+            
         }
     }
 }

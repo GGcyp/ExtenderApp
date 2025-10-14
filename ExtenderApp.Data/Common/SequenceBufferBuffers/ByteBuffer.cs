@@ -227,6 +227,48 @@ namespace ExtenderApp.Data
         }
 
         /// <summary>
+        /// 尝试将剩余数据复制到<see cref="ByteBlock"/>（不改变读取位置）。
+        /// </summary>
+        /// <param name="block">目标字节块</param>
+        /// <returns>复制成功返回 true。</returns>
+        public bool TryCopyTo(ByteBlock block)
+        {
+            if (block.IsEmpty)
+                return false;
+
+            block.Ensure((int)Length);
+            while (End)
+            {
+                var span = UnreadSpan;
+                block.Write(span);
+                ReadAdvance(span.Length);
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// 尝试将剩余数据复制到<see cref="Stream"/>（不改变读取位置）。
+        /// </summary>
+        /// <param name="stream">目标流</param>
+        /// <returns>复制成功返回 true。</returns>
+        public bool TryCopyTo(Stream stream)
+        {
+            if (stream == null)
+                throw new ArgumentNullException(nameof(stream));
+            if (IsEmpty)
+                throw new Exception("当前字节缓冲无任何数据，无法复制。");
+
+            while (!End)
+            {
+                ReadOnlySpan<byte> span = UnreadSpan;
+                stream.Write(span);
+                ReadAdvance(span.Length);
+            }
+
+            return true;
+        }
+
+        /// <summary>
         /// 尝试预览一个元素（不前进）。
         /// </summary>
         /// <param name="value">输出预览到的元素。</param>
@@ -345,6 +387,13 @@ namespace ExtenderApp.Data
         public void Dispose()
         {
             _buffer.Dispose();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void ThrowIfCannotWrite()
+        {
+            if (!CanWrite)
+                throw new ObjectDisposedException("当前字节缓冲不可写入。");
         }
 
         #region FormByteBuffer

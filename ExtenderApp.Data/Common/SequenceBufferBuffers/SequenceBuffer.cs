@@ -75,7 +75,7 @@ namespace ExtenderApp.Data
         /// <summary>
         /// 已消耗（读取）元素数量。
         /// </summary>
-        public long Consumed { get; private set; }
+        public long Consumed => reader.Consumed;
 
         /// <summary>
         /// 当前读取位置。
@@ -230,8 +230,9 @@ namespace ExtenderApp.Data
                 return;
             }
 
+            var lastReader = reader;
             reader = new SequenceReader<T>(_sequence);
-            reader.Advance(Consumed);
+            reader.Advance(lastReader.Consumed);
             readerDirty = false;
         }
 
@@ -256,7 +257,6 @@ namespace ExtenderApp.Data
         {
             UpdateReader();
             reader.Advance(count);
-            Consumed += count;
         }
 
         /// <summary>
@@ -336,7 +336,6 @@ namespace ExtenderApp.Data
             UpdateReader();
             if (reader.TryRead(out value))
             {
-                Consumed++;
                 return true;
             }
             return false;
@@ -358,7 +357,6 @@ namespace ExtenderApp.Data
             }
             var start = reader.Position;
             reader.Advance(count);
-            Consumed += count;
             var end = reader.Position;
             value = reader.Sequence.Slice(start, end);
             return true;
@@ -374,6 +372,22 @@ namespace ExtenderApp.Data
         {
             UpdateReader();
             return reader.TryCopyTo(buffer);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool TryCopyTo(MemoryBlock<T> block)
+        {
+            if (block.IsEmpty)
+                return false;
+
+            block.Ensure((int)Length);
+            while (End)
+            {
+                var span = UnreadSpan;
+                block.Write(span);
+                ReadAdvance(span.Length);
+            }
+            return true;
         }
 
         /// <summary>
@@ -408,7 +422,19 @@ namespace ExtenderApp.Data
         {
             if (pos < 0 || pos > Length)
                 throw new ArgumentOutOfRangeException(nameof(pos), "位置超出范围。");
-            Rewind(Length - pos);
+            long lastPos = Consumed;
+            long diff = lastPos - pos;
+            if (diff == 0)
+                return;
+
+            if (diff < 0)
+            {
+                Rewind(Math.Abs(diff));
+            }
+            else
+            {
+                ReadAdvance(diff);
+            }
         }
 
         /// <summary>
@@ -419,7 +445,6 @@ namespace ExtenderApp.Data
         {
             UpdateReader();
             reader.Rewind(count);
-            Consumed -= count;
         }
 
         /// <summary>
@@ -455,7 +480,7 @@ namespace ExtenderApp.Data
             UpdateReader();
             var array = new T[Length];
             long consumed = Consumed;
-            reader.Rewind(0);
+            reader.Rewind(consumed);
             TryCopyTo(array);
             reader.Advance(consumed);
             return array;
@@ -487,6 +512,13 @@ namespace ExtenderApp.Data
             {
                 rental.Dispose();
             }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void ThrowIfCannotWrite()
+        {
+            if (!CanWrite)
+                throw new ObjectDisposedException("当前缓冲不可写入。");
         }
 
         #region FromSequenceBuffer

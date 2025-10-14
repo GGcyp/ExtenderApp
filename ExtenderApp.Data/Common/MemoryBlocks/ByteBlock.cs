@@ -45,6 +45,11 @@ namespace ExtenderApp.Data
         /// </summary>
         public ReadOnlyMemory<byte> UnreadMemory => _block.UnreadMemory;
 
+        public ByteBlock()
+        {
+            _block = new MemoryBlock<byte>();
+        }
+
         /// <summary>
         /// 按指定容量创建缓冲。
         /// </summary>
@@ -106,9 +111,27 @@ namespace ExtenderApp.Data
         /// 复制构造：克隆另一个 <see cref="ByteBlock"/> 的内容与读写指针。
         /// </summary>
         /// <param name="block">源实例（仅拷贝已写入范围 0..Length）。</param>
-        public ByteBlock(in ByteBlock block)
+        public ByteBlock(in ByteBlock block) : this(block._block)
         {
-            _block = new(block._block);
+        }
+
+        public ByteBlock(in MemoryBlock<byte> block)
+        {
+            _block = new(block);
+        }
+
+        public ByteBlock(in ByteBuffer buffer)
+        {
+            if (buffer.IsEmpty)
+                throw new ArgumentException(nameof(buffer));
+
+            Ensure((int)buffer.Length);
+            while (!buffer.End)
+            {
+                var span = buffer.UnreadSpan;
+                Write(span);
+                buffer.ReadAdvance(span.Length);
+            }
         }
 
         /// <summary>
@@ -138,6 +161,15 @@ namespace ExtenderApp.Data
         public void ReadAdvance(int count) => _block.ReadAdvance(count);
 
         /// <summary>
+        /// 确保至少还能写入 <paramref name="sizeHint"/> 个元素；不足则扩容。
+        /// </summary>
+        /// <param name="sizeHint">需要预留的最小写入空间。</param>
+        public void Ensure(int sizeHint)
+        {
+            _block.Ensure(sizeHint);
+        }
+
+        /// <summary>
         /// 写入单个字节到当前写指针位置。
         /// </summary>
         /// <param name="value">要写入的字节。</param>
@@ -165,9 +197,18 @@ namespace ExtenderApp.Data
         /// 将可读数据（Length - Consumed）复制到目标 UnreadSpan。
         /// </summary>
         /// <param name="destination">目标缓冲。</param>
+        /// <returns>若目标有足够空间则返回 true。</returns>
+        public bool TryCopyTo(Span<byte> destination)
+            => _block.TryCopyTo(destination);
+
+        /// <summary>
+        /// 将可读数据（Length - Consumed）复制到目标 UnreadSpan。
+        /// </summary>
+        /// <param name="destination">目标缓冲。</param>
         /// <param name="written">实际写入的字节数。</param>
         /// <returns>若目标有足够空间则返回 true。</returns>
-        public bool TryCopyTo(Span<byte> destination, out int written) => _block.TryCopyTo(destination, out written);
+        public bool TryCopyTo(Span<byte> destination, out int written)
+            => _block.TryCopyTo(destination, out written);
 
         /// <summary>
         /// 查看当前读指针位置的字节而不移动指针。
@@ -236,6 +277,14 @@ namespace ExtenderApp.Data
         public static implicit operator ReadOnlyMemory<byte>(in ByteBlock block)
             => block.UnreadMemory;
 
+        /// <summary>
+        /// 隐式转换为已写入范围的只读字节 UnreadMemory。
+        /// 注意：该切片引用底层缓冲，生命周期应短于本实例且不得在 <see cref="Dispose"/> 后使用。
+        /// </summary>
+        /// <param name="block">源实例。</param>
+        public static implicit operator ByteBuffer(in ByteBlock block)
+            => new ByteBuffer(block.UnreadMemory);
+
         #endregion
 
         #region ToByteBlock
@@ -245,6 +294,15 @@ namespace ExtenderApp.Data
 
         public static implicit operator ByteBlock(ReadOnlyMemory<byte> memory)
             => new ByteBlock(memory);
+
+        public static implicit operator ByteBlock(ReadOnlySequence<byte> sequence)
+            => new ByteBlock(buffer: sequence);
+
+        public static implicit operator ByteBlock(ByteBuffer buffer)
+            => new ByteBlock(buffer);
+
+        public static implicit operator ByteBlock(MemoryBlock<byte> block)
+            => new ByteBlock(block);
 
         #endregion
     }

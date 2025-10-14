@@ -98,7 +98,11 @@ namespace ExtenderApp.Common.IO.Binary.Formatters
             if (!_store.TryGetSingleFormatterType(typeof(Array), out Type formatterType))
                 return null;
 
-            return formatterType.MakeGenericType(type);
+            var elementType = type.GetElementType();
+            if (elementType == null)
+                return null; // 理论上不应发生
+
+            return formatterType.MakeGenericType(elementType);
         }
 
         /// <summary>

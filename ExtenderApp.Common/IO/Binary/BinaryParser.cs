@@ -1,4 +1,5 @@
-﻿using System.Buffers;
+﻿using System;
+using System.Buffers;
 using ExtenderApp.Abstract;
 using ExtenderApp.Common.Error;
 using ExtenderApp.Common.IO.Binary.LZ4;
@@ -78,75 +79,61 @@ namespace ExtenderApp.Common.IO.Binary
 
         #region Serialize
 
-        public void Serialize<T>(T value, byte[] bytes, out int length)
+        public void Serialize<T>(T value, Span<byte> span)
         {
-            Serialize(value, bytes, out long longLength);
-            length = (int)longLength;
-        }
+            if (span.IsEmpty)
+                throw new ArgumentNullException(nameof(span));
 
-        public void Serialize<T>(T value, byte[] bytes, out long length)
-        {
-            bytes.ArgumentNull(nameof(bytes));
+            Serialize(value, out ByteBuffer buffer);
+            if (buffer.Remaining > span.Length)
+                throw new ArgumentException("数组内存空间不足", nameof(span));
 
-            length = GetLength(value);
-            if (bytes.LongLength < length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(length));
-            }
-
-            var buffer = new ByteBuffer(_pool);
-            Serialize(ref buffer, value);
-            buffer.TryCopyTo(bytes);
+            buffer.TryCopyTo(span);
             buffer.Dispose();
-        }
-
-        public void Serialize<T>(T value, byte[] bytes)
-        {
-            bytes.ArgumentNull(nameof(bytes));
-
-            var result = SerializeForArrayPool(value, out int length);
-            if (bytes.LongLength < length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(length));
-            }
-
-            result.CopyTo(bytes, 0);
-            ArrayPool<byte>.Shared.Return(result);
         }
 
         public byte[] Serialize<T>(T value)
         {
-            var buffer = new ByteBuffer(_pool);
-            Serialize(ref buffer, value);
+            Serialize(value, out ByteBuffer buffer);
             var result = buffer.ToArray();
             buffer.Dispose();
             return result;
         }
 
-        public void Serialize<T>(ref ByteBuffer buffer, T value)
+        public void Serialize<T>(T value, Stream stream)
         {
-            try
-            {
-                _resolver.GetFormatterWithVerify<T>().Serialize(ref buffer, value);
-            }
-            catch (Exception ex)
-            {
-                throw;
-            }
+            if (stream is null)
+                throw new ArgumentNullException(nameof(stream));
+
+            Serialize(value, out ByteBuffer buffer);
+            buffer.TryCopyTo(stream);
+            buffer.Dispose();
         }
 
-        public void Serialize<T>(Stream stream, T value)
+        public void Serialize<T>(T value, out ByteBuffer buffer)
         {
-            var buffer = new ByteBuffer(_pool);
-            Serialize(ref buffer, value);
+            buffer = new(_pool);
+            _resolver.GetFormatterWithVerify<T>().Serialize(ref buffer, value);
+        }
 
-            foreach (ReadOnlyMemory<byte> segment in buffer.Sequence)
-            {
-                var sharedBuffer = ArrayPool<byte>.Shared.Rent(segment.Length);
-                segment.CopyTo(sharedBuffer);
-                stream.Write(sharedBuffer, 0, sharedBuffer.Length);
-            }
+        public void Serialize<T>(T value, out ByteBlock block)
+        {
+            ByteBuffer buffer = new ByteBuffer(_pool);
+            _resolver.GetFormatterWithVerify<T>().Serialize(ref buffer, value);
+            block = new((int)buffer.Length);
+            buffer.TryCopyTo(block);
             buffer.Dispose();
+        }
+
+
+        public Task SerializeAsync<T>(T value, Stream stream, CancellationToken token = default)
+        {
+            return Task.Run(() =>
+            {
+                Serialize(value, out ByteBuffer buffer);
+                buffer.TryCopyTo(stream);
+                buffer.Dispose();
+            }, token);
         }
 
         public Task<byte[]> SerializeAsync<T>(T value, CancellationToken token)
@@ -162,49 +149,20 @@ namespace ExtenderApp.Common.IO.Binary
             }, token);
         }
 
-        public Task SerializeAsync<T>(Stream stream, T value, CancellationToken token)
-        {
-            return Task.Run(() =>
-            {
-                var buffer = new ByteBuffer(_pool);
-                Serialize(ref buffer, value);
-                foreach (ReadOnlyMemory<byte> segment in buffer.Sequence)
-                {
-                    var sharedBuffer = ArrayPool<byte>.Shared.Rent(segment.Length);
-                    segment.CopyTo(sharedBuffer);
-                    stream.Write(sharedBuffer, 0, sharedBuffer.Length);
-                }
-                buffer.Dispose();
-            }, token);
-        }
-
-        /// <summary>
-        /// 将指定对象序列化为字节数组，并存储在 ArrayPool 中。
-        /// </summary>
-        /// <typeparam name="T">要序列化的对象的类型。</typeparam>
-        /// <param name="value">要序列化的对象。</param>
-        /// <returns>包含序列化数据的字节数组。</returns>
-        public byte[] SerializeForArrayPool<T>(T value, out long length)
-        {
-            var buffer = new ByteBuffer(_pool);
-            Serialize(ref buffer, value);
-            length = buffer.Length;
-            byte[] bytes = ArrayPool<byte>.Shared.Rent((int)length);
-            buffer.TryCopyTo(bytes);
-            buffer.Dispose();
-            return bytes;
-        }
-
-        public byte[] SerializeForArrayPool<T>(T value, out int length)
-        {
-            var bytes = SerializeForArrayPool(value, out long longLength);
-            length = (int)longLength;
-            return bytes;
-        }
-
         #endregion Serialize
 
         #region Deserialize
+
+        public T? Deserialize<T>(ReadOnlySpan<byte> span)
+        {
+            if (span.IsEmpty)
+                throw new ArgumentNullException(nameof(span));
+
+            ByteBlock block = span;
+            var result = Deserialize<T>(ref block);
+            block.Dispose();
+            return result;
+        }
 
         public T? Deserialize<T>(ReadOnlyMemory<byte> memory)
         {
@@ -212,31 +170,43 @@ namespace ExtenderApp.Common.IO.Binary
                 throw new ArgumentNullException(nameof(memory));
 
             ByteBuffer buffer = new ByteBuffer(memory);
-            return Deserialize<T>(ref buffer);
+            var result = Deserialize<T>(ref buffer);
+            buffer.Dispose();
+            return result;
         }
 
         /// <summary>
         /// 反序列化数据。
         /// </summary>
         /// <typeparam name="T">反序列化后的数据类型</typeparam>
-        /// <param name="rbuffer">用于读取数据的<see cref="ByteBuffer"/>对象</param>
+        /// <param name="buffer">用于读取数据的<see cref="ByteBuffer"/>对象</param>
         /// <returns>反序列化后的对象，如果剩余数据为0且没有默认格式化器，则返回默认值</returns>
-        private T? Deserialize<T>(ref ByteBuffer rbuffer)
+        public T? Deserialize<T>(ref ByteBuffer buffer)
         {
-            if (rbuffer.Remaining == 0)
+            if (buffer.Remaining == 0)
             {
-                var formatter = _resolver.GetFormatter<T>();
                 return default;
             }
 
-            if (TryDecompress(ref rbuffer, out var buffer))
+            T? result;
+            if (TryDecompress(ref buffer, out var outBuffer))
             {
-                rbuffer.Dispose();
-                rbuffer = new ByteBuffer(buffer.Sequence);
+                result = _resolver.GetFormatterWithVerify<T>().Deserialize(ref outBuffer);
+            }
+            else
+            {
+                result = _resolver.GetFormatterWithVerify<T>().Deserialize(ref buffer);
             }
 
-            T? result = _resolver.GetFormatterWithVerify<T>().Deserialize(ref rbuffer);
-            rbuffer.Dispose();
+            outBuffer.Dispose();
+            return result;
+        }
+
+        public T? Deserialize<T>(ref ByteBlock block)
+        {
+            ByteBuffer buffer = block;
+            T? result = Deserialize<T>(ref buffer);
+            buffer.Dispose();
             return result;
         }
 
@@ -257,21 +227,23 @@ namespace ExtenderApp.Common.IO.Binary
             }
             while (bytesRead > 0);
 
-            result = DeserializeFromSequenceAndRewindStreamIfPossible<T>(stream, buffer.Sequence);
+            result = DeserializeFromSequenceAndRewindStreamIfPossible<T>(stream, buffer);
 
             buffer.Dispose();
             return result;
         }
 
-        public async Task<T?> DeserializeAsync<T>(ReadOnlyMemory<byte> span, CancellationToken token)
+        public Task<T?> DeserializeAsync<T>(ReadOnlyMemory<byte> memory, CancellationToken token)
         {
-            if (span.IsEmpty)
-                throw new ArgumentNullException(nameof(span));
+            if (memory.IsEmpty)
+                throw new ArgumentNullException(nameof(memory));
 
-            return await Task.Run(() =>
+            return Task.Run(() =>
             {
-                ByteBuffer buffer = new ByteBuffer(span);
-                return Deserialize<T>(ref buffer);
+                ByteBuffer buffer = memory;
+                var result = Deserialize<T>(ref buffer);
+                buffer.Dispose();
+                return result;
             }, token);
         }
 
@@ -281,27 +253,29 @@ namespace ExtenderApp.Common.IO.Binary
         /// <typeparam name="T">要反序列化的对象的类型。</typeparam>
         /// <param name="stream">包含要反序列化的数据的流。</param>
         /// <returns>反序列化后的对象，如果反序列化失败则返回null。</returns>
-        public async Task<T?> DeserializeAsync<T>(Stream stream, CancellationToken token)
+        public Task<T?> DeserializeAsync<T>(Stream stream, CancellationToken token)
         {
-            if (TryDeserializeFromMemoryStream<T>(stream, out var result))
+            return Task.Run<T?>(() =>
             {
+                if (TryDeserializeFromMemoryStream<T>(stream, out var result))
+                {
+                    return result;
+                }
+
+                ByteBuffer buffer = new ByteBuffer(_pool);
+                int bytesRead = 0;
+                while (bytesRead > 0)
+                {
+                    Span<byte> span = buffer.GetSpan(stream.CanSeek ? (int)System.Math.Min(SuggestedContiguousMemorySize, stream.Length - stream.Position) : 0);
+                    bytesRead = stream.Read(span);
+                    buffer.WriteAdvance(bytesRead);
+                }
+
+                result = DeserializeFromSequenceAndRewindStreamIfPossible<T>(stream, buffer);
+
+                buffer.Dispose();
                 return result;
-            }
-
-            var rent = _pool.Rent();
-            var sequence = rent.Value;
-            int bytesRead = 0;
-            while (bytesRead > 0)
-            {
-                Memory<byte> memory = sequence.GetMemory(stream.CanSeek ? (int)System.Math.Min(SuggestedContiguousMemorySize, stream.Length - stream.Position) : 0);
-                bytesRead = await stream.ReadAsync(memory);
-                sequence.Advance(bytesRead);
-            }
-
-            result = DeserializeFromSequenceAndRewindStreamIfPossible<T>(stream, sequence);
-
-            rent.Dispose();
-            return result;
+            });
         }
 
         /// <summary>
@@ -312,14 +286,12 @@ namespace ExtenderApp.Common.IO.Binary
         /// <param name="sequence">包含要反序列化的数据的只读序列。</param>
         /// <returns>反序列化后的对象。</returns>
         /// <exception cref="ArgumentNullException">如果stream为null。</exception>
-        private T? DeserializeFromSequenceAndRewindStreamIfPossible<T>(Stream stream, ReadOnlySequence<byte> sequence)
+        private T? DeserializeFromSequenceAndRewindStreamIfPossible<T>(Stream stream, ByteBuffer buffer)
         {
             if (stream is null)
             {
                 throw new ArgumentNullException(nameof(stream));
             }
-
-            ByteBuffer buffer = new ByteBuffer(sequence);
 
             T? result = Deserialize<T>(ref buffer);
 
@@ -406,16 +378,14 @@ namespace ExtenderApp.Common.IO.Binary
 
         protected override void ExecuteWrite<T>(IFileOperate fileOperate, T value)
         {
-            ByteBuffer buffer = new ByteBuffer(_pool);
-            Serialize(ref buffer, value);
+            Serialize(value, out ByteBuffer buffer);
             fileOperate.Write(buffer);
             buffer.Dispose();
         }
 
         protected override void ExecuteWrite<T>(IFileOperate fileOperate, T value, long position)
         {
-            ByteBuffer buffer = new ByteBuffer(_pool);
-            Serialize(ref buffer, value);
+            Serialize(value, out ByteBuffer buffer);
             fileOperate.Write(position, buffer);
             buffer.Dispose();
         }
@@ -424,8 +394,7 @@ namespace ExtenderApp.Common.IO.Binary
         {
             return Task.Run(() =>
             {
-                ByteBuffer buffer = new ByteBuffer(_pool);
-                Serialize(ref buffer, value);
+                Serialize(value, out ByteBuffer buffer);
                 fileOperate.Write(buffer);
                 buffer.Dispose();
             }, token);
@@ -435,8 +404,7 @@ namespace ExtenderApp.Common.IO.Binary
         {
             return Task.Run(() =>
             {
-                ByteBuffer buffer = new ByteBuffer(_pool);
-                Serialize(ref buffer, value);
+                Serialize(value, out ByteBuffer buffer);
                 fileOperate.Write(position, buffer);
                 buffer.Dispose();
             }, token);
@@ -500,39 +468,17 @@ namespace ExtenderApp.Common.IO.Binary
             }
         }
 
-        public byte[] Compression<T>(T value, CompressionType compression)
+        public byte[] Serialize<T>(T value, CompressionType compression)
         {
-            var scratchbuffer = new ByteBuffer(_pool);
-            Serialize(ref scratchbuffer, value);
+            Serialize(value, out ByteBuffer buffer);
 
-            var buffer = new ByteBuffer(_pool);
-            ToLz4(scratchbuffer.Sequence, ref buffer, compression);
+            var outBuffer = new ByteBuffer(_pool);
+            ToLz4(buffer.Sequence, ref outBuffer, compression);
 
-            byte[] result = buffer.ToArray();
+            byte[] result = outBuffer.ToArray();
 
-            scratchbuffer.Dispose();
             buffer.Dispose();
-            return result;
-        }
-
-        public byte[] Compression(ReadOnlySpan<byte> input, CompressionType compression)
-        {
-            var scratchbuffer = new ByteBuffer(_pool);
-            scratchbuffer.Write(input);
-            var buffer = new ByteBuffer(_pool);
-            ToLz4(scratchbuffer.Sequence, ref buffer, compression);
-            byte[] result = buffer.ToArray();
-            scratchbuffer.Dispose();
-            buffer.Dispose();
-            return result;
-        }
-
-        public byte[] Compression(in ReadOnlySequence<byte> readOnlyMemories, CompressionType compression)
-        {
-            ByteBuffer buffer = new ByteBuffer(_pool);
-            ToLz4(readOnlyMemories, ref buffer, CompressionType.Lz4BlockArray);
-            var result = buffer.ToArray();
-            buffer.Dispose();
+            outBuffer.Dispose();
             return result;
         }
 
@@ -561,16 +507,65 @@ namespace ExtenderApp.Common.IO.Binary
                 ErrorUtil.ArgumentNull(nameof(fileOperate));
                 return;
             }
+            Serialize(value, out ByteBuffer buffer);
 
-            var scratchbuffer = new ByteBuffer(_pool);
-            Serialize(ref scratchbuffer, value);
+            var outBuffer = new ByteBuffer(_pool);
+            ToLz4(buffer.Sequence, ref outBuffer, compression);
+            fileOperate.Write(outBuffer);
 
-            var buffer = new ByteBuffer(_pool);
-            ToLz4(scratchbuffer.Sequence, ref buffer, compression);
+            buffer.Dispose();
+            outBuffer.Dispose();
+        }
 
-            fileOperate.Write(buffer);
+        public void Write(ExpectLocalFileInfo info, ref ByteBuffer buffer, CompressionType compression)
+        {
+            Write(info.CreateReadWriteOperate(FileExtension), ref buffer, compression);
+        }
 
-            scratchbuffer.Dispose();
+        public void Write(FileOperateInfo info, ref ByteBuffer buffer, CompressionType compression)
+        {
+            Write(GetOperate(info), ref buffer, compression);
+        }
+
+        public void Write(IFileOperate fileOperate, ref ByteBuffer buffer, CompressionType compression)
+        {
+            if (fileOperate == null)
+            {
+                ErrorUtil.ArgumentNull(nameof(fileOperate));
+                return;
+            }
+
+            var outBuffer = new ByteBuffer(_pool);
+            ToLz4(buffer.Sequence, ref outBuffer, compression);
+            fileOperate.Write(outBuffer);
+
+            outBuffer.Dispose();
+        }
+
+        public void Write(ExpectLocalFileInfo info, ref ByteBlock block, CompressionType compression)
+        {
+            Write(info.CreateReadWriteOperate(FileExtension), ref block, compression);
+        }
+
+        public void Write(FileOperateInfo info, ref ByteBlock block, CompressionType compression)
+        {
+            Write(GetOperate(info), ref block, compression);
+        }
+
+        public void Write(IFileOperate fileOperate, ref ByteBlock block, CompressionType compression)
+        {
+            if (fileOperate == null)
+            {
+                ErrorUtil.ArgumentNull(nameof(fileOperate));
+                return;
+            }
+
+            var buffer = new ByteBuffer(block);
+            var outBuffer = new ByteBuffer(_pool);
+            ToLz4(buffer.Sequence, ref outBuffer, compression);
+            fileOperate.Write(outBuffer);
+
+            outBuffer.Dispose();
             buffer.Dispose();
         }
 
@@ -612,7 +607,9 @@ namespace ExtenderApp.Common.IO.Binary
                     }
 
                     _convert.WriteArrayHeader(ref buffer, sequenceCount + 1);
-                    Serialize(ref buffer, new ExtensionHeader(Lz4bufferArray, (uint)extHeaderSize));
+                    Serialize(new ExtensionHeader(Lz4bufferArray, (uint)extHeaderSize), out ByteBuffer tempBuffer);
+                    tempBuffer.TryCopyTo(buffer);
+                    tempBuffer.Dispose();
                     IBinaryFormatter<int> intFormatter = _resolver.GetFormatterWithVerify<int>();
                     foreach (var item in readOnlyMemories)
                     {
@@ -658,15 +655,14 @@ namespace ExtenderApp.Common.IO.Binary
             }
             return Task.Run(() =>
             {
-                var scratchbuffer = new ByteBuffer(_pool);
-                Serialize(ref scratchbuffer, value);
+                Serialize(value, out ByteBuffer buffer);
 
-                var buffer = new ByteBuffer(_pool);
-                ToLz4(scratchbuffer.Sequence, ref buffer, compression);
+                var outBuffer = new ByteBuffer(_pool);
+                ToLz4(buffer.Sequence, ref outBuffer, compression);
 
-                fileOperate.Write(buffer);
-                scratchbuffer.Dispose();
+                fileOperate.Write(outBuffer);
                 buffer.Dispose();
+                outBuffer.Dispose();
             }, token);
         }
 
@@ -781,6 +777,58 @@ namespace ExtenderApp.Common.IO.Binary
                 return 5;
             }
         }
+
+
+        public void Serialize<T>(T value, out ByteBuffer buffer, CompressionType compression)
+        {
+            Serialize(value, out buffer);
+
+            var outBuffer = new ByteBuffer(_pool);
+            ToLz4(buffer.Sequence, ref outBuffer, compression);
+
+            outBuffer.Dispose();
+        }
+
+        public void Serialize<T>(T value, out ByteBlock block, CompressionType compression)
+        {
+            Serialize(value, out ByteBuffer buffer);
+
+            var outBuffer = new ByteBuffer(_pool);
+            ToLz4(buffer.Sequence, ref outBuffer, compression);
+
+            block = outBuffer;
+            outBuffer.Dispose();
+        }
+
+        public void Serialize(ref ByteBuffer inputBuffer, out ByteBuffer outBuffer, CompressionType compression)
+        {
+            if (inputBuffer.IsEmpty)
+                throw new ArgumentNullException(nameof(inputBuffer));
+            inputBuffer.ThrowIfCannotWrite();
+
+            outBuffer = new(_pool);
+            ToLz4(inputBuffer.Sequence, ref outBuffer, compression);
+        }
+
+        public void Serialize(ref ByteBlock inputBlock, out ByteBlock outBlock, CompressionType compression)
+        {
+            if (inputBlock.IsEmpty)
+                throw new ArgumentNullException(nameof(inputBlock));
+
+            ByteBuffer inputBuffer = inputBlock;
+            ByteBuffer outBuffer = new(_pool);
+            ToLz4(inputBuffer.Sequence, ref outBuffer, compression);
+            outBlock = outBuffer;
+        }
+
+        public Task<byte[]> SerializeAsync<T>(T value, CompressionType compression)
+        {
+            return Task.Run(() =>
+            {
+                return Serialize(value, compression);
+            });
+        }
+
 
         #endregion LZ4
     }

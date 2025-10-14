@@ -29,9 +29,7 @@ namespace ExtenderApp.Common.IO.Binary.Formatters.Collection
             }
 
             byte[] array = Array.Empty<byte>();
-
             array = _bufferConvert.ReadRaw(ref buffer, len).ToArray();
-
             return array;
         }
 

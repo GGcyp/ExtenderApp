@@ -67,7 +67,7 @@
         {
             if (output.Length == 0)
             {
-                throw new Exception("Output is empty.");
+                throw new Exception("输出数组为空。");
             }
 
             fixed (byte* inputPtr = input)
@@ -85,7 +85,7 @@
 
                 if (length != input.Length)
                 {
-                    throw new Exception("LZ4 block is corrupted, or invalid length has been given.");
+                    throw new Exception("LZ4块损坏或提供了无效的长度。");
                 }
 
                 return output.Length;
