@@ -5,7 +5,7 @@ namespace ExtenderApp.Data
     /// <summary>
     /// 面向 byte 的缓冲块，内部直接复用 <see cref="MemoryBlock{T}"/>（T=byte）。
     /// - Length 表示已写入字节数（写指针/写边界）。
-    /// - Position 表示当前读取位置（读指针）。
+    /// - Consumed 表示当前读取位置（读指针）。
     /// 线程不安全；使用完毕需调用 <see cref="Dispose"/> 归还到数组池。
     /// </summary>
     public struct ByteBlock
@@ -23,7 +23,7 @@ namespace ExtenderApp.Data
         /// <summary>
         /// 当前读取位置（读指针）。范围：0到<see cref="Length"/>之间。
         /// </summary>
-        public int Position => _block.Position;
+        public int Position => _block.Consumed;
 
         /// <summary>
         /// 底层缓冲容量。
@@ -162,7 +162,7 @@ namespace ExtenderApp.Data
         public void Write(in ReadOnlySequence<byte> value) => _block.Write(value);
 
         /// <summary>
-        /// 将可读数据（Length - Position）复制到目标 UnreadSpan。
+        /// 将可读数据（Length - Consumed）复制到目标 UnreadSpan。
         /// </summary>
         /// <param name="destination">目标缓冲。</param>
         /// <param name="written">实际写入的字节数。</param>
@@ -179,7 +179,7 @@ namespace ExtenderApp.Data
         /// <summary>
         /// 查看相对当前读指针偏移处的字节（不移动指针）。
         /// </summary>
-        /// <param name="offset">相对偏移量（从 Position 开始，需 ≥ 0）。</param>
+        /// <param name="offset">相对偏移量（从 Consumed 开始，需 ≥ 0）。</param>
         /// <param name="value">输出字节。</param>
         /// <returns>若存在可读字节则返回 true。</returns>
         public bool TryPeek(long offset, out byte value) => _block.TryPeek(offset, out value);

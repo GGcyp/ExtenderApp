@@ -158,8 +158,8 @@ namespace ExtenderApp.Abstract
         /// 从指定文件偏移开始，将 <see cref="ByteBlock"/> 的可读数据写入文件。
         /// </summary>
         /// <param name="filePosition">文件起始写入位置（字节偏移）。</param>
-        /// <param name="block">缓冲块；实现应写入其 <c>[Position, Length)</c> 区间。</param>
-        /// <remarks>实现可在写入成功后相应推进 <paramref name="block"/>.Position。</remarks>
+        /// <param name="block">缓冲块；实现应写入其 <c>[Consumed, Length)</c> 区间。</param>
+        /// <remarks>实现可在写入成功后相应推进 <paramref name="block"/>.Consumed。</remarks>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="filePosition"/> 为负数。</exception>
         /// <exception cref="IOException">底层 IO 错误。</exception>
         /// <exception cref="UnauthorizedAccessException">无权限。</exception>
@@ -169,8 +169,8 @@ namespace ExtenderApp.Abstract
         /// <summary>
         /// 将 <see cref="ByteBlock"/> 的可读数据写入文件（从文件起始或实现定义的位置）。
         /// </summary>
-        /// <param name="block">缓冲块；实现应写入其 <c>[Position, Length)</c> 区间。</param>
-        /// <remarks>实现可在写入成功后相应推进 <paramref name="block"/>.Position。</remarks>
+        /// <param name="block">缓冲块；实现应写入其 <c>[Consumed, Length)</c> 区间。</param>
+        /// <remarks>实现可在写入成功后相应推进 <paramref name="block"/>.Consumed。</remarks>
         /// <exception cref="IOException">底层 IO 错误。</exception>
         /// <exception cref="UnauthorizedAccessException">无权限。</exception>
         /// <exception cref="ObjectDisposedException">对象已释放。</exception>

@@ -1,5 +1,6 @@
 ﻿
 
+using System.Text;
 using ExtenderApp.Data;
 
 namespace ExtenderApp.Common.IO.Binary
@@ -17,6 +18,8 @@ namespace ExtenderApp.Common.IO.Binary
         private readonly BinaryConvert _binaryConvert;
 
         private BinaryCode BinaryCode => _binaryConvert.BinaryCode;
+
+        public Encoding BinaryEncoding => _binaryConvert.BinaryEncoding;
 
         public ByteBufferConvert(BinaryConvert binaryConvert)
         {

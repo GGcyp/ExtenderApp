@@ -1137,7 +1137,7 @@ namespace ExtenderApp.Common.IO.Binary
             }
 
             long oldPosition = buffer.Consumed;
-            int length = checked((int)GetStringLengthInBytes(ref buffer));
+            int length = checked((int)GetStringLengthInBuffer(ref buffer));
             ThrowInsufficientBufferUnless(buffer.Remaining >= length);
 
             if (buffer.CurrentSpanIndex + length <= buffer.CurrentSpan.Length)
@@ -1160,7 +1160,7 @@ namespace ExtenderApp.Common.IO.Binary
         /// <param name="buffer">Bytebuffer对象，用于读取数据。</param>
         /// <returns>返回字符串的长度（以字节为单位）。</returns>
         /// <exception cref="Exception">如果缓冲区不足，则抛出异常。</exception>
-        private uint GetStringLengthInBytes(ref ByteBuffer buffer)
+        private uint GetStringLengthInBuffer(ref ByteBuffer buffer)
         {
             // 如果缓冲区不足，则抛出异常
             ThrowInsufficientBufferUnless(TryGetStringLengthInBytes(ref buffer, out uint length));

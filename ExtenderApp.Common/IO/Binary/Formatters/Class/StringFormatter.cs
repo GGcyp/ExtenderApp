@@ -1,4 +1,5 @@
 ﻿using ExtenderApp.Data;
+using Microsoft.VisualBasic;
 
 namespace ExtenderApp.Common.IO.Binary.Formatters
 {
@@ -28,15 +29,33 @@ namespace ExtenderApp.Common.IO.Binary.Formatters
 
         public override string Deserialize(ref ByteBuffer buffer)
         {
-            if (_bufferConvert.TryReadNil(ref buffer))
+            if (_bufferConvert.TryReadStringSpan(ref buffer, out ReadOnlySpan<byte> span))
+            {
+                if (span.Length < 4096)
+                {
+                    if (span.Length == 0)
+                    {
+                        return string.Empty;
+                    }
+
+                    Span<char> chars = stackalloc char[span.Length];
+                    int charLength;
+                    unsafe
+                    {
+                        fixed (byte* pBytes = span)
+                        fixed (char* pChars = chars)
+                        {
+                            charLength = _bufferConvert.BinaryEncoding.GetChars(pBytes, span.Length, pChars, chars.Length);
+                        }
+                    }
+                    return new string(chars.Slice(0, charLength));
+                }
+            }
+            else
             {
                 return string.Empty;
             }
-
-            if (!_bufferConvert.TryReadStringSpan(ref buffer, out ReadOnlySpan<byte> bytes))
-                return string.Empty;
-
-            return _bufferConvert.UTF8ToString(bytes);
+            return _bufferConvert.UTF8ToString(span);
         }
 
         public override void Serialize(ref ByteBuffer buffer, string value)

@@ -1,6 +1,4 @@
 ﻿using System.Buffers;
-using System.Collections;
-using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
 namespace ExtenderApp.Data
@@ -9,7 +7,7 @@ namespace ExtenderApp.Data
     /// 轻量的顺序写入 + 顺序读取封装。
     /// - 通过 <see cref="Sequence{T}"/> 提供写缓冲（<see cref="GetSpan"/> / <see cref="GetMemory"/> / <see cref="Write(in T)"/> 等）；
     /// - 通过内部 <see cref="SequenceReader{T}"/> 提供只读的顺序读取（<see cref="TryRead(out T)"/> / <see cref="TryRead(int, out ReadOnlySequence{T})"/> / <see cref="TryPeek(out T)"/> 等）；
-    /// - 写入后会将读取视图标记为“脏”，下次访问 <see cref="Reader"/> 时自动刷新到最新快照。
+    /// - 写入后会将读取视图标记为“脏”，下次访问 <see cref="UpdateReader()"/> 时自动刷新到最新快照。
     /// 注意：
     /// 1) 本类型为 ref struct，不可装箱、不可捕获到闭包、不可跨异步、不可存入堆结构；
     /// 2) 非线程安全：同一实例请勿在多线程并发读写。
@@ -34,73 +32,110 @@ namespace ExtenderApp.Data
         private SequenceReader<T> reader;
 
         /// <summary>
-        /// 获取当前的只读读取器。
-        /// 若前序发生写入或申请了写缓冲，会在此处刷新读取快照并清除脏标记。
-        /// </summary>
-        public SequenceReader<T> Reader
-        {
-            get
-            {
-                if (readerDirty)
-                {
-                    reader = new SequenceReader<T>(_sequence);
-                    readerDirty = false;
-                }
-                return reader;
-            }
-        }
-
-        /// <summary>
         /// 读取视图是否已失效（发生写入或申请写缓冲后置为 true）。
         /// </summary>
         private bool readerDirty;
 
-        #region Properties
-
         /// <summary>
         /// 获取当前读取器所在的跨度索引。
         /// </summary>
-        public int CurrentSpanIndex => Reader.CurrentSpanIndex;
+        public int CurrentSpanIndex
+        {
+            get
+            {
+                UpdateReader();
+                return reader.CurrentSpanIndex;
+            }
+        }
 
         /// <summary>
         /// 剩余未读取的元素数量。
         /// </summary>
-        public long Remaining => Reader.Remaining;
+        public long Remaining
+        {
+            get
+            {
+                UpdateReader();
+                return reader.Remaining;
+            }
+        }
 
         /// <summary>
         /// 序列的总长度。
         /// </summary>
-        public long Length => Reader.Length;
+        public long Length
+        {
+            get
+            {
+                UpdateReader();
+                return reader.Length;
+            }
+        }
 
         /// <summary>
         /// 已消耗（读取）元素数量。
         /// </summary>
-        public long Consumed => Reader.Consumed;
+        public long Consumed { get; private set; }
 
         /// <summary>
         /// 当前读取位置。
         /// </summary>
-        public SequencePosition Position => Reader.Position;
+        public SequencePosition Position
+        {
+            get
+            {
+                UpdateReader();
+                return reader.Position;
+            }
+        }
 
         /// <summary>
         /// 是否已到达序列末尾。
         /// </summary>
-        public bool End => Reader.End;
+        public bool End
+        {
+            get
+            {
+                UpdateReader();
+                return reader.End;
+            }
+        }
 
         /// <summary>
         /// 当前读取器绑定的只读序列快照。
         /// </summary>
-        public ReadOnlySequence<T> Sequence => Reader.Sequence;
+        public ReadOnlySequence<T> Sequence
+        {
+            get
+            {
+                UpdateReader();
+                return reader.Sequence;
+            }
+        }
 
         /// <summary>
         /// 当前数据片段的只读跨度。
         /// </summary>
-        public ReadOnlySpan<T> CurrentSpan => Reader.CurrentSpan;
+        public ReadOnlySpan<T> CurrentSpan
+        {
+            get
+            {
+                UpdateReader();
+                return reader.CurrentSpan;
+            }
+        }
 
         /// <summary>
         /// 当前数据片段中尚未读取的只读跨度。
         /// </summary>
-        public ReadOnlySpan<T> UnreadSpan => Reader.UnreadSpan;
+        public ReadOnlySpan<T> UnreadSpan
+        {
+            get
+            {
+                UpdateReader();
+                return reader.UnreadSpan;
+            }
+        }
 
         /// <summary>
         /// 获取当前块是否支持写入（持有可写序列）。
@@ -110,9 +145,15 @@ namespace ExtenderApp.Data
         /// <summary>
         /// 是否为空：当未持有可写序列且读取器中无数据时为 true。
         /// </summary>
-        public bool IsEmpty => _sequence == null && Reader.Length == 0;
+        public bool IsEmpty => _sequence == null && reader.Length == 0;
 
-        #endregion
+        public SequenceBuffer(in SequenceBuffer<T> other)
+        {
+            _sequence = other._sequence;
+            rental = other.rental;
+            reader = other.reader;
+            readerDirty = other.readerDirty;
+        }
 
         /// <summary>
         /// 通过序列池构造并获取一个可写序列的租约。
@@ -174,6 +215,20 @@ namespace ExtenderApp.Data
         }
 
         /// <summary>
+        /// 更新读取器以反映最新的写入状态（若已脏）。
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void UpdateReader()
+        {
+            if (readerDirty)
+            {
+                reader = new SequenceReader<T>(_sequence);
+                reader.Advance(Consumed);
+                readerDirty = false;
+            }
+        }
+
+        /// <summary>
         /// 提交此前通过 <see cref="GetSpan(int)"/> 或 <see cref="GetMemory(int)"/> 获取的写缓冲中已写入的元素数，
         /// 前进写入位置并使读取快照失效。
         /// </summary>
@@ -181,7 +236,7 @@ namespace ExtenderApp.Data
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void WriteAdvance(int count)
         {
-            _sequence!.Advance(count);
+            _sequence?.Advance(count);
             readerDirty = true;
         }
 
@@ -192,7 +247,9 @@ namespace ExtenderApp.Data
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void ReadAdvance(long count)
         {
-            Reader.Advance(count);
+            UpdateReader();
+            reader.Advance(count);
+            Consumed += count;
         }
 
         /// <summary>
@@ -269,7 +326,13 @@ namespace ExtenderApp.Data
         /// <returns>读取成功返回 true，否则 false。</returns>
         public bool TryRead(out T value)
         {
-            return Reader.TryRead(out value);
+            UpdateReader();
+            if (reader.TryRead(out value))
+            {
+                Consumed++;
+                return true;
+            }
+            return false;
         }
 
         /// <summary>
@@ -280,15 +343,17 @@ namespace ExtenderApp.Data
         /// <returns>若剩余长度不足 count，返回 false 且不前进。</returns>
         public bool TryRead(int count, out ReadOnlySequence<T> value)
         {
-            if (count < 0 || Reader.Length < count)
+            UpdateReader();
+            if (count < 0 || reader.Length < count)
             {
                 value = default;
                 return false;
             }
-            var start = Reader.Position;
-            Reader.Advance(count);
-            var end = Reader.Position;
-            value = Reader.Sequence.Slice(start, end);
+            var start = reader.Position;
+            reader.Advance(count);
+            Consumed += count;
+            var end = reader.Position;
+            value = reader.Sequence.Slice(start, end);
             return true;
         }
 
@@ -300,7 +365,8 @@ namespace ExtenderApp.Data
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool TryCopyTo(scoped Span<T> buffer)
         {
-            return Reader.TryCopyTo(buffer);
+            UpdateReader();
+            return reader.TryCopyTo(buffer);
         }
 
         /// <summary>
@@ -310,7 +376,8 @@ namespace ExtenderApp.Data
         /// <returns>预览成功返回 true。</returns>
         public bool TryPeek(out T value)
         {
-            return Reader.TryPeek(out value);
+            UpdateReader();
+            return reader.TryPeek(out value);
         }
 
         /// <summary>
@@ -321,7 +388,8 @@ namespace ExtenderApp.Data
         /// <returns>预览成功返回 true。</returns>
         public bool TryPeek(long offset, out T value)
         {
-            return Reader.TryPeek(offset, out value);
+            UpdateReader();
+            return reader.TryPeek(offset, out value);
         }
 
         /// <summary>
@@ -342,7 +410,9 @@ namespace ExtenderApp.Data
         /// <param name="count">回退的元素数量。</param>
         public void Rewind(long count)
         {
-            Reader.Rewind(count);
+            UpdateReader();
+            reader.Rewind(count);
+            Consumed -= count;
         }
 
         /// <summary>
@@ -374,11 +444,13 @@ namespace ExtenderApp.Data
         {
             if (IsEmpty)
                 return Array.Empty<T>();
+
+            UpdateReader();
             var array = new T[Length];
-            long pos = Consumed;
-            Reader.Rewind(0);
+            long consumed = Consumed;
+            reader.Rewind(0);
             TryCopyTo(array);
-            Reader.Advance(pos);
+            reader.Advance(consumed);
             return array;
         }
 
@@ -392,7 +464,7 @@ namespace ExtenderApp.Data
         /// 获取当前序列的只读内存列表视图。
         /// </summary>
         /// <returns>只读内存列表</returns>
-        public IReadOnlyList<ReadOnlyMemory<T>> ToReadOnlyList() 
+        public IReadOnlyList<ReadOnlyMemory<T>> ToReadOnlyList()
             => new ReadOnlyList<T>(this);
 
         /// <summary>
@@ -414,8 +486,10 @@ namespace ExtenderApp.Data
             => buffer.Sequence;
 
         public static implicit operator SequenceReader<T>(in SequenceBuffer<T> buffer)
-            => buffer.Reader;
-
+        {
+            buffer.UpdateReader();
+            return buffer.reader;
+        }
 
         public class ReadOnlyList<TValue> : List<ReadOnlyMemory<TValue>>, IReadOnlyList<ReadOnlyMemory<TValue>>
             where TValue : unmanaged, IEquatable<TValue>

@@ -18,52 +18,52 @@ namespace ExtenderApp.Data
         /// <summary>
         /// 内部泛型块实现，封装实际的写入/读取逻辑。
         /// </summary>
-        private SequenceBuffer<byte> _block;
+        private SequenceBuffer<byte> _buffer;
 
         /// <summary>
         /// 当前绑定的只读序列快照。
         /// </summary>
-        public ReadOnlySequence<byte> Sequence => _block.Reader.Sequence;
+        public ReadOnlySequence<byte> Sequence => _buffer.Sequence;
 
         /// <summary>
         /// 获得当前数据片段的索引。
         /// </summary>
-        public int CurrentSpanIndex => _block.CurrentSpanIndex;
+        public int CurrentSpanIndex => _buffer.CurrentSpanIndex;
 
         /// <summary>
         /// 序列总长度。
         /// </summary>
-        public long Length => _block.Length;
+        public long Length => _buffer.Length;
 
         /// <summary>
         /// 剩余未读取的元素数量。
         /// </summary>
-        public long Remaining => _block.Remaining;
+        public long Remaining => _buffer.Remaining;
 
         /// <summary>
         /// 是否已经到达序列末尾。
         /// </summary>
-        public bool End => _block.End;
+        public bool End => _buffer.End;
 
         /// <summary>
         /// 已消耗（读取）的元素数量。
         /// </summary>
-        public long Consumed => _block.Consumed;
+        public long Consumed => _buffer.Consumed;
 
         /// <summary>
         /// 当前读取位置。
         /// </summary>
-        public SequencePosition Position => _block.Position;
+        public SequencePosition Position => _buffer.Position;
 
         /// <summary>
         /// 当前数据片段的只读跨度。
         /// </summary>
-        public ReadOnlySpan<byte> CurrentSpan => _block.CurrentSpan;
+        public ReadOnlySpan<byte> CurrentSpan => _buffer.CurrentSpan;
 
         /// <summary>
         /// 当前数据片段中尚未读取的只读跨度。
         /// </summary>
-        public ReadOnlySpan<byte> UnreadSpan => _block.UnreadSpan;
+        public ReadOnlySpan<byte> UnreadSpan => _buffer.UnreadSpan;
 
         /// <summary>
         /// 获取下一个元素（不前进），若无数据则抛出 <see cref="System.IO.EndOfStreamException"/>。
@@ -72,7 +72,7 @@ namespace ExtenderApp.Data
         {
             get
             {
-                if (!_block.TryPeek(out byte code))
+                if (!_buffer.TryPeek(out byte code))
                 {
                     throw new EndOfStreamException();
                 }
@@ -83,12 +83,29 @@ namespace ExtenderApp.Data
         /// <summary>
         /// 获得当前是否可写：当持有可写序列且未释放时为 true。
         /// </summary>
-        public bool CanWrite => _block.CanWrite;
+        public bool CanWrite => _buffer.CanWrite;
 
         /// <summary>
         /// 是否为空：当未持有可写序列且读取器中无数据时为 true。
         /// </summary>
-        public bool IsEmpty => _block.IsEmpty;
+        public bool IsEmpty => _buffer.IsEmpty;
+
+        /// <summary>
+        /// 通过已有的 <see cref="ByteBuffer"/> 构造（拷贝构造）。
+        /// </summary>
+        /// <param name="other">已有的字节缓冲</param>
+        public ByteBuffer(in ByteBuffer other) : this(other._buffer)
+        {
+        }
+
+        /// <summary>
+        /// 通过已有的 <see cref="SequenceBuffer{T}"/> 构造。
+        /// </summary>
+        /// <param name="buffer">已有的缓冲</param>
+        public ByteBuffer(in SequenceBuffer<byte> buffer)
+        {
+            _buffer = buffer;
+        }
 
         /// <summary>
         /// 通过序列池构造并获取一个可写序列的租约。
@@ -97,7 +114,7 @@ namespace ExtenderApp.Data
         /// <remarks>生命周期结束时调用 <see cref="Dispose"/> 归还租约。</remarks>
         public ByteBuffer(SequencePool<byte> pool)
         {
-            _block = new SequenceBuffer<byte>(pool);
+            _buffer = new SequenceBuffer<byte>(pool);
         }
 
         /// <summary>
@@ -106,7 +123,7 @@ namespace ExtenderApp.Data
         /// <param name="sequence">可写序列。</param>
         public ByteBuffer(Sequence<byte> sequence)
         {
-            _block = new SequenceBuffer<byte>(sequence);
+            _buffer = new SequenceBuffer<byte>(sequence);
         }
 
         /// <summary>
@@ -115,7 +132,7 @@ namespace ExtenderApp.Data
         /// <param name="memory">只读内存。</param>
         public ByteBuffer(ReadOnlyMemory<byte> memory)
         {
-            _block = new SequenceBuffer<byte>(memory);
+            _buffer = new SequenceBuffer<byte>(memory);
         }
 
         /// <summary>
@@ -124,7 +141,7 @@ namespace ExtenderApp.Data
         /// <param name="readSequence">只读序列快照。</param>
         public ByteBuffer(ReadOnlySequence<byte> readSequence)
         {
-            _block = new SequenceBuffer<byte>(readSequence);
+            _buffer = new SequenceBuffer<byte>(readSequence);
         }
 
         /// <summary>
@@ -135,7 +152,7 @@ namespace ExtenderApp.Data
         /// <exception cref="ObjectDisposedException">当未持有可写序列时抛出。</exception>
         public Span<byte> GetSpan(int sizeHint = 0)
         {
-            return _block.GetSpan(sizeHint);
+            return _buffer.GetSpan(sizeHint);
         }
 
         /// <summary>
@@ -146,7 +163,7 @@ namespace ExtenderApp.Data
         /// <exception cref="ObjectDisposedException">当未持有可写序列时抛出。</exception>
         public Memory<byte> GetMemory(int sizeHint = 0)
         {
-            return _block.GetMemory(sizeHint);
+            return _buffer.GetMemory(sizeHint);
         }
 
         /// <summary>
@@ -155,7 +172,7 @@ namespace ExtenderApp.Data
         /// <param name="value">要追加的元素。</param>
         public void Write(in byte value)
         {
-            _block.Write(value);
+            _buffer.Write(value);
         }
 
         /// <summary>
@@ -164,7 +181,7 @@ namespace ExtenderApp.Data
         /// <param name="value">要追加的数据。</param>
         public void Write(in ReadOnlySpan<byte> value)
         {
-            _block.Write(value);
+            _buffer.Write(value);
         }
 
         /// <summary>
@@ -173,7 +190,7 @@ namespace ExtenderApp.Data
         /// <param name="value">要追加的数据。</param>
         public void Write(in ReadOnlyMemory<byte> value)
         {
-            _block.Write(value);
+            _buffer.Write(value);
         }
 
         /// <summary>
@@ -182,7 +199,7 @@ namespace ExtenderApp.Data
         /// <param name="value">要追加的数据。</param>
         public void Write(in ReadOnlySequence<byte> value)
         {
-            _block.Write(value);
+            _buffer.Write(value);
         }
 
         /// <summary>
@@ -192,7 +209,7 @@ namespace ExtenderApp.Data
         /// <returns>读取成功返回 true，否则 false。</returns>
         public bool TryRead(out byte value)
         {
-            return _block.TryRead(out value);
+            return _buffer.TryRead(out value);
         }
 
         /// <summary>
@@ -203,7 +220,7 @@ namespace ExtenderApp.Data
         /// <returns>若剩余长度不足 count，返回 false 且不前进。</returns>
         public bool TryRead(int count, out ReadOnlySequence<byte> value)
         {
-            return _block.TryRead(count, out value);
+            return _buffer.TryRead(count, out value);
         }
 
         /// <summary>
@@ -214,7 +231,7 @@ namespace ExtenderApp.Data
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool TryCopyTo(scoped Span<byte> buffer)
         {
-            return _block.TryCopyTo(buffer);
+            return _buffer.TryCopyTo(buffer);
         }
 
         /// <summary>
@@ -224,7 +241,7 @@ namespace ExtenderApp.Data
         /// <returns>预览成功返回 true。</returns>
         public bool TryPeek(out byte value)
         {
-            return _block.TryPeek(out value);
+            return _buffer.TryPeek(out value);
         }
 
         /// <summary>
@@ -235,7 +252,7 @@ namespace ExtenderApp.Data
         /// <returns>预览成功返回 true。</returns>
         public bool TryPeek(long offset, out byte value)
         {
-            return _block.TryPeek(offset, out value);
+            return _buffer.TryPeek(offset, out value);
         }
 
         /// <summary>
@@ -245,7 +262,7 @@ namespace ExtenderApp.Data
         /// <exception cref="ArgumentOutOfRangeException">当位置小于0或大于已写入长度时触发</exception>
         public void Seek(long pos)
         {
-            _block.Seek(pos);
+            _buffer.Seek(pos);
         }
 
         /// <summary>
@@ -254,7 +271,7 @@ namespace ExtenderApp.Data
         /// <param name="count">回退的元素数量。</param>
         public void Rewind(long count)
         {
-            _block.Rewind(count);
+            _buffer.Rewind(count);
         }
 
         /// <summary>
@@ -265,7 +282,7 @@ namespace ExtenderApp.Data
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void WriteAdvance(int count)
         {
-            _block.WriteAdvance(count);
+            _buffer.WriteAdvance(count);
         }
 
         /// <summary>
@@ -275,7 +292,7 @@ namespace ExtenderApp.Data
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void ReadAdvance(long count)
         {
-            _block.ReadAdvance(count);
+            _buffer.ReadAdvance(count);
         }
 
         /// <summary>
@@ -285,7 +302,7 @@ namespace ExtenderApp.Data
         /// <returns>若剩余长度不足 <paramref name="count"/>，则不移动并返回 false；否则前进并返回 true。</returns>
         public bool TryReadAdvance(long count)
         {
-            return _block.TryReadAdvance(count);
+            return _buffer.TryReadAdvance(count);
         }
 
         /// <summary>
@@ -315,7 +332,7 @@ namespace ExtenderApp.Data
         /// <returns>包含当前内容的字节数组。</returns>
         public byte[] ToArray()
         {
-            return _block.ToArray();
+            return _buffer.ToArray();
         }
 
         /// <summary>
@@ -328,20 +345,20 @@ namespace ExtenderApp.Data
         /// 获取当前序列的只读内存列表视图。
         /// </summary>
         /// <returns>只读内存列表</returns>
-        public IReadOnlyList<ReadOnlyMemory<byte>> ToReadOnlyList() => _block.ToReadOnlyList();
+        public IReadOnlyList<ReadOnlyMemory<byte>> ToReadOnlyList() => _buffer.ToReadOnlyList();
 
         /// <summary>
         /// 释放底层序列资源（若有）。
         /// </summary>
         public void Dispose()
         {
-            _block.Dispose();
+            _buffer.Dispose();
         }
 
         public static implicit operator ReadOnlySequence<byte>(in ByteBuffer buffer)
             => buffer.Sequence;
 
         public static implicit operator SequenceReader<byte>(in ByteBuffer buffer)
-            => buffer._block;
+            => buffer._buffer;
     }
 }

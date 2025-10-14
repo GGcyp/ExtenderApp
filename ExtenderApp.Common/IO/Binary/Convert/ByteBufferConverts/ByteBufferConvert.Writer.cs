@@ -459,9 +459,9 @@ namespace ExtenderApp.Common.IO.Binary
                 return;
             }
 
-            ref byte b = ref WriteString_PrepareSpan(ref buffer, value.Length, out int bufferSize, out int useOffset);
+            ref byte byteBuffer = ref WriteString_PrepareSpan(ref buffer, value.Length, out int bufferSize, out int useOffset);
             fixed (char* pValue = value)
-            fixed (byte* pBuffer = &b)
+            fixed (byte* pBuffer = &byteBuffer)
             {
                 int byteCount = _binaryConvert.BinaryEncoding.GetBytes(pValue, value.Length, pBuffer + useOffset, bufferSize);
                 WriteString_PostEncoding(ref buffer, pBuffer, useOffset, byteCount);
@@ -503,7 +503,7 @@ namespace ExtenderApp.Common.IO.Binary
         /// </summary>
         /// <param name="buffer">Binarybuffer实例。</param>
         /// <param name="utf8stringBytes">UTF-8编码的字符串的字节序列。</param>
-        public void WriteString(ref ByteBuffer buffer, ReadOnlySpan<byte> utf8stringBytes)
+        public void WriteString(ref ByteBuffer buffer, in ReadOnlySpan<byte> utf8stringBytes)
         {
             var length = utf8stringBytes.Length;
             WriteStringHeader(ref buffer, length);
@@ -555,7 +555,7 @@ namespace ExtenderApp.Common.IO.Binary
 
             int useOffset;
             // 根据字符长度确定偏移量
-            if (characterLength <= _binaryConvert.BinaryOptions.BinaryRang.MaxFixStringLength)
+            if (characterLength <= _binaryConvert.BinaryRang.MaxFixStringLength)
             {
                 useOffset = 1;
             }

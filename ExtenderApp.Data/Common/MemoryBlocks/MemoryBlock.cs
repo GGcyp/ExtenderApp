@@ -5,7 +5,7 @@ namespace ExtenderApp.Data
     /// <summary>
     /// 使用 ArrayPool&lt;T&gt; 管理的可增长顺序缓冲。
     /// - Length 表示已写入元素的数量（写指针/写边界）。
-    /// - Position 表示当前读取位置（读指针）。
+    /// - Consumed 表示当前读取位置（读指针）。
     /// 线程不安全；需要在使用完毕后调用 <see cref="Dispose"/> 归还数组到池。
     /// </summary>
     /// <typeparam name="T">元素类型。</typeparam>
@@ -27,9 +27,14 @@ namespace ExtenderApp.Data
         public int Length { get; private set; }
 
         /// <summary>
-        /// 当前读取位置（读指针）。范围：0..Length。
+        /// 当前读取位置（读指针）。
         /// </summary>
-        public int Position { get; private set; }
+        public int Consumed { get; private set; }
+
+        /// <summary>
+        /// 剩余未读数据的数量（Length - Consumed）。
+        /// </summary>
+        public long Remaining=> Length - Consumed;
 
         /// <summary>
         /// 当前底层缓冲容量。array 为空时为 0。
@@ -44,12 +49,12 @@ namespace ExtenderApp.Data
         /// <summary>
         /// 获取已写入范围的只读 UnreadSpan。
         /// </summary>
-        public ReadOnlySpan<T> UnreadSpan => array.AsSpan(Position, Length);
+        public ReadOnlySpan<T> UnreadSpan => array.AsSpan(Consumed, Length);
 
         /// <summary>
         /// 获取已写入范围的只读 UnreadMemory。
         /// </summary>
-        public ReadOnlyMemory<T> UnreadMemory => array.AsMemory(Position, Length);
+        public ReadOnlyMemory<T> UnreadMemory => array.AsMemory(Consumed, Length);
 
         /// <summary>
         /// 按指定容量租用缓冲。
@@ -68,7 +73,7 @@ namespace ExtenderApp.Data
         {
             _pool = pool;
             array = _pool.Rent(capacity);
-            Position = 0;
+            Consumed = 0;
             Length = 0;
         }
 
@@ -117,7 +122,7 @@ namespace ExtenderApp.Data
         public MemoryBlock(in MemoryBlock<T> block)
         {
             _pool = block._pool;
-            Position = block.Position;
+            Consumed = block.Consumed;
             Length = block.Length;
             array = _pool.Rent(block.Capacity);
             Array.Copy(block.array, array, Length);
@@ -160,7 +165,7 @@ namespace ExtenderApp.Data
         /// <param name="count">推进的元素个数。</param>
         public void ReadAdvance(int count)
         {
-            Position += count;
+            Consumed += count;
         }
 
         /// <summary>
@@ -212,17 +217,17 @@ namespace ExtenderApp.Data
         }
 
         /// <summary>
-        /// 将可读数据（Length - Position）复制到目标 UnreadSpan。
+        /// 将可读数据（Length - Consumed）复制到目标 UnreadSpan。
         /// </summary>
         /// <param name="destination">目标缓冲。</param>
         /// <param name="written">实际写入的元素数量。</param>
         /// <returns>若目标有足够空间则返回 true。</returns>
         public bool TryCopyTo(Span<T> destination, out int written)
         {
-            int length = Length - Position;
+            int length = Length - Consumed;
             if (length <= destination.Length)
             {
-                array.AsSpan(Position, length).CopyTo(destination);
+                array.AsSpan(Consumed, length).CopyTo(destination);
                 written = length;
                 return true;
             }
@@ -237,7 +242,7 @@ namespace ExtenderApp.Data
         /// <returns>若存在可读元素则返回 true。</returns>
         public bool TryPeek(out T value)
         {
-            int pos = Position;
+            int pos = Consumed;
             value = default;
             if (pos >= Length)
             {
@@ -251,7 +256,7 @@ namespace ExtenderApp.Data
         /// <summary>
         /// 查看相对当前读指针 <paramref name="offset"/> 偏移处的元素（不移动指针）。
         /// </summary>
-        /// <param name="offset">相对偏移量（从当前 Position 开始计算，需 ≥ 0）。</param>
+        /// <param name="offset">相对偏移量（从当前 Consumed 开始计算，需 ≥ 0）。</param>
         /// <param name="value">输出元素。</param>
         /// <returns>若存在可读元素则返回 true。</returns>
         public bool TryPeek(long offset, out T value)
@@ -262,7 +267,7 @@ namespace ExtenderApp.Data
                 return false;
             }
 
-            long index = (long)Position + offset;
+            long index = (long)Consumed + offset;
             if (index >= Length)
             {
                 return false;
@@ -305,7 +310,7 @@ namespace ExtenderApp.Data
                 throw new ArgumentOutOfRangeException(nameof(count), string.Format("超过已写入范围限制：{0}", count));
             }
 
-            Position = count;
+            Consumed = count;
         }
 
         /// <summary>
@@ -313,7 +318,7 @@ namespace ExtenderApp.Data
         /// </summary>
         public void Reset()
         {
-            Position = 0;
+            Consumed = 0;
             Length = 0;
         }
 
@@ -356,7 +361,7 @@ namespace ExtenderApp.Data
             {
                 _pool.Return(array);
                 array = null;
-                Position = 0;
+                Consumed = 0;
                 Length = 0;
             }
         }
