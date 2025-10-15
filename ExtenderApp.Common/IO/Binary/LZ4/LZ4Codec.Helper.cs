@@ -1,8 +1,5 @@
 ﻿namespace ExtenderApp.Common.IO.Binary.LZ4
 {
-    /// <summary>
-    /// 哈希表池类，用于提供线程安全的哈希表数组池。
-    /// </summary>
     internal partial class LZ4Codec
     {
         /// <summary>

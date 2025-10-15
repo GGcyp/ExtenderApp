@@ -120,12 +120,13 @@ namespace ExtenderApp.Data
             _block = new(block);
         }
 
-        public ByteBlock(in ByteBuffer buffer)
+        public ByteBlock(ByteBuffer buffer)
         {
             if (buffer.IsEmpty)
                 throw new ArgumentException(nameof(buffer));
 
-            Ensure((int)buffer.Length);
+            _block = new MemoryBlock<byte>((int)buffer.Length);
+
             while (!buffer.End)
             {
                 var span = buffer.UnreadSpan;

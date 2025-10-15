@@ -19,9 +19,12 @@ namespace ExtenderApp.Test
             //binaryParser.Serialize("5646464", out ByteBuffer buffer);
             //Info(buffer.Remaining);
             //var data = binaryParser.Deserialize<string>(ref buffer);
-            binaryParser.Write(info, new int[1000], CompressionType.Lz4Block);
-            var data = binaryParser.Read<int[]>(info);
+            binaryParser.Serialize(new int[1000], out ByteBlock block, CompressionType.Lz4Block);
+            binaryParser.Serialize(new int[1000], out ByteBlock bblock, CompressionType.Lz4BlockArray);
+            var data = binaryParser.Deserialize<int[]>(ref bblock);
+            data = binaryParser.Deserialize<int[]>(ref block);
         }
+
         private ExpectLocalFileInfo CreatTestExpectLocalFileInfo(string fileName)
         {
             return new ExpectLocalFileInfo(ServiceStore.PathService.CreateFolderPathForAppRootFolder("test"), fileName);

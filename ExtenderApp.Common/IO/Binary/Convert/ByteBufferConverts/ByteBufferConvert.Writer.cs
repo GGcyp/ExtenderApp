@@ -27,7 +27,7 @@ namespace ExtenderApp.Common.IO.Binary
         /// Binarybuffer 实例。
         /// </param>
         /// <param name="span">原始的二进制数据。</param>
-        public void bufferaw(ref ByteBuffer buffer, ReadOnlySpan<byte> span)
+        public void WriteRaw(ref ByteBuffer buffer, ReadOnlySpan<byte> span)
             => buffer.Write(span);
 
         /// <summary>
@@ -37,7 +37,7 @@ namespace ExtenderApp.Common.IO.Binary
         /// Binarybuffer 实例。
         /// </param>
         /// <param name="sequence">原始的二进制序列。</param>
-        public void bufferaw(ref ByteBuffer buffer, in ReadOnlySequence<byte> sequence)
+        public void WriteRaw(ref ByteBuffer buffer, in ReadOnlySequence<byte> sequence)
         {
             foreach (ReadOnlyMemory<byte> segment in sequence)
             {
@@ -682,12 +682,11 @@ namespace ExtenderApp.Common.IO.Binary
         /// <param name="buffer">Bytebuffer对象，用于写入数据。</param>
         /// <param name="extensionHeader">要写入的扩展头部信息。</param>
         /// <remarks>
-        /// 在编写数据头部信息时，同时请求足够空间来存储后续有效载荷数据的策略。 这样做的目的是为了提高程序的效率，通过减少内存分配的次数来避免潜在的性能问题。
+        /// 在编写数据头部信息时，同时请求足够空间来存储后续有效载荷数据的策略。 
+        /// 这样做的目的是为了提高程序的效率，通过减少内存分配的次数来避免潜在的性能问题。
         /// </remarks>
         public void WriteExtensionFormatHeader(ref ByteBuffer buffer, ExtensionHeader extensionHeader)
         {
-            //在编写数据头部信息时，同时请求足够空间来存储后续有效载荷数据的策略。
-            //这样做的目的是为了提高程序的效率，通过减少内存分配的次数来避免潜在的性能问题。
             Span<byte> span = buffer.GetSpan((int)(extensionHeader.Length + 6));
             AssumesTrue(_binaryConvert.TryWriteExtensionFormatHeader(span, extensionHeader, out int written));
             buffer.WriteAdvance(written);

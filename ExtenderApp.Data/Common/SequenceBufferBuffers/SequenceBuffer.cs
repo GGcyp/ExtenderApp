@@ -27,14 +27,26 @@ namespace ExtenderApp.Data
         private SequencePool<T>.SequenceRental rental;
 
         /// <summary>
+        /// 读取视图是否已失效（发生写入或申请写缓冲后置为 true）。
+        /// </summary>
+        private bool readerDirty;
+
+        /// <summary>
         /// 内部读取器，指向当前只读快照。
         /// </summary>
         private SequenceReader<T> reader;
 
         /// <summary>
-        /// 读取视图是否已失效（发生写入或申请写缓冲后置为 true）。
+        /// 序列读取器。
         /// </summary>
-        private bool readerDirty;
+        public SequenceReader<T> Reader
+        {
+            get
+            {
+                UpdateReader();
+                return reader;
+            }
+        }
 
         /// <summary>
         /// 获取当前读取器所在的跨度索引。
@@ -152,14 +164,6 @@ namespace ExtenderApp.Data
 
         }
 
-        public SequenceBuffer(in SequenceBuffer<T> other)
-        {
-            _sequence = other._sequence;
-            rental = other.rental;
-            reader = other.reader;
-            readerDirty = other.readerDirty;
-        }
-
         /// <summary>
         /// 通过序列池构造并获取一个可写序列的租约。
         /// </summary>
@@ -169,15 +173,6 @@ namespace ExtenderApp.Data
         {
             rental = pool.Rent();
             _sequence = rental.Value;
-        }
-
-        /// <summary>
-        /// 使用可写的 <see cref="Sequence{T}"/> 构造，支持后续写入。
-        /// </summary>
-        /// <param name="sequence">可写序列。</param>
-        public SequenceBuffer(Sequence<T> sequence) : this(readOnlySequence: sequence)
-        {
-            _sequence = sequence;
         }
 
         /// <summary>
@@ -192,9 +187,19 @@ namespace ExtenderApp.Data
         /// 使用只读序列构造，无法进行写入，仅能读取。
         /// </summary>
         /// <param name="readOnlySequence">只读序列快照。</param>
-        public SequenceBuffer(ReadOnlySequence<T> readOnlySequence)
+        public SequenceBuffer(ReadOnlySequence<T> readOnlySequence) : this(new SequenceReader<T>(readOnlySequence))
         {
-            reader = new(readOnlySequence);
+
+        }
+
+        public SequenceBuffer(SequenceReader<T> reader)
+        {
+            this.reader = reader;
+        }
+
+        public SequenceBuffer(in SequenceBuffer<T> other)
+        {
+            reader = other.reader;
         }
 
         /// <summary>
@@ -281,7 +286,6 @@ namespace ExtenderApp.Data
         public void Write(in T value)
         {
             _sequence!.Write(new(in value));
-            WriteAdvance(1);
             readerDirty = true;
         }
 
@@ -296,7 +300,6 @@ namespace ExtenderApp.Data
                 return;
 
             _sequence!.Write(value);
-            WriteAdvance(value.Length);
             readerDirty = true;
         }
 
@@ -321,7 +324,6 @@ namespace ExtenderApp.Data
             foreach (var segment in value)
             {
                 _sequence!.Write(segment.Span);
-                WriteAdvance(segment.Length);
             }
             readerDirty = true;
         }
@@ -365,13 +367,13 @@ namespace ExtenderApp.Data
         /// <summary>
         /// 尝试将剩余数据复制到目标缓冲区（不改变读取位置）。
         /// </summary>
-        /// <param name="buffer">目标缓冲区。</param>
+        /// <param name="span">目标缓冲区。</param>
         /// <returns>复制成功返回 true。</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool TryCopyTo(scoped Span<T> buffer)
+        public bool TryCopyTo(scoped Span<T> span)
         {
             UpdateReader();
-            return reader.TryCopyTo(buffer);
+            return reader.TryCopyTo(span);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -490,7 +492,11 @@ namespace ExtenderApp.Data
         /// 创建一个用于“窥视”的副本。
         /// 注意：该方法返回的是当前实例的按值副本，用于只读预览；请勿对副本调用 <see cref="Dispose"/> 以避免重复归还租约。
         /// </summary>
-        public SequenceBuffer<T> CreatePeekBuffer() => this;
+        public SequenceBuffer<T> CreatePeekBuffer()
+        {
+            UpdateReader();
+            return reader;
+        }
 
         /// <summary>
         /// 获取当前序列的只读内存列表视图。
@@ -504,11 +510,7 @@ namespace ExtenderApp.Data
         /// </summary>
         public void Dispose()
         {
-            if (rental.IsEmpty)
-            {
-                _sequence?.Dispose();
-            }
-            else
+            if (!rental.IsEmpty)
             {
                 rental.Dispose();
             }
@@ -553,6 +555,12 @@ namespace ExtenderApp.Data
 
         public static implicit operator SequenceBuffer<T>(ReadOnlyMemory<T> memory)
             => new SequenceBuffer<T>(memory);
+
+        public static implicit operator SequenceBuffer<T>(MemoryBlock<T> block)
+            => new SequenceBuffer<T>(block);
+
+        public static implicit operator SequenceBuffer<T>(SequenceReader<T> reader)
+            => new SequenceBuffer<T>(reader);
 
         #endregion
     }

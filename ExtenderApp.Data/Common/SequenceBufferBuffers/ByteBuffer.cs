@@ -90,6 +90,10 @@ namespace ExtenderApp.Data
         /// </summary>
         public bool IsEmpty => _buffer.IsEmpty;
 
+        public ByteBuffer(in ByteBuffer buffer) : this(buffer._buffer)
+        {
+        }
+
         /// <summary>
         /// 通过已有的 <see cref="SequenceBuffer{T}"/> 构造。
         /// </summary>
@@ -110,15 +114,6 @@ namespace ExtenderApp.Data
         }
 
         /// <summary>
-        /// 使用可写的 <see cref="Sequence{T}"/> 构造，支持后续写入。
-        /// </summary>
-        /// <param name="sequence">可写序列。</param>
-        public ByteBuffer(Sequence<byte> sequence)
-        {
-            _buffer = new SequenceBuffer<byte>(sequence);
-        }
-
-        /// <summary>
         /// 使用给定的只读内存构造，对应一个单段序列（只读）。
         /// </summary>
         /// <param name="memory">只读内存。</param>
@@ -134,6 +129,11 @@ namespace ExtenderApp.Data
         public ByteBuffer(ReadOnlySequence<byte> readSequence)
         {
             _buffer = new SequenceBuffer<byte>(readSequence);
+        }
+
+        public ByteBuffer(SequenceReader<byte> reader)
+        {
+            _buffer = new SequenceBuffer<byte>(reader);
         }
 
         /// <summary>
@@ -231,19 +231,34 @@ namespace ExtenderApp.Data
         /// </summary>
         /// <param name="block">目标字节块</param>
         /// <returns>复制成功返回 true。</returns>
-        public bool TryCopyTo(ByteBlock block)
+        public bool TryCopyTo(ref ByteBlock block)
         {
-            if (block.IsEmpty)
+            int length = (int)Length;
+            if (TryCopyTo(block.GetSpan(length).Slice(0, length)))
+            {
+                block.WriteAdvance(length);
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// 尝试将剩余数据复制到<see cref="ByteBuffer"/>（不改变读取位置）。
+        /// </summary>
+        /// <param name="block">目标缓存</param>
+        /// <returns>复制成功返回 true。</returns>
+        public bool TryCopyTo(ref ByteBuffer buffer)
+        {
+            if (!buffer.CanWrite)
                 return false;
 
-            block.Ensure((int)Length);
-            while (End)
+            int length = (int)Length;
+            if (TryCopyTo(buffer.GetSpan(length).Slice(0, length)))
             {
-                var span = UnreadSpan;
-                block.Write(span);
-                ReadAdvance(span.Length);
+                buffer.WriteAdvance(length);
+                return true;
             }
-            return true;
+            return false;
         }
 
         /// <summary>
@@ -373,7 +388,7 @@ namespace ExtenderApp.Data
         /// 创建一个用于“窥视”的副本。
         /// 注意：返回的是当前实例的按值副本，用于只读预览；请勿对副本调用 <see cref="Dispose"/> 以避免重复释放。
         /// </summary>
-        public ByteBuffer CreatePeekBuffer() => this;
+        public ByteBuffer CreatePeekBuffer() => _buffer.Reader;
 
         /// <summary>
         /// 获取当前序列的只读内存列表视图。
@@ -404,7 +419,7 @@ namespace ExtenderApp.Data
         public static implicit operator SequenceReader<byte>(in ByteBuffer buffer)
             => buffer._buffer;
 
-        #endregion
+        #endregion FormByteBuffer
 
         #region ToByteBuffer
 
@@ -417,6 +432,12 @@ namespace ExtenderApp.Data
         public static implicit operator ByteBuffer(ReadOnlyMemory<byte> memory)
             => new ByteBuffer(memory);
 
-        #endregion
+        public static implicit operator ByteBuffer(SequencePool<byte> pool)
+            => new ByteBuffer(pool);
+
+        public static implicit operator ByteBuffer(SequenceReader<byte> reader)
+            => new ByteBuffer(reader);
+
+        #endregion ToByteBuffer
     }
 }

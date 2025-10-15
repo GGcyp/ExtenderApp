@@ -7,18 +7,31 @@ namespace ExtenderApp.Data
     /// </summary>
     public struct ExtensionHeader : IEquatable<ExtensionHeader>
     {
-        public const int LengthOfUncompressedDataSizeHeader = 5; // 扩展头的固定大小为5字节（1字节类型代码 + 4字节长度）
+        /// <summary>
+        /// 扩展头的固定大小为5字节（1字节类型代码 + 4字节长度）
+        /// </summary>
+        public const int LengthOfUncompressedDataSizeHeader = 5; 
+
+        /// LZ4块压缩的标识常量
+        /// </summary>
+        public const sbyte Lz4Block = 99;
+
+        /// <summary>
+        /// LZ4块数组压缩的标识常量
+        /// </summary>
+        public const sbyte Lz4bufferArray = 98;
+
         public ExtensionHeader Empty => new ExtensionHeader(0, 0);
 
         /// <summary>
         /// 获取扩展头的类型代码。
         /// </summary>
-        public sbyte TypeCode { get; private set; }
+        public sbyte TypeCode { get; }
 
         /// <summary>
         /// 获取扩展头的长度。
         /// </summary>
-        public uint Length { get; private set; }
+        public uint Length { get; }
 
         public bool IsEmpty => this.TypeCode == 0 && this.Length == 0;
 
@@ -49,6 +62,7 @@ namespace ExtenderApp.Data
         /// </summary>
         /// <param name="other">与当前对象进行比较的对象。</param>
         /// <returns>如果当前对象等于 other 参数，则为 true；否则为 false。</returns>
-        public bool Equals(ExtensionHeader other) => this.TypeCode == other.TypeCode && this.Length == other.Length;
+        public bool Equals(ExtensionHeader other)
+            => this.TypeCode == other.TypeCode && this.Length == other.Length;
     }
 }

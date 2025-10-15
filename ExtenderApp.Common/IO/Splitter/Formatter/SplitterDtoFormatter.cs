@@ -43,7 +43,7 @@ namespace ExtenderApp.Common.IO.Splitter
             _uint.Serialize(ref buffer, value.ChunkIndex);
             _int.Serialize(ref buffer, value.Length);
             _int.Serialize(ref buffer, value.Bytes.Length);
-            _bufferConvert.bufferaw(ref buffer, value.Bytes.AsSpan(0, value.Length));
+            _bufferConvert.WriteRaw(ref buffer, value.Bytes.AsSpan(0, value.Length));
         }
 
         public override long GetLength(SplitterDto value)

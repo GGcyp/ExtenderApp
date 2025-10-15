@@ -51,7 +51,7 @@ namespace ExtenderApp.Common.IO.Binary.Formatters
             var bytes = ArrayPool<byte>.Shared.Rent(value.Length);
             value.ToBytes(bytes);
             _bufferConvert.WriteArrayHeader(ref buffer, value.Length);
-            _bufferConvert.bufferaw(ref buffer, bytes.AsSpan(0, value.Length));
+            _bufferConvert.WriteRaw(ref buffer, bytes.AsSpan(0, value.Length));
             ArrayPool<byte>.Shared.Return(bytes);
         }
 
