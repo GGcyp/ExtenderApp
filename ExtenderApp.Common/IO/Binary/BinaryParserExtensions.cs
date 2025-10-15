@@ -32,7 +32,7 @@ namespace ExtenderApp.Common.IO.Binary
             services.AddSingleton<BinaryConvert>();
             services.AddSingleton<BinaryOptions>();
             services.AddSingleton<ByteBufferConvert>();
-            services.AddSingleton(new SequencePool<byte>(Environment.ProcessorCount * 2, ArrayPool<byte>.Shared));
+            services.AddSingleton(new SequencePool<byte>());
             services.AddSingleton<DefaultObjectStore>();
 
             services.AddSingleton(typeof(IBinaryFormatter<>), (p, o) =>
