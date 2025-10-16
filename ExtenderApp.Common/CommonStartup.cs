@@ -1,5 +1,6 @@
 ﻿using AppHost.Builder;
 using AppHost.Extensions.DependencyInjection;
+using ExtenderApp.Common.Buffers;
 using ExtenderApp.Common.Caches;
 using ExtenderApp.Common.Hash;
 using ExtenderApp.Common.Networks;
@@ -14,6 +15,7 @@ namespace ExtenderApp.Common
         public override void AddService(IServiceCollection services)
         {
             services.AddIO();
+            services.AddBufferFactory();
             services.AddObjectPool();
             services.AddNetwork();
             services.AddHash();

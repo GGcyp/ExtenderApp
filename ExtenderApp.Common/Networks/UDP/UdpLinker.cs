@@ -12,6 +12,9 @@ namespace ExtenderApp.Common.Networks.UDP
     /// </summary>
     internal class UdpLinker : Linker, IUdpLinker
     {
-
+        protected override void ExecuteSend(ref ByteBuffer buffer)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

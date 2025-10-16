@@ -42,6 +42,11 @@ namespace ExtenderApp.Common.IO.Binary
         private readonly IBinaryFormatterResolver _resolver;
 
         /// <summary>
+        /// 字节缓冲区工厂
+        /// </summary>
+        private readonly IByteBufferFactory _bufferFactory;
+
+        /// <summary>
         /// 字节序列池
         /// </summary>
         private readonly SequencePool<byte> _pool;
@@ -62,12 +67,13 @@ namespace ExtenderApp.Common.IO.Binary
 
         protected override string FileExtension { get; }
 
-        public BinaryParser(IBinaryFormatterResolver binaryFormatterResolver, SequencePool<byte> sequencePool, ByteBufferConvert convert, BinaryOptions options, IFileOperateProvider provider) : base(provider)
+        public BinaryParser(IBinaryFormatterResolver binaryFormatterResolver, SequencePool<byte> sequencePool, ByteBufferConvert convert, BinaryOptions options, IByteBufferFactory bufferFactory, IFileOperateProvider provider) : base(provider)
         {
             _resolver = binaryFormatterResolver;
             _pool = sequencePool;
             _options = options;
             _convert = convert;
+            _bufferFactory = bufferFactory;
 
             _extensionFormatter = _resolver.GetFormatterWithVerify<ExtensionHeader>();
             _intFormatter = _resolver.GetFormatterWithVerify<int>();
@@ -119,13 +125,13 @@ namespace ExtenderApp.Common.IO.Binary
 
         public void Serialize<T>(T value, out ByteBuffer buffer)
         {
-            buffer = new(_pool);
+            buffer = _bufferFactory.Create();
             _resolver.GetFormatterWithVerify<T>().Serialize(ref buffer, value);
         }
 
         public void Serialize<T>(T value, out ByteBlock block)
         {
-            ByteBuffer buffer = new ByteBuffer(_pool);
+            ByteBuffer buffer = _bufferFactory.Create();
             _resolver.GetFormatterWithVerify<T>().Serialize(ref buffer, value);
             block = new((int)buffer.Length);
             buffer.TryCopyTo(ref block);
@@ -147,7 +153,7 @@ namespace ExtenderApp.Common.IO.Binary
             return Task.Run(() =>
             {
                 var formatter = _resolver.GetFormatterWithVerify<T>();
-                var buffer = new ByteBuffer(_pool);
+                var buffer = _bufferFactory.Create(); ;
                 formatter.Serialize(ref buffer, value);
                 var result = buffer.ToArray();
                 buffer.Dispose();
@@ -223,7 +229,7 @@ namespace ExtenderApp.Common.IO.Binary
                 return result;
             }
 
-            ByteBuffer buffer = new ByteBuffer(_pool);
+            ByteBuffer buffer = _bufferFactory.Create();
             int bytesRead = 0;
             do
             {
@@ -268,7 +274,7 @@ namespace ExtenderApp.Common.IO.Binary
                     return result;
                 }
 
-                ByteBuffer buffer = new ByteBuffer(_pool);
+                ByteBuffer buffer = _bufferFactory.Create();
                 int bytesRead = 0;
                 do
                 {
@@ -342,7 +348,7 @@ namespace ExtenderApp.Common.IO.Binary
 
         protected override T? ExecuteRead<T>(IFileOperate fileOperate) where T : default
         {
-            ByteBuffer buffer = new ByteBuffer(_pool);
+            ByteBuffer buffer = _bufferFactory.Create();
             fileOperate.Read(ref buffer);
             T? result = Deserialize<T>(ref buffer);
             buffer.Dispose();
@@ -351,7 +357,7 @@ namespace ExtenderApp.Common.IO.Binary
 
         protected override T? ExecuteRead<T>(IFileOperate fileOperate, long position, int length) where T : default
         {
-            ByteBuffer buffer = new ByteBuffer(_pool);
+            ByteBuffer buffer = _bufferFactory.Create();
             fileOperate.Read(position, length, ref buffer);
             T? result = Deserialize<T>(ref buffer);
             buffer.Dispose();
@@ -362,7 +368,7 @@ namespace ExtenderApp.Common.IO.Binary
         {
             return Task.Run(() =>
             {
-                ByteBuffer buffer = new ByteBuffer(_pool);
+                ByteBuffer buffer = _bufferFactory.Create();
                 fileOperate.Read(ref buffer);
                 T? result = Deserialize<T>(ref buffer);
                 buffer.Dispose();
@@ -374,7 +380,7 @@ namespace ExtenderApp.Common.IO.Binary
         {
             return Task.Run(() =>
             {
-                ByteBuffer buffer = new ByteBuffer(_pool);
+                ByteBuffer buffer = _bufferFactory.Create();
                 fileOperate.Read(ref buffer);
                 T? result = Deserialize<T>(ref buffer);
                 buffer.Dispose();
@@ -527,7 +533,7 @@ namespace ExtenderApp.Common.IO.Binary
         private void ToLz4Block(in ReadOnlySequence<byte> readOnlyMemories, ref ByteBuffer buffer)
         {
             var maxCompressedLength = LZ4Codec.MaximumOutputLength((int)readOnlyMemories.Length);
-            var lz4Buffer = new ByteBuffer(_pool);
+            var lz4Buffer = _bufferFactory.Create();
 
             int lz4BlockLength = LZ4Operation(readOnlyMemories, lz4Buffer.GetSpan(maxCompressedLength).Slice(0, maxCompressedLength), LZ4CodecEncode);
             lz4Buffer.WriteAdvance(lz4BlockLength);
@@ -583,7 +589,7 @@ namespace ExtenderApp.Common.IO.Binary
         /// </remarks>
         private bool TryDecompress(ref ByteBuffer inputbuffer, out ByteBuffer outbuffer)
         {
-            outbuffer = new ByteBuffer(_pool);
+            outbuffer = _bufferFactory.Create();
             if (inputbuffer.End)
             {
                 outbuffer.Dispose();
@@ -729,7 +735,7 @@ namespace ExtenderApp.Common.IO.Binary
         {
             Serialize(value, out ByteBuffer buffer);
 
-            var outBuffer = new ByteBuffer(_pool);
+            var outBuffer = _bufferFactory.Create();
             ToLz4(buffer.Sequence, ref outBuffer, compression);
 
             byte[] result = outBuffer.ToArray();
@@ -766,7 +772,7 @@ namespace ExtenderApp.Common.IO.Binary
             }
             Serialize(value, out ByteBuffer buffer);
 
-            var outBuffer = new ByteBuffer(_pool);
+            var outBuffer = _bufferFactory.Create();
             ToLz4(buffer.Sequence, ref outBuffer, compression);
             fileOperate.Write(outBuffer);
 
@@ -792,7 +798,7 @@ namespace ExtenderApp.Common.IO.Binary
                 return;
             }
 
-            var outBuffer = new ByteBuffer(_pool);
+            var outBuffer = _bufferFactory.Create();
             ToLz4(buffer.Sequence, ref outBuffer, compression);
             fileOperate.Write(outBuffer);
 
@@ -818,7 +824,7 @@ namespace ExtenderApp.Common.IO.Binary
             }
 
             var buffer = new ByteBuffer(block);
-            var outBuffer = new ByteBuffer(_pool);
+            var outBuffer = _bufferFactory.Create();
             ToLz4(buffer.Sequence, ref outBuffer, compression);
             fileOperate.Write(outBuffer);
 
@@ -854,7 +860,7 @@ namespace ExtenderApp.Common.IO.Binary
             {
                 Serialize(value, out ByteBuffer buffer);
 
-                var outBuffer = new ByteBuffer(_pool);
+                var outBuffer = _bufferFactory.Create();
                 ToLz4(buffer.Sequence, ref outBuffer, compression);
 
                 fileOperate.Write(outBuffer);
@@ -867,7 +873,7 @@ namespace ExtenderApp.Common.IO.Binary
         {
             Serialize(value, out buffer);
 
-            var outBuffer = new ByteBuffer(_pool);
+            var outBuffer = _bufferFactory.Create();
             ToLz4(buffer.Sequence, ref outBuffer, compression);
 
             outBuffer.Dispose();
@@ -877,7 +883,7 @@ namespace ExtenderApp.Common.IO.Binary
         {
             Serialize(value, out ByteBuffer buffer);
 
-            var outBuffer = new ByteBuffer(_pool);
+            var outBuffer = _bufferFactory.Create();
             ToLz4(buffer.Sequence, ref outBuffer, compression);
 
             block = outBuffer;

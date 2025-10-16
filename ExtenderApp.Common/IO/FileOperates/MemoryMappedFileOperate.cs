@@ -33,7 +33,7 @@ namespace ExtenderApp.Common.IO
         //    FileStream stream = OperateInfo.OpenFile();
         //    if (capacity == 0)
         //    {
-        //        capacity = stream.Length == 0L ? Utility.KilobytesToBytes(4) : stream.Length;
+        //        capacity = stream.DefaultLength == 0L ? Utility.KilobytesToBytes(4) : stream.DefaultLength;
         //    }
 
         //    if (AllocationStrategy != AllocationStrategy.None)
@@ -41,7 +41,7 @@ namespace ExtenderApp.Common.IO
         //        SwitchAllocationStrategy(stream, capacity);
         //    }
 
-        //    if (stream.Length < capacity)
+        //    if (stream.DefaultLength < capacity)
         //    {
         //        stream.SetLength(capacity);
         //    }

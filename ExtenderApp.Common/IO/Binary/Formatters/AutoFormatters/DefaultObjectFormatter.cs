@@ -1,4 +1,5 @@
 ﻿using System.Reflection;
+using ExtenderApp.Abstract;
 
 namespace ExtenderApp.Common.IO.Binary.Formatters
 {
@@ -8,12 +9,25 @@ namespace ExtenderApp.Common.IO.Binary.Formatters
     /// <typeparam name="T">要格式化的对象的类型。</typeparam>
     internal class DefaultObjectFormatter<T> : AutoFormatter<T>
     {
-        public DefaultObjectFormatter(DefaultObjectStore store) : base(store)
+        public DefaultObjectFormatter(IBinaryFormatterResolver resolver) : base(resolver)
+        {
+        }
+
+        protected override void Init(AutoMemberDetailsStore store)
         {
             Type type = typeof(T);
             PropertyInfo[] properties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.GetProperty | BindingFlags.SetProperty);
             FieldInfo[] fields = type.GetFields(BindingFlags.Public | BindingFlags.Instance | BindingFlags.GetField | BindingFlags.SetField);
-            Init(properties, fields, properties.Length + fields.Length);
+
+            for (int i = 0; i < properties.Length; i++)
+            {
+                store.Add(properties[i]);
+            }
+
+            for (int i = 0; i < fields.Length; i++)
+            {
+                store.Add(fields[i]);
+            }
         }
     }
 }

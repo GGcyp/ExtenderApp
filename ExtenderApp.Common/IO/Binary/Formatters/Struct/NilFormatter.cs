@@ -10,7 +10,7 @@ namespace ExtenderApp.Common.IO.Binary.Formatters
 
         public override Nil Deserialize(ref ByteBuffer buffer)
         {
-            return _bufferConvert.ReadNil(ref buffer);
+            return _bufferConvert.TryReadNil(ref buffer);
         }
 
         public override void Serialize(ref ByteBuffer buffer, Nil value)

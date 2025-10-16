@@ -8,7 +8,7 @@ namespace ExtenderApp.Common.IO.Binary.Formatters
     /// 具体读写逻辑由更具体的派生类实现。
     /// </summary>
     /// <typeparam name="T">要序列化/反序列化的目标类型。</typeparam>
-    public abstract class BinaryFormatter<T> : BaseBinaryFormatter<T>
+    public abstract class BinaryFormatter<T> : BinaryFormatterBase<T>
     {
         /// <summary>
         /// 二进制选项（类型码、范围、长度、时间等运行时配置）。

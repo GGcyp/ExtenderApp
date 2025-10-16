@@ -12,6 +12,11 @@ namespace ExtenderApp.Abstract
         /// 用于预留写缓冲的大小提示，实际写入可能与该值不同。
         /// </summary>
         int DefaultLength { get; }
+
+        /// <summary>
+        /// 二进制格式化器的方法信息详情。
+        /// </summary>
+        BinaryFormatterMethodInfoDetails MethodInfoDetails { get; }
     }
 
     /// <summary>

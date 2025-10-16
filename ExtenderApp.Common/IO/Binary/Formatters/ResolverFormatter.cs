@@ -8,7 +8,7 @@ namespace ExtenderApp.Common.IO.Binary.Formatters
     /// 提供按需获取其它类型格式化器的能力，并内置对 Nil 标记的写入与检测辅助方法。
     /// </summary>
     /// <typeparam name="T">目标序列化/反序列化的类型。</typeparam>
-    public abstract class ResolverFormatter<T> : BaseBinaryFormatter<T>
+    public abstract class ResolverFormatter<T> : BinaryFormatterBase<T>
     {
         /// <summary>
         /// 格式化器解析器，用于解析并获取指定类型的 <see cref="IBinaryFormatter{T}"/>。
@@ -41,6 +41,16 @@ namespace ExtenderApp.Common.IO.Binary.Formatters
         protected IBinaryFormatter<TValue> GetFormatter<TValue>()
         {
             return _resolver.GetFormatterWithVerify<TValue>();
+        }
+
+        /// <summary>
+        /// 获得指定类型个二进制格式转换器
+        /// </summary>
+        /// <param name="type">指定类型</param>
+        /// <returns>格式转换器</returns>
+        protected IBinaryFormatter GetFormatter(Type type)
+        {
+            return _resolver.GetFormatter(type);
         }
 
         /// <summary>

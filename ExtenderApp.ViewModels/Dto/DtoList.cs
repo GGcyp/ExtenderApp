@@ -188,10 +188,10 @@ namespace ExtenderApp.ViewModels
     //    public void CopyTo(TDto[] array, int arrayIndex)
     //    {
     //        //无法装下全部数据
-    //        if (array.Length - arrayIndex > Count)
+    //        if (array.DefaultLength - arrayIndex > Count)
     //            throw new ArgumentException(nameof(array));
 
-    //        for (int i = 0; i < array.Length; i++)
+    //        for (int i = 0; i < array.DefaultLength; i++)
     //        {
     //            array[i + arrayIndex] = this[i];
     //        }

@@ -43,30 +43,28 @@ namespace ExtenderApp.Common
             _formatCreator = new(store);
         }
 
-        /// <summary>
-        /// 获取指定类型的BinaryFormatter解析器
-        /// </summary>
-        /// <typeparam name="T">要解析的类型</typeparam>
-        /// <returns>返回指定类型的BinaryFormatter解析器</returns>
-        /// <exception cref="InvalidOperationException">如果未找到指定类型的解析方法，则抛出此异常</exception>
         public IBinaryFormatter<T> GetFormatter<T>()
         {
-            var resultType = typeof(T);
-            if (!_formmaterDict.TryGetValue(resultType, out var formatter))
+            return (IBinaryFormatter<T>)GetFormatter(typeof(T));
+        }
+
+        public IBinaryFormatter GetFormatter(Type type)
+        {
+            if (!_formmaterDict.TryGetValue(type, out var formatter))
             {
                 lock (_formmaterDict)
                 {
-                    if (_formmaterDict.TryGetValue(resultType, out formatter))
+                    if (_formmaterDict.TryGetValue(type, out formatter))
                     {
-                        return (IBinaryFormatter<T>)formatter;
+                        return formatter;
                     }
 
                     Type? formatterType = null;
-                    if (!_store.TryGetValue(resultType, out var details))
+                    if (!_store.TryGetValue(type, out var details))
                     {
-                        formatterType = _formatCreator.CreatFormatter(resultType);
+                        formatterType = _formatCreator.CreatFormatter(type);
                         if (formatterType is null)
-                            throw new InvalidOperationException($"未找到转换器类型：{resultType.FullName}.");
+                            throw new InvalidOperationException($"未找到转换器类型：{type.FullName}.");
 
                         formatter = _serviceProvider.GetService(formatterType!) as IBinaryFormatter;
                     }
@@ -74,7 +72,7 @@ namespace ExtenderApp.Common
                     {
                         if (details.FormatterTypes.Count == 0)
                         {
-                            throw new ArgumentNullException($"转换器类型为空：{resultType}");
+                            throw new ArgumentNullException($"转换器类型为空：{type}");
                         }
 
                         //检查是不是版本数据转换器
@@ -93,7 +91,7 @@ namespace ExtenderApp.Common
                             }
 
                             _formmaterDict.Add(details.VersionDataBinaryType!, formatter!);
-                            resultType = details.BinaryType;
+                            type = details.BinaryType;
                         }
                         else
                         {
@@ -102,14 +100,12 @@ namespace ExtenderApp.Common
                         }
                     }
                     if (formatter == null)
-                        throw new ArgumentNullException($"未找到：{resultType.FullName} 的格式转换器");
+                        throw new ArgumentNullException($"未找到：{type.FullName} 的格式转换器");
 
-                    _formmaterDict.Add(resultType, formatter);
+                    _formmaterDict.Add(type, formatter);
                 }
             }
-
-
-            return (IBinaryFormatter<T>)formatter;
+            return formatter;
         }
     }
 }

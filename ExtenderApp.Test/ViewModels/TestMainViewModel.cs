@@ -13,16 +13,17 @@ namespace ExtenderApp.Test
 {
     public class TestMainViewModel : ExtenderAppViewModel
     {
+        public class TestClass
+        {
+            public string Name { get; set; }
+            public int Age { get; set; }
+        }
+
         public TestMainViewModel(IServiceStore serviceStore, IBinaryParser binaryParser) : base(serviceStore)
         {
             var info = CreatTestExpectLocalFileInfo("text");
-            //binaryParser.Serialize("5646464", out ByteBuffer buffer);
-            //Info(buffer.Remaining);
-            //var data = binaryParser.Deserialize<string>(ref buffer);
-            binaryParser.Serialize(new int[1000], out ByteBlock block, CompressionType.Lz4Block);
-            binaryParser.Serialize(new int[1000], out ByteBlock bblock, CompressionType.Lz4BlockArray);
-            var data = binaryParser.Deserialize<int[]>(ref bblock);
-            data = binaryParser.Deserialize<int[]>(ref block);
+            binaryParser.Serialize(new TestClass { Name = "Test", Age = 18 }, out ByteBlock block);
+            var obj = binaryParser.Deserialize<TestClass>(ref block);
         }
 
         private ExpectLocalFileInfo CreatTestExpectLocalFileInfo(string fileName)

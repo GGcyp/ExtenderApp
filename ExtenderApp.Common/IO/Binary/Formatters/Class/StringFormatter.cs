@@ -24,7 +24,7 @@ namespace ExtenderApp.Common.IO.Binary.Formatters
                 return DefaultLength;
             }
             return _binaryOptions.BinaryEncoding.GetMaxByteCount(value.Length) + DefaultLength;
-            //return value.Length + Length;
+            //return value.DefaultLength + DefaultLength;
         }
 
         public override string Deserialize(ref ByteBuffer buffer)

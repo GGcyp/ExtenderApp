@@ -109,7 +109,7 @@ namespace ExtenderApp.Common.IO
             if (length < 0) throw new ArgumentOutOfRangeException(nameof(length));
             if (!CanRead) throw new InvalidOperationException("文件不支持读取操作。");
 
-            // 如需强边界，可改用 Stream.Length；或允许短读由 ExecuteRead 实现处理
+            // 如需强边界，可改用 Stream.DefaultLength；或允许短读由 ExecuteRead 实现处理
             var result = ExecuteRead(filePosition, length);
             LastOperateTime = DateTime.Now;
             return result;

@@ -185,7 +185,7 @@ namespace ExtenderApp.Common.Networks
             //检查大小，小的文件直接传输，大的文件需要分块传输
             //var splitterInfo = splitterParser.Create(info, chukSize, false);
 
-            //if (splitterInfo.Length <= DefaultSendLength)
+            //if (splitterInfo.DefaultLength <= DefaultSendLength)
             //{
             //    //小文件直接传输
             //    var splitterDto = splitterParser.GetSplitterDto(info, 0, splitterInfo);
