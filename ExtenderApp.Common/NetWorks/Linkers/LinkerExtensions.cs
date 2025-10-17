@@ -1,6 +1,8 @@
 ﻿using System.Reflection;
+using System.Threading.Tasks;
 using AppHost.Extensions.DependencyInjection;
 using ExtenderApp.Abstract;
+using ExtenderApp.Data;
 
 namespace ExtenderApp.Common.Networks
 {
@@ -41,6 +43,52 @@ namespace ExtenderApp.Common.Networks
             });
 
             return services;
+        }
+
+        public static int Send(this ILinker linker, ReadOnlyMemory<byte> memory)
+        {
+            return linker.Send(memory.Span);
+        }
+
+        public static int Send(this ILinker linker, ref ByteBlock block)
+        {
+            int len = linker.Send(block);
+            block.ReadAdvance(len);
+            return len;
+        }
+
+        public static int Send(this ILinker linker, ref ByteBuffer buffer)
+        {
+            ByteBlock block = new((int)buffer.Remaining);
+            buffer.TryCopyTo(ref block);
+            int len = linker.Send(block);
+            buffer.ReadAdvance(len);
+            block.Dispose();
+            return len;
+        }
+
+        public static async ValueTask<int> SendAsync(this ILinker linker, ReadOnlySpan<byte> span, CancellationToken token)
+        {
+            ByteBlock block = new(span);
+            int len = await linker.SendAsync(block);
+            block.Dispose();
+            return len;
+        }
+
+        public static async Task<int> SendAsync(this ILinker linker, ref ByteBlock block, CancellationToken token)
+        {
+            int len = await linker.SendAsync(block);
+            block.ReadAdvance(len);
+            return len;
+        }
+
+        public static void Send(this ILinker linker, ref ByteBuffer buffer, CancellationToken token)
+        {
+            ByteBlock block = new((int)buffer.Remaining);
+            buffer.TryCopyTo(ref block);
+            int len = linker.Send(block);
+            buffer.ReadAdvance(len);
+            block.Dispose();
         }
     }
 }

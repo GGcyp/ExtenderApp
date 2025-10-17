@@ -1,4 +1,4 @@
-﻿using System.Net.Sockets;
+﻿using System.Net;
 using ExtenderApp.Abstract;
 using ExtenderApp.Data;
 
@@ -11,63 +11,88 @@ namespace ExtenderApp.Common.Networks
     /// <typeparam name="TData">数据类型，需要继承自 LinkerData。</typeparam>
     public abstract class Linker : DisposableObject, ILinker
     {
+        private const int DefaultCapacity = 1024 * 512;
+
         private readonly SemaphoreSlim _sendSlim;
+        public CapacityLimiter CapacityLimiter { get; }
 
-        private ValueCounter sendCounter;
+        public ValueCounter SendCounter { get; }
 
-        private ValueCounter receiveCounter;
+        public ValueCounter ReceiveCounter { get; }
 
-        public bool NoDelay { get; protected set; }
+        #region 子类实现
 
+        public abstract bool NoDelay { get; set; }
 
-        public Linker()
+        public abstract bool Connected { get; }
+
+        public abstract EndPoint? LocalEndPoint { get; }
+
+        public abstract EndPoint? RemoteEndPoint { get; }
+
+        #endregion 子类实现
+
+        public Linker() : this(DefaultCapacity)
+        {
+
+        }
+
+        public Linker(long capacity)
         {
             _sendSlim = new(1, 1);
 
-            sendCounter = new();
-            receiveCounter = new();
+            CapacityLimiter = new(capacity);
+
+            SendCounter = new();
+            ReceiveCounter = new();
+            SendCounter.Start();
+            ReceiveCounter.Start();
         }
 
-        //public void Send(in ReadOnlySpan<byte> span)
-        //{
-        //    ByteBlock block = new(span);
-        //    Send(ref block);
-        //    block.Dispose();
-        //}
-
-        //public void Send(in ReadOnlyMemory<byte> memory)
-        //{
-        //    ByteBuffer buffer = new(memory);
-        //    Send(ref buffer);
-        //    buffer.Dispose();
-        //}
-
-        //public void Send(ref ByteBlock block)
-        //{
-        //    ByteBuffer buffer = block;
-        //    Send(ref buffer);
-        //    buffer.Dispose();
-        //}
-
-        public void Send(ref ByteBuffer buffer)
+        public int Send(ReadOnlySpan<byte> span)
         {
+            ThrowIfDisposed();
+            var lease = CapacityLimiter.Acquire(span.Length);
             _sendSlim.Wait();
             try
             {
-                ExecuteSend(ref buffer);
+                int len = ExecuteSend(span);
+                SendCounter.Increment(len);
+                return len;
             }
             finally
             {
                 _sendSlim.Release();
+                lease.Dispose();
             }
         }
 
-        protected abstract void ExecuteSend(ref ByteBuffer buffer);
+        public async ValueTask<int> SendAsync(ReadOnlyMemory<byte> memory, CancellationToken token = default)
+        {
+            ThrowIfDisposed();
+            var lease = await CapacityLimiter.AcquireAsync(memory.Length, token).ConfigureAwait(false);
+            await _sendSlim.WaitAsync().ConfigureAwait(false);
+            try
+            {
+                return await ExecuteSendAsync(memory, token).ConfigureAwait(false);
+            }
+            finally
+            {
+                _sendSlim.Release();
+                lease.Dispose();
+            }
+        }
+
+        protected abstract int ExecuteSend(ReadOnlySpan<byte> span);
+
+        protected abstract ValueTask<int> ExecuteSendAsync(ReadOnlyMemory<byte> memory, CancellationToken token);
 
         protected override void Dispose(bool disposing)
         {
-            sendCounter.Dispose();
-            receiveCounter.Dispose();
+            SendCounter.Dispose();
+            ReceiveCounter.Dispose();
+            _sendSlim.Dispose();
+            CapacityLimiter.Dispose();
         }
     }
 }

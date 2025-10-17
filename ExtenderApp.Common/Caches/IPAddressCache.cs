@@ -1,5 +1,4 @@
 ﻿using System.Net;
-using ExtenderApp.Common.Caches;
 using ExtenderApp.Common.Hash;
 
 namespace ExtenderApp.Common.Caches

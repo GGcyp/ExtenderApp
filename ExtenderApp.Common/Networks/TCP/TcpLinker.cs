@@ -1,5 +1,4 @@
-﻿using System.Net.Sockets;
-using ExtenderApp.Abstract;
+﻿using ExtenderApp.Abstract;
 using ExtenderApp.Common.Networks;
 using ExtenderApp.Data;
 
@@ -10,9 +9,6 @@ namespace ExtenderApp.Common
     /// </summary>
     internal class TcpLinker : Linker, ITcpLinker
     {
-        protected override void ExecuteSend(ref ByteBuffer buffer)
-        {
-            throw new NotImplementedException();
-        }
+
     }
 }

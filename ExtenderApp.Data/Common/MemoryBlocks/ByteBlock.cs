@@ -8,7 +8,7 @@ namespace ExtenderApp.Data
     /// - Consumed 表示当前读取位置（读指针）。
     /// 线程不安全；使用完毕需调用 <see cref="Dispose"/> 归还到数组池。
     /// </summary>
-    public struct ByteBlock
+    public struct ByteBlock : IDisposable
     {
         /// <summary>
         ///底层内存块。
@@ -34,6 +34,11 @@ namespace ExtenderApp.Data
         /// 是否无任何已写入数据（Length == 0）。
         /// </summary>
         public bool IsEmpty => _block.IsEmpty;
+
+        /// <summary>
+        /// 内存块中剩余可读取的字节数
+        /// </summary>
+        public long Remaining => _block.Remaining;
 
         /// <summary>
         /// 获得已写入范围的只读字节切片。

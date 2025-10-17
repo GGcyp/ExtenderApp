@@ -13,17 +13,9 @@ namespace ExtenderApp.Test
 {
     public class TestMainViewModel : ExtenderAppViewModel
     {
-        public class TestClass
-        {
-            public string Name { get; set; }
-            public int Age { get; set; }
-        }
-
         public TestMainViewModel(IServiceStore serviceStore, IBinaryParser binaryParser) : base(serviceStore)
         {
             var info = CreatTestExpectLocalFileInfo("text");
-            binaryParser.Serialize(new TestClass { Name = "Test", Age = 18 }, out ByteBlock block);
-            var obj = binaryParser.Deserialize<TestClass>(ref block);
         }
 
         private ExpectLocalFileInfo CreatTestExpectLocalFileInfo(string fileName)

@@ -276,7 +276,7 @@ namespace ExtenderApp.Data
                 if (_trackingStartUtc == default)
                     _trackingStartUtc = PeriodStartUtc;
 
-                _timer = new Timer(static s => ((ValueCounter)s!).OnTimer(), this, _period, _period);
+                _timer = new Timer(OnTimer, null, _period, _period);
             }
         }
 
@@ -314,8 +314,13 @@ namespace ExtenderApp.Data
                 if (_trackingStartUtc == default)
                     _trackingStartUtc = PeriodStartUtc;
 
-                _timer = new Timer(static s => ((ValueCounter)s!).OnTimer(), this, _period, _period);
+                _timer = new Timer(OnTimer, null, _period, _period);
             }
+        }
+
+        private void OnTimer(object? obj)
+        {
+            OnTimer();
         }
 
         private void OnTimer()

@@ -17,8 +17,6 @@ namespace ExtenderApp.Common.Networks
         public ListenerLinkerFactory(ILinkerFactory linkerFactory)
         {
             _linkerFactory = linkerFactory;
-            _tcpDataBuffer = DataBuffer.CreateDataBuffer(() => new ListenerLinker<ITcpLinker>(SocketType.Stream, ProtocolType.Tcp, _linkerFactory));
-            _udpDataBuffer = DataBuffer.CreateDataBuffer(() => new ListenerLinker<IUdpLinker>(SocketType.Stream, ProtocolType.Tcp, _linkerFactory));
         }
 
         public IListenerLinker<T> CreateListenerLinker<T>()
