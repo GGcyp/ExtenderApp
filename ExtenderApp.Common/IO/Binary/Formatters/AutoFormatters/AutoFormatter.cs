@@ -316,7 +316,6 @@ namespace ExtenderApp.Common.IO.Binary.Formatters
             /// <exception cref="InvalidOperationException">当表达式不是成员访问时抛出。</exception>
             /// <exception cref="ArgumentException">当表达式不是属性或字段访问时抛出。</exception>
             public AutoMemberDetailsStore Add<TMember>(Expression<Func<T, TMember>> selector)
-                where TMember : MemberInfo
             {
                 ArgumentNullException.ThrowIfNull(selector, nameof(selector));
 
