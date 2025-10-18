@@ -1,50 +1,43 @@
 ﻿using System.Net.Sockets;
 using ExtenderApp.Abstract;
-using ExtenderApp.Common.DataBuffers;
-using ExtenderApp.Common.Networks.UDP;
 
 namespace ExtenderApp.Common.Networks
 {
     /// <summary>
-    /// LinkerFactory 类是一个内部类，实现了 ILinkerFactory 接口。
-    /// 用于创建不同类型的 Linker 对象。
+    /// <see cref="ILinker"/> 工厂抽象类
     /// </summary>
-    internal class LinkerFactory : ILinkerFactory
+    /// <typeparam name="T">链接接口继承自<see cref="ILinker"/></typeparam>
+    public abstract class LinkerFactory<T> : ILinkerFactory<T>
+        where T : ILinker
     {
-        private readonly ResourceLimiter _resourceLimiter;
-        private readonly DataBuffer _tcpSDataBuffer;
-        private readonly DataBuffer _udpSDataBuffer;
-        private readonly DataBuffer _tcpADataBuffer;
-        private readonly DataBuffer _udpADataBuffer;
+        public abstract SocketType LinkerSocketType { get; }
+        public abstract ProtocolType LinkerProtocolType { get; }
 
-        public LinkerFactory(ResourceLimiter resourceLimiter)
+        public T CreateLinker()
         {
-            _resourceLimiter = resourceLimiter;
+            return CreateLinker(AddressFamily.InterNetwork);
         }
 
-        public T CreateLinker<T>() where T : ILinker
+        public T CreateLinker(Socket socket)
         {
-            return CreateLinker<T>(AddressFamily.InterNetwork);
-        }
-
-        public T CreateLinker<T>(Socket socket) where T : ILinker
-        {
-            return typeof(T) switch
+            if (socket == null)
             {
-                var t when t == typeof(ITcpLinker) => _tcpSDataBuffer.Process<Socket, ResourceLimiter, T>(socket, _resourceLimiter)!,
-                var t when t == typeof(IUdpLinker) => _udpSDataBuffer.Process<Socket, ResourceLimiter, T>(socket, _resourceLimiter)!,
-                _ => throw new System.NotImplementedException()
-            };
+                throw new ArgumentNullException(nameof(socket));
+            }
+
+            if (socket.SocketType != LinkerSocketType || socket.ProtocolType != LinkerProtocolType)
+            {
+                throw new ArgumentException(string.Format("传入的套字节类型和协议类型需要一致:{0}", typeof(T).Name), nameof(socket));
+            }
+
+            return CreateLinkerInternal(socket);
         }
 
-        public T CreateLinker<T>(AddressFamily addressFamily) where T : ILinker
+        public T CreateLinker(AddressFamily addressFamily)
         {
-            return typeof(T) switch
-            {
-                var t when t == typeof(ITcpLinker) => _tcpADataBuffer.Process<AddressFamily, ResourceLimiter, T>(addressFamily, _resourceLimiter)!,
-                var t when t == typeof(IUdpLinker) => _udpADataBuffer.Process<AddressFamily, ResourceLimiter, T>(addressFamily, _resourceLimiter)!,
-                _ => throw new System.NotImplementedException()
-            };
+            return CreateLinker(new Socket(addressFamily, LinkerSocketType, LinkerProtocolType));
         }
+
+        protected abstract T CreateLinkerInternal(Socket socket);
     }
 }

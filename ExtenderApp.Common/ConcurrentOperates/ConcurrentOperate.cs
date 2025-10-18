@@ -65,7 +65,6 @@ namespace ExtenderApp.Common.ConcurrentOperates
                 return;
 
             _concurrencySemaphore.Dispose();
-            base.Dispose(disposing);
         }
 
         public abstract void Execute(IConcurrentOperation operation);

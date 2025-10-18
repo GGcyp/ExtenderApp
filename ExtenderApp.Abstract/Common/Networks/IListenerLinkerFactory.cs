@@ -1,21 +1,32 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Net.Sockets;
+
 
 namespace ExtenderApp.Abstract
 {
     /// <summary>
-    /// 定义创建监听器连接器的工厂接口。
+    /// 监听器链接器工厂接口：提供多种方式创建 <see cref="IListenerLinker{T}"/>。
     /// </summary>
-    public interface IListenerLinkerFactory
+    /// <typeparam name="T">链接器类型，必须实现 <see cref="ILinker"/>。</typeparam>
+    public interface IListenerLinkerFactory<T> where T : ILinker
     {
         /// <summary>
-        /// 创建一个监听器连接器实例。
+        /// 使用默认地址族（IPv4，<see cref="AddressFamily.InterNetwork"/>）创建监听器链接器。
         /// </summary>
-        /// <typeparam name="T">指定连接器的类型，必须实现<see cref="ILinker"/>接口。</typeparam>
-        /// <returns>返回创建的监听器连接器实例。</returns>
-        IListenerLinker<T> CreateListenerLinker<T>() where T : ILinker;
+        /// <returns>监听器链接器实例。</returns>
+        IListenerLinker<T> CreateListenerLinker();
+
+        /// <summary>
+        /// 使用给定的 <see cref="Socket"/> 创建监听器链接器。
+        /// </summary>
+        /// <param name="socket">已按协议构造的套接字。</param>
+        /// <returns>监听器链接器实例。</returns>
+        IListenerLinker<T> CreateListenerLinker(Socket socket);
+
+        /// <summary>
+        /// 使用指定地址族创建监听器链接器。
+        /// </summary>
+        /// <param name="addressFamily">地址族，例如 <see cref="AddressFamily.InterNetwork"/> 或 <see cref="AddressFamily.InterNetworkV6"/>。</param>
+        /// <returns>监听器链接器实例。</returns>
+        IListenerLinker<T> CreateListenerLinker(AddressFamily addressFamily);
     }
 }

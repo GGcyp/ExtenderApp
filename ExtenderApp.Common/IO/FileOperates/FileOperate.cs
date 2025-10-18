@@ -700,7 +700,9 @@ namespace ExtenderApp.Common.IO
         /// </summary>
         protected override void Dispose(bool disposing)
         {
-            if (!disposing) return;
+            if (!disposing) 
+                return;
+
             Stream.Dispose();
         }
     }

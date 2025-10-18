@@ -8,8 +8,8 @@ namespace ExtenderApp.Common.Networks.LinkClients
         public static IServiceCollection AddLinkerClient(this IServiceCollection services)
         {
             services.AddScoped<LinkClientFactory>();
-            services.AddSingleton<LinkParser, ExtenderLinkParser>();
-            services.AddTransient(typeof(LinkClient<,>), typeof(LinkClient<,>));
+            //services.AddSingleton<LinkParser, ExtenderLinkParser>();
+            //services.AddTransient(typeof(LinkClient<,>), typeof(LinkClient<,>));
 
             return services;
         }

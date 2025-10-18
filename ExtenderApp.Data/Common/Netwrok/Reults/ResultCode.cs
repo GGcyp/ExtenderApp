@@ -1,49 +1,47 @@
-﻿
-
-namespace ExtenderApp.Data
+﻿namespace ExtenderApp.Data
 {
-    // <summary>
-    /// 结果类型
+    /// <summary>
+    /// 表示通用结果的状态码。用于统一描述一次操作的最终状态。
     /// </summary>
     public enum ResultCode : byte
     {
         /// <summary>
-        /// 默认，表示没有特定的结果状态
+        /// 默认值（未设置/未开始）。不代表具体结果，仅用于初始化。
         /// </summary>
         Default = 0,
 
         /// <summary>
-        /// 成功
+        /// 操作成功完成。
         /// </summary>
         Success,
 
         /// <summary>
-        /// 错误，程度较重的错误，但不影响系统的运行
+        /// 业务或可预期的错误，例如参数无效、权限不足、校验失败等。
         /// </summary>
         Error,
 
         /// <summary>
-        /// 异常，程度较重的错误，可能是由于系统异常或其他不可恢复的原因导致的
+        /// 执行过程中发生异常导致失败（通常伴随异常对象）。
         /// </summary>
         Exception,
 
         /// <summary>
-        /// 失败，程度较轻的错误，可能是由于参数错误或其他可恢复的原因导致的
+        /// 一般性失败，非异常引起，但未达到预期结果。
         /// </summary>
-        Failure,
+        Failed,
 
         /// <summary>
-        /// 操作超时
+        /// 超时未完成（Timeout）。
         /// </summary>
         Overtime,
 
         /// <summary>
-        /// 操作取消
+        /// 操作被取消（通常由调用方通过取消令牌触发）。
         /// </summary>
         Canceled,
 
         /// <summary>
-        /// 操作对象已被释放
+        /// 相关对象或上下文已释放（Disposed），无法执行或继续操作。
         /// </summary>
         Disposed,
     }

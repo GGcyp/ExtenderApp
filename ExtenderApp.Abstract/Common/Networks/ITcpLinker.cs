@@ -7,5 +7,13 @@ namespace ExtenderApp.Abstract
     /// </summary>
     public interface ITcpLinker : ILinker
     {
+        /// <summary>
+        /// 是否禁用 Nagle 算法（仅对 TCP 有效）。
+        /// </summary>
+        /// <remarks>
+        /// - true：小包将尽快发送，降低延迟但可能增加包数量；<br/>
+        /// - false：允许合并小包，降低包数量但可能增加延迟。
+        /// </remarks>
+        bool NoDelay { get; set; }
     }
 }

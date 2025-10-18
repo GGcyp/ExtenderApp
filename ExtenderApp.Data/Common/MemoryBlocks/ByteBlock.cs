@@ -41,6 +41,11 @@ namespace ExtenderApp.Data
         public long Remaining => _block.Remaining;
 
         /// <summary>
+        /// 当前字节读取位置（读指针）。
+        /// </summary>
+        public int Consumed => _block.Consumed;
+
+        /// <summary>
         /// 获得已写入范围的只读字节切片。
         /// </summary>
         public ReadOnlySpan<byte> UnreadSpan => _block.UnreadSpan;
@@ -179,25 +184,51 @@ namespace ExtenderApp.Data
         /// 写入单个字节到当前写指针位置。
         /// </summary>
         /// <param name="value">要写入的字节。</param>
-        public void Write(byte value) => _block.Write(value);
+        public void Write(byte value)
+            => _block.Write(value);
 
         /// <summary>
         /// 写入一段连续字节到当前写指针位置。
         /// </summary>
         /// <param name="span">要写入的数据切片。</param>
-        public void Write(ReadOnlySpan<byte> span) => _block.Write(span);
+        public void Write(ReadOnlySpan<byte> span)
+            => _block.Write(span);
 
         /// <summary>
         /// 写入一段连续字节到当前写指针位置。
         /// </summary>
         /// <param name="memory">要写入的数据内存。</param>
-        public void Write(ReadOnlyMemory<byte> memory) => _block.Write(memory);
+        public void Write(ReadOnlyMemory<byte> memory)
+            => _block.Write(memory);
 
         /// <summary>
         /// 写入一个只读字节序列（可能由多段组成）。
         /// </summary>
         /// <param name="value">只读序列。</param>
-        public void Write(in ReadOnlySequence<byte> value) => _block.Write(value);
+        public void Write(in ReadOnlySequence<byte> value)
+            => _block.Write(value);
+
+        public void Write(in ByteBlock value)
+        {
+            Write(value.UnreadSpan);
+        }
+
+        public void Write(ByteBuffer buffer)
+        {
+            Ensure((int)buffer.Remaining);
+            while (!buffer.End)
+            {
+                var span = buffer.UnreadSpan;
+                Write(span);
+                buffer.ReadAdvance(span.Length);
+            }
+        }
+
+        public bool TryCopyTo(ref ByteBuffer buffer)
+        {
+            buffer.Write(UnreadSpan);
+            return true;
+        }
 
         /// <summary>
         /// 将可读数据（Length - Consumed）复制到目标 UnreadSpan。

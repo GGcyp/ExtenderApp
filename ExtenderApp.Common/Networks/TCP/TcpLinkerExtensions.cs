@@ -1,18 +1,18 @@
 ﻿using AppHost.Extensions.DependencyInjection;
 using ExtenderApp.Abstract;
-using ExtenderApp.Common.Networks;
 
-namespace ExtenderApp.Common
+namespace ExtenderApp.Common.Networks
 {
     public static class TcpLinkerExtensions
     {
+        /// <summary>
+        /// 向服务集合中添加TCP链接器相关服务。
+        /// </summary>
+        /// <param name="services">服务集合实例</param>
+        /// <returns>服务集合实例</returns>
         public static IServiceCollection AddTcpLinker(this IServiceCollection services)
         {
-            services.AddTransient<ITcpLinker>(p =>
-            {
-                var factory = p.GetRequiredService<ILinkerFactory>();
-                return factory.CreateLinker<ITcpLinker>();
-            });
+            services.AddILinker<ITcpLinker, TcpLinker, TcpLinkerFactory>();
             return services;
         }
     }

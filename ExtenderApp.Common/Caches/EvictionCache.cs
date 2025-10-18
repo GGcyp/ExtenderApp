@@ -203,6 +203,9 @@ namespace ExtenderApp.Common.Caches
 
         protected override void Dispose(bool disposing)
         {
+            if (!disposing)
+                return;
+
             foreach (var value in Values)
             {
                 if (value is IDisposable disposable)
@@ -212,7 +215,6 @@ namespace ExtenderApp.Common.Caches
             }
             _dict.Clear();
             _task.Dispose();
-            base.Dispose(disposing);
         }
     }
 }

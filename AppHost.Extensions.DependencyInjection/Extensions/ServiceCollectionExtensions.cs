@@ -185,7 +185,6 @@ namespace AppHost.Extensions.DependencyInjection
         /// <param name="factory">创建服务实例的工厂函数，接收 <see cref="IServiceProvider"/> 并返回服务实例对象。</param>
         /// <returns>添加服务后的 <see cref="IServiceCollection"/> 实例，便于后续继续添加服务注册。</returns>
         public static IServiceCollection AddTransient<TService>(this IServiceCollection services, Func<IServiceProvider, object> factory)
-            where TService : class
         {
             services.Add(typeof(TService), factory, ServiceLifetime.Transient);
             return services;
@@ -201,7 +200,6 @@ namespace AppHost.Extensions.DependencyInjection
         /// <param name="serviceKey">用于区分服务注册的键，可为 null。</param>
         /// <returns>添加服务后的 <see cref="IServiceCollection"/> 实例，方便后续继续添加服务注册。</returns>
         public static IServiceCollection AddTransient<TService>(this IServiceCollection services, Func<IServiceProvider, object?, object> factory, object? serviceKey)
-            where TService : class
         {
             services.Add(typeof(TService), factory, serviceKey, ServiceLifetime.Transient);
             return services;

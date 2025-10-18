@@ -391,14 +391,14 @@ namespace ExtenderApp.Common.IO.Binary
         protected override void ExecuteWrite<T>(IFileOperate fileOperate, T value)
         {
             Serialize(value, out ByteBuffer buffer);
-            fileOperate.Write(buffer);
+            fileOperate.Write(ref buffer);
             buffer.Dispose();
         }
 
         protected override void ExecuteWrite<T>(IFileOperate fileOperate, T value, long position)
         {
             Serialize(value, out ByteBuffer buffer);
-            fileOperate.Write(position, buffer);
+            fileOperate.Write(position, ref buffer);
             buffer.Dispose();
         }
 
@@ -407,7 +407,7 @@ namespace ExtenderApp.Common.IO.Binary
             return Task.Run(() =>
             {
                 Serialize(value, out ByteBuffer buffer);
-                fileOperate.Write(buffer);
+                fileOperate.Write(ref buffer);
                 buffer.Dispose();
             }, token);
         }
@@ -417,7 +417,7 @@ namespace ExtenderApp.Common.IO.Binary
             return Task.Run(() =>
             {
                 Serialize(value, out ByteBuffer buffer);
-                fileOperate.Write(position, buffer);
+                fileOperate.Write(position, ref buffer);
                 buffer.Dispose();
             }, token);
         }
@@ -774,7 +774,7 @@ namespace ExtenderApp.Common.IO.Binary
 
             var outBuffer = _bufferFactory.Create();
             ToLz4(buffer.Sequence, ref outBuffer, compression);
-            fileOperate.Write(outBuffer);
+            fileOperate.Write(ref outBuffer);
 
             buffer.Dispose();
             outBuffer.Dispose();

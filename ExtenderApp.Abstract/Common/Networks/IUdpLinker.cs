@@ -10,6 +10,8 @@ namespace ExtenderApp.Abstract
     /// </summary>
     public interface IUdpLinker : ILinker
     {
+        SocketOperationResult SendTo(Memory<byte> memory, EndPoint endPoint);
 
+        ValueTask<SocketOperationResult> SendToAsync(Memory<byte> memory, EndPoint endPoint, CancellationToken token = default);
     }
 }
