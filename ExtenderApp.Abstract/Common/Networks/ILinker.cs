@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using System.Buffers;
+using System.Net;
 using ExtenderApp.Data;
 
 namespace ExtenderApp.Abstract
@@ -16,7 +17,7 @@ namespace ExtenderApp.Abstract
         ValueCounter SendCounter { get; }
         ValueCounter ReceiveCounter { get; }
 
-        int Send(ReadOnlySpan<byte> span);
-        ValueTask<int> SendAsync(ReadOnlyMemory<byte> memory, CancellationToken token = default);
+        int Send(ref ByteBuffer buffer);
+        Task<int> SendAsync(ReadOnlySequence<byte> readOnlyMemories, CancellationToken token = default);
     }
 }

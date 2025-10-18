@@ -1,4 +1,7 @@
-﻿using System.Net;
+﻿using System;
+using System.Buffers;
+using System.Net;
+using System.Runtime.ExceptionServices;
 using ExtenderApp.Abstract;
 using ExtenderApp.Data;
 
@@ -14,6 +17,8 @@ namespace ExtenderApp.Common.Networks
         private const int DefaultCapacity = 1024 * 512;
 
         private readonly SemaphoreSlim _sendSlim;
+
+        protected readonly ExceptionDispatchInfo ExceptionDispatchInfo;
         public CapacityLimiter CapacityLimiter { get; }
 
         public ValueCounter SendCounter { get; }
@@ -49,15 +54,19 @@ namespace ExtenderApp.Common.Networks
             ReceiveCounter.Start();
         }
 
-        public int Send(ReadOnlySpan<byte> span)
+        public int Send(ref ByteBuffer buffer)
         {
+            if (buffer.IsEmpty || buffer.Remaining == 0)
+                return 0;
+
             ThrowIfDisposed();
-            var lease = CapacityLimiter.Acquire(span.Length);
+            var lease = CapacityLimiter.Acquire(buffer.Remaining);
             _sendSlim.Wait();
             try
             {
-                int len = ExecuteSend(span);
+                int len = ExecuteSend(buffer);
                 SendCounter.Increment(len);
+                buffer.ReadAdvance(len);
                 return len;
             }
             finally
@@ -67,14 +76,17 @@ namespace ExtenderApp.Common.Networks
             }
         }
 
-        public async ValueTask<int> SendAsync(ReadOnlyMemory<byte> memory, CancellationToken token = default)
+        public async Task<int> SendAsync(ReadOnlySequence<byte> readOnlyMemories, CancellationToken token = default)
         {
+            if (readOnlyMemories.IsEmpty || readOnlyMemories.Length == 0)
+                return 0;
+
             ThrowIfDisposed();
-            var lease = await CapacityLimiter.AcquireAsync(memory.Length, token).ConfigureAwait(false);
+            var lease = await CapacityLimiter.AcquireAsync(readOnlyMemories.Length, token).ConfigureAwait(false);
             await _sendSlim.WaitAsync().ConfigureAwait(false);
             try
             {
-                return await ExecuteSendAsync(memory, token).ConfigureAwait(false);
+                return await ExecuteSendAsync(readOnlyMemories, token).ConfigureAwait(false);
             }
             finally
             {
@@ -83,9 +95,9 @@ namespace ExtenderApp.Common.Networks
             }
         }
 
-        protected abstract int ExecuteSend(ReadOnlySpan<byte> span);
+        protected abstract int ExecuteSend(ByteBuffer buffer);
 
-        protected abstract ValueTask<int> ExecuteSendAsync(ReadOnlyMemory<byte> memory, CancellationToken token);
+        protected abstract Task<int> ExecuteSendAsync(in ReadOnlySequence<byte> readOnlyMemories, CancellationToken token);
 
         protected override void Dispose(bool disposing)
         {

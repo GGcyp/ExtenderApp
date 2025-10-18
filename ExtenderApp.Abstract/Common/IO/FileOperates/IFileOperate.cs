@@ -142,7 +142,7 @@ namespace ExtenderApp.Abstract
         /// <exception cref="IOException">底层 IO 错误。</exception>
         /// <exception cref="UnauthorizedAccessException">无权限。</exception>
         /// <exception cref="ObjectDisposedException">对象已释放。</exception>
-        void Write(long filePosition, ByteBuffer buffer);
+        void Write(long filePosition, ref ByteBuffer buffer);
 
         /// <summary>
         /// 将 <see cref="ByteBuffer"/> 的可读数据写入文件（从文件起始或实现定义的位置）。
@@ -152,7 +152,7 @@ namespace ExtenderApp.Abstract
         /// <exception cref="IOException">底层 IO 错误。</exception>
         /// <exception cref="UnauthorizedAccessException">无权限。</exception>
         /// <exception cref="ObjectDisposedException">对象已释放。</exception>
-        void Write(ByteBuffer buffer);
+        void Write(ref ByteBuffer buffer);
 
         /// <summary>
         /// 从指定文件偏移开始，将 <see cref="ByteBlock"/> 的可读数据写入文件。
@@ -164,7 +164,7 @@ namespace ExtenderApp.Abstract
         /// <exception cref="IOException">底层 IO 错误。</exception>
         /// <exception cref="UnauthorizedAccessException">无权限。</exception>
         /// <exception cref="ObjectDisposedException">对象已释放。</exception>
-        void Write(long filePosition, ByteBlock block);
+        void Write(long filePosition, ref ByteBlock block);
 
         /// <summary>
         /// 将 <see cref="ByteBlock"/> 的可读数据写入文件（从文件起始或实现定义的位置）。
@@ -174,7 +174,7 @@ namespace ExtenderApp.Abstract
         /// <exception cref="IOException">底层 IO 错误。</exception>
         /// <exception cref="UnauthorizedAccessException">无权限。</exception>
         /// <exception cref="ObjectDisposedException">对象已释放。</exception>
-        void Write(ByteBlock block);
+        void Write(ref ByteBlock block);
 
         #endregion Write
 

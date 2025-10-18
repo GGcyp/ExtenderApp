@@ -66,6 +66,11 @@ namespace ExtenderApp.Data
         public ReadOnlySpan<byte> UnreadSpan => _buffer.UnreadSpan;
 
         /// <summary>
+        /// 获取当前读取器实例。
+        /// </summary>
+        public SequenceReader<byte> Reader => _buffer.Reader;
+
+        /// <summary>
         /// 获取下一个元素（不前进），若无数据则抛出 <see cref="System.IO.EndOfStreamException"/>。
         /// </summary>
         public byte NextCode

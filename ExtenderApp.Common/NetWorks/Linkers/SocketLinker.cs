@@ -1,9 +1,11 @@
-﻿using System.Net;
+﻿using System.Buffers;
+using System.Net;
 using System.Net.Sockets;
 using ExtenderApp.Common.Networks;
+using ExtenderApp.Data;
 
 
-namespace ExtenderApp.Common.NetWorks.Linkers
+namespace ExtenderApp.Common.NetWorks
 {
     public class SocketLinker : Linker
     {
@@ -26,14 +28,23 @@ namespace ExtenderApp.Common.NetWorks.Linkers
 
         public override EndPoint? RemoteEndPoint => _socket.RemoteEndPoint;
 
-        protected override int ExecuteSend(ReadOnlySpan<byte> span)
+        protected override int ExecuteSend(ByteBuffer buffer)
         {
-            return _socket.Send(span, SocketFlags.None);
+            int totalSent = 0;
+            while (!buffer.End)
+            {
+                int len = _socket.Send(buffer.UnreadSpan);
+                if (len <= 0)
+                    break;
+                totalSent += len;
+                buffer.ReadAdvance(len);
+            }
+            return totalSent;
         }
 
-        protected override ValueTask<int> ExecuteSendAsync(ReadOnlyMemory<byte> memory, CancellationToken token)
+        protected override Task<int> ExecuteSendAsync(in ReadOnlySequence<byte> readOnlyMemories, CancellationToken token)
         {
-            return _socket.SendAsync(memory, SocketFlags.None, token);
+            throw new NotImplementedException();
         }
     }
 }

@@ -112,7 +112,7 @@ namespace ExtenderApp.Common.IO
             throw new NotImplementedException();
         }
 
-        protected override void ExecuteWrite(long filePosition, ByteBuffer buffer)
+        protected override void ExecuteWrite(long filePosition, ref ByteBuffer buffer)
         {
             throw new NotImplementedException();
         }
@@ -177,7 +177,7 @@ namespace ExtenderApp.Common.IO
             throw new NotImplementedException();
         }
 
-        protected override void ExecuteWrite(long filePosition, ByteBlock block)
+        protected override void ExecuteWrite(long filePosition, ref ByteBlock block)
         {
             throw new NotImplementedException();
         }

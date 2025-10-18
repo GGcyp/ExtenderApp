@@ -205,7 +205,7 @@ namespace ExtenderApp.Common.IO
             }
         }
 
-        protected override void ExecuteWrite(long filePosition, ByteBuffer buffer)
+        protected override void ExecuteWrite(long filePosition, ref ByteBuffer buffer)
         {
             _slim.Wait();
             try
@@ -219,7 +219,7 @@ namespace ExtenderApp.Common.IO
             }
         }
 
-        protected override void ExecuteWrite(long filePosition, ByteBlock block)
+        protected override void ExecuteWrite(long filePosition, ref ByteBlock block)
         {
             _slim.Wait();
             try

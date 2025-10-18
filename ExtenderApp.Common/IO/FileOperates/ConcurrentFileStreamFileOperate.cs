@@ -154,7 +154,7 @@ namespace ExtenderApp.Common.IO.FileOperates
             }
         }
 
-        protected override void ExecuteWrite(long filePosition, ByteBuffer buffer)
+        protected override void ExecuteWrite(long filePosition, ref ByteBuffer buffer)
         {
             long remaining = buffer.Remaining;
             EnterOperate(filePosition, remaining);
@@ -224,7 +224,7 @@ namespace ExtenderApp.Common.IO.FileOperates
             }
         }
 
-        protected override void ExecuteWrite(long filePosition, ByteBlock block)
+        protected override void ExecuteWrite(long filePosition, ref ByteBlock block)
         {
             EnterOperate(filePosition, block.Length);
             try

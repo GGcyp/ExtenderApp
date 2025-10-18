@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics.CodeAnalysis;
+using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using ExtenderApp.Abstract;
@@ -80,6 +81,7 @@ namespace ExtenderApp.Common.IO
             {
                 throw new InvalidOperationException("文件信息为空，无法创建文件操控类。");
             }
+
             OperateInfo = operateInfo;
             Stream = operateInfo.OpenFile();
             Capacity = Info.Exists ? Info.FileSize : 1;
@@ -104,10 +106,14 @@ namespace ExtenderApp.Common.IO
         public byte[] Read(long filePosition, int length)
         {
             ThrowIfDisposed();
-            if (length == 0) return Array.Empty<byte>();
-            if (filePosition < 0) throw new ArgumentOutOfRangeException(nameof(filePosition));
-            if (length < 0) throw new ArgumentOutOfRangeException(nameof(length));
-            if (!CanRead) throw new InvalidOperationException("文件不支持读取操作。");
+            if (length == 0)
+                return Array.Empty<byte>();
+            if (filePosition < 0)
+                throw new ArgumentOutOfRangeException(nameof(filePosition));
+            if (length < 0)
+                throw new ArgumentOutOfRangeException(nameof(length));
+            if (!CanRead)
+                throw new InvalidOperationException("文件不支持读取操作。");
 
             // 如需强边界，可改用 Stream.DefaultLength；或允许短读由 ExecuteRead 实现处理
             var result = ExecuteRead(filePosition, length);
@@ -250,6 +256,7 @@ namespace ExtenderApp.Common.IO
                 throw new InvalidOperationException("文件不支持读取操作。");
 
             LastOperateTime = DateTime.Now;
+
             return ExecuteReadAsync(filePosition, length, token);
         }
 
@@ -388,12 +395,12 @@ namespace ExtenderApp.Common.IO
             LastOperateTime = DateTime.Now;
         }
 
-        public void Write(ByteBuffer buffer)
+        public void Write(ref ByteBuffer buffer)
         {
-            Write(0, buffer);
+            Write(0, ref buffer);
         }
 
-        public void Write(long filePosition, ByteBuffer buffer)
+        public void Write(long filePosition, ref ByteBuffer buffer)
         {
             if (buffer.Length == 0)
                 return;
@@ -402,15 +409,15 @@ namespace ExtenderApp.Common.IO
                 throw new ArgumentNullException(nameof(buffer));
             if (!CanWrite)
                 throw new InvalidOperationException("文件不支持写入操作。");
-            ExecuteWrite(filePosition, buffer);
+            ExecuteWrite(filePosition, ref buffer);
         }
 
-        public void Write(ByteBlock block)
+        public void Write(ref ByteBlock block)
         {
-            Write(0, block);
+            Write(0, ref block);
         }
 
-        public void Write(long filePosition, ByteBlock block)
+        public void Write(long filePosition, ref ByteBlock block)
         {
             if (block.Length == 0)
                 return;
@@ -419,7 +426,7 @@ namespace ExtenderApp.Common.IO
                 throw new ArgumentNullException(nameof(block));
             if (!CanWrite)
                 throw new InvalidOperationException("文件不支持写入操作。");
-            ExecuteWrite(filePosition, block);
+            ExecuteWrite(filePosition, ref block);
         }
 
         #endregion Write
@@ -543,9 +550,9 @@ namespace ExtenderApp.Common.IO
         /// </summary>
         protected abstract void ExecuteWrite(long filePosition, byte[] bytes, int bytesPosition, int bytesLength);
 
-        protected abstract void ExecuteWrite(long filePosition, ByteBuffer buffer);
+        protected abstract void ExecuteWrite(long filePosition, ref ByteBuffer buffer);
 
-        protected abstract void ExecuteWrite(long filePosition, ByteBlock block);
+        protected abstract void ExecuteWrite(long filePosition, ref ByteBlock block);
 
         /// <summary>
         /// 派生类同步写入实现：将 span 写入到 filePosition。

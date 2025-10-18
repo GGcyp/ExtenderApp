@@ -1,4 +1,5 @@
-﻿using System.Reflection;
+﻿using System.Buffers;
+using System.Reflection;
 using System.Threading.Tasks;
 using AppHost.Extensions.DependencyInjection;
 using ExtenderApp.Abstract;
@@ -45,9 +46,12 @@ namespace ExtenderApp.Common.Networks
             return services;
         }
 
-        public static int Send(this ILinker linker, ReadOnlyMemory<byte> memory)
+        public static int Send(this ILinker linker, in ReadOnlyMemory<byte> memory)
         {
-            return linker.Send(memory.Span);
+            ByteBuffer byteBuffer = new(memory);
+            int len = linker.Send(ref byteBuffer);
+            byteBuffer.Dispose();
+            return len;
         }
 
         public static int Send(this ILinker linker, ref ByteBlock block)
@@ -57,38 +61,25 @@ namespace ExtenderApp.Common.Networks
             return len;
         }
 
-        public static int Send(this ILinker linker, ref ByteBuffer buffer)
-        {
-            ByteBlock block = new((int)buffer.Remaining);
-            buffer.TryCopyTo(ref block);
-            int len = linker.Send(block);
-            buffer.ReadAdvance(len);
-            block.Dispose();
-            return len;
-        }
-
-        public static async ValueTask<int> SendAsync(this ILinker linker, ReadOnlySpan<byte> span, CancellationToken token)
+        public static Task<int> SendAsync(this ILinker linker, in ReadOnlySpan<byte> span, CancellationToken token = default)
         {
             ByteBlock block = new(span);
-            int len = await linker.SendAsync(block);
-            block.Dispose();
-            return len;
+            return linker.SendAsync(block, token).ContinueWith(t =>
+            {
+                int len = t.Result;
+                block.Dispose();
+                return len;
+            });
         }
 
-        public static async Task<int> SendAsync(this ILinker linker, ref ByteBlock block, CancellationToken token)
+        public static Task<int> SendAsync(this ILinker linker, in ByteBlock block, CancellationToken token)
         {
-            int len = await linker.SendAsync(block);
-            block.ReadAdvance(len);
-            return len;
+            return linker.SendAsync(new ReadOnlySequence<byte>(block.UnreadMemory), token);
         }
 
-        public static void Send(this ILinker linker, ref ByteBuffer buffer, CancellationToken token)
+        public static Task<int> SendAsync(this ILinker linker, in ByteBuffer buffer, CancellationToken token)
         {
-            ByteBlock block = new((int)buffer.Remaining);
-            buffer.TryCopyTo(ref block);
-            int len = linker.Send(block);
-            buffer.ReadAdvance(len);
-            block.Dispose();
+            return linker.SendAsync(buffer.Sequence.Slice(buffer.Position, buffer.CurrentSpanIndex), token);
         }
     }
 }
