@@ -10,42 +10,55 @@ namespace ExtenderApp.Common.Networks
     /// </summary>
     internal class UdpLinker : SocketLinker, IUdpLinker
     {
-        private EndPoint? endPoint;
-
-        public override EndPoint? RemoteEndPoint => endPoint;
+        public override EndPoint? RemoteEndPoint => Socket.RemoteEndPoint;
 
         public UdpLinker(Socket socket) : base(socket)
         {
         }
 
+        // 已连接UDP：设置默认远端（若未绑定会自动绑定本地端口）
         protected override ValueTask ExecuteConnectAsync(EndPoint remoteEndPoint, CancellationToken token)
         {
-            endPoint = remoteEndPoint;
+            Socket.Connect(remoteEndPoint); // UDP下为快速同步调用
             return ValueTask.CompletedTask;
         }
 
         protected override ValueTask ExecuteDisconnectAsync(CancellationToken token)
         {
-            endPoint = null;
+            try
+            {
+                // UDP下Disconnect清除默认远端
+                if (Socket.Connected)
+                    Socket.Disconnect(reuseSocket: false);
+            }
+            catch
+            {
+                // 某些平台/状态下可能抛异常，忽略即可
+            }
             return ValueTask.CompletedTask;
         }
 
         protected override ValueTask<SocketOperationResult> ExecuteReceiveAsync(AwaitableSocketEventArgs args, Memory<byte> memory, CancellationToken token)
         {
-            if (endPoint == null)
+            if (!Socket.Connected)
             {
                 return ValueTask.FromResult(new SocketOperationResult(CreateSocketException(SocketError.NotConnected)));
             }
-            return args.ReceiveFromAsync(Socket, memory, endPoint, token);
+            return args.ReceiveAsync(Socket, memory, token);
         }
 
         protected override ValueTask<SocketOperationResult> ExecuteSendAsync(AwaitableSocketEventArgs args, Memory<byte> memory, CancellationToken token)
         {
-            if (endPoint == null)
+            if (!Socket.Connected)
             {
                 return ValueTask.FromResult(new SocketOperationResult(CreateSocketException(SocketError.NotConnected)));
             }
-            return args.SendToAsync(Socket, memory, endPoint, token);
+            return args.SendAsync(Socket, memory, token);
+        }
+
+        public void Bind(EndPoint localEndPoint)
+        {
+            Socket.Bind(localEndPoint);
         }
 
         public SocketOperationResult SendTo(Memory<byte> memory, EndPoint endPoint)
@@ -54,7 +67,6 @@ namespace ExtenderApp.Common.Networks
             {
                 return new SocketOperationResult(CreateSocketException(SocketError.NoBufferSpaceAvailable));
             }
-
             if (endPoint == null)
             {
                 return new SocketOperationResult(CreateSocketException(SocketError.NotConnected));
@@ -77,7 +89,6 @@ namespace ExtenderApp.Common.Networks
             {
                 return ValueTask.FromResult(new SocketOperationResult(CreateSocketException(SocketError.NoBufferSpaceAvailable)));
             }
-
             if (endPoint == null)
             {
                 return ValueTask.FromResult(new SocketOperationResult(CreateSocketException(SocketError.NotConnected)));
@@ -86,7 +97,7 @@ namespace ExtenderApp.Common.Networks
             var args = GetArgs();
             try
             {
-                return args.SendToAsync(Socket, memory, endPoint, default);
+                return args.SendToAsync(Socket, memory, endPoint, token);
             }
             finally
             {

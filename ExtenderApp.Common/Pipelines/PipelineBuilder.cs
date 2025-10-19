@@ -88,22 +88,13 @@ namespace ExtenderApp.Common.Pipelines
             return this;
         }
 
-        /// <summary>
-        /// 构建最终的管道委托。
-        /// </summary>
-        /// <returns>可执行的 <see cref="PipelineDelegate{T}"/>。</returns>
-        /// <remarks>
-        /// - 若未注册任何步骤，返回一个空操作的委托（立即完成）。
-        /// - 为保证链条闭合，会在末尾追加一个终止委托（不再调用 <c>next</c>）。
-        /// - 多次调用 Build 会在现有链路上继续追加终止委托，建议仅调用一次。
-        /// </remarks>
-        public PipelineDelegate<T> Build()
+        public PipelineExecute<T> Build()
         {
             if (middleware == null)
-                return (context, next) => Task.CompletedTask;
+                return (context) => Task.CompletedTask;
 
             middleware = Run(middleware);
-            return middleware;
+            return (context) => middleware(context, () => Task.CompletedTask);
         }
 
         /// <summary>

@@ -1,6 +1,5 @@
 ﻿namespace ExtenderApp.Abstract
 {
-
     /// <summary>
     /// 泛型中间件接口：处理特定类型的管道上下文。
     /// </summary>

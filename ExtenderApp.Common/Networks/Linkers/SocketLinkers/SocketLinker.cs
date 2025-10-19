@@ -42,26 +42,60 @@ namespace ExtenderApp.Common.Networks
         protected override sealed ValueTask<SocketOperationResult> ExecuteSendAsync(Memory<byte> memory, CancellationToken token)
         {
             var args = _pool.Get();
-            try
+            var vt = ExecuteSendAsync(args, memory, token);
+
+            if (vt.IsCompletedSuccessfully)
             {
-                return ExecuteSendAsync(args, memory, token);
+                try
+                {
+                    var result = vt.Result; // 同步完成，安全读取
+                    _pool.Release(args);
+                    return new ValueTask<SocketOperationResult>(result);
+                }
+                catch
+                {
+                    _pool.Release(args);
+                    throw;
+                }
             }
-            finally
-            {
-                _pool.Release(args);
-            }
+
+            return AwaitAndReleaseAsync(vt, args);
         }
 
         protected override sealed ValueTask<SocketOperationResult> ExecuteReceiveAsync(Memory<byte> memory, CancellationToken token)
         {
             var args = _pool.Get();
+            var vt = ExecuteReceiveAsync(args, memory, token);
+
+            if (vt.IsCompletedSuccessfully)
+            {
+                try
+                {
+                    var result = vt.Result;
+                    _pool.Release(args);
+                    return new ValueTask<SocketOperationResult>(result);
+                }
+                catch
+                {
+                    _pool.Release(args);
+                    throw;
+                }
+            }
+
+            return AwaitAndReleaseAsync(vt, args);
+
+
+        }
+
+        private async ValueTask<SocketOperationResult> AwaitAndReleaseAsync(ValueTask<SocketOperationResult> pending, AwaitableSocketEventArgs a)
+        {
             try
             {
-                return ExecuteReceiveAsync(args, memory, token);
+                return await pending.ConfigureAwait(false);
             }
             finally
             {
-                _pool.Release(args);
+                _pool.Release(a);
             }
         }
 

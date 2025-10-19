@@ -13,6 +13,8 @@
     /// <seealso cref="IMiddleware{T}"/>
     public delegate Task PipelineDelegate<T>(T context, Func<Task> next) where T : IPipelineContext;
 
+    public delegate Task PipelineExecute<T>(T context) where T : IPipelineContext;
+
     /// <summary>
     /// 管道构建器接口：用于按顺序注册中间件或委托，并构建可执行的管道。
     /// </summary>
@@ -42,12 +44,12 @@
         /// <summary>
         /// 构建并返回最终可执行的管道委托。
         /// </summary>
-        /// <returns>可执行的 <see cref="PipelineDelegate{T}"/>。</returns>
+        /// <returns>可执行的 <see cref="PipelineExecute{T}"/>。</returns>
         /// <remarks>
         /// 未注册任何步骤时的行为（如返回空操作委托）由具体实现决定。
         /// 是否可重复调用也由实现决定，通常建议在配置完成后仅调用一次。
         /// </remarks>
-        PipelineDelegate<T> Build();
+        PipelineExecute<T> Build();
 
         /// <summary>
         /// 直接注册一个管道委托。

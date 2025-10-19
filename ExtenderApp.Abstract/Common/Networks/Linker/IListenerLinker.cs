@@ -45,6 +45,6 @@ namespace ExtenderApp.Abstract
         /// </remarks>
         /// <exception cref="InvalidOperationException">未绑定即开始监听，或实现不允许的状态。实际限制视实现而定。</exception>
         /// <exception cref="SocketException">底层开始监听失败。</exception>
-        void Listen(int backlog);
+        void Listen(int backlog = 10);
     }
 }

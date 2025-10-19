@@ -534,29 +534,31 @@ namespace ExtenderApp.Common.Networks
 
         #region SocketOperationResult
 
-        /// <summary>
-        /// 获取结果（由 await 基础设施调用）。如该轮次以异常/取消完成，将在此处抛出。
-        /// </summary>
-        SocketOperationResult IValueTaskSource<SocketOperationResult>.GetResult(short token) => vts.GetResult(token);
+        SocketOperationResult IValueTaskSource<SocketOperationResult>.GetResult(short token)
+            => vts.GetResult(token);
+
+        ValueTaskSourceStatus IValueTaskSource<SocketOperationResult>.GetStatus(short token)
+            => vts.GetStatus(token);
+
+        void IValueTaskSource<SocketOperationResult>.OnCompleted(
+            Action<object?> continuation, object? state, short token, ValueTaskSourceOnCompletedFlags flags)
+            => vts.OnCompleted(continuation, state, token, flags);
 
         #endregion SocketOperationResult
 
         #region SocketAccept
 
-        Socket IValueTaskSource<Socket>.GetResult(short token) => vtsAccept.GetResult(token);
+        Socket IValueTaskSource<Socket>.GetResult(short token)
+            => vtsAccept.GetResult(token);
+
+        ValueTaskSourceStatus IValueTaskSource<Socket>.GetStatus(short token)
+            => vtsAccept.GetStatus(token);
+
+        void IValueTaskSource<Socket>.OnCompleted(
+            Action<object?> continuation, object? state, short token, ValueTaskSourceOnCompletedFlags flags)
+            => vtsAccept.OnCompleted(continuation, state, token, flags);
 
         #endregion SocketAccept
-
-        /// <summary>
-        /// 获取当前状态（由 await 基础设施调用）。
-        /// </summary>
-        public ValueTaskSourceStatus GetStatus(short token) => vts.GetStatus(token);
-
-        /// <summary>
-        /// 注册完成延续（由 await 基础设施调用）。
-        /// </summary>
-        public void OnCompleted(Action<object?> continuation, object? state, short token, ValueTaskSourceOnCompletedFlags flags)
-            => vts.OnCompleted(continuation, state, token, flags);
 
         #endregion Awaitable
 

@@ -14,11 +14,7 @@ namespace ExtenderApp.Common
         public bool NoDelay
         {
             get => Socket.NoDelay;
-            set => Socket.NoDelay = NoDelay;
-        }
-
-        public TcpLinker() : this(new Socket(SocketType.Raw, ProtocolType.IP))
-        {
+            set => Socket.NoDelay = value;
         }
 
         public TcpLinker(Socket socket) : base(socket)

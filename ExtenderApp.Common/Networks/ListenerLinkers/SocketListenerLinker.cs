@@ -107,22 +107,25 @@ namespace ExtenderApp.Common.Networks
         /// </remarks>
         /// <exception cref="InvalidOperationException">未调用 <see cref="Bind(EndPoint)"/> 即开始监听，或监听已开始。</exception>
         /// <exception cref="SocketException">底层开始监听失败。</exception>
-        public override void Listen(int backlog = 10)
+        public override void Listen(int backlog)
         {
             if (!_isBinded)
                 throw new InvalidOperationException("Socket未绑定，无法监听。");
 
-            // 幂等处理：只允许启动一次
+            // 仅支持 TCP 监听，UDP 不支持 Listen/Accept
+            if (_listenerSocket.SocketType != SocketType.Stream || _listenerSocket.ProtocolType != ProtocolType.Tcp)
+                throw new NotSupportedException("SocketListenerLinker 仅支持 TCP（Stream）套接字，UDP 不支持 Listen/Accept。");
+
             if (Interlocked.Exchange(ref _started, 1) == 1)
                 return;
 
-            _listenerSocket.Listen(backlog);
+            _listenerSocket.Listen(backlog <= 0 ? 10 : backlog);
 
             var tokenSource = new CancellationTokenSource();
             _cts = tokenSource;
             var token = tokenSource.Token;
 
-            int acceptConcurrency = AcceptConcurrency; // 使用配置的并发度
+            int acceptConcurrency = AcceptConcurrency;
             _acceptTasks = new Task[acceptConcurrency];
             for (int i = 0; i < acceptConcurrency; i++)
             {
@@ -155,55 +158,41 @@ namespace ExtenderApp.Common.Networks
         private async Task AcceptWorkerAsync(CancellationToken token)
         {
             // 持续挂起 Accept，接入后通过事件通知
+            var args = _pool.Get();
             while (!token.IsCancellationRequested)
             {
                 // 等待恢复后再开始下一轮 Accept
                 await _pauseGate.WaitAsync().ConfigureAwait(false);
                 if (token.IsCancellationRequested) break;
 
-                var args = _pool.Get();
                 Socket? accepted = null;
                 try
                 {
-                    try
-                    {
-                        accepted = await args.AcceptAsync(_listenerSocket, token).ConfigureAwait(false);
-                    }
-                    catch (OperationCanceledException)
-                    {
-                        break;
-                    }
-                    catch (ObjectDisposedException)
-                    {
-                        break;
-                    }
-                    catch (SocketException)
-                    {
-                        // 监听Socket可能短暂异常，继续尝试
-                        continue;
-                    }
-
-                    if (accepted is null)
-                        continue;
-
-                    // 将已接入的 Socket 包装为 Linker，并通过事件发布
-                    var linker = linkerFactory.CreateLinker(accepted);
-
-                    try
-                    {
-                        // 事件只作通知钩子，重活请移交到调用方
-                        RaiseOnAccept(linker);
-                    }
-                    catch
-                    {
-                        // 隔离事件处理器异常，避免中断接入循环
-                    }
+                    accepted = await args.AcceptAsync(_listenerSocket, token).ConfigureAwait(false);
                 }
-                finally
+                catch (SocketException)
                 {
-                    _pool.Release(args);
+                    // 监听Socket可能短暂异常，继续尝试
+                    continue;
+                }
+
+                if (accepted is null)
+                    continue;
+
+                // 将已接入的 Socket 包装为 Linker，并通过事件发布
+                var linker = linkerFactory.CreateLinker(accepted);
+
+                try
+                {
+                    // 事件只作通知钩子，重活请移交到调用方
+                    RaiseOnAccept(linker);
+                }
+                catch
+                {
+                    // 隔离事件处理器异常，避免中断接入循环
                 }
             }
+            _pool.Release(args);
         }
 
         /// <inheritdoc />
