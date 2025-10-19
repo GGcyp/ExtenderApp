@@ -1,19 +1,12 @@
 ﻿using ExtenderApp.Data;
 using ExtenderApp.Abstract;
 using ExtenderApp.ViewModels;
-using ExtenderApp.Common;
-using System.Security.Cryptography;
-using System.Net.Sockets;
-using System.Net;
-using ExtenderApp.Common.Networks;
-using System.Buffers.Binary;
-using System.Text;
 
 namespace ExtenderApp.Test
 {
     public class TestMainViewModel : ExtenderAppViewModel
     {
-        public TestMainViewModel(IServiceStore serviceStore, IBinaryParser binaryParser) : base(serviceStore)
+        public TestMainViewModel(IServiceStore serviceStore) : base(serviceStore)
         {
             var info = CreatTestExpectLocalFileInfo("text");
         }

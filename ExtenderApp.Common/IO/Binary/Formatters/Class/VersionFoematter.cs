@@ -9,14 +9,14 @@ namespace ExtenderApp.Common.IO.Binary.Formatters
     /// </summary>
     internal class VersionFoematter : ResolverFormatter<Version>
     {
-        private readonly IBinaryFormatter<string> _string;
+        private readonly IBinaryFormatter<int> _int;
 
         public VersionFoematter(IBinaryFormatterResolver resolver) : base(resolver)
         {
-            _string = GetFormatter<string>();
+            _int = GetFormatter<int>();
         }
 
-        public override int DefaultLength => _string.DefaultLength;
+        public override int DefaultLength => _int.DefaultLength * 4;
 
         public override Version Deserialize(ref ByteBuffer buffer)
         {
@@ -25,9 +25,13 @@ namespace ExtenderApp.Common.IO.Binary.Formatters
                 return null;
             }
 
-            var version = _string.Deserialize(ref buffer);
+            var major = _int.Deserialize(ref buffer);
+            var minor = _int.Deserialize(ref buffer);
+            var build = _int.Deserialize(ref buffer);
+            var revision = _int.Deserialize(ref buffer);
 
-            return new Version(version);
+            //int major, int minor, int build, int revision
+            return new Version(major, minor, build, revision);
         }
 
         public override void Serialize(ref ByteBuffer buffer, Version value)
@@ -37,7 +41,10 @@ namespace ExtenderApp.Common.IO.Binary.Formatters
                 WriteNil(ref buffer);
                 return;
             }
-            _string.Serialize(ref buffer, value.ToString());
+            _int.Serialize(ref buffer, value.Major);
+            _int.Serialize(ref buffer, value.Minor);
+            _int.Serialize(ref buffer, value.Build);
+            _int.Serialize(ref buffer, value.Revision);
         }
 
         public override long GetLength(Version value)
@@ -47,7 +54,10 @@ namespace ExtenderApp.Common.IO.Binary.Formatters
                 return 1;
             }
 
-            return _string.GetLength(value.ToString());
+            return _int.GetLength(value.Major) +
+                   _int.GetLength(value.Minor) +
+                   _int.GetLength(value.Build) +
+                   _int.GetLength(value.Revision);
         }
     }
 }

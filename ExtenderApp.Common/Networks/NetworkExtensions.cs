@@ -1,6 +1,5 @@
 ﻿using AppHost.Extensions.DependencyInjection;
 using ExtenderApp.Abstract;
-using ExtenderApp.Common.Networks.Limiters;
 using ExtenderApp.Common.Networks.LinkClients;
 
 namespace ExtenderApp.Common.Networks
@@ -21,12 +20,6 @@ namespace ExtenderApp.Common.Networks
             services.AddUdpLinker();
             services.AddLinkerClient();
             services.AddFileSegmenter();
-            services.AddLimiter();
-            services.Configuration<IBinaryFormatterStore>(s =>
-            {
-                s.Add<ResultDto, ResultDtoFormatter>();
-                s.Add<ErrorDto, ErrorDtoFormatter>();
-            });
             return services;
         }
     }

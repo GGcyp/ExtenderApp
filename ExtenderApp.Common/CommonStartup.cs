@@ -4,6 +4,7 @@ using ExtenderApp.Common.Buffers;
 using ExtenderApp.Common.Caches;
 using ExtenderApp.Common.Hash;
 using ExtenderApp.Common.Networks;
+using ExtenderApp.Common.Pipelines;
 
 namespace ExtenderApp.Common
 {
@@ -20,6 +21,7 @@ namespace ExtenderApp.Common
             services.AddNetwork();
             services.AddHash();
             services.AddCache();
+            services.AddPipeline();
         }
     }
 }

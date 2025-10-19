@@ -82,7 +82,9 @@ namespace ExtenderApp.Data
                 throw new ArgumentNullException(nameof(pool));
 
             _pool = pool;
-            array = _pool.Rent(capacity);
+            if (capacity > 0) array = _pool.Rent(capacity);
+            else array = array = Array.Empty<T>();
+
             Consumed = 0;
             Length = 0;
         }

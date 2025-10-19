@@ -167,9 +167,14 @@ namespace ExtenderApp.Data
         /// 追加单个元素。
         /// </summary>
         /// <param name="value">要追加的元素。</param>
-        public void Write(in byte value)
+        public void Write(byte value)
         {
             _buffer.Write(value);
+        }
+
+        public void Write(byte[] bytes)
+        {
+            _buffer.Write(bytes.AsMemory());
         }
 
         /// <summary>

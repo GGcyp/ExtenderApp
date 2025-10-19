@@ -800,7 +800,7 @@ namespace ExtenderApp.Common.IO.Binary
 
             var outBuffer = _bufferFactory.Create();
             ToLz4(buffer.Sequence, ref outBuffer, compression);
-            fileOperate.Write(outBuffer);
+            fileOperate.Write(ref outBuffer);
 
             outBuffer.Dispose();
         }
@@ -826,7 +826,7 @@ namespace ExtenderApp.Common.IO.Binary
             var buffer = new ByteBuffer(block);
             var outBuffer = _bufferFactory.Create();
             ToLz4(buffer.Sequence, ref outBuffer, compression);
-            fileOperate.Write(outBuffer);
+            fileOperate.Write(ref outBuffer);
 
             outBuffer.Dispose();
             buffer.Dispose();
@@ -863,7 +863,7 @@ namespace ExtenderApp.Common.IO.Binary
                 var outBuffer = _bufferFactory.Create();
                 ToLz4(buffer.Sequence, ref outBuffer, compression);
 
-                fileOperate.Write(outBuffer);
+                fileOperate.Write(ref outBuffer);
                 buffer.Dispose();
                 outBuffer.Dispose();
             }, token);
