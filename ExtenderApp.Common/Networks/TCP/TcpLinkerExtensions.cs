@@ -12,7 +12,19 @@ namespace ExtenderApp.Common.Networks
         /// <returns>服务集合实例</returns>
         public static IServiceCollection AddTcpLinker(this IServiceCollection services)
         {
-            services.AddILinker<ITcpLinker, TcpLinker, TcpLinkerFactory>();
+            services.AddSingleton<ILinkerFactory<ITcpLinker>, TcpLinkerFactory>();
+            services.AddSingleton<ITcpListenerLinkerFactory, TcpListenerLinkerFactory>();
+
+            services.AddTransient<ITcpLinker>(provider =>
+            {
+                return provider.GetRequiredService<ILinkerFactory<ITcpLinker>>().CreateLinker();
+            });
+
+            // 每次解析 IListenerLinker<TILinker> 时通过工厂创建
+            services.AddTransient<ITcpListenerLinker>(provider =>
+            {
+                return provider.GetRequiredService<ITcpListenerLinkerFactory>().CreateListenerLinker();
+            });
             return services;
         }
     }

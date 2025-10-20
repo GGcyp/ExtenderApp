@@ -8,13 +8,15 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\AppHost.Builder\AppHost.Builder.csproj" />
-    <ProjectReference Include="..\ExtenderApp.Abstract\ExtenderApp.Abstract.csproj" />
-    <ProjectReference Include="..\ExtenderApp.Data\ExtenderApp.Data.csproj" />
+    <Compile Remove="Networks\Http\**" />
+    <EmbeddedResource Remove="Networks\Http\**" />
+    <None Remove="Networks\Http\**" />
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Networks\Http\" />
+    <ProjectReference Include="..\AppHost.Builder\AppHost.Builder.csproj" />
+    <ProjectReference Include="..\ExtenderApp.Abstract\ExtenderApp.Abstract.csproj" />
+    <ProjectReference Include="..\ExtenderApp.Data\ExtenderApp.Data.csproj" />
   </ItemGroup>
 
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">

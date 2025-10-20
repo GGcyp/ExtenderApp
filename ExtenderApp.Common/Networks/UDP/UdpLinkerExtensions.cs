@@ -16,7 +16,11 @@ namespace ExtenderApp.Common
         /// <returns>返回IServiceCollection实例。</returns>
         public static IServiceCollection AddUdpLinker(this IServiceCollection services)
         {
-            services.AddILinker<IUdpLinker, UdpLinker, UdpLinkerFactory>();
+            services.AddSingleton<ILinkerFactory<IUdpLinker>, UdpLinkerFactory>();
+            services.AddTransient<IUdpLinker>(provider =>
+            {
+                return provider.GetRequiredService<ILinkerFactory<IUdpLinker>>().CreateLinker();
+            });
             return services;
         }
     }

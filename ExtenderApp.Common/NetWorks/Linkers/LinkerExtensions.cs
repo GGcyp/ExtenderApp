@@ -27,52 +27,6 @@ namespace ExtenderApp.Common.Networks
         }
 
         /// <summary>
-        /// 以约定的生命周期将链接器与其工厂注册到 DI 容器。
-        /// </summary>
-        /// <typeparam name="TILinker">
-        /// 对外暴露的链接接口类型，必须实现 <see cref="ILinker"/>。
-        /// </typeparam>
-        /// <typeparam name="TLinker">
-        /// 链接器具体实现类型，需实现 <typeparamref name="TILinker"/>。
-        /// </typeparam>
-        /// <typeparam name="TLinkerFactory">
-        /// 链接器工厂类型，需实现 <see cref="ILinkerFactory{T}"/>。
-        /// </typeparam>
-        /// <typeparam name="TListenerLinkerFactory">
-        /// 监听器链接器工厂类型，需实现 <see cref="IListenerLinkerFactory{T}"/>。
-        /// </typeparam>
-        /// <param name="services">服务集合。</param>
-        /// <returns>原服务集合（便于链式调用）。</returns>
-        /// <remarks>
-        /// 生命周期约定：
-        /// - 工厂： <c>Singleton</c>； <br/>
-        /// - ILinker 实例：
-        ///   <c>Transient</c>（每次解析创建新实例）； <br/>
-        /// - IListenerLinker 实例： <c>Transient</c>（每次解析创建新实例）。
-        /// </remarks>
-        public static IServiceCollection AddILinker<TILinker, TLinker, TLinkerFactory>(this IServiceCollection services)
-            where TILinker : ILinker
-            where TLinker : TILinker
-            where TLinkerFactory : class, ILinkerFactory<TILinker>
-        {
-            services.AddSingleton<ILinkerFactory<TILinker>, TLinkerFactory>();
-            services.AddSingleton<IListenerLinkerFactory<TILinker>, ListenerLinkerFactory<TILinker>>();
-
-            // 每次解析 TILinker 时通过工厂创建
-            services.AddTransient<TILinker>(provider =>
-            {
-                return provider.GetRequiredService<ILinkerFactory<TILinker>>().CreateLinker();
-            });
-
-            // 每次解析 IListenerLinker<TILinker> 时通过工厂创建
-            services.AddTransient<IListenerLinker<TILinker>>(provider =>
-            {
-                return provider.GetRequiredService<IListenerLinkerFactory<TILinker>>().CreateListenerLinker();
-            });
-            return services;
-        }
-
-        /// <summary>
         /// 同步发送一段只读内存数据。
         /// </summary>
         /// <param name="linker">目标链接。</param>

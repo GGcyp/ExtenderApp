@@ -7,12 +7,11 @@ using ExtenderApp.Common.ObjectPools;
 namespace ExtenderApp.Common.Networks
 {
     /// <summary>
-    /// 基于 <see cref="Socket"/> 的端口监听器实现。
-    /// 通过事件 <see cref="IListenerLinker{T}.OnAccept"/> 将新连接以 <typeparamref name="T"/> 的形式解耦发布。
+    /// 基于 <see cref="Socket"/> 的 TCP 监听器实现。
+    /// 通过 <see cref="ITcpListenerLinker.OnAccept"/> 事件将新连接以 <see cref="ITcpLinker"/> 的形式发布。
     /// 支持配置并行 Accept 数量（<see cref="AcceptConcurrency"/>）与运行时暂停/恢复（<see cref="Pause"/> / <see cref="Resume"/>）。
     /// </summary>
-    /// <typeparam name="T">连接器类型，必须实现 <see cref="ILinker"/>。</typeparam>
-    internal class SocketListenerLinker<T> : ListenerLinker<T> where T : ILinker
+    internal class SocketTcpListenerLinker : TcpListenerLinker
     {
         private static readonly ObjectPool<AwaitableSocketEventArgs> _pool
             = ObjectPool.CreateDefaultPool<AwaitableSocketEventArgs>();
@@ -58,12 +57,12 @@ namespace ExtenderApp.Common.Networks
         public override EndPoint? ListenerPoint => _listenerSocket.LocalEndPoint;
 
         /// <summary>
-        /// 使用指定监听 Socket 与链接器工厂构造监听器。
+        /// 使用指定监听 <see cref="Socket"/> 与链接器工厂构造监听器。
         /// </summary>
         /// <param name="socket">处于可绑定/监听状态的 <see cref="Socket"/>。</param>
-        /// <param name="linkerFactory">用于将已接入的 <see cref="Socket"/> 包装为 <typeparamref name="T"/> 的工厂。</param>
+        /// <param name="linkerFactory">用于将已接入的 <see cref="Socket"/> 包装为 <see cref="ITcpLinker"/> 的工厂。</param>
         /// <exception cref="ArgumentNullException"><paramref name="socket"/> 或 <paramref name="linkerFactory"/> 为 null。</exception>
-        public SocketListenerLinker(Socket socket, ILinkerFactory<T> linkerFactory) : base(linkerFactory)
+        public SocketTcpListenerLinker(Socket socket, ILinkerFactory<ITcpLinker> linkerFactory) : base(linkerFactory)
         {
             _listenerSocket = socket ?? throw new ArgumentNullException(nameof(socket));
         }
@@ -75,7 +74,7 @@ namespace ExtenderApp.Common.Networks
         /// <param name="linkerFactory">链接器工厂。</param>
         /// <param name="acceptConcurrency">并行 Accept 数量（≥1）。</param>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="acceptConcurrency"/> 小于 1。</exception>
-        public SocketListenerLinker(Socket socket, ILinkerFactory<T> linkerFactory, int acceptConcurrency) : this(socket, linkerFactory)
+        public SocketTcpListenerLinker(Socket socket, ILinkerFactory<ITcpLinker> linkerFactory, int acceptConcurrency) : this(socket, linkerFactory)
         {
             AcceptConcurrency = acceptConcurrency;
         }
@@ -101,7 +100,7 @@ namespace ExtenderApp.Common.Networks
         /// <param name="backlog">监听队列长度（传递给 <see cref="Socket.Listen(int)"/>）。</param>
         /// <remarks>
         /// - 幂等：多次调用仅首次生效。<br/>
-        /// - 接入通知：每当有新连接接入，将通过 <see cref="IListenerLinker{T}.OnAccept"/> 事件发布一个 <typeparamref name="T"/> 实例。<br/>
+        /// - 接入通知：每当有新连接接入，将通过 <see cref="ITcpListenerLinker.OnAccept"/> 发布一个 <see cref="ITcpLinker"/> 实例。<br/>
         /// - 并行度：Accept 并行数量由 <see cref="AcceptConcurrency"/> 决定，需在启动前设置。<br/>
         /// - 暂停/恢复：可通过 <see cref="Pause"/> 与 <see cref="Resume"/> 控制是否发起新的 Accept。
         /// </remarks>
@@ -254,17 +253,11 @@ namespace ExtenderApp.Common.Networks
             /// <summary>
             /// 异步等待闸门被打开。
             /// </summary>
-            /// <returns>当闸门打开时完成的任务。</returns>
-            /// <remarks>
-            /// - 若当前已为打开状态，返回的任务已完成；
-            /// - 建议使用 await 进行异步等待，避免阻塞线程。
-            /// </remarks>
             public Task WaitAsync() => _tcs.Task;
 
             /// <summary>
             /// 打开闸门：释放所有当前等待者，并使后续调用 <see cref="WaitAsync"/> 的等待者直接通过。
             /// </summary>
-            /// <remarks>该方法为幂等操作，多次调用影响等价于一次。</remarks>
             public void Set()
             {
                 _tcs.TrySetResult(true);
@@ -273,11 +266,6 @@ namespace ExtenderApp.Common.Networks
             /// <summary>
             /// 关闭闸门：后续调用 <see cref="WaitAsync"/> 的等待者将被阻塞，直到下次 <see cref="Set"/>。
             /// </summary>
-            /// <remarks>
-            /// - 仅当当前闸门处于“打开状态”（任务已完成）时重置；
-            /// - 使用 CAS（Compare-Exchange）避免并发竞争；
-            /// - 不会影响已经顺利通过的等待者。
-            /// </remarks>
             public void Reset()
             {
                 while (true)
