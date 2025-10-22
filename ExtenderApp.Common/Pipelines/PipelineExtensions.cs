@@ -1,5 +1,6 @@
 ﻿using AppHost.Extensions.DependencyInjection;
 using ExtenderApp.Abstract;
+using ExtenderApp.Data;
 
 namespace ExtenderApp.Common.Pipelines
 {
@@ -10,16 +11,24 @@ namespace ExtenderApp.Common.Pipelines
             services.AddTransient(typeof(IPipelineBuilder<>), (p, o) =>
             {
                 if (o is not Type[] types || types.Length > 1)
-                    return null;
+                    return null!;
 
                 var pipelineBuilderType = typeof(PipelineBuilder<>).MakeGenericType(types);
-                return Activator.CreateInstance(pipelineBuilderType, p);
+                return Activator.CreateInstance(pipelineBuilderType, p)!;
+            });
+            services.AddTransient(typeof(IPipelineBuilder<,>), (p, o) =>
+            {
+                if (o is not Type[] types || types.Length > 2)
+                    return null!;
+
+                var pipelineBuilderType = typeof(PipelineBuilder<,>).MakeGenericType(types);
+                return Activator.CreateInstance(pipelineBuilderType, p)!;
             });
             return services;
         }
 
         public static IPipelineBuilder<T> CreatePipelineBuilder<T>(this IServiceProvider serviceProvider)
-            where T : IPipelineContext
+            where T : PipelineContext
         {
             return new PipelineBuilder<T>(serviceProvider);
         }

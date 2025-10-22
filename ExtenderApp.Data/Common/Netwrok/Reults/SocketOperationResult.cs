@@ -12,6 +12,8 @@ namespace ExtenderApp.Data
     /// </remarks>
     public struct SocketOperationResult
     {
+        public static readonly SocketOperationResult Empty = new SocketOperationResult(0, null, null, default);
+
         /// <summary>
         /// 实际传输的字节数。
         /// 对于接收操作，值为 0 通常表示对端已优雅关闭连接。
@@ -40,6 +42,10 @@ namespace ExtenderApp.Data
         /// 当前返回值的结果状态码。
         /// </summary>
         public ResultCode Code => SocketError == null ? ResultCode.Success : ResultCode.Failed;
+
+        public bool IsSuccess => SocketError == null;
+
+        public bool IsEmpty => BytesTransferred == 0 && RemoteEndPoint == null && SocketError == null;
 
         public SocketOperationResult(SocketException? socketError) : this(0, null, socketError, default)
         {

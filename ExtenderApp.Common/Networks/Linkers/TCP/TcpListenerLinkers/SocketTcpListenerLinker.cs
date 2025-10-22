@@ -178,7 +178,7 @@ namespace ExtenderApp.Common.Networks
                 if (accepted is null)
                     continue;
 
-                // 将已接入的 Socket 包装为 Linker，并通过事件发布
+                // 将已接入的 Socket 包装为 _linker，并通过事件发布
                 var linker = linkerFactory.CreateLinker(accepted);
 
                 try

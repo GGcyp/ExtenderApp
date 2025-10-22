@@ -73,12 +73,12 @@ namespace ExtenderApp.ViewModels
     //    public event NotifyCollectionChangedEventHandler? CollectionChanged;
 
     //    public void OnCollectionChanged(NotifyCollectionChangedEventArgs action) =>
-    //        CollectionChanged?.Invoke(this, action);
+    //        CollectionChanged?.InvokePlugins(this, action);
 
     //    public event PropertyChangedEventHandler? PropertyChanged;
 
     //    public void OnPropertyChanged(string name) =>
-    //        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+    //        PropertyChanged?.InvokePlugins(this, new PropertyChangedEventArgs(name));
 
     //    #endregion
 

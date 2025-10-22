@@ -1,5 +1,6 @@
 ﻿using AppHost.Extensions.DependencyInjection;
 using ExtenderApp.Abstract;
+using ExtenderApp.Common.Networks.Formatters;
 using ExtenderApp.Common.Networks.LinkClients;
 
 namespace ExtenderApp.Common.Networks
@@ -16,6 +17,7 @@ namespace ExtenderApp.Common.Networks
         /// <returns>服务集合</returns>
         public static IServiceCollection AddNetwork(this IServiceCollection services)
         {
+            services.AddFormatter();
             services.AddLinker();
             services.AddUdpLinker();
             services.AddLinkerClient();

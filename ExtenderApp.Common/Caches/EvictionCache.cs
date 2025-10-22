@@ -1,4 +1,5 @@
 ﻿using System.Collections.Concurrent;
+using ExtenderApp.Data;
 
 namespace ExtenderApp.Common.Caches
 {

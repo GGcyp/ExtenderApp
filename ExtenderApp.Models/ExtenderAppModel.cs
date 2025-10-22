@@ -2,6 +2,7 @@
 using System.Runtime.CompilerServices;
 using ExtenderApp.Abstract;
 using ExtenderApp.Common;
+using ExtenderApp.Data;
 
 namespace ExtenderApp.Models
 {

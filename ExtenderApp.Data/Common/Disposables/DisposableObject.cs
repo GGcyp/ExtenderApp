@@ -1,6 +1,6 @@
 ﻿using System.Runtime.CompilerServices;
 
-namespace ExtenderApp.Common
+namespace ExtenderApp.Data
 {
     /// <summary>
     /// 一个实现了IDisposable接口的抽象类，用于管理可释放资源。

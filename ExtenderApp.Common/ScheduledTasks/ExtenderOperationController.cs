@@ -1,4 +1,6 @@
-﻿namespace ExtenderApp.Common.ScheduledTasks
+﻿using ExtenderApp.Data;
+
+namespace ExtenderApp.Common.ScheduledTasks
 {
     /// <summary>
     /// 操作控制器（可暂停/恢复/停止，带定时调度，线程安全）。

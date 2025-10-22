@@ -11,7 +11,7 @@ namespace ExtenderApp.Data
     /// - 事件线程：<see cref="OnPeriod"/> 在线程池计时器回调线程上触发，请避免在回调中做耗时/阻塞操作。<br/>
     /// - 生命周期：请在不再使用时调用 <see cref="Dispose"/> 或配合 using 释放，避免定时器泄漏。
     /// </remarks>
-    public sealed class ValueCounter : IDisposable
+    public struct ValueCounter : IDisposable
     {
         /// <summary>
         /// 当前周期累计值（本周期内通过 <see cref="Increment(long)"/> 累计的总和）。

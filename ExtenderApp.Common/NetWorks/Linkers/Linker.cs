@@ -5,7 +5,7 @@ using ExtenderApp.Data;
 namespace ExtenderApp.Common.Networks
 {
     /// <summary>
-    /// 抽象基类 Linker，实现 ILinker，提供统一的发送/接收/连接/断开模板与并发门控。
+    /// 抽象基类 _linker，实现 ILinker，提供统一的发送/接收/连接/断开模板与并发门控。
     /// </summary>
     public abstract class Linker : DisposableObject, ILinker
     {

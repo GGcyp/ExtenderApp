@@ -507,7 +507,7 @@ namespace ExtenderApp.Media
         //                // 读取完毕，退出循环
         //                if (result == ffmpeg.AVERROR_EOF)
         //                {
-        //                    //Dispatcher.Invoke(() =>
+        //                    //Dispatcher.InvokePlugins(() =>
         //                    //{
         //                    //    statusText.Text = "播放完成";
         //                    //});
@@ -541,7 +541,7 @@ namespace ExtenderApp.Media
         //                long currentTime = formatContext->streams[_videoStreamIndex]->index;
         //                Float64 position = (Float64)currentTime / _videoDuration;
 
-        //                Dispatcher.Invoke(() =>
+        //                Dispatcher.InvokePlugins(() =>
         //                {
         //                    //positionSlider.Value = position;
         //                    UpdateTimeDisplay(currentTime);
@@ -554,7 +554,7 @@ namespace ExtenderApp.Media
         //    }
         //    catch (Exception ex)
         //    {
-        //        //Dispatcher.Invoke(() =>
+        //        //Dispatcher.InvokePlugins(() =>
         //        //{
         //        //    MessageBox.Show($"播放错误: {ex.Message}");
         //        //    statusText.Text = $"错误: {ex.Message}";
@@ -564,7 +564,7 @@ namespace ExtenderApp.Media
         //    {
         //        if (!cancellationToken.IsCancellationRequested)
         //        {
-        //            Dispatcher.Invoke(StopPlayback);
+        //            Dispatcher.InvokePlugins(StopPlayback);
         //        }
         //    }
         //}
@@ -607,7 +607,7 @@ namespace ExtenderApp.Media
         //            rgbFrame->data, rgbFrame->linesize);
 
         //        // 在UI线程更新图像
-        //        Dispatcher.Invoke(() =>
+        //        Dispatcher.InvokePlugins(() =>
         //        {
         //            _bitmap.WritePixels(
         //                new Int32Rect(0, 0, _videoWidth, _videoHeight),
@@ -659,7 +659,7 @@ namespace ExtenderApp.Media
         //    }
 
         //    //// 更新UI
-        //    //Dispatcher.Invoke(() =>
+        //    //Dispatcher.InvokePlugins(() =>
         //    //{
         //    //    positionSlider.Value = 0;
         //    //    UpdateTimeDisplay(0);
@@ -717,7 +717,7 @@ namespace ExtenderApp.Media
         //        string errorMessage = Marshal.PtrToStringAnsi(ptr);
         //        Marshal.FreeHGlobal(ptr);
 
-        //        Dispatcher.Invoke(() =>
+        //        Dispatcher.InvokePlugins(() =>
         //        {
         //            MessageBox.Show($"{message}: {errorMessage} (错误代码: {errorCode})");
         //            //statusText.Text = $"错误: {errorMessage}";

@@ -383,7 +383,7 @@ namespace ExtenderApp.Data
                 return false;
 
             block.Ensure((int)Length);
-            while (End)
+            while (!End)
             {
                 var span = UnreadSpan;
                 block.Write(span);
@@ -480,7 +480,7 @@ namespace ExtenderApp.Data
                 return Array.Empty<T>();
 
             UpdateReader();
-            var array = new T[Length];
+            var array = new T[(int)Length];
             long consumed = Consumed;
             reader.Rewind(consumed);
             TryCopyTo(array);

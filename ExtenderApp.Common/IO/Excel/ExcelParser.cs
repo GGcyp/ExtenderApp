@@ -32,7 +32,7 @@ namespace ExtenderApp.Common.IO
         //            table.Add(sheet.Name, ReadToExcelTable(sheet));
         //        }
         //    }
-        //    processAction?.Invoke(table);
+        //    processAction?.InvokePlugins(table);
         //}
 
         //private Table<string> ReadToExcelTable(ExcelWorksheet worksheet)

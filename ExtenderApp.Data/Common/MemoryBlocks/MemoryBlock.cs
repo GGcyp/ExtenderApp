@@ -217,6 +217,9 @@ namespace ExtenderApp.Data
         /// <param name="memory">要写入的数据内存。</param>
         public void Write(ReadOnlyMemory<T> memory)
         {
+            if (memory.IsEmpty || memory.Length == 0)
+                return;
+
             Write(memory.Span);
         }
 

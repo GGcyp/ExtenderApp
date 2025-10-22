@@ -19,7 +19,14 @@ namespace ExtenderApp.Common.IO.Binary
     /// </summary>
     internal static class BinaryParserExtensions
     {
-        private static readonly MethodInfo _getFormatterMethodInfo = typeof(IBinaryFormatterResolver).GetMethod("GetFormatter");
+        private static readonly MethodInfo _getFormatterMethodInfo = 
+            typeof(IBinaryFormatterResolver)
+            .GetMethods()
+            .Single(m =>
+                m.Name == "GetFormatter" &&
+                m.IsGenericMethodDefinition &&
+                m.GetGenericArguments().Length == 1 &&
+                m.GetParameters().Length == 0);
 
         /// <summary>
         /// 为服务集合添加二进制格式化器。

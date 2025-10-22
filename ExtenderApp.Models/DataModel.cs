@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel;
 using System.Runtime.CompilerServices;
-using ExtenderApp.Common;
+using ExtenderApp.Data;
 
 namespace ExtenderApp.Models
 {

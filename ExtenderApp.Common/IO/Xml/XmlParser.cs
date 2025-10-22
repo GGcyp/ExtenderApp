@@ -35,7 +35,7 @@ namespace ExtenderApp.Common.IO
         //    using (Xmlbuffer buffer = Xmlbuffer.Create(infoData.Info.FullName))
         //    {
         //        // 移动到根元素
-        //        processAction?.Invoke(buffer);
+        //        processAction?.InvokePlugins(buffer);
         //    }
         //}
 
@@ -55,7 +55,7 @@ namespace ExtenderApp.Common.IO
         //    XmlElement rootElement = xmlDoc.CreateElement("Root");
         //    xmlDoc.AppendChild(rootElement);
 
-        //    processAction?.Invoke(Tuple.Create(rootElement, xmlDoc));
+        //    processAction?.InvokePlugins(Tuple.Create(rootElement, xmlDoc));
 
         //    // 保存 XML 文件
         //    //文档一些设置
