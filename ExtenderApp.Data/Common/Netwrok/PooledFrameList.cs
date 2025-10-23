@@ -10,9 +10,15 @@ namespace ExtenderApp.Data
         public int Count => _count;
         public bool IsCreated => _array is not null;
 
-        public Frame this[int index] => _array![index];
+        public Frame this[int index]
+        {
+            get => _array![index];
+            set => _array![index] = value;
+        }
 
-        public ReadOnlySpan<Frame> AsSpan() => _array is null ? ReadOnlySpan<Frame>.Empty : _array.AsSpan(0, _count);
+
+        public ReadOnlySpan<Frame> AsSpan()
+            => _array is null ? ReadOnlySpan<Frame>.Empty : _array.AsSpan(0, _count);
 
         public void Add(Frame frame)
         {

@@ -66,6 +66,11 @@ namespace ExtenderApp.Data
         public ReadOnlySpan<byte> UnreadSpan => _buffer.UnreadSpan;
 
         /// <summary>
+        /// 未读取的只读序列快照。
+        /// </summary>
+        public ReadOnlySequence<byte> UnreadSequence => _buffer.UnreadSequence;
+
+        /// <summary>
         /// 获取当前读取器实例。
         /// </summary>
         public SequenceReader<byte> Reader => _buffer.Reader;
@@ -436,17 +441,17 @@ namespace ExtenderApp.Data
         public static implicit operator ByteBuffer(in SequenceBuffer<byte> buffer)
             => new ByteBuffer(buffer);
 
-        public static implicit operator ByteBuffer(ReadOnlySequence<byte> sequence)
+        public static explicit operator ByteBuffer(ReadOnlySequence<byte> sequence)
             => new ByteBuffer(sequence);
-
-        public static implicit operator ByteBuffer(ReadOnlyMemory<byte> memory)
-            => new ByteBuffer(memory);
 
         public static implicit operator ByteBuffer(SequencePool<byte> pool)
             => new ByteBuffer(pool);
 
         public static implicit operator ByteBuffer(SequenceReader<byte> reader)
             => new ByteBuffer(reader);
+
+        public static explicit operator ByteBuffer(ReadOnlyMemory<byte> memory)
+            => new ByteBuffer(memory);
 
         #endregion ToByteBuffer
     }

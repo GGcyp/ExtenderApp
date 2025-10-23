@@ -150,6 +150,18 @@ namespace ExtenderApp.Data
         }
 
         /// <summary>
+        /// 未读取的只读序列。
+        /// </summary>
+        public ReadOnlySequence<T> UnreadSequence
+        {
+            get
+            {
+                UpdateReader();
+                return reader.UnreadSequence;
+            }
+        }
+
+        /// <summary>
         /// 获取当前块是否支持写入（持有可写序列）。
         /// </summary>
         public bool CanWrite => _sequence != null;

@@ -6,8 +6,11 @@ namespace ExtenderApp.Abstract
 {
     public interface IClient : ILinker
     {
-        Task SendAsync<T>(T data);
-        void SetClientPipeline(IPipelineBuilder<LinkerClientContext, LinkerClientContext> builder);
+        IClientFormatterManager? FormatterManager { get; }
+        IClientPluginManager? PluginManager { get; }
+
+        ValueTask<SocketOperationResult> SendAsync<T>(T data);
+        void SetClientFormatterManager(IClientFormatterManager formatterManager);
         void SetClientPluginManager(IClientPluginManager pluginManager);
     }
 }

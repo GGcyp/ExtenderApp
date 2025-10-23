@@ -11,7 +11,7 @@ namespace ExtenderApp.Data
     /// <typeparam name="T">元素类型。</typeparam>
     public struct MemoryBlock<T>
     {
-        private const int DefaultCapacity = 256;
+        private const int DefaultCapacity = 32 * 1024;
 
         /// <summary>
         /// 内存块使用的数组池。

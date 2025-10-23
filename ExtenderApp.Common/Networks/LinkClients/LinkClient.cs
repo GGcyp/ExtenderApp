@@ -1,7 +1,5 @@
-﻿using System.Buffers;
-using System.Net;
+﻿using System.Net;
 using ExtenderApp.Abstract;
-using ExtenderApp.Common.ObjectPools;
 using ExtenderApp.Data;
 
 namespace ExtenderApp.Common.Networks
@@ -9,15 +7,10 @@ namespace ExtenderApp.Common.Networks
     public class LinkClient<TLinker> : DisposableObject, IClient
         where TLinker : ILinker
     {
-        private static readonly ObjectPool<LinkerClientContext> _pool
-            = ObjectPool.CreateDefaultPool<LinkerClientContext>();
-
         private readonly TLinker _linker;
-
-        public PipelineExecute<LinkerClientContext>? InputPipeline { get; set; }
-        public PipelineExecute<LinkerClientContext>? OutputPipeline { get; set; }
         public Exception? Erorr { get; protected set; }
-        public IClientPluginManager? PluginManager { get; set; }
+        public IClientFormatterManager? FormatterManager { get; private set; }
+        public IClientPluginManager? PluginManager { get; private set; }
 
         #region ILinker 直通属性
 
@@ -40,52 +33,31 @@ namespace ExtenderApp.Common.Networks
             _linker = linker;
         }
 
-        public async Task SendAsync<T>(T data)
+        public ValueTask<SocketOperationResult> SendAsync<T>(T data)
         {
-            var context = _pool.Get();
+            if (FormatterManager is null)
+                throw new InvalidOperationException("转换器管理为空，不能使用泛型方法");
 
-            T[] values = ArrayPool<T>.Shared.Rent(1);
-            values[0] = data;
-            Action<object>? completeAction = static (o) =>
-            {
-                if (o is not T[] array)
-                    return;
-                ArrayPool<T>.Shared.Return(array);
-            };
+            var formatter = FormatterManager.GetFormatter<T>();
+            if (formatter is null)
+                throw new InvalidOperationException($"未找到类型 {typeof(T).FullName} 的格式化器，无法发送数据");
 
-            context.AddFrame(new Frame(default, new ByteBlock(), values, completeAction));
-            try
-            {
-                Task executTask = OutputPipeline?.Invoke(context) ?? Task.CompletedTask;
-                await executTask.ConfigureAwait(false);
-                await _linker.SendAsync(context.MessageBlock).ConfigureAwait(false);
-            }
-            catch (Exception ex)
-            {
-                Erorr = ex;
-                return;
-            }
-            finally
-            {
-                if (context.ResultArray is T[] resultArray)
-                {
-                    ArrayPool<T>.Shared.Return(resultArray);
-                }
-                context.Reset();
-                _pool.Release(context);
-            }
+            var buffer = formatter.Serialize(data);
+            return _linker.SendAsync(buffer);
         }
 
         public void SetClientPluginManager(IClientPluginManager pluginManager)
         {
+            ArgumentNullException.ThrowIfNull(pluginManager, nameof(pluginManager));
+
             PluginManager = pluginManager;
-            pluginManager.InvokePlugins<IPersistentPlugin>(this);
         }
 
-        public void SetClientPipeline(IPipelineBuilder<LinkerClientContext, LinkerClientContext> builder)
+        public void SetClientFormatterManager(IClientFormatterManager formatterManager)
         {
-            InputPipeline = builder.BuildInput();
-            OutputPipeline = builder.BuildOutput();
+            ArgumentNullException.ThrowIfNull(formatterManager, nameof(formatterManager));
+
+            FormatterManager = formatterManager;
         }
 
         #region Linker 直通方法

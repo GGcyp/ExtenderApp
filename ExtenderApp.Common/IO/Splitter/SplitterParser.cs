@@ -41,7 +41,7 @@ namespace ExtenderApp.Common.IO.Splitter
                 ErrorUtil.ArgumentNull(nameof(fileInfo), "文件信息不能为空");
             }
             var infoFile = fileInfo.CreateReadWriteOperate(infoExtensions);
-            //_provider.GetOperate(fileInfo);
+            //Provider.GetOperate(fileInfo);
         }
 
         public void CreateInfoFile(LocalFileInfo fileInfo, SplitterInfo sInfo)

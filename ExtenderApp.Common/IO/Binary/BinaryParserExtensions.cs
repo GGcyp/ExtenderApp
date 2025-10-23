@@ -19,15 +19,6 @@ namespace ExtenderApp.Common.IO.Binary
     /// </summary>
     internal static class BinaryParserExtensions
     {
-        private static readonly MethodInfo _getFormatterMethodInfo = 
-            typeof(IBinaryFormatterResolver)
-            .GetMethods()
-            .Single(m =>
-                m.Name == "GetFormatter" &&
-                m.IsGenericMethodDefinition &&
-                m.GetGenericArguments().Length == 1 &&
-                m.GetParameters().Length == 0);
-
         /// <summary>
         /// 为服务集合添加二进制格式化器。
         /// </summary>
@@ -47,10 +38,7 @@ namespace ExtenderApp.Common.IO.Binary
                 Type type = types[0];
 
                 IBinaryFormatterResolver resolver = p.GetRequiredService<IBinaryFormatterResolver>();
-
-                MethodInfo method = _getFormatterMethodInfo.MakeGenericMethod(type);
-                var result = method.Invoke(resolver, null);
-                return result;
+                return resolver.GetFormatter(type);
             });
 
             services.AddBinaryFormatter();

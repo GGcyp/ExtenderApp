@@ -4,21 +4,17 @@ using ExtenderApp.ViewModels;
 using System.Net;
 using System.Text;
 using ExtenderApp.Common.Networks;
-using ExtenderApp.Common.Pipelines;
-using ExtenderApp.Common.Networks.Middlewares;
 
 namespace ExtenderApp.Test
 {
     public class TestMainViewModel : ExtenderAppViewModel
     {
         private readonly IBinaryFormatter<string> _string;
-        private readonly IBinaryFormatter<LinkHeader> _linkHeaderFormatter;
 
-        public TestMainViewModel(IServiceStore serviceStore, ITcpLinker tcpLinker, ITcpListenerLinker tcpListenerLinker, IBinaryFormatter<string> formatter,IBinaryFormatter<LinkHeader> formatter1, IByteBufferFactory factory) : base(serviceStore)
+        public TestMainViewModel(IServiceStore serviceStore, ITcpLinker tcpLinker, ITcpListenerLinker tcpListenerLinker, IBinaryFormatter<string> formatter, IByteBufferFactory factory, IServiceProvider provider) : base(serviceStore)
         {
             var info = CreatTestExpectLocalFileInfo("text");
             _string = formatter;
-            _linkHeaderFormatter = formatter1;
 
             IPEndPoint loop = new IPEndPoint(IPAddress.Loopback, 9090);
             tcpListenerLinker.Bind(loop);
@@ -26,12 +22,13 @@ namespace ExtenderApp.Test
             tcpListenerLinker.Listen(10);
 
             tcpLinker.ConnectAsync(loop);
-            LinkClient<ITcpLinker> client = new(tcpLinker);
-            PipelineBuilder<LinkerClientContext, LinkerClientContext> builder = new();
-            FormatterMiddleware<string> middleware = new(formatter, factory);
-            builder.Use(middleware);
-            client.SetClientPipeline(builder);
-            client.SendAsync("saadasdad").GetAwaiter().GetResult();
+            ClientBuilder<ITcpLinker> builder = new ClientBuilder<ITcpLinker>(provider);
+            builder.SetFormatterManager(b =>
+            {
+                b.AddBinaryFormatter<string>();
+            });
+            LinkClient<ITcpLinker> client = builder.Build(tcpLinker) as LinkClient<ITcpLinker>;
+            client.SendAsync("saadasdad");
         }
 
         private void TcpListenerLinker_OnAccept(object? sender, ITcpLinker e)
@@ -50,7 +47,6 @@ namespace ExtenderApp.Test
         private void Formatter(byte[] bytes)
         {
             ByteBuffer buffer = new(bytes);
-            LinkHeader header = _linkHeaderFormatter.Deserialize(ref buffer);
             string s = _string.Deserialize(ref buffer);
             Info(s);
         }

@@ -314,32 +314,27 @@ namespace ExtenderApp.Data
         public static implicit operator ReadOnlyMemory<byte>(in ByteBlock block)
             => block.UnreadMemory;
 
-        /// <summary>
-        /// 隐式转换为已写入范围的只读字节 UnreadMemory。
-        /// 注意：该切片引用底层缓冲，生命周期应短于本实例且不得在 <see cref="Dispose"/> 后使用。
-        /// </summary>
-        /// <param name="block">源实例。</param>
-        public static implicit operator ByteBuffer(in ByteBlock block)
+        public static explicit operator ByteBuffer(in ByteBlock block)
             => new ByteBuffer(block.UnreadMemory);
 
         #endregion
 
         #region ToByteBlock
 
-        public static implicit operator ByteBlock(ReadOnlySpan<byte> span)
+        public static explicit operator ByteBlock(ReadOnlySpan<byte> span)
             => new ByteBlock(span);
 
-        public static implicit operator ByteBlock(ReadOnlyMemory<byte> memory)
+        public static explicit operator ByteBlock(ReadOnlyMemory<byte> memory)
             => new ByteBlock(memory);
 
-        public static implicit operator ByteBlock(ReadOnlySequence<byte> sequence)
-            => new ByteBlock(buffer: sequence);
+        public static explicit operator ByteBlock(ReadOnlySequence<byte> sequence)
+            => new ByteBlock((ByteBuffer)sequence);
 
-        public static implicit operator ByteBlock(ByteBuffer buffer)
-            => new ByteBlock(buffer);
-
-        public static implicit operator ByteBlock(MemoryBlock<byte> block)
+        public static explicit operator ByteBlock(MemoryBlock<byte> block)
             => new ByteBlock(block);
+
+        public static explicit operator ByteBlock(ByteBuffer buffer)
+            => new ByteBlock(buffer);
 
         #endregion
     }

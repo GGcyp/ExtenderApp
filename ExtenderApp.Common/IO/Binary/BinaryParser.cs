@@ -170,7 +170,7 @@ namespace ExtenderApp.Common.IO.Binary
             if (span.IsEmpty)
                 throw new ArgumentNullException(nameof(span));
 
-            ByteBlock block = span;
+            ByteBlock block = new ByteBlock(span);
             var result = Deserialize<T>(ref block);
             block.Dispose();
             return result;
@@ -216,7 +216,7 @@ namespace ExtenderApp.Common.IO.Binary
 
         public T? Deserialize<T>(ref ByteBlock block)
         {
-            ByteBuffer buffer = block;
+            ByteBuffer buffer = (ByteBuffer)block;
             T? result = Deserialize<T>(ref buffer);
             buffer.Dispose();
             return result;
@@ -252,7 +252,7 @@ namespace ExtenderApp.Common.IO.Binary
 
             return Task.Run(() =>
             {
-                ByteBuffer buffer = memory;
+                ByteBuffer buffer = new ByteBuffer(memory);
                 var result = Deserialize<T>(ref buffer);
                 buffer.Dispose();
                 return result;
@@ -886,7 +886,7 @@ namespace ExtenderApp.Common.IO.Binary
             var outBuffer = _bufferFactory.Create();
             ToLz4(buffer.Sequence, ref outBuffer, compression);
 
-            block = outBuffer;
+            block = (ByteBlock)outBuffer;
             outBuffer.Dispose();
         }
 
@@ -905,10 +905,10 @@ namespace ExtenderApp.Common.IO.Binary
             if (inputBlock.IsEmpty)
                 throw new ArgumentNullException(nameof(inputBlock));
 
-            ByteBuffer inputBuffer = inputBlock;
+            ByteBuffer inputBuffer = (ByteBuffer)inputBlock;
             ByteBuffer outBuffer = new(_pool);
             ToLz4(inputBuffer.Sequence, ref outBuffer, compression);
-            outBlock = outBuffer;
+            outBlock = (ByteBlock)outBuffer;
         }
 
         public Task<byte[]> SerializeAsync<T>(T value, CompressionType compression)
