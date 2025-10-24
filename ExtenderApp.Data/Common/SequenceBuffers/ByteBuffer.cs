@@ -15,6 +15,8 @@ namespace ExtenderApp.Data
     /// </summary>
     public ref struct ByteBuffer
     {
+        public static ByteBuffer CreateBuffer() => new ByteBuffer(SequencePool<byte>.Shared);
+
         /// <summary>
         /// 内部泛型块实现，封装实际的写入/读取逻辑。
         /// </summary>

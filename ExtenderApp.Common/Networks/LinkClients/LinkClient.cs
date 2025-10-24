@@ -4,12 +4,13 @@ using ExtenderApp.Data;
 
 namespace ExtenderApp.Common.Networks
 {
-    public class LinkClient : DisposableObject, IClient
+    public class LinkClient<TLinker> : DisposableObject, ILinkClient
+        where TLinker : ILinker
     {
-        private readonly ILinker _linker;
+        private readonly TLinker _linker;
         public Exception? Erorr { get; protected set; }
-        public IClientFormatterManager? FormatterManager { get; private set; }
-        public IClientPluginManager? PluginManager { get; private set; }
+        public ILinkClientFormatterManager? FormatterManager { get; private set; }
+        public ILinkClientPluginManager? PluginManager { get; private set; }
 
         #region ILinker 直通属性
 
@@ -27,7 +28,7 @@ namespace ExtenderApp.Common.Networks
 
         #endregion ILinker 直通属性
 
-        public LinkClient(ILinker linker)
+        public LinkClient(TLinker linker)
         {
             _linker = linker;
         }
@@ -42,17 +43,28 @@ namespace ExtenderApp.Common.Networks
                 throw new InvalidOperationException($"未找到类型 {typeof(T).FullName} 的格式化器，无法发送数据");
 
             var buffer = formatter.Serialize(data);
-            return _linker.SendAsync(buffer);
+            LinkHeade linkHeade = new LinkHeade(formatter.DataType, (int)buffer.Length);
+            ILinkClientPlugin plugin = null;
+            ByteBlock sendBlock = new ByteBlock((int)buffer.Length);
+            //plugin.OnBeforeSend(this, ref sendBlock, buffer, 0);
+            buffer.Dispose();
+            return _linker.SendAsync(sendBlock);
         }
 
-        public void SetClientPluginManager(IClientPluginManager pluginManager)
+        private async ValueTask<SocketOperationResult> PrivateSendAsync(ByteBlock sendBlock)
+        {
+            SocketOperationResult result = await _linker.SendAsync(sendBlock);
+            return result;
+        }
+
+        public void SetClientPluginManager(ILinkClientPluginManager pluginManager)
         {
             ArgumentNullException.ThrowIfNull(pluginManager, nameof(pluginManager));
 
             PluginManager = pluginManager;
         }
 
-        public void SetClientFormatterManager(IClientFormatterManager formatterManager)
+        public void SetClientFormatterManager(ILinkClientFormatterManager formatterManager)
         {
             ArgumentNullException.ThrowIfNull(formatterManager, nameof(formatterManager));
 

@@ -4,7 +4,7 @@ using ExtenderApp.Data;
 
 namespace ExtenderApp.Common.Networks
 {
-    internal class LinkHeaderFormatter : AutoFormatter<LinkHeader>
+    internal class LinkHeaderFormatter : AutoFormatter<LinkHeade>
     {
         public LinkHeaderFormatter(IBinaryFormatterResolver resolver) : base(resolver)
         {

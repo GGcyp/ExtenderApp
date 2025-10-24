@@ -12,15 +12,13 @@ namespace ExtenderApp.Common.Networks
     /// <remarks>
     /// 约定与行为：
     /// - 缓冲来源：通过 <see cref="IByteBufferFactory"/> 创建 <see cref="ByteBuffer"/>；
-    /// - 类型标识：<see cref="DataTypeHash"/> 基于 <typeparamref name="T"/> 的类型名（<c>typeof(T).Name</c>）使用 FNV-1a 计算，需与对端保持一致用于快速路由；
+    /// - 类型标识：<see cref="DataType"/> 基于 <typeparamref name="T"/> 的类型名（<c>typeof(T).Name</c>）使用 FNV-1a 计算，需与对端保持一致用于快速路由；
     /// - 分发机制：反序列化成功后触发 <see cref="Receive"/> 事件；
     /// - 线程安全：本类型本身无状态且通常可在多线程并发调用，但具体实现需保证对 <paramref name="buffer"/> 的读写只发生在调用栈内；
     /// - 资源管理：若工厂返回的是池化可写缓冲，调用方在使用完 <see cref="Serialize(T)"/> 的返回值后应调用 <see cref="ByteBuffer.Dispose"/> 归还资源。
     /// </remarks>
-    public abstract class ClientFormatter<T> : IClientFormatter<T>
+    public abstract class LinkClientFormatter<T> : IClientFormatter<T>
     {
-        private readonly IByteBufferFactory _bufferFactory;
-
         /// <summary>
         /// 与业务数据类型 <typeparamref name="T"/> 关联的稳定哈希。
         /// </summary>
@@ -29,7 +27,7 @@ namespace ExtenderApp.Common.Networks
         /// - 注意：若存在跨命名空间同名类型，建议统一迁移到使用 FullName 的策略（需通讯两端同时调整）；
         /// - 用途：在消息头中用于快速定位对应的格式化器或处理管道。
         /// </remarks>
-        public int DataTypeHash { get; private set; }
+        public int DataType { get; private set; }
 
         /// <summary>
         /// 当成功反序列化得到一个 <typeparamref name="T"/> 实例时触发。
@@ -39,16 +37,6 @@ namespace ExtenderApp.Common.Networks
         /// - 订阅/反订阅请在对象生命周期内进行，避免潜在的内存泄漏。
         /// </remarks>
         public event Action<T>? Receive;
-
-        /// <summary>
-        /// 初始化格式化器。
-        /// </summary>
-        /// <param name="factory">缓冲工厂，用于创建 <see cref="ByteBuffer"/>。</param>
-        public ClientFormatter(IByteBufferFactory factory)
-        {
-            _bufferFactory = factory;
-            DataTypeHash = typeof(T).Name.ComputeHash_FNV_1a();
-        }
 
         /// <summary>
         /// 从输入缓冲中反序列化并分发（触发 <see cref="Receive"/>）。
@@ -84,7 +72,7 @@ namespace ExtenderApp.Common.Networks
         /// </remarks>
         public ByteBuffer Serialize(T value)
         {
-            var buffer = _bufferFactory.Create();
+            var buffer = new ByteBuffer();
             Serialize(value, ref buffer);
             return buffer;
         }

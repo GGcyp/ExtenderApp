@@ -11,7 +11,7 @@ namespace ExtenderApp.Abstract
     /// - 提供稳定的数据类型标识与格式化器类型标识，便于快速路由与协议协商；
     /// - 反序列化成功后由泛型接口 <see cref="IClientFormatter{T}"/> 触发类型安全的事件。
     /// </remarks>
-    public interface IClientFormatter
+    public interface ILinkClientFormatter
     {
         /// <summary>
         /// 与“业务数据类型”关联的稳定哈希。
@@ -21,7 +21,7 @@ namespace ExtenderApp.Abstract
         /// - 常见做法是使用类型名或自定义标识计算哈希（例如 FNV-1a）；<br/>
         /// - 用于在反序列化前的快速分发与匹配。
         /// </remarks>
-        int DataTypeHash { get; }
+        int DataType { get; }
 
         /// <summary>
         /// 从输入缓冲中反序列化并进行分发（触发对应的类型事件）。
@@ -39,7 +39,7 @@ namespace ExtenderApp.Abstract
     /// 面向具体类型 <typeparamref name="T"/> 的客户端格式化器契约。
     /// </summary>
     /// <typeparam name="T">消息/数据的强类型。</typeparam>
-    public interface IClientFormatter<T> : IClientFormatter
+    public interface IClientFormatter<T> : ILinkClientFormatter
     {
         /// <summary>
         /// 当成功反序列化得到一个 <typeparamref name="T"/> 实例时触发。

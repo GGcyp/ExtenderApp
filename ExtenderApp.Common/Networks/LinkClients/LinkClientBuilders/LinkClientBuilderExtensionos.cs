@@ -3,7 +3,7 @@ using ExtenderApp.Abstract;
 
 namespace ExtenderApp.Common.Networks
 {
-    public static class ClientBuilderExtensionos
+    public static class LinkClientBuilderExtensionos
     {
         public static IServiceCollection AddLinkClientBuilder(this IServiceCollection services)
         {
@@ -21,7 +21,7 @@ namespace ExtenderApp.Common.Networks
 
         public static FormatterManagerBuilder AddBinaryFormatter<T>(this FormatterManagerBuilder builder)
         {
-            var formatter = builder.Provider.GetRequiredService<BinaryClientFormatter<T>>();
+            var formatter = builder.Provider.GetRequiredService<BinaryLinkClientFormatter<T>>();
             builder.Manager.AddFormatter(formatter);
             return builder;
         }

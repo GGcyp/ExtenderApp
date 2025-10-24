@@ -3,37 +3,37 @@ using ExtenderApp.Abstract;
 
 namespace ExtenderApp.Common.Networks
 {
-    public class ClientBuilder<TILinker> where TILinker : ILinker
+    public class LinkClientBuilder<TILinker> where TILinker : ILinker
     {
         private readonly IServiceProvider _provider;
         public ILinkerFactory<TILinker>? LinkerFactory { get; set; }
-        public IClientPluginManager? PluginManager { get; set; }
-        public IClientFormatterManager? FormatterManager { get; set; }
+        public ILinkClientPluginManager? PluginManager { get; set; }
+        public ILinkClientFormatterManager? FormatterManager { get; set; }
 
-        public ClientBuilder(IServiceProvider provider, ILinkerFactory<TILinker> factory) : this(provider)
+        public LinkClientBuilder(IServiceProvider provider, ILinkerFactory<TILinker> factory) : this(provider)
         {
             LinkerFactory = factory;
         }
 
-        public ClientBuilder(IServiceProvider provider)
+        public LinkClientBuilder(IServiceProvider provider)
         {
             _provider = provider;
         }
 
-        public ClientBuilder<TILinker> SetFormatterManager(Action<FormatterManagerBuilder> action)
+        public LinkClientBuilder<TILinker> SetFormatterManager(Action<FormatterManagerBuilder> action)
         {
-            ClientFormatterManager manager = new();
+            LinkClientFormatterManager manager = new();
             FormatterManager = manager;
             action?.Invoke(new FormatterManagerBuilder(_provider, FormatterManager));
             return this;
         }
 
-        public IClient Build()
+        public ILinkClient Build()
         {
             return Build(AddressFamily.InterNetwork);
         }
 
-        public IClient Build(AddressFamily addressFamily)
+        public ILinkClient Build(AddressFamily addressFamily)
         {
             if (LinkerFactory is null)
                 throw new InvalidOperationException("LinkerFactory 未设置，无法创建 Linker 实例。");
@@ -41,7 +41,7 @@ namespace ExtenderApp.Common.Networks
             return Build(LinkerFactory.CreateLinker(addressFamily));
         }
 
-        public IClient Build(Socket socket)
+        public ILinkClient Build(Socket socket)
         {
             if (LinkerFactory is null)
                 throw new InvalidOperationException("LinkerFactory 未设置，无法创建 Linker 实例。");
@@ -49,11 +49,11 @@ namespace ExtenderApp.Common.Networks
             return Build(LinkerFactory.CreateLinker(socket));
         }
 
-        public IClient Build(TILinker linker)
+        public ILinkClient Build(TILinker linker)
         {
             ArgumentNullException.ThrowIfNull(linker, nameof(linker));
 
-            var client = new LinkClient<TILinker>(linker);
+            var client = new LinkClient(linker);
 
             if (FormatterManager is not null)
                 client.SetClientFormatterManager(FormatterManager);

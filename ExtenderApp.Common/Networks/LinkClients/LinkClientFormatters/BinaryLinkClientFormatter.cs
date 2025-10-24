@@ -3,11 +3,11 @@ using ExtenderApp.Data;
 
 namespace ExtenderApp.Common.Networks
 {
-    internal class BinaryClientFormatter<T> : ClientFormatter<T>
+    internal class BinaryLinkClientFormatter<T> : LinkClientFormatter<T>
     {
         private readonly IBinaryFormatter<T> _formatter;
 
-        public BinaryClientFormatter(IByteBufferFactory factory, IBinaryFormatter<T> formatter) : base(factory)
+        public BinaryLinkClientFormatter(IBinaryFormatter<T> formatter)
         {
             _formatter = formatter;
         }

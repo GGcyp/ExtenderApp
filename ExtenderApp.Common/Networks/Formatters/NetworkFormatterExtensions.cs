@@ -15,7 +15,7 @@ namespace ExtenderApp.Common.Networks.Formatters
         {
             services.Configuration<IBinaryFormatterStore>(s =>
             {
-                s.Add<LinkHeader, LinkHeaderFormatter>();
+                s.Add<LinkHeade, LinkHeaderFormatter>();
             });
             return services;
         }

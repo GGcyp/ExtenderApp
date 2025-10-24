@@ -10,6 +10,11 @@ namespace ExtenderApp.Data
     public class SequencePool<T>
     {
         /// <summary>
+        /// 共享序列池实例。
+        /// </summary>
+        public static readonly SequencePool<T> Shared = new SequencePool<T>();
+
+        /// <summary>
         /// 序列的最小跨度长度。
         /// </summary>
         private const int MinimumSpanLength = 32 * 1024;

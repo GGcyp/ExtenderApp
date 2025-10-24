@@ -11,7 +11,7 @@ namespace ExtenderApp.Test
     {
         private readonly IBinaryFormatter<string> _string;
 
-        public TestMainViewModel(IServiceStore serviceStore, ITcpLinker tcpLinker, ITcpListenerLinker tcpListenerLinker, IBinaryFormatter<string> formatter, IByteBufferFactory factory, IServiceProvider provider) : base(serviceStore)
+        public TestMainViewModel(IServiceStore serviceStore, ITcpLinker tcpLinker, ITcpListenerLinker tcpListenerLinker, IBinaryFormatter<string> formatter,  IServiceProvider provider) : base(serviceStore)
         {
             var info = CreatTestExpectLocalFileInfo("text");
             _string = formatter;
@@ -22,12 +22,12 @@ namespace ExtenderApp.Test
             tcpListenerLinker.Listen(10);
 
             tcpLinker.ConnectAsync(loop);
-            ClientBuilder<ITcpLinker> builder = new ClientBuilder<ITcpLinker>(provider);
+            LinkClientBuilder<ITcpLinker> builder = new LinkClientBuilder<ITcpLinker>(provider);
             builder.SetFormatterManager(b =>
             {
                 b.AddBinaryFormatter<string>();
             });
-            LinkClient<ITcpLinker> client = builder.Build(tcpLinker) as LinkClient<ITcpLinker>;
+            LinkClient client = builder.Build(tcpLinker) as LinkClient;
             client.SendAsync("saadasdad");
         }
 
