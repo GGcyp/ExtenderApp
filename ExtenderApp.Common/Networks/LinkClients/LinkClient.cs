@@ -4,10 +4,9 @@ using ExtenderApp.Data;
 
 namespace ExtenderApp.Common.Networks
 {
-    public class LinkClient<TLinker> : DisposableObject, IClient
-        where TLinker : ILinker
+    public class LinkClient : DisposableObject, IClient
     {
-        private readonly TLinker _linker;
+        private readonly ILinker _linker;
         public Exception? Erorr { get; protected set; }
         public IClientFormatterManager? FormatterManager { get; private set; }
         public IClientPluginManager? PluginManager { get; private set; }
@@ -28,7 +27,7 @@ namespace ExtenderApp.Common.Networks
 
         #endregion ILinker 直通属性
 
-        public LinkClient(TLinker linker)
+        public LinkClient(ILinker linker)
         {
             _linker = linker;
         }
