@@ -53,7 +53,7 @@ namespace ExtenderApp.Common.Networks
         {
             ArgumentNullException.ThrowIfNull(linker, nameof(linker));
 
-            var client = new LinkClient(linker);
+            var client = new LinkClient<TILinker>(linker);
 
             if (FormatterManager is not null)
                 client.SetClientFormatterManager(FormatterManager);

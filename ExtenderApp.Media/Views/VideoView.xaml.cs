@@ -184,19 +184,19 @@ namespace ExtenderApp.Media
         //        _networkInitialized = true;
         //        // 打开媒体文件
         //        var formatContext = ffmpeg.avformat_alloc_context();
-        //        int result = ffmpeg.avformat_open_input(&formatContext, filePath, null, null);
-        //        if (result < 0)
+        //        int Result = ffmpeg.avformat_open_input(&formatContext, filePath, null, null);
+        //        if (Result < 0)
         //        {
-        //            ShowFFmpegError("无法打开媒体文件", result);
+        //            ShowFFmpegError("无法打开媒体文件", Result);
         //            return false;
         //        }
         //        _formatContext = (IntPtr)formatContext;
 
         //        // 获取流信息
-        //        result = ffmpeg.avformat_find_stream_info(formatContext, null);
-        //        if (result < 0)
+        //        Result = ffmpeg.avformat_find_stream_info(formatContext, null);
+        //        if (Result < 0)
         //        {
-        //            ShowFFmpegError("无法获取流信息", result);
+        //            ShowFFmpegError("无法获取流信息", Result);
         //            return false;
         //        }
 
@@ -291,18 +291,18 @@ namespace ExtenderApp.Media
         //    }
 
         //    // 从流参数复制到解码器上下文
-        //    int result = ffmpeg.avcodec_parameters_to_context(codecContext, codecParameters);
-        //    if (result < 0)
+        //    int Result = ffmpeg.avcodec_parameters_to_context(codecContext, codecParameters);
+        //    if (Result < 0)
         //    {
-        //        ShowFFmpegError("无法复制解码器参数", result);
+        //        ShowFFmpegError("无法复制解码器参数", Result);
         //        return false;
         //    }
 
         //    // 打开解码器
-        //    result = ffmpeg.avcodec_open2(codecContext, codec, null);
-        //    if (result < 0)
+        //    Result = ffmpeg.avcodec_open2(codecContext, codec, null);
+        //    if (Result < 0)
         //    {
-        //        ShowFFmpegError("无法打开解码器", result);
+        //        ShowFFmpegError("无法打开解码器", Result);
         //        return false;
         //    }
 
@@ -501,11 +501,11 @@ namespace ExtenderApp.Media
         //            }
 
         //            // 读取数据包
-        //            int result = ffmpeg.av_read_frame((AVFormatContext*)_formatContext, (AVPacket*)_packet);
-        //            if (result < 0)
+        //            int Result = ffmpeg.av_read_frame((AVFormatContext*)_formatContext, (AVPacket*)_packet);
+        //            if (Result < 0)
         //            {
         //                // 读取完毕，退出循环
-        //                if (result == ffmpeg.AVERROR_EOF)
+        //                if (Result == ffmpeg.AVERROR_EOF)
         //                {
         //                    //Dispatcher.InvokePlugins(() =>
         //                    //{
@@ -514,7 +514,7 @@ namespace ExtenderApp.Media
         //                }
         //                else
         //                {
-        //                    ShowFFmpegError("读取帧失败", result);
+        //                    ShowFFmpegError("读取帧失败", Result);
         //                }
         //                break;
         //            }
@@ -577,10 +577,10 @@ namespace ExtenderApp.Media
         //    // 发送数据包到解码器
         //    AVCodecContext* codecContext = (AVCodecContext*)_codecContext;
         //    AVPacket* packet = (AVPacket*)_packet;
-        //    int result = ffmpeg.avcodec_send_packet(codecContext, packet);
-        //    if (result < 0)
+        //    int Result = ffmpeg.avcodec_send_packet(codecContext, packet);
+        //    if (Result < 0)
         //    {
-        //        ShowFFmpegError("发送数据包失败", result);
+        //        ShowFFmpegError("发送数据包失败", Result);
         //        return;
         //    }
 
@@ -588,16 +588,16 @@ namespace ExtenderApp.Media
         //    AVFrame* frame = (AVFrame*)_frame;
         //    SwsContext* swsContext = (SwsContext*)_swsContext;
         //    AVFrame* rgbFrame = (AVFrame*)_rgbFrame;
-        //    while (result >= 0 && !cancellationToken.IsCancellationRequested)
+        //    while (Result >= 0 && !cancellationToken.IsCancellationRequested)
         //    {
-        //        result = ffmpeg.avcodec_receive_frame(codecContext, frame);
-        //        if (result == ffmpeg.AVERROR(ffmpeg.EAGAIN) || result == ffmpeg.AVERROR_EOF)
+        //        Result = ffmpeg.avcodec_receive_frame(codecContext, frame);
+        //        if (Result == ffmpeg.AVERROR(ffmpeg.EAGAIN) || Result == ffmpeg.AVERROR_EOF)
         //        {
         //            break;
         //        }
-        //        else if (result < 0)
+        //        else if (Result < 0)
         //        {
-        //            ShowFFmpegError("接收帧失败", result);
+        //            ShowFFmpegError("接收帧失败", Result);
         //            return;
         //        }
 

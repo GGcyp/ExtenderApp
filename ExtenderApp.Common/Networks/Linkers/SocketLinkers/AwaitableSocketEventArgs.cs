@@ -255,7 +255,7 @@ namespace ExtenderApp.Common.Networks
             }
 
             RemoteEndPoint = remoteEndPoint;                    // 必须指定远端
-            SetBuffer(MemoryMarshal.AsMemory(buffer));          // ReadOnlyMemory -> Memory
+            SetBuffer(MemoryMarshal.AsMemory(buffer));          // ReadOnlyMemory -> ResultMessage
 
             if (!socket.SendToAsync(this))
             {

@@ -5,11 +5,11 @@
     /// </summary>
     /// <remarks>
     /// 职责：
-    /// - 维护“数据类型哈希（DataType）→ IClientFormatter 实例”的映射；<br/>
+    /// - 维护“数据类型哈希（MessageType）→ IClientFormatter 实例”的映射；<br/>
     /// - 支持以类型哈希或泛型类型两种方式获取已注册的格式化器；<br/>
     /// - 供网络管道在反序列化前进行快速路由与分发。<br/>
     /// 约定：
-    /// - DataType 应与 <see cref="IClientFormatter{T}"/> 内部约定保持一致（例如基于类型名的稳定哈希）；<br/>
+    /// - MessageType 应与 <see cref="IClientFormatter{T}"/> 内部约定保持一致（例如基于类型名的稳定哈希）；<br/>
     /// - 建议实现为线程安全（读多写少）以适配运行期收发并发。
     /// </remarks>
     /// <seealso cref="ILinkClientFormatter"/>
@@ -22,7 +22,7 @@
         /// <typeparam name="T">消息/数据的强类型。</typeparam>
         /// <param name="formatter">要注册的格式化器实例，其 <see cref="ILinkClientFormatter.DataType"/> 用作键。</param>
         /// <remarks>
-        /// 冲突策略（同一 DataType 已存在时的行为）由具体实现决定：可选择抛出、覆盖或忽略。
+        /// 冲突策略（同一 MessageType 已存在时的行为）由具体实现决定：可选择抛出、覆盖或忽略。
         /// </remarks>
         void AddFormatter<T>(IClientFormatter<T> formatter);
 
@@ -39,7 +39,7 @@
         /// <typeparam name="T">消息/数据的强类型。</typeparam>
         /// <returns>匹配的强类型格式化器；若未找到返回 null。</returns>
         /// <remarks>
-        /// 具体实现通常会基于与 <see cref="IClientFormatter{T}"/> 相同的规则计算 <c>DataType</c> 后再查找。
+        /// 具体实现通常会基于与 <see cref="IClientFormatter{T}"/> 相同的规则计算 <c>MessageType</c> 后再查找。
         /// </remarks>
         IClientFormatter<T>? GetFormatter<T>();
 

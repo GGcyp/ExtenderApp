@@ -39,5 +39,20 @@ namespace ExtenderApp.Common.Networks
         }
 
         protected abstract T CreateLinkerInternal(Socket socket);
+
+        ILinker ILinkerFactory.CreateLinker()
+        {
+            return CreateLinker();
+        }
+
+        ILinker ILinkerFactory.CreateLinker(Socket socket)
+        {
+            return CreateLinker(socket);
+        }
+
+        ILinker ILinkerFactory.CreateLinker(AddressFamily addressFamily)
+        {
+            return CreateLinker(addressFamily);
+        }
     }
 }

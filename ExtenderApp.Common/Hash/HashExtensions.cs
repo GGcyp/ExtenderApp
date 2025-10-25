@@ -1,7 +1,6 @@
 ﻿using System.Security.Cryptography;
 using AppHost.Extensions.DependencyInjection;
 using ExtenderApp.Abstract;
-using ExtenderApp.Common.Hash;
 using ExtenderApp.Data;
 
 namespace ExtenderApp.Common.Hash
@@ -32,28 +31,19 @@ namespace ExtenderApp.Common.Hash
         }
 
         /// <summary>
-        /// 计算文件的哈希值。
+        /// 使用FNV-1a算法计算类型的哈希值
         /// </summary>
-        /// <typeparam name="T">哈希算法的类型，需要继承自<see cref="HashAlgorithm"/>。</typeparam>
-        /// <param name="hashProvider">哈希提供者实例。</param>
-        /// <param name="localFileInfo">本地文件信息。</param>
-        ///// <returns>计算得到的哈希值。</returns>
-        //public static HashValue ComputeHash<T>(this IHashProvider hashProvider, LocalFileInfo localFileInfo) where T : HashAlgorithm
-        //{
-        //    return hashProvider.ComputeHash<T>(localFileInfo.CreateReadWriteOperate());
-        //}
+        /// <param name="type">需要被计算的类型</param>
+        /// <returns>计算出来的类型名称哈希值</returns>
+        /// <exception cref="ArgumentNullException">当类型为空时抛出</exception>
+        public static int ComputeHash_FNV_1a(this Type type)
+        {
+            if (type == null)
+                throw new ArgumentNullException((nameof(type)));
 
-        ///// <summary>
-        ///// 计算给定文件的哈希值。
-        ///// </summary>
-        ///// <typeparam name="T">哈希值的类型。</typeparam>
-        ///// <param name="hashProvider">哈希提供者接口。</param>
-        ///// <param name="localFileInfo">包含文件信息的对象。</param>
-        ///// <returns>异步返回计算出的哈希值。</returns>
-        //public static Task<HashValue> ComputeHashAsync<T>(this IHashProvider hashProvider, LocalFileInfo localFileInfo) where T : HashAlgorithm
-        //{
-        //    return hashProvider.ComputeHashAsync<T>(localFileInfo.CreateReadWriteOperate());
-        //}
+            string NameOrFullName = type.FullName ?? type.Name;
+            return NameOrFullName.ComputeHash_FNV_1a();
+        }
 
         /// <summary>
         /// 使用FNV-1a算法计算字符串的哈希值

@@ -1434,9 +1434,9 @@ namespace ExtenderApp.Common.Math
         ///// </summary>
         ///// <param name="matrix">输入矩阵</param>
         ///// <param name="degree">多项式的次数，默认为2</param>
-        ///// <param name="result">输出矩阵，默认为空矩阵</param>
+        ///// <param name="Result">输出矩阵，默认为空矩阵</param>
         ///// <returns>变换后的矩阵</returns>
-        //public static Matrix FitTransform(this Matrix matrix, int degree = 2, Matrix result = default)
+        //public static Matrix FitTransform(this Matrix matrix, int degree = 2, Matrix Result = default)
         //{
         //    if (matrix.IsEmpty)
         //        throw new ArgumentNullException(nameof(matrix), "输入矩阵不能为null");
@@ -1449,19 +1449,19 @@ namespace ExtenderApp.Common.Math
         //    // 计算生成后的特征数量
         //    int numNewFeatures = CalculateNumNewFeatures(numOriginalFeatures, degree);
 
-        //    if (result.IsEmpty || result.Row != numSamples || result.Column != numNewFeatures)
-        //        result = new Matrix(numSamples, numNewFeatures);
+        //    if (Result.IsEmpty || Result.Row != numSamples || Result.Column != numNewFeatures)
+        //        Result = new Matrix(numSamples, numNewFeatures);
 
         //    // 填充结果矩阵的第一列全为1，对应截距项
         //    for (int i = 0; i < numSamples; i++)
         //    {
-        //        result[i, 0] = 1;
+        //        Result[i, 0] = 1;
         //    }
 
         //    // 生成交叉项（不同原始特征之间的乘积组合）
-        //    GenerateCrossTerms(matrix, result, numOriginalFeatures, numSamples, degree);
+        //    GenerateCrossTerms(matrix, Result, numOriginalFeatures, numSamples, degree);
 
-        //    return result;
+        //    return Result;
         //}
 
         ///// <summary>
@@ -1488,28 +1488,28 @@ namespace ExtenderApp.Common.Math
         ///// <returns>组合数</returns>
         //private static int CalculateBinomialCoefficient(int n, int k)
         //{
-        //    int result = 1;
+        //    int Result = 1;
         //    if (k == 0 || k == n)
-        //        return result;
+        //        return Result;
 
         //    int minK = k < (n - k) ? k : (n - k); // 利用组合数的对称性，选择较小的数进行计算，减少循环次数
         //    for (int i = 1; i <= minK; i++)
         //    {
-        //        result *= (n - (minK - i));
-        //        result /= i;
+        //        Result *= (n - (minK - i));
+        //        Result /= i;
         //    }
-        //    return result;
+        //    return Result;
         //}
 
         ///// <summary>
         ///// 生成交叉项（不同原始特征之间的乘积组合）
         ///// </summary>
         ///// <param name="matrix">输入矩阵</param>
-        ///// <param name="result">输出矩阵</param>
+        ///// <param name="Result">输出矩阵</param>
         ///// <param name="numOriginalFeatures">原始特征数量</param>
         ///// <param name="numSamples">样本数量</param>
         ///// <param name="degree">多项式的次数</param>
-        //private static void GenerateCrossTerms(Matrix matrix, Matrix result, int numOriginalFeatures, int numSamples, int degree)
+        //private static void GenerateCrossTerms(Matrix matrix, Matrix Result, int numOriginalFeatures, int numSamples, int degree)
         //{
         //    //加上1次幂的初始值
         //    int featureIndex = 1;
@@ -1522,7 +1522,7 @@ namespace ExtenderApp.Common.Math
         //        list.Add(0);
         //        for (int i = 0; i < numSamples; i++)
         //        {
-        //            CalculateCrossTerms(matrix, result, numOriginalFeatures, featureIndex, k, i, list);
+        //            CalculateCrossTerms(matrix, Result, numOriginalFeatures, featureIndex, k, i, list);
         //        }
         //        featureIndex += CalculateBinomialCoefficient(numOriginalFeatures + k - 1, k);
         //    }
@@ -1532,13 +1532,13 @@ namespace ExtenderApp.Common.Math
         ///// 计算交叉项的值。
         ///// </summary>
         ///// <param name="matrix">原始数据矩阵。</param>
-        ///// <param name="result">存储计算结果的矩阵。</param>
+        ///// <param name="Result">存储计算结果的矩阵。</param>
         ///// <param name="numOriginalFeatures">原始特征的数量。</param>
         ///// <param name="crossTermIndex">当前交叉项的索引。</param>
         ///// <param name="degree">交叉项的度数。</param>
         ///// <param name="samplesIndex">当前样本的索引。</param>
         ///// <param name="list">存储交叉项特征索引的列表。</param>
-        //private static void CalculateCrossTerms(Matrix matrix, Matrix result, int numOriginalFeatures, int crossTermIndex, int degree, int samplesIndex, List<int> list)
+        //private static void CalculateCrossTerms(Matrix matrix, Matrix Result, int numOriginalFeatures, int crossTermIndex, int degree, int samplesIndex, List<int> list)
         //{
         //    //指针个数
         //    int numPoint = degree - 1;
@@ -1552,7 +1552,7 @@ namespace ExtenderApp.Common.Math
         //        {
         //            list[j] = i;
         //        }
-        //        CrossTerm(matrix, result, samplesIndex, crossTermIndex, list);
+        //        CrossTerm(matrix, Result, samplesIndex, crossTermIndex, list);
         //        crossTermIndex++;
 
         //        if (list.Count <= 1) continue;
@@ -1562,7 +1562,7 @@ namespace ExtenderApp.Common.Math
         //        {
         //            int currentListIndex = numPoint - (j % numPoint);
         //            list[currentListIndex]++;
-        //            CrossTerm(matrix, result, samplesIndex, crossTermIndex, list);
+        //            CrossTerm(matrix, Result, samplesIndex, crossTermIndex, list);
         //            crossTermIndex++;
         //        }
 
@@ -1584,7 +1584,7 @@ namespace ExtenderApp.Common.Math
 
 
         //            list[currentNumIndex] = currentNumFeatureIndex;
-        //            CrossTerm(matrix, result, samplesIndex, crossTermIndex, list);
+        //            CrossTerm(matrix, Result, samplesIndex, crossTermIndex, list);
 
         //            if (currentNumFeatureIndex >= numOriginalFeatures - 1)
         //            {
@@ -1599,11 +1599,11 @@ namespace ExtenderApp.Common.Math
 
         //            crossTermIndex++;
         //        }
-        //        //CalculateCrossTerm(matrix, result, numOriginalFeatures, i, samplesIndex, list, ref crossTermIndex);
+        //        //CalculateCrossTerm(matrix, Result, numOriginalFeatures, i, samplesIndex, list, ref crossTermIndex);
         //    }
         //}
 
-        //private static void CalculateCrossTerm(Matrix matrix, Matrix result, int numOriginalFeatures, int currentFeatures, int samplesIndex, List<int> list, ref int crossTermIndex)
+        //private static void CalculateCrossTerm(Matrix matrix, Matrix Result, int numOriginalFeatures, int currentFeatures, int samplesIndex, List<int> list, ref int crossTermIndex)
         //{
         //    for (int k = currentFeatures; k < numOriginalFeatures - 2; k++)
         //    {
@@ -1617,7 +1617,7 @@ namespace ExtenderApp.Common.Math
         //        for (int j = k + 2; j < numOriginalFeatures; j++)
         //        {
         //            list[list.Count - 1] = j;
-        //            CrossTerm(matrix, result, samplesIndex, crossTermIndex, list);
+        //            CrossTerm(matrix, Result, samplesIndex, crossTermIndex, list);
         //            crossTermIndex++;
         //        }
         //    }
@@ -1627,11 +1627,11 @@ namespace ExtenderApp.Common.Math
         ///// 计算并存储一个交叉项的值。
         ///// </summary>
         ///// <param name="matrix">原始数据矩阵。</param>
-        ///// <param name="result">存储计算结果的矩阵。</param>
+        ///// <param name="Result">存储计算结果的矩阵。</param>
         ///// <param name="samplesIndex">当前样本的索引。</param>
         ///// <param name="crossTermIndex">当前交叉项的索引。</param>
         ///// <param name="degreelist">存储交叉项特征索引的列表。</param>
-        //private static void CrossTerm(Matrix matrix, Matrix result, int samplesIndex, int crossTermIndex, List<int> degreelist)
+        //private static void CrossTerm(Matrix matrix, Matrix Result, int samplesIndex, int crossTermIndex, List<int> degreelist)
         //{
         //    //确定一个次幂内的一个交叉项的值
         //    Float64 crossTermValue = 1;
@@ -1640,7 +1640,7 @@ namespace ExtenderApp.Common.Math
         //        int currentFeature = degreelist[i];
         //        crossTermValue *= matrix[samplesIndex, currentFeature];
         //    }
-        //    result[samplesIndex, crossTermIndex] = crossTermValue;
+        //    Result[samplesIndex, crossTermIndex] = crossTermValue;
         //}
 
         //#endregion

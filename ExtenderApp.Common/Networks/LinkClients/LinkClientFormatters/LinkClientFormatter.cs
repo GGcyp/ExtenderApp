@@ -38,6 +38,11 @@ namespace ExtenderApp.Common.Networks
         /// </remarks>
         public event Action<T>? Receive;
 
+        public LinkClientFormatter()
+        {
+            DataType = typeof(T).ComputeHash_FNV_1a();
+        }
+
         /// <summary>
         /// 从输入缓冲中反序列化并分发（触发 <see cref="Receive"/>）。
         /// </summary>

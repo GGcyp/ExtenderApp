@@ -1,69 +1,155 @@
-﻿using System;
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using ExtenderApp.Abstract;
 using ExtenderApp.Data;
 
 namespace ExtenderApp.Common.Networks
 {
-    internal class LinkClientPluginManager : ILinkClientPluginManager
+    internal class LinkClientPluginManager<TLinker> : ILinkClientPluginManager<TLinker> where TLinker : ILinker
     {
-        private readonly ConcurrentDictionary<Type, List<ILinkClientPlugin>> _plugins;
-        private ILinkClient? client;
+        private readonly ConcurrentDictionary<Type, ILinkClientPlugin<TLinker>> _plugins;
+        // 写时更新的快照，读时无锁遍历
+        private volatile ILinkClientPlugin<TLinker>[] _snapshot;
 
         public LinkClientPluginManager()
         {
             _plugins = new();
+            _snapshot = Array.Empty<ILinkClientPlugin<TLinker>>();
         }
 
-        public void AddPlugin(ILinkClientPlugin plugin)
+        public void AddPlugin<T>(T plugin) where T : ILinkClientPlugin<TLinker>
         {
-            throw new NotImplementedException();
+            ArgumentNullException.ThrowIfNull(plugin, nameof(plugin));
+
+            Type type = typeof(T);
+            if (_plugins.ContainsKey(type))
+            {
+                throw new InvalidOperationException($"插件管理器中已存在类型为 {type.FullName} 的插件，不能重复添加");
+            }
+            if (!_plugins.TryAdd(type, plugin))
+            {
+                throw new InvalidOperationException($"向插件管理器添加类型为 {type.FullName} 的插件失败");
+            }
+
+            // 写时重建快照
+            _snapshot = _plugins.Values.ToArray();
         }
 
-        public void OnAfterReceive(ILinkClient client)
+        public bool RemovePlugin<T>() where T : ILinkClientPlugin<TLinker>
         {
-            throw new NotImplementedException();
+            Type type = typeof(T);
+            if (_plugins.TryRemove(type, out _))
+            {
+                _snapshot = _plugins.Values.ToArray();
+                return true;
+            }
+            return false;
         }
 
-        public void OnAfterSend(ILinkClient client, SocketOperationResult result)
+        public bool TryGetPlugin<T>(out T? plugin) where T : class, ILinkClientPlugin<TLinker>
         {
-            throw new NotImplementedException();
+            Type type = typeof(T);
+            if (_plugins.TryGetValue(type, out var found))
+            {
+                plugin = found as T;
+                return plugin is not null;
+            }
+            plugin = null;
+            return false;
         }
 
-        public void OnAttach(ILinkClient client)
+        public void ReplacePlugin<T>(T plugin) where T : ILinkClientPlugin<TLinker>
         {
-            throw new NotImplementedException();
+            ArgumentNullException.ThrowIfNull(plugin, nameof(plugin));
+            Type type = typeof(T);
+
+            while (true)
+            {
+                if (!_plugins.TryGetValue(type, out var existing))
+                {
+                    throw new InvalidOperationException($"要替换的插件类型 {type.FullName} 不存在");
+                }
+
+                if (_plugins.TryUpdate(type, plugin, existing))
+                {
+                    _snapshot = _plugins.Values.ToArray();
+                    return;
+                }
+
+                // 竞争重试
+            }
         }
 
-        public void OnBeforeSend(ILinkClient client, ref LinkClientPluginSendData sendData)
+        public IReadOnlyList<ILinkClientPlugin<TLinker>> GetPlugins()
         {
-            throw new NotImplementedException();
+            // 返回当前快照的只读包装（避免外部修改）
+            return Array.AsReadOnly(_snapshot.ToArray());
         }
 
-        public void OnConnected(ILinkClient client, EndPoint remoteEndPoint)
+        public void OnAttach(ILinkClient<TLinker> client)
         {
-            throw new NotImplementedException();
+            foreach (var plugin in _snapshot)
+            {
+                plugin.OnAttach(client);
+            }
         }
 
-        public void OnConnecting(ILinkClient client, EndPoint remoteEndPoint)
+        public void OnSend(ILinkClient<TLinker> client, ref LinkClientPluginSendMessage sendData)
         {
-            throw new NotImplementedException();
+            foreach (var plugin in _snapshot)
+            {
+                plugin.OnSend(client, ref sendData);
+            }
         }
 
-        public void OnDetach(ILinkClient client)
+        public void OnConnecting(ILinkClient<TLinker> client, EndPoint remoteEndPoint)
         {
-            throw new NotImplementedException();
+            foreach (var plugin in _snapshot)
+            {
+                plugin.OnConnecting(client, remoteEndPoint);
+            }
         }
 
-        public void OnDisconnected(ILinkClient client, Exception? error)
+        public void OnDetach(ILinkClient<TLinker> client)
         {
-            throw new NotImplementedException();
+            foreach (var plugin in _snapshot)
+            {
+                plugin.OnDetach(client);
+            }
         }
 
-        public void OnDisconnecting(ILinkClient client)
+        public void OnDisconnected(ILinkClient<TLinker> client, Exception? error)
         {
-            throw new NotImplementedException();
+            foreach (var plugin in _snapshot)
+            {
+                plugin.OnDisconnected(client, error);
+            }
+        }
+
+        public void OnDisconnecting(ILinkClient<TLinker> client)
+        {
+            foreach (var plugin in _snapshot)
+            {
+                plugin.OnDisconnecting(client);
+            }
+        }
+
+        public void OnConnected(ILinkClient<TLinker> client, EndPoint remoteEndPoint, Exception exception)
+        {
+            foreach (var plugin in _snapshot)
+            {
+                plugin.OnConnected(client, remoteEndPoint, exception);
+            }
+        }
+
+        public void OnReceive(ILinkClient<TLinker> client, ref LinkClientPluginReceiveMessage message)
+        {
+            foreach (var plugin in _snapshot)
+            {
+                plugin.OnReceive(client, ref message);
+            }
         }
     }
 }

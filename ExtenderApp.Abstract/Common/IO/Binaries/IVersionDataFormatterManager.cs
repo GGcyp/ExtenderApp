@@ -6,7 +6,7 @@ namespace ExtenderApp.Abstract
     /// 支持按版本管理的二进制格式化器管理接口。
     /// 提供默认长度提示，并允许向管理器注册具体的格式化器实例。
     /// </summary>
-    public interface IVersionDataFormatterMananger : IBinaryFormatter
+    public interface IVersionDataFormatterManager : IBinaryFormatter
     {
         /// <summary>
         /// 向管理器注册一个格式化器实例。
@@ -21,7 +21,7 @@ namespace ExtenderApp.Abstract
     /// 在 <see cref="IBinaryFormatter{T}"/> 基础上，额外提供带 <see cref="Version"/> 的读写与长度估算方法。
     /// </summary>
     /// <typeparam name="T">目标序列化/反序列化的类型。</typeparam>
-    public interface IVersionDataFormatterMananger<T> : IBinaryFormatter<T>, IVersionDataFormatterMananger
+    public interface IVersionDataFormatterManager<T> : IBinaryFormatter<T>, IVersionDataFormatterManager
     {
         /// <summary>
         /// 将 <paramref name="value"/> 依据指定 <paramref name="version"/> 的协议写入到 <see cref="ByteBuffer"/>。

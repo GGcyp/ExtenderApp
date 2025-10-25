@@ -96,7 +96,7 @@ namespace MachineLearning
             //        GridColor: Plotly.NET.Color.fromString("#ffff"),
             //        ZeroLineWidth: 2);
 
-            //// We will plot the line that shows the perfect result. Setup that line here.
+            //// We will plot the line that shows the perfect Result. Setup that line here.
             //var maximumValue = Math.Max(trueValues.Max(), predictedValues.Max());
             //var perfectX = new[] { 0, maximumValue };
             //var perfectY = new[] { 0, maximumValue };

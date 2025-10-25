@@ -12,7 +12,7 @@ namespace ExtenderApp.Common.IO.Binary.Formatters
     /// 2. 实现 <see cref="IVersionFormatterMananger"/> 接口，管理多个版本的格式化器
     /// 3. 内部维护格式化器列表，按版本号排序以确保使用正确的格式化器
     /// </remarks>
-    internal class VersionDataFormatterMananger<T> : ResolverFormatter<VersionData<T>>, IVersionDataFormatterMananger<T>
+    internal class VersionDataFormatterManager<T> : ResolverFormatter<VersionData<T>>, IVersionDataFormatterManager<T>
     {
         private readonly IBinaryFormatter<Version> _version;
 
@@ -20,7 +20,7 @@ namespace ExtenderApp.Common.IO.Binary.Formatters
 
         public override int DefaultLength => Formatters.Last().DefaultLength;
 
-        public VersionDataFormatterMananger(IBinaryFormatterResolver resolver) : base(resolver)
+        public VersionDataFormatterManager(IBinaryFormatterResolver resolver) : base(resolver)
         {
             Formatters = new();
             _version = resolver.GetFormatter<Version>();

@@ -222,7 +222,7 @@ namespace ExtenderApp.Common.DataBuffers
         /// 获取处理动作。
         /// </summary>
         /// <typeparam name="TResult">返回结果类型。</typeparam>
-        /// <param name="action">处理动作，包含两个参数，DataBuffer<T>类型的数据和TResult类型的返回结果。</param>
+        /// <param name="action">处理动作，包含两个参数，OriginalMessageBuffer<T>类型的数据和TResult类型的返回结果。</param>
         /// <returns>返回处理动作。</returns>
         public Action<TResult> GetProcessAction<TResult>(Action<DataBuffer<T>, TResult> action)
         {
@@ -234,7 +234,7 @@ namespace ExtenderApp.Common.DataBuffers
         /// 设置处理动作。
         /// </summary>
         /// <typeparam name="TResult">返回结果类型。</typeparam>
-        /// <param name="action">处理动作，包含两个参数，DataBuffer<T>类型的数据和TResult类型的返回结果。</param>
+        /// <param name="action">处理动作，包含两个参数，OriginalMessageBuffer<T>类型的数据和TResult类型的返回结果。</param>
         public void SetProcessAction<TResult>(Action<DataBuffer<T>, TResult> action)
         {
             processDelegate = action;
@@ -464,20 +464,20 @@ namespace ExtenderApp.Common.DataBuffers
     public class DataBuffer<T1, T2, T3, T4> : DisposableObject, IResettable
     {
         /// <summary>
-        /// 静态对象池，用于存储和重用 DataBuffer 实例。
+        /// 静态对象池，用于存储和重用 OriginalMessageBuffer 实例。
         /// </summary>
         private static ObjectPool<DataBuffer<T1, T2, T3, T4>> pool = ObjectPool.CreateDefaultPool<DataBuffer<T1, T2, T3, T4>>();
 
         /// <summary>
-        /// 从对象池中获取一个 DataBuffer 实例。
+        /// 从对象池中获取一个 OriginalMessageBuffer 实例。
         /// </summary>
-        /// <returns>从对象池中获取的 DataBuffer 实例。</returns>
+        /// <returns>从对象池中获取的 OriginalMessageBuffer 实例。</returns>
         public static DataBuffer<T1, T2, T3, T4> GetDataBuffer() => pool.Get();
 
         /// <summary>
-        /// 将 DataBuffer 实例释放回对象池。
+        /// 将 OriginalMessageBuffer 实例释放回对象池。
         /// </summary>
-        /// <param name="item">要释放的 DataBuffer 实例。</param>
+        /// <param name="item">要释放的 OriginalMessageBuffer 实例。</param>
         public static void ReleaseDataBuffer(DataBuffer<T1, T2, T3, T4> item) => pool.Release(item);
 
         /// <summary>

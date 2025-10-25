@@ -78,9 +78,9 @@ namespace ExtenderApp.Common
                         //检查是不是版本数据转换器
                         if (details.IsVersionDataFormatter)
                         {
-                            var managerType = typeof(VersionDataFormatterMananger<>).MakeGenericType(details.BinaryType);
+                            var managerType = typeof(VersionDataFormatterManager<>).MakeGenericType(details.BinaryType);
                             var obj = Activator.CreateInstance(managerType, this);
-                            var manager = obj as IVersionDataFormatterMananger;
+                            var manager = obj as IVersionDataFormatterManager;
 
                             formatter = manager;
                             var formatterTypes = details.FormatterTypes;
