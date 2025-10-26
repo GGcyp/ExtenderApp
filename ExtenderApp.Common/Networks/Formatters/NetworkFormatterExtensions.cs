@@ -13,10 +13,10 @@ namespace ExtenderApp.Common.Networks.Formatters
         /// <returns>服务收集接口</returns>
         public static IServiceCollection AddFormatter(this IServiceCollection services)
         {
-            services.Configuration<IBinaryFormatterStore>(s =>
-            {
-                s.Add<LinkHeade, LinkHeaderFormatter>();
-            });
+            //services.Configuration<IBinaryFormatterStore>(s =>
+            //{
+
+            //});
             return services;
         }
     }

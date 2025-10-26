@@ -9,7 +9,7 @@ namespace ExtenderApp.Abstract
     /// 实现者应使用 <see cref="SocketOperationResult"/> 来统一表达本次接收的状态（成功/失败/取消/超时等），
     /// 尽量将可预期的网络错误封装到返回值中，而将真正的编程错误（例如参数为 null 或对象已释放）通过异常抛出。
     /// </remarks>
-    public interface ILinkReceive
+    public interface ILinkReceiver
     {
         /// <summary>
         /// 同步接收数据到指定缓冲区。

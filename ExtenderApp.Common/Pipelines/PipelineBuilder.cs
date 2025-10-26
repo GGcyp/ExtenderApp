@@ -63,13 +63,13 @@ namespace ExtenderApp.Common.Pipelines
         /// <exception cref="ArgumentNullException">当 <paramref name="middleware"/> 为 null 时抛出。</exception>
         /// <remarks>
         /// 要求中间件的 <c>InvokeAsync</c> 签名与 <see cref="PipelineDelegate{T}"/> 保持一致：
-        /// <c>Task InvokeAsync(T context, Func&lt;Task&gt; next)</c>。
+        /// <c>Task InvokeAsync(TLinkClient context, Func&lt;Task&gt; next)</c>。
         /// </remarks>
         public IPipelineBuilder<T> Use(IMiddleware<T> middleware)
         {
             ArgumentNullException.ThrowIfNull(middleware);
 
-            // 方法组转换为 PipelineDelegate<T>
+            // 方法组转换为 PipelineDelegate<TLinkClient>
             return Use(middleware.InvokeAsync);
         }
 

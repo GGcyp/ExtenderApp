@@ -4,7 +4,7 @@ using ExtenderApp.Abstract;
 namespace ExtenderApp.Common.ObjectPools
 {
     /// <summary>
-    /// 默认的对象池类，继承自ObjectPool<T>泛型类，适用于需要频繁创建和销毁对象的场景。
+    /// 默认的对象池类，继承自ObjectPool<TLinkClient>泛型类，适用于需要频繁创建和销毁对象的场景。
     /// </summary>
     /// <typeparam name="T">对象池管理的对象类型，必须为引用类型。</typeparam>
     public class DefaultObjectPool<T> : ObjectPool<T> where T : class

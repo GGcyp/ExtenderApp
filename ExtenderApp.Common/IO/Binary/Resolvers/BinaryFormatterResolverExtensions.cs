@@ -14,7 +14,7 @@ namespace ExtenderApp.Common
         /// </summary>
         /// <typeparam name="T">要格式化的类型。</typeparam>
         /// <param name="resolver">IFormatterResolver 实例。</param>
-        /// <returns>返回指定类型的 IBinaryFormatter<T> 实例。</returns>
+        /// <returns>返回指定类型的 IBinaryFormatter<TLinkClient> 实例。</returns>
         /// <exception cref="ArgumentNullException">如果 resolver 为 null。</exception>
         /// <exception cref="Exception">如果未注册指定类型的格式化器。</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -197,15 +197,15 @@ namespace ExtenderApp.Common.DataBuffers
         private readonly static ObjectPool<DataBuffer<T>> _pool = ObjectPool.CreateDefaultPool<DataBuffer<T>>();
 
         /// <summary>
-        /// 从对象池中获取一个DataBuffer<T>实例。
+        /// 从对象池中获取一个DataBuffer<TLinkClient>实例。
         /// </summary>
-        /// <returns>返回从对象池中获取的DataBuffer<T>实例。</returns>
+        /// <returns>返回从对象池中获取的DataBuffer<TLinkClient>实例。</returns>
         public static DataBuffer<T> GetDataBuffer() => _pool.Get();
 
         /// <summary>
-        /// 将DataBuffer<T>实例释放回对象池。
+        /// 将DataBuffer<TLinkClient>实例释放回对象池。
         /// </summary>
-        /// <param name="item">要释放的DataBuffer<T>实例。</param>
+        /// <param name="item">要释放的DataBuffer<TLinkClient>实例。</param>
         public static void ReleaseDataBuffer(DataBuffer<T> item) => _pool.Release(item);
 
         /// <summary>
@@ -222,7 +222,7 @@ namespace ExtenderApp.Common.DataBuffers
         /// 获取处理动作。
         /// </summary>
         /// <typeparam name="TResult">返回结果类型。</typeparam>
-        /// <param name="action">处理动作，包含两个参数，OriginalMessageBuffer<T>类型的数据和TResult类型的返回结果。</param>
+        /// <param name="action">处理动作，包含两个参数，OriginalMessageBuffer<TLinkClient>类型的数据和TResult类型的返回结果。</param>
         /// <returns>返回处理动作。</returns>
         public Action<TResult> GetProcessAction<TResult>(Action<DataBuffer<T>, TResult> action)
         {
@@ -234,7 +234,7 @@ namespace ExtenderApp.Common.DataBuffers
         /// 设置处理动作。
         /// </summary>
         /// <typeparam name="TResult">返回结果类型。</typeparam>
-        /// <param name="action">处理动作，包含两个参数，OriginalMessageBuffer<T>类型的数据和TResult类型的返回结果。</param>
+        /// <param name="action">处理动作，包含两个参数，OriginalMessageBuffer<TLinkClient>类型的数据和TResult类型的返回结果。</param>
         public void SetProcessAction<TResult>(Action<DataBuffer<T>, TResult> action)
         {
             processDelegate = action;
@@ -247,7 +247,7 @@ namespace ExtenderApp.Common.DataBuffers
         }
 
         /// <summary>
-        /// 释放当前DataBuffer<T>实例，将其放回对象池中。
+        /// 释放当前DataBuffer<TLinkClient>实例，将其放回对象池中。
         /// </summary>
         public void Release()
         {
@@ -255,7 +255,7 @@ namespace ExtenderApp.Common.DataBuffers
         }
 
         /// <summary>
-        /// 尝试重置DataBuffer<T>实例。
+        /// 尝试重置DataBuffer<TLinkClient>实例。
         /// </summary>
         /// <returns>如果成功重置则返回true，否则返回false。</returns>
         public bool TryReset()

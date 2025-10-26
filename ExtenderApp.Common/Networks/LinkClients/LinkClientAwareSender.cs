@@ -1,0 +1,293 @@
+﻿using System.Buffers;
+using System.Net;
+using ExtenderApp.Abstract;
+using ExtenderApp.Data;
+
+namespace ExtenderApp.Common.Networks
+{
+    /// <summary>
+    /// 支持插件与格式化器的链接客户端发送器基类。
+    /// </summary>
+    /// <typeparam name="TLinker">指定类型连接器</typeparam>
+    public abstract class LinkClientAwareSender<TLinkClient, TLinker> : LinkClient<TLinker>, ILinkClientAwareSender<TLinkClient>
+        where TLinkClient : ILinkClientAwareSender<TLinkClient>
+        where TLinker : ILinker
+    {
+        /// <summary>
+        /// 保护对接收相关状态的并发访问锁：用于在
+        /// StartReceive/StopReceive 中同步检查与切换 <see
+        /// cref="_receiveCts"/> 与 <see
+        /// cref="_receiveTask"/>。 注意：StopReceive 中可能在锁外等待任务完成或在持有锁的情况下启动取消，但应尽量保持锁粒度短以避免阻塞接收路径。
+        /// </summary>
+        private readonly object _receiveLock = new();
+
+        /// <summary>
+        /// 当前客户端自身的引用，便于在基类中传递给插件管理器等使用。
+        /// </summary>
+        public readonly TLinkClient _thisClient;
+
+        /// <summary>
+        /// 用于控制接收循环的取消令牌源。 在 StartReceive 创建，在
+        /// StopReceive 取消并释放；为 null 表示接收循环未在运行或已被释放。
+        /// </summary>
+        private CancellationTokenSource? _receiveCts;
+
+        /// <summary>
+        /// 表示当前正在运行的接收循环任务（由 StartReceive 启动）。
+        /// 可能为 null（未启动或已完成/已释放）。对其检查/赋值需在 <see
+        /// cref="_receiveLock"/> 保护下进行以避免竞态。
+        /// </summary>
+        private Task? _receiveTask;
+
+        public ILinkClientFormatterManager? FormatterManager { get; private set; }
+        public ILinkClientPluginManager<TLinkClient>? PluginManager { get; private set; }
+
+        public LinkClientAwareSender(TLinker linker) : base(linker)
+        {
+            _thisClient = (TLinkClient)(ILinkClientAwareSender<TLinkClient>)this;
+            if (Connected)
+            {
+                StartReceive();
+            }
+        }
+
+        public void SetClientPluginManager(ILinkClientPluginManager<TLinkClient> pluginManager)
+        {
+            ArgumentNullException.ThrowIfNull(pluginManager, nameof(pluginManager));
+
+            PluginManager = pluginManager;
+        }
+
+        public void SetClientFormatterManager(ILinkClientFormatterManager formatterManager)
+        {
+            ArgumentNullException.ThrowIfNull(formatterManager, nameof(formatterManager));
+
+            FormatterManager = formatterManager;
+        }
+
+        #region Send And Receive
+
+        public virtual ValueTask<SocketOperationResult> SendAsync<T>(T data)
+        {
+            if (FormatterManager is null)
+                throw new InvalidOperationException("转换器管理为空，不能使用泛型方法");
+
+            var formatter = FormatterManager.GetFormatter<T>();
+            if (formatter is null)
+                throw new InvalidOperationException($"未找到类型 {typeof(T).FullName} 的格式化器，无法发送数据");
+
+            var buffer = formatter.Serialize(data);
+            LinkClientPluginSendMessage pluginSendData = new(buffer, formatter.DataType);
+            PluginManager?.OnSend(_thisClient, ref pluginSendData);
+
+            ByteBlock sendBlock = pluginSendData.ToBlock();
+            buffer.Dispose();
+            return PrivateSendAsync(sendBlock);
+        }
+
+        private async ValueTask<SocketOperationResult> PrivateSendAsync(ByteBlock sendBlock)
+        {
+            SocketOperationResult result = await Linker.SendAsync(sendBlock);
+            sendBlock.Dispose();
+            return result;
+        }
+
+        private async Task LoopReceive(CancellationToken token)
+        {
+            byte[] bytes = ArrayPool<byte>.Shared.Rent((int)Utility.KilobytesToBytes(4));
+            try
+            {
+                while (!token.IsCancellationRequested)
+                {
+                    SocketOperationResult result;
+                    try
+                    {
+                        // ReceiveAsync 接受
+                        // ResultMessage<byte> 并支持传入取消令牌
+                        result = await Linker.ReceiveAsync(bytes.AsMemory(), token);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        // 被取消：正常退出接收循环
+                        break;
+                    }
+                    catch (Exception ex)
+                    {
+                        // 非取消异常：通知插件并退出循环（认为链路已异常断开）
+                        PluginManager?.OnDisconnected(_thisClient, ex);
+                        break;
+                    }
+
+                    // 若对端优雅关闭（TCP）通常返回 0，或者实现以 0 表示已断开，退出接收循环以进入暂停状态
+                    if (result.BytesTransferred <= 0)
+                    {
+                        break;
+                    }
+
+                    // 调用插件处理收到的数据（即使
+                    // BytesTransferred 为 0，也通知一次）
+                    try
+                    {
+                        await PrivatePluginReceiveMessage(result, bytes.AsMemory(0, result.BytesTransferred));
+                    }
+                    catch
+                    {
+                        // 插件异常不应导致接收循环崩溃，记录/吞掉（具体日志可由实现添加）
+                    }
+                }
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(bytes);
+            }
+        }
+
+        private ValueTask PrivatePluginReceiveMessage(SocketOperationResult result, ReadOnlyMemory<byte> resultMessage)
+        {
+            LinkClientPluginReceiveMessage message = new(result, resultMessage);
+            PluginManager?.OnReceive(_thisClient, ref message);
+            if (FormatterManager != null && !message.OutMessageFrames.IsEmpty)
+            {
+                for (int i = 0; i < message.OutMessageFrames.Count; i++)
+                {
+                    var frame = message.OutMessageFrames[i];
+                    var formatter = FormatterManager.GetFormatter(frame.MessageType);
+                    if (formatter is null)
+                    {
+                        // 未找到对应格式化器，跳过
+                        continue;
+                    }
+                    formatter.DeserializeAndInvoke((ByteBuffer)frame.Payload);
+                }
+            }
+            return ValueTask.CompletedTask;
+        }
+
+        private void StartReceive()
+        {
+            lock (_receiveLock)
+            {
+                if (_receiveTask != null && !_receiveTask.IsCompleted)
+                {
+                    // 已在运行
+                    return;
+                }
+
+                _receiveCts = new CancellationTokenSource();
+                _receiveTask = Task.Run(() => LoopReceive(_receiveCts.Token));
+            }
+        }
+
+        private void StopReceive()
+        {
+            lock (_receiveLock)
+            {
+                if (_receiveCts == null)
+                    return;
+
+                try
+                {
+                    _receiveCts.Cancel();
+                }
+                catch { }
+
+                try
+                {
+                    _receiveTask?.Wait(); // 可阻塞等待接收任务退出
+                }
+                catch (AggregateException) { }
+                finally
+                {
+                    _receiveTask = null;
+                    _receiveCts.Dispose();
+                    _receiveCts = null;
+                }
+            }
+        }
+
+        #endregion Send And Receive
+
+        #region ILinker 直通方法
+
+        public virtual void Connect(EndPoint remoteEndPoint)
+        {
+            PluginManager?.OnConnecting(_thisClient, remoteEndPoint);
+            try
+            {
+                Linker.Connect(remoteEndPoint);
+                // 连接成功后启动接收循环
+                StartReceive();
+                PluginManager?.OnConnected(_thisClient, remoteEndPoint, null);
+            }
+            catch (Exception ex)
+            {
+                PluginManager?.OnConnected(_thisClient, remoteEndPoint, ex);
+                throw;
+            }
+        }
+
+        public virtual async ValueTask ConnectAsync(EndPoint remoteEndPoint, CancellationToken token = default)
+        {
+            PluginManager?.OnConnecting(_thisClient, remoteEndPoint);
+
+            try
+            {
+                await Linker.ConnectAsync(remoteEndPoint, token);
+                // 连接成功后启动接收循环
+                StartReceive();
+                PluginManager?.OnConnected(_thisClient, remoteEndPoint, null);
+            }
+            catch (Exception ex)
+            {
+                PluginManager?.OnConnected(_thisClient, remoteEndPoint, ex);
+                throw;
+            }
+        }
+
+        public virtual void Disconnect()
+        {
+            PluginManager?.OnDisconnecting(_thisClient);
+            // 先暂停接收，再关闭底层（避免在关闭过程中继续处理数据）
+            StopReceive();
+            try
+            {
+                Linker.Disconnect();
+                PluginManager?.OnDisconnected(_thisClient, null);
+            }
+            catch (Exception ex)
+            {
+                PluginManager?.OnDisconnected(_thisClient, ex);
+                throw;
+            }
+        }
+
+        public virtual async ValueTask DisconnectAsync(CancellationToken token = default)
+        {
+            PluginManager?.OnDisconnecting(_thisClient);
+            // 先暂停接收，再异步断开底层
+            StopReceive();
+            try
+            {
+                await Linker.DisconnectAsync(token);
+                PluginManager?.OnDisconnected(_thisClient, null);
+            }
+            catch (Exception ex)
+            {
+                PluginManager?.OnDisconnected(_thisClient, ex);
+                throw;
+            }
+        }
+
+        public virtual SocketOperationResult Send(Memory<byte> memory)
+        {
+            return Linker.Send(memory);
+        }
+
+        public virtual ValueTask<SocketOperationResult> SendAsync(Memory<byte> memory, CancellationToken token = default)
+        {
+            return Linker.SendAsync(memory, token);
+        }
+
+        #endregion ILinker 直通方法
+    }
+}

@@ -8,8 +8,8 @@ namespace ExtenderApp.Common.Networks
     /// </summary>
     internal class UdpLinkerFactory : LinkerFactory<IUdpLinker>
     {
-        public override SocketType LinkerSocketType => SocketType.Dgram;
-        public override ProtocolType LinkerProtocolType => ProtocolType.Udp;
+        public override SocketType SocketType => SocketType.Dgram;
+        public override ProtocolType ProtocolType => ProtocolType.Udp;
 
         protected override IUdpLinker CreateLinkerInternal(Socket socket)
         {

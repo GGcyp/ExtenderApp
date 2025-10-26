@@ -11,7 +11,7 @@ namespace ExtenderApp.Common
     /// </typeparam>
     public class Singleton<T> where T : class, new()
     {
-        // 使用Lazy<T>实现延迟初始化
+        // 使用Lazy<TLinkClient>实现延迟初始化
         // readonly修饰保证线程安全
         // 静态构造函数特性保证首次访问前初始化
         private static readonly Lazy<T> _lazyInstance =

@@ -7,7 +7,7 @@ namespace ExtenderApp.Abstract
     /// </summary>
     /// <remarks>
     /// 接口聚合了运行时信息（<see cref="ILinkInfo"/>）、连接管理（<see cref="ILinkConnect"/>）、
-    /// 发送（<see cref="ILinkSend"/>）与接收（<see cref="ILinkReceive"/>）能力，并要求实现对资源负责的释放（通过 <see cref="IDisposable.Dispose"/>）。
+    /// 发送（<see cref="ILinkSender"/>）与接收（<see cref="ILinkReceiver"/>）能力，并要求实现对资源负责的释放（通过 <see cref="IDisposable.Dispose"/>）。
     ///
     /// 设计与使用约定（实现者与调用者应遵守或在实现文档中明确）：
     /// - 线程安全：应保证并发调用的正确性。常见做法是对同类操作（发送/接收）进行内部串行化或使用并发安全的数据结构，避免竞态与资源泄露。
@@ -26,7 +26,7 @@ namespace ExtenderApp.Abstract
     ///   <see cref="SocketOperationResult.RemoteEndPoint"/> 等字段应尽量完整地提供诊断信息，便于调用方决定重试、记录或降级处理。
     /// - 文档化行为：实现应在其具体文档中明确对重复 Connect/Disconnect 的处理策略、在取消/超时情形下是以异常还是返回特定结果码作为指示等细节。
     /// </remarks>
-    public interface ILinker : IDisposable, ILinkInfo, ILinkReceive, ILinkSend, ILinkConnect
+    public interface ILinker : IDisposable, ILinkInfo, ILinkReceiver, ILinkSender, ILinkConnect
     {
     }
 }

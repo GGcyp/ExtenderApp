@@ -22,7 +22,7 @@ namespace ExtenderApp.Common.ObjectPools
         /// <summary>
         /// 注入发布操作。
         /// </summary>
-        /// <param name="action">待注入的发布操作，该操作接受一个泛型参数 T。</param>
+        /// <param name="action">待注入的发布操作，该操作接受一个泛型参数 TLinkClient。</param>
         public void InjectReleaseAction(Action<T> action)
         {
             releaseAction = action;

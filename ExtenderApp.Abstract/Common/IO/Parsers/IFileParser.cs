@@ -8,7 +8,7 @@ namespace ExtenderApp.Abstract
     /// <remarks>
     /// 约定：
     /// - 偏移与长度均以字节为单位。<br/>
-    /// - 读取方法：从文件读取原始字节并反序列化为 T；失败或内容为空可返回 null。<br/>
+    /// - 读取方法：从文件读取原始字节并反序列化为 TLinkClient；失败或内容为空可返回 null。<br/>
     /// - 写入方法：将值序列化为字节并写入到实现定义的位置/区间（覆盖或追加策略由实现决定）。<br/>
     /// - 并发与线程安全由具体实现决定；结合 <see cref="IFileOperate"/> 可实现更细粒度控制。<br/>
     /// - 常见异常（如 IOException、UnauthorizedAccessException）由具体实现决定是否抛出。

@@ -4,14 +4,16 @@ using ExtenderApp.ViewModels;
 using System.Net;
 using System.Text;
 using ExtenderApp.Common.Networks;
+using AppHost.Extensions.DependencyInjection;
 
 namespace ExtenderApp.Test
 {
     public class TestMainViewModel : ExtenderAppViewModel
     {
         private readonly IBinaryFormatter<string> _string;
+        private readonly LinkClientBuilder<ITcpLinkClient> _builder;
 
-        public TestMainViewModel(IServiceStore serviceStore, ITcpLinker tcpLinker, ITcpListenerLinker tcpListenerLinker, IBinaryFormatter<string> formatter,  IServiceProvider provider) : base(serviceStore)
+        public TestMainViewModel(IServiceStore serviceStore, ITcpLinker tcpLinker, ITcpListenerLinker tcpListenerLinker, IBinaryFormatter<string> formatter, IServiceProvider provider) : base(serviceStore)
         {
             var info = CreatTestExpectLocalFileInfo("text");
             _string = formatter;
@@ -21,27 +23,20 @@ namespace ExtenderApp.Test
             tcpListenerLinker.OnAccept += TcpListenerLinker_OnAccept;
             tcpListenerLinker.Listen(10);
 
-            tcpLinker.ConnectAsync(loop);
-            LinkClientBuilder<ITcpLinker> builder = new LinkClientBuilder<ITcpLinker>(provider);
-            builder.SetFormatterManager(b =>
+            _builder = new(provider, provider.GetRequiredService<ILinkClientFactory<ITcpLinkClient>>());
+            _builder.SetFormatterManager(b =>
             {
-                b.AddBinaryFormatter<string>();
+                b.AddBinaryFormatter<string>(s => Info(s));
             });
-            LinkClient client = builder.Build(tcpLinker) as LinkClient;
-            client.SendAsync("saadasdad");
+            ITcpLinkClient client = _builder.Build(tcpLinker);
+            client.Connect(loop);
+            Thread.Sleep(1000);
+            client.SendAsync("Hello World!");
         }
 
         private void TcpListenerLinker_OnAccept(object? sender, ITcpLinker e)
         {
-            Task.Run(async () =>
-            {
-                byte[] bytes = new byte[1024];
-                while (true)
-                {
-                    await e.ReceiveAsync(bytes);
-                    Formatter(bytes);
-                }
-            });
+            var client = _builder.Build(e);
         }
 
         private void Formatter(byte[] bytes)

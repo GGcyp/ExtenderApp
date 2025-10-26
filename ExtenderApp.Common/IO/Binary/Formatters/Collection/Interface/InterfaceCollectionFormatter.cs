@@ -4,7 +4,7 @@ using ExtenderApp.Data;
 namespace ExtenderApp.Common.IO.Binary.Formatters.Collection
 {
     /// <summary>
-    /// InterfaceCollectionFormatter 类是对 CollectionFormatter 类的一个扩展，用于处理实现了 ICollection<T> 接口的集合类型。
+    /// InterfaceCollectionFormatter 类是对 CollectionFormatter 类的一个扩展，用于处理实现了 ICollection<TLinkClient> 接口的集合类型。
     /// </summary>
     /// <typeparam name="T">集合中元素的类型。</typeparam>
     internal class InterfaceCollectionFormatter<T> : CollectionFormatter<T, ICollection<T>>

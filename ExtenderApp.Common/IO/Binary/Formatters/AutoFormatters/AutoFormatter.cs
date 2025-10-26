@@ -82,7 +82,7 @@ namespace ExtenderApp.Common.IO.Binary.Formatters
         {
             Type type = typeof(T);
 
-            // 统一的 T 参数表达式（确保所有成员访问表达式共享同一 ParameterExpression）
+            // 统一的 TLinkClient 参数表达式（确保所有成员访问表达式共享同一 ParameterExpression）
             ParameterExpression parameter = Expression.Parameter(typeof(T));
 
             // 将统一参数传入 Store，确保成员表达式与后续 Lambda 使用相同的 ParameterExpression
@@ -107,7 +107,7 @@ namespace ExtenderApp.Common.IO.Binary.Formatters
             if (IsClass)
                 DefaultLength = 1; // 引用类型包含 Nil 标记（注意：此处仅设置为 1，未叠加成员默认长度）
 
-            // 编译 Serialize(ref ByteBuffer, T)
+            // 编译 Serialize(ref ByteBuffer, TLinkClient)
             var serializeBody = Expression.Block(serializes);
             var serializeLambda = Expression.Lambda<SerializeMethod>(serializeBody, ByteBufferParameter, parameter);
             _serialize = serializeLambda.Compile();
@@ -131,7 +131,7 @@ namespace ExtenderApp.Common.IO.Binary.Formatters
             var deserializeLambda = Expression.Lambda<DeserializeMethod>(deserializeBody, ByteBufferParameter);
             _deserialize = deserializeLambda.Compile();
 
-            // 编译 GetLength(T) —— 非空场景下各成员长度之和
+            // 编译 GetLength(TLinkClient) —— 非空场景下各成员长度之和
             Expression totalLen = getLengths[0];
             for (int i = 1; i < getLengths.Length; i++)
             {

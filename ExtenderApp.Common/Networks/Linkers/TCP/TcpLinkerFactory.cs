@@ -8,9 +8,9 @@ namespace ExtenderApp.Common.Networks
     /// </summary>
     internal class TcpLinkerFactory : LinkerFactory<ITcpLinker>
     {
-        public override SocketType LinkerSocketType => SocketType.Stream;
+        public override SocketType SocketType => SocketType.Stream;
 
-        public override ProtocolType LinkerProtocolType => ProtocolType.Tcp;
+        public override ProtocolType ProtocolType => ProtocolType.Tcp;
 
         protected override ITcpLinker CreateLinkerInternal(Socket socket)
         {

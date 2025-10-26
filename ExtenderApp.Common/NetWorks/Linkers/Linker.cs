@@ -1,11 +1,12 @@
 ﻿using System.Net;
+using System.Net.Sockets;
 using ExtenderApp.Abstract;
 using ExtenderApp.Data;
 
 namespace ExtenderApp.Common.Networks
 {
     /// <summary>
-    /// 抽象基类 _linker，实现 ILinker，提供统一的发送/接收/连接/断开模板与并发门控。
+    /// 抽象基类 Linker，实现 ILinker，提供统一的发送/接收/连接/断开模板与并发门控。
     /// </summary>
     public abstract class Linker : DisposableObject, ILinker
     {
@@ -28,6 +29,10 @@ namespace ExtenderApp.Common.Networks
         public abstract EndPoint? LocalEndPoint { get; }
 
         public abstract EndPoint? RemoteEndPoint { get; }
+
+        public abstract ProtocolType ProtocolType { get; }
+
+        public abstract SocketType SocketType { get; }
 
         #endregion 子类实现
 

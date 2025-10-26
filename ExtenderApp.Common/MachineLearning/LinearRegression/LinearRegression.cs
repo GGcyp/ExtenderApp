@@ -10,11 +10,11 @@ namespace ExtenderApp.Common.MachineLearning.Linear
         public override void DataFit()
         {
             //默认最后为截距值
-            // 计算 (X^T * X + lambda * I)^(-1) 的逆矩阵
+            // 计算 (X^TLinkClient * X + lambda * I)^(-1) 的逆矩阵
             var transpose = MatrixX.Transpose();
             var inverseMatrix = transpose.Dot(MatrixX).Inverse();
 
-            // 计算系数向量，其中包含截距和斜率(X^T * X + lambda * I)^(-1) * X^T
+            // 计算系数向量，其中包含截距和斜率(X^TLinkClient * X + lambda * I)^(-1) * X^TLinkClient
             CoefficientMatrix = inverseMatrix.Dot(transpose).Dot(MatrixY);
         }
     }

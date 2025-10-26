@@ -19,9 +19,10 @@ namespace ExtenderApp.Common.Networks
 
         #region FormatterManagerBuilder
 
-        public static FormatterManagerBuilder AddBinaryFormatter<T>(this FormatterManagerBuilder builder)
+        public static FormatterManagerBuilder AddBinaryFormatter<T>(this FormatterManagerBuilder builder, Action<T>? callback = null)
         {
             var formatter = builder.Provider.GetRequiredService<BinaryLinkClientFormatter<T>>();
+            formatter.Receive += callback;
             builder.Manager.AddFormatter(formatter);
             return builder;
         }

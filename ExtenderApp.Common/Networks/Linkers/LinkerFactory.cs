@@ -10,8 +10,8 @@ namespace ExtenderApp.Common.Networks
     public abstract class LinkerFactory<T> : ILinkerFactory<T>
         where T : ILinker
     {
-        public abstract SocketType LinkerSocketType { get; }
-        public abstract ProtocolType LinkerProtocolType { get; }
+        public abstract SocketType SocketType { get; }
+        public abstract ProtocolType ProtocolType { get; }
 
         public T CreateLinker()
         {
@@ -25,7 +25,7 @@ namespace ExtenderApp.Common.Networks
                 throw new ArgumentNullException(nameof(socket));
             }
 
-            if (socket.SocketType != LinkerSocketType || socket.ProtocolType != LinkerProtocolType)
+            if (socket.SocketType != SocketType || socket.ProtocolType != ProtocolType)
             {
                 throw new ArgumentException(string.Format("传入的套字节类型和协议类型需要一致:{0}", typeof(T).Name), nameof(socket));
             }
@@ -35,24 +35,9 @@ namespace ExtenderApp.Common.Networks
 
         public T CreateLinker(AddressFamily addressFamily)
         {
-            return CreateLinker(new Socket(addressFamily, LinkerSocketType, LinkerProtocolType));
+            return CreateLinker(new Socket(addressFamily, SocketType, ProtocolType));
         }
 
         protected abstract T CreateLinkerInternal(Socket socket);
-
-        ILinker ILinkerFactory.CreateLinker()
-        {
-            return CreateLinker();
-        }
-
-        ILinker ILinkerFactory.CreateLinker(Socket socket)
-        {
-            return CreateLinker(socket);
-        }
-
-        ILinker ILinkerFactory.CreateLinker(AddressFamily addressFamily)
-        {
-            return CreateLinker(addressFamily);
-        }
     }
 }

@@ -7,7 +7,6 @@ namespace ExtenderApp.Common.Networks.LinkClients
     {
         public static IServiceCollection AddLinkerClient(this IServiceCollection services)
         {
-            services.AddScoped<LinkClientFactory>();
             services.AddTransient(typeof(BinaryLinkClientFormatter<>), (p, o) =>
             {
                 if (o is not Type[] types)
@@ -16,8 +15,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
                 IBinaryFormatter formatter = p.GetRequiredService<IBinaryFormatterResolver>().GetFormatter(types[0]);
                 return Activator.CreateInstance(typeof(BinaryLinkClientFormatter<>).MakeGenericType(types[0]), formatter);
             });
-            //services.AddSingleton<LinkParser, ExtenderLinkParser>();
-            //services.AddTransient(typeof(LinkClient<,>), typeof(LinkClient<,>));
+            services.AddTcpLinkClient();
 
             return services;
         }

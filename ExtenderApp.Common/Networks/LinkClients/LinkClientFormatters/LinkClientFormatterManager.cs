@@ -8,8 +8,8 @@ namespace ExtenderApp.Common.Networks
     /// 客户端格式化器管理器：负责注册与查找 <see cref="ILinkClientFormatter"/>。
     /// </summary>
     /// <remarks>
-    /// - 提供两种索引：按数据类型哈希（MessageType）与按泛型类型 <c>T</c>；
-    /// - 当同一 <c>T</c> 注册多个实现时，会自动以 <see cref="ClientFormatterTypeSwitch{T}"/> 聚合，
+    /// - 提供两种索引：按数据类型哈希（MessageType）与按泛型类型 <c>TLinkClient</c>；
+    /// - 当同一 <c>TLinkClient</c> 注册多个实现时，会自动以 <see cref="ClientFormatterTypeSwitch{T}"/> 聚合，
     ///   以支持基于 FormatterTypeHash 的后续分发。
     /// </remarks>
     internal class LinkClientFormatterManager : ILinkClientFormatterManager

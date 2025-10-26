@@ -7,19 +7,26 @@ using ExtenderApp.Data;
 
 namespace ExtenderApp.Common.Networks
 {
-    internal class LinkClientPluginManager<TLinker> : ILinkClientPluginManager<TLinker> where TLinker : ILinker
+    internal class LinkClientPluginManager<TLinkClient> : ILinkClientPluginManager<TLinkClient> 
+        where TLinkClient : ILinkClientAwareSender<TLinkClient>
     {
-        private readonly ConcurrentDictionary<Type, ILinkClientPlugin<TLinker>> _plugins;
+        private readonly ConcurrentDictionary<Type, ILinkClientPlugin<TLinkClient>> _plugins;
         // 写时更新的快照，读时无锁遍历
-        private volatile ILinkClientPlugin<TLinker>[] _snapshot;
+        private volatile ILinkClientPlugin<TLinkClient>[] _snapshot;
 
         public LinkClientPluginManager()
         {
             _plugins = new();
-            _snapshot = Array.Empty<ILinkClientPlugin<TLinker>>();
+            _snapshot = Array.Empty<ILinkClientPlugin<TLinkClient>>();
         }
 
-        public void AddPlugin<T>(T plugin) where T : ILinkClientPlugin<TLinker>
+        public LinkClientPluginManager(ConcurrentDictionary<Type, ILinkClientPlugin<TLinkClient>> plugins)
+        {
+            _plugins = plugins;
+            _snapshot = plugins.Values.ToArray();
+        }
+
+        public void AddPlugin<T>(T plugin) where T : ILinkClientPlugin<TLinkClient>
         {
             ArgumentNullException.ThrowIfNull(plugin, nameof(plugin));
 
@@ -37,7 +44,7 @@ namespace ExtenderApp.Common.Networks
             _snapshot = _plugins.Values.ToArray();
         }
 
-        public bool RemovePlugin<T>() where T : ILinkClientPlugin<TLinker>
+        public bool RemovePlugin<T>() where T : ILinkClientPlugin<TLinkClient>
         {
             Type type = typeof(T);
             if (_plugins.TryRemove(type, out _))
@@ -48,7 +55,7 @@ namespace ExtenderApp.Common.Networks
             return false;
         }
 
-        public bool TryGetPlugin<T>(out T? plugin) where T : class, ILinkClientPlugin<TLinker>
+        public bool TryGetPlugin<T>(out T? plugin) where T : class, ILinkClientPlugin<TLinkClient>
         {
             Type type = typeof(T);
             if (_plugins.TryGetValue(type, out var found))
@@ -60,7 +67,7 @@ namespace ExtenderApp.Common.Networks
             return false;
         }
 
-        public void ReplacePlugin<T>(T plugin) where T : ILinkClientPlugin<TLinker>
+        public void ReplacePlugin<T>(T plugin) where T : ILinkClientPlugin<TLinkClient>
         {
             ArgumentNullException.ThrowIfNull(plugin, nameof(plugin));
             Type type = typeof(T);
@@ -82,13 +89,13 @@ namespace ExtenderApp.Common.Networks
             }
         }
 
-        public IReadOnlyList<ILinkClientPlugin<TLinker>> GetPlugins()
+        public IReadOnlyList<ILinkClientPlugin<TLinkClient>> GetPlugins()
         {
             // 返回当前快照的只读包装（避免外部修改）
             return Array.AsReadOnly(_snapshot.ToArray());
         }
 
-        public void OnAttach(ILinkClient<TLinker> client)
+        public void OnAttach(TLinkClient client)
         {
             foreach (var plugin in _snapshot)
             {
@@ -96,7 +103,7 @@ namespace ExtenderApp.Common.Networks
             }
         }
 
-        public void OnSend(ILinkClient<TLinker> client, ref LinkClientPluginSendMessage sendData)
+        public void OnSend(TLinkClient client, ref LinkClientPluginSendMessage sendData)
         {
             foreach (var plugin in _snapshot)
             {
@@ -104,7 +111,7 @@ namespace ExtenderApp.Common.Networks
             }
         }
 
-        public void OnConnecting(ILinkClient<TLinker> client, EndPoint remoteEndPoint)
+        public void OnConnecting(TLinkClient client, EndPoint remoteEndPoint)
         {
             foreach (var plugin in _snapshot)
             {
@@ -112,7 +119,7 @@ namespace ExtenderApp.Common.Networks
             }
         }
 
-        public void OnDetach(ILinkClient<TLinker> client)
+        public void OnDetach(TLinkClient client)
         {
             foreach (var plugin in _snapshot)
             {
@@ -120,7 +127,7 @@ namespace ExtenderApp.Common.Networks
             }
         }
 
-        public void OnDisconnected(ILinkClient<TLinker> client, Exception? error)
+        public void OnDisconnected(TLinkClient client, Exception? error)
         {
             foreach (var plugin in _snapshot)
             {
@@ -128,7 +135,7 @@ namespace ExtenderApp.Common.Networks
             }
         }
 
-        public void OnDisconnecting(ILinkClient<TLinker> client)
+        public void OnDisconnecting(TLinkClient client)
         {
             foreach (var plugin in _snapshot)
             {
@@ -136,7 +143,7 @@ namespace ExtenderApp.Common.Networks
             }
         }
 
-        public void OnConnected(ILinkClient<TLinker> client, EndPoint remoteEndPoint, Exception exception)
+        public void OnConnected(TLinkClient client, EndPoint remoteEndPoint, Exception exception)
         {
             foreach (var plugin in _snapshot)
             {
@@ -144,7 +151,7 @@ namespace ExtenderApp.Common.Networks
             }
         }
 
-        public void OnReceive(ILinkClient<TLinker> client, ref LinkClientPluginReceiveMessage message)
+        public void OnReceive(TLinkClient client, ref LinkClientPluginReceiveMessage message)
         {
             foreach (var plugin in _snapshot)
             {

@@ -20,7 +20,7 @@ namespace ExtenderApp.Common.Networks
                 return provider.GetRequiredService<ILinkerFactory<ITcpLinker>>().CreateLinker();
             });
 
-            // 每次解析 IListenerLinker<TILinker> 时通过工厂创建
+            // 每次解析 IListenerLinker<TLinkClient> 时通过工厂创建
             services.AddTransient<ITcpListenerLinker>(provider =>
             {
                 return provider.GetRequiredService<ITcpListenerLinkerFactory>().CreateListenerLinker();

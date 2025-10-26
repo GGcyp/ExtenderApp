@@ -1,4 +1,5 @@
 ﻿using System.Net;
+using System.Net.Sockets;
 using ExtenderApp.Data;
 
 namespace ExtenderApp.Abstract
@@ -21,6 +22,16 @@ namespace ExtenderApp.Abstract
         /// - 对于无连接的协议（如 UDP），若实现未对 socket 调用 Connect，则该值的含义由实现决定（可始终为 true、始终为 false，或表示逻辑上的“就绪”状态）。调用方不应对 UDP 的 Connected 做严格假定，需参考实现文档。
         /// </remarks>
         bool Connected { get; }
+
+        /// <summary>
+        /// 获取链路所使用的协议类型。
+        /// </summary>
+        public ProtocolType ProtocolType { get; }
+
+        /// <summary>
+        /// 获取链路所使用的套接字类型。
+        /// </summary>
+        public SocketType SocketType { get; }
 
         /// <summary>
         /// 本地终结点（本地地址与端口），若不可用则为 null。

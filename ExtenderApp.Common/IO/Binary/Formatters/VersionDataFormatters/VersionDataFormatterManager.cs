@@ -54,7 +54,7 @@ namespace ExtenderApp.Common.IO.Binary.Formatters
             }
             if (formatter is not IVersionDataFormatter<T> localFormatter)
             {
-                throw new ArgumentException("格式化器必须实现IVersionFormatter<T>接口", nameof(formatter));
+                throw new ArgumentException("格式化器必须实现IVersionFormatter<TLinkClient>接口", nameof(formatter));
             }
             if (Formatters.Any(f => f.FormatterVersion == localFormatter.FormatterVersion))
             {
@@ -80,7 +80,7 @@ namespace ExtenderApp.Common.IO.Binary.Formatters
             var version = _version.Deserialize(ref block);
             if (version == null)
             {
-                //throw new InvalidOperationException($"读取到的版本信息为空，无法确定使用哪个格式化器进行反序列化。序列化类型为：{typeof(T).Name}");
+                //throw new InvalidOperationException($"读取到的版本信息为空，无法确定使用哪个格式化器进行反序列化。序列化类型为：{typeof(TLinkClient).Name}");
                 return new VersionData<T>(version, default);
             }
 

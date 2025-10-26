@@ -11,7 +11,7 @@ namespace ExtenderApp.Abstract
     /// 实现应使用 <see cref="SocketOperationResult"/>
     /// 统一表达操作结果（成功/失败/取消/超时等）。 对于可预期的网络错误建议通过返回值表述；仅在参数非法或对象已释放等不可恢复的编程错误时抛出异常。
     /// </remarks>
-    public interface ILinkSend
+    public interface ILinkSender
     {
         /// <summary>
         /// 同步发送指定缓冲区的数据。

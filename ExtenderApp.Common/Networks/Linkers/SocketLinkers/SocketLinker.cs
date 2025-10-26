@@ -1,6 +1,5 @@
 ﻿using System.Net;
 using System.Net.Sockets;
-using ExtenderApp.Common.Networks;
 using ExtenderApp.Common.ObjectPools;
 using ExtenderApp.Data;
 
@@ -27,10 +26,16 @@ namespace ExtenderApp.Common.Networks
 
         public override EndPoint? RemoteEndPoint => Socket.RemoteEndPoint;
 
+        public override SocketType SocketType => Socket.SocketType;
+
+        public override ProtocolType ProtocolType => Socket.ProtocolType;
+
         /// <summary>
         /// 从对象池中获取 AwaitableSocketEventArgs 实例。
         /// </summary>
-        /// <returns>AwaitableSocketEventArgs 实例</returns>
+        /// <returns>
+        /// AwaitableSocketEventArgs 实例
+        /// </returns>
         protected AwaitableSocketEventArgs GetArgs() => _pool.Get();
 
         /// <summary>
@@ -83,8 +88,6 @@ namespace ExtenderApp.Common.Networks
             }
 
             return AwaitAndReleaseAsync(vt, args);
-
-
         }
 
         private async ValueTask<SocketOperationResult> AwaitAndReleaseAsync(ValueTask<SocketOperationResult> pending, AwaitableSocketEventArgs a)

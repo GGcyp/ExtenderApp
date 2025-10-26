@@ -14,12 +14,12 @@ namespace ExtenderApp.Common.Networks
         /// <summary>
         /// 链接器所需的 <see cref="SocketType"/>（如 <see cref="SocketType.Stream"/> 表示 TCP）。
         /// </summary>
-        protected SocketType LinkerSocketType => _linkerFactory.LinkerSocketType;
+        protected SocketType LinkerSocketType => _linkerFactory.SocketType;
 
         /// <summary>
         /// 链接器所需的 <see cref="ProtocolType"/>（如 <see cref="ProtocolType.Tcp"/>）。
         /// </summary>
-        protected ProtocolType LinkerProtocolType => _linkerFactory.LinkerProtocolType;
+        protected ProtocolType LinkerProtocolType => _linkerFactory.ProtocolType;
 
         /// <summary>
         /// 使用指定的链接器工厂构造监听器链接器工厂。

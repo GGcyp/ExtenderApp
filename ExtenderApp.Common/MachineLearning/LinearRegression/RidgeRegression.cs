@@ -25,9 +25,9 @@ namespace ExtenderApp.Common.MachineLearning
         {
             Matrix transpose = MatrixX.Transpose();
             var identityMatrix = Matrix.Identity(MatrixX.Column);
-            // 计算 (X^T * X + lambda * I)^(-1) 原生加减乘法会产生新的内存消耗
+            // 计算 (X^TLinkClient * X + lambda * I)^(-1) 原生加减乘法会产生新的内存消耗
             var inverseMatrix = (transpose * MatrixX + identityMatrix.Multiplication(Lambda)).Inverse();
-            // 计算 (X^T * X + lambda * I)^(-1) * X^T
+            // 计算 (X^TLinkClient * X + lambda * I)^(-1) * X^TLinkClient
             var result = inverseMatrix.Multiplication(transpose);
 
             CoefficientMatrix = result.Dot(MatrixY);

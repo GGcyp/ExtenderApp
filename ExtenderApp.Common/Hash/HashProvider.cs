@@ -150,9 +150,9 @@ namespace ExtenderApp.Common.Hash
             return new HashValue(reslut);
         }
 
-        //public async Task<HashValue> ComputeHashAsync<T>(FileOperateInfo fileOperate) where T : HashAlgorithm
+        //public async Task<HashValue> ComputeHashAsync<TLinkClient>(FileOperateInfo fileOperate) where TLinkClient : HashAlgorithm
         //{
-        //    var pool = GetPool<T>();
+        //    var pool = GetPool<TLinkClient>();
         //    var hashAlgorithm = pool.Get();
         //    var fileConcurrent = _fileOperateProvider.GetOperate(fileOperate);
 

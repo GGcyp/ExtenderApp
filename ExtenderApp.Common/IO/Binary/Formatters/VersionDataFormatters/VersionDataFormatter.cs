@@ -7,8 +7,8 @@ namespace ExtenderApp.Common.IO.Binary.Formatters
     /// </summary>
     /// <typeparam name="T">需要格式化的数据类型</typeparam>
     /// <remarks>
-    /// 1. 继承自 ResolverFormatter&lt;T&gt;，复用其基础格式化功能
-    /// 2. 实现 ILocalFormatter&lt;T&gt; 接口，强制要求声明格式化器版本
+    /// 1. 继承自 ResolverFormatter&lt;TLinkClient&gt;，复用其基础格式化功能
+    /// 2. 实现 ILocalFormatter&lt;TLinkClient&gt; 接口，强制要求声明格式化器版本
     /// 3. 通过构造函数注入二进制格式化解析器
     /// </remarks>
     public abstract class VersionDataFormatter<T> : ResolverFormatter<T>, IVersionDataFormatter<T>

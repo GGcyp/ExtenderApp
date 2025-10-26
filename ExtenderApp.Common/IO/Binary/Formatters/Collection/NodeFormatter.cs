@@ -7,9 +7,9 @@ using ExtenderApp.Data;
 namespace ExtenderApp.Common.IO.Binary.Formatters
 {
     /// <summary>
-    /// 抽象类 NodeFormatter，用于格式化 Node<T> 类型的节点。
+    /// 抽象类 NodeFormatter，用于格式化 Node<TLinkClient> 类型的节点。
     /// </summary>
-    /// <typeparam name="T">表示 Node<T> 类型的泛型参数。</typeparam>
+    /// <typeparam name="T">表示 Node<TLinkClient> 类型的泛型参数。</typeparam>
     public abstract class NodeFormatter<T> : BinaryFormatter<T> where T : Node<T>, IEnumerable<T>
     {
         /// <summary>
@@ -30,10 +30,10 @@ namespace ExtenderApp.Common.IO.Binary.Formatters
         }
 
         /// <summary>
-        /// 从给定的 ByteBuffer 中反序列化一个 Node<T> 类型的对象。
+        /// 从给定的 ByteBuffer 中反序列化一个 Node<TLinkClient> 类型的对象。
         /// </summary>
         /// <param name="buffer">ByteBuffer 对象，用于读取二进制数据。</param>
-        /// <returns>返回反序列化后的 Node<T> 类型的对象。</returns>
+        /// <returns>返回反序列化后的 Node<TLinkClient> 类型的对象。</returns>
         public sealed override T Deserialize(ref ByteBuffer buffer)
         {
             if (_bufferConvert.TryReadNil(ref buffer))
@@ -66,10 +66,10 @@ namespace ExtenderApp.Common.IO.Binary.Formatters
         }
 
         /// <summary>
-        /// 将给定的 Node<T> 类型的对象序列化为二进制数据，并写入 ByteBuffer 中。
+        /// 将给定的 Node<TLinkClient> 类型的对象序列化为二进制数据，并写入 ByteBuffer 中。
         /// </summary>
         /// <param name="buffer">ByteBuffer 对象，用于写入二进制数据。</param>
-        /// <param name="value">要序列化的 Node<T> 类型的对象。</param>
+        /// <param name="value">要序列化的 Node<TLinkClient> 类型的对象。</param>
         public sealed override void Serialize(ref ByteBuffer buffer, T value)
         {
             if (value == null)
@@ -94,17 +94,17 @@ namespace ExtenderApp.Common.IO.Binary.Formatters
         }
 
         /// <summary>
-        /// 受保护的序列化方法，用于将给定的 Node<T> 类型的对象序列化为二进制数据，并写入 ByteBuffer 中。
+        /// 受保护的序列化方法，用于将给定的 Node<TLinkClient> 类型的对象序列化为二进制数据，并写入 ByteBuffer 中。
         /// </summary>
         /// <param name="buffer">ByteBuffer 对象，用于写入二进制数据。</param>
-        /// <param name="value">要序列化的 Node<T> 类型的对象。</param>
+        /// <param name="value">要序列化的 Node<TLinkClient> 类型的对象。</param>
         protected abstract void ProtectedSerialize(ref ByteBuffer buffer, T value);
 
         /// <summary>
-        /// 受保护的反序列化方法，用于从 ByteBuffer 中反序列化一个 Node<T> 类型的对象。
+        /// 受保护的反序列化方法，用于从 ByteBuffer 中反序列化一个 Node<TLinkClient> 类型的对象。
         /// </summary>
         /// <param name="buffer">ByteBuffer 对象，用于读取二进制数据。</param>
-        /// <returns>返回反序列化后的 Node<T> 类型的对象。</returns>
+        /// <returns>返回反序列化后的 Node<TLinkClient> 类型的对象。</returns>
         protected abstract T ProtectedDeserialize(ref ByteBuffer buffer);
 
         /// <summary>
