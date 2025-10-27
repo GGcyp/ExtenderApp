@@ -34,6 +34,11 @@ namespace ExtenderApp.Abstract
         ILinkClientFormatterManager? FormatterManager { get; }
 
         /// <summary>
+        /// 连接客户端消息打包/解包器实例（可为 null）。
+        /// </summary>
+        ILinkClientFramer? Framer { get; }
+
+        /// <summary>
         /// 设置客户端插件管理器实例（不得为 null）。建议在调用泛型发送或启用插件逻辑前先设置。
         /// </summary>
         /// <param name="pluginManager">要设置的插件管理器实例（不能为 null）。</param>
@@ -44,6 +49,12 @@ namespace ExtenderApp.Abstract
         /// </summary>
         /// <param name="formatterManager">要设置的格式化器管理器实例（不能为 null）。</param>
         void SetClientFormatterManager(ILinkClientFormatterManager formatterManager);
+
+        /// <summary>
+        /// 设置客户端消息打包/解包器实例（可为 null）。建议在启用自定义帧格式化逻辑前先设置。
+        /// </summary>
+        /// <param name="framer">客户端消息打包/解包器实例</param>
+        void SetClientFramer(ILinkClientFramer framer);
 
         /// <summary>
         /// 将业务对象序列化并异步发送到远端。实现应：

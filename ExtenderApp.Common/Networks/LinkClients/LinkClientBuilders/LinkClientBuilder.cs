@@ -11,8 +11,8 @@ namespace ExtenderApp.Common.Networks
     /// </summary>
     /// <typeparam name="TLinkClient">要构建的链路客户端类型，必须实现 <see cref="ILinkClientAwareSender{TLinkClient}"/>。</typeparam>
     /// <remarks>
-    /// - 本构建器以“先配置后构建”的方式工作；通常在单线程/启动时使用。若在并发环境中共享使用，应由调用方负责同步。  
-    /// - 构建出的客户端不会被本类释放或管理；调用方对客户端的生命周期负责。  
+    /// - 本构建器以“先配置后构建”的方式工作；通常在单线程/启动时使用。若在并发环境中共享使用，应由调用方负责同步。
+    /// - 构建出的客户端不会被本类释放或管理；调用方对客户端的生命周期负责。
     /// - FormatterManager 与 PluginManager 为可选依赖：若需要按类型序列化/反序列化或插件管线，请在构建前设置相应管理器。
     /// </remarks>
     public class LinkClientBuilder<TLinkClient>
@@ -38,6 +38,8 @@ namespace ExtenderApp.Common.Networks
         /// </summary>
         public ILinkClientFormatterManager? FormatterManager { get; set; }
 
+        public ILinkClientFramer? Framer { get; set; }
+
         /// <summary>
         /// 使用运行时服务提供者与默认客户端工厂初始化构建器。
         /// </summary>
@@ -47,6 +49,7 @@ namespace ExtenderApp.Common.Networks
         {
             ClientFactory = factory;
             _provider = provider;
+            PluginManager = new LinkClientPluginManager<TLinkClient>();
         }
 
         /// <summary>
@@ -55,14 +58,26 @@ namespace ExtenderApp.Common.Networks
         /// <param name="action">用于配置 <see cref="FormatterManagerBuilder"/> 的委托；可为 null（表示仅初始化空管理器）。</param>
         /// <returns>当前构建器实例（便于链式调用）。</returns>
         /// <remarks>
-        /// - 本方法会创建一个内部 <see cref="LinkClientFormatterManager"/> 实例并赋值给 <see cref="FormatterManager"/>。  
+        /// - 本方法会创建一个内部 <see cref="LinkClientFormatterManager"/> 实例并赋值给 <see cref="FormatterManager"/>。
         /// - 回调中可使用提供的 <see cref="FormatterManagerBuilder"/> 注册格式化器；回调异常会直接向上抛出。
         /// </remarks>
-        public LinkClientBuilder<TLinkClient> SetFormatterManager(Action<FormatterManagerBuilder> action)
+        public LinkClientBuilder<TLinkClient> SetFormatterManager(Action<FormatterManagerBuilder> action, ILinkClientFormatterManager? manager = null)
         {
-            LinkClientFormatterManager manager = new();
-            FormatterManager = manager;
+            FormatterManager = manager ?? new LinkClientFormatterManager();
             action?.Invoke(new FormatterManagerBuilder(_provider, FormatterManager));
+            return this;
+        }
+
+        /// <summary>
+        /// 初始化并设置一个 <see cref="ILinkClientPluginManager{TLinkClient}"/> 实例，并通过回调允许调用方注册插件。
+        /// </summary>
+        /// <param name="action"></param>
+        /// <param name="manager"></param>
+        /// <returns></returns>
+        public LinkClientBuilder<TLinkClient> SetPluginManager(Action<PluginManagerBuilder<TLinkClient>> action, ILinkClientPluginManager<TLinkClient>? manager = null)
+        {
+            PluginManager = manager ?? new LinkClientPluginManager<TLinkClient>();
+            action?.Invoke(new PluginManagerBuilder<TLinkClient>(_provider, PluginManager));
             return this;
         }
 
@@ -124,7 +139,7 @@ namespace ExtenderApp.Common.Networks
         /// <returns>已注入 <see cref="FormatterManager"/> 与 <see cref="PluginManager"/>（如果已设置）的客户端实例。</returns>
         /// <exception cref="ArgumentNullException">当 <paramref name="client"/> 为 null 时抛出。</exception>
         /// <remarks>
-        /// - 如果 <see cref="FormatterManager"/> 或 <see cref="PluginManager"/> 非空，方法会调用客户端的相应设置方法进行注入。  
+        /// - 如果 <see cref="FormatterManager"/> 或 <see cref="PluginManager"/> 非空，方法会调用客户端的相应设置方法进行注入。
         /// - 方法不会对客户端做进一步初始化或启动连接；仅完成依赖注入式的配置。
         /// </remarks>
         public TLinkClient Build(TLinkClient client)
@@ -132,7 +147,22 @@ namespace ExtenderApp.Common.Networks
             ArgumentNullException.ThrowIfNull(client, nameof(client));
 
             if (FormatterManager is not null)
+            {
                 client.SetClientFormatterManager(FormatterManager);
+
+                ReadOnlyMemory<byte> magic = ReadOnlyMemory<byte>.Empty;
+                if (typeof(TLinkClient).IsAssignableFrom(typeof(ITcpLinkClient)))
+                {
+                    magic = LinkClientFramer.TcpMagic;
+                }
+                else if (typeof(TLinkClient).IsAssignableFrom(typeof(IUdpLinkClient)))
+                {
+                    magic = LinkClientFramer.UdpMagic;
+                }
+
+                Framer = Framer ?? new LinkClientFramer((int)Utility.KilobytesToBytes(4), magic.Span);
+                client.SetClientFramer(Framer);
+            }
 
             if (PluginManager is not null)
                 client.SetClientPluginManager(PluginManager);

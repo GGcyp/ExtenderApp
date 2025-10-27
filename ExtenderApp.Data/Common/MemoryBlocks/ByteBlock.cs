@@ -187,6 +187,9 @@ namespace ExtenderApp.Data
         public void Write(byte value)
             => _block.Write(value);
 
+        public void Write(byte[] buffer)
+            => _block.Write(buffer.AsMemory());
+
         /// <summary>
         /// 写入一段连续字节到当前写指针位置。
         /// </summary>
@@ -273,6 +276,11 @@ namespace ExtenderApp.Data
         /// 重置读/写指针为起点（不清零数据）。
         /// </summary>
         public void Reset() => _block.Reset();
+
+        /// <summary>
+        /// 将未消费的数据移动到缓冲起始处并重置读写指针。
+        /// </summary>
+        public void Compact() => _block.Compact();
 
         /// <summary>
         /// 清零已使用区域的数据（不改变读/写指针）。

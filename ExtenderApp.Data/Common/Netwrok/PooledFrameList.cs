@@ -80,9 +80,9 @@ namespace ExtenderApp.Data
             {
                 for (int i = 0; i < _count; i++)
                 {
-                    _array![i].Dispose();
+                    _array[i].Dispose();
                 }
-                ArrayPool<Frame>.Shared.Return(_array, clearArray: true);
+                ArrayPool<Frame>.Shared.Return(_array);
                 _array = null;
                 _count = 0;
             }

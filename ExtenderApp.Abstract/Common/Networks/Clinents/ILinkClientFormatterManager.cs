@@ -20,7 +20,7 @@
         /// 注册一个类型 <typeparamref name="T"/> 的客户端格式化器。
         /// </summary>
         /// <typeparam name="T">消息/数据的强类型。</typeparam>
-        /// <param name="formatter">要注册的格式化器实例，其 <see cref="ILinkClientFormatter.DataType"/> 用作键。</param>
+        /// <param name="formatter">要注册的格式化器实例，其 <see cref="ILinkClientFormatter.MessageType"/> 用作键。</param>
         /// <remarks>
         /// 冲突策略（同一 MessageType 已存在时的行为）由具体实现决定：可选择抛出、覆盖或忽略。
         /// </remarks>

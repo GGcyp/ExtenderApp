@@ -21,7 +21,7 @@ namespace ExtenderApp.Abstract
         /// - 常见做法是使用类型名或自定义标识计算哈希（例如 FNV-1a）；<br/>
         /// - 用于在反序列化前的快速分发与匹配。
         /// </remarks>
-        int DataType { get; }
+        int MessageType { get; }
 
         /// <summary>
         /// 从输入缓冲中反序列化并进行分发（触发对应的类型事件）。

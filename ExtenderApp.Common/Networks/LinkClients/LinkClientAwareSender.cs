@@ -39,6 +39,7 @@ namespace ExtenderApp.Common.Networks
         /// </summary>
         private Task? _receiveTask;
 
+        public ILinkClientFramer? Framer { get; private set; }
         public ILinkClientFormatterManager? FormatterManager { get; private set; }
         public ILinkClientPluginManager<TLinkClient>? PluginManager { get; private set; }
 
@@ -65,6 +66,12 @@ namespace ExtenderApp.Common.Networks
             FormatterManager = formatterManager;
         }
 
+        public void SetClientFramer(ILinkClientFramer framer)
+        {
+            ArgumentNullException.ThrowIfNull(framer, nameof(framer));
+            Framer = framer;
+        }
+
         #region Send And Receive
 
         public virtual ValueTask<SocketOperationResult> SendAsync<T>(T data)
@@ -77,10 +84,30 @@ namespace ExtenderApp.Common.Networks
                 throw new InvalidOperationException($"未找到类型 {typeof(T).FullName} 的格式化器，无法发送数据");
 
             var buffer = formatter.Serialize(data);
-            LinkClientPluginSendMessage pluginSendData = new(buffer, formatter.DataType);
+            LinkClientPluginSendMessage pluginSendData = new(buffer, formatter.MessageType);
             PluginManager?.OnSend(_thisClient, ref pluginSendData);
 
-            ByteBlock sendBlock = pluginSendData.ToBlock();
+
+            ByteBlock sendBlock = default;
+            if (Framer != null)
+            {
+                Framer.Encode(formatter.MessageType, (int)buffer.Length, out var framedMessage);
+                sendBlock = new ByteBlock((int)(buffer.Length + framedMessage.Length));
+
+                framedMessage.TryCopyTo(sendBlock.GetSpan((int)framedMessage.Remaining).Slice(0, (int)framedMessage.Remaining));
+                sendBlock.WriteAdvance((int)framedMessage.Remaining);
+                buffer.TryCopyTo(sendBlock.GetSpan((int)buffer.Length).Slice(0, (int)buffer.Length));
+                sendBlock.WriteAdvance((int)buffer.Length);
+
+                framedMessage.Dispose();
+            }
+            else
+            {
+                sendBlock = new ByteBlock((int)buffer.Length);
+                buffer.TryCopyTo(sendBlock.GetSpan((int)buffer.Length).Slice(0, (int)buffer.Length));
+                sendBlock.WriteAdvance((int)buffer.Length);
+            }
+
             buffer.Dispose();
             return PrivateSendAsync(sendBlock);
         }
@@ -144,7 +171,18 @@ namespace ExtenderApp.Common.Networks
 
         private ValueTask PrivatePluginReceiveMessage(SocketOperationResult result, ReadOnlyMemory<byte> resultMessage)
         {
-            LinkClientPluginReceiveMessage message = new(result, resultMessage);
+            ByteBuffer buffer = new(resultMessage);
+            LinkClientPluginReceiveMessage message = default;
+            if (Framer != null)
+            {
+                Framer.Decode(ref buffer, out var framedList);
+                message = new(result, framedList);
+            }
+            else
+            {
+                message = new(result, default);
+            }
+
             PluginManager?.OnReceive(_thisClient, ref message);
             if (FormatterManager != null && !message.OutMessageFrames.IsEmpty)
             {

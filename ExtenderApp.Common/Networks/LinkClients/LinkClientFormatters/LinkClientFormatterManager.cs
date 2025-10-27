@@ -33,11 +33,11 @@ namespace ExtenderApp.Common.Networks
                 throw new ArgumentNullException(nameof(formatter));
 
             Type type = typeof(T);
-            if (_hashToFormatterDict.TryGetValue(formatter.DataType, out var lastFormatter))
+            if (_hashToFormatterDict.TryGetValue(formatter.MessageType, out var lastFormatter))
             {
                 throw new InvalidOperationException(string.Format("当前转换器已经被注册：{0}", type.FullName));
             }
-            _hashToFormatterDict.TryAdd(formatter.DataType, formatter);
+            _hashToFormatterDict.TryAdd(formatter.MessageType, formatter);
         }
 
         public void RemoveFormatter<T>()

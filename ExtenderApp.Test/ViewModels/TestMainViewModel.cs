@@ -31,7 +31,10 @@ namespace ExtenderApp.Test
             ITcpLinkClient client = _builder.Build(tcpLinker);
             client.Connect(loop);
             Thread.Sleep(1000);
-            client.SendAsync("Hello World!");
+            for (int i = 0; i < 5; i++)
+            {
+                client.SendAsync("Hello World!");
+            }
         }
 
         private void TcpListenerLinker_OnAccept(object? sender, ITcpLinker e)

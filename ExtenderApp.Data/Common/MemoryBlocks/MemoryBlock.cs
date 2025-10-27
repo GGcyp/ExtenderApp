@@ -368,6 +368,32 @@ namespace ExtenderApp.Data
         }
 
         /// <summary>
+        /// 将未消费的数据移动到缓冲起始处并重置读写指针。
+        /// - 场景：当 Consumed > 0 且还有剩余未读数据时，调用此方法把 unread 数据拷贝到 array[0..Remaining-1]，
+        ///   以便回收前面的已消费区域用于后续写入。
+        /// - 若所有数据都已消费，则行为等同于 Reset()。
+        /// </summary>
+        public void Compact()
+        {
+            // 如果没有底层数组或没有已写数据，直接返回
+            if (array == null || Length == 0)
+                return;
+
+            int unread = Length - Consumed;
+            if (unread <= 0 || Consumed == 0)
+            {
+                // 全部消费，重置指针以重用整个缓冲
+                Reset();
+                return;
+            }
+
+            // 将未读取数据前移到起始位置
+            Array.Copy(array, Consumed, array, 0, unread);
+            Consumed = 0;
+            Length = unread;
+        }
+
+        /// <summary>
         /// 复制已写入的数据到新数组并返回。
         /// </summary>
         /// <returns>包含已写入数据的新数组。</returns>

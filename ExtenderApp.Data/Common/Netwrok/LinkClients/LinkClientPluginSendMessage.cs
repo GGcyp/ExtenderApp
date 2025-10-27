@@ -24,11 +24,6 @@
         public int MessageType;
 
         /// <summary>
-        /// 前置缓冲：插件可在此写入需要放在消息起始处的字节（例如帧头、前置标记等）。
-        /// </summary>
-        public ByteBuffer FirstMessageBuffer;
-
-        /// <summary>
         /// 输出缓冲：插件可在此写入替代或附加的完整消息内容。若该缓冲非空，最终输出会以此为主；否则使用 <see cref="OriginalMessageBuffer"/>。
         /// </summary>
         public ByteBuffer OutMessageBuffer;
@@ -44,7 +39,6 @@
             MessageType = Message;
 
             OutMessageBuffer = ByteBuffer.CreateBuffer();
-            FirstMessageBuffer = ByteBuffer.CreateBuffer();
         }
 
         /// <summary>
@@ -53,36 +47,7 @@
         public void Dispose()
         {
             OriginalMessageBuffer.Dispose();
-            FirstMessageBuffer.Dispose();
             OutMessageBuffer.Dispose();
-        }
-
-        /// <summary>
-        /// 将当前封装中存在的缓冲内容合并为单个 <see cref="ByteBlock"/>：
-        /// - 若 <see cref="OutMessageBuffer"/> 非空，先写入 <see cref="FirstMessageBuffer"/>（若有）再写入 <see cref="OutMessageBuffer"/>；  
-        /// - 否则，先写入 <see cref="FirstMessageBuffer"/>（若有）再写入 <see cref="OriginalMessageBuffer"/>（原始消息）。
-        /// </summary>
-        /// <returns>
-        /// 新创建的 <see cref="ByteBlock"/>，包含合并后的可读字节。返回的 <see cref="ByteBlock"/> 由调用方负责释放。
-        /// </returns>
-        /// <remarks>
-        /// - 本方法会复制当前各 <see cref="ByteBuffer"/> 中的可读字节到返回的 <see cref="ByteBlock"/>，以便后续发送使用。  
-        /// - 为避免重复释放与资源竞争，通常在调用 <see cref="ToBlock"/> 并获取结果后，再统一调用 <see cref="Dispose"/> 释放原始缓冲租约。
-        /// </remarks>
-        public ByteBlock ToBlock()
-        {
-            int length = (int)(FirstMessageBuffer.Remaining + OutMessageBuffer.Remaining);
-            ByteBlock byteBlock = new ByteBlock(length);
-
-            if (FirstMessageBuffer.Remaining > 0)
-                byteBlock.Write(FirstMessageBuffer);
-
-            if (OutMessageBuffer.Remaining > 0)
-                byteBlock.Write(OutMessageBuffer);
-            else
-                byteBlock.Write(OriginalMessageBuffer);
-
-            return byteBlock;
         }
     }
 }
