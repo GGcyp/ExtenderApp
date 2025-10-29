@@ -74,7 +74,7 @@ namespace ExtenderApp.Common.Networks
 
         #region Send And Receive
 
-        public virtual ValueTask<SocketOperationResult> SendAsync<T>(T data)
+        public virtual ValueTask<SocketOperationResult> SendAsync<T>(T data, CancellationToken token = default)
         {
             if (FormatterManager is null)
                 throw new InvalidOperationException("转换器管理为空，不能使用泛型方法");
@@ -87,35 +87,39 @@ namespace ExtenderApp.Common.Networks
             LinkClientPluginSendMessage pluginSendData = new(buffer, formatter.MessageType);
             PluginManager?.OnSend(_thisClient, ref pluginSendData);
 
-
-            ByteBlock sendBlock = default;
+            ByteBuffer sendBuffer = default;
             if (Framer != null)
             {
-                Framer.Encode(formatter.MessageType, (int)buffer.Length, out var framedMessage);
-                sendBlock = new ByteBlock((int)(buffer.Length + framedMessage.Length));
+                Framer.Encode(pluginSendData.MessageType, (int)pluginSendData.ResultOutMessageBuffer.Length, out var framedMessage);
 
-                framedMessage.TryCopyTo(sendBlock.GetSpan((int)framedMessage.Remaining).Slice(0, (int)framedMessage.Remaining));
-                sendBlock.WriteAdvance((int)framedMessage.Remaining);
-                buffer.TryCopyTo(sendBlock.GetSpan((int)buffer.Length).Slice(0, (int)buffer.Length));
-                sendBlock.WriteAdvance((int)buffer.Length);
+                sendBuffer = ByteBuffer.CreateBuffer();
+                sendBuffer.Write(framedMessage);
+                sendBuffer.Write(pluginSendData.ResultOutMessageBuffer);
 
                 framedMessage.Dispose();
+                pluginSendData.Dispose();
+                return PrivateSendAsync(sendBuffer.UnreadSequence, sendBuffer.Rental, token);
             }
             else
             {
-                sendBlock = new ByteBlock((int)buffer.Length);
-                buffer.TryCopyTo(sendBlock.GetSpan((int)buffer.Length).Slice(0, (int)buffer.Length));
-                sendBlock.WriteAdvance((int)buffer.Length);
+                if (pluginSendData.OutMessageBuffer.Remaining > 0)
+                {
+                    sendBuffer = pluginSendData.OutMessageBuffer;
+                    pluginSendData.OriginalMessageBuffer.Dispose();
+                }
+                else
+                {
+                    sendBuffer = pluginSendData.OriginalMessageBuffer;
+                    pluginSendData.OutMessageBuffer.Dispose();
+                }
             }
-
-            buffer.Dispose();
-            return PrivateSendAsync(sendBlock);
+            return PrivateSendAsync(sendBuffer.UnreadSequence, sendBuffer.Rental, token);
         }
 
-        private async ValueTask<SocketOperationResult> PrivateSendAsync(ByteBlock sendBlock)
+        private async ValueTask<SocketOperationResult> PrivateSendAsync(ReadOnlySequence<byte> memories, SequencePool<byte>.SequenceRental rental, CancellationToken token)
         {
-            SocketOperationResult result = await Linker.SendAsync(sendBlock);
-            sendBlock.Dispose();
+            var result = await Linker.SendAsync(memories, token);
+            rental.Dispose();
             return result;
         }
 
@@ -176,6 +180,10 @@ namespace ExtenderApp.Common.Networks
             if (Framer != null)
             {
                 Framer.Decode(ref buffer, out var framedList);
+                // 未能解析出任何帧，直接返回
+                if (framedList.IsEmpty)
+                    return ValueTask.CompletedTask;
+
                 message = new(result, framedList);
             }
             else

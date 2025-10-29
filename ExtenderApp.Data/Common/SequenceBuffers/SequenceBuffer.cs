@@ -24,7 +24,7 @@ namespace ExtenderApp.Data
         /// <summary>
         /// 序列池租约，负责释放从 <see cref="SequencePool{T}"/> 租用的 <see cref="_sequence"/>。
         /// </summary>
-        private SequencePool<T>.SequenceRental rental;
+        public SequencePool<T>.SequenceRental Rental;
 
         /// <summary>
         /// 读取视图是否已失效（发生写入或申请写缓冲后置为 true）。
@@ -183,8 +183,8 @@ namespace ExtenderApp.Data
         /// <remarks>生命周期结束时调用 <see cref="Dispose"/> 归还租约。</remarks>
         public SequenceBuffer(SequencePool<T> pool)
         {
-            rental = pool.Rent();
-            _sequence = rental.Value;
+            Rental = pool.Rent();
+            _sequence = Rental.Value;
         }
 
         /// <summary>
@@ -522,9 +522,9 @@ namespace ExtenderApp.Data
         /// </summary>
         public void Dispose()
         {
-            if (!rental.IsEmpty)
+            if (!Rental.IsEmpty)
             {
-                rental.Dispose();
+                Rental.Dispose();
             }
         }
 

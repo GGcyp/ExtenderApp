@@ -26,14 +26,17 @@ namespace ExtenderApp.Test
             _builder = new(provider, provider.GetRequiredService<ILinkClientFactory<ITcpLinkClient>>());
             _builder.SetFormatterManager(b =>
             {
-                b.AddBinaryFormatter<string>(s => Info(s));
+                //b.AddBinaryFormatter<string>(s => Info(s));
+                b.AddBinaryFormatter<int[]>(a => Info(a.Length));
             });
             ITcpLinkClient client = _builder.Build(tcpLinker);
             client.Connect(loop);
             Thread.Sleep(1000);
+            int[] ints = new int[1000000];
             for (int i = 0; i < 5; i++)
             {
-                client.SendAsync("Hello World!");
+                //client.SendAsync("Hello World!");
+                client.SendAsync(ints);
             }
         }
 

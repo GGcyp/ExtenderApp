@@ -77,7 +77,7 @@ namespace ExtenderApp.Common.Networks
                 if (receiveCacheBlock.Remaining < headerLen)
                     break;
 
-                ByteBuffer peek = (ByteBuffer)receiveCacheBlock;
+                ByteBuffer peek = new(receiveCacheBlock);
                 // 查找/匹配 magic（若配置）
                 bool magicMatched = true;
                 ReadOnlySpan<byte> magicSpan = Magic.Span;
@@ -100,7 +100,7 @@ namespace ExtenderApp.Common.Networks
                     if (!magicMatched)
                     {
                         // magic 未匹配：丢弃 1 字节（向后搜索），继续下一次尝试以寻找对齐的魔数字节序列
-                        receiveCacheBlock.ReadAdvance(1);
+                        peek.ReadAdvance(1);
                         if (peek.End)
                         {
                             break;
@@ -136,9 +136,13 @@ namespace ExtenderApp.Common.Networks
 
                 if (length < 0)
                     throw new ArgumentOutOfRangeException(nameof(length), "帧长度非法（负值）。");
+                else if (length > receiveCacheBlock.Capacity)
+                {
+                    receiveCacheBlock.Ensure(length);
+                }
 
                 // 如果剩余数据不足以包含完整 payload，则等候更多数据
-                if (peek.Remaining < length)
+                if (peek.Remaining < length || peek.Remaining == 0)
                     break;
 
                 // 确认有完整帧：先消费 header（magic + type + length）再读取 payload
@@ -146,6 +150,7 @@ namespace ExtenderApp.Common.Networks
 
                 // 将 payloadSeq 拷贝到新的 ByteBlock（由 Frame 接管并在最终释放）
                 var payload = new ByteBlock(receiveCacheBlock.UnreadSpan.Slice(0, length));
+                receiveCacheBlock.ReadAdvance(length);
 
                 // 将帧加入集合（集合接管 payload 的释放责任）
                 framedList.Add(new Frame(messageType, payload));
@@ -154,8 +159,8 @@ namespace ExtenderApp.Common.Networks
 
             if (receiveCacheBlock.Remaining == 0)
             {
-                // 缓存已空，重置为初始状态以便复用
-                receiveCacheBlock.Reset();
+                receiveCacheBlock.Dispose();
+                receiveCacheBlock = new ByteBlock(cacheLength);
             }
             else
             {

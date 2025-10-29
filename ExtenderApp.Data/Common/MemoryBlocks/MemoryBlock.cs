@@ -11,7 +11,7 @@ namespace ExtenderApp.Data
     /// <typeparam name="T">元素类型。</typeparam>
     public struct MemoryBlock<T>
     {
-        private const int DefaultCapacity = 32 * 1024;
+        private const int DefaultCapacity = 4 * 1024;
 
         /// <summary>
         /// 内存块使用的数组池。
@@ -36,7 +36,7 @@ namespace ExtenderApp.Data
         /// <summary>
         /// 剩余未读数据的数量（Length - Consumed）。
         /// </summary>
-        public long Remaining => Length - Consumed;
+        public int Remaining => Length - Consumed;
 
         /// <summary>
         /// 当前底层缓冲容量。array 为空时为 0。
@@ -51,12 +51,12 @@ namespace ExtenderApp.Data
         /// <summary>
         /// 获取已写入范围的只读 UnreadSpan。
         /// </summary>
-        public ReadOnlySpan<T> UnreadSpan => array.AsSpan(Consumed, Length);
+        public ReadOnlySpan<T> UnreadSpan => array.AsSpan(Consumed, (int)Remaining);
 
         /// <summary>
         /// 获取已写入范围的只读 UnreadMemory。
         /// </summary>
-        public ReadOnlyMemory<T> UnreadMemory => array.AsMemory(Consumed, Length);
+        public ReadOnlyMemory<T> UnreadMemory => array.AsMemory(Consumed, (int)Remaining);
 
         public MemoryBlock() : this(DefaultCapacity)
         {
@@ -82,8 +82,13 @@ namespace ExtenderApp.Data
                 throw new ArgumentNullException(nameof(pool));
 
             _pool = pool;
-            if (capacity > 0) array = _pool.Rent(capacity);
-            else array = array = Array.Empty<T>();
+            if (capacity > 0)
+            {
+                capacity = capacity < DefaultCapacity ? DefaultCapacity : capacity;
+                array = _pool.Rent(capacity);
+            }
+            else
+                array = array = Array.Empty<T>();
 
             Consumed = 0;
             Length = 0;
@@ -376,11 +381,11 @@ namespace ExtenderApp.Data
         public void Compact()
         {
             // 如果没有底层数组或没有已写数据，直接返回
-            if (array == null || Length == 0)
+            if (array == null || Length == 0 || Consumed == 0)
                 return;
 
             int unread = Length - Consumed;
-            if (unread <= 0 || Consumed == 0)
+            if (unread <= 0)
             {
                 // 全部消费，重置指针以重用整个缓冲
                 Reset();

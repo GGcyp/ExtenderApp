@@ -28,6 +28,11 @@ namespace ExtenderApp.Data
         public ReadOnlySequence<byte> Sequence => _buffer.Sequence;
 
         /// <summary>
+        /// 获取当前持有的序列租约（若有）。
+        /// </summary>
+        public SequencePool<byte>.SequenceRental Rental => _buffer.Rental;
+
+        /// <summary>
         /// 获得当前数据片段的索引。
         /// </summary>
         public int CurrentSpanIndex => _buffer.CurrentSpanIndex;
@@ -102,7 +107,7 @@ namespace ExtenderApp.Data
         /// </summary>
         public bool IsEmpty => _buffer.IsEmpty;
 
-        public ByteBuffer(in ByteBuffer buffer) : this(buffer._buffer)
+        public ByteBuffer(ByteBuffer buffer) : this(buffer._buffer)
         {
         }
 
@@ -110,9 +115,9 @@ namespace ExtenderApp.Data
         /// 通过已有的 <see cref="SequenceBuffer{T}"/> 构造。
         /// </summary>
         /// <param name="buffer">已有的缓冲</param>
-        public ByteBuffer(in SequenceBuffer<byte> buffer)
+        public ByteBuffer(SequenceBuffer<byte> buffer) : this(SequencePool<byte>.Shared)
         {
-            _buffer = buffer;
+            Write(buffer);
         }
 
         /// <summary>
@@ -431,7 +436,7 @@ namespace ExtenderApp.Data
         #region FormByteBuffer
 
         public static implicit operator ReadOnlySequence<byte>(in ByteBuffer buffer)
-            => buffer.Sequence;
+            => buffer.UnreadSequence;
 
         public static implicit operator SequenceReader<byte>(in ByteBuffer buffer)
             => buffer._buffer;

@@ -64,6 +64,7 @@ namespace ExtenderApp.Abstract
         /// </summary>
         /// <typeparam name="T">要发送的业务对象类型。</typeparam>
         /// <param name="data">要发送的业务对象实例。</param>
-        ValueTask<SocketOperationResult> SendAsync<T>(T data);
+        /// <param name="token">取消令牌</param>
+        ValueTask<SocketOperationResult> SendAsync<T>(T data, CancellationToken token = default);
     }
 }

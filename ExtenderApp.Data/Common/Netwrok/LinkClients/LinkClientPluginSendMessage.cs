@@ -29,6 +29,11 @@
         public ByteBuffer OutMessageBuffer;
 
         /// <summary>
+        /// 获取最终用于发送的消息缓冲（只读属性）。
+        /// </summary>
+        public ByteBuffer ResultOutMessageBuffer => OutMessageBuffer.Remaining > 0 ? OutMessageBuffer : OriginalMessageBuffer;
+
+        /// <summary>
         /// 使用原始消息缓冲与消息类型构造一个插件消息封装实例。会为 <see cref="FirstMessageBuffer"/> 与 <see cref="OutMessageBuffer"/> 分配新缓冲。
         /// </summary>
         /// <param name="dataBuffer">原始消息缓冲，所有权转移到新实例。</param>
