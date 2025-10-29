@@ -73,7 +73,7 @@ namespace ExtenderApp.Abstract
         /// </summary>
         /// <param name="token">取消令牌。</param>
         /// <returns>可与 await 配合使用的可等待对象。</returns>
-        ExtenderThreadSwitchAwaitable ToMainThreadAsync(CancellationToken token = default);
+        ThreadSwitchAwaitable ToMainThreadAsync(CancellationToken token = default);
 
         /// <summary>
         /// 生成一个可等待对象，用于将后续代码切换到非主线程（后台线程/线程池）执行。
@@ -81,6 +81,6 @@ namespace ExtenderApp.Abstract
         /// </summary>
         /// <param name="token">取消令牌。</param>
         /// <returns>可与 await 配合使用的可等待对象。</returns>
-        ExtenderThreadSwitchAwaitable AwayMainThreadAsync(CancellationToken token = default);
+        ThreadSwitchAwaitable AwayMainThreadAsync(CancellationToken token = default);
     }
 }

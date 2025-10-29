@@ -75,7 +75,7 @@ namespace ExtenderApp.Data
         /// </summary>
         public override bool Equals(object obj)
         {
-            return obj is HttpMethod && Equals((HttpMethod)obj);
+            return obj is HttpMethod httpMethod && Equals(httpMethod);
         }
 
         /// <summary>
@@ -84,6 +84,11 @@ namespace ExtenderApp.Data
         public override int GetHashCode()
         {
             return Method.GetHashCode(StringComparison.OrdinalIgnoreCase);
+        }
+
+        public override string ToString()
+        {
+            return Method;
         }
     }
 }

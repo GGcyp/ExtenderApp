@@ -5,6 +5,7 @@ using System.Net;
 using System.Text;
 using ExtenderApp.Common.Networks;
 using AppHost.Extensions.DependencyInjection;
+using System.Net.Http;
 
 namespace ExtenderApp.Test
 {
@@ -33,6 +34,7 @@ namespace ExtenderApp.Test
             client.Connect(loop);
             Thread.Sleep(1000);
             int[] ints = new int[1000000];
+            HttpRequestMessage message=new HttpRequestMessage();
             for (int i = 0; i < 5; i++)
             {
                 //client.SendAsync("Hello World!");

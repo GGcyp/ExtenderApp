@@ -54,6 +54,7 @@ namespace ExtenderApp.Common.Networks
 
         public void SetClientPluginManager(ILinkClientPluginManager<TLinkClient> pluginManager)
         {
+            ThrowIfDisposed();
             ArgumentNullException.ThrowIfNull(pluginManager, nameof(pluginManager));
 
             PluginManager = pluginManager;
@@ -61,6 +62,7 @@ namespace ExtenderApp.Common.Networks
 
         public void SetClientFormatterManager(ILinkClientFormatterManager formatterManager)
         {
+            ThrowIfDisposed();
             ArgumentNullException.ThrowIfNull(formatterManager, nameof(formatterManager));
 
             FormatterManager = formatterManager;
@@ -68,6 +70,7 @@ namespace ExtenderApp.Common.Networks
 
         public void SetClientFramer(ILinkClientFramer framer)
         {
+            ThrowIfDisposed();
             ArgumentNullException.ThrowIfNull(framer, nameof(framer));
             Framer = framer;
         }
@@ -76,6 +79,7 @@ namespace ExtenderApp.Common.Networks
 
         public virtual ValueTask<SocketOperationResult> SendAsync<T>(T data, CancellationToken token = default)
         {
+            ThrowIfDisposed();
             if (FormatterManager is null)
                 throw new InvalidOperationException("转换器管理为空，不能使用泛型方法");
 
@@ -209,7 +213,7 @@ namespace ExtenderApp.Common.Networks
             return ValueTask.CompletedTask;
         }
 
-        private void StartReceive()
+        protected void StartReceive()
         {
             lock (_receiveLock)
             {
@@ -224,7 +228,7 @@ namespace ExtenderApp.Common.Networks
             }
         }
 
-        private void StopReceive()
+        protected void StopReceive()
         {
             lock (_receiveLock)
             {
@@ -257,6 +261,7 @@ namespace ExtenderApp.Common.Networks
 
         public virtual void Connect(EndPoint remoteEndPoint)
         {
+            ThrowIfDisposed();
             PluginManager?.OnConnecting(_thisClient, remoteEndPoint);
             try
             {
@@ -274,6 +279,7 @@ namespace ExtenderApp.Common.Networks
 
         public virtual async ValueTask ConnectAsync(EndPoint remoteEndPoint, CancellationToken token = default)
         {
+            ThrowIfDisposed();
             PluginManager?.OnConnecting(_thisClient, remoteEndPoint);
 
             try
@@ -292,6 +298,7 @@ namespace ExtenderApp.Common.Networks
 
         public virtual void Disconnect()
         {
+            ThrowIfDisposed();
             PluginManager?.OnDisconnecting(_thisClient);
             // 先暂停接收，再关闭底层（避免在关闭过程中继续处理数据）
             StopReceive();
@@ -309,6 +316,7 @@ namespace ExtenderApp.Common.Networks
 
         public virtual async ValueTask DisconnectAsync(CancellationToken token = default)
         {
+            ThrowIfDisposed();
             PluginManager?.OnDisconnecting(_thisClient);
             // 先暂停接收，再异步断开底层
             StopReceive();

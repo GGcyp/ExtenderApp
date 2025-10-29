@@ -87,6 +87,7 @@ namespace ExtenderApp.Common.Networks
         /// <exception cref="SocketException">底层套接字绑定失败。</exception>
         public override void Bind(EndPoint endPoint)
         {
+            ThrowIfDisposed();
             if (endPoint is null)
                 throw new ArgumentNullException(nameof(endPoint));
 
@@ -108,6 +109,7 @@ namespace ExtenderApp.Common.Networks
         /// <exception cref="SocketException">底层开始监听失败。</exception>
         public override void Listen(int backlog)
         {
+            ThrowIfDisposed();
             if (!_isBinded)
                 throw new InvalidOperationException("Socket未绑定，无法监听。");
 
@@ -138,6 +140,7 @@ namespace ExtenderApp.Common.Networks
         /// </summary>
         public void Pause()
         {
+            ThrowIfDisposed();
             if (IsPaused) return;
             IsPaused = true;
             _pauseGate.Reset();
@@ -149,6 +152,7 @@ namespace ExtenderApp.Common.Networks
         /// </summary>
         public void Resume()
         {
+            ThrowIfDisposed();
             if (!IsPaused) return;
             IsPaused = false;
             _pauseGate.Set();

@@ -2,14 +2,14 @@
 {
     /// <summary>
     /// 自定义 Awaitable 结构体，用于支持 await 语法，实现线程切换或异步等待。
-    /// 通常与 <see cref="ExtenderThreadSwitchAwaiter"/> 配合使用，封装异步调度、主线程切换等场景。
+    /// 通常与 <see cref="ThreadSwitchAwaiter"/> 配合使用，封装异步调度、主线程切换等场景。
     /// 典型用法：await dispatcher.ToMainThreadAsync(); // 之后的代码在线程上下文（如 UI 线程）执行
     /// </summary>
-    /// <seealso cref="ExtenderThreadSwitchAwaiter"/>
-    public readonly struct ExtenderThreadSwitchAwaitable
+    /// <seealso cref="ThreadSwitchAwaiter"/>
+    public readonly struct ThreadSwitchAwaitable
     {
         /// <summary>
-        /// 取消令牌，用于支持异步操作的取消，在 <see cref="ExtenderThreadSwitchAwaiter.GetResult"/> 处传播取消。
+        /// 取消令牌，用于支持异步操作的取消，在 <see cref="ThreadSwitchAwaiter.GetResult"/> 处传播取消。
         /// </summary>
         private readonly CancellationToken _token;
 
@@ -43,7 +43,7 @@
         /// <param name="unsafeCallback">非安全 continuation 调度回调。</param>
         /// <param name="isCompleted">固定完成态；true 表示无需切换，await 同步继续。</param>
         /// <param name="token">取消令牌。</param>
-        public ExtenderThreadSwitchAwaitable(Action<Action>? callback, Action<Action>? unsafeCallback, bool isCompleted, CancellationToken token = default)
+        public ThreadSwitchAwaitable(Action<Action>? callback, Action<Action>? unsafeCallback, bool isCompleted, CancellationToken token = default)
         {
             _token = token;
             _callback = callback;
@@ -60,7 +60,7 @@
         /// <param name="unsafeCallback">非安全 continuation 调度回调。</param>
         /// <param name="isCompletedFunc">动态判断是否已在目标上下文的委托；true 表示无需切换。</param>
         /// <param name="token">取消令牌。</param>
-        public ExtenderThreadSwitchAwaitable(Action<Action>? callback, Action<Action>? unsafeCallback, Func<bool>? isCompletedFunc, CancellationToken token = default)
+        public ThreadSwitchAwaitable(Action<Action>? callback, Action<Action>? unsafeCallback, Func<bool>? isCompletedFunc, CancellationToken token = default)
         {
             _token = token;
             _callback = callback;
@@ -72,16 +72,16 @@
         /// <summary>
         /// 获取 Awaiter 实例，供 await 语法使用。
         /// </summary>
-        /// <returns><see cref="ExtenderThreadSwitchAwaiter"/> 实例。</returns>
+        /// <returns><see cref="ThreadSwitchAwaiter"/> 实例。</returns>
         /// <remarks>
         /// 若提供了 <see cref="_isCompletedFunc"/>，则走“动态判断”路径；否则使用固定完成态 <see cref="_isCompleted"/>。
         /// </remarks>
-        public ExtenderThreadSwitchAwaiter GetAwaiter()
+        public ThreadSwitchAwaiter GetAwaiter()
         {
             if (_isCompletedFunc != null)
-                return new ExtenderThreadSwitchAwaiter(_callback, _unsafeCallback, _isCompletedFunc, _token);
+                return new ThreadSwitchAwaiter(_callback, _unsafeCallback, _isCompletedFunc, _token);
 
-            return new ExtenderThreadSwitchAwaiter(_callback, _unsafeCallback, _isCompleted, _token);
+            return new ThreadSwitchAwaiter(_callback, _unsafeCallback, _isCompleted, _token);
         }
     }
 }

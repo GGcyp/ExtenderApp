@@ -8,6 +8,8 @@ namespace ExtenderApp.Data
     /// <typeparam name="T">值的类型。</typeparam>
     public class ValueOrList<T> : IList<T>
     {
+        public static ValueOrList<T> Empty { get; } = new ValueOrList<T>(0);
+
         /// <summary>
         /// 存储单个值。
         /// </summary>

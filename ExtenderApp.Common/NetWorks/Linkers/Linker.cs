@@ -54,15 +54,7 @@ namespace ExtenderApp.Common.Networks
             ReceiveCounter.Start();
         }
 
-        /// <summary>
-        /// 关闭链接（等价于 Dispose）。
-        /// </summary>
-        public void Closed()
-        {
-            Dispose();
-        }
-
-        #region Connect/Disconnect
+        #region Connect/Close
 
         /// <summary>
         /// 同步连接到远端。
@@ -74,6 +66,10 @@ namespace ExtenderApp.Common.Networks
             _sendSlim.Wait();
             _receiveSlim.Wait();
             _lifecycleSlim.Wait();
+
+            if (Connected)
+                Disconnect();
+
             try
             {
                 ExecuteConnectAsync(remoteEndPoint, default).GetAwaiter().GetResult();
@@ -94,6 +90,10 @@ namespace ExtenderApp.Common.Networks
             await _sendSlim.WaitAsync(token).ConfigureAwait(false);
             await _receiveSlim.WaitAsync(token).ConfigureAwait(false);
             await _lifecycleSlim.WaitAsync(token).ConfigureAwait(false);
+
+            if (Connected)
+                await DisconnectAsync(token).ConfigureAwait(false);
+
             try
             {
                 await ExecuteConnectAsync(remoteEndPoint, token).ConfigureAwait(false);
@@ -145,7 +145,7 @@ namespace ExtenderApp.Common.Networks
             }
         }
 
-        #endregion Connect/Disconnect
+        #endregion Connect/Close
 
         #region Send
 

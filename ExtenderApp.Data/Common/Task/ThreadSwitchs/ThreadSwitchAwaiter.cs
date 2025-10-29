@@ -6,7 +6,7 @@ namespace ExtenderApp.Data
     /// 自定义 Awaiter，用于支持 await 语法，实现线程切换或异步等待。
     /// 通过 ICriticalNotifyCompletion 接口，配合 ExtenderAwaitable 实现主线程/调度器切换。
     /// </summary>
-    public readonly struct ExtenderThreadSwitchAwaiter : ICriticalNotifyCompletion
+    public readonly struct ThreadSwitchAwaiter : ICriticalNotifyCompletion
     {
         /// <summary>
         /// 取消令牌，用于支持异步操作的取消。
@@ -55,7 +55,7 @@ namespace ExtenderApp.Data
         /// <param name="unsafeCallback">非安全 continuation 调度回调（可跳过部分安全检查）。</param>
         /// <param name="isCompletedFunc">动态判断是否已完成/无需切换的委托，返回 true 表示 await 同步继续。</param>
         /// <param name="token">取消令牌，将在 <see cref="GetResult"/> 处传播取消。</param>
-        public ExtenderThreadSwitchAwaiter(Action<Action>? callback, Action<Action>? unsafeCallback, Func<bool>? isCompletedFunc, CancellationToken token)
+        public ThreadSwitchAwaiter(Action<Action>? callback, Action<Action>? unsafeCallback, Func<bool>? isCompletedFunc, CancellationToken token)
         {
             _token = token;
             _callback = callback;
@@ -72,7 +72,7 @@ namespace ExtenderApp.Data
         /// <param name="unsafeCallback">非安全 continuation 调度回调。</param>
         /// <param name="isCompleted">固定的完成状态；true 表示无需切换，await 同步继续。</param>
         /// <param name="token">取消令牌，将在 <see cref="GetResult"/> 处传播取消。</param>
-        public ExtenderThreadSwitchAwaiter(Action<Action>? callback, Action<Action>? unsafeCallback, bool isCompleted, CancellationToken token)
+        public ThreadSwitchAwaiter(Action<Action>? callback, Action<Action>? unsafeCallback, bool isCompleted, CancellationToken token)
         {
             _token = token;
             _callback = callback;

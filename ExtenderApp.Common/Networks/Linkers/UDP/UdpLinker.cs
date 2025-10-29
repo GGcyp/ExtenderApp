@@ -58,11 +58,13 @@ namespace ExtenderApp.Common.Networks
 
         public void Bind(EndPoint localEndPoint)
         {
+            ThrowIfDisposed();
             Socket.Bind(localEndPoint);
         }
 
         public SocketOperationResult SendTo(Memory<byte> memory, EndPoint endPoint)
         {
+            ThrowIfDisposed();
             if (memory.IsEmpty || memory.Length <= 0)
             {
                 return new SocketOperationResult(CreateSocketException(SocketError.NoBufferSpaceAvailable));
@@ -85,6 +87,7 @@ namespace ExtenderApp.Common.Networks
 
         public ValueTask<SocketOperationResult> SendToAsync(Memory<byte> memory, EndPoint endPoint, CancellationToken token = default)
         {
+            ThrowIfDisposed();
             if (memory.IsEmpty || memory.Length <= 0)
             {
                 return ValueTask.FromResult(new SocketOperationResult(CreateSocketException(SocketError.NoBufferSpaceAvailable)));
