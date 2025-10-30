@@ -19,27 +19,30 @@ namespace ExtenderApp.Test
             var info = CreatTestExpectLocalFileInfo("text");
             _string = formatter;
 
-            IPEndPoint loop = new IPEndPoint(IPAddress.Loopback, 9090);
-            tcpListenerLinker.Bind(loop);
-            tcpListenerLinker.OnAccept += TcpListenerLinker_OnAccept;
-            tcpListenerLinker.Listen(10);
+            //IPEndPoint loop = new IPEndPoint(IPAddress.Loopback, 9090);
+            //tcpListenerLinker.Bind(loop);
+            //tcpListenerLinker.OnAccept += TcpListenerLinker_OnAccept;
+            //tcpListenerLinker.Listen(10);
 
-            _builder = new(provider, provider.GetRequiredService<ILinkClientFactory<ITcpLinkClient>>());
-            _builder.SetFormatterManager(b =>
-            {
-                //b.AddBinaryFormatter<string>(s => Info(s));
-                b.AddBinaryFormatter<int[]>(a => Info(a.Length));
-            });
-            ITcpLinkClient client = _builder.Build(tcpLinker);
-            client.Connect(loop);
-            Thread.Sleep(1000);
-            int[] ints = new int[1000000];
-            HttpRequestMessage message=new HttpRequestMessage();
-            for (int i = 0; i < 5; i++)
-            {
-                //client.SendAsync("Hello World!");
-                client.SendAsync(ints);
-            }
+            //_builder = new(provider, provider.GetRequiredService<ILinkClientFactory<ITcpLinkClient>>());
+            //_builder.SetFormatterManager(b =>
+            //{
+            //    //b.AddBinaryFormatter<string>(s => Info(s));
+            //    b.AddBinaryFormatter<int[]>(a => Info(a.Length));
+            //});
+            //ITcpLinkClient client = _builder.Build(tcpLinker);
+            //client.Connect(loop);
+            //Thread.Sleep(1000);
+            //int[] ints = new int[1000000];
+            //for (int i = 0; i < 5; i++)
+            //{
+            //    //client.SendAsync("Hello World!");
+            //    client.SendAsync(ints);
+            //}
+
+            HttpLinkClient httpLinkClient = new(tcpLinker);
+            var temp = httpLinkClient.SendAsync(new Data.HttpRequestMessage(Data.HttpMethod.Get, "http://www.baidu.com/")).GetAwaiter().GetResult();
+            Info(temp.StatusCode);
         }
 
         private void TcpListenerLinker_OnAccept(object? sender, ITcpLinker e)

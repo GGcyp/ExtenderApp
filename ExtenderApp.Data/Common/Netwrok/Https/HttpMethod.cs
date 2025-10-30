@@ -39,6 +39,11 @@ namespace ExtenderApp.Data
         public string Method { get; }
 
         /// <summary>
+        /// 获得是否为空方法（即 Method 为 null 或空字符串）。
+        /// </summary>
+        public bool IsEmpty => string.IsNullOrEmpty(Method);
+
+        /// <summary>
         /// 使用指定方法字符串构造一个 <see cref="HttpMethod"/> 实例。
         /// </summary>
         /// <param name="method">非空的 HTTP 方法名称。</param>

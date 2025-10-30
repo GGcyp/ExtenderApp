@@ -42,13 +42,23 @@ namespace ExtenderApp.Data
             }
         }
 
+        public void SetValue(string name, object? value)
+        {
+            ArgumentNullException.ThrowIfNull(value);
+
+            SetValue(name, value.ToString());
+        }
+
         /// <summary>
         /// 用单个值替换已有值（如果存在则删除旧值并只保留新值）。
         /// </summary>
-        public void SetValue(string name, string value)
+        public void SetValue(string name, string? value)
         {
             ArgumentNullException.ThrowIfNull(name);
-            ArgumentNullException.ThrowIfNull(value);
+            if (string.IsNullOrEmpty(value))
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
 
             var list = new ValueOrList<string>(1);
             list.Add(value);

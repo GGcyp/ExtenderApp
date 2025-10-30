@@ -38,7 +38,7 @@ namespace ExtenderApp.Data
         /// <summary>
         /// 内存块中剩余可读取的字节数
         /// </summary>
-        public long Remaining => _block.Remaining;
+        public int Remaining => _block.Remaining;
 
         /// <summary>
         /// 当前字节读取位置（读指针）。

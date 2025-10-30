@@ -21,7 +21,7 @@ namespace ExtenderApp.Data
         /// <summary>
         /// 内存块的底层数组。
         /// </summary>
-        private T[] array;
+        private T[]? array;
 
         /// <summary>
         /// 已写入元素的数量（写指针/写边界）。
@@ -58,9 +58,9 @@ namespace ExtenderApp.Data
         /// </summary>
         public ReadOnlyMemory<T> UnreadMemory => array.AsMemory(Consumed, (int)Remaining);
 
-        public MemoryBlock() : this(DefaultCapacity)
+        public MemoryBlock()
         {
-
+            _pool = ArrayPool<T>.Shared;
         }
 
         /// <summary>
@@ -151,7 +151,7 @@ namespace ExtenderApp.Data
             Consumed = block.Consumed;
             Length = block.Length;
             array = _pool.Rent(block.Capacity);
-            Array.Copy(block.array, array, Length);
+            Array.Copy(block.array!, array, Length);
         }
 
         /// <summary>

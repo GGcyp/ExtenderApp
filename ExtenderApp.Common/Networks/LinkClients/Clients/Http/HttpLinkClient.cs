@@ -1,112 +1,128 @@
-﻿using System;
+﻿using System.Buffers;
 using System.Net;
-using System.Net.Sockets;
-using System.Text;
+using System.Threading.Tasks.Sources;
 using ExtenderApp.Abstract;
+using ExtenderApp.Data;
+using HttpRequestMessage = ExtenderApp.Data.HttpRequestMessage;
+using HttpResponseMessage = ExtenderApp.Data.HttpResponseMessage;
 
 namespace ExtenderApp.Common.Networks
 {
-    internal class HttpLinkClient : LinkClient<ITcpLinker>, IHttpLinkClient
+    public class HttpLinkClient : LinkClient<ITcpLinker>, IHttpLinkClient, IValueTaskSource<HttpResponseMessage>, IDisposable
     {
+        private readonly HttpParser Parser;
+        private ManualResetValueTaskSourceCore<HttpResponseMessage> vts;
+
+        // 接收循环任务与同步保护，避免重复启动接收任务
+        private Task? _receiveTask;
+        private readonly object _receiveLock = new();
+        public short Version => vts.Version;
+
         public HttpLinkClient(ITcpLinker linker) : base(linker)
         {
-
+            Parser = new();
+            vts = new ManualResetValueTaskSourceCore<HttpResponseMessage>();
+            vts.RunContinuationsAsynchronously = true;
         }
 
-        /// <summary>
-        /// 简单的异步 GET 请求，返回响应文本（按 UTF-8 解码）。
-        /// 使用 Connection: close，读取直到远端关闭连接停止。
-        /// </summary>
-        public async ValueTask<string> GetAsync(string host, string path = "/", int port = 80, CancellationToken token = default)
+        public async ValueTask<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken token = default)
         {
-            await EnsureConnectedAsync(host, port, token).ConfigureAwait(false);
+            ArgumentNullException.ThrowIfNull(request);
 
-            string request = $"GET {path} HTTP/1.1\r\nHost: {host}\r\nAccept: */*\r\nConnection: close\r\n\r\n";
-            var requestBytes = Encoding.ASCII.GetBytes(request);
+            await ConnectAsync(request.RequestUri, token).ConfigureAwait(false);
 
-            // 发送请求
-            await Linker.SendAsync(requestBytes.AsMemory(), token).ConfigureAwait(false);
+            // 发送请求（释放 ByteBuffer 的租约）
+            await SendRequestMessage(request.ToBuffer(), token).ConfigureAwait(false);
 
-            // 读取响应直到远端关闭
-            return await ReadAllResponseAsync(token).ConfigureAwait(false);
+            // 准备等待源并启动接收任务（若尚未启动）
+            vts.Reset();
+            EnsureReceiveTaskRunning(token);
+
+            // 返回可等待的 ValueTask（等待接收任务解析并 SetResult）
+            return await new ValueTask<HttpResponseMessage>(this, vts.Version).ConfigureAwait(false);
         }
 
-        /// <summary>
-        /// 简单的异步 POST 请求，body 作为二进制负载，返回响应文本（按 UTF-8 解码）。
-        /// 使用 Connection: close，读取直到远端关闭连接停止。
-        /// </summary>
-        public async ValueTask<string> PostAsync(string host, string path, ReadOnlyMemory<byte> body, string contentType = "application/octet-stream", int port = 80, CancellationToken token = default)
+        private ValueTask ConnectAsync(Uri? requestUri, CancellationToken token)
         {
-            await EnsureConnectedAsync(host, port, token).ConfigureAwait(false);
+            ArgumentNullException.ThrowIfNull(requestUri);
+            int port = requestUri.Port > 0 ? requestUri.Port : 80;
+            return Linker.ConnectAsync(new DnsEndPoint(requestUri.Host, port), token);
+        }
 
-            string reqHead = $"POST {path} HTTP/1.1\r\nHost: {host}\r\nContent-Type: {contentType}\r\nContent-Length: {body.Length}\r\nConnection: close\r\n\r\n";
-            var headBytes = Encoding.ASCII.GetBytes(reqHead);
+        private ValueTask SendRequestMessage(ByteBuffer byteBuffer, CancellationToken token)
+        {
+            return SendRequestMessage(byteBuffer.UnreadSequence, byteBuffer.Rental, token);
+        }
 
-            // 发送头部
-            await Linker.SendAsync(headBytes.AsMemory(), token).ConfigureAwait(false);
+        private async ValueTask SendRequestMessage(ReadOnlySequence<byte> memories, SequencePool<byte>.SequenceRental rental, CancellationToken token)
+        {
+            await Linker.SendAsync(memories, token).ConfigureAwait(false);
+            rental.Dispose();
+        }
 
-            // 发送正文（若有）
-            if (!body.IsEmpty)
+        private void EnsureReceiveTaskRunning(CancellationToken token)
+        {
+            lock (_receiveLock)
             {
-                await Linker.SendAsync(body.ToArray().AsMemory(), token).ConfigureAwait(false);
+                if (_receiveTask != null && !_receiveTask.IsCompleted)
+                    return;
+
+                // fire-and-forget 接收循环（在托管线程池中运行）
+                _receiveTask = Task.Run(() => ReceiveLoopAsync(token), token);
             }
-
-            // 读取响应直到远端关闭
-            return await ReadAllResponseAsync(token).ConfigureAwait(false);
         }
 
-        /// <summary>
-        /// 同步包装方法（仅在需要同步调用时使用）。
-        /// </summary>
-        public string Get(string host, string path = "/", int port = 80, CancellationToken token = default)
-            => GetAsync(host, path, port, token).GetAwaiter().GetResult();
-
-        public string Post(string host, string path, ReadOnlyMemory<byte> body, string contentType = "application/octet-stream", int port = 80, CancellationToken token = default)
-            => PostAsync(host, path, body, contentType, port, token).GetAwaiter().GetResult();
-
-        private async ValueTask EnsureConnectedAsync(string host, int port, CancellationToken token)
+        private async Task ReceiveLoopAsync(CancellationToken token)
         {
-            if (Linker.Connected)
-                return;
-
-            // 解析主机地址，优先 IPv4
-            IPAddress[] addrs = await Dns.GetHostAddressesAsync(host).ConfigureAwait(false);
-            IPAddress? addr = null;
-            foreach (var a in addrs)
+            byte[] buffer = ArrayPool<byte>.Shared.Rent((int)Utility.KilobytesToBytes(4));
+            try
             {
-                if (a.AddressFamily == AddressFamily.InterNetwork)
+                while (!token.IsCancellationRequested)
                 {
-                    addr = a;
-                    break;
+                    SocketOperationResult result;
+                    try
+                    {
+                        result = await Linker.ReceiveAsync(buffer, token).ConfigureAwait(false);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        // 取消：如果等待者存在则通知取消
+                        vts.SetException(new OperationCanceledException(token));
+                        return;
+                    }
+                    catch (Exception ex)
+                    {
+                        vts.SetException(ex);
+                        return;
+                    }
+
+                    if (result.BytesTransferred <= 0)
+                    {
+                        vts.SetException(new InvalidOperationException("底层连接已关闭或远端异常断开"));
+                        return;
+                    }
+
+                    if (Parser.TryParseResponse(buffer.AsSpan(0, result.BytesTransferred), out HttpResponseMessage responseMessage, out int consumed))
+                    {
+                        vts.SetResult(responseMessage);
+                        ArrayPool<byte>.Shared.Return(buffer);
+                        break;
+                    }
                 }
             }
-            addr ??= addrs.Length > 0 ? addrs[0] : null;
-
-            if (addr is null)
-                throw new InvalidOperationException($"无法解析主机: {host}");
-
-            var ep = new IPEndPoint(addr, port);
-            await Linker.ConnectAsync(ep, token).ConfigureAwait(false);
-        }
-
-        private async ValueTask<string> ReadAllResponseAsync(CancellationToken token)
-        {
-            var sb = new StringBuilder();
-            byte[] buffer = new byte[8192];
-
-            while (true)
+            finally
             {
-                var res = await Linker.ReceiveAsync(buffer.AsMemory(), token).ConfigureAwait(false);
-
-                // 读取结果：当远端关闭连接时，BytesTransferred 很可能为 0
-                int read = res.BytesTransferred;
-                if (read <= 0)
-                    break;
-
-                sb.Append(Encoding.UTF8.GetString(buffer, 0, read));
+                ArrayPool<byte>.Shared.Return(buffer);
             }
-
-            return sb.ToString();
         }
+
+        #region IValueTaskSource<HttpResponseMessage>（委托 vts）
+        public HttpResponseMessage GetResult(short token) => vts.GetResult(token);
+
+        public ValueTaskSourceStatus GetStatus(short token) => vts.GetStatus(token);
+
+        public void OnCompleted(Action<object?> continuation, object? state, short token, ValueTaskSourceOnCompletedFlags flags)
+            => vts.OnCompleted(continuation, state, token, flags);
+        #endregion
     }
 }

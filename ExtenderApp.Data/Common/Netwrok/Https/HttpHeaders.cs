@@ -1,4 +1,5 @@
 ﻿using System.Net;
+using System.Text;
 
 namespace ExtenderApp.Data
 {
@@ -7,6 +8,27 @@ namespace ExtenderApp.Data
     /// </summary>
     public static class HttpHeaders
     {
+        #region Http报文常量
+
+        /// <summary>
+        /// 空格字符常量，常用于构造/解析 HTTP 报文时作为分隔符。
+        /// </summary>
+        public const char SpaceChar = ' ';
+
+        /// <summary>
+        /// 点字符常量，常用于文件扩展名、主机名或版本号等的拼接与解析。
+        /// </summary>
+        public const char DotChar = '.';
+
+        /// <summary>
+        /// HTTP 报文行结束符（CRLF），用于分隔头部行与行尾。
+        /// </summary>
+        public const string NextLine = "\r\n";
+
+        #endregion
+
+        #region HttpHeaders Constants
+
         /// <summary>
         /// Cache-Control 标头，指定请求/响应链上所有缓存控制机制必须服从的指令。
         /// </summary>
@@ -272,6 +294,8 @@ namespace ExtenderApp.Data
         /// </summary>
         public const string ContentDisposition = "Content-Disposition";
 
+        #endregion HttpHeaders Constants
+
         /// <summary>
         /// 将 HttpRequestHeader 枚举转换为对应的字符串表示。
         /// </summary>
@@ -367,6 +391,55 @@ namespace ExtenderApp.Data
                 HttpResponseHeader.WwwAuthenticate => WwwAuthenticate,
                 _ => string.Empty
             };
+        }
+
+        /// <summary>
+        /// 将 <see cref="StringBuilder"/> 的字符内容按指定 <see cref="Encoding"/> 编码并与指定的 <see cref="ByteBlock"/> 合并，
+        /// 写入一个新创建的 <see cref="ByteBuffer"/> 中。
+        /// </summary>
+        /// <param name="builder">要编码写入的 <see cref="StringBuilder"/> 实例（按块读取以避免中间拷贝）。</param>
+        /// <param name="body">要追加到缓冲末尾的字节块（可为空块）。</param>
+        /// <param name="buffer">输出参数：包含已写入数据的新建 <see cref="ByteBuffer"/>。调用方需在适当时机释放/归还其资源（若实现了 Dispose）。</param>
+        /// <param name="encoding">用于将字符编码为字节的编码；若为 <c>null</c>，默认使用 <see cref="Encoding.ASCII"/>。</param>
+        /// <remarks>
+        /// 实现细节：
+        /// - 先根据编码和字符串长度估算所需字节数（使用 <see cref="Encoding.GetMaxByteCount"/>），并加上 body.Length 作为申请大小提示；
+        /// - 通过 <see cref="ByteBuffer.CreateBuffer"/> 创建目标缓冲并调用 <see cref="ByteBuffer.GetSpan(int)"/> 获取可写 <see cref="Span{T}"/>；
+        /// - 使用 <see cref="Encoder"/> 对 <see cref="StringBuilder"/> 的每个块逐段编码到目标 span，最后调用一次带 flush 的 Convert 将编码器状态刷新干净；
+        /// - 调用 <see cref="ByteBuffer.WriteAdvance(int)"/> 提交已写入字节数，然后将 body 追加到缓冲末尾。
+        /// 注意：<see cref="ByteBuffer"/> 为 ref struct，使用时请注意其生命周期与释放语义。
+        /// </remarks>
+        public static void BuildByteBuffer(this StringBuilder builder, ByteBlock body, out ByteBuffer buffer, Encoding? encoding = null)
+        {
+            encoding ??= Encoding.ASCII;
+            int length = encoding.GetMaxByteCount(builder.Length) + body.Length;
+            buffer = ByteBuffer.CreateBuffer();
+            Span<byte> span = buffer.GetSpan(length);
+
+            Encoder encoder = encoding.GetEncoder();
+            int spanPos = 0;
+
+            foreach (var chunkMem in builder.GetChunks())
+            {
+                ReadOnlySpan<char> chars = chunkMem.Span;
+                while (!chars.IsEmpty)
+                {
+                    // 将一段 chars 编码到 dest.Slice(spanPos)
+                    encoder.Convert(chars, span.Slice(spanPos), false, out int charsUsed, out int bytesUsed, out bool completed);
+                    chars = chars.Slice(charsUsed);
+                    spanPos += bytesUsed;
+                }
+            }
+
+            // flush any encoder state
+            encoder.Convert(ReadOnlySpan<char>.Empty, span.Slice(spanPos), true, out int _, out int bytesFlushed, out bool _);
+            spanPos += bytesFlushed;
+
+            // 提交写入的字节数
+            buffer.WriteAdvance(spanPos);
+
+            buffer.Write(body);
+            return;
         }
     }
 }

@@ -203,7 +203,6 @@ namespace ExtenderApp.Common.Networks
                 return ValueTask.FromException<SocketOperationResult>(CreateSocketException(SocketError));
             }
 
-            socketError = CreateSocketException(SocketError);
             return new ValueTask<SocketOperationResult>(this, Version);
         }
 
@@ -269,7 +268,6 @@ namespace ExtenderApp.Common.Networks
                 return ValueTask.FromException<SocketOperationResult>(CreateSocketException(SocketError));
             }
 
-            socketError = CreateSocketException(SocketError);
             return new ValueTask<SocketOperationResult>(this, Version);
         }
 

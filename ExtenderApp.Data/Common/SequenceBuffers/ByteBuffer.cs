@@ -189,6 +189,11 @@ namespace ExtenderApp.Data
             _buffer.Write(bytes.AsMemory());
         }
 
+        public void Write(ByteBlock block)
+        {
+            Write(block.UnreadSpan);
+        }
+
         /// <summary>
         /// 追加一段只读跨度数据。
         /// </summary>
