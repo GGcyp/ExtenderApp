@@ -43,6 +43,7 @@ namespace ExtenderApp.Test
             HttpLinkClient httpLinkClient = new(tcpLinker);
             var temp = httpLinkClient.SendAsync(new Data.HttpRequestMessage(Data.HttpMethod.Get, "http://www.baidu.com/")).GetAwaiter().GetResult();
             Info(temp.StatusCode);
+            Info(Encoding.UTF8.GetString(temp.Body.UnreadSpan));
         }
 
         private void TcpListenerLinker_OnAccept(object? sender, ITcpLinker e)

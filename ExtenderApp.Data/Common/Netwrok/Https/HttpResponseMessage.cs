@@ -9,8 +9,6 @@ namespace ExtenderApp.Data
     /// </summary>
     public class HttpResponseMessage : DisposableObject
     {
-        private readonly Lazy<HttpHeader> _headerLazy;
-
         /// <summary>
         /// 与该响应关联的请求消息（若有）。仅供参考，可能为 <c>null</c>。
         /// </summary>
@@ -34,7 +32,7 @@ namespace ExtenderApp.Data
         /// <summary>
         /// 响应头集合（不区分大小写的键名比较）。
         /// </summary>
-        public HttpHeader Headers => _headerLazy.Value;
+        public HttpHeader? Headers { get; set; }
 
         /// <summary>
         /// 响应主体的字节块。注意：该字段持有资源，使用完毕请调用 <see cref="Dispose"/> 回收底层缓冲。
@@ -52,7 +50,6 @@ namespace ExtenderApp.Data
 
         public HttpResponseMessage(HttpRequestMessage message)
         {
-            _headerLazy = new(static () => new HttpHeader());
             Version = HttpVersion.Version11;
             ReasonPhrase = string.Empty;
             RequestMessage = message;
@@ -99,17 +96,16 @@ namespace ExtenderApp.Data
         /// <param name="contentType">Content-Type，默认 application/octet-stream。</param>
         public void SetContent(ByteBlock block, string? contentType = "application/octet-stream")
         {
-            if (!block.IsEmpty)
+            if (block.IsEmpty)
             {
                 return;
             }
 
             Body.Dispose();
-            Body = new ByteBlock(block.Remaining);
-            Body.Write(block);
+            Body = block;
 
-            Headers.SetValue(HttpHeaders.ContentType, contentType ?? "application/octet-stream");
-            Headers.SetValue(HttpHeaders.ContentLength, block.Length.ToString());
+            Headers!.SetValue(HttpHeaders.ContentType, contentType ?? "application/octet-stream");
+            Headers!.SetValue(HttpHeaders.ContentLength, block.Length.ToString());
         }
 
         /// <summary>

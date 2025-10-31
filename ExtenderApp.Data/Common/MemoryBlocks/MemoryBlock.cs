@@ -44,6 +44,11 @@ namespace ExtenderApp.Data
         public int Capacity => array?.Length ?? 0;
 
         /// <summary>
+        /// 可写入的数量（Capacity - Length）。确保不为负数。
+        /// </summary>
+        public int WritableBytes => Capacity >= Length ? Capacity - Length : 0;
+
+        /// <summary>
         /// 是否无任何已写入数据（Length == 0）。
         /// </summary>
         public bool IsEmpty => Length == 0;

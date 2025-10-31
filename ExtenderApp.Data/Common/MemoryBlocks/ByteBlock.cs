@@ -31,6 +31,11 @@ namespace ExtenderApp.Data
         public int Capacity => _block.Capacity;
 
         /// <summary>
+        /// 可写入的字节数。
+        /// </summary>
+        public int WritableBytes => _block.WritableBytes;
+
+        /// <summary>
         /// 是否无任何已写入数据（Length == 0）。
         /// </summary>
         public bool IsEmpty => _block.IsEmpty;
