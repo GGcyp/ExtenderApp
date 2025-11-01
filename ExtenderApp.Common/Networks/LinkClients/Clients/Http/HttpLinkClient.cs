@@ -25,6 +25,7 @@ namespace ExtenderApp.Common.Networks
 
         private Stream? currentStream;
         private HttpRequestMessage? currentRequest;
+        public int MaxRedirects { get; set; } = 5;
 
         public HttpLinkClient(ITcpLinker linker) : base(linker)
         {
@@ -44,29 +45,66 @@ namespace ExtenderApp.Common.Networks
         public async ValueTask<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken token = default, SslClientAuthenticationOptions? options = null)
         {
             ArgumentNullException.ThrowIfNull(request);
+            ArgumentNullException.ThrowIfNull(request.RequestUri);
+            int redirectCount = 0;
+            Uri currentUri = request.RequestUri;
 
-            await ConnectAsync(request.RequestUri, token).ConfigureAwait(false);
-
-            currentRequest = request;
-            currentStream = request.IsHttps ? _sslStream : _tcpLinkerStream;
-            if (request.IsHttps)
+            while (true)
             {
-                options = options ?? AuthenticationOptions;
-                options.TargetHost = request.RequestUri!.Host;
-                await _sslStream.AuthenticateAsClientAsync(options, token).ConfigureAwait(false);
-                await SendAuthenticateRequestMessage(request.ToBuffer(), token).ConfigureAwait(false);
-            }
-            else
-            {
-                await SendRequestMessage(request.ToBuffer(), token).ConfigureAwait(false);
-            }
+                await ConnectAsync(request.RequestUri, token).ConfigureAwait(false);
 
-            // 准备等待源并启动接收任务（若尚未启动）
-            vts.Reset();
-            EnsureReceiveTaskRunning(token);
+                currentRequest = request;
+                currentStream = request.IsHttps ? _sslStream : _tcpLinkerStream;
+                if (request.IsHttps)
+                {
+                    options = options ?? AuthenticationOptions;
+                    options.TargetHost = request.RequestUri!.Host;
+                    await _sslStream.AuthenticateAsClientAsync(options, token).ConfigureAwait(false);
+                    await SendAuthenticateRequestMessage(request.ToBuffer(), token).ConfigureAwait(false);
+                }
+                else
+                {
+                    await SendRequestMessage(request.ToBuffer(), token).ConfigureAwait(false);
+                }
 
-            // 返回可等待的 ValueTask（等待接收任务解析并 SetResult）
-            return await new ValueTask<HttpResponseMessage>(this, vts.Version).ConfigureAwait(false);
+                // 准备等待源并启动接收任务（若尚未启动）
+                vts.Reset();
+                EnsureReceiveTaskRunning(token);
+                var response = await new ValueTask<HttpResponseMessage>(this, vts.Version).ConfigureAwait(false);
+
+                // 如果不是重定向，直接返回
+                if (response.StatusCode != HttpStatusCode.Redirect || redirectCount >= MaxRedirects)
+                    return response;
+
+                // 获取 Location 头（需检查是否存在并能解析）
+                string? location = string.Empty;
+                if (!response.Headers.TryGetValues(HttpHeaders.Location, out var locs))
+                {
+                    location = locs.FirstOrDefault();
+                    if (string.IsNullOrEmpty(location))
+                        return response;
+                }
+
+                Uri newUri = new Uri(currentUri, location); // 解析相对/绝对
+                redirectCount++;
+
+                // 必要时调整请求（例如 302/303 将方法改为 GET 并清除 Body）
+                if (response.StatusCode == HttpStatusCode.Redirect || response.StatusCode == HttpStatusCode.RedirectMethod)
+                {
+                    request.Method = Data.HttpMethod.Get;
+                    request.Body.Dispose();
+                }
+
+                if (!string.Equals(currentUri.Host, newUri.Host, StringComparison.OrdinalIgnoreCase) || currentUri.Port != newUri.Port)
+                {
+                    await Linker.DisconnectAsync().ConfigureAwait(false);
+                }
+
+                // 准备下次循环
+                currentUri = newUri;
+                request.RequestUri = newUri;
+                request.Headers.SetValue(HttpHeaders.Host, newUri.Authority);
+            }
         }
 
         private ValueTask ConnectAsync(Uri? requestUri, CancellationToken token)
