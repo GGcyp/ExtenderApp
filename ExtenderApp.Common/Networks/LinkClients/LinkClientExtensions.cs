@@ -16,6 +16,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
                 return Activator.CreateInstance(typeof(BinaryLinkClientFormatter<>).MakeGenericType(types[0]), formatter);
             });
             services.AddTcpLinkClient();
+            services.AddHttpLinkClient();
 
             return services;
         }

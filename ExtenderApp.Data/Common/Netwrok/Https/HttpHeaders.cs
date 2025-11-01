@@ -25,6 +25,21 @@ namespace ExtenderApp.Data
         /// </summary>
         public const string NextLine = "\r\n";
 
+        /// <summary>
+        /// 斜杠字符常量，常用于 URL 路径的拼接与解析。
+        /// </summary>
+        public const string SlashChar = "/";
+
+        /// <summary>
+        /// http 字符常量，常用于构造和解析 URL。
+        /// </summary>
+        public const string HttpChars = "HTTP";
+
+        /// <summary>
+        /// https 字符常量，常用于构造和解析 URL。
+        /// </summary>
+        public const string HttpsChars = "HTTPS";
+
         #endregion
 
         #region HttpHeaders Constants

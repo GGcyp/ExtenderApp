@@ -27,5 +27,10 @@ namespace ExtenderApp.Common.Networks
             });
             return services;
         }
+
+        public static TcpLinkerStream ToStream(this ITcpLinker linker)
+        {
+            return new TcpLinkerStream(linker);
+        }
     }
 }

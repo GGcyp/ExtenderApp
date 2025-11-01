@@ -23,6 +23,8 @@ namespace ExtenderApp.Common.Networks
         private HttpResponseMessage? response;
         private int headerBlockLen;
         private int contentLength;
+        private static string HttpScheme = $"{Uri.UriSchemeHttp}/";
+        private static string HttpsScheme = $"{Uri.UriSchemeHttps}/";
 
         private HttpRequestMessage? request;
 
@@ -56,6 +58,9 @@ namespace ExtenderApp.Common.Networks
                 block.ReadAdvance(headerBlockLen);
             }
 
+            if (contentLength == 0)
+                return true;
+
             bytesConsumed = headerBlockLen + contentLength;
             ReadOnlySpan<byte> unread = block.UnreadSpan;
             int stillNeedLen = contentLength - block.Remaining;
@@ -80,7 +85,8 @@ namespace ExtenderApp.Common.Networks
             block.Dispose();
             block = new(DefaultHeaderSize);
             request = null;
-
+            headerBlockLen = 0;
+            contentLength = 0;
             return true;
         }
 
@@ -88,7 +94,7 @@ namespace ExtenderApp.Common.Networks
         /// 尝试从字节切片解析 HTTP 响应。
         /// 与请求解析类似：查找头部终止符并根据 Content-Length 提取 body。
         /// </summary>
-        public bool TryParseResponse(ReadOnlySpan<byte> buffer, out HttpResponseMessage? message, out int bytesConsumed, Encoding? encoding = null)
+        public bool TryParseResponse(ReadOnlySpan<byte> buffer, HttpRequestMessage requestMessage, out HttpResponseMessage? message, out int bytesConsumed, Encoding? encoding = null)
         {
             message = response;
             bytesConsumed = 0;
@@ -99,13 +105,16 @@ namespace ExtenderApp.Common.Networks
             if (response is null)
             {
                 // 解析头部
-                if (!TryParseResponseHeader(encoding, out message))
+                if (!TryParseResponseHeader(encoding, requestMessage, out message))
                 {
                     return false; // 头部未完整到达
                 }
                 response = message;
                 block.ReadAdvance(headerBlockLen);
             }
+
+            if (contentLength == 0)
+                return true;
 
             bytesConsumed = headerBlockLen + contentLength;
             ReadOnlySpan<byte> unread = block.UnreadSpan;
@@ -130,10 +139,12 @@ namespace ExtenderApp.Common.Networks
             block.Dispose();
             block = new(DefaultHeaderSize);
             response = null;
+            headerBlockLen = 0;
+            contentLength = 0;
             return true;
         }
 
-        private bool TryParseResponseHeader(Encoding? encoding, out HttpResponseMessage message)
+        private bool TryParseResponseHeader(Encoding? encoding, HttpRequestMessage requestMessage, out HttpResponseMessage message)
         {
             message = null!;
             ReadOnlySpan<byte> unread = block.UnreadSpan;
@@ -181,15 +192,24 @@ namespace ExtenderApp.Common.Networks
             if (parts.Length < 2)
                 throw new InvalidOperationException("无法解析 HTTP 响应状态行");
 
-            message = new HttpResponseMessage
+            message = new HttpResponseMessage(requestMessage)
             {
                 Headers = headers
             };
 
             // 版本
-            if (parts[0].StartsWith("HTTP/", StringComparison.OrdinalIgnoreCase))
+            if (parts[0].StartsWith(HttpScheme, StringComparison.OrdinalIgnoreCase))
             {
                 var ver = parts[0].Substring(5);
+                var verParts = ver.Split('.', 2);
+                if (verParts.Length == 2 && int.TryParse(verParts[0], out int major) && int.TryParse(verParts[1], out int minor))
+                {
+                    message.Version = new Version(major, minor);
+                }
+            }
+            else if (parts[0].StartsWith(HttpsScheme, StringComparison.OrdinalIgnoreCase))
+            {
+                var ver = parts[0].Substring(6);
                 var verParts = ver.Split('.', 2);
                 if (verParts.Length == 2 && int.TryParse(verParts[0], out int major) && int.TryParse(verParts[1], out int minor))
                 {

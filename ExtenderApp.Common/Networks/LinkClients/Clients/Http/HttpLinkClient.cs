@@ -1,5 +1,7 @@
 ﻿using System.Buffers;
 using System.Net;
+using System.Net.Security;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks.Sources;
 using ExtenderApp.Abstract;
 using ExtenderApp.Data;
@@ -10,29 +12,54 @@ namespace ExtenderApp.Common.Networks
 {
     public class HttpLinkClient : LinkClient<ITcpLinker>, IHttpLinkClient, IValueTaskSource<HttpResponseMessage>, IDisposable
     {
+        private readonly TcpLinkerStream _tcpLinkerStream;
+        private readonly SslStream _sslStream;
         private readonly HttpParser Parser;
         private ManualResetValueTaskSourceCore<HttpResponseMessage> vts;
 
+        public SslClientAuthenticationOptions AuthenticationOptions;
         // 接收循环任务与同步保护，避免重复启动接收任务
         private Task? _receiveTask;
         private readonly object _receiveLock = new();
         public short Version => vts.Version;
+
+        private Stream? currentStream;
+        private HttpRequestMessage? currentRequest;
 
         public HttpLinkClient(ITcpLinker linker) : base(linker)
         {
             Parser = new();
             vts = new ManualResetValueTaskSourceCore<HttpResponseMessage>();
             vts.RunContinuationsAsynchronously = true;
+            _tcpLinkerStream = linker.ToStream();
+            _sslStream = new(_tcpLinkerStream);
+            AuthenticationOptions = new SslClientAuthenticationOptions
+            {
+                EnabledSslProtocols = System.Security.Authentication.SslProtocols.Tls12 | System.Security.Authentication.SslProtocols.Tls13,
+                CertificateRevocationCheckMode = X509RevocationMode.Online,
+                EncryptionPolicy = EncryptionPolicy.RequireEncryption,
+            };
         }
 
-        public async ValueTask<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken token = default)
+        public async ValueTask<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken token = default, SslClientAuthenticationOptions? options = null)
         {
             ArgumentNullException.ThrowIfNull(request);
 
             await ConnectAsync(request.RequestUri, token).ConfigureAwait(false);
 
-            // 发送请求（释放 ByteBuffer 的租约）
-            await SendRequestMessage(request.ToBuffer(), token).ConfigureAwait(false);
+            currentRequest = request;
+            currentStream = request.IsHttps ? _sslStream : _tcpLinkerStream;
+            if (request.IsHttps)
+            {
+                options = options ?? AuthenticationOptions;
+                options.TargetHost = request.RequestUri!.Host;
+                await _sslStream.AuthenticateAsClientAsync(options, token).ConfigureAwait(false);
+                await SendAuthenticateRequestMessage(request.ToBuffer(), token).ConfigureAwait(false);
+            }
+            else
+            {
+                await SendRequestMessage(request.ToBuffer(), token).ConfigureAwait(false);
+            }
 
             // 准备等待源并启动接收任务（若尚未启动）
             vts.Reset();
@@ -60,6 +87,21 @@ namespace ExtenderApp.Common.Networks
             rental.Dispose();
         }
 
+        private ValueTask SendAuthenticateRequestMessage(ByteBuffer byteBuffer, CancellationToken token)
+        {
+            return SendAuthenticateRequestMessage(byteBuffer.UnreadSequence, byteBuffer.Rental, token);
+        }
+
+        private async ValueTask SendAuthenticateRequestMessage(ReadOnlySequence<byte> memories, SequencePool<byte>.SequenceRental rental, CancellationToken token)
+        {
+            foreach (var segment in memories)
+            {
+                await _sslStream.WriteAsync(segment, token).ConfigureAwait(false);
+            }
+            await _sslStream.FlushAsync(token).ConfigureAwait(false);
+            rental.Dispose();
+        }
+
         private void EnsureReceiveTaskRunning(CancellationToken token)
         {
             lock (_receiveLock)
@@ -74,15 +116,17 @@ namespace ExtenderApp.Common.Networks
 
         private async Task ReceiveLoopAsync(CancellationToken token)
         {
+            ArgumentNullException.ThrowIfNull(currentStream);
+            ArgumentNullException.ThrowIfNull(currentRequest);
             byte[] buffer = ArrayPool<byte>.Shared.Rent((int)Utility.KilobytesToBytes(4));
             try
             {
                 while (!token.IsCancellationRequested)
                 {
-                    SocketOperationResult result;
+                    int bytesTransferred = 0;
                     try
                     {
-                        result = await Linker.ReceiveAsync(buffer, token).ConfigureAwait(false);
+                        bytesTransferred = await currentStream.ReadAsync(buffer, token).ConfigureAwait(false);
                     }
                     catch (OperationCanceledException)
                     {
@@ -96,23 +140,24 @@ namespace ExtenderApp.Common.Networks
                         return;
                     }
 
-                    if (result.BytesTransferred <= 0)
+                    if (bytesTransferred <= 0)
                     {
                         vts.SetException(new InvalidOperationException("底层连接已关闭或远端异常断开"));
                         return;
                     }
 
-                    if (Parser.TryParseResponse(buffer.AsSpan(0, result.BytesTransferred), out HttpResponseMessage responseMessage, out int consumed))
+                    if (Parser.TryParseResponse(buffer.AsSpan(0, bytesTransferred), currentRequest, out var responseMessage, out int consumed))
                     {
-                        vts.SetResult(responseMessage);
-                        ArrayPool<byte>.Shared.Return(buffer);
+                        vts.SetResult(responseMessage!);
                         break;
                     }
                 }
             }
             finally
             {
+                await Linker.DisconnectAsync();
                 ArrayPool<byte>.Shared.Return(buffer);
+                currentStream = null;
             }
         }
 

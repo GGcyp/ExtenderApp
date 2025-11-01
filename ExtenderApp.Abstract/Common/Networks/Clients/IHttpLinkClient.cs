@@ -2,7 +2,7 @@
 
 namespace ExtenderApp.Abstract
 {
-    public interface IHttpLinkClient
+    public interface IHttpLinkClient : ILinkClient
     {
     }
 }

@@ -12,7 +12,7 @@ namespace ExtenderApp.Data
         /// <summary>
         /// 与该响应关联的请求消息（若有）。仅供参考，可能为 <c>null</c>。
         /// </summary>
-        public HttpRequestMessage? RequestMessage { get; private set; }
+        public HttpRequestMessage RequestMessage { get; private set; }
 
         /// <summary>
         /// 响应的状态码（如 200、404 等）。
@@ -32,27 +32,19 @@ namespace ExtenderApp.Data
         /// <summary>
         /// 响应头集合（不区分大小写的键名比较）。
         /// </summary>
-        public HttpHeader? Headers { get; set; }
+        public HttpHeader Headers { get; set; }
 
         /// <summary>
         /// 响应主体的字节块。注意：该字段持有资源，使用完毕请调用 <see cref="Dispose"/> 回收底层缓冲。
         /// </summary>
         public ByteBlock Body { get; private set; }
 
-        /// <summary>
-        /// 创建一个默认的 <see cref="HttpResponseMessage"/> 实例。
-        /// 默认初始化：Headers 为空集合，Version 为 HTTP/1.1，ReasonPhrase 为空字符串。
-        /// </summary>
-        public HttpResponseMessage() : this(null)
-        {
-
-        }
-
         public HttpResponseMessage(HttpRequestMessage message)
         {
             Version = HttpVersion.Version11;
             ReasonPhrase = string.Empty;
             RequestMessage = message;
+            Headers = new ();
         }
 
         /// <summary>
@@ -132,20 +124,15 @@ namespace ExtenderApp.Data
         /// <returns>
         /// 包含序列化后数据的 <see cref="ByteBuffer"/>（引用类型为 ref struct，调用方负责在合适时机调用其 <see cref="ByteBuffer.Dispose"/> 回收资源）。
         /// </returns>
-        /// <remarks>
-        /// 序列化过程：
-        /// - 写入状态行："HTTP/{major}.{minor} {statusCode} {reason}\r\n"；
-        /// - 写入所有响应头（调用 <see cref="HttpHeader.BuildHeaderBlock"/>）并追加一个 CRLF 作为头部与主体的分隔；
-        /// - 将头部内容编码到 <see cref="ByteBuffer"/>，随后把 <see cref="Body"/> 的字节追加到缓冲末尾。
-        /// 注意：返回的 <see cref="ByteBuffer"/> 可能持有池化或租用资源，使用完毕请释放。
-        /// </remarks>
         public ByteBuffer ToBuffer(Encoding? encoding = null)
         {
             encoding ??= Encoding.ASCII;
             var sb = new StringBuilder();
 
             // 状态行: HTTP/{major}.{minor} {statusCode} {reason}\r\n
-            sb.Append("HTTP/");
+            sb.Append(RequestMessage.Scheme);
+            sb.Append(HttpHeaders.SlashChar);
+            sb.Append(HttpHeaders.SlashChar);
             sb.Append(Version.Major);
             sb.Append(HttpHeaders.DotChar);
             sb.Append(Version.Minor);

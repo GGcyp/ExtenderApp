@@ -20,15 +20,29 @@ namespace ExtenderApp.Data
         /// </summary>
         public HttpMethod Method { get; set; }
 
+        private Uri? requestUri;
         /// <summary>
         /// 请求 URI（可以为 null，但序列化时需非空）。
         /// </summary>
-        public Uri? RequestUri { get; set; }
+        public Uri? RequestUri
+        {
+            get => requestUri;
+            set
+            {
+                requestUri = value;
+                if (requestUri is not null)
+                    Scheme = requestUri.Scheme.Equals(Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase) ? 
+                        HttpHeaders.HttpsChars : 
+                        HttpHeaders.HttpChars;
+            }
+        }
 
         /// <summary>
         /// HTTP 版本（默认 HTTP/1.1）。
         /// </summary>
         public Version Version { get; set; }
+
+        public string? Scheme { get; private set; }
 
         /// <summary>
         /// 请求头集合（不区分大小写）。
@@ -39,6 +53,11 @@ namespace ExtenderApp.Data
         /// 查询/表单参数集合（延迟创建）。
         /// </summary>
         public HttpParams Params => _paramsLazy.Value;
+
+        /// <summary>
+        /// 检查请求是否使用 HTTPS。
+        /// </summary>
+        public bool IsHttps => RequestUri != null && RequestUri.Scheme.Equals(Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase);
 
         /// <summary>
         /// 请求体字节块（结构体），注意需要在不再使用时释放。
@@ -191,7 +210,8 @@ namespace ExtenderApp.Data
             }
 
             sb.Append(HttpHeaders.SpaceChar);
-            sb.Append("HTTP/");
+            sb.Append(Scheme);
+            sb.Append(HttpHeaders.SlashChar);
             sb.Append(Version.Major);
             sb.Append(HttpHeaders.DotChar);
             sb.Append(Version.Minor);
