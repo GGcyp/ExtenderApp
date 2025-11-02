@@ -2,6 +2,7 @@
 using ExtenderApp.Abstract;
 using ExtenderApp.Common.Networks;
 using ExtenderApp.Data;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace ExtenderApp.Common.IO.Splitter
 {

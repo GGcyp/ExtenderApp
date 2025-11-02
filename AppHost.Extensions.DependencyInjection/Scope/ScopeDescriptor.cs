@@ -1,14 +1,16 @@
-﻿namespace AppHost.Extensions.DependencyInjection
+﻿using Microsoft.Extensions.DependencyInjection;
+
+namespace AppHost.Extensions.DependencyInjection
 {
     /// <summary>
     /// 范围描述符类
     /// </summary>
-    public class ScopeDescriptor : ServiceDescriptor
+    public class ScopeDescriptor : ExtenderServiceDescriptor
     {
         /// <summary>
         /// 被替换的服务
         /// </summary>
-        public ServiceDescriptor? OriginaService { get; set; }
+        public ExtenderServiceDescriptor? OriginaService { get; set; }
 
         public ScopeDescriptor(Type serviceType, object implementationInstance) : base(serviceType, implementationInstance)
         {
@@ -26,13 +28,12 @@
         {
         }
 
-        public ScopeDescriptor(Type serviceType, Func<IServiceProvider, object?, object> factoryFunc, object? serviceKey, ServiceLifetime lifetime) : base(serviceType, factoryFunc, serviceKey, lifetime)
-        {
-        }
+        //public ScopeDescriptor(Type serviceType, Func<IServiceProvider, object?, object> factoryFunc, object? serviceKey, ServiceLifetime lifetime) : base(serviceType, factoryFunc, serviceKey, lifetime)
+        //{
+        //}
 
-        public ScopeDescriptor(Type serviceType, Type ImplementationType, Func<IServiceProvider, object?, object> factoryFunc, object? serviceKey, ServiceLifetime lifetime) : base(serviceType, ImplementationType, factoryFunc, serviceKey, lifetime)
-        {
-        }
-
+        //public ScopeDescriptor(Type serviceType, Type ImplementationType, Func<IServiceProvider, object?, object> factoryFunc, object? serviceKey, ServiceLifetime lifetime) : base(serviceType, ImplementationType, factoryFunc, serviceKey, lifetime)
+        //{
+        //}
     }
 }

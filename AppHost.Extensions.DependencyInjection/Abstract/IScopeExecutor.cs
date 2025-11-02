@@ -1,4 +1,5 @@
-﻿
+﻿using Microsoft.Extensions.DependencyInjection;
+
 namespace AppHost.Extensions.DependencyInjection
 {
     /// <summary>
@@ -24,7 +25,9 @@ namespace AppHost.Extensions.DependencyInjection
         /// 卸载作用域。
         /// </summary>
         /// <param name="scopeName">要卸载的作用域名称。</param>
-        /// <exception cref="ArgumentNullException">当 scopeName 为 null 或空字符串时抛出。</exception>
+        /// <exception cref="ArgumentNullException">
+        /// 当 scopeName 为 null 或空字符串时抛出。
+        /// </exception>
         void UnLoadScope(string scopeName);
     }
 }

@@ -1,18 +1,19 @@
 ﻿using System.Collections.Concurrent;
 using System.Collections.Frozen;
 using System.Reflection;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace AppHost.Extensions.DependencyInjection
 {
     /// <summary>
     /// 服务提供者类，用于实现IServiceProvider接口，提供依赖注入服务。
     /// </summary>
-    internal class ServiceProvider : IServiceProvider, IDisposable, IAsyncDisposable
+    internal class ServiceProvider : IServiceProvider, IDisposable, IAsyncDisposable, IServiceProviderIsService
     {
         /// <summary>
         /// 所有依赖注入关系字典
         /// </summary>
-        private readonly FrozenDictionary<Type, ServiceDescriptor> _serviceDescriptorDict;
+        private readonly FrozenDictionary<Type, ExtenderServiceDescriptor> _serviceDescriptorDict;
 
         /// <summary>
         /// 并发字典，存储服务构造详情
@@ -98,10 +99,9 @@ namespace AppHost.Extensions.DependencyInjection
                 Type[] serviceTypeArguments = serviceGenericType.GetGenericArguments();
 
                 //如果是IEnumerable<>类型的,或是其他默认将他的子类型传入
-                if (descriptor.ImplementationType == null && descriptor.HasFactory)
+                if (descriptor.ImplementationType == null && descriptor.IsKeyedService)
                 {
-                    descriptor.ServiceKey = serviceTypeArguments;
-                    return new ServiceConstructorDetail(descriptor);
+                    return new ServiceConstructorDetail(descriptor, serviceTypeArguments);
                 }
 
                 serviceGenericType = descriptor.ImplementationType!.MakeGenericType(serviceTypeArguments);
@@ -136,7 +136,7 @@ namespace AppHost.Extensions.DependencyInjection
             //查看是否是注册服务类
             if (_serviceDescriptorDict.TryGetValue(serviceType, out var descriptor))
             {
-                if (descriptor.HasFactory)
+                if (descriptor.ImplementationFactory != null)
                 {
                     detail = new ServiceConstructorDetail(descriptor);
                     _serviceConstructorDetailsDict.TryAdd(serviceType, detail);
@@ -227,7 +227,7 @@ namespace AppHost.Extensions.DependencyInjection
         /// <param name="serviceType">要查找的服务类型。</param>
         /// <param name="serviceDescriptor">输出参数，如果找到匹配的服务描述符，则将其赋值给此参数。</param>
         /// <returns>如果找到匹配的服务描述符，则返回 true；否则返回 false。</returns>
-        internal bool TryGetServiceDescriptor(Type serviceType, out ServiceDescriptor? serviceDescriptor)
+        internal bool TryGetServiceDescriptor(Type serviceType, out ExtenderServiceDescriptor? serviceDescriptor)
         {
             return _serviceDescriptorDict.TryGetValue(serviceType, out serviceDescriptor);
         }
@@ -284,6 +284,15 @@ namespace AppHost.Extensions.DependencyInjection
 
             _serviceConstructorDetailsDict.Clear();
             GC.SuppressFinalize(this);
+        }
+
+        public bool IsService(Type serviceType)
+        {
+            if (serviceType == null)
+            {
+                throw new ArgumentNullException(nameof(serviceType), "服务类型不能为空。");
+            }
+            return _serviceDescriptorDict.ContainsKey(serviceType);
         }
     }
 }

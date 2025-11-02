@@ -2,6 +2,7 @@
 using ExtenderApp.Abstract;
 using ExtenderApp.Common.IO.Binary.Formatters;
 using ExtenderApp.Data;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace ExtenderApp.Common
 {

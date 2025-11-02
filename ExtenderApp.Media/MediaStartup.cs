@@ -7,6 +7,7 @@ using ExtenderApp.Media.ViewModels;
 using ExtenderApp.Data;
 using System.IO;
 using ExtenderApp.FFmpegEngines;
+using Microsoft.Extensions.DependencyInjection;
 
 
 namespace ExtenderApp.Media

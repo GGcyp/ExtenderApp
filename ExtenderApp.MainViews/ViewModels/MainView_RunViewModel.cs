@@ -6,6 +6,7 @@ using ExtenderApp.MainViews.Views;
 using ExtenderApp.ViewModels;
 using ExtenderApp.Views.Commands;
 using ExtenderApp.Views.CutsceneViews;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace ExtenderApp.MainViews.ViewModels
 {
@@ -46,7 +47,7 @@ namespace ExtenderApp.MainViews.ViewModels
             var details = Model.CurrentPluginDetails;
             if (details != null)
             {
-                currentMainViewSettings = _scopeExecutor.GetServiceProvider(details.PluginScope)?.GetService<IMainViewSettings>();
+                currentMainViewSettings = _scopeExecutor.GetServiceProvider(details.PluginScope)?.GetRequiredService<IMainViewSettings>();
             }
         }
 

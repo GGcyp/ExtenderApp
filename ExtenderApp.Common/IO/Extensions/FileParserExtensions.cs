@@ -3,6 +3,7 @@ using ExtenderApp.Abstract;
 using ExtenderApp.Common.IO.Splitter;
 using ExtenderApp.Common.IO;
 using ExtenderApp.Common.IO.Binary;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace ExtenderApp.Common
 {

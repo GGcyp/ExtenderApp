@@ -1,6 +1,7 @@
 ﻿using AppHost.Extensions.DependencyInjection;
 using ExtenderApp.Abstract;
 using ExtenderApp.Common.ObjectPools;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace ExtenderApp.Common
 {

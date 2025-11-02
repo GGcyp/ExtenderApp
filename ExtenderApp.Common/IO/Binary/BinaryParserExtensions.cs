@@ -10,6 +10,7 @@ using ExtenderApp.Common.IO.Binary.Formatters;
 using ExtenderApp.Common.IO.Binary.Formatters.Class;
 using ExtenderApp.Common.IO.Binary.Formatters;
 using ExtenderApp.Data;
+using Microsoft.Extensions.DependencyInjection;
 
 
 namespace ExtenderApp.Common.IO.Binary

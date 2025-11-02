@@ -1,6 +1,7 @@
 ﻿using AppHost.Extensions.DependencyInjection;
 using ExtenderApp.Abstract;
 using ExtenderApp.MainViews.ViewModels;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace ExtenderApp.MainViews.Windows
 {

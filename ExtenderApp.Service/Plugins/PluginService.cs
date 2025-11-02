@@ -6,6 +6,7 @@ using AppHost.Extensions.DependencyInjection;
 using ExtenderApp.Abstract;
 using ExtenderApp.Common.Error;
 using ExtenderApp.Data;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace ExtenderApp.Services
 {

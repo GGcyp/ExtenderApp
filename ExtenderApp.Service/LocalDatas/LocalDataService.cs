@@ -1,8 +1,7 @@
-﻿using AppHost.Extensions.DependencyInjection;
-using ExtenderApp.Abstract;
+﻿using ExtenderApp.Abstract;
 using ExtenderApp.Common;
 using ExtenderApp.Data;
-
+using Microsoft.Extensions.DependencyInjection;
 
 namespace ExtenderApp.Services
 {
@@ -37,8 +36,7 @@ namespace ExtenderApp.Services
         private readonly IServiceProvider _serviceProvider;
 
         /// <summary>
-        /// 默认数据版本号。
-        /// 用于初始化本地数据的版本信息，未指定时采用此版本。
+        /// 默认数据版本号。 用于初始化本地数据的版本信息，未指定时采用此版本。
         /// </summary>
         private readonly Version _version;
 

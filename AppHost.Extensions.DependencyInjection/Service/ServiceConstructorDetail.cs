@@ -1,4 +1,5 @@
 ﻿using System.Reflection;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace AppHost.Extensions.DependencyInjection
 {
@@ -20,7 +21,9 @@ namespace AppHost.Extensions.DependencyInjection
         /// <summary>
         /// 服务描述
         /// </summary>
-        public ServiceDescriptor? ServiceDescriptor { get; }
+        public ExtenderServiceDescriptor? ServiceDescriptor { get; }
+
+        public Type[]? genericServiceTypes { get; private set; }
 
         /// <summary>
         /// 服务实例对象
@@ -32,9 +35,9 @@ namespace AppHost.Extensions.DependencyInjection
         /// </summary>
         public object? ServiceInstance => _serviceInstance ?? ServiceDescriptor?.ImplementationInstance;
 
-        public ServiceConstructorDetail(ServiceDescriptor serviceDescriptor) : this(null, null, serviceDescriptor)
+        public ServiceConstructorDetail(ExtenderServiceDescriptor serviceDescriptor, Type[]? genericServiceTypes = null) : this(null, null, serviceDescriptor)
         {
-
+            this.genericServiceTypes = genericServiceTypes;
         }
 
         public ServiceConstructorDetail(ConstructorInfo serviceConstructorInfo) : this(serviceConstructorInfo, null, null)
@@ -42,7 +45,7 @@ namespace AppHost.Extensions.DependencyInjection
 
         }
 
-        public ServiceConstructorDetail(ConstructorInfo serviceConstructorInfo, ServiceConstructorDetail[] constructorDetails, ServiceDescriptor serviceDescriptor)
+        public ServiceConstructorDetail(ConstructorInfo serviceConstructorInfo, ServiceConstructorDetail[] constructorDetails, ExtenderServiceDescriptor serviceDescriptor)
         {
             ServiceConstructorInfo = serviceConstructorInfo;
             ConstructorDetails = constructorDetails;
@@ -72,7 +75,7 @@ namespace AppHost.Extensions.DependencyInjection
                 }
             }
 
-            if (ServiceDescriptor.HasFactory)
+            if (ServiceDescriptor.IsKeyedService)
             {
                 return GetServiceForFactory(provider);
             }
@@ -150,9 +153,10 @@ namespace AppHost.Extensions.DependencyInjection
         /// <returns></returns>
         private object GetServiceForFactory(IServiceProvider provider)
         {
-            if (ServiceDescriptor.IsKeyedService)
+            if (ServiceDescriptor!.IsKeyedService)
             {
-                return ServiceDescriptor.KeyedImplementationFactory!.Invoke(provider, ServiceDescriptor.ServiceKey);
+                object? key = ServiceDescriptor.ServiceKey is not null ? ServiceDescriptor.ServiceKey : genericServiceTypes;
+                return ServiceDescriptor.KeyedImplementationFactory!.Invoke(provider, key);
             }
             return ServiceDescriptor!.ImplementationFactory!.Invoke(provider);
         }

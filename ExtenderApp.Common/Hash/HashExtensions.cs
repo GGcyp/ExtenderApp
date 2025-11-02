@@ -2,6 +2,7 @@
 using AppHost.Extensions.DependencyInjection;
 using ExtenderApp.Abstract;
 using ExtenderApp.Data;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace ExtenderApp.Common.Hash
 {
@@ -11,8 +12,9 @@ namespace ExtenderApp.Common.Hash
     public static class HashExtensions
     {
         // FNV-1a算法的32位参数
-        const uint FNV_offset_basis = 2166136261;
-        const uint FNV_prime = 16777619;
+        private const uint FNV_offset_basis = 2166136261;
+
+        private const uint FNV_prime = 16777619;
 
         /// <summary>
         /// 为服务集合添加哈希服务。
@@ -35,7 +37,9 @@ namespace ExtenderApp.Common.Hash
         /// </summary>
         /// <param name="type">需要被计算的类型</param>
         /// <returns>计算出来的类型名称哈希值</returns>
-        /// <exception cref="ArgumentNullException">当类型为空时抛出</exception>
+        /// <exception cref="ArgumentNullException">
+        /// 当类型为空时抛出
+        /// </exception>
         public static int ComputeHash_FNV_1a(this Type type)
         {
             if (type == null)
@@ -91,7 +95,9 @@ namespace ExtenderApp.Common.Hash
         /// <summary>
         /// 使用MD5算法计算给定字节序列的哈希值，并返回其前4个字节的整数表示。
         /// </summary>
-        /// <param name="span">包含要计算哈希值的字节序列的<see cref="ReadOnlySpan{byte}"/>。</param>
+        /// <param name="span">
+        /// 包含要计算哈希值的字节序列的 <see cref="ReadOnlySpan{byte}"/>。
+        /// </param>
         /// <returns>返回计算出的哈希值的前4个字节的整数表示。如果输入为空或发生异常，则返回0。</returns>
         public static int ComputeHash_MD5(this ReadOnlySpan<byte> span)
         {

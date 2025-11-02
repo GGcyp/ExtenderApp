@@ -7,6 +7,7 @@ using ExtenderApp.Common.Error;
 using ExtenderApp.Common;
 using AppHost.Extensions.DependencyInjection;
 using ExtenderApp.Models;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace ExtenderApp.ViewModels
 {
@@ -81,12 +82,10 @@ namespace ExtenderApp.ViewModels
 
         public virtual void OnViewloaded()
         {
-
         }
 
         public virtual void OnViewUnloaded()
         {
-
         }
 
         #region Navigate
@@ -632,8 +631,7 @@ namespace ExtenderApp.ViewModels
         #region KeyCapture
 
         /// <summary>
-        /// 启动键盘捕获服务。
-        /// 调用后实现应安装底层钩子或开始监听系统键盘事件。
+        /// 启动键盘捕获服务。 调用后实现应安装底层钩子或开始监听系统键盘事件。
         /// </summary>
         /// <remarks>
         /// - 若服务已启动，应为幂等操作，不应抛出异常。
@@ -645,12 +643,9 @@ namespace ExtenderApp.ViewModels
         }
 
         /// <summary>
-        /// 停止键盘捕获服务。
-        /// 调用后实现应卸载底层钩子或停止监听，但通常保留已注册的回调以便后续再次启动。
+        /// 停止键盘捕获服务。 调用后实现应卸载底层钩子或停止监听，但通常保留已注册的回调以便后续再次启动。
         /// </summary>
-        /// <remarks>
-        /// 若服务未启动，应为幂等操作，不产生副作用。
-        /// </remarks>
+        /// <remarks>若服务未启动，应为幂等操作，不产生副作用。</remarks>
         protected void StopKeyCapture()
         {
             ServiceStore.SystemService.KeyCapture.Stop();

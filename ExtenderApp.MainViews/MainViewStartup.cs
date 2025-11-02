@@ -5,6 +5,7 @@ using ExtenderApp.MainViews.ViewModels;
 using ExtenderApp.MainViews.Models;
 using ExtenderApp.MainViews.Windows;
 using ExtenderApp.MainViews.Views;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace ExtenderApp.MainViews
 {

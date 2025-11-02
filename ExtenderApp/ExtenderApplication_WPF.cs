@@ -4,6 +4,7 @@ using AppHost;
 using AppHost.Builder;
 using AppHost.Extensions.DependencyInjection;
 using ExtenderApp.Abstract;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace ExtenderApp
 {

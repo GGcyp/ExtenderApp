@@ -1,9 +1,9 @@
 ﻿using AppHost.Builder;
-using AppHost.Extensions.DependencyInjection;
 using ExtenderApp.Common.Caches;
 using ExtenderApp.Common.Hash;
 using ExtenderApp.Common.Networks;
 using ExtenderApp.Common.Pipelines;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace ExtenderApp.Common
 {

@@ -1,7 +1,6 @@
-﻿
-
-using AppHost.Extensions.DependencyInjection;
+﻿using AppHost.Extensions.DependencyInjection;
 using ExtenderApp.Abstract;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace ExtenderApp.Common.Networks
 {

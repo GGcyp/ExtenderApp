@@ -1,5 +1,8 @@
 ﻿using System.Collections;
 using System.Reflection;
+using Autofac;
+using Autofac.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace AppHost.Extensions.DependencyInjection
 {
@@ -20,6 +23,14 @@ namespace AppHost.Extensions.DependencyInjection
 
             services.AddIEnumerable();
             services.AddList();
+
+            // 使用 Autofac 构建容器并返回 AutofacServiceProvider
+            var builder = new ContainerBuilder();
+
+            builder.Register<ServiceProvider>(c => new ServiceProvider(services)).SingleInstance();
+
+            // 将已有的 IServiceCollection 填充到 Autofac 容器中
+            builder.Populate(services);
 
             return new ServiceProvider(services);
         }

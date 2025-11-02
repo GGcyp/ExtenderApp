@@ -1,5 +1,6 @@
 ﻿using System.Reflection;
 using AppHost.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
 
 
 namespace AppHost.Builder.Extensions

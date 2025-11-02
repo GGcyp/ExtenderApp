@@ -1,6 +1,7 @@
 ﻿using AppHost.Extensions.DependencyInjection;
 using ExtenderApp.Abstract;
 using ExtenderApp.Common.Networks;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace ExtenderApp.Common
 {
@@ -17,7 +18,7 @@ namespace ExtenderApp.Common
         public static IServiceCollection AddUdpLinker(this IServiceCollection services)
         {
             services.AddSingleton<ILinkerFactory<IUdpLinker>, UdpLinkerFactory>();
-            services.AddTransient<IUdpLinker>(provider =>
+            services.AddTransient(provider =>
             {
                 return provider.GetRequiredService<ILinkerFactory<IUdpLinker>>().CreateLinker();
             });

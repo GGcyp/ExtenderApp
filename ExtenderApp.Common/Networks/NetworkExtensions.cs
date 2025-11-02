@@ -2,6 +2,7 @@
 using ExtenderApp.Abstract;
 using ExtenderApp.Common.Networks.Formatters;
 using ExtenderApp.Common.Networks.LinkClients;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace ExtenderApp.Common.Networks
 {

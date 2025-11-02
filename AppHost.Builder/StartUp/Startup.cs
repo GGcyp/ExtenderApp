@@ -1,4 +1,4 @@
-﻿using AppHost.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 
 namespace AppHost.Builder
 {
@@ -33,7 +33,6 @@ namespace AppHost.Builder
         /// <param name="builder">主机应用程序构建器</param>
         public virtual void Start(IHostApplicationBuilder builder)
         {
-
         }
 
         /// <summary>
@@ -42,7 +41,6 @@ namespace AppHost.Builder
         /// <param name="services">服务集合</param>
         public virtual void AddService(IServiceCollection services)
         {
-
         }
     }
 }

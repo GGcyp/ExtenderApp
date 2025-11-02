@@ -3,6 +3,7 @@ using System.Runtime.InteropServices;
 using AppHost.Extensions.DependencyInjection;
 using ExtenderApp.Abstract;
 using ExtenderApp.Data;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace ExtenderApp.Common.Networks
 {
@@ -36,7 +37,8 @@ namespace ExtenderApp.Common.Networks
         /// <param name="memory">要发送的数据窗口。</param>
         /// <returns>发送结果（包含已发送字节数和可能的底层错误）。</returns>
         /// <remarks>
-        /// 这是对 <see cref="ILinker.Send(Memory{byte})"/> 的便捷包装。
+        /// 这是对 <see
+        /// cref="ILinker.Send(Memory{byte})"/> 的便捷包装。
         /// </remarks>
         public static SocketOperationResult Send(this ILinker linker, in ReadOnlyMemory<byte> memory)
         {
@@ -62,10 +64,13 @@ namespace ExtenderApp.Common.Networks
         /// 同步发送 <see cref="ByteBuffer"/> 中尚未读取的数据。
         /// </summary>
         /// <param name="linker">目标链接。</param>
-        /// <param name="buffer">只读缓冲视图；其 <see cref="ByteBuffer.UnreadSequence"/> 将被发送。</param>
+        /// <param name="buffer">
+        /// 只读缓冲视图；其 <see
+        /// cref="ByteBuffer.UnreadSequence"/> 将被发送。
+        /// </param>
         /// <returns>发送结果（累加所有分段的已发送字节数与最后一次结果的端点/标志）。</returns>
         /// <remarks>
-        /// - TCP：内部处理“部分发送”，会在每段上循环直至耗尽。<br/>
+        /// - TCP：内部处理“部分发送”，会在每段上循环直至耗尽。 <br/>
         /// - UDP：按分段逐帧发送；若需单帧发送，请先合并为单块再调用。
         /// </remarks>
         public static SocketOperationResult Send(this ILinker linker, ByteBuffer buffer)
@@ -80,7 +85,7 @@ namespace ExtenderApp.Common.Networks
         /// <param name="sequence">只读字节序列，将按顺序发送。</param>
         /// <returns>发送结果（累加所有分段的已发送字节数与最后一次结果的端点/标志）。</returns>
         /// <remarks>
-        /// - TCP：处理“部分发送”，对每个分段进行补发直到耗尽。<br/>
+        /// - TCP：处理“部分发送”，对每个分段进行补发直到耗尽。 <br/>
         /// - UDP：按分段逐帧发送；若需保持单报文，请先合并为单块。
         /// </remarks>
         public static SocketOperationResult Send(this ILinker linker, ReadOnlySequence<byte> sequence)
@@ -121,7 +126,9 @@ namespace ExtenderApp.Common.Networks
         /// <param name="token">取消令牌。</param>
         /// <returns>发送结果任务（包含已发送字节数和可能的底层错误）。</returns>
         /// <remarks>
-        /// 这是对 <see cref="ILinker.SendAsync(Memory{byte}, CancellationToken)"/> 的便捷包装。
+        /// 这是对 <see
+        /// cref="ILinker.SendAsync(Memory{byte},
+        /// CancellationToken)"/> 的便捷包装。
         /// </remarks>
         public static ValueTask<SocketOperationResult> SendAsync(this ILinker linker, in ReadOnlyMemory<byte> memory, CancellationToken token = default)
         {
@@ -166,11 +173,14 @@ namespace ExtenderApp.Common.Networks
         /// 异步发送 <see cref="ByteBuffer"/> 中尚未读取的数据。
         /// </summary>
         /// <param name="linker">目标链接。</param>
-        /// <param name="buffer">只读缓冲视图；其 <see cref="ByteBuffer.UnreadSequence"/> 将被发送。</param>
+        /// <param name="buffer">
+        /// 只读缓冲视图；其 <see
+        /// cref="ByteBuffer.UnreadSequence"/> 将被发送。
+        /// </param>
         /// <param name="token">取消令牌。</param>
         /// <returns>发送结果任务（累加所有分段的已发送字节数与最后一次结果的端点/标志）。</returns>
         /// <remarks>
-        /// - TCP：内部处理“部分发送”，对每段循环直至耗尽。<br/>
+        /// - TCP：内部处理“部分发送”，对每段循环直至耗尽。 <br/>
         /// - UDP：按分段逐帧发送；若需单帧发送，请先合并为单块。
         /// </remarks>
         public static ValueTask<SocketOperationResult> SendAsync(this ILinker linker, ByteBuffer buffer, CancellationToken token = default)
@@ -186,7 +196,7 @@ namespace ExtenderApp.Common.Networks
         /// <param name="token">取消令牌。</param>
         /// <returns>发送结果任务（累加所有分段的已发送字节数与最后一次结果的端点/标志）。</returns>
         /// <remarks>
-        /// - TCP：处理“部分发送”，对每个分段进行补发直到耗尽。<br/>
+        /// - TCP：处理“部分发送”，对每个分段进行补发直到耗尽。 <br/>
         /// - UDP：按分段逐帧发送；若需保持单报文，请先合并为单块。
         /// </remarks>
         public static async ValueTask<SocketOperationResult> SendAsync(this ILinker linker, ReadOnlySequence<byte> sequence, CancellationToken token = default)
@@ -219,7 +229,7 @@ namespace ExtenderApp.Common.Networks
             return new SocketOperationResult(total, last.RemoteEndPoint, null, last.ReceiveMessageFromPacketInfo);
         }
 
-        #endregion
+        #endregion Send
 
         #region Receive
 
@@ -227,15 +237,20 @@ namespace ExtenderApp.Common.Networks
         /// 同步接收数据到 ByteBuffer。
         /// </summary>
         /// <param name="linker">目标链接。</param>
-        /// <param name="buffer">写入目标（ref struct，不能用于 async 方法）。</param>
+        /// <param name="buffer">
+        /// 写入目标（ref struct，不能用于 async 方法）。
+        /// </param>
         /// <param name="sizeHint">
-        /// 期望接收的最小容量提示；内部将调用 <see cref="ByteBuffer.GetMemory(int)"/> 申请写缓冲。
+        /// 期望接收的最小容量提示；内部将调用 <see
+        /// cref="ByteBuffer.GetMemory(int)"/> 申请写缓冲。
         /// </param>
         /// <returns>
-        /// 接收结果；TCP 下 BytesTransferred 为 0 通常表示对端优雅关闭；UDP 下可能存在截断标志（取决于实现）。
+        /// 接收结果；TCP 下 BytesTransferred 为 0
+        /// 通常表示对端优雅关闭；UDP 下可能存在截断标志（取决于实现）。
         /// </returns>
         /// <remarks>
-        /// 由于 <see cref="ByteBuffer"/> 为 ref struct，无法在真正的异步方法中使用；因此提供同步 API。
+        /// 由于 <see cref="ByteBuffer"/> 为 ref
+        /// struct，无法在真正的异步方法中使用；因此提供同步 API。
         /// </remarks>
         public static SocketOperationResult Receive(this ILinker linker, ref ByteBuffer buffer, int sizeHint = 1024)
         {
@@ -245,6 +260,6 @@ namespace ExtenderApp.Common.Networks
             return result;
         }
 
-        #endregion
+        #endregion Receive
     }
 }

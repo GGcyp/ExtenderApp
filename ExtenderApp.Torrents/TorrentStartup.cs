@@ -7,7 +7,7 @@ using ExtenderApp.Torrents.Models;
 using ExtenderApp.Torrents.Models.Formatters;
 using ExtenderApp.Torrents.ViewModels;
 using ExtenderApp.Torrents.Views;
-
+using Microsoft.Extensions.DependencyInjection;
 
 namespace ExtenderApp.Torrents
 {

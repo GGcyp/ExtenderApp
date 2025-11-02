@@ -1,5 +1,4 @@
-﻿using AppHost.Extensions.DependencyInjection;
-using ExtenderApp.Abstract;
+﻿using Microsoft.Extensions.DependencyInjection;
 
 namespace ExtenderApp.Common.Networks
 {
@@ -27,6 +26,6 @@ namespace ExtenderApp.Common.Networks
             return builder;
         }
 
-        #endregion
+        #endregion FormatterManagerBuilder
     }
 }

@@ -1,5 +1,4 @@
 ﻿using System.Collections.ObjectModel;
-using System.Reflection;
 using AppHost.Builder;
 using AppHost.Extensions.DependencyInjection;
 using AppHost.Extensions.Hosting;
@@ -8,6 +7,7 @@ using ExtenderApp.Abstract.View;
 using ExtenderApp.Views.Clipboards;
 using ExtenderApp.Views.CutsceneViews;
 using ExtenderApp.Views.Themes;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace ExtenderApp.Views
 {
@@ -19,7 +19,6 @@ namespace ExtenderApp.Views
             services.AddSingleton<IClipboard, Clipboard_WPF>();
             services.AddTransient<CutsceneView>();
             AddThemeManager(services);
-
 
             services.Configuration<IBinaryFormatterStore>(s =>
             {
