@@ -34,5 +34,10 @@ namespace ExtenderApp.Common.Networks
         {
             Linker = linker ?? throw new ArgumentNullException(nameof(linker));
         }
+
+        protected override void Dispose(bool disposing)
+        {
+            Linker.Dispose();
+        }
     }
 }

@@ -17,15 +17,53 @@ namespace ExtenderApp.Common.Networks
     /// </summary>
     internal class HttpParser : DisposableObject, IHttpParser
     {
+        /// <summary>
+        /// 默认分配给内部头部缓冲区的初始大小（字节）。用于优化常见场景下的头部读取，避免频繁扩容。
+        /// </summary>
         private const int DefaultHeaderSize = 4 * 1024;
+
+        /// <summary>
+        /// HTTP 头部终止标记 "\r\n\r\n" 的字节表示，用于在接收缓冲中查找头部结束位置。
+        /// </summary>
         private static readonly byte[] HeaderTerminator = { (byte)'\r', (byte)'\n', (byte)'\r', (byte)'\n' };
+
+        /// <summary>
+        /// 内部接收缓冲（ByteBlock），用于累积来自网络的字节并在缓冲中进行解析。
+        /// 注意：HttpParser 非线程安全；该缓冲仅在单一解析上下文中使用并在 Dispose 时释放。
+        /// </summary>
         private ByteBlock block;
+
+        /// <summary>
+        /// 正在构造的 HttpResponseMessage 实例（当解析响应头后创建并在解析 body 后完成）。
+        /// 在解析完成并返回给调用方后会被置为 null 以准备下一次解析。
+        /// </summary>
         private HttpResponseMessage? response;
+
+        /// <summary>
+        /// 当前已解析出的头部长度（包含 HeaderTerminator 的长度），用于计算已消费字节与 body 偏移。
+        /// </summary>
         private int headerBlockLen;
+
+        /// <summary>
+        /// 根据响应头中的 Content-Length 解析得到的主体长度（字节）。
+        /// 若未提供 Content-Length，则为 0（当前实现不支持 chunked 编码）。
+        /// </summary>
         private int contentLength;
+
+        /// <summary>
+        /// 用于识别响应状态行中以 "HTTP/" 开头的前缀（比较时使用 StartsWith）。
+        /// </summary>
         private static string HttpScheme = $"{Uri.UriSchemeHttp}/";
+
+        /// <summary>
+        /// 用于识别响应状态行中以 "HTTPS/" 开头的前缀（如果需要兼容不同前缀形式）。
+        /// </summary>
         private static string HttpsScheme = $"{Uri.UriSchemeHttps}/";
 
+        /// <summary>
+        /// 在解析请求时临时保存对应的 HttpRequestMessage（若解析响应时需要参考原始请求）。
+        /// 解析完成后会重置为 null。
+        /// </summary>
         private HttpRequestMessage? request;
 
         public HttpParser()

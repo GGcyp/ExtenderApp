@@ -10,23 +10,72 @@ using HttpResponseMessage = ExtenderApp.Data.HttpResponseMessage;
 
 namespace ExtenderApp.Common.Networks
 {
+    /// <summary>
+    /// 简易的 HTTP 客户端，基于底层 ITcpLinker 封装为可发送请求并接收响应的客户端。
+    /// - 支持明文和 TLS（通过 SslStream）请求发送/接收。
+    /// - 使用 HttpParser 对响应进行增量解析（基于 Content-Length）。
+    /// - 对外以 ValueTask&lt;HttpResponseMessage&gt; 形式返回解析结果。
+    /// </summary>
     public class HttpLinkClient : LinkClient<ITcpLinker>, IHttpLinkClient, IValueTaskSource<HttpResponseMessage>, IDisposable
     {
+        /// <summary>
+        ///  发送或请求明文 HTTP 请求时使用的 TcpLinkerStream。
+        /// </summary>
         private readonly TcpLinkerStream _tcpLinkerStream;
+
+        /// <summary>
+        /// 发送或请求 HTTPS 请求时使用的 SslStream。
+        /// </summary>
         private readonly SslStream _sslStream;
+
+        /// <summary>
+        /// Http 响应解析器。
+        /// </summary>
         private readonly HttpParser Parser;
+
+        /// <summary>
+        /// 异步结果的手动重置 ValueTask 源。
+        /// </summary>
         private ManualResetValueTaskSourceCore<HttpResponseMessage> vts;
 
+        /// <summary>
+        /// 默认的 SSL 客户端身份验证选项。
+        /// </summary>
         public SslClientAuthenticationOptions AuthenticationOptions;
+
         // 接收循环任务与同步保护，避免重复启动接收任务
-        private Task? _receiveTask;
+
+        /// <summary>
+        /// 当前的接收循环任务（若有）。
+        /// </summary>
+        private Task? receiveTask;
+        /// <summary>
+        /// 当前接收循环的取消令牌源。
+        /// </summary>
+        private CancellationTokenSource? receiveCts;
+
+
         private readonly object _receiveLock = new();
+
+        /// <summary>
+        /// 当前 vts 的版本号，用于 ValueTask 源标识。
+        /// </summary>
         public short Version => vts.Version;
 
+        /// <summary>
+        /// 当前正在处理的流（可能是明文流或 SSL 流）。
+        /// </summary>
         private Stream? currentStream;
-        private HttpRequestMessage? currentRequest;
-        public int MaxRedirects { get; set; } = 5;
 
+        /// <summary>
+        /// 当前正在处理的请求消息（用于解析响应时参考请求头等信息）。
+        /// </summary>
+        private HttpRequestMessage? currentRequest;
+
+        /// <summary>
+        /// 使用指定的 ITcpLinker 创建 HttpLinkClient 实例。
+        /// </summary>
+        /// <param name="linker">底层 TCP 链接器，用于建立连接并收发原始字节。</param>
         public HttpLinkClient(ITcpLinker linker) : base(linker)
         {
             Parser = new();
@@ -42,12 +91,17 @@ namespace ExtenderApp.Common.Networks
             };
         }
 
-        public async ValueTask<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken token = default, SslClientAuthenticationOptions? options = null)
+        public async ValueTask<HttpResponseMessage> SendAsync(HttpRequestMessage request, SslClientAuthenticationOptions? options = null, CancellationToken token = default)
         {
             ArgumentNullException.ThrowIfNull(request);
             ArgumentNullException.ThrowIfNull(request.RequestUri);
+            receiveCts = CancellationTokenSource.CreateLinkedTokenSource(token);
+            token = receiveCts.Token;
+
+
             int redirectCount = 0;
             Uri currentUri = request.RequestUri;
+            int maxRedirects = request.MaxRedirects;
 
             while (true)
             {
@@ -73,7 +127,7 @@ namespace ExtenderApp.Common.Networks
                 var response = await new ValueTask<HttpResponseMessage>(this, vts.Version).ConfigureAwait(false);
 
                 // 如果不是重定向，直接返回
-                if (response.StatusCode != HttpStatusCode.Redirect || redirectCount >= MaxRedirects)
+                if (response.StatusCode != HttpStatusCode.Redirect || redirectCount >= maxRedirects)
                     return response;
 
                 // 获取 Location 头（需检查是否存在并能解析）
@@ -107,6 +161,12 @@ namespace ExtenderApp.Common.Networks
             }
         }
 
+        /// <summary>
+        /// 连接到指定请求 URI 的主机与端口。
+        /// </summary>
+        /// <param name="requestUri">目标 URI，不能为空。</param>
+        /// <param name="token">取消令牌。</param>
+        /// <returns>表示连接操作的 ValueTask。</returns>
         private ValueTask ConnectAsync(Uri? requestUri, CancellationToken token)
         {
             ArgumentNullException.ThrowIfNull(requestUri);
@@ -114,22 +174,36 @@ namespace ExtenderApp.Common.Networks
             return Linker.ConnectAsync(new DnsEndPoint(requestUri.Host, port), token);
         }
 
+        /// <summary>
+        /// 将 ByteBuffer 转换并通过底层 Linker 发送（用于明文请求）。
+        /// </summary>
         private ValueTask SendRequestMessage(ByteBuffer byteBuffer, CancellationToken token)
         {
             return SendRequestMessage(byteBuffer.UnreadSequence, byteBuffer.Rental, token);
         }
 
+        /// <summary>
+        /// 将已租用的 ReadOnlySequence 的所有段发送到底层 Linker，然后释放租约。
+        /// </summary>
+        /// <param name="memories">要发送的只读序列（可能为多段）。</param>
+        /// <param name="rental">序列租约，发送后需释放。</param>
         private async ValueTask SendRequestMessage(ReadOnlySequence<byte> memories, SequencePool<byte>.SequenceRental rental, CancellationToken token)
         {
             await Linker.SendAsync(memories, token).ConfigureAwait(false);
             rental.Dispose();
         }
 
+        /// <summary>
+        /// 将 ByteBuffer 转换并通过 SslStream 写出（用于 HTTPS 请求发送前，SslStream 已完成握手）。
+        /// </summary>
         private ValueTask SendAuthenticateRequestMessage(ByteBuffer byteBuffer, CancellationToken token)
         {
             return SendAuthenticateRequestMessage(byteBuffer.UnreadSequence, byteBuffer.Rental, token);
         }
 
+        /// <summary>
+        /// 将只读序列的每个段写入 SslStream 并 Flush，然后释放序列租约。
+        /// </summary>
         private async ValueTask SendAuthenticateRequestMessage(ReadOnlySequence<byte> memories, SequencePool<byte>.SequenceRental rental, CancellationToken token)
         {
             foreach (var segment in memories)
@@ -140,18 +214,27 @@ namespace ExtenderApp.Common.Networks
             rental.Dispose();
         }
 
+        /// <summary>
+        /// 确保接收循环任务正在运行；若尚未运行则在线程池中启动一个任务。
+        /// </summary>
+        /// <param name="token">用于控制接收循环的取消令牌。</param>
         private void EnsureReceiveTaskRunning(CancellationToken token)
         {
             lock (_receiveLock)
             {
-                if (_receiveTask != null && !_receiveTask.IsCompleted)
+                if (receiveTask != null && !receiveTask.IsCompleted)
                     return;
 
                 // fire-and-forget 接收循环（在托管线程池中运行）
-                _receiveTask = Task.Run(() => ReceiveLoopAsync(token), token);
+                receiveTask = Task.Run(() => ReceiveLoopAsync(token), token);
             }
         }
 
+        /// <summary>
+        /// 接收循环：从 currentStream 读取字节并交给 HttpParser 进行增量解析。
+        /// 解析成功时通过 vts.SetResult 完成等待的任务；出现错误则通过 vts.SetException 传递异常。
+        /// </summary>
+        /// <param name="token">取消令牌。</param>
         private async Task ReceiveLoopAsync(CancellationToken token)
         {
             ArgumentNullException.ThrowIfNull(currentStream);
@@ -199,13 +282,35 @@ namespace ExtenderApp.Common.Networks
             }
         }
 
+        protected override void Dispose(bool disposing)
+        {
+            receiveCts?.Cancel();
+            receiveTask?.Wait();
+            receiveCts?.Dispose();
+            receiveTask?.Dispose();
+            _sslStream.Dispose();
+            _tcpLinkerStream.Dispose();
+            base.Dispose(disposing);
+        }
+
         #region IValueTaskSource<HttpResponseMessage>（委托 vts）
+
+        /// <summary>
+        /// 从内部 ManualResetValueTaskSourceCore 获取结果（用于 ValueTask 源）。
+        /// </summary>
         public HttpResponseMessage GetResult(short token) => vts.GetResult(token);
 
+        /// <summary>
+        /// 获取当前内部源的状态。
+        /// </summary>
         public ValueTaskSourceStatus GetStatus(short token) => vts.GetStatus(token);
 
+        /// <summary>
+        /// 注册当内部源完成时要调用的 continuation。
+        /// </summary>
         public void OnCompleted(Action<object?> continuation, object? state, short token, ValueTaskSourceOnCompletedFlags flags)
             => vts.OnCompleted(continuation, state, token, flags);
-        #endregion
+
+        #endregion IValueTaskSource<HttpResponseMessage>（委托 vts）
     }
 }

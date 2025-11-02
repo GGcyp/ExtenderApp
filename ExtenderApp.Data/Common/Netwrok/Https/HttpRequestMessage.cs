@@ -31,8 +31,8 @@ namespace ExtenderApp.Data
             {
                 requestUri = value;
                 if (requestUri is not null)
-                    Scheme = requestUri.Scheme.Equals(Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase) ? 
-                        HttpHeaders.HttpsChars : 
+                    Scheme = requestUri.Scheme.Equals(Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase) ?
+                        HttpHeaders.HttpsChars :
                         HttpHeaders.HttpChars;
             }
         }
@@ -42,7 +42,15 @@ namespace ExtenderApp.Data
         /// </summary>
         public Version Version { get; set; }
 
+        /// <summary>
+        /// 头部使用的协议方案字符串（"HTTP" 或 "HTTPS"）。
+        /// </summary>
         public string? Scheme { get; private set; }
+
+        /// <summary>
+        /// 最大重定向次数（默认 5 次）。
+        /// </summary>
+        public int MaxRedirects { get; set; } = 5;
 
         /// <summary>
         /// 请求头集合（不区分大小写）。
