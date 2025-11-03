@@ -1,6 +1,4 @@
-﻿using AppHost.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection;
-
+﻿using Microsoft.Extensions.DependencyInjection;
 
 namespace ExtenderApp.Common.Caches
 {
@@ -12,7 +10,9 @@ namespace ExtenderApp.Common.Caches
         /// <summary>
         /// 添加缓存服务到IServiceCollection中
         /// </summary>
-        /// <param name="services">IServiceCollection 实例</param>
+        /// <param name="services">
+        /// IServiceCollection 实例
+        /// </param>
         /// <returns>扩展后的IServiceCollection实例</returns>
         internal static IServiceCollection AddCache(this IServiceCollection services)
         {

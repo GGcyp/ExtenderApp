@@ -4,7 +4,7 @@ using ExtenderApp.ViewModels;
 using System.Net;
 using System.Text;
 using ExtenderApp.Common.Networks;
-using AppHost.Extensions.DependencyInjection;
+
 using System.Net.Http;
 
 namespace ExtenderApp.Test

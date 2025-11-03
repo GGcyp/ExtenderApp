@@ -1,5 +1,5 @@
 ﻿using ExtenderApp.Services;
-using AppHost.Extensions.DependencyInjection;
+
 using ExtenderApp.Abstract;
 using ExtenderApp.Common;
 

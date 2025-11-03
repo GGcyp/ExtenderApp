@@ -1,5 +1,4 @@
 ﻿using System.Collections;
-using System.Reflection;
 using Autofac;
 using Autofac.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection;
@@ -21,117 +20,8 @@ namespace AppHost.Extensions.DependencyInjection
                 throw new ArgumentNullException(nameof(services));
             }
 
-            services.AddIEnumerable();
-            services.AddList();
-
-            // 使用 Autofac 构建容器并返回 AutofacServiceProvider
-            var builder = new ContainerBuilder();
-
-            builder.Register<ServiceProvider>(c => new ServiceProvider(services)).SingleInstance();
-
-            // 将已有的 IServiceCollection 填充到 Autofac 容器中
-            builder.Populate(services);
 
             return new ServiceProvider(services);
-        }
-
-        /// <summary>
-        /// 向IServiceCollection中添加IEnumerable类型的服务，该服务是一个包含所有可分配给指定元素类型的服务实例的列表。
-        /// </summary>
-        /// <param name="services">IServiceCollection实例，用于注册服务。</param>
-        /// <returns>IServiceCollection的实例，用于链式注册服务。</returns>
-        public static IServiceCollection AddIEnumerable(this IServiceCollection services)
-        {
-            services.AddTransient(typeof(IEnumerable<>), (p, obj) =>
-            {
-                var types = obj as Type[];
-                //ArgumentNullException.ThrowIfNull(types, "type");
-                if (types is null) return default;
-
-                Type elementType = types[0];
-
-                // 使用反射创建 List<T> 的类型
-                Type listType = typeof(List<>).MakeGenericType(elementType);
-                // 使用反射创建 List<T> 的实例
-                object listInstance = Activator.CreateInstance(listType);
-                //向 List<T> 添加元素（使用反射调用 Add 方法）
-                //MethodInfo addMethod = listType.GetMethod("Add");
-                //var collection = p.GetRequiredService<IServiceCollection>();
-                //object?[] objects = new object?[1];
-                //foreach (var item in collection)
-                //{
-                //    if (elementType.IsAssignableFrom(item.ServiceType))
-                //    {
-                //        objects[0] = p.GetRequiredService(item.ServiceType);
-                //        addMethod!.Invoke(listInstance, objects);
-                //    }
-                //}
-
-                var collection = p.GetRequiredService<IServiceCollection>();
-                IList list = listInstance as IList;
-                foreach (var item in collection)
-                {
-                    if (elementType.IsAssignableFrom(item.ServiceType))
-                    {
-                        var t = p.GetRequiredService(item.ServiceType);
-                        list.Add(t);
-                    }
-                }
-
-                return listInstance;
-            });
-
-            return services;
-        }
-
-        /// <summary>
-        /// 向IServiceCollection中添加IList类型的服务，该服务是一个包含所有可分配给指定元素类型的服务实例的列表。
-        /// </summary>
-        /// <param name="services">IServiceCollection实例，用于注册服务。</param>
-        /// <returns>IServiceCollection的实例，用于链式注册服务。</returns>
-        public static IServiceCollection AddList(this IServiceCollection services)
-        {
-            services.AddTransient(typeof(List<>), (p, obj) =>
-            {
-                var types = obj as Type[];
-                //ArgumentNullException.ThrowIfNull(types, "type");
-                if (types is null) return default;
-
-                Type elementType = types[0];
-
-                Type listType = typeof(List<>).MakeGenericType(elementType);
-                // 使用反射创建 List<T> 的实例
-                object listInstance = Activator.CreateInstance(listType);
-                //向 List<T> 添加元素（使用反射调用 Add 方法）
-                //MethodInfo addMethod = listType.GetMethod("Add");
-
-                //var collection = p.GetRequiredService<IServiceCollection>();
-
-                //object?[] objects = new object?[1];
-                //foreach (var item in collection)
-                //{
-                //    if (elementType.IsAssignableFrom(item.ServiceType))
-                //    {
-                //        objects[0] = p.GetRequiredService(item.ServiceType);
-                //        addMethod!.Invoke(listInstance, objects);
-                //    }
-                //}
-
-                var collection = p.GetRequiredService<IServiceCollection>();
-                IList list = listInstance as IList;
-                foreach (var item in collection)
-                {
-                    if (elementType.IsAssignableFrom(item.ServiceType))
-                    {
-                        var t = p.GetRequiredService(item.ServiceType);
-                        list.Add(t);
-                    }
-                }
-
-                return listInstance;
-            });
-
-            return services;
         }
     }
 }

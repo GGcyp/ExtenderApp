@@ -1,5 +1,5 @@
 ﻿using System.Windows.Controls;
-using AppHost.Extensions.DependencyInjection;
+
 using ExtenderApp.Abstract;
 using ExtenderApp.MainViews.Models;
 using ExtenderApp.MainViews.Views;

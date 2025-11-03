@@ -15,7 +15,7 @@
 			<JsonFiles Include="$(TargetDir)\init.json" />
 		</ItemGroup>
 		<ItemGroup>
-			<TargetFolder Include="$(SolutionDir)ExtenderApp\bin\$(Configuration)\net8.0-windows\plugins"/>
+			<TargetFolder Include="$(SolutionDir)ExtenderApp\bin\$(Configuration)\net8.0-windows\plugins" />
 		</ItemGroup>
 		<!-- 通过环境变量获取当前用户名（Windows 系统下常用的 USERNAME 环境变量） -->
 		<PropertyGroup>
@@ -52,7 +52,6 @@
 		<PackageReference Include="Plotly.NET" Version="5.1.0" />
 	</ItemGroup>
 	<ItemGroup>
-		<ProjectReference Include="..\AppHost.Builder\AppHost.Builder.csproj" />
 		<ProjectReference Include="..\ExtenderApp.Service\ExtenderApp.Services.csproj" />
 		<ProjectReference Include="..\ExtenderApp.ViewModels\ExtenderApp.ViewModels.csproj" />
 		<ProjectReference Include="..\ExtenderApp.Views\ExtenderApp.Views.csproj" />

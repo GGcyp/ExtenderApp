@@ -1,5 +1,4 @@
-﻿using AppHost.Extensions.DependencyInjection;
-using ExtenderApp.Services;
+﻿using ExtenderApp.Services;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace ExtenderApp.Test

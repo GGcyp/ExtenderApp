@@ -1,6 +1,6 @@
 ﻿using System.Diagnostics;
 using System.Transactions;
-using AppHost.Extensions.Hosting;
+
 using ExtenderApp.Abstract;
 using ExtenderApp.Data;
 

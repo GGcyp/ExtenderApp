@@ -1,4 +1,4 @@
-﻿using AppHost.Extensions.DependencyInjection;
+﻿
 using ExtenderApp.Abstract;
 using ExtenderApp.Common.Networks.Formatters;
 using ExtenderApp.Common.Networks.LinkClients;

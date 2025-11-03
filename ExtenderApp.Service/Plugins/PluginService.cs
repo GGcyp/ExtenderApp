@@ -1,9 +1,7 @@
-﻿using System.IO;
-using System.Reflection;
+﻿using System.Reflection;
 using System.Runtime.Loader;
-using AppHost.Builder.Extensions;
-using AppHost.Extensions.DependencyInjection;
 using ExtenderApp.Abstract;
+using ExtenderApp.Common;
 using ExtenderApp.Common.Error;
 using ExtenderApp.Data;
 using Microsoft.Extensions.DependencyInjection;
@@ -65,8 +63,13 @@ namespace ExtenderApp.Services
         /// <summary>
         /// 判断给定的 ModeInfo 是否存在于 ModStore 中。
         /// </summary>
-        /// <param name="info">要判断的 ModeInfo 对象。</param>
-        /// <returns>如果 ModeInfo 存在于 ModStore 中，则返回 true；否则返回 false。</returns>
+        /// <param name="info">
+        /// 要判断的 ModeInfo 对象。
+        /// </param>
+        /// <returns>
+        /// 如果 ModeInfo 存在于 ModStore 中，则返回
+        /// true；否则返回 false。
+        /// </returns>
         private bool Contains(PluginInfo info)
         {
             return GetPluginDetails(info.PluginStartupDll) is not null;
@@ -75,8 +78,12 @@ namespace ExtenderApp.Services
         /// <summary>
         /// 根据给定的启动 DLL 名称获取 ModDetails 对象。
         /// </summary>
-        /// <param name="modStartDLLName">启动 DLL 的名称。</param>
-        /// <returns>如果找到匹配的 ModDetails 对象，则返回该对象；否则返回 null。</returns>
+        /// <param name="modStartDLLName">
+        /// 启动 DLL 的名称。
+        /// </param>
+        /// <returns>
+        /// 如果找到匹配的 ModDetails 对象，则返回该对象；否则返回 null。
+        /// </returns>
         public PluginDetails? GetPluginDetails(string modStartDLLName)
         {
             if (string.IsNullOrEmpty(modStartDLLName)) return null;
@@ -88,7 +95,9 @@ namespace ExtenderApp.Services
         /// 加载插件信息
         /// </summary>
         /// <param name="modFolderPath">插件文件夹路径</param>
-        /// <exception cref="ArgumentException">如果插件文件夹路径为空</exception>
+        /// <exception cref="ArgumentException">
+        /// 如果插件文件夹路径为空
+        /// </exception>
         public void LoadPluginInfo(string modFolderPath)
         {
             string.IsNullOrEmpty(modFolderPath).ArgumentFalse(nameof(IPluginService), "加载模组地址不能为空");
@@ -126,8 +135,12 @@ namespace ExtenderApp.Services
         /// 异步加载插件
         /// </summary>
         /// <param name="details">插件详情信息</param>
-        /// <exception cref="ArgumentNullException">当插件详情为null或关键路径为空时抛出</exception>
-        /// <exception cref="InvalidOperationException">当未找到插件启动项时抛出</exception>
+        /// <exception cref="ArgumentNullException">
+        /// 当插件详情为null或关键路径为空时抛出
+        /// </exception>
+        /// <exception cref="InvalidOperationException">
+        /// 当未找到插件启动项时抛出
+        /// </exception>
         public async Task LoadPluginAsync(PluginDetails details)
         {
             ArgumentNullException.ThrowIfNull(details, nameof(details));
@@ -202,6 +215,8 @@ namespace ExtenderApp.Services
             return reslut;
         }
 
+
+
         /// <summary>
         /// 用于加载插件的转换类
         /// </summary>
@@ -216,13 +231,16 @@ namespace ExtenderApp.Services
             /// 将服务添加到插件的作用域
             /// </summary>
             /// <param name="services">服务集合</param>
-            /// <param name="options">作用域选项</param>
-            public void AddServiceToPluginScope(IServiceCollection services, ScopeOptions options)
+            /// <param name="scoepName">作用域选项</param>
+            /// <returns>放回要被加载的作用域名称</returns>
+            public string AddServiceToPluginScope(IServiceCollection services, string scoepName)
             {
-                Details.PluginScope = options.ScopeName;
+                Details.PluginScope = scoepName;
 
                 services.AddSingleton<IServiceStore, PluginServiceStore>();
                 services.AddSingleton(Details);
+
+                return scoepName;
             }
         }
     }

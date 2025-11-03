@@ -1,8 +1,7 @@
-﻿using AppHost.Builder;
-using ExtenderApp.Common.Caches;
+﻿using ExtenderApp.Common.Caches;
 using ExtenderApp.Common.Hash;
 using ExtenderApp.Common.Networks;
-using ExtenderApp.Common.Pipelines;
+using ExtenderApp.Common.Threads;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace ExtenderApp.Common
@@ -19,7 +18,7 @@ namespace ExtenderApp.Common
             services.AddNetwork();
             services.AddHash();
             services.AddCache();
-            services.AddPipeline();
+            services.AddMainThreadContext();
         }
     }
 }

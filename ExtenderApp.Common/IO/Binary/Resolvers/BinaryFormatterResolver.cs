@@ -1,5 +1,4 @@
-﻿using AppHost.Extensions.DependencyInjection;
-using ExtenderApp.Abstract;
+﻿using ExtenderApp.Abstract;
 using ExtenderApp.Common.IO.Binary.Formatters;
 using ExtenderApp.Data;
 using Microsoft.Extensions.DependencyInjection;
@@ -7,7 +6,8 @@ using Microsoft.Extensions.DependencyInjection;
 namespace ExtenderApp.Common
 {
     /// <summary>
-    /// 内部类 BinaryFormatterResolver，实现了 IBinaryFormatterResolver 接口。
+    /// 内部类 BinaryFormatterResolver，实现了
+    /// IBinaryFormatterResolver 接口。
     /// </summary>
     internal class BinaryFormatterResolver : IBinaryFormatterResolver
     {
@@ -22,9 +22,9 @@ namespace ExtenderApp.Common
         private readonly IBinaryFormatterStore _store;
 
         /// <summary>
-        /// 临时提供程序接口实例
+        /// 服务提供者实例
         /// </summary>
-        private readonly ITentativeProvider _serviceProvider;
+        private readonly IServiceProvider _serviceProvider;
 
         /// <summary>
         /// 二进制格式化器创建器实例
@@ -35,7 +35,7 @@ namespace ExtenderApp.Common
         /// 使用指定的BinaryFormatter解析器仓库创建BinaryFormatter解析器实例
         /// </summary>
         /// <param name="store">BinaryFormatter解析器仓库</param>
-        public BinaryFormatterResolver(IBinaryFormatterStore store, ITentativeProvider provider)
+        public BinaryFormatterResolver(IBinaryFormatterStore store, IServiceProvider provider)
         {
             _formmaterDict = new();
             _serviceProvider = provider;

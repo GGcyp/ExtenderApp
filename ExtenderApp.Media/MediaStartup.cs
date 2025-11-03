@@ -1,4 +1,4 @@
-﻿using AppHost.Extensions.DependencyInjection;
+﻿
 using ExtenderApp.Abstract;
 using ExtenderApp.Services;
 using ExtenderApp.Common;

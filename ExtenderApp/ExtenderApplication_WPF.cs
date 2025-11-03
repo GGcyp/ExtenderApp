@@ -1,8 +1,5 @@
 ﻿using System.Diagnostics;
 using System.Windows;
-using AppHost;
-using AppHost.Builder;
-using AppHost.Extensions.DependencyInjection;
 using ExtenderApp.Abstract;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -10,8 +7,7 @@ namespace ExtenderApp
 {
     internal class ExtenderApplication_WPF : Application
     {
-        private readonly AppHostBuilder _builder;
-        private AppHostApplication application;
+
         private ILogingService logingService;
         private IServiceProvider serviceProvider;
 
@@ -20,18 +16,16 @@ namespace ExtenderApp
             Stopwatch sw = new Stopwatch();
             sw.Start();
             DebugMessage($"开始启动 : {DateTime.Now}");
-            _builder = AppHostApplication.CreateBuilder();
+            //_builder = AppHostApplication.CreateBuilder();
             DebugMessage($"启动成功 : {DateTime.Now}");
 
             DebugMessage($"开始生成服务 : {DateTime.Now}");
-            _builder.LoadAssembliesForFolder("pack");
-            _builder.FindStarupForFolder("lib");
-            application = _builder.Builde();
+            //_builder.LoadAssembliesForFolder("pack");
+            //_builder.FindStarupForFolder("lib");
+            //application = _builder.Builde();
             DebugMessage($"生成服务成功 : {DateTime.Now}");
 
-            serviceProvider = application.ServiceProvider;
-            logingService = application.ServiceProvider.GetRequiredService<ILogingService>();
-            application.Run();
+
             sw.Stop();
             logingService?.Print(new Data.LogInfo()
             {
@@ -46,29 +40,29 @@ namespace ExtenderApp
         protected override void OnStartup(StartupEventArgs e)
         {
             base.OnStartup(e);
-            _builder.MainThreadContext.InitMainThreadContext();
+            //_builder.MainThreadContext.InitMainThreadContext();
             //Resources.MergedDictionaries.Add(new() { Source = new("pack://application:,,,/ExtenderApp.Views;component/Themes/Global/DarkTheme.xaml") });
         }
 
         protected override void OnExit(ExitEventArgs e)
         {
             base.OnExit(e);
-            application.StopAsync().ConfigureAwait(false);
-            serviceProvider.GetRequiredService<IServiceProviderCloser>().DisposeAsync().ConfigureAwait(false);
+            //application.StopAsync().ConfigureAwait(false);
+            //serviceProvider.GetRequiredService<IServiceProviderCloser>().DisposeAsync().ConfigureAwait(false);
         }
 
         public void Eorrer(Exception ex)
         {
-            var logingService = application.ServiceProvider.GetService<ILogingService>();
-            logingService?.Print(new Data.LogInfo()
-            {
-                LogLevel = Data.LogLevel.ERROR,
-                Message = "程序出现问题了！",
-                Source = nameof(ExtenderApplication_WPF),
-                Time = DateTime.Now,
-                ThreadId = Thread.CurrentThread.ManagedThreadId,
-                Exception = ex
-            });
+            //var logingService = application.ServiceProvider.GetService<ILogingService>();
+            //logingService?.Print(new Data.LogInfo()
+            //{
+            //    LogLevel = Data.LogLevel.ERROR,
+            //    Message = "程序出现问题了！",
+            //    Source = nameof(ExtenderApplication_WPF),
+            //    Time = DateTime.Now,
+            //    ThreadId = Thread.CurrentThread.ManagedThreadId,
+            //    Exception = ex
+            //});
         }
 
 #if DEBUG

@@ -62,8 +62,6 @@
 	</Target>
 
 	<ItemGroup>
-	  <ProjectReference Include="..\AppHost.Builder\AppHost.Builder.csproj" />
-	  <ProjectReference Include="..\AppHost.Common\AppHost.Common.csproj" />
 	  <ProjectReference Include="..\ExtenderApp.Service\ExtenderApp.Services.csproj" />
 	  <ProjectReference Include="..\ExtenderApp.ViewModels\ExtenderApp.ViewModels.csproj" />
 	  <ProjectReference Include="..\ExtenderApp.Views\ExtenderApp.Views.csproj" />

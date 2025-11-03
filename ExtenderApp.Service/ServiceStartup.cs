@@ -1,6 +1,5 @@
-﻿using AppHost.Builder;
-using AppHost.Extensions.DependencyInjection;
-using ExtenderApp.Abstract;
+﻿using ExtenderApp.Abstract;
+using ExtenderApp.Common;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace ExtenderApp.Services

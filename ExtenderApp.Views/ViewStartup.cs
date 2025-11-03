@@ -1,9 +1,9 @@
 ﻿using System.Collections.ObjectModel;
-using AppHost.Builder;
 using AppHost.Extensions.DependencyInjection;
-using AppHost.Extensions.Hosting;
 using ExtenderApp.Abstract;
 using ExtenderApp.Abstract.View;
+using ExtenderApp.Common;
+using ExtenderApp.Common.Networks;
 using ExtenderApp.Views.Clipboards;
 using ExtenderApp.Views.CutsceneViews;
 using ExtenderApp.Views.Themes;
@@ -15,12 +15,12 @@ namespace ExtenderApp.Views
     {
         public override void AddService(IServiceCollection services)
         {
-            services.AddHosted<MainViewHostedService>();
+            //services.AddHosted<MainViewHostedService>();
             services.AddSingleton<IClipboard, Clipboard_WPF>();
             services.AddTransient<CutsceneView>();
             AddThemeManager(services);
 
-            services.Configuration<IBinaryFormatterStore>(s =>
+            services.ConfigureSingletonInstance<IBinaryFormatterStore>(s =>
             {
                 s.AddFormatter(typeof(ObservableCollection<>), typeof(ObservableCollectionFormatter<>));
             });

@@ -1,4 +1,4 @@
-﻿using AppHost.Extensions.DependencyInjection;
+﻿
 
 namespace AppHost.Builder
 {

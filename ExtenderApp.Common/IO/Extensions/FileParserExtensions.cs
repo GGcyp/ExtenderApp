@@ -1,4 +1,4 @@
-﻿using AppHost.Extensions.DependencyInjection;
+﻿
 using ExtenderApp.Abstract;
 using ExtenderApp.Common.IO.Splitter;
 using ExtenderApp.Common.IO;
@@ -17,7 +17,7 @@ namespace ExtenderApp.Common
         /// </summary>
         /// <param name="services">服务集合</param>
         /// <returns>返回添加文件相关服务后的服务集合</returns>
-        public static IServiceCollection AddIO(this IServiceCollection services)
+        internal static IServiceCollection AddIO(this IServiceCollection services)
         {
             //Parser
             services.AddParser();

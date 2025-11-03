@@ -1,7 +1,7 @@
 ﻿using System.Buffers;
 using System.Net;
 using System.Reflection;
-using AppHost.Extensions.DependencyInjection;
+
 using ExtenderApp.Abstract;
 using ExtenderApp.Common.IO.Binary.Formatters;
 using ExtenderApp.Common.IO.Binary.Formatters.Collection;

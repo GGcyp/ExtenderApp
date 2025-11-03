@@ -1,5 +1,4 @@
-﻿using AppHost.Extensions.DependencyInjection;
-using ExtenderApp.Data;
+﻿using ExtenderApp.Data;
 
 namespace ExtenderApp.Abstract
 {
@@ -7,7 +6,7 @@ namespace ExtenderApp.Abstract
     /// 表示二进制格式化程序的存储接口，用于管理和获取不同类型的二进制格式化程序。
     /// 继承自 <see cref="IConfiguration"/> 接口。
     /// </summary>
-    public interface IBinaryFormatterStore : IConfiguration
+    public interface IBinaryFormatterStore
     {
         /// <summary>
         /// 向格式化程序存储中添加指定类型的格式化程序。

@@ -5,7 +5,7 @@ using ExtenderApp.Services;
 using ExtenderApp.Data;
 using ExtenderApp.Common.Error;
 using ExtenderApp.Common;
-using AppHost.Extensions.DependencyInjection;
+
 using ExtenderApp.Models;
 using Microsoft.Extensions.DependencyInjection;
 

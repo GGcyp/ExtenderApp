@@ -1,5 +1,4 @@
 ﻿using System.Security.Cryptography;
-using AppHost.Extensions.DependencyInjection;
 using ExtenderApp.Abstract;
 using ExtenderApp.Data;
 using Microsoft.Extensions.DependencyInjection;
@@ -24,7 +23,7 @@ namespace ExtenderApp.Common.Hash
         internal static IServiceCollection AddHash(this IServiceCollection services)
         {
             services.AddSingleton<IHashProvider, HashProvider>();
-            services.Configuration<IBinaryFormatterStore>(b =>
+            services.ConfigureSingletonInstance<IBinaryFormatterStore>(b =>
             {
                 b.AddStructFormatter<HashValue, HashValueFormatter>();
                 b.AddStructFormatter<HashValues, HashValuesFormatter>();

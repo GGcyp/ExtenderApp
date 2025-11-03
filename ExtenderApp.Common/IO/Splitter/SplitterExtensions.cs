@@ -1,4 +1,4 @@
-﻿using AppHost.Extensions.DependencyInjection;
+﻿
 using ExtenderApp.Abstract;
 using ExtenderApp.Common.Networks;
 using ExtenderApp.Data;
@@ -20,12 +20,12 @@ namespace ExtenderApp.Common.IO.Splitter
         {
             //services.AddSingleton<IFileSplitter, FileSplitter>();
 
-            services.Configuration<IBinaryFormatterStore>(s =>
-            {
-                s.Add<SplitterInfo, SplitterInfoFormatter>();
-                s.Add<SplitterDto, SplitterDtoFormatter>();
-                s.Add<PieceData, PieceDataFormatter>();
-            });
+            //services.Configuration<IBinaryFormatterStore>(s =>
+            //{
+            //    s.Add<SplitterInfo, SplitterInfoFormatter>();
+            //    s.Add<SplitterDto, SplitterDtoFormatter>();
+            //    s.Add<PieceData, PieceDataFormatter>();
+            //});
 
             return services;
         }

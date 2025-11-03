@@ -1,24 +1,66 @@
 ﻿using System.Reflection;
-
+using ExtenderApp.Abstract;
 using Microsoft.Extensions.DependencyInjection;
 
-
-namespace AppHost.Builder.Extensions
+namespace ExtenderApp.Common
 {
     /// <summary>
-    /// ScopeExecutor 的扩展方法类。
+    /// 作用域执行器类
     /// </summary>
-    public static class ScopeExecutorExtensions
+    public class ScopeExecutor : IScopeExecutor
     {
+        private readonly IServiceProvider _serviceProvider;
+
+        private readonly Dictionary<string, IServiceScope> _scopesDict;
+
         /// <summary>
-        /// 为 IHostApplicationBuilder 添加 ScopeExecutor 服务。
+        /// 初始化作用域执行器
         /// </summary>
-        /// <param name="host">IHostApplicationBuilder 实例。</param>
-        /// <returns>返回添加了 ScopeExecutor 服务的 IHostApplicationBuilder 实例。</returns>
-        public static IHostApplicationBuilder AddScopeExecutor(this IHostApplicationBuilder host)
+        /// <param name="addAction">添加作用域的委托</param>
+        /// <param name="removeAction">移除作用域的委托</param>
+        public ScopeExecutor(IServiceProvider provider)
         {
-            host.Services.AddSingleton<IScopeExecutor, ScopeExecutor>();
-            return host;
+            _serviceProvider = provider;
+            _scopesDict = new();
+        }
+
+        public void LoadScope(IServiceCollection collection, string scopeName)
+        {
+            if (string.IsNullOrEmpty(scopeName))
+            {
+                throw new ArgumentNullException(nameof(scopeName), "作用域名称不能为空");
+            }
+
+            if (_scopesDict.ContainsKey(scopeName))
+            {
+                throw new InvalidOperationException(string.Concat("不可以重复注册作用域: ", scopeName));
+            }
+
+        }
+
+        public void UnLoadScope(string scope)
+        {
+            if (string.IsNullOrEmpty(scope))
+            {
+                return;
+            }
+
+            _scopesDict.Remove(scope, out var scopeService);
+            //scopeService?.DisposeAsync().ConfigureAwait(false);
+        }
+
+        public IServiceProvider? GetServiceProvider(string scope)
+        {
+            if (string.IsNullOrEmpty(scope))
+            {
+                throw new InvalidOperationException(nameof(IScopeExecutor));
+            }
+
+            if (_scopesDict.TryGetValue(scope, out var provider))
+            {
+                return provider;
+            }
+            return null;
         }
 
         /// <summary>
@@ -30,10 +72,10 @@ namespace AppHost.Builder.Extensions
         /// <param name="callback">可选的回调函数，用于配置作用域选项和服务集合。</param>
         /// <returns>加载的启动类实例，如果未找到匹配的启动类则返回 null。</returns>
         /// <exception cref="ArgumentNullException">如果 assembly 参数为 null，则抛出此异常。</exception>
-        public static TStartup? LoadScope<TStartup>(this IScopeExecutor executor, string assemblyPath, Action<IServiceCollection, ScopeOptions> callback = null) where TStartup : ScopeStartup
+        public TStartup? LoadScope<TStartup>(IScopeExecutor executor, string assemblyPath, Action<IServiceCollection, string> callback = null) where TStartup : ScopeStartup
         {
             var assembly = Assembly.LoadFrom(assemblyPath);
-            return executor.LoadScope<TStartup>(assembly, callback);
+            return executor.LoadScope<TStartup>(executor, assembly, callback);
         }
 
         /// <summary>
@@ -45,7 +87,7 @@ namespace AppHost.Builder.Extensions
         /// <param name="callback">可选的回调函数，用于配置作用域选项和服务集合。</param>
         /// <returns>加载的启动类实例，如果未找到匹配的启动类则返回 null。</returns>
         /// <exception cref="ArgumentNullException">如果 assembly 参数为 null，则抛出此异常。</exception>
-        public static TStartup? LoadScope<TStartup>(this IScopeExecutor executor, Assembly assembly, Action<IServiceCollection, ScopeOptions> callback = null) where TStartup : ScopeStartup
+        public static TStartup? LoadScope<TStartup>(IScopeExecutor executor, Assembly assembly, Action<IServiceCollection, string> callback = null) where TStartup : ScopeStartup
         {
             if (assembly == null) throw new ArgumentNullException(nameof(assembly));
             var startType = assembly.GetTypes().FirstOrDefault(t => !t.IsAbstract && ScopeStartup.Type.IsAssignableFrom(t));

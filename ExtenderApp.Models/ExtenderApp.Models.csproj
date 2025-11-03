@@ -7,13 +7,22 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\AppHost.Builder\AppHost.Builder.csproj" />
     <ProjectReference Include="..\ExtenderApp.Abstract\ExtenderApp.Abstract.csproj" />
     <ProjectReference Include="..\ExtenderApp.Common\ExtenderApp.Common.csproj" />
   </ItemGroup>
 
-  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-	<Exec Command="copy &quot;$(TargetDir)\$(ProjectName).dll&quot; &quot;E:\WPF_Project\ExtenderApp\ExtenderApp\bin\Debug\net8.0-windows\lib\$(ProjectName).dll&quot;" />
-  </Target>
+	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
+		<ItemGroup>
+			<TargetFolder Include="E:\WPF_Project\ExtenderApp\ExtenderApp\bin\Debug\net8.0-windows" />
+		</ItemGroup>
+		<MakeDir Directories="%(TargetFolder.Identity)\lib" Condition="!Exists('%(TargetFolder.Identity)\lib')" />
+		<Exec Command="copy &quot;$(TargetDir)\$(ProjectName).dll&quot; &quot;%(TargetFolder.Identity)\lib\$(ProjectName).dll&quot;" />
+
+		<ItemGroup>
+			<PackageReferencePath Include="$(NuGetPackageRoot)\%(PackageReference.Identity)\%(PackageReference.Version)\lib\**\*.dll" />
+		</ItemGroup>
+		<MakeDir Directories="%(TargetFolder.Identity)" Condition="!Exists('%(TargetFolder.Identity)\pack')" />
+		<Copy SourceFiles="@(PackageReferencePath)" DestinationFolder="%(TargetFolder.Identity)\pack" SkipUnchangedFiles="true" />
+	</Target>
 	
 </Project>

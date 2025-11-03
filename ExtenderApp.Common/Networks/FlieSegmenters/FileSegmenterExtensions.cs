@@ -1,4 +1,4 @@
-﻿using AppHost.Extensions.DependencyInjection;
+﻿
 using ExtenderApp.Abstract;
 using ExtenderApp.Common.Networks.FlieSegmenters.FileResponseDtos;
 using Microsoft.Extensions.DependencyInjection;
@@ -11,7 +11,7 @@ namespace ExtenderApp.Common.Networks
         {
             services.AddSingleton<FileSegmenter>();
 
-            services.Configuration<IBinaryFormatterStore>(s =>
+            services.ConfigureSingletonInstance<IBinaryFormatterStore>(s =>
             {
                 s.Add<FileInfoDto, FileInfoDtoFormatter>();
                 s.Add<FileTransferRequestDto, FileTransferRequestDtoFormatter>();

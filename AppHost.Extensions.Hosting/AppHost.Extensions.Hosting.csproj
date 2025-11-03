@@ -6,8 +6,4 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\AppHost.Extensions.DependencyInjection\AppHost.Extensions.DependencyInjection.csproj" />
-  </ItemGroup>
-
 </Project>

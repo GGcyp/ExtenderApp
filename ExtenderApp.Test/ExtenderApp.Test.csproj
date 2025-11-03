@@ -8,7 +8,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\AppHost.Builder\AppHost.Builder.csproj" />
     <ProjectReference Include="..\ExtenderApp.Abstract\ExtenderApp.Abstract.csproj" />
     <ProjectReference Include="..\ExtenderApp.Common\ExtenderApp.Common.csproj" />
     <ProjectReference Include="..\ExtenderApp.Service\ExtenderApp.Services.csproj" />
@@ -32,7 +31,7 @@
 			<JsonFiles Include="$(TargetDir)\init.json" />
 		</ItemGroup>
 		<ItemGroup>
-			<TargetFolder Include="$(SolutionDir)ExtenderApp\bin\$(Configuration)\net8.0-windows\plugins"/>
+			<TargetFolder Include="$(SolutionDir)ExtenderApp\bin\$(Configuration)\net8.0-windows\plugins" />
 		</ItemGroup>
 		<!-- 创建目标文件夹（如果不存在）并复制动态库文件和init.json -->
 		<MakeDir Directories="%(TargetFolder.Identity)\$(ProjectName)" Condition="!Exists('%(TargetFolder.Identity)\$(ProjectName)')" />
