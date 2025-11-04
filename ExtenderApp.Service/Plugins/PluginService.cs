@@ -1,4 +1,5 @@
-﻿using System.Reflection;
+﻿using System.Collections.Concurrent;
+using System.Reflection;
 using System.Runtime.Loader;
 using ExtenderApp.Abstract;
 using ExtenderApp.Common;
@@ -23,15 +24,7 @@ namespace ExtenderApp.Services
         /// </summary>
         private readonly PluginStore _pluginStore;
 
-        /// <summary>
-        /// 插件转换
-        /// </summary>
-        private readonly LoadPluginTransform _pluginTransform;
-
-        /// <summary>
-        /// 作用域执行器
-        /// </summary>
-        private IScopeExecutor _scopeExecutor;
+        private readonly ConcurrentDictionary<string, IServiceScope> _pluginServiceDict;
 
         /// <summary>
         /// 路径提供者接口实例
@@ -48,16 +41,25 @@ namespace ExtenderApp.Services
         /// </summary>
         private IBinaryFormatterStore _binaryFormatterStore;
 
-        public PluginService(PluginStore pluginStore, IPathService pathProvider, IJsonParser parser, IScopeExecutor executor, IBinaryFormatterStore binaryFormatterStore)
+        public PluginService(PluginStore pluginStore, IPathService pathProvider, IJsonParser parser, IBinaryFormatterStore binaryFormatterStore)
         {
             _pluginStore = pluginStore;
-            _scopeExecutor = executor;
             _pathProvider = pathProvider;
             _jsonParser = parser;
-            _pluginTransform = new();
             _binaryFormatterStore = binaryFormatterStore;
 
+            _pluginServiceDict = new();
+
             LoadPluginInfo(_pathProvider.ModsPath);
+        }
+
+        public IServiceProvider GetPluginServiceProvider(string scopeName)
+        {
+            if (_pluginServiceDict.TryGetValue(scopeName, out var serviceScope))
+            {
+                return serviceScope.ServiceProvider;
+            }
+            throw new KeyNotFoundException($"未找到名称为 {scopeName} 的插件服务作用域。");
         }
 
         /// <summary>
@@ -128,7 +130,11 @@ namespace ExtenderApp.Services
         public void UnloadPlugin(PluginDetails details)
         {
             if (details.IsStandingModel) return;
-            _scopeExecutor.UnLoadScope(details.PluginScope);
+
+            if (_pluginServiceDict.TryRemove(details.PluginScopeName, out var serviceScope))
+            {
+                serviceScope.Dispose();
+            }
         }
 
         /// <summary>
@@ -152,15 +158,13 @@ namespace ExtenderApp.Services
             }
 
             var loadContext = details.LoadContext;
-
             var startAssembly = details.StartAssembly;
 
-            _pluginTransform.Details = details;
-            var modStartup = _scopeExecutor.LoadScope<PluginEntityStartup>(startAssembly, _pluginTransform.AddServiceToPluginScope);
-            modStartup.ConfigureDetails(details);
-
-            if (modStartup == null)
+            var modStartup = LoadScope(startAssembly, details);
+            if (modStartup is null)
                 throw new InvalidOperationException(string.Format("未找到这个模组的启动项：{0}", details.Title));
+
+            modStartup.ConfigureDetails(details);
             details.StartupType = modStartup.StartType;
             details.CutsceneViewType = modStartup.CutsceneViewType;
 
@@ -188,10 +192,10 @@ namespace ExtenderApp.Services
                 {
                     foreach (var dir in Directory.GetFiles(packPath))
                     {
-                        using (var stream = new FileStream(dir, FileMode.Open, FileAccess.Read))
-                        {
-                            loadContext.LoadFromStream(stream);
-                        }
+                        if (dir.IndexOf(".dll", StringComparison.OrdinalIgnoreCase) < 0)
+                            continue;
+
+                        loadContext.LoadFromAssemblyPath(dir);
                     }
                 });
             }
@@ -215,32 +219,31 @@ namespace ExtenderApp.Services
             return reslut;
         }
 
-
-
-        /// <summary>
-        /// 用于加载插件的转换类
-        /// </summary>
-        private class LoadPluginTransform
+        public PluginEntityStartup? LoadScope(Assembly? assembly, PluginDetails details)
         {
-            /// <summary>
-            /// 获取或设置插件详细信息
-            /// </summary>
-            public PluginDetails Details { get; set; }
+            if (assembly == null)
+                throw new ArgumentNullException(nameof(assembly), "插件启动库不能为空");
 
-            /// <summary>
-            /// 将服务添加到插件的作用域
-            /// </summary>
-            /// <param name="services">服务集合</param>
-            /// <param name="scoepName">作用域选项</param>
-            /// <returns>放回要被加载的作用域名称</returns>
-            public string AddServiceToPluginScope(IServiceCollection services, string scoepName)
+            var startType = assembly.GetTypes().FirstOrDefault(t => !t.IsAbstract && ScopeStartup.StartupType.IsAssignableFrom(t));
+            if (startType is null)
+                return null;
+
+            var startup = (Activator.CreateInstance(startType) as PluginEntityStartup)!;
+
+            IServiceCollection services = new ServiceCollection();
+            services.AddSingleton<IServiceStore, PluginServiceStore>();
+            services.AddSingleton(details);
+            startup.AddService(services);
+            details.PluginScopeName = startup.ScopeName;
+            AddPluginServiceScope(startup.ScopeName, services.BuildServiceProvider().CreateScope());
+            return startup;
+        }
+
+        private void AddPluginServiceScope(string scopeName, IServiceScope serviceScope)
+        {
+            if (_pluginServiceDict.TryAdd(scopeName, serviceScope))
             {
-                Details.PluginScope = scoepName;
-
-                services.AddSingleton<IServiceStore, PluginServiceStore>();
-                services.AddSingleton(Details);
-
-                return scoepName;
+                throw new Exception($"已存在相同名称的插件服务作用域：{scopeName}");
             }
         }
     }

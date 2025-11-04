@@ -8,7 +8,7 @@ namespace ExtenderApp.Common.Networks
         {
             //services.AddTransient(typeof(ClientBuilder<>), (p, o) =>
             //{
-            //    if (o is not Type[] types)
+            //    if (o is not StartupType[] types)
             //        return null;
 
             //});

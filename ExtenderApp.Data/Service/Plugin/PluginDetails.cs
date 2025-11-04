@@ -66,7 +66,7 @@ namespace ExtenderApp.Data
         /// <summary>
         /// 获取或设置插件作用域
         /// </summary>
-        public string PluginScope { get; set; }
+        public string PluginScopeName { get; set; }
 
         /// <summary>
         /// 获取插件图标路径。
@@ -105,7 +105,7 @@ namespace ExtenderApp.Data
         /// </summary>
         public PluginDetails()
         {
-            PluginScope = string.Empty;
+            PluginScopeName = string.Empty;
             PluginFolderPath = string.Empty;
             StartupType = null;
             LoadContext = null;

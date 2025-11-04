@@ -19,7 +19,7 @@ namespace ExtenderApp.Common
         public static IBinaryFormatterStore AddClassFormatter<Type, TFormatter>(this IBinaryFormatterStore store) where Type : class where TFormatter : IBinaryFormatter<Type>
         {
             store.Add<Type, TFormatter>();
-            //_store.AddCollectionFormatter<Type>();
+            //_store.AddCollectionFormatter<StartupType>();
             return store;
         }
 
@@ -34,7 +34,7 @@ namespace ExtenderApp.Common
         {
             store.Add<Type, TFormatter>();
             store.AddNullableFormatter<Type>();
-            //_store.AddCollectionFormatter<Type>();
+            //_store.AddCollectionFormatter<StartupType>();
             return store;
         }
 

@@ -8,24 +8,9 @@ namespace ExtenderApp.Common
     public abstract class Startup
     {
         /// <summary>
-        /// 启动类类型
-        /// </summary>
-        private static Type m_StartupType;
-
-        /// <summary>
         /// 获取启动类类型
         /// </summary>
-        public static Type Type
-        {
-            get
-            {
-                if (m_StartupType == null)
-                {
-                    m_StartupType = typeof(Startup);
-                }
-                return m_StartupType;
-            }
-        }
+        public static Type StartupType { get; } = typeof(Startup);
 
         /// <summary>
         /// 添加服务

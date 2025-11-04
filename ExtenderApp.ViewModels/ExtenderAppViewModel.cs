@@ -98,7 +98,7 @@ namespace ExtenderApp.ViewModels
         protected TView? NavigateTo<TView>()
             where TView : class, IView
         {
-            string scope = Details is null ? string.Empty : Details.PluginScope;
+            string scope = Details is null ? string.Empty : Details.PluginScopeName;
             return NavigateTo(typeof(TView), scope) as TView;
         }
 
@@ -111,7 +111,7 @@ namespace ExtenderApp.ViewModels
         protected TView? NavigateTo<TView>(IView oldView)
             where TView : class, IView
         {
-            string scope = Details is null ? string.Empty : Details.PluginScope;
+            string scope = Details is null ? string.Empty : Details.PluginScopeName;
             return NavigateTo(typeof(TView), scope, oldView) as TView;
         }
 
@@ -134,7 +134,7 @@ namespace ExtenderApp.ViewModels
         /// <returns>返回目标视图实例，如果导航失败则返回null。</returns>
         protected TView? NavigateTo<TView>(PluginDetails modDetails) where TView : class, IView
         {
-            return NavigateTo<TView>(modDetails.PluginScope);
+            return NavigateTo<TView>(modDetails.PluginScopeName);
         }
 
         /// <summary>
@@ -155,7 +155,7 @@ namespace ExtenderApp.ViewModels
                 return null;
             }
 
-            return NavigateTo(modDetails.StartupType, modDetails.PluginScope);
+            return NavigateTo(modDetails.StartupType, modDetails.PluginScopeName);
         }
 
         /// <summary>
@@ -210,7 +210,7 @@ namespace ExtenderApp.ViewModels
             IWindow window = null;
             try
             {
-                string scope = Details is null ? string.Empty : Details.PluginScope;
+                string scope = Details is null ? string.Empty : Details.PluginScopeName;
                 window = ServiceStore.NavigationService.NavigateToWindow<TView>(scope, null);
             }
             catch (Exception ex)
@@ -799,7 +799,7 @@ namespace ExtenderApp.ViewModels
             IWindow? window = null;
             try
             {
-                string scope = Details is null ? string.Empty : Details.PluginScope;
+                string scope = Details is null ? string.Empty : Details.PluginScopeName;
                 window = ServiceStore.NavigationService.NavigateToWindow<T>(scope, View);
             }
             catch (Exception ex)

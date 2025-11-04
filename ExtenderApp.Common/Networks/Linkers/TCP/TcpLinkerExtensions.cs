@@ -16,13 +16,13 @@ namespace ExtenderApp.Common.Networks
             services.AddSingleton<ILinkerFactory<ITcpLinker>, TcpLinkerFactory>();
             services.AddSingleton<ITcpListenerLinkerFactory, TcpListenerLinkerFactory>();
 
-            services.AddTransient<ITcpLinker>(provider =>
+            services.AddTransient(provider =>
             {
                 return provider.GetRequiredService<ILinkerFactory<ITcpLinker>>().CreateLinker();
             });
 
             // 每次解析 IListenerLinker<TLinkClient> 时通过工厂创建
-            services.AddTransient<ITcpListenerLinker>(provider =>
+            services.AddTransient(provider =>
             {
                 return provider.GetRequiredService<ITcpListenerLinkerFactory>().CreateListenerLinker();
             });

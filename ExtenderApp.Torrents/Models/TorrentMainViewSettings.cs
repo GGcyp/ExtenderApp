@@ -24,7 +24,7 @@ namespace ExtenderApp.Torrents.Models
 
         protected override TorrentSettingsView CreateSettingsView()
         {
-            return ServiceStore.NavigationService.NavigateTo<TorrentSettingsView>(GetPluginDetails().PluginScope);
+            return ServiceStore.NavigationService.NavigateTo<TorrentSettingsView>(GetPluginDetails().PluginScopeName);
         }
     }
 }

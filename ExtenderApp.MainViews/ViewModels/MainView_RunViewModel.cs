@@ -47,7 +47,7 @@ namespace ExtenderApp.MainViews.ViewModels
             var details = Model.CurrentPluginDetails;
             if (details != null)
             {
-                currentMainViewSettings = _scopeExecutor.GetServiceProvider(details.PluginScope)?.GetRequiredService<IMainViewSettings>();
+                currentMainViewSettings = _scopeExecutor.GetServiceProvider(details.PluginScopeName)?.GetRequiredService<IMainViewSettings>();
             }
         }
 

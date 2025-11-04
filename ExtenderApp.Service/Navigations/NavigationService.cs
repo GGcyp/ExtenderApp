@@ -1,7 +1,5 @@
-﻿
-using ExtenderApp.Abstract;
+﻿using ExtenderApp.Abstract;
 using Microsoft.Extensions.DependencyInjection;
-
 
 namespace ExtenderApp.Services
 {
@@ -15,10 +13,7 @@ namespace ExtenderApp.Services
         /// </summary>
         private readonly IServiceProvider _serviceProvider;
 
-        /// <summary>
-        /// 作用域执行器
-        /// </summary>
-        private readonly IScopeExecutor _scopeExecutor;
+        private readonly IPluginService _pluginService;
 
         private readonly ILogingService _logingService;
 
@@ -27,11 +22,11 @@ namespace ExtenderApp.Services
         /// </summary>
         /// <param name="serviceProvider">服务提供程序</param>
         /// <param name="scopeExecutor">作用域执行器</param>
-        public NavigationService(IServiceProvider serviceProvider, IScopeExecutor scopeExecutor, ILogingService logingService)
+        public NavigationService(IServiceProvider serviceProvider, ILogingService logingService, IPluginService pluginService)
         {
             _serviceProvider = serviceProvider;
-            _scopeExecutor = scopeExecutor;
             _logingService = logingService;
+            _pluginService = pluginService;
         }
 
         /// <summary>
@@ -46,16 +41,13 @@ namespace ExtenderApp.Services
             IView? newView = null;
             try
             {
-                newView = string.IsNullOrEmpty(scope) ?
-                    _serviceProvider.GetRequiredService(targetViewType) as IView
-                    : _scopeExecutor.GetServiceProvider(scope)?.GetRequiredService(targetViewType) as IView;
+                newView = GetView(targetViewType, scope);
             }
             catch (Exception ex)
             {
                 _logingService.Error(string.Format("导航到视图时发生错误，目标视图类型：{0}，作用域：{1}，错误信息：{2}", targetViewType.Name, scope, ex.Message), nameof(INavigationService), ex);
                 return null;
             }
-
 
             oldView?.Exit(newView!.ViewInfo);
             newView!.Enter(oldView is null ? default : oldView.ViewInfo);
@@ -65,14 +57,11 @@ namespace ExtenderApp.Services
 
         public IWindow NavigateToWindow(Type targetViewType, string scope, IView? oldView)
         {
-            IWindow window = string.IsNullOrEmpty(scope) ?
-                _serviceProvider.GetRequiredService<IWindow>()!
-                : _scopeExecutor.GetServiceProvider(scope)?.GetRequiredService<IWindow>()!;
+            IWindow? window = GetWindow(scope);
 
-            IView? newView = string.IsNullOrEmpty(scope) ?
-                _serviceProvider.GetRequiredService(targetViewType) as IView
-                : _scopeExecutor.GetServiceProvider(scope)?.GetRequiredService(targetViewType) as IView;
+            IView? newView = GetView(targetViewType, scope);
 
+            ArgumentNullException.ThrowIfNull(window, "没有找到要转换的窗口");
             ArgumentNullException.ThrowIfNull(newView, string.Format("没有找到要转换的视图：{0}", targetViewType.Name));
 
             window.ShowView(newView);
@@ -82,6 +71,24 @@ namespace ExtenderApp.Services
             newView.Enter(oldView is null ? default : oldView.ViewInfo);
 
             return window;
+        }
+
+        private IWindow? GetWindow(string? scope)
+        {
+            IWindow? newWindow = string.IsNullOrEmpty(scope) ?
+                _serviceProvider.GetRequiredService<IWindow>()
+                : _pluginService.GetPluginServiceProvider(scope)?.GetRequiredService<IWindow>();
+
+            return newWindow ?? _serviceProvider.GetRequiredService<IWindow>();
+        }
+
+        private IView? GetView(Type targetViewType, string? scope)
+        {
+            IView? newView = string.IsNullOrEmpty(scope) ?
+                _serviceProvider.GetRequiredService(targetViewType) as IView
+                : _pluginService.GetPluginServiceProvider(scope)?.GetRequiredService(targetViewType) as IView;
+
+            return newView ?? _serviceProvider.GetRequiredService(targetViewType) as IView;
         }
     }
 }

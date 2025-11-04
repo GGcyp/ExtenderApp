@@ -1,9 +1,7 @@
 ﻿using System.Collections.ObjectModel;
-using AppHost.Extensions.DependencyInjection;
 using ExtenderApp.Abstract;
 using ExtenderApp.Abstract.View;
 using ExtenderApp.Common;
-using ExtenderApp.Common.Networks;
 using ExtenderApp.Views.Clipboards;
 using ExtenderApp.Views.CutsceneViews;
 using ExtenderApp.Views.Themes;

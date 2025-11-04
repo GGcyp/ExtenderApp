@@ -1,4 +1,6 @@
 ﻿using System.Diagnostics;
+using System.IO;
+using System.Reflection;
 using System.Windows;
 using ExtenderApp.Abstract;
 using Microsoft.Extensions.DependencyInjection;
@@ -7,7 +9,6 @@ namespace ExtenderApp
 {
     internal class ExtenderApplication_WPF : Application
     {
-
         private ILogingService logingService;
         private IServiceProvider serviceProvider;
 
@@ -16,15 +17,12 @@ namespace ExtenderApp
             Stopwatch sw = new Stopwatch();
             sw.Start();
             DebugMessage($"开始启动 : {DateTime.Now}");
-            //_builder = AppHostApplication.CreateBuilder();
-            DebugMessage($"启动成功 : {DateTime.Now}");
 
             DebugMessage($"开始生成服务 : {DateTime.Now}");
-            //_builder.LoadAssembliesForFolder("pack");
+            LoadAssembliesForFolder("pack");
             //_builder.FindStarupForFolder("lib");
             //application = _builder.Builde();
             DebugMessage($"生成服务成功 : {DateTime.Now}");
-
 
             sw.Stop();
             logingService?.Print(new Data.LogInfo()
@@ -66,10 +64,57 @@ namespace ExtenderApp
         }
 
 #if DEBUG
+
         private static void DebugMessage(string message)
         {
             Debug.Print(message);
         }
+
 #endif
+
+        private void LoadAssembliesForFolder(string folderName)
+        {
+            if (string.IsNullOrEmpty(folderName))
+                return;
+            string currPath = ResolveAppRootPath();
+            var path = Path.Combine(currPath, folderName);
+
+            var dllFiles = Directory.GetFiles(path, "*.dll", SearchOption.AllDirectories);
+            foreach (var dllFile in dllFiles)
+            {
+                Assembly.Load(dllFile);
+            }
+        }
+
+        private static string ResolveAppRootPath()
+        {
+            // 1) 优先使用 AppContext.BaseDirectory（大多数托管/控制台/桌面应用正确）
+            var baseDir = AppContext.BaseDirectory;
+            if (!string.IsNullOrEmpty(baseDir))
+            {
+                return baseDir.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            }
+
+            // 2) 使用 EntryAssembly 的位置（可用于 exe 主程序集）
+            var entryLocation = Assembly.GetEntryAssembly()?.Location;
+            if (!string.IsNullOrEmpty(entryLocation))
+            {
+                var dir = Path.GetDirectoryName(entryLocation);
+                if (!string.IsNullOrEmpty(dir))
+                    return dir;
+            }
+
+            // 3) 使用当前执行程序集的位置（当被加载为库时有帮助）
+            var execLocation = Assembly.GetExecutingAssembly()?.Location;
+            if (!string.IsNullOrEmpty(execLocation))
+            {
+                var dir = Path.GetDirectoryName(execLocation);
+                if (!string.IsNullOrEmpty(dir))
+                    return dir;
+            }
+
+            // 4) 最后回退到当前工作目录
+            return Directory.GetCurrentDirectory();
+        }
     }
 }

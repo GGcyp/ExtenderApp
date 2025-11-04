@@ -36,5 +36,6 @@ namespace ExtenderApp.Abstract
         /// <exception cref="ArgumentNullException">当插件详情为null或关键路径为空时抛出</exception>
         /// <exception cref="InvalidOperationException">当未找到插件启动项时抛出</exception>
         Task LoadPluginAsync(PluginDetails details);
+        IServiceProvider GetPluginServiceProvider(string scopeName);
     }
 }

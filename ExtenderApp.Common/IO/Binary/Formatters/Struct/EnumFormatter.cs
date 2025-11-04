@@ -12,7 +12,7 @@ namespace ExtenderApp.Common.IO.Binary.Formatters
         //{
         //    var type = typeof(TLinkClient).GetEnumUnderlyingType();
 
-        //    switch (Type.GetTypeCode(type))
+        //    switch (StartupType.GetTypeCode(type))
         //    {
         //        case TypeCode.Byte:
         //            serializer = (ref ByteBuffer buffer, ref TLinkClient value) => _bufferConvert.Write(ref buffer, Unsafe.As<TLinkClient, Byte>(ref value));
