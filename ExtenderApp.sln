@@ -45,8 +45,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExtenderApp.DbEntities", "E
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExtenderApp", "ExtenderApp\ExtenderApp.csproj", "{4303F05E-00DA-2844-9B60-77B529220632}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AppHost.Builder", "AppHost.Builder\AppHost.Builder.csproj", "{A3AE7BAC-F8B8-A0AB-E34C-2FE4A9CA0DBD}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -117,10 +115,6 @@ Global
 		{4303F05E-00DA-2844-9B60-77B529220632}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4303F05E-00DA-2844-9B60-77B529220632}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4303F05E-00DA-2844-9B60-77B529220632}.Release|Any CPU.Build.0 = Release|Any CPU
-		{A3AE7BAC-F8B8-A0AB-E34C-2FE4A9CA0DBD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{A3AE7BAC-F8B8-A0AB-E34C-2FE4A9CA0DBD}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{A3AE7BAC-F8B8-A0AB-E34C-2FE4A9CA0DBD}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{A3AE7BAC-F8B8-A0AB-E34C-2FE4A9CA0DBD}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -142,7 +136,6 @@ Global
 		{8B996B7E-948E-4F6E-A755-38274C401A28} = {9097846F-4A73-4915-8C5B-215B83CF6991}
 		{D5F6317F-C8FB-7C22-E6FB-E02A6E9ABA43} = {9097846F-4A73-4915-8C5B-215B83CF6991}
 		{4303F05E-00DA-2844-9B60-77B529220632} = {1D8489AA-15D9-4EEA-8615-CD9892216B3D}
-		{A3AE7BAC-F8B8-A0AB-E34C-2FE4A9CA0DBD} = {9097846F-4A73-4915-8C5B-215B83CF6991}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {07F96706-A0E9-4590-819E-3841EC1BB7E5}

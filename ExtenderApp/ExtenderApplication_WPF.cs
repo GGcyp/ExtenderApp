@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
 using System.IO;
 using System.Reflection;
+using System.Runtime.Loader;
 using System.Windows;
 using ExtenderApp.Abstract;
 using Microsoft.Extensions.DependencyInjection;
@@ -9,8 +10,11 @@ namespace ExtenderApp
 {
     internal class ExtenderApplication_WPF : Application
     {
+        private const string APP_FOLDER_PACK = "pack";
+        private const string APP_FOLDER_LIB = "lib";
         private ILogingService logingService;
         private IServiceProvider serviceProvider;
+        private AssemblyLoadContext context;
 
         public ExtenderApplication_WPF()
         {
@@ -19,9 +23,13 @@ namespace ExtenderApp
             DebugMessage($"开始启动 : {DateTime.Now}");
 
             DebugMessage($"开始生成服务 : {DateTime.Now}");
-            LoadAssembliesForFolder("pack");
-            //_builder.FindStarupForFolder("lib");
-            //application = _builder.Builde();
+            string currAppPath = ResolveAppRootPath();
+            IServiceCollection services = new ServiceCollection();
+            AssemblyLoadContext context = new("ExtenderApp_WPF", true);
+
+            LoadAssembliesForFolder(context, currAppPath, APP_FOLDER_PACK);
+            context.LoadAssemblyAndStartupFormFolderPath(Path.Combine(currAppPath, APP_FOLDER_LIB), services);
+            services.BuildServiceProvider();
             DebugMessage($"生成服务成功 : {DateTime.Now}");
 
             sw.Stop();
@@ -72,17 +80,16 @@ namespace ExtenderApp
 
 #endif
 
-        private void LoadAssembliesForFolder(string folderName)
+        private void LoadAssembliesForFolder(AssemblyLoadContext context, string appPath, string folderName)
         {
-            if (string.IsNullOrEmpty(folderName))
+            if (string.IsNullOrEmpty(folderName) || string.IsNullOrEmpty(appPath))
                 return;
-            string currPath = ResolveAppRootPath();
-            var path = Path.Combine(currPath, folderName);
+            string fullPath = Path.Combine(appPath, folderName);
 
-            var dllFiles = Directory.GetFiles(path, "*.dll", SearchOption.AllDirectories);
+            var dllFiles = Directory.GetFiles(fullPath, "*.dll", SearchOption.AllDirectories);
             foreach (var dllFile in dllFiles)
             {
-                Assembly.Load(dllFile);
+                context.LoadFromAssemblyPath(dllFile);
             }
         }
 

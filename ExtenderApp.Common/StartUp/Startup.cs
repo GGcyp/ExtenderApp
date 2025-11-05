@@ -1,17 +1,13 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using ExtenderApp.Abstract;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace ExtenderApp.Common
 {
     /// <summary>
-    /// 启动类基类
+    /// 库启动基类
     /// </summary>
-    public abstract class Startup
+    public abstract class Startup : IStartup
     {
-        /// <summary>
-        /// 获取启动类类型
-        /// </summary>
-        public static Type StartupType { get; } = typeof(Startup);
-
         /// <summary>
         /// 添加服务
         /// </summary>

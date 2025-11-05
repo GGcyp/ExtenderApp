@@ -1,5 +1,4 @@
 ﻿using System.Windows.Controls;
-
 using ExtenderApp.Abstract;
 using ExtenderApp.MainViews.Models;
 using ExtenderApp.MainViews.Views;
@@ -15,11 +14,6 @@ namespace ExtenderApp.MainViews.ViewModels
     /// </summary>
     public class MainView_RunViewModel : ExtenderAppViewModel<MainView_RunView, MainModel>
     {
-        /// <summary>
-        /// 依赖注入的 IScopeExecutor 实例，用于执行与插件作用域相关的操作。
-        /// </summary>
-        private readonly IScopeExecutor _scopeExecutor;
-
         private IMainViewSettings? currentMainViewSettings;
 
         /// <summary>
@@ -38,17 +32,12 @@ namespace ExtenderApp.MainViews.ViewModels
         /// <param name="model">MainModel 实例，提供视图模型所需的数据。</param>
         /// <param name="scope">IScopeExecutor 实例，用于执行与插件作用域相关的操作。</param>
         /// <param name="serviceStore">IServiceStore 实例，提供应用程序所需的服务。</param>
-        public MainView_RunViewModel(MainModel model, IScopeExecutor scope, IServiceStore serviceStore) : base(model, serviceStore)
+        public MainView_RunViewModel(MainModel model, IServiceStore serviceStore) : base(model, serviceStore)
         {
             ToMainViewCommand = new NoValueCommand(ToMainView);
             OpenSettingsWindowCommand = new NoValueCommand(OpenSettingsWindow);
-            _scopeExecutor = scope;
 
             var details = Model.CurrentPluginDetails;
-            if (details != null)
-            {
-                currentMainViewSettings = _scopeExecutor.GetServiceProvider(details.PluginScopeName)?.GetRequiredService<IMainViewSettings>();
-            }
         }
 
         /// <summary>

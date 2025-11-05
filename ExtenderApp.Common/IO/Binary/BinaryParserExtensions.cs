@@ -33,21 +33,6 @@ namespace ExtenderApp.Common.IO.Binary
             services.AddSingleton<ByteBufferConvert>();
             services.AddSingleton(new SequencePool<byte>());
 
-            services.AddSingleton(typeof(IBinaryFormatter<>), (IServiceProvider provider, object[] args) =>
-            {
-                // args 在容器解析时会包含具体的泛型类型参数（例如 typeof(Foo)）
-                Type[] types = args as Type[] ?? Array.Empty<Type>();
-                if (types.Length == 0)
-                    throw new InvalidOperationException("不能创建指定类型的二进制格式化器");
-
-                Type targetType = types[0];
-
-                var resolver = provider.GetRequiredService<IBinaryFormatterResolver>();
-
-                // 直接使用非泛型接口 GetFormatter(StartupType) 返回实现 IBinaryFormatter<T> 的实例（如果实现正确）
-                return resolver.GetFormatter(targetType);
-            });
-
             services.AddBinaryFormatter();
 
             return services;

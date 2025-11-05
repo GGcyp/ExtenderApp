@@ -1,18 +1,15 @@
-﻿
-
-using ExtenderApp.Abstract;
+﻿using ExtenderApp.Abstract;
 using ExtenderApp.MainViews.ViewModels;
 using ExtenderApp.MainViews.Models;
 using ExtenderApp.MainViews.Windows;
 using ExtenderApp.MainViews.Views;
 using Microsoft.Extensions.DependencyInjection;
+using ExtenderApp.Common;
 
 namespace ExtenderApp.MainViews
 {
     internal class MainViewStartup : Startup
     {
-        public static string MainViewTitle = "Main";
-
         public override void AddService(IServiceCollection services)
         {
             //services.AddSingleton<IMainWindow, MainViewWindow>();

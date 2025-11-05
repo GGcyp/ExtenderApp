@@ -224,11 +224,8 @@ namespace ExtenderApp.Services
             if (assembly == null)
                 throw new ArgumentNullException(nameof(assembly), "插件启动库不能为空");
 
-            var startType = assembly.GetTypes().FirstOrDefault(t => !t.IsAbstract && ScopeStartup.StartupType.IsAssignableFrom(t));
-            if (startType is null)
+            if(!assembly.TryGetStartup<PluginEntityStartup>(out var startup))
                 return null;
-
-            var startup = (Activator.CreateInstance(startType) as PluginEntityStartup)!;
 
             IServiceCollection services = new ServiceCollection();
             services.AddSingleton<IServiceStore, PluginServiceStore>();
