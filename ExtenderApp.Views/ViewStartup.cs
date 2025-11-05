@@ -13,7 +13,7 @@ namespace ExtenderApp.Views
     {
         public override void AddService(IServiceCollection services)
         {
-            //services.AddHosted<MainViewHostedService>();
+            services.AddTransient<IStartupExecute, MainViewHostedService>();
             services.AddSingleton<IClipboard, Clipboard_WPF>();
             services.AddTransient<CutsceneView>();
             AddThemeManager(services);

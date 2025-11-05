@@ -5,7 +5,7 @@ namespace ExtenderApp.Data
     /// <summary>
     /// 一个实现了IDisposable接口的抽象类，用于管理可释放资源。
     /// </summary>
-    public abstract class DisposableObject : IDisposable
+    public abstract class DisposableObject : IDisposable, IAsyncDisposable
     {
         /// <summary>
         /// 用于标记对象是否已被释放。
@@ -22,6 +22,7 @@ namespace ExtenderApp.Data
         /// </summary>
         ~DisposableObject()
         {
+            DisposeAsync(false);
             Dispose(false);
         }
 
@@ -55,6 +56,26 @@ namespace ExtenderApp.Data
         protected virtual void Dispose(bool disposing)
         {
             // 子类实现具体释放逻辑
+        }
+
+        public async ValueTask DisposeAsync()
+        {
+            if (Interlocked.Exchange(ref _disposed, 1) != 0)
+                return;
+
+            await DisposeAsync(true);
+            GC.SuppressFinalize(this);
+        }
+
+        /// <summary>
+        /// 释放或重置由DisposableObject使用的资源。
+        /// </summary>
+        /// <param name="disposing">指示是否由Dispose方法调用。</param>
+        /// <returns>异步调用结束时返回</returns>
+        protected virtual ValueTask DisposeAsync(bool disposing)
+        {
+            // 子类实现具体释放逻辑
+            return ValueTask.CompletedTask;
         }
     }
 }

@@ -5,6 +5,7 @@ using System.Runtime.Loader;
 using System.Windows;
 using ExtenderApp.Abstract;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace ExtenderApp
 {
@@ -29,8 +30,9 @@ namespace ExtenderApp
 
             LoadAssembliesForFolder(context, currAppPath, APP_FOLDER_PACK);
             context.LoadAssemblyAndStartupFormFolderPath(Path.Combine(currAppPath, APP_FOLDER_LIB), services);
-            services.BuildServiceProvider();
+            serviceProvider = services.BuildServiceProvider();
             DebugMessage($"生成服务成功 : {DateTime.Now}");
+            serviceProvider.GetRequiredService<IStartupExecuter>().ExecuteAsync();
 
             sw.Stop();
             logingService?.Print(new Data.LogInfo()

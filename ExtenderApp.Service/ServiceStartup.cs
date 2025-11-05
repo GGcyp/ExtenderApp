@@ -5,7 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 namespace ExtenderApp.Services
 {
     /// <summary>
-    /// ServiceStartup 类，继承自 Startup 类，用于配置应用程序的服务。
+    /// ServiceStartup 类，继承自 Startups 类，用于配置应用程序的服务。
     /// </summary>
     public class ServiceStartup : Startup
     {
@@ -24,34 +24,8 @@ namespace ExtenderApp.Services
             services.AddSingleton<IMainWindowService, MainWindowService>();
             services.AddSingleton<ISystemService, SystemService>();
             services.AddSingleton<IMessageService, MessageService>();
-
-            AddPluginService(services);
-            AddLocaDataService(services);
-        }
-
-        /// <summary>
-        /// 添加插件服务到服务集合中。
-        /// </summary>
-        /// <param name="services">服务集合。</param>
-        private void AddPluginService(IServiceCollection services)
-        {
-            /// <summary>
-            /// 向服务集合中添加一个单例的IPluginService实现。
-            /// </summary>
             services.AddSingleton<IPluginService, PluginService>();
-
-            /// <summary>
-            /// 向服务集合中添加一个单例的PluginStore。
-            /// </summary>
             services.AddSingleton<PluginStore>();
-        }
-
-        /// <summary>
-        /// 添加本地化数据服务
-        /// </summary>
-        /// <param name="services">服务集合</param>
-        private void AddLocaDataService(IServiceCollection services)
-        {
             services.AddSingleton<ILocalDataService, LocalDataService>();
         }
     }

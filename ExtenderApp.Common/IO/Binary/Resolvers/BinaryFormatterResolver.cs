@@ -97,7 +97,7 @@ namespace ExtenderApp.Common
                         else
                         {
                             formatterType = details.FormatterTypes[0];
-                            formatter = _serviceProvider.GetService(formatterType!) as IBinaryFormatter;
+                            formatter = ActivatorUtilities.CreateInstance(_serviceProvider, formatterType!) as IBinaryFormatter;
                         }
                     }
                     if (formatter == null)
