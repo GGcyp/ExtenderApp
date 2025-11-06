@@ -1,9 +1,11 @@
-﻿using System.Collections.Concurrent;
+﻿using System;
 using System.Reflection;
 using System.Runtime.Loader;
+using Autofac;
+using Autofac.Extensions.DependencyInjection;
 using ExtenderApp.Abstract;
-using ExtenderApp.Common;
 using ExtenderApp.Common.Error;
+using ExtenderApp.Common.Scopes;
 using ExtenderApp.Data;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -29,6 +31,8 @@ namespace ExtenderApp.Services
         /// </summary>
         private readonly IServiceScopeStore _serviceScopeStore;
 
+        private readonly ILifetimeScope _mainLifetimeScope;
+
         /// <summary>
         /// 路径提供者接口实例
         /// </summary>
@@ -44,15 +48,16 @@ namespace ExtenderApp.Services
         /// </summary>
         private IBinaryFormatterStore _binaryFormatterStore;
 
-        public PluginService(PluginStore pluginStore, IPathService pathProvider, IJsonParser parser, IBinaryFormatterStore binaryFormatterStore, IServiceScopeStore serviceScopeStore)
+        public PluginService(PluginStore pluginStore, IPathService pathProvider, IJsonParser parser, IBinaryFormatterStore binaryFormatterStore, IServiceScopeStore serviceScopeStore, ILifetimeScope lifetimeScope)
         {
             _pluginStore = pluginStore;
             _pathProvider = pathProvider;
             _jsonParser = parser;
             _binaryFormatterStore = binaryFormatterStore;
+            _serviceScopeStore = serviceScopeStore;
+            _mainLifetimeScope = lifetimeScope;
 
             LoadPluginInfo(_pathProvider.ModsPath);
-            _serviceScopeStore = serviceScopeStore;
         }
 
         /// <summary>
@@ -172,7 +177,7 @@ namespace ExtenderApp.Services
             if (string.IsNullOrEmpty(details.PluginFolderPath) || string.IsNullOrEmpty(details.StartupDll))
                 throw new ArgumentNullException("Mod详情中的路径或启动DLL不能为空");
 
-            var loadContext = new AssemblyLoadContext(details.Title, true);
+            ScopeLoadContext loadContext = new(details.Title!);
             details.LoadContext = loadContext;
             string dllPath = Path.Combine(details.PluginFolderPath, details.StartupDll);
 
@@ -225,7 +230,13 @@ namespace ExtenderApp.Services
             services.AddSingleton(details);
             startup.AddService(services);
             details.PluginScopeName = startup.ScopeName;
-            _serviceScopeStore.TryAdd(startup.ScopeName, services.BuildServiceProvider().CreateScope());
+
+            var pluginScope = _mainLifetimeScope.BeginLifetimeScope(builder =>
+            {
+                builder.Populate(services);
+            });
+            var pluginServiceProvider = new AutofacServiceProvider(pluginScope);
+            _serviceScopeStore.TryAdd(startup.ScopeName, pluginServiceProvider.CreateScope());
             return startup;
         }
     }

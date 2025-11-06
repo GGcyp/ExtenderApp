@@ -3,9 +3,10 @@ using System.IO;
 using System.Reflection;
 using System.Runtime.Loader;
 using System.Windows;
+using Autofac;
+using Autofac.Extensions.DependencyInjection;
 using ExtenderApp.Abstract;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 
 namespace ExtenderApp
 {
@@ -30,7 +31,9 @@ namespace ExtenderApp
 
             LoadAssembliesForFolder(context, currAppPath, APP_FOLDER_PACK);
             context.LoadAssemblyAndStartupFormFolderPath(Path.Combine(currAppPath, APP_FOLDER_LIB), services);
-            serviceProvider = services.BuildServiceProvider();
+            var builder = new ContainerBuilder();
+            builder.Populate(services);
+            serviceProvider = new AutofacServiceProvider(builder.Build());
             DebugMessage($"生成服务成功 : {DateTime.Now}");
             serviceProvider.GetRequiredService<IStartupExecuter>().ExecuteAsync();
 
@@ -48,15 +51,16 @@ namespace ExtenderApp
         protected override void OnStartup(StartupEventArgs e)
         {
             base.OnStartup(e);
-            //_builder.MainThreadContext.InitMainThreadContext();
-            //Resources.MergedDictionaries.Add(new() { Source = new("pack://application:,,,/ExtenderApp.Views;component/Themes/Global/DarkTheme.xaml") });
+            serviceProvider.GetRequiredService<IMainThreadContext>().InitMainThreadContext();
         }
 
         protected override void OnExit(ExitEventArgs e)
         {
             base.OnExit(e);
-            //application.StopAsync().ConfigureAwait(false);
-            //serviceProvider.GetRequiredService<IServiceProviderCloser>().DisposeAsync().ConfigureAwait(false);
+            if (serviceProvider is IDisposable disposable)
+            {
+                disposable.Dispose();
+            }
         }
 
         public void Eorrer(Exception ex)
