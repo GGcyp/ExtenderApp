@@ -1,14 +1,8 @@
-﻿using System.Buffers;
-using System.Net;
-using System.Reflection;
-
+﻿using System.Net;
 using ExtenderApp.Abstract;
 using ExtenderApp.Common.IO.Binary.Formatters;
 using ExtenderApp.Common.IO.Binary.Formatters.Collection;
-using ExtenderApp.Common.IO.Binary.Formatters;
-using ExtenderApp.Common.IO.Binary.Formatters;
 using ExtenderApp.Common.IO.Binary.Formatters.Class;
-using ExtenderApp.Common.IO.Binary.Formatters;
 using ExtenderApp.Data;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -27,6 +21,7 @@ namespace ExtenderApp.Common.IO.Binary
         /// <returns>返回添加后的服务集合。</returns>
         public static IServiceCollection AddBinary(this IServiceCollection services)
         {
+            services.AddSingleton(typeof(IBinaryFormatter<>), typeof(GenericFormatter<>));
             services.AddSingleton<IBinaryFormatterResolver, BinaryFormatterResolver>();
             services.AddSingleton<BinaryConvert>();
             services.AddSingleton<BinaryOptions>();

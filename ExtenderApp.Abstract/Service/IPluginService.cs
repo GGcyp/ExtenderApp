@@ -21,7 +21,7 @@ namespace ExtenderApp.Abstract
         /// <remarks>
         /// 此方法用于加载指定路径下的模组信息。
         /// </remarks>
-        void LoadPluginInfo(string modFolderPath = null);
+        void LoadPluginInfo(string modFolderPath);
 
         /// <summary>
         /// 卸载模组
@@ -36,6 +36,5 @@ namespace ExtenderApp.Abstract
         /// <exception cref="ArgumentNullException">当插件详情为null或关键路径为空时抛出</exception>
         /// <exception cref="InvalidOperationException">当未找到插件启动项时抛出</exception>
         Task LoadPluginAsync(PluginDetails details);
-        IServiceProvider GetPluginServiceProvider(string scopeName);
     }
 }

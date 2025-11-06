@@ -24,7 +24,10 @@ namespace ExtenderApp.Services
         /// </summary>
         private readonly PluginStore _pluginStore;
 
-        private readonly ConcurrentDictionary<string, IServiceScope> _pluginServiceDict;
+        /// <summary>
+        /// 插件服务作用域字典
+        /// </summary>
+        private readonly IServiceScopeStore _serviceScopeStore;
 
         /// <summary>
         /// 路径提供者接口实例
@@ -41,25 +44,15 @@ namespace ExtenderApp.Services
         /// </summary>
         private IBinaryFormatterStore _binaryFormatterStore;
 
-        public PluginService(PluginStore pluginStore, IPathService pathProvider, IJsonParser parser, IBinaryFormatterStore binaryFormatterStore)
+        public PluginService(PluginStore pluginStore, IPathService pathProvider, IJsonParser parser, IBinaryFormatterStore binaryFormatterStore, IServiceScopeStore serviceScopeStore)
         {
             _pluginStore = pluginStore;
             _pathProvider = pathProvider;
             _jsonParser = parser;
             _binaryFormatterStore = binaryFormatterStore;
 
-            _pluginServiceDict = new();
-
             LoadPluginInfo(_pathProvider.ModsPath);
-        }
-
-        public IServiceProvider GetPluginServiceProvider(string scopeName)
-        {
-            if (_pluginServiceDict.TryGetValue(scopeName, out var serviceScope))
-            {
-                return serviceScope.ServiceProvider;
-            }
-            throw new KeyNotFoundException($"未找到名称为 {scopeName} 的插件服务作用域。");
+            _serviceScopeStore = serviceScopeStore;
         }
 
         /// <summary>
@@ -131,9 +124,9 @@ namespace ExtenderApp.Services
         {
             if (details.IsStandingModel) return;
 
-            if (_pluginServiceDict.TryRemove(details.PluginScopeName, out var serviceScope))
+            if (_serviceScopeStore.TryRemove(details.PluginScopeName, out var scope))
             {
-                serviceScope.Dispose();
+                scope.Dispose();
             }
         }
 
@@ -224,7 +217,7 @@ namespace ExtenderApp.Services
             if (assembly == null)
                 throw new ArgumentNullException(nameof(assembly), "插件启动库不能为空");
 
-            if(!assembly.TryGetStartup<PluginEntityStartup>(out var startup))
+            if (!assembly.TryGetStartup<PluginEntityStartup>(out var startup))
                 return null;
 
             IServiceCollection services = new ServiceCollection();
@@ -232,16 +225,8 @@ namespace ExtenderApp.Services
             services.AddSingleton(details);
             startup.AddService(services);
             details.PluginScopeName = startup.ScopeName;
-            AddPluginServiceScope(startup.ScopeName, services.BuildServiceProvider().CreateScope());
+            _serviceScopeStore.TryAdd(startup.ScopeName, services.BuildServiceProvider().CreateScope());
             return startup;
-        }
-
-        private void AddPluginServiceScope(string scopeName, IServiceScope serviceScope)
-        {
-            if (_pluginServiceDict.TryAdd(scopeName, serviceScope))
-            {
-                throw new Exception($"已存在相同名称的插件服务作用域：{scopeName}");
-            }
         }
     }
 }

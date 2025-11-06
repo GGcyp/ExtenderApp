@@ -1,7 +1,7 @@
 ﻿using ExtenderApp.Services;
-
 using ExtenderApp.Abstract;
 using ExtenderApp.Common;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace ExtenderApp.LAN
 {

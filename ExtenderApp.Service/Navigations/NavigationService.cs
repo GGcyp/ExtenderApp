@@ -17,16 +17,19 @@ namespace ExtenderApp.Services
 
         private readonly ILogingService _logingService;
 
+        private readonly IServiceScopeStore _serviceScopeStore;
+
         /// <summary>
         /// 导航服务构造函数
         /// </summary>
         /// <param name="serviceProvider">服务提供程序</param>
         /// <param name="scopeExecutor">作用域执行器</param>
-        public NavigationService(IServiceProvider serviceProvider, ILogingService logingService, IPluginService pluginService)
+        public NavigationService(IServiceProvider serviceProvider, ILogingService logingService, IPluginService pluginService, IServiceScopeStore serviceScopeStore)
         {
             _serviceProvider = serviceProvider;
             _logingService = logingService;
             _pluginService = pluginService;
+            _serviceScopeStore = serviceScopeStore;
         }
 
         /// <summary>
@@ -77,7 +80,7 @@ namespace ExtenderApp.Services
         {
             IWindow? newWindow = string.IsNullOrEmpty(scope) ?
                 _serviceProvider.GetRequiredService<IWindow>()
-                : _pluginService.GetPluginServiceProvider(scope)?.GetRequiredService<IWindow>();
+                : _serviceScopeStore.Get(scope)?.GetRequiredService<IWindow>();
 
             return newWindow ?? _serviceProvider.GetRequiredService<IWindow>();
         }
@@ -86,7 +89,7 @@ namespace ExtenderApp.Services
         {
             IView? newView = string.IsNullOrEmpty(scope) ?
                 _serviceProvider.GetRequiredService(targetViewType) as IView
-                : _pluginService.GetPluginServiceProvider(scope)?.GetRequiredService(targetViewType) as IView;
+                : _serviceScopeStore.Get(scope)?.GetRequiredService(targetViewType) as IView;
 
             return newView ?? _serviceProvider.GetRequiredService(targetViewType) as IView;
         }

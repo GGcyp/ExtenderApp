@@ -1,6 +1,0 @@
-{
-  "PluginTitle": "MachineLearning",
-  "PluginDescription": "MachineLearning",
-  "PluginVersion": "0.0.1",
-  "PluginStartupDll": "ExtenderApp.ML.dll"
-}

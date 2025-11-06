@@ -3,6 +3,7 @@ using ExtenderApp.Common.Hash;
 using ExtenderApp.Common.Networks;
 using ExtenderApp.Common.Startups;
 using ExtenderApp.Common.Threads;
+using ExtenderApp.Common.Scopes;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace ExtenderApp.Common
@@ -21,6 +22,7 @@ namespace ExtenderApp.Common
             services.AddCache();
             services.AddMainThreadContext();
             services.AddStartupExecuter();
+            services.AddServiceScopeStore();
         }
     }
 }
