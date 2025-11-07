@@ -6,6 +6,7 @@ using System.Windows;
 using Autofac;
 using Autofac.Extensions.DependencyInjection;
 using ExtenderApp.Abstract;
+using ExtenderApp.Data;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace ExtenderApp
@@ -38,14 +39,6 @@ namespace ExtenderApp
             serviceProvider.GetRequiredService<IStartupExecuter>().ExecuteAsync();
 
             sw.Stop();
-            logingService?.Print(new Data.LogInfo()
-            {
-                LogLevel = Data.LogLevel.INFO,
-                Message = $"启动成功 本次启动用时 ：{sw.ElapsedMilliseconds} 毫秒",
-                Source = nameof(ExtenderApplication_WPF),
-                Time = DateTime.Now,
-                ThreadId = Thread.CurrentThread.ManagedThreadId
-            });
         }
 
         protected override void OnStartup(StartupEventArgs e)

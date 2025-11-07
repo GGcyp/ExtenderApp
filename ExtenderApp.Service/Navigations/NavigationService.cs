@@ -1,5 +1,6 @@
 ﻿using ExtenderApp.Abstract;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace ExtenderApp.Services
 {
@@ -13,22 +14,27 @@ namespace ExtenderApp.Services
         /// </summary>
         private readonly IServiceProvider _serviceProvider;
 
-        private readonly IPluginService _pluginService;
+        /// <summary>
+        /// 日志记录器
+        /// </summary>
+        private readonly ILogger<INavigationService> _logger;
 
-        private readonly ILogingService _logingService;
-
+        /// <summary>
+        /// 作用域存储
+        /// </summary>
         private readonly IServiceScopeStore _serviceScopeStore;
 
         /// <summary>
         /// 导航服务构造函数
         /// </summary>
         /// <param name="serviceProvider">服务提供程序</param>
-        /// <param name="scopeExecutor">作用域执行器</param>
-        public NavigationService(IServiceProvider serviceProvider, ILogingService logingService, IPluginService pluginService, IServiceScopeStore serviceScopeStore)
+        /// <param name="logger">日志记录器</param>
+        /// <param name="pluginService">插件服务</param>
+        /// <param name="serviceScopeStore">服务作用域存储</param>
+        public NavigationService(IServiceProvider serviceProvider, ILogger<INavigationService> logger, IPluginService pluginService, IServiceScopeStore serviceScopeStore)
         {
             _serviceProvider = serviceProvider;
-            _logingService = logingService;
-            _pluginService = pluginService;
+            _logger = logger;
             _serviceScopeStore = serviceScopeStore;
         }
 
@@ -48,8 +54,8 @@ namespace ExtenderApp.Services
             }
             catch (Exception ex)
             {
-                _logingService.Error(string.Format("导航到视图时发生错误，目标视图类型：{0}，作用域：{1}，错误信息：{2}", targetViewType.Name, scope, ex.Message), nameof(INavigationService), ex);
-                return null;
+                _logger.LogError(ex, "导航到视图时发生错误，目标视图类型：{0}，作用域：{1}，错误信息：{2}", targetViewType.Name, scope, ex.Message);
+                return null!;
             }
 
             oldView?.Exit(newView!.ViewInfo);

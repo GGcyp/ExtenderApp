@@ -27,8 +27,8 @@ namespace ExtenderApp.Test
             //_builder = new(provider, provider.GetRequiredService<ILinkClientFactory<ITcpLinkClient>>());
             //_builder.SetFormatterManager(b =>
             //{
-            //    //b.AddBinaryFormatter<string>(s => Info(s));
-            //    b.AddBinaryFormatter<int[]>(a => Info(a.Length));
+            //    //b.AddBinaryFormatter<string>(s => LogInformation(s));
+            //    b.AddBinaryFormatter<int[]>(a => LogInformation(a.Length));
             //});
             //ITcpLinkClient client = _builder.Build(tcpLinker);
             //client.Connect(loop);
@@ -49,10 +49,10 @@ namespace ExtenderApp.Test
             }
             catch (Exception ex)
             {
-                Info(ex.ToString());
+                LogInformation(ex.ToString());
             }
-            Info(message.StatusCode);
-            Info(Encoding.UTF8.GetString(message.Body.UnreadSpan));
+            LogInformation(message.StatusCode);
+            LogInformation(Encoding.UTF8.GetString(message.Body.UnreadSpan));
         }
 
         private void TcpListenerLinker_OnAccept(object? sender, ITcpLinker e)
@@ -64,7 +64,7 @@ namespace ExtenderApp.Test
         {
             ByteBuffer buffer = new(bytes);
             string s = _string.Deserialize(ref buffer);
-            Info(s);
+            LogInformation(s);
         }
 
         private ExpectLocalFileInfo CreatTestExpectLocalFileInfo(string fileName)

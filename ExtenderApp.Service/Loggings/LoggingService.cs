@@ -3,48 +3,39 @@ using ExtenderApp.Common.ConcurrentOperates;
 using ExtenderApp.Common.ObjectPools;
 using ExtenderApp.Data;
 using ExtenderApp.Services.Logging;
+using Microsoft.Extensions.Logging;
 
 namespace ExtenderApp.Services
 {
     /// <summary>
     /// 日志服务类，实现了ILogService接口
     /// </summary>
-    internal class LoggingService : ConcurrentOperate<LoggingData>, ILogingService
+    internal class LoggingService : ILogingService
     {
-        private static ObjectPool<LoggingOperation> _pool =
-            ObjectPool.Create(new SelfResetPooledObjectPolicy<LoggingOperation>());
-
-        public static LoggingOperation Get() => _pool.Get();
-        public static void Release(LoggingOperation operation) => _pool.Release(operation);
+        private readonly ILogger _logger;
 
         /// <summary>
         /// 构造函数，初始化日志服务
         /// </summary>
-        /// <param name="service">刷新服务</param>
-        /// <param name="environment">主机环境</param>
-        public LoggingService(IPathService provider)
+        /// <param name="logger">日志记录器实例</param>
+        public LoggingService(ILogger logger)
         {
-            //检查是否存在存放日志文件夹，如不存在则创建
-            string logFolderPath = provider.LoggingPath;
-            if (!Directory.Exists(logFolderPath))
-            {
-                Directory.CreateDirectory(logFolderPath);
-            }
-
-            //将数据传递给基类
-            LoggingData data = new LoggingData(provider);
-            Start(data);
+            _logger = logger;
         }
 
-        /// <summary>
-        /// 打印日志信息到日志队列
-        /// </summary>
-        /// <param name="info">日志信息</param>
-        public void Print(LogInfo info)
+        public void Log<TState>(Microsoft.Extensions.Logging.LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
         {
-            var operation = Get();
-            operation.SetLogInfo(info);
-            ExecuteAsync(operation);
+            _logger.Log(logLevel, eventId, state, exception, formatter);
+        }
+
+        public bool IsEnabled(Microsoft.Extensions.Logging.LogLevel logLevel)
+        {
+            return _logger.IsEnabled(logLevel);
+        }
+
+        public IDisposable? BeginScope<TState>(TState state) where TState : notnull
+        {
+            return _logger.BeginScope(state);
         }
     }
 }

@@ -55,18 +55,18 @@ namespace ExtenderApp.Torrents.ViewModels
                 {
                     Task.Run(async () =>
                     {
-                        Info($"开始删除种子: 种子名字：{info.Name}，种子哈希值：{info.V1orV2}");
+                        LogInformation($"开始删除种子: 种子名字：{info.Name}，种子哈希值：{info.V1orV2}");
                         await Model.RemoveTorrentAsync(info);
                         try
                         {
                             if (Directory.Exists(info.SavePath))
                             {
                                 Directory.Delete(info.SavePath, true);
-                                Info($"删除种子文件夹成功: 种子名字：{info.Name}，种子哈希值：{info.V1orV2}");
+                                LogInformation($"删除种子文件夹成功: 种子名字：{info.Name}，种子哈希值：{info.V1orV2}");
                                 DispatcherBeginInvoke(() => { Model.DowloadTorrentCollection.Remove(info); });
                                 return;
                             }
-                            Info("未找到种子文件夹，可能已被手动删除。");
+                            LogInformation("未找到种子文件夹，可能已被手动删除。");
                         }
                         catch (IOException ex)
                         {
@@ -116,7 +116,7 @@ namespace ExtenderApp.Torrents.ViewModels
                 {
                     Task.Run(async () =>
                     {
-                        Info($"开始删除种子: 种子名字：{info.Name}，种子哈希值：{info.V1orV2}");
+                        LogInformation($"开始删除种子: 种子名字：{info.Name}，种子哈希值：{info.V1orV2}");
                         DispatcherBeginInvoke(() => 
                         { 
                             Model.DowloadTorrentCollection.Remove(info);
@@ -182,7 +182,7 @@ namespace ExtenderApp.Torrents.ViewModels
                 Task.Run(async () =>
                 {
                     await Model.SatrtTorrentAsync(info);
-                    Info($"开始下载: 种子名字：{info.Name}，种子哈希值：{info.V1orV2}");
+                    LogInformation($"开始下载: 种子名字：{info.Name}，种子哈希值：{info.V1orV2}");
                 });
             }
             else
@@ -195,7 +195,7 @@ namespace ExtenderApp.Torrents.ViewModels
                         info.ConnectPeers.Clear();
                         info.Trackers.Clear();
                     });
-                    Info($"暂停下载: 种子名字：{info.Name}，种子哈希值：{info.V1orV2}");
+                    LogInformation($"暂停下载: 种子名字：{info.Name}，种子哈希值：{info.V1orV2}");
                 });
             }
         }

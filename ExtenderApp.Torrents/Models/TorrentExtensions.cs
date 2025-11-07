@@ -24,7 +24,7 @@ namespace ExtenderApp.Torrents.Models
             builder.Append("magnet:?");
 
             // 构建磁力链接的基础部分（必须包含info hash）
-            // xt字段：精确主题，包含info hash（btih表示BitTorrent Info Hash）
+            // xt字段：精确主题，包含info hash（btih表示BitTorrent LogInformation Hash）
             InfoHashes infoHashes = torrent.InfoHashes;
             if (infoHashes.V1 != null)
             {

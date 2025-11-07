@@ -8,6 +8,7 @@ using ExtenderApp.Common;
 
 using ExtenderApp.Models;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace ExtenderApp.ViewModels
 {
@@ -224,22 +225,28 @@ namespace ExtenderApp.ViewModels
 
         #region Log
 
+        private const string InfoEmptyMessage = "输出空信息日志";
+        private const string DebugEmptyMessage = "输出空调试日志";
+        private const string WarningEmptyMessage = "输出空警告日志";
+        private const string ErrorEmptyMessage = "输出空错误日志";
+        private ILogingService logingService => ServiceStore.LogingService;
+
         /// <summary>
         /// 输出信息日志。
         /// </summary>
         /// <param name="message">要输出的信息内容。</param>
-        public void Info(object message)
+        public void LogInformation(object message)
         {
-            Info(message?.ToString() ?? string.Empty);
+            LogInformation(message?.ToString() ?? InfoEmptyMessage);
         }
 
         /// <summary>
         /// 输出调试日志。
         /// </summary>
         /// <param name="message">要输出的调试内容。</param>
-        public void Debug(object message)
+        public void LogDebug(object message)
         {
-            Debug(message?.ToString() ?? string.Empty);
+            LogDebug(message?.ToString() ?? DebugEmptyMessage);
         }
 
         /// <summary>
@@ -247,36 +254,36 @@ namespace ExtenderApp.ViewModels
         /// </summary>
         /// <param name="message">要输出的错误信息内容。</param>
         /// <param name="exception">异常对象。</param>
-        public void Error(object message, Exception exception)
+        public void LogError(object message, Exception exception)
         {
-            Error(message?.ToString() ?? string.Empty, exception);
+            Error(message?.ToString() ?? ErrorEmptyMessage, exception);
         }
 
         /// <summary>
         /// 输出警告日志。
         /// </summary>
         /// <param name="message">要输出的警告内容。</param>
-        public void Warning(object message)
+        public void LogWarning(object message)
         {
-            Warning(message?.ToString() ?? string.Empty);
+            Warning(message?.ToString() ?? WarningEmptyMessage);
         }
 
         /// <summary>
         /// 记录信息级别的日志。
         /// </summary>
         /// <param name="message">要记录的信息内容。</param>
-        public void Info(string message)
+        public void LogInformation(string message)
         {
-            ServiceStore.LogingService.Info(message, _viewModelName);
+            logingService.LogInformation(message, _viewModelName);
         }
 
         /// <summary>
         /// 记录调试级别的日志。
         /// </summary>
         /// <param name="message">要记录的调试信息内容。</param>
-        public void Debug(string message)
+        public void LogDebug(string message)
         {
-            ServiceStore.LogingService.Debug(message, _viewModelName);
+            logingService.LogDebug(message, _viewModelName);
         }
 
         /// <summary>
@@ -286,7 +293,7 @@ namespace ExtenderApp.ViewModels
         /// <param name="exception">引发的异常。</param>
         public void Error(string message, Exception exception)
         {
-            ServiceStore.LogingService.Error(message, _viewModelName, exception);
+            logingService.LogError(message, _viewModelName, exception);
         }
 
         /// <summary>
@@ -295,7 +302,7 @@ namespace ExtenderApp.ViewModels
         /// <param name="message">要记录的警告信息内容。</param>
         public void Warning(string message)
         {
-            ServiceStore.LogingService.Warning(message, _viewModelName);
+            logingService.LogWarning(message, _viewModelName);
         }
 
         #endregion Log

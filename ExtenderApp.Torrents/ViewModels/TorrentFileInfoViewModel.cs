@@ -37,7 +37,7 @@ namespace ExtenderApp.Torrents.ViewModels
                 info.IsDownloading = true;
             });
             InfoHashes infoHashes = info.Torrent == null ? info.MagnetLink.InfoHashes : info.Torrent.InfoHashes;
-            Info($"开始下载；种子名字：{info.Name}，种子哈希值：{infoHashes.V1OrV2.ToHex()}");
+            LogInformation($"开始下载；种子名字：{info.Name}，种子哈希值：{infoHashes.V1OrV2.ToHex()}");
         }
 
         /// <summary>
