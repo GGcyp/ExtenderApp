@@ -1,12 +1,11 @@
 ﻿using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using ExtenderApp.Abstract;
-using ExtenderApp.Services;
-using ExtenderApp.Data;
-using ExtenderApp.Common.Error;
 using ExtenderApp.Common;
-
+using ExtenderApp.Common.Error;
+using ExtenderApp.Data;
 using ExtenderApp.Models;
+using ExtenderApp.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -15,7 +14,7 @@ namespace ExtenderApp.ViewModels
     /// <summary>
     /// 扩展应用程序视图模型基类，继承自 <see cref="IViewModel"/>
     /// </summary>
-    public abstract class ExtenderAppViewModel : DisposableObject, IViewModel, INotifyPropertyChanged
+    public abstract class ExtenderAppViewModel : DisposableObject, IViewModel, INotifyPropertyChanged, ILogger
     {
         /// <summary>
         /// 服务存储接口实例
@@ -152,7 +151,7 @@ namespace ExtenderApp.ViewModels
             }
             catch (ArgumentNullException ex)
             {
-                Error("导航参数不能为空！", ex);
+                LogError(ex, "导航参数不能为空！");
                 return null;
             }
 
@@ -174,7 +173,7 @@ namespace ExtenderApp.ViewModels
             }
             catch (Exception ex)
             {
-                Error("视图导航出现了问题！", ex);
+                LogError(ex, "视图导航出现了问题！");
             }
             return view;
         }
@@ -195,7 +194,7 @@ namespace ExtenderApp.ViewModels
             }
             catch (Exception ex)
             {
-                Error("视图导航出现了问题！", ex);
+                LogError(ex, "视图导航出现了问题！");
             }
             return view;
         }
@@ -216,7 +215,7 @@ namespace ExtenderApp.ViewModels
             }
             catch (Exception ex)
             {
-                Error("视图导航出现了问题！", ex);
+                LogError(ex, "视图导航出现了问题！");
             }
             return window;
         }
@@ -237,7 +236,7 @@ namespace ExtenderApp.ViewModels
         /// <param name="message">要输出的信息内容。</param>
         public void LogInformation(object message)
         {
-            LogInformation(message?.ToString() ?? InfoEmptyMessage);
+            logingService.LogInformation(message?.ToString() ?? InfoEmptyMessage);
         }
 
         /// <summary>
@@ -246,7 +245,7 @@ namespace ExtenderApp.ViewModels
         /// <param name="message">要输出的调试内容。</param>
         public void LogDebug(object message)
         {
-            LogDebug(message?.ToString() ?? DebugEmptyMessage);
+            logingService.LogDebug(message?.ToString() ?? DebugEmptyMessage);
         }
 
         /// <summary>
@@ -254,9 +253,9 @@ namespace ExtenderApp.ViewModels
         /// </summary>
         /// <param name="message">要输出的错误信息内容。</param>
         /// <param name="exception">异常对象。</param>
-        public void LogError(object message, Exception exception)
+        public void LogError(Exception exception, object message)
         {
-            Error(message?.ToString() ?? ErrorEmptyMessage, exception);
+            logingService.LogError(exception, message?.ToString() ?? ErrorEmptyMessage);
         }
 
         /// <summary>
@@ -265,44 +264,22 @@ namespace ExtenderApp.ViewModels
         /// <param name="message">要输出的警告内容。</param>
         public void LogWarning(object message)
         {
-            Warning(message?.ToString() ?? WarningEmptyMessage);
+            logingService.LogWarning(message?.ToString() ?? WarningEmptyMessage);
         }
 
-        /// <summary>
-        /// 记录信息级别的日志。
-        /// </summary>
-        /// <param name="message">要记录的信息内容。</param>
-        public void LogInformation(string message)
+        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
         {
-            logingService.LogInformation(message, _viewModelName);
+            logingService.Log(logLevel, eventId, state, exception, formatter);
         }
 
-        /// <summary>
-        /// 记录调试级别的日志。
-        /// </summary>
-        /// <param name="message">要记录的调试信息内容。</param>
-        public void LogDebug(string message)
+        public bool IsEnabled(LogLevel logLevel)
         {
-            logingService.LogDebug(message, _viewModelName);
+            return logingService.IsEnabled(logLevel);
         }
 
-        /// <summary>
-        /// 记录错误级别的日志。
-        /// </summary>
-        /// <param name="message">要记录的错误信息内容。</param>
-        /// <param name="exception">引发的异常。</param>
-        public void Error(string message, Exception exception)
+        public IDisposable? BeginScope<TState>(TState state) where TState : notnull
         {
-            logingService.LogError(message, _viewModelName, exception);
-        }
-
-        /// <summary>
-        /// 记录警告级别的日志。
-        /// </summary>
-        /// <param name="message">要记录的警告信息内容。</param>
-        public void Warning(string message)
-        {
-            logingService.LogWarning(message, _viewModelName);
+            return logingService.BeginScope(state);
         }
 
         #endregion Log
@@ -547,7 +524,7 @@ namespace ExtenderApp.ViewModels
             }
             catch (Exception ex)
             {
-                Error($"打开路径失败：{path}", ex);
+                logingService.LogError(ex, "打开路径失败：{path}", path);
             }
         }
 
@@ -569,7 +546,7 @@ namespace ExtenderApp.ViewModels
             }
             catch (Exception ex)
             {
-                Error($"打开文件失败：{filter} :{targetPath}", ex);
+                logingService.LogError(ex, "打开文件失败：{filter} :{targetPath}", filter, targetPath);
                 return string.Empty;
             }
         }
@@ -586,7 +563,7 @@ namespace ExtenderApp.ViewModels
             }
             catch (Exception ex)
             {
-                Error($"创建路径失败：{folderPath}", ex);
+                logingService.LogError(ex, "创建路径失败：{folderPath}", folderPath);
                 return string.Empty;
             }
         }
@@ -796,7 +773,7 @@ namespace ExtenderApp.ViewModels
             }
             catch (Exception ex)
             {
-                Error("视图导航出现了问题！", ex);
+                LogError(ex, "视图导航出现了问题！");
             }
             return view;
         }
@@ -811,7 +788,7 @@ namespace ExtenderApp.ViewModels
             }
             catch (Exception ex)
             {
-                Error("视图导航出现了问题！", ex);
+                LogError(ex, "视图导航出现了问题！");
             }
             return window;
         }

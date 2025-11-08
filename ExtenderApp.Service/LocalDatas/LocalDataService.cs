@@ -2,6 +2,7 @@
 using ExtenderApp.Common;
 using ExtenderApp.Data;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace ExtenderApp.Services
 {
@@ -28,7 +29,7 @@ namespace ExtenderApp.Services
         /// <summary>
         /// 日志服务接口，用于记录日志信息。
         /// </summary>
-        private readonly ILogingService _logingService;
+        private readonly ILogger<ILocalDataService> _logger;
 
         /// <summary>
         /// 服务提供者实例，用于解析依赖服务。
@@ -45,13 +46,13 @@ namespace ExtenderApp.Services
         /// </summary>
         private ScheduledTask autosaveTokn;
 
-        public LocalDataService(IPathService pathService, IBinaryParser parser, IBinaryFormatterStore store, ILogingService logingService, IServiceProvider serviceProvider)
+        public LocalDataService(IPathService pathService, IBinaryParser parser, IBinaryFormatterStore store, ILogger<ILocalDataService> logger, IServiceProvider serviceProvider)
         {
             _parser = parser;
             _pathService = pathService;
 
             _localDataDict = new();
-            _logingService = logingService;
+            _logger = logger;
             _version = new(0, 0, 0, 1);
 
             autosaveTokn = new ScheduledTask();
@@ -66,7 +67,7 @@ namespace ExtenderApp.Services
 
             if (string.IsNullOrEmpty(dataName))
             {
-                _logingService.Error("获取本地数据名字不能为空", nameof(ILocalDataService), null);
+                _logger.LogError("获取本地数据名字不能为空");
                 return false;
             }
 
@@ -93,7 +94,7 @@ namespace ExtenderApp.Services
             }
             catch (Exception ex)
             {
-                _logingService.Error($"读取本地数据出现错误:{dataName}", nameof(ILocalDataService), ex);
+                _logger.LogError(ex, "读取本地数据出现错误:{dataName}", dataName);
 
                 if (typeof(T).GetConstructor(Type.EmptyTypes) == null)
                     return false;
@@ -139,7 +140,7 @@ namespace ExtenderApp.Services
             }
             catch (Exception ex)
             {
-                _logingService.Error($"写入本地数据出现错误:{dataName}", nameof(ILocalDataService), ex);
+                _logger.LogError(ex, "写入本地数据出现错误:{dataName}", dataName);
                 return false;
             }
         }

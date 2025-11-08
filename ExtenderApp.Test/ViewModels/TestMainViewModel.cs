@@ -1,11 +1,8 @@
 ﻿using ExtenderApp.Data;
 using ExtenderApp.Abstract;
 using ExtenderApp.ViewModels;
-using System.Net;
 using System.Text;
 using ExtenderApp.Common.Networks;
-
-using System.Net.Http;
 
 namespace ExtenderApp.Test
 {
@@ -18,7 +15,7 @@ namespace ExtenderApp.Test
         {
             var info = CreatTestExpectLocalFileInfo("text");
             _string = formatter;
-
+            LogInformation("开始测试");
             //IPEndPoint loop = new IPEndPoint(IPAddress.Loopback, 9090);
             //tcpListenerLinker.Bind(loop);
             //tcpListenerLinker.OnAccept += TcpListenerLinker_OnAccept;
@@ -39,6 +36,8 @@ namespace ExtenderApp.Test
             //    //client.SendAsync("Hello World!");
             //    client.SendAsync(ints);
             //}
+
+            this.LogInformation("启动成功{sss}");
 
             HttpLinkClient httpLinkClient = new(tcpLinker);
             Data.HttpResponseMessage? message = null;

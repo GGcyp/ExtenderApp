@@ -1,8 +1,4 @@
 ﻿using ExtenderApp.Abstract;
-using ExtenderApp.Common.ConcurrentOperates;
-using ExtenderApp.Common.ObjectPools;
-using ExtenderApp.Data;
-using ExtenderApp.Services.Logging;
 using Microsoft.Extensions.Logging;
 
 namespace ExtenderApp.Services
@@ -12,23 +8,23 @@ namespace ExtenderApp.Services
     /// </summary>
     internal class LoggingService : ILogingService
     {
-        private readonly ILogger _logger;
+        private readonly ILogger<ILogingService> _logger;
 
         /// <summary>
         /// 构造函数，初始化日志服务
         /// </summary>
         /// <param name="logger">日志记录器实例</param>
-        public LoggingService(ILogger logger)
+        public LoggingService(ILogger<ILogingService> logger)
         {
             _logger = logger;
         }
 
-        public void Log<TState>(Microsoft.Extensions.Logging.LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
+        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
         {
             _logger.Log(logLevel, eventId, state, exception, formatter);
         }
 
-        public bool IsEnabled(Microsoft.Extensions.Logging.LogLevel logLevel)
+        public bool IsEnabled(LogLevel logLevel)
         {
             return _logger.IsEnabled(logLevel);
         }

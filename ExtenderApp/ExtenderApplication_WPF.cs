@@ -8,6 +8,7 @@ using Autofac.Extensions.DependencyInjection;
 using ExtenderApp.Abstract;
 using ExtenderApp.Data;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace ExtenderApp
 {
@@ -28,6 +29,14 @@ namespace ExtenderApp
             DebugMessage($"开始生成服务 : {DateTime.Now}");
             string currAppPath = ResolveAppRootPath();
             IServiceCollection services = new ServiceCollection();
+
+            // 配置日志：清除默认提供器，添加 Debug 提供器，设置最低级别
+            services.AddLogging(builder =>
+            {
+                builder.ClearProviders();
+                builder.SetMinimumLevel(LogLevel.Trace);
+            });
+
             AssemblyLoadContext context = new("ExtenderApp_WPF", true);
 
             LoadAssembliesForFolder(context, currAppPath, APP_FOLDER_PACK);
@@ -36,15 +45,16 @@ namespace ExtenderApp
             builder.Populate(services);
             serviceProvider = new AutofacServiceProvider(builder.Build());
             DebugMessage($"生成服务成功 : {DateTime.Now}");
-            serviceProvider.GetRequiredService<IStartupExecuter>().ExecuteAsync();
 
             sw.Stop();
+            serviceProvider.GetRequiredService<ILogger<ExtenderApplication_WPF>>().LogInformation("{Now}启动成功，本次启动耗时{}", DateTime.Now, sw.ToString());
         }
 
         protected override void OnStartup(StartupEventArgs e)
         {
             base.OnStartup(e);
             serviceProvider.GetRequiredService<IMainThreadContext>().InitMainThreadContext();
+            serviceProvider.GetRequiredService<IStartupExecuter>().ExecuteAsync();
         }
 
         protected override void OnExit(ExitEventArgs e)

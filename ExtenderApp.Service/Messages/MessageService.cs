@@ -2,6 +2,7 @@
 using ExtenderApp.Abstract;
 using ExtenderApp.Data;
 using ExtenderApp.Services.Messages;
+using Microsoft.Extensions.Logging;
 
 namespace ExtenderApp.Services
 {
@@ -19,16 +20,16 @@ namespace ExtenderApp.Services
         /// <summary>
         /// 日志服务实例，用于记录消息相关日志。
         /// </summary>
-        private readonly ILogingService _logingService;
+        private readonly ILogger<IMessageService> _logger;
 
         /// <summary>
         /// 初始化消息服务实例。
         /// </summary>
         /// <param name="logingService">日志服务实例</param>
-        public MessageService(ILogingService logingService)
+        public MessageService(ILogger<IMessageService> logger)
         {
             _messagePublishers = new();
-            _logingService = logingService;
+            _logger = logger;
         }
 
         /// <summary>
@@ -208,7 +209,7 @@ namespace ExtenderApp.Services
             }
             catch (Exception ex)
             {
-                _logingService.Error(nameof(IMessageService), $"指定类型已被注册，需要类型{messageName}，已注册类型{item?.MessageType.FullName}", ex);
+                _logger.LogError(ex, $"指定类型已被注册，需要类型{messageName}，已注册类型{item?.MessageType.FullName}", messageName, item?.MessageType.FullName);
                 publisher = null;
                 return false;
             }

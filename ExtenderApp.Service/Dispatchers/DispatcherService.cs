@@ -1,8 +1,6 @@
-﻿using System.Diagnostics;
-using System.Transactions;
-
-using ExtenderApp.Abstract;
+﻿using ExtenderApp.Abstract;
 using ExtenderApp.Data;
+using Microsoft.Extensions.Logging;
 
 namespace ExtenderApp.Services
 {
@@ -15,7 +13,7 @@ namespace ExtenderApp.Services
         /// <summary>
         /// 日志服务接口，用于记录异常信息
         /// </summary>
-        private readonly ILogingService _logingService;
+        private readonly ILogger<IDispatcherService> _logeer;
         private readonly IMainThreadContext _mainThreadContext;
         private readonly Action<Action> _toMainThread;
         private readonly Action<Action> _awayMainThread;
@@ -27,9 +25,9 @@ namespace ExtenderApp.Services
         /// 构造函数
         /// </summary>
         /// <param name="logingService">日志服务实例</param>
-        public DispatcherService(ILogingService logingService, IMainThreadContext mainThreadContext)
+        public DispatcherService(ILogger<IDispatcherService> logger, IMainThreadContext mainThreadContext)
         {
-            _logingService = logingService;
+            _logeer = logger;
             _mainThreadContext = mainThreadContext;
 
             _toMainThread = BeginInvoke;
@@ -68,7 +66,7 @@ namespace ExtenderApp.Services
             catch (Exception ex)
             {
                 // 记录错误日志，包含异常信息和堆栈跟踪
-                _logingService.Error("调度器错误", nameof(IDispatcherService), ex);
+                _logeer.LogError(ex, "调度器错误");
             }
         }
 
@@ -102,7 +100,7 @@ namespace ExtenderApp.Services
             catch (Exception ex)
             {
                 // 记录错误日志，包含异常信息和堆栈跟踪
-                _logingService.Error("调度器错误", nameof(IDispatcherService), ex);
+                _logeer.LogError(ex, "调度器错误");
             }
         }
 
@@ -148,7 +146,7 @@ namespace ExtenderApp.Services
                 }
                 catch (Exception ex)
                 {
-                    _logingService.Error("调度器错误", nameof(IDispatcherService), ex);
+                    _logeer.LogError(ex, "调度器错误");
                 }
             };
         }
