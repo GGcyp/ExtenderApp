@@ -1,6 +1,7 @@
 ﻿
 using System.Reflection;
 using ExtenderApp.Abstract;
+using Microsoft.Extensions.Configuration;
 
 namespace ExtenderApp.Services
 {

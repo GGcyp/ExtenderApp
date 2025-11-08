@@ -1,5 +1,6 @@
 ﻿using ExtenderApp.Abstract;
 using ExtenderApp.Services;
+using Microsoft.Extensions.Logging;
 using MonoTorrent.Logging;
 
 namespace ExtenderApp.Torrents.Models
@@ -37,7 +38,7 @@ namespace ExtenderApp.Torrents.Models
         /// <param name="message">要记录的调试信息。</param>
         public void Debug(string message)
         {
-            _logingService.Debug(message, _name);
+            _logingService.LogDebug(message, _name);
         }
 
         /// <summary>
@@ -46,7 +47,7 @@ namespace ExtenderApp.Torrents.Models
         /// <param name="message">要记录的错误信息。</param>
         public void Error(string message)
         {
-            _logingService.Error(message, _name, null);
+            _logingService.LogError(null, message);
         }
 
         /// <summary>
@@ -55,7 +56,7 @@ namespace ExtenderApp.Torrents.Models
         /// <param name="message">要记录的信息。</param>
         public void Info(string message)
         {
-            _logingService.Info(message, _name);
+            _logingService.LogInformation(message);
         }
     }
 }

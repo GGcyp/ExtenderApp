@@ -14,7 +14,8 @@ namespace ExtenderApp.Media.ViewModels
         {
             if (!Environment.Is64BitProcess)
             {
-                Error("仅支持64位系统", new Exception());
+                LogWarning("仅支持64位系统");
+                return;
             }
         }
     }

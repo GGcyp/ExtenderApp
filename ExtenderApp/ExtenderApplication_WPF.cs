@@ -16,9 +16,10 @@ namespace ExtenderApp
     {
         private const string APP_FOLDER_PACK = "pack";
         private const string APP_FOLDER_LIB = "lib";
-        private ILogingService logingService;
         private IServiceProvider serviceProvider;
         private AssemblyLoadContext context;
+        private ILogger<ExtenderApplication_WPF> _logger;
+
 
         public ExtenderApplication_WPF()
         {
@@ -30,14 +31,7 @@ namespace ExtenderApp
             string currAppPath = ResolveAppRootPath();
             IServiceCollection services = new ServiceCollection();
 
-            // 配置日志：清除默认提供器，添加 Debug 提供器，设置最低级别
-            services.AddLogging(builder =>
-            {
-                builder.ClearProviders();
-                builder.SetMinimumLevel(LogLevel.Trace);
-            });
-
-            AssemblyLoadContext context = new("ExtenderApp_WPF", true);
+            context = new("ExtenderApp_WPF", true);
 
             LoadAssembliesForFolder(context, currAppPath, APP_FOLDER_PACK);
             context.LoadAssemblyAndStartupFormFolderPath(Path.Combine(currAppPath, APP_FOLDER_LIB), services);
@@ -47,7 +41,8 @@ namespace ExtenderApp
             DebugMessage($"生成服务成功 : {DateTime.Now}");
 
             sw.Stop();
-            serviceProvider.GetRequiredService<ILogger<ExtenderApplication_WPF>>().LogInformation("{Now}启动成功，本次启动耗时{}", DateTime.Now, sw.ToString());
+            _logger = serviceProvider.GetRequiredService<ILogger<ExtenderApplication_WPF>>();
+            _logger.LogInformation("{Now}启动成功，本次启动耗时{timeSpan}秒", DateTime.Now, TimeSpan.FromMilliseconds(sw.ElapsedMilliseconds).TotalSeconds);
         }
 
         protected override void OnStartup(StartupEventArgs e)
@@ -64,20 +59,6 @@ namespace ExtenderApp
             {
                 disposable.Dispose();
             }
-        }
-
-        public void Eorrer(Exception ex)
-        {
-            //var logingService = application.ServiceProvider.GetService<ILogingService>();
-            //logingService?.Print(new Data.LogInfo()
-            //{
-            //    LogLevel = Data.LogLevel.ERROR,
-            //    Message = "程序出现问题了！",
-            //    Source = nameof(ExtenderApplication_WPF),
-            //    Time = DateTime.Now,
-            //    ThreadId = Thread.CurrentThread.ManagedThreadId,
-            //    Exception = ex
-            //});
         }
 
 #if DEBUG
@@ -131,6 +112,11 @@ namespace ExtenderApp
 
             // 4) 最后回退到当前工作目录
             return Directory.GetCurrentDirectory();
+        }
+
+        internal void LogEorrer(Exception ex)
+        {
+            _logger?.LogError(ex, "应用程序发生未处理的异常");
         }
     }
 }

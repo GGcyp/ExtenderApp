@@ -17,7 +17,7 @@ namespace ExtenderApp
             }
             catch (Exception ex)
             {
-                app.Eorrer(ex);
+                app.LogEorrer(ex);
             }
         }
     }
