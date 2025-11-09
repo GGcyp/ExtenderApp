@@ -20,7 +20,6 @@ namespace ExtenderApp.Services
             services.AddSingleton<IDispatcherService, DispatcherService>();
             services.AddSingleton<ICacheService, CacheService>();
             services.AddSingleton<ILogingService, LoggingService>();
-            services.AddSingleton<IPathService, PathService>();
             services.AddSingleton<IMainWindowService, MainWindowService>();
             services.AddSingleton<ISystemService, SystemService>();
             services.AddSingleton<IMessageService, MessageService>();

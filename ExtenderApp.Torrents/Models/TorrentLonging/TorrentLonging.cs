@@ -9,7 +9,7 @@ namespace ExtenderApp.Torrents.Models
     /// <summary>
     /// TorrentLonging 类实现了 ILogger 接口，用于记录与 Torrent 相关的日志信息。
     /// </summary>
-    public class TorrentLonging : ILogger
+    public class TorrentLonging : MonoTorrent.Logging.ILogger
     {
         /// <summary>
         /// 类名

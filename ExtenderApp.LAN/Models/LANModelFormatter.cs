@@ -12,16 +12,19 @@ namespace ExtenderApp.LAN
         {
         }
 
-        public override LANModel Deserialize(ref ExtenderBinaryReader reader)
+        public override LANModel Deserialize(ref ByteBuffer buffer)
         {
-            var result = new LANModel();
-
-            return result;
+            throw new NotImplementedException();
         }
 
-        public override void Serialize(ref ExtenderBinaryWriter writer, LANModel value)
+        public override void Serialize(ref ByteBuffer buffer, LANModel value)
         {
+            throw new NotImplementedException();
+        }
 
+        public override long GetLength(LANModel value)
+        {
+            throw new NotImplementedException();
         }
     }
 }

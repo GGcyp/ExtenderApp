@@ -19,8 +19,6 @@ namespace ExtenderApp.Services
 
         public ILocalDataService LocalDataService { get; }
 
-        public IPathService PathService { get; }
-
         public IServiceProvider ServiceProvider { get; }
 
         public IMainWindowService MainWindowService { get; }
@@ -35,7 +33,6 @@ namespace ExtenderApp.Services
             ILogingService logingService,
             IPluginService modService,
             ILocalDataService localDataService,
-            IPathService pathService,
             IServiceProvider serviceProvider,
             IMainWindowService mainWindowService,
             ISystemService systemService,
@@ -47,7 +44,6 @@ namespace ExtenderApp.Services
             LogingService = logingService;
             PluginService = modService;
             LocalDataService = localDataService;
-            PathService = pathService;
             ServiceProvider = serviceProvider;
             MainWindowService = mainWindowService;
             SystemService = systemService;

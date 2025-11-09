@@ -68,7 +68,7 @@ namespace ExtenderApp.Test
 
         private ExpectLocalFileInfo CreatTestExpectLocalFileInfo(string fileName)
         {
-            return new ExpectLocalFileInfo(ServiceStore.PathService.CreateFolderPathForAppRootFolder("test"), fileName);
+            return new ExpectLocalFileInfo(ProgramDirectory.ChekAndCreateFolder("test"), fileName);
         }
     }
 }

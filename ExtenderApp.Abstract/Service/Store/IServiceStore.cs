@@ -37,14 +37,6 @@
         ILocalDataService LocalDataService { get; }
 
         /// <summary>
-        /// 获取路径服务接口。
-        /// </summary>
-        /// <value>
-        /// 返回实现IPathService接口的对象。
-        /// </value>
-        IPathService PathService { get; }
-
-        /// <summary>
         /// 获取服务提供者。
         /// </summary>
         IServiceProvider ServiceProvider { get; }

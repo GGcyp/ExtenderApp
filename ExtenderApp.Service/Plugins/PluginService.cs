@@ -34,11 +34,6 @@ namespace ExtenderApp.Services
         private readonly ILifetimeScope _mainLifetimeScope;
 
         /// <summary>
-        /// 路径提供者接口实例
-        /// </summary>
-        private IPathService _pathProvider;
-
-        /// <summary>
         /// Json文件接口
         /// </summary>
         private IJsonParser _jsonParser;
@@ -48,16 +43,15 @@ namespace ExtenderApp.Services
         /// </summary>
         private IBinaryFormatterStore _binaryFormatterStore;
 
-        public PluginService(PluginStore pluginStore, IPathService pathProvider, IJsonParser parser, IBinaryFormatterStore binaryFormatterStore, IServiceScopeStore serviceScopeStore, ILifetimeScope lifetimeScope)
+        public PluginService(PluginStore pluginStore, IJsonParser parser, IBinaryFormatterStore binaryFormatterStore, IServiceScopeStore serviceScopeStore, ILifetimeScope lifetimeScope)
         {
             _pluginStore = pluginStore;
-            _pathProvider = pathProvider;
             _jsonParser = parser;
             _binaryFormatterStore = binaryFormatterStore;
             _serviceScopeStore = serviceScopeStore;
             _mainLifetimeScope = lifetimeScope;
 
-            LoadPluginInfo(_pathProvider.ModsPath);
+            LoadPluginInfo(ProgramDirectory.PluginPath);
         }
 
         /// <summary>
@@ -182,7 +176,7 @@ namespace ExtenderApp.Services
             string dllPath = Path.Combine(details.PluginFolderPath, details.StartupDll);
 
             //添加模组依赖库
-            string packName = string.IsNullOrEmpty(details.PackPath) ? _pathProvider.PackFolderName : details.PackPath;
+            string packName = string.IsNullOrEmpty(details.PackPath) ? ProgramDirectory.PACKNAME : details.PackPath;
             string packPath = Path.Combine(details.PluginFolderPath, packName);
             if (Directory.Exists(packPath))
             {

@@ -17,11 +17,6 @@ namespace ExtenderApp.Services
         private readonly IBinaryParser _parser;
 
         /// <summary>
-        /// 路径服务接口，用于处理文件路径相关操作。
-        /// </summary>
-        private readonly IPathService _pathService;
-
-        /// <summary>
         /// 存储本地数据信息的字典。
         /// </summary>
         private readonly Dictionary<string, LocalDataInfo> _localDataDict;
@@ -46,10 +41,9 @@ namespace ExtenderApp.Services
         /// </summary>
         private ScheduledTask autosaveTokn;
 
-        public LocalDataService(IPathService pathService, IBinaryParser parser, IBinaryFormatterStore store, ILogger<ILocalDataService> logger, IServiceProvider serviceProvider)
+        public LocalDataService(IBinaryParser parser, IBinaryFormatterStore store, ILogger<ILocalDataService> logger, IServiceProvider serviceProvider)
         {
             _parser = parser;
-            _pathService = pathService;
 
             _localDataDict = new();
             _logger = logger;
@@ -76,12 +70,12 @@ namespace ExtenderApp.Services
                 LocalData<T>? localData = null;
                 if (!_localDataDict.TryGetValue(dataName, out var info))
                 {
-                    ExpectLocalFileInfo fileInfo = new(_pathService.DataPath, dataName);
+                    ExpectLocalFileInfo fileInfo = new(ProgramDirectory.DataPath, dataName);
                     var tempdata = _parser.Read<VersionData<T>>(fileInfo);
 
                     localData = new LocalData<T>(tempdata.Data ?? _serviceProvider.GetRequiredService<T>(), SaveLocalData, tempdata.DataVersion ?? _version);
 
-                    info = new LocalDataInfo(_pathService.DataPath, dataName, localData);
+                    info = new LocalDataInfo(ProgramDirectory.DataPath, dataName, localData);
                     _localDataDict.Add(dataName, info);
                 }
                 else
@@ -100,7 +94,7 @@ namespace ExtenderApp.Services
                     return false;
 
                 data = new LocalData<T>(Activator.CreateInstance(typeof(T)) as T, SaveLocalData, _version);
-                var info = new LocalDataInfo(_pathService.DataPath, dataName, data);
+                var info = new LocalDataInfo(ProgramDirectory.DataPath, dataName, data);
                 _localDataDict.Add(dataName, info);
                 return true;
             }
