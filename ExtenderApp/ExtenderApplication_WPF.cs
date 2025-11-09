@@ -55,9 +55,6 @@ namespace ExtenderApp
 
             DebugMessage($"开始生成服务 : {DateTime.Now}");
 
-            // 解析应用根路径（兼容多种运行场景）
-            string currAppPath = ResolveAppRootPath();
-
             // 使用 Microsoft DI 构建 IServiceCollection，随后由 Autofac 填充
             IServiceCollection services = new ServiceCollection();
 
@@ -68,17 +65,17 @@ namespace ExtenderApp
             services.AddSingleton<IConfiguration>(provider =>
             {
                 var configBuilder = new ConfigurationBuilder()
-                    .SetBasePath(currAppPath)
+                    .SetBasePath(ProgramDirectory.AppRootPath)
                     .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
                     .AddEnvironmentVariables();
                 return configBuilder.Build();
             });
 
             // 加载插件目录中的程序集（Pack 文件夹）
-            LoadAssembliesForFolder(context, currAppPath, ProgramDirectory.PackPath);
+            LoadAssembliesForFolder(context, ProgramDirectory.PackPath);
 
             // 从指定的库目录加载程序集并调用扩展的加载逻辑（扩展方法在其他位置实现）
-            context.LoadAssemblyAndStartupFormFolderPath(Path.Combine(currAppPath, ProgramDirectory.LibPath), services);
+            context.LoadAssemblyAndStartupFormFolderPath(ProgramDirectory.LibPath, services);
 
             // 使用 Autofac 构建容器并将 IServiceCollection 中的服务填充进去
             var builder = new ContainerBuilder();
@@ -93,7 +90,7 @@ namespace ExtenderApp
             _logger.LogInformation("{Now}启动成功，本次启动耗时{timeSpan}秒", DateTime.Now, TimeSpan.FromMilliseconds(sw.ElapsedMilliseconds).TotalSeconds);
         }
 
-        
+
 
         /// <summary>
         /// WPF 启动时调用。初始化主线程上下文并触发启动执行器。
@@ -122,6 +119,35 @@ namespace ExtenderApp
             }
         }
 
+        /// <summary>
+        /// 将指定文件夹（及其子目录）下的所有 .dll 加载到给定的 AssemblyLoadContext。
+        /// 跳过空或无效的路径参数。
+        /// </summary>
+        /// <param name="context">目标 AssemblyLoadContext。</param>
+        /// <param name="fullPath">目标文件全称</param>
+        private void LoadAssembliesForFolder(AssemblyLoadContext context, string fullPath)
+        {
+            if (string.IsNullOrEmpty(fullPath))
+                return;
+
+            // 查找所有 DLL 并加载到指定的 AssemblyLoadContext 中
+            var dllFiles = Directory.GetFiles(fullPath, "*.dll", SearchOption.AllDirectories);
+            foreach (var dllFile in dllFiles)
+            {
+                context.LoadFromAssemblyPath(dllFile);
+            }
+        }
+
+        /// <summary>
+        /// 对外的错误记录入口（方法名保留原拼写 LogEorrer）。
+        /// 使用注入的 ILogger 记录未处理异常信息（若 _logger 为 null 则静默忽略）。
+        /// </summary>
+        /// <param name="ex">需记录的异常。</param>
+        internal void LogEorrer(Exception ex)
+        {
+            _logger?.LogError(ex, "应用程序发生未处理的异常");
+        }
+
 #if DEBUG
 
         /// <summary>
@@ -133,39 +159,5 @@ namespace ExtenderApp
         }
 
 #endif
-
-        /// <summary>
-        /// 将指定文件夹（及其子目录）下的所有 .dll 加载到给定的 AssemblyLoadContext。
-        /// 跳过空或无效的路径参数。
-        /// </summary>
-        /// <param name="context">目标 AssemblyLoadContext。</param>
-        /// <param name="appPath">应用根路径。</param>
-        /// <param name="folderName">相对于 appPath 的文件夹名称（例如插件或库文件夹）。</param>
-        private void LoadAssembliesForFolder(AssemblyLoadContext context, string appPath, string folderName)
-        {
-            if (string.IsNullOrEmpty(folderName) || string.IsNullOrEmpty(appPath))
-                return;
-
-            string fullPath = Path.Combine(appPath, folderName);
-
-            // 查找所有 DLL 并加载到指定的 AssemblyLoadContext 中
-            var dllFiles = Directory.GetFiles(fullPath, "*.dll", SearchOption.AllDirectories);
-            foreach (var dllFile in dllFiles)
-            {
-                context.LoadFromAssemblyPath(dllFile);
-            }
-        }
-
-        
-
-        /// <summary>
-        /// 对外的错误记录入口（方法名保留原拼写 LogEorrer）。
-        /// 使用注入的 ILogger 记录未处理异常信息（若 _logger 为 null 则静默忽略）。
-        /// </summary>
-        /// <param name="ex">需记录的异常。</param>
-        internal void LogEorrer(Exception ex)
-        {
-            _logger?.LogError(ex, "应用程序发生未处理的异常");
-        }
     }
 }

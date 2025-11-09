@@ -21,11 +21,6 @@
         ICacheService CacheService { get; }
 
         /// <summary>
-        /// 获取日志服务
-        /// </summary>
-        ILogingService LogingService { get; }
-
-        /// <summary>
         /// 获取模组服务
         /// </summary>
         IPluginService PluginService { get; }

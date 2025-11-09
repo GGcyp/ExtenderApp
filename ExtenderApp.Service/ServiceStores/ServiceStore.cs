@@ -13,8 +13,6 @@ namespace ExtenderApp.Services
 
         public ICacheService CacheService { get; }
 
-        public ILogingService LogingService { get; }
-
         public IPluginService PluginService { get; }
 
         public ILocalDataService LocalDataService { get; }
@@ -30,7 +28,6 @@ namespace ExtenderApp.Services
         public ServiceStore(IDispatcherService dispatcherService,
             INavigationService navigationService,
             ICacheService cacheStore,
-            ILogingService logingService,
             IPluginService modService,
             ILocalDataService localDataService,
             IServiceProvider serviceProvider,
@@ -41,7 +38,6 @@ namespace ExtenderApp.Services
             DispatcherService = dispatcherService;
             NavigationService = navigationService;
             CacheService = cacheStore;
-            LogingService = logingService;
             PluginService = modService;
             LocalDataService = localDataService;
             ServiceProvider = serviceProvider;

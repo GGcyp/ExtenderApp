@@ -22,9 +22,24 @@ namespace ExtenderApp.ViewModels
         protected readonly IServiceStore ServiceStore;
 
         /// <summary>
-        /// 视图模型名称（只读）
+        /// 当前日志记录器实例
         /// </summary>
-        private readonly string _viewModelName;
+        private ILogger? logger;
+        /// <summary>
+        /// 当前视图模型的日志记录器
+        /// </summary>
+        protected ILogger Logger
+        {
+            get
+            {
+                if (logger is null)
+                {
+                    var loggerType = typeof(ILogger<>).MakeGenericType(GetType());
+                    logger = ServiceStore.ServiceProvider.GetService(loggerType) as ILogger;
+                }
+                return logger!;
+            }
+        }
 
         /// <summary>
         /// 当前视图模型的插件详细信息
@@ -50,14 +65,14 @@ namespace ExtenderApp.ViewModels
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
 
-        /// <summary>
-        /// ExtenderAppViewModel构造函数
-        /// </summary>
-        /// <param name="serviceStore">服务存储对象</param>
+        public ExtenderAppViewModel(IServiceStore serviceStore, ILogger logger) : this(serviceStore)
+        {
+            this.logger = logger;
+        }
+
         public ExtenderAppViewModel(IServiceStore serviceStore)
         {
             ServiceStore = serviceStore;
-            _viewModelName = GetType().Name;
             Details = GetCurrentPluginDetails();
         }
 
@@ -228,7 +243,6 @@ namespace ExtenderApp.ViewModels
         private const string DebugEmptyMessage = "输出空调试日志";
         private const string WarningEmptyMessage = "输出空警告日志";
         private const string ErrorEmptyMessage = "输出空错误日志";
-        private ILogingService logingService => ServiceStore.LogingService;
 
         /// <summary>
         /// 输出信息日志。
@@ -236,7 +250,7 @@ namespace ExtenderApp.ViewModels
         /// <param name="message">要输出的信息内容。</param>
         public void LogInformation(object message)
         {
-            logingService.LogInformation(message?.ToString() ?? InfoEmptyMessage);
+            Logger.LogInformation(message?.ToString() ?? InfoEmptyMessage);
         }
 
         /// <summary>
@@ -245,7 +259,7 @@ namespace ExtenderApp.ViewModels
         /// <param name="message">要输出的调试内容。</param>
         public void LogDebug(object message)
         {
-            logingService.LogDebug(message?.ToString() ?? DebugEmptyMessage);
+            Logger.LogDebug(message?.ToString() ?? DebugEmptyMessage);
         }
 
         /// <summary>
@@ -255,7 +269,7 @@ namespace ExtenderApp.ViewModels
         /// <param name="exception">异常对象。</param>
         public void LogError(Exception exception, object message)
         {
-            logingService.LogError(exception, message?.ToString() ?? ErrorEmptyMessage);
+            Logger.LogError(exception, message?.ToString() ?? ErrorEmptyMessage);
         }
 
         /// <summary>
@@ -264,22 +278,22 @@ namespace ExtenderApp.ViewModels
         /// <param name="message">要输出的警告内容。</param>
         public void LogWarning(object message)
         {
-            logingService.LogWarning(message?.ToString() ?? WarningEmptyMessage);
+            Logger.LogWarning(message?.ToString() ?? WarningEmptyMessage);
         }
 
         public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
         {
-            logingService.Log(logLevel, eventId, state, exception, formatter);
+            Logger.Log(logLevel, eventId, state, exception, formatter);
         }
 
         public bool IsEnabled(LogLevel logLevel)
         {
-            return logingService.IsEnabled(logLevel);
+            return Logger.IsEnabled(logLevel);
         }
 
         public IDisposable? BeginScope<TState>(TState state) where TState : notnull
         {
-            return logingService.BeginScope(state);
+            return Logger.BeginScope(state);
         }
 
         #endregion Log
@@ -544,7 +558,7 @@ namespace ExtenderApp.ViewModels
             }
             catch (Exception ex)
             {
-                logingService.LogError(ex, "打开路径失败：{path}", path);
+                Logger.LogError(ex, "打开路径失败：{path}", path);
             }
         }
 
@@ -560,7 +574,7 @@ namespace ExtenderApp.ViewModels
             }
             catch (Exception ex)
             {
-                logingService.LogError(ex, "创建路径失败：{folderPath}", folderPath);
+                Logger.LogError(ex, "创建路径失败：{folderPath}", folderPath);
                 return string.Empty;
             }
         }
@@ -742,6 +756,11 @@ namespace ExtenderApp.ViewModels
             View = default!;
         }
 
+        public ExtenderAppViewModel(IServiceStore serviceStore, ILogger logger) : base(serviceStore, logger)
+        {
+            View = default!;
+        }
+
         public override void InjectView(IView view)
         {
             if (view is TView tview)
@@ -822,17 +841,21 @@ namespace ExtenderApp.ViewModels
             }
         }
 
-        /// <summary>
-        /// 初始化 <see
-        /// cref="ExtenderAppViewModel{TView,
-        /// TModle}"/> 的新实例
-        /// </summary>
-        /// <param name="serviceStore">服务存储</param>
+
         protected ExtenderAppViewModel(IServiceStore serviceStore) : base(serviceStore)
         {
         }
 
+        protected ExtenderAppViewModel(IServiceStore serviceStore, ILogger logger) : base(serviceStore, logger)
+        {
+        }
+
         protected ExtenderAppViewModel(TModle model, IServiceStore serviceStore) : base(serviceStore)
+        {
+            this.model = model;
+        }
+
+        protected ExtenderAppViewModel(TModle model, IServiceStore serviceStore, ILogger logger) : base(serviceStore, logger)
         {
             this.model = model;
         }

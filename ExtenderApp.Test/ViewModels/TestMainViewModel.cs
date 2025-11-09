@@ -3,6 +3,7 @@ using ExtenderApp.Abstract;
 using ExtenderApp.ViewModels;
 using System.Text;
 using ExtenderApp.Common.Networks;
+using Microsoft.Extensions.Logging;
 
 namespace ExtenderApp.Test
 {
@@ -37,21 +38,21 @@ namespace ExtenderApp.Test
             //    client.SendAsync(ints);
             //}
 
-            this.LogInformation("启动成功{sss}");
+            this.LogInformation("启动成功{sss}", "asdasd");
 
-            HttpLinkClient httpLinkClient = new(tcpLinker);
-            Data.HttpResponseMessage? message = null;
-            try
-            {
-                message = httpLinkClient.SendAsync(new Data.HttpRequestMessage(Data.HttpMethod.Get, "http://www.baidu.com/")).GetAwaiter().GetResult();
+            //HttpLinkClient httpLinkClient = new(tcpLinker);
+            //Data.HttpResponseMessage? message = null;
+            //try
+            //{
+            //    message = httpLinkClient.SendAsync(new Data.HttpRequestMessage(Data.HttpMethod.Get, "http://www.baidu.com/")).GetAwaiter().GetResult();
 
-            }
-            catch (Exception ex)
-            {
-                LogInformation(ex.ToString());
-            }
-            LogInformation(message.StatusCode);
-            LogInformation(Encoding.UTF8.GetString(message.Body.UnreadSpan));
+            //}
+            //catch (Exception ex)
+            //{
+            //    LogInformation(ex.ToString());
+            //}
+            //LogInformation(message.StatusCode);
+            //LogInformation(Encoding.UTF8.GetString(message.Body.UnreadSpan));
         }
 
         private void TcpListenerLinker_OnAccept(object? sender, ITcpLinker e)
