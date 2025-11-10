@@ -1,8 +1,7 @@
 ﻿using System.Net;
 using System.Text;
-using System.Threading;
-using ExtenderApp.Abstract;
 using ExtenderApp.Data;
+using ExtenderApp.Abstract;
 using HttpMethod = ExtenderApp.Data.HttpMethod;
 using HttpRequestMessage = ExtenderApp.Data.HttpRequestMessage;
 using HttpResponseMessage = ExtenderApp.Data.HttpResponseMessage;
@@ -34,12 +33,6 @@ namespace ExtenderApp.Common.Networks
         private ByteBlock block;
 
         /// <summary>
-        /// 正在构造的 HttpResponseMessage 实例（当解析响应头后创建并在解析 body 后完成）。
-        /// 在解析完成并返回给调用方后会被置为 null 以准备下一次解析。
-        /// </summary>
-        private HttpResponseMessage? response;
-
-        /// <summary>
         /// 当前已解析出的头部长度（包含 HeaderTerminator 的长度），用于计算已消费字节与 body 偏移。
         /// </summary>
         private int headerBlockLen;
@@ -66,17 +59,17 @@ namespace ExtenderApp.Common.Networks
         /// </summary>
         private HttpRequestMessage? request;
 
+        /// <summary>
+        /// 正在构造的 HttpResponseMessage 实例（当解析响应头后创建并在解析 body 后完成）。
+        /// 在解析完成并返回给调用方后会被置为 null 以准备下一次解析。
+        /// </summary>
+        private HttpResponseMessage? response;
+
         public HttpParser()
         {
             block = new ByteBlock(DefaultHeaderSize);
         }
 
-        /// <summary>
-        /// 尝试从字节切片解析 HTTP 请求。
-        /// 将接收到的 buffer 写入内部接收缓冲 block 并尽可能基于 Span 解析。
-        /// 成功解析时：返回 true，输出完整消息并自动从内部缓冲消费已解析字节。
-        /// 若数据不足则返回 false（不会消费内部缓冲），上层应等待更多字节并重试。
-        /// </summary>
         public bool TryParseRequest(ReadOnlySpan<byte> buffer, out HttpRequestMessage? message, out int bytesConsumed, Encoding? encoding = null)
         {
             message = default;
@@ -128,10 +121,6 @@ namespace ExtenderApp.Common.Networks
             return true;
         }
 
-        /// <summary>
-        /// 尝试从字节切片解析 HTTP 响应。
-        /// 与请求解析类似：查找头部终止符并根据 Content-Length 提取 body。
-        /// </summary>
         public bool TryParseResponse(ReadOnlySpan<byte> buffer, HttpRequestMessage requestMessage, out HttpResponseMessage? message, out int bytesConsumed, Encoding? encoding = null)
         {
             message = response;

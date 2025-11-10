@@ -9,7 +9,7 @@ namespace ExtenderApp.Common.Networks
         public static IServiceCollection AddTcpLinkClient(this IServiceCollection services)
         {
             services.AddSingleton<ILinkClientFactory<ITcpLinkClient>, TcpLinkClientFactory>();
-            services.AddTransient<ITcpLinkClient>(p =>
+            services.AddTransient(p =>
             {
                 return p.GetRequiredService<ILinkClientFactory<ITcpLinkClient>>().CreateLinkClient();
             });

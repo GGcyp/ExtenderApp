@@ -1,6 +1,4 @@
-﻿
-
-using System.Net.Security;
+﻿using System.Net.Security;
 
 namespace ExtenderApp.Abstract
 {
@@ -17,5 +15,13 @@ namespace ExtenderApp.Abstract
         /// <param name="token">可选取消令牌。</param>
         /// <returns>解析完成的 HttpResponseMessage。</returns>
         ValueTask<Data.HttpResponseMessage> SendAsync(Data.HttpRequestMessage request, SslClientAuthenticationOptions? options = null, CancellationToken token = default);
+
+        /// <summary>
+        /// 放入新的 HTTP 解析器实例。
+        /// </summary>
+        /// <param name="httpParser">解析器实例</param>
+        /// <param name="token">解除令牌</param>
+        /// <returns>结构体线程任务</returns>
+        ValueTask SetHttpParser(IHttpParser httpParser, CancellationToken token = default);
     }
 }

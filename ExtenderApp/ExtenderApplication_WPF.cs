@@ -1,6 +1,5 @@
 ﻿using System.Diagnostics;
 using System.IO;
-using System.Reflection;
 using System.Runtime.Loader;
 using System.Windows;
 using Autofac;
@@ -33,7 +32,7 @@ namespace ExtenderApp
         private IServiceProvider serviceProvider;
 
         /// <summary>
-        /// 自定义的 AssemblyLoadContext，用于在运行时加载插件/程序集，便于卸载或隔离。
+        /// 自定义的 AssemblyLoadContext，用于在运行时加载主程序集。
         /// </summary>
         private AssemblyLoadContext context;
 
@@ -89,8 +88,6 @@ namespace ExtenderApp
             _logger = serviceProvider.GetRequiredService<ILogger<ExtenderApplication_WPF>>();
             _logger.LogInformation("{Now}启动成功，本次启动耗时{timeSpan}秒", DateTime.Now, TimeSpan.FromMilliseconds(sw.ElapsedMilliseconds).TotalSeconds);
         }
-
-
 
         /// <summary>
         /// WPF 启动时调用。初始化主线程上下文并触发启动执行器。

@@ -18,6 +18,10 @@
     <ProjectReference Include="..\ExtenderApp.Data\ExtenderApp.Data.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Networks\LinkClients\Clients\Nat\" />
+  </ItemGroup>
+
 	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
 		<ItemGroup>
 			<TargetFolder Include="E:\WPF_Project\ExtenderApp\ExtenderApp\bin\Debug\net8.0-windows" />

@@ -5,7 +5,7 @@ using ExtenderApp.Data;
 
 namespace ExtenderApp.Common.Networks
 {
-    public abstract class LinkClient<TLinker> : DisposableObject, ILinkClient
+    public abstract class LinkClient<TLinker> : DisposableObject, ILinkClient, ILinker
         where TLinker : ILinker
     {
         protected TLinker Linker;
@@ -38,6 +38,46 @@ namespace ExtenderApp.Common.Networks
         protected override void Dispose(bool disposing)
         {
             Linker.Dispose();
+        }
+
+        public SocketOperationResult Receive(Memory<byte> memory)
+        {
+            return Linker.Receive(memory);
+        }
+
+        public ValueTask<SocketOperationResult> ReceiveAsync(Memory<byte> memory, CancellationToken token = default)
+        {
+            return Linker.ReceiveAsync(memory, token);
+        }
+
+        public SocketOperationResult Send(Memory<byte> memory)
+        {
+            return Linker.Send(memory);
+        }
+
+        public ValueTask<SocketOperationResult> SendAsync(Memory<byte> memory, CancellationToken token = default)
+        {
+            return Linker.SendAsync(memory, token);
+        }
+
+        public void Connect(EndPoint remoteEndPoint)
+        {
+            Linker.Connect(remoteEndPoint);
+        }
+
+        public ValueTask ConnectAsync(EndPoint remoteEndPoint, CancellationToken token = default)
+        {
+            return Linker.ConnectAsync(remoteEndPoint, token);
+        }
+
+        public void Disconnect()
+        {
+            Linker.Disconnect();
+        }
+
+        public ValueTask DisconnectAsync(CancellationToken token = default)
+        {
+            return Linker.DisconnectAsync(token);
         }
     }
 }

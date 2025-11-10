@@ -31,7 +31,7 @@ namespace ExtenderApp.Common.Networks
         /// <summary>
         /// Http 响应解析器。
         /// </summary>
-        private readonly HttpParser Parser;
+        private IHttpParser Parser;
 
         /// <summary>
         /// 异步结果的手动重置 ValueTask 源。
@@ -43,17 +43,15 @@ namespace ExtenderApp.Common.Networks
         /// </summary>
         public SslClientAuthenticationOptions AuthenticationOptions;
 
-        // 接收循环任务与同步保护，避免重复启动接收任务
-
         /// <summary>
         /// 当前的接收循环任务（若有）。
         /// </summary>
         private Task? receiveTask;
+
         /// <summary>
         /// 当前接收循环的取消令牌源。
         /// </summary>
         private CancellationTokenSource? receiveCts;
-
 
         private readonly object _receiveLock = new();
 
@@ -76,9 +74,9 @@ namespace ExtenderApp.Common.Networks
         /// 使用指定的 ITcpLinker 创建 HttpLinkClient 实例。
         /// </summary>
         /// <param name="linker">底层 TCP 链接器，用于建立连接并收发原始字节。</param>
-        public HttpLinkClient(ITcpLinker linker) : base(linker)
+        public HttpLinkClient(ITcpLinker linker, IHttpParser? httpParser = null) : base(linker)
         {
-            Parser = new();
+            Parser = httpParser ?? new HttpParser();
             vts = new ManualResetValueTaskSourceCore<HttpResponseMessage>();
             vts.RunContinuationsAsynchronously = true;
             _tcpLinkerStream = linker.ToStream();
@@ -91,13 +89,22 @@ namespace ExtenderApp.Common.Networks
             };
         }
 
+        public async ValueTask SetHttpParser(IHttpParser httpParser, CancellationToken token = default)
+        {
+            ArgumentNullException.ThrowIfNull(httpParser, nameof(httpParser));
+
+            if (receiveTask is not null)
+                await receiveTask.WaitAsync(token);
+
+            Parser = httpParser;
+        }
+
         public async ValueTask<HttpResponseMessage> SendAsync(HttpRequestMessage request, SslClientAuthenticationOptions? options = null, CancellationToken token = default)
         {
             ArgumentNullException.ThrowIfNull(request);
             ArgumentNullException.ThrowIfNull(request.RequestUri);
             receiveCts = CancellationTokenSource.CreateLinkedTokenSource(token);
             token = receiveCts.Token;
-
 
             int redirectCount = 0;
             Uri currentUri = request.RequestUri;

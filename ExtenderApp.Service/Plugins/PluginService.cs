@@ -1,5 +1,4 @@
-﻿using System;
-using System.Reflection;
+﻿using System.Reflection;
 using System.Runtime.Loader;
 using Autofac;
 using Autofac.Extensions.DependencyInjection;
@@ -31,12 +30,15 @@ namespace ExtenderApp.Services
         /// </summary>
         private readonly IServiceScopeStore _serviceScopeStore;
 
+        /// <summary>
+        /// 主作用域范围
+        /// </summary>
         private readonly ILifetimeScope _mainLifetimeScope;
 
         /// <summary>
         /// Json文件接口
         /// </summary>
-        private IJsonParser _jsonParser;
+        private readonly IJsonParser _jsonParser;
 
         /// <summary>
         /// 用于存储二进制格式化的私有变量

@@ -32,7 +32,7 @@ namespace ExtenderApp.Common
         /// <summary>
         /// 用户回调
         /// </summary>
-        private Action<object?> userCallback;
+        private Action<object?>? userCallback;
 
         /// <summary>
         /// 状态对象
@@ -149,7 +149,7 @@ namespace ExtenderApp.Common
         {
             try
             {
-                userCallback(_state);
+                userCallback?.Invoke(_state);
             }
             finally
             {

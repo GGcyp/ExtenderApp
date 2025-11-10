@@ -10,6 +10,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
         {
             services.AddTransient(typeof(BinaryLinkClientFormatter<>), typeof(BinaryLinkClientFormatter<>));
             services.AddTcpLinkClient();
+            services.AddUdpLinkClient();
             services.AddHttpLinkClient();
 
             return services;
