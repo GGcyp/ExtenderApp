@@ -80,6 +80,21 @@ namespace ExtenderApp.Common.Networks
         public virtual ValueTask<SocketOperationResult> SendAsync<T>(T data, CancellationToken token = default)
         {
             ThrowIfDisposed();
+
+            var sendBuffer = ValueToByteBuffer(data);
+
+            return PrivateSendAsync(sendBuffer.UnreadSequence, sendBuffer.Rental, token);
+        }
+
+        /// <summary>
+        /// 将指定类型转换为可发送的<see cref="ByteBuffer"/>。
+        /// </summary>
+        /// <typeparam name="T">指定类型<see cref="{T}"/></typeparam>
+        /// <param name="data">指定类型数据</param>
+        /// <returns>返回装完数据的<see cref="ByteBuffer"/></returns>
+        /// <exception cref="InvalidOperationException">当<see cref="FormatterManager"/>为空或找不到指定<see cref="IClientFormatter{T}"/>时候弹出</exception>
+        protected ByteBuffer ValueToByteBuffer<T>(T data)
+        {
             if (FormatterManager is null)
                 throw new InvalidOperationException("转换器管理为空，不能使用泛型方法");
 
@@ -102,7 +117,6 @@ namespace ExtenderApp.Common.Networks
 
                 framedMessage.Dispose();
                 pluginSendData.Dispose();
-                return PrivateSendAsync(sendBuffer.UnreadSequence, sendBuffer.Rental, token);
             }
             else
             {
@@ -117,7 +131,8 @@ namespace ExtenderApp.Common.Networks
                     pluginSendData.OutMessageBuffer.Dispose();
                 }
             }
-            return PrivateSendAsync(sendBuffer.UnreadSequence, sendBuffer.Rental, token);
+
+            return sendBuffer;
         }
 
         private async ValueTask<SocketOperationResult> PrivateSendAsync(ReadOnlySequence<byte> memories, SequencePool<byte>.SequenceRental rental, CancellationToken token)

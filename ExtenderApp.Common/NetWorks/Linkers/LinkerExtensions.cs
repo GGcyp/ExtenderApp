@@ -1,4 +1,5 @@
 ﻿using System.Buffers;
+using System.Net;
 using System.Runtime.InteropServices;
 
 using ExtenderApp.Abstract;
@@ -227,6 +228,95 @@ namespace ExtenderApp.Common.Networks
             }
 
             return new SocketOperationResult(total, last.RemoteEndPoint, null, last.ReceiveMessageFromPacketInfo);
+        }
+
+        /// <summary>
+        /// 异步发送一个 <see cref="ByteBuffer"/> 中的未读数据到指定 UDP 远端（SendTo 语义）。
+        /// </summary>
+        /// <typeparam name="TLinker">UDP 链接器类型。</typeparam>
+        /// <param name="linker">目标 UDP 链接器。</param>
+        /// <param name="buffer">源缓冲（ref struct，不在方法内释放；仅复制未读部分）。</param>
+        /// <param name="endPoint">目标远端终结点。</param>
+        /// <param name="token">取消令牌。</param>
+        /// <returns>一次发送操作的结果。</returns>
+        /// <exception cref="ArgumentNullException">buffer 为空（IsEmpty）。</exception>
+        /// <remarks>
+        /// - 内部将把 <paramref name="buffer"/> 克隆为 <see cref="ByteBlock"/>，避免直接处理 ref struct；
+        ///   发送结束后自动释放克隆。<br/>
+        /// - 若需要避免额外复制，可先手动合并为 <see cref="ByteBlock"/> 调用另一个重载。<br/>
+        /// - 仅发送未读部分（UnreadSequence）；不推进原缓冲读指针。
+        /// </remarks>
+        public static ValueTask<SocketOperationResult> SendToAsync<TLinker>(this TLinker linker, ByteBuffer buffer, EndPoint endPoint, CancellationToken token = default)
+            where TLinker : IUdpLinker
+        {
+            if (buffer.IsEmpty)
+                throw new ArgumentNullException(nameof(buffer));
+
+            ByteBlock block = new(buffer);
+            return PrivateSendToAsync(linker, block, endPoint, token);
+        }
+
+        /// <summary>
+        /// 私有辅助：发送并释放临时 <see cref="ByteBlock"/>。
+        /// </summary>
+        /// <typeparam name="TLinker">UDP 链接器类型。</typeparam>
+        /// <param name="linker">链接器实例。</param>
+        /// <param name="block">待发送的临时块。</param>
+        /// <param name="endPoint">目标远端。</param>
+        /// <param name="token">取消令牌。</param>
+        /// <returns>发送结果。</returns>
+        /// <remarks>
+        /// - 若取消或失败，仍确保 <paramref name="block"/> 被释放。<br/>
+        /// - 此方法不做参数校验，由外层调用保证。
+        /// </remarks>
+        private static async ValueTask<SocketOperationResult> PrivateSendToAsync<TLinker>(this TLinker linker, ByteBlock block, EndPoint endPoint, CancellationToken token = default)
+            where TLinker : IUdpLinker
+        {
+            var result = await linker.SendToAsync(block.UnreadMemory, endPoint, token);
+            block.Dispose();
+            return result;
+        }
+
+        /// <summary>
+        /// 异步发送一个现有 <see cref="ByteBlock"/>（未读数据）到指定 UDP 远端。
+        /// </summary>
+        /// <typeparam name="TLinker">UDP 链接器类型。</typeparam>
+        /// <param name="linker">目标链接器。</param>
+        /// <param name="block">数据块（未在此方法内释放或推进读取位置）。</param>
+        /// <param name="endPoint">目标远端终结点。</param>
+        /// <param name="token">取消令牌。</param>
+        /// <returns>发送结果。</returns>
+        /// <exception cref="ArgumentNullException">block 为空（IsEmpty）。</exception>
+        /// <remarks>
+        /// - 仅读取 <see cref="ByteBlock.UnreadMemory"/>；不修改读指针。 <br/>
+        /// - 若需要发送后自动释放，请调用上层封装或自行在外部 finally 里释放。
+        /// </remarks>
+        public static ValueTask<SocketOperationResult> SendToAsync<TLinker>(this TLinker linker, ByteBlock block, EndPoint endPoint, CancellationToken token = default)
+            where TLinker : IUdpLinker
+        {
+            if (block.IsEmpty)
+                throw new ArgumentNullException(nameof(block));
+
+            return linker.SendToAsync(block.UnreadMemory, endPoint, token);
+        }
+
+        /// <summary>
+        /// 异步发送一段只读内存数据到指定 UDP 远端（无需显式构造 ByteBlock）。
+        /// </summary>
+        /// <typeparam name="TLinker">UDP 链接器类型。</typeparam>
+        /// <param name="linker">目标链接器。</param>
+        /// <param name="memory">要发送的只读内存。</param>
+        /// <param name="endPoint">目标远端终结点。</param>
+        /// <param name="token">取消令牌。</param>
+        /// <returns>发送结果。</returns>
+        /// <remarks>
+        /// - 内部使用 <see cref="MemoryMarshal.AsMemory{T}(ReadOnlyMemory{T})"/> 转换为可写视图后调用底层。<br/>
+        /// - 对大数据或频繁调用场景，可考虑预分配缓冲以减少复制。
+        /// </remarks>
+        public static ValueTask<SocketOperationResult> SendToAsync<TLinker>(this TLinker linker, in ReadOnlyMemory<byte> memory, EndPoint endPoint, CancellationToken token = default)
+            where TLinker : IUdpLinker
+        {
+            return linker.SendToAsync(MemoryMarshal.AsMemory(memory), endPoint, token);
         }
 
         #endregion Send
