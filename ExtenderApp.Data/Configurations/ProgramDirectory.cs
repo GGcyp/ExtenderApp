@@ -42,6 +42,11 @@ namespace ExtenderApp.Data
         /// </summary>
         public const string DATANAME = "data";
 
+        /// <summary>
+        /// 插件初始化文件名。
+        /// </summary>
+        public const string PLUGININITENAME = "init.json";
+
         #endregion
 
         /// <summary>

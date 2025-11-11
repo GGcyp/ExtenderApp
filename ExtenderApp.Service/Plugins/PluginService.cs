@@ -16,11 +16,6 @@ namespace ExtenderApp.Services
     internal class PluginService : IPluginService
     {
         /// <summary>
-        /// 初始化文件名
-        /// </summary>
-        private const string MOD_INIT_FILE_NAME = "init.json";
-
-        /// <summary>
         /// 插件存储
         /// </summary>
         private readonly PluginStore _pluginStore;
@@ -101,7 +96,7 @@ namespace ExtenderApp.Services
 
             foreach (var dir in modPaths)
             {
-                var fileInfo = new LocalFileInfo(Path.Combine(dir, MOD_INIT_FILE_NAME));
+                var fileInfo = new LocalFileInfo(Path.Combine(dir, ProgramDirectory.PLUGININITENAME));
                 if (!fileInfo.Exists) continue;
 
                 //解析模组的信息
