@@ -3,6 +3,8 @@ using ExtenderApp.Abstract;
 using ExtenderApp.ViewModels;
 using ExtenderApp.Common.Networks;
 using Microsoft.Extensions.Logging;
+using ExtenderApp.Common.Encodings;
+using System.Text;
 
 namespace ExtenderApp.Test
 {
@@ -52,6 +54,14 @@ namespace ExtenderApp.Test
             //}
             //LogInformation(message.StatusCode);
             //LogInformation(Encoding.UTF8.GetString(message.Body.UnreadSpan));
+            var temp = BerHelper.EncodeInteger(123456789);
+            ByteBlock block = new();
+            BerHelper.EncodeInteger(ref block, 123456789);
+            // 普通相等比较（最快捷）
+            bool equal = block.UnreadSpan.SequenceEqual(temp);
+            block.Reset();
+            block.Write("sadasd");
+            string s = Encoding.UTF8.GetString(block.UnreadSpan);
         }
 
         private void TcpListenerLinker_OnAccept(object? sender, ITcpLinker e)

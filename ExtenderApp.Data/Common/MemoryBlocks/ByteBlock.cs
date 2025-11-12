@@ -1,4 +1,5 @@
 ﻿using System.Buffers;
+using System.Text;
 
 namespace ExtenderApp.Data
 {
@@ -192,8 +193,29 @@ namespace ExtenderApp.Data
         public void Write(byte value)
             => _block.Write(value);
 
-        public void Write(byte[] buffer)
-            => _block.Write(buffer.AsMemory());
+        /// <summary>
+        /// 写入整个字节数组到当前写指针位置。
+        /// </summary>
+        /// <param name="value">要写入的字节数组。为 null 时将导致异常。</param>
+        public void Write(byte[] value)
+            => _block.Write(value.AsMemory());
+
+        /// <summary>
+        /// 将字符串按指定编码写入当前写指针位置（不包含长度或终止符），不改变读指针。
+        /// </summary>
+        /// <param name="value">要写入的字符串；null 或空字符串时不执行任何操作。</param>
+        /// <param name="encoding">字符编码，默认 UTF-8。</param>
+        public void Write(string value, Encoding? encoding = null)
+        {
+            if (string.IsNullOrEmpty(value))
+                return;
+
+            encoding ??= Encoding.UTF8;
+            var byteCount = encoding.GetByteCount(value);
+            var memory = GetMemory(byteCount);
+            encoding.GetBytes(value, memory.Span);
+            WriteAdvance(byteCount);
+        }
 
         /// <summary>
         /// 写入一段连续字节到当前写指针位置。
@@ -221,6 +243,13 @@ namespace ExtenderApp.Data
             Write(value.UnreadSpan);
         }
 
+        /// <summary>
+        /// 将 <see cref="ByteBuffer"/> 的未读数据逐段写入当前块。
+        /// </summary>
+        /// <param name="buffer">源缓冲，将读取其未读片段并写入当前块。</param>
+        /// <remarks>
+        /// 会根据 <paramref name="buffer"/> 的剩余长度预留容量；写入过程中会推进源缓冲的读取位置，不改变当前块的读指针。
+        /// </remarks>
         public void Write(ByteBuffer buffer)
         {
             Ensure((int)buffer.Remaining);
@@ -232,6 +261,11 @@ namespace ExtenderApp.Data
             }
         }
 
+        /// <summary>
+        /// 将当前块的可读数据（Length - Consumed）复制到目标 <see cref="ByteBuffer"/>，不改变当前块的读指针。
+        /// </summary>
+        /// <param name="buffer">目标缓冲，将在其末尾追加写入。</param>
+        /// <returns>始终返回 true。</returns>
         public bool TryCopyTo(ref ByteBuffer buffer)
         {
             buffer.Write(UnreadSpan);
@@ -293,16 +327,45 @@ namespace ExtenderApp.Data
         public void Clear() => _block.Clear();
 
         /// <summary>
-        /// 复制已写入的数据为新数组。
+        /// 复制剩余未读数据（Length - Consumed）为新数组，不改变读/写指针。
         /// </summary>
-        /// <returns>包含已写入数据的新数组。</returns>
+        /// <returns>
+        /// 包含未读数据的新数组；若无未读数据则返回空数组。
+        /// </returns>
         public byte[] ToArray() => _block.ToArray();
+
+        /// <summary>
+        /// 复制当前已写入的数据为新数组（范围 [0..Length)，包含已消费部分），不改变读/写指针。
+        /// </summary>
+        /// <returns>
+        /// 包含 [0..Length) 范围内数据的新数组；若无已写入数据则返回空数组。
+        /// </returns>
+        public byte[] ToAllArray() => _block.ToAllArray();
 
         /// <summary>
         /// 克隆一个新的 <see cref="ByteBlock"/>（包含当前已写入数据与读写位置）。
         /// </summary>
         /// <returns>新的 <see cref="ByteBlock"/> 实例。</returns>
         public ByteBlock Clone() => new ByteBlock(this);
+
+        /// <summary>
+        /// 反转从已写入数据的读指针到写指针范围内的顺序。不改变读/写指针。
+        /// </summary>
+        public void Reverse()
+        {
+            _block.Reverse();
+        }
+
+        /// <summary>
+        /// 反转从已写入数据的读指针到写指针范围内的顺序。不改变读/写指针。
+        /// </summary>
+        /// <param name="start">开始索引（不能提前于已读取的位置）。</param>
+        /// <param name="length">要反转的元素个数（不能多于未读取的个数）。</param>
+        /// <exception cref="ArgumentOutOfRangeException">当 start 或 length 超出已写入范围时抛出。</exception>
+        public void Reverse(int start, int length)
+        {
+            _block.Reverse(start, length);
+        }
 
         /// <summary>
         /// 归还底层缓冲到数组池。调用后不应再使用此实例。

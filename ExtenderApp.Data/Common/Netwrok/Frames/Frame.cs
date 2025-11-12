@@ -3,16 +3,6 @@
     /// <summary>
     /// 表示一个单条消息帧的封装：包含消息类型标识与对应的字节负载。
     /// </summary>
-    /// <remarks>
-    /// - 所有权规则：Frame 对 <see cref="Payload"/> 拥有释放（归还）责任。构造时负载的所有权转移给 Frame，调用方在不再使用时应调用 <see cref="Dispose"/>。  
-    /// - 值类型注意：Frame 为只读值类型（readonly struct），复制时会进行浅拷贝 —— 复制的副本将引用相同的 <see cref="ByteBlock"/> 数据。请避免在多个副本上重复调用 <see cref="Dispose"/>，以免导致重复归还/释放。  
-    /// - 线程安全：<see cref="ByteBlock"/> 本身非线程安全；并发访问需在外部同步或确保单一线程拥有并释放该实例。  
-    /// - 推荐用法：建议使用 using/try-finally 模式确保在处理完负载后释放资源，例如：
-    ///   <code>
-    ///   using var frame = new Frame(messageType, payload);
-    ///   // 读取 frame.Payload 中的数据
-    ///   </code>
-    /// </remarks>
     public readonly struct Frame : IDisposable
     {
         /// <summary>

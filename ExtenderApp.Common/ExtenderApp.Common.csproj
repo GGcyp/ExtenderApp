@@ -19,7 +19,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="Networks\LAN\" />
     <Folder Include="Networks\LinkClients\Clients\Nat\" />
+    <Folder Include="Networks\LAN\SNMP\" />
   </ItemGroup>
 
 	<Target Name="PostBuild" AfterTargets="PostBuildEvent">

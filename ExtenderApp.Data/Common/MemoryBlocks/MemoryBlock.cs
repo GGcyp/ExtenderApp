@@ -335,6 +335,8 @@ namespace ExtenderApp.Data
 
             var oldArray = array;
             array = _pool.Rent(newCapacity);
+            if (oldArray is null)
+                return;
             if (Length > 0)
             {
                 Array.Copy(oldArray, 0, array, 0, Length);
@@ -355,6 +357,34 @@ namespace ExtenderApp.Data
             }
 
             Consumed = count;
+        }
+
+        /// <summary>
+        /// 反转从已写入数据的读指针到写指针范围内的顺序。不改变读/写指针。
+        /// </summary>
+        public void Reverse()
+        {
+            if (array == null)
+                return;
+            Array.Reverse(array, Consumed, Remaining);
+        }
+
+        /// <summary>
+        /// 反转从已写入数据的读指针到写指针范围内的顺序。不改变读/写指针。
+        /// </summary>
+        /// <param name="start">开始索引（不能提前于已读取的位置）。</param>
+        /// <param name="length">要反转的元素个数（不能多于未读取的个数）。</param>
+        /// <exception cref="ArgumentOutOfRangeException">当 start 或 length 超出已写入范围时抛出。</exception>
+        public void Reverse(int start, int length)
+        {
+            if (start < Consumed || start > Length)
+                throw new ArgumentOutOfRangeException(nameof(start), string.Format("超过已写入范围限制：{0}", start));
+            if (length < 0 || start + length > Remaining)
+                throw new ArgumentOutOfRangeException(nameof(length), string.Format("超过已写入范围限制：{0}", length));
+            if (array == null)
+                return;
+
+            Array.Reverse(array, start, length);
         }
 
         /// <summary>
@@ -404,13 +434,28 @@ namespace ExtenderApp.Data
         }
 
         /// <summary>
-        /// 复制已写入的数据到新数组并返回。
+        /// 复制剩余未读数据（Length - Consumed）为新数组。
         /// </summary>
-        /// <returns>包含已写入数据的新数组。</returns>
+        /// <returns>包含未读数据的新数组；若无未读数据则返回 <see cref="Array.Empty{T}"/>。</returns>
         public T[] ToArray()
         {
-            if (Length == 0)
+            if (Remaining == 0 || array is null)
                 return Array.Empty<T>();
+
+            var newArray = new T[Remaining];
+            Array.Copy(array, Consumed, newArray, 0, Remaining);
+            return newArray;
+        }
+
+        /// <summary>
+        /// 复制当前已写入的数据为新数组（包含已消费部分）。
+        /// </summary>
+        /// <returns>包含 [0..Length) 范围内数据的新数组；若无已写入数据则返回 <see cref="Array.Empty{T}"/>。</returns>
+        public T[] ToAllArray()
+        {
+            if (Length == 0 || array is null)
+                return Array.Empty<T>();
+
             var newArray = new T[Length];
             Array.Copy(array, newArray, Length);
             return newArray;
@@ -451,10 +496,9 @@ namespace ExtenderApp.Data
         public static implicit operator ReadOnlySequence<T>(in MemoryBlock<T> block)
             => new ReadOnlySequence<T>(block.UnreadMemory);
 
-        #endregion
+        #endregion FormMemoryBlock
 
         #region ToMemoryBlock
-
 
         public static implicit operator MemoryBlock<T>(ReadOnlySpan<T> span)
             => new MemoryBlock<T>(span);
@@ -465,6 +509,6 @@ namespace ExtenderApp.Data
         public static implicit operator MemoryBlock<T>(in ReadOnlySequence<T> sequence)
             => new MemoryBlock<T>(sequence);
 
-        #endregion
+        #endregion ToMemoryBlock
     }
 }
