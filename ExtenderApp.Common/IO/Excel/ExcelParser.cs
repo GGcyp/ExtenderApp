@@ -66,7 +66,7 @@ namespace ExtenderApp.Common.IO
         //    using (var package = new ExcelPackage())
         //    {
         //        var worksheet = package.Workbook.Worksheets.Add("Sheet1");
-        //        worksheet.Cells[1, 1].Value = "Hello, EPPlus!";
+        //        worksheet.Cells[1, 1].Item1 = "Hello, EPPlus!";
 
         //        // 保存文件
         //        package.SaveAs(infoData.Info);

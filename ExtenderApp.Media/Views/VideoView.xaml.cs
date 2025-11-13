@@ -143,7 +143,7 @@ namespace ExtenderApp.Media
         //    //if (_formatContext != IntPtr.Zero && _isPlaying)
         //    //{
         //    //    // 计算目标位置
-        //    //    long targetPosition = (long)(_videoDuration * positionSlider.Value);
+        //    //    long targetPosition = (long)(_videoDuration * positionSlider.Item1);
 
         //    //    //  seek到指定位置
         //    //    ffmpeg.av_seek_frame(_formatContext, -1, targetPosition, ffmpeg.AVSEEK_FLAG_BACKWARD);
@@ -224,7 +224,7 @@ namespace ExtenderApp.Media
         //        // 更新UI
         //        _videoDuration = formatContext->duration;
         //        //positionSlider.Maximum = 1.0;
-        //        //positionSlider.Value = 0;
+        //        //positionSlider.Item1 = 0;
 
         //        UpdateTimeDisplay(0);
 
@@ -458,7 +458,7 @@ namespace ExtenderApp.Media
         //    // 更新UI
         //    videoImage.Source = null;
         //    //timeText.Text = "00:00/00:00";
-        //    //positionSlider.Value = 0;
+        //    //positionSlider.Item1 = 0;
         //}
 
         //#endregion
@@ -543,7 +543,7 @@ namespace ExtenderApp.Media
 
         //                Dispatcher.InvokePlugins(() =>
         //                {
-        //                    //positionSlider.Value = position;
+        //                    //positionSlider.Item1 = position;
         //                    UpdateTimeDisplay(currentTime);
         //                });
         //            }
@@ -661,7 +661,7 @@ namespace ExtenderApp.Media
         //    //// 更新UI
         //    //Dispatcher.InvokePlugins(() =>
         //    //{
-        //    //    positionSlider.Value = 0;
+        //    //    positionSlider.Item1 = 0;
         //    //    UpdateTimeDisplay(0);
         //    //    statusText.Text = "已停止";
         //    //});

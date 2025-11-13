@@ -1,4 +1,5 @@
 ﻿using System.Buffers;
+using static ExtenderApp.Data.ValueCounter;
 
 namespace ExtenderApp.Data
 {
@@ -479,6 +480,63 @@ namespace ExtenderApp.Data
                 Consumed = 0;
                 Length = 0;
             }
+        }
+
+        /// <summary>
+        /// 读取当前未读的第一个元素，并将读指针前进 1（不影响写指针）。
+        /// </summary>
+        /// <returns>读取到的元素。</returns>
+        /// <exception cref="InvalidOperationException">当没有可读数据（Remaining == 0）时抛出。</exception>
+        public T Read()
+        {
+            if (Remaining <= 0)
+                throw new InvalidOperationException("没有可读数据。");
+
+            T result = UnreadSpan[0];
+            ReadAdvance(1);
+            return result;
+        }
+
+        /// <summary>
+        /// 读取最多 values.Length 个未读元素到目标跨度，并将读指针前进相应长度（不影响写指针）。
+        /// </summary>
+        /// <param name="values">接收数据的目标跨度。</param>
+        /// <returns>实际读取的元素数量。</returns>
+        /// <exception cref="InvalidOperationException">当没有可读数据（Remaining == 0）时抛出。</exception>
+        /// <remarks>读取数量为 Math.Min(values.Length, Remaining)。</remarks>
+        public int Read(Span<T> values)
+        {
+            if (Remaining <= 0)
+                throw new InvalidOperationException("没有可读数据。");
+
+            int length = Math.Min(values.Length, Remaining);
+            UnreadSpan.Slice(0, length).CopyTo(values);
+            ReadAdvance(length);
+            return length;
+        }
+
+        /// <summary>
+        /// 读取最多 values.Length 个未读元素到目标内存，并将读指针前进相应长度（不影响写指针）。
+        /// </summary>
+        /// <param name="values">接收数据的目标内存。</param>
+        /// <returns>实际读取的元素数量。</returns>
+        /// <exception cref="InvalidOperationException">当没有可读数据（Remaining == 0）时抛出。</exception>
+        /// <remarks>等同于调用 Read(values.Span)。实际读取数量为 Math.Min(values.Length, Remaining)。</remarks>
+        public int Read(Memory<T> values)
+        {
+            return Read(values.Span);
+        }
+
+        public ReadOnlySpan<T> Read(int length)
+        {
+            if (Remaining <= 0)
+                throw new InvalidOperationException("没有可读数据。");
+            if (length < 0 || length > Remaining)
+                throw new ArgumentOutOfRangeException("读取长度不足");
+
+            var result = UnreadSpan.Slice(0, length);
+            ReadAdvance(length);
+            return result;
         }
 
         #region FormMemoryBlock

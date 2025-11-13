@@ -54,14 +54,16 @@ namespace ExtenderApp.Test
             //}
             //LogInformation(message.StatusCode);
             //LogInformation(Encoding.UTF8.GetString(message.Body.UnreadSpan));
-            var temp = BerHelper.EncodeInteger(123456789);
+            var temp = BerHelper.Encode(123456789);
             ByteBlock block = new();
-            BerHelper.EncodeInteger(ref block, 123456789);
-            // 普通相等比较（最快捷）
-            bool equal = block.UnreadSpan.SequenceEqual(temp);
-            block.Reset();
-            block.Write("sadasd");
-            string s = Encoding.UTF8.GetString(block.UnreadSpan);
+            BerHelper.Encode(ref block, 123456789);
+            //// 普通相等比较（最快捷）
+            //bool equal = block.UnreadSpan.SequenceEqual(temp);
+            //block.Reset();
+            //block.Write("sadasd");
+            //string s = Encoding.UTF8.GetString(block.UnreadSpan);
+            long s = BerHelper.DecodeInteger(ref block);
+            long t = BerHelper.DecodeInteger(temp);
         }
 
         private void TcpListenerLinker_OnAccept(object? sender, ITcpLinker e)

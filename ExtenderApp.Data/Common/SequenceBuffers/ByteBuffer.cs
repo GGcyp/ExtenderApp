@@ -186,7 +186,17 @@ namespace ExtenderApp.Data
 
         public void Write(byte[] bytes)
         {
+            ArgumentNullException.ThrowIfNull(bytes);
             _buffer.Write(bytes.AsMemory());
+        }
+
+        public void Write(byte[][] bytes)
+        {
+            ArgumentNullException.ThrowIfNull(bytes);
+            foreach (var item in bytes)
+            {
+                _buffer.Write(item.AsMemory());
+            }
         }
 
         public void Write(ByteBlock block)

@@ -165,14 +165,14 @@ namespace ExtenderApp.Media
         private void mediaSlider_PreviewMouseUp(object sender, MouseButtonEventArgs e)
         {
             var slider = sender as Slider;
-            //Float64 value = slider?.Value ?? 0;
+            //Float64 value = slider?.Item1 ?? 0;
 
             // 获取鼠标在Slider上的位置
             var pos = e.GetPosition(slider);
             double percent = Math.Max(0, Math.Min(1, pos.X / slider.ActualWidth));
             double newValue = slider.Minimum + percent * (slider.Maximum - slider.Minimum);
 
-            //slider.Value = newValue;
+            //slider.Item1 = newValue;
 
             var viewModel = ViewModel<MediaMainViewModel>()!;
             viewModel.Seek(TimeSpan.FromSeconds(newValue));

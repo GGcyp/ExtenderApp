@@ -139,7 +139,7 @@ namespace ExtenderApp.Torrents
             InitCollection(DowloadCompletedTorrentCollection);
             InitCollection(RecycleBinCollection);
 
-            SaveDirectory = string.IsNullOrEmpty(SaveDirectory) ? store.PathService.CreateFolderPathForAppRootFolder("TorrentSave") : SaveDirectory;
+            SaveDirectory = string.IsNullOrEmpty(SaveDirectory) ? ProgramDirectory.ChekAndCreateFolder("TorrentSave") : SaveDirectory;
 
             // 初始化 Tracker 列表
             if (Trackers == null || Trackers.Count == 0)

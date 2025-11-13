@@ -1,4 +1,4 @@
-﻿using ExtenderApp.Abstract;
+﻿using Microsoft.Extensions.Logging;
 
 namespace ExtenderApp.Torrents.Models
 {
@@ -10,15 +10,15 @@ namespace ExtenderApp.Torrents.Models
         /// <summary>
         /// 依赖注入的日志服务，用于记录日志。
         /// </summary>
-        private readonly ILogingService _logingService;
+        private readonly ILogger<TorrentLonging> _logger;
 
         /// <summary>
         /// TorrentLongingFactory 构造函数。
         /// </summary>
-        /// <param name="logingService">日志服务实例，用于后续创建 TorrentLonging 实例时记录日志。</param>
-        public TorrentLongingFactory(ILogingService logingService)
+        /// <param name="logger">日志服务实例，用于后续创建 TorrentLonging 实例时记录日志。</param>
+        public TorrentLongingFactory(ILogger<TorrentLonging> logger)
         {
-            _logingService = logingService;
+            _logger = logger;
         }
 
         /// <summary>
@@ -28,7 +28,7 @@ namespace ExtenderApp.Torrents.Models
         /// <returns>返回创建的 TorrentLonging 实例。</returns>
         public TorrentLonging CreateTorrentLonging(string name)
         {
-            return new TorrentLonging(name, _logingService);
+            return new TorrentLonging(name, _logger);
         }
     }
 }

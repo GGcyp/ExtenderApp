@@ -86,7 +86,7 @@ namespace ExtenderApp.Torrents.Models.Formatters
                 {
                     var index = _int.Deserialize(ref buffer);
                     dict.TryGetValue(index, out var name);
-                    DataBuffer<int, string> data = DataBuffer<int, string>.GetDataBuffer();
+                    DataBuffer<int, string> data = DataBuffer<int, string>.Get();
                     data.Item1 = index;
                     data.Item2 = name ?? string.Empty;
                     names.Add(data);

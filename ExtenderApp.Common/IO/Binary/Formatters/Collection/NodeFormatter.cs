@@ -117,7 +117,7 @@ namespace ExtenderApp.Common.IO.Binary.Formatters
             if (value == null)
                 return 1;
 
-            DataBuffer<long> dataBuffer = DataBuffer<long>.GetDataBuffer();
+            DataBuffer<long> dataBuffer = DataBuffer<long>.Get();
             ProtectedGetLength(value, dataBuffer);
             value.LoopAllChildNodes(ProtectedGetLength, dataBuffer);
             long length = dataBuffer.Item1;

@@ -46,7 +46,7 @@ namespace ExtenderApp.Torrents.ViewModels
             openFileDialog.Filter = "Torrent 文件 (*.torrent)|*.torrent";
             // 打开文件选择对话框并获取用户选择结果
             bool? result = openFileDialog.ShowDialog();
-            
+
             if (result == true)
             {
                 // 用户选择了文件，获取文件路径
@@ -72,7 +72,7 @@ namespace ExtenderApp.Torrents.ViewModels
                 }
                 catch (Exception ex)
                 {
-                    Error($"种子文件数据有误：{openFileDialog.FileName}", ex);
+                    LogError(ex, $"种子文件数据有误：{openFileDialog.FileName}");
                     MessageBox.Show("种子文件数据有误");
                 }
             }

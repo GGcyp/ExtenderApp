@@ -70,11 +70,11 @@ namespace ExtenderApp.Torrents.ViewModels
                         }
                         catch (IOException ex)
                         {
-                            Error($"删除种子文件夹失败: 种子名字：{info.Name}，种子哈希值：{info.V1orV2}，错误信息：{ex.Message}", ex);
+                            LogError(ex, $"删除种子文件夹失败: 种子名字：{info.Name}，种子哈希值：{info.V1orV2}，错误信息：{ex.Message}");
                         }
                         catch (UnauthorizedAccessException ex)
                         {
-                            Error($"删除种子文件夹失败: 种子名字：{info.Name}，种子哈希值：{info.V1orV2}，错误信息：{ex.Message}", ex);
+                            LogError(ex, $"删除种子文件夹失败: 种子名字：{info.Name}，种子哈希值：{info.V1orV2}，错误信息：{ex.Message}");
                         }
                     });
                 }
@@ -117,8 +117,8 @@ namespace ExtenderApp.Torrents.ViewModels
                     Task.Run(async () =>
                     {
                         LogInformation($"开始删除种子: 种子名字：{info.Name}，种子哈希值：{info.V1orV2}");
-                        DispatcherBeginInvoke(() => 
-                        { 
+                        DispatcherBeginInvoke(() =>
+                        {
                             Model.DowloadTorrentCollection.Remove(info);
                             Model.RecycleBinCollection.Add(info);
                         });

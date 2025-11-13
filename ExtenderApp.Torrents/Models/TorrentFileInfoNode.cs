@@ -147,7 +147,7 @@ namespace ExtenderApp.Torrents.Models
                     }
 
                     piece.State = piece.State == TorrentPieceStateType.DontDownloaded ? NeedDownloading ? TorrentPieceStateType.ToBeDownloaded : TorrentPieceStateType.DontDownloaded : piece.State;
-                    DataBuffer<int, string> data = DataBuffer<int, string>.GetDataBuffer();
+                    DataBuffer<int, string> data = DataBuffer<int, string>.Get();
                     data.Item1 = nameHashCode;
                     data.Item2 = Name;
                     piece.PieceNames.Add(data);
@@ -180,7 +180,7 @@ namespace ExtenderApp.Torrents.Models
                         piece = list[i];
                     }
                     piece.State = piece.State == TorrentPieceStateType.DontDownloaded ? NeedDownloading ? TorrentPieceStateType.ToBeDownloaded : TorrentPieceStateType.DontDownloaded : piece.State;
-                    DataBuffer<int, string> data = DataBuffer<int, string>.GetDataBuffer();
+                    DataBuffer<int, string> data = DataBuffer<int, string>.Get();
                     data.Item1 = nameHashCode;
                     data.Item2 = Name;
                     piece.PieceNames.Add(data);

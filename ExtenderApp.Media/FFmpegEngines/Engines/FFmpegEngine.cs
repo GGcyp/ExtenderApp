@@ -812,7 +812,7 @@ namespace ExtenderApp.FFmpegEngines
             codec = ffmpeg.avcodec_find_decoder(codecParameters.Value->codec_id);
             if (codec.IsEmpty)
             {
-                //throw new FFmpegException($"未找到解码器: {codecParameters.Value->codec_id}");
+                //throw new FFmpegException($"未找到解码器: {codecParameters.Item1->codec_id}");
                 return false;
             }
 

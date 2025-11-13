@@ -262,6 +262,73 @@ namespace ExtenderApp.Data
         }
 
         /// <summary>
+        /// 读取当前未读的第一个字节，并将读指针前进 1（不影响写指针）。
+        /// </summary>
+        /// <returns>读取到的字节。</returns>
+        /// <exception cref="InvalidOperationException">当没有可读数据（Remaining == 0）时抛出。</exception>
+        public byte Read()
+            => _block.Read();
+
+        /// <summary>
+        /// 读取最多 <paramref name="destination"/>.Length 个未读字节到目标跨度，并将读指针前进相应长度（不影响写指针）。
+        /// </summary>
+        /// <param name="destination">接收数据的目标跨度。</param>
+        /// <returns>实际读取的字节数。</returns>
+        /// <exception cref="InvalidOperationException">当没有可读数据（Remaining == 0）时抛出。</exception>
+        /// <remarks>读取数量为 Math.Min(destination.Length, Remaining)。</remarks>
+        public int Read(Span<byte> destination)
+            => _block.Read(destination);
+
+        /// <summary>
+        /// 读取最多 <paramref name="destination"/>.Length 个未读字节到目标内存，并将读指针前进相应长度（不影响写指针）。
+        /// </summary>
+        /// <param name="destination">接收数据的目标内存。</param>
+        /// <returns>实际读取的字节数。</returns>
+        /// <exception cref="InvalidOperationException">当没有可读数据（Remaining == 0）时抛出。</exception>
+        /// <remarks>等同于调用 Read(destination.Span)。实际读取数量为 Math.Min(destination.Length, Remaining)。</remarks>
+        public int Read(Memory<byte> destination)
+            => _block.Read(destination);
+
+        /// <summary>
+        /// 读取最多 <paramref name="byteCount"/> 个未读字节，并将读指针前进相应长度（不影响写指针）。
+        /// </summary>
+        /// <param name="byteCount">期望读取的字节数；若超过可读数量将按 <see cref="Remaining"/> 截断。</param>
+        /// <returns>指向所读数据的只读跨度。</returns>
+        /// <exception cref="InvalidOperationException">当没有可读数据（<see cref="Remaining"/> == 0）时抛出。</exception>
+        public ReadOnlySpan<byte> Read(int byteCount)
+        {
+            return _block.Read(byteCount);
+        }
+
+        /// <summary>
+        /// 使用指定编码读取剩余全部未读字节为字符串，并将读指针前进相应字节数（不影响写指针）。
+        /// </summary>
+        /// <param name="encoding">字符编码，默认 UTF-8。</param>
+        /// <returns>解析得到的字符串。</returns>
+        /// <exception cref="ArgumentOutOfRangeException">当没有可读数据（Remaining == 0）时抛出。</exception>
+        public string ReadString(Encoding? encoding = null)
+        {
+            return ReadString(Remaining, encoding);
+        }
+
+        /// <summary>
+        /// 使用指定编码读取给定字节数为字符串，并将读指针前进相应字节数（不影响写指针）。
+        /// </summary>
+        /// <param name="byteCount">要读取并解码的字节数（必须在 1..Remaining 范围内）。</param>
+        /// <param name="encoding">字符编码，默认 UTF-8。</param>
+        /// <returns>解析得到的字符串。</returns>
+        /// <exception cref="ArgumentOutOfRangeException">当 <paramref name="byteCount"/> ≤ 0 或大于可读字节数（Remaining）时抛出。</exception>
+        public string ReadString(int byteCount, Encoding? encoding = null)
+        {
+            if (byteCount <= 0 || byteCount > Remaining)
+                throw new ArgumentOutOfRangeException(nameof(byteCount));
+            encoding ??= Encoding.UTF8;
+            var span = _block.Read(byteCount);
+            var result = encoding.GetString(span);
+            return result;
+        }
+
+        /// <summary>
         /// 将当前块的可读数据（Length - Consumed）复制到目标 <see cref="ByteBuffer"/>，不改变当前块的读指针。
         /// </summary>
         /// <param name="buffer">目标缓冲，将在其末尾追加写入。</param>
