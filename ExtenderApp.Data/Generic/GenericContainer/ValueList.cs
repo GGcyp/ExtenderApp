@@ -1,55 +1,71 @@
-﻿using System.Collections;
+﻿using System.Buffers;
+using System.Collections;
 using System.Data;
 
 namespace ExtenderApp.Data
 {
     /// <summary>
-    /// ValueList 泛型结构体，实现了 IList<T> 接口，用于管理值类型的集合。
-    /// 类内部使用类，最好不要传递
+    /// 使用 <see cref="ArrayPool{T}"/> 进行内存租赁的轻量 List 结构体实现，避免频繁堆分配。
+    /// 非线程安全；适合短生命周期或热点路径。
     /// </summary>
-    /// <typeparam name="T">集合中元素的类型。</typeparam>
-    public struct ValueList<T> : IList<T>, IEquatable<ValueList<T>>
+    /// <typeparam name="T">元素类型。</typeparam>
+    public struct ValueList<T> : IList<T>, IEquatable<ValueList<T>>, IDisposable
     {
         /// <summary>
-        /// 默认的数组长度。
+        /// 数组池，用于优化数组分配与回收，减少 GC 压力。
         /// </summary>
-        private const int m_DefaultLength = 4;
+        private readonly ArrayPool<T> _pool;
 
         /// <summary>
-        /// 存储集合元素的数组。
+        /// 元素比较器缓存，避免频繁调用 <see cref="EqualityComparer{T}.Default"/>。
         /// </summary>
-        private T[] array;
+        private readonly EqualityComparer<T> _eComparer;
 
         /// <summary>
-        /// 获取一个对象，用于锁定。
+        /// 实际存储元素的池租赁数组。已使用区间为 [0, Count)。
+        /// 可能为 null（尚未分配）。
         /// </summary>
-        public object LockObject => array;
+        private T[]? array;
 
         /// <summary>
-        /// 获取一个值，指示集合是否为空。
+        /// 用于外部锁定的对象引用（返回内部数组）。数组未初始化时抛出异常。
         /// </summary>
-        public bool IsEmpty => LockObject == null;
+        public object LockObject => array ?? throw new NullReferenceException(nameof(ValueList<T>));
 
         /// <summary>
-        /// 获取一个值，指示集合是否为只读。
+        /// 指示是否尚未分配底层数组。
+        /// </summary>
+        public bool IsEmpty => array == null;
+
+        /// <summary>
+        /// 始终返回 false；该结构可写。
         /// </summary>
         public bool IsReadOnly => false;
 
         /// <summary>
-        /// 获取表示数组元素的 UnreadSpan<T>。
+        /// 返回底层数组的 Span 视图。注意：如果 <c>array</c> 为 null 将得到默认 <see cref="Span{T}"/>。
+        /// 有效数据仅前 <see cref="Count"/> 个元素。
         /// </summary>
         public Span<T> SpanArray => array;
 
         /// <summary>
-        /// 获取或设置集合中的元素个数。
+        /// 当前元素数量（有效长度）。范围：[0, Capacity]。
         /// </summary>
-        public int Count { get; set; }
+        public int Count { get; private set; }
 
         /// <summary>
-        /// 获取或设置指定索引处的元素。
+        /// 当前数组容量（底层数组长度）。为 0 表示尚未分配。
         /// </summary>
-        /// <param name="index">要获取或设置的元素的从零开始的索引。</param>
-        /// <returns>指定索引处的元素。</returns>
+        public int Capacity => array?.Length ?? 0;
+
+        /// <summary>
+        /// 访问或设置指定索引处的元素。
+        /// </summary>
+        /// <param name="index">索引（0 ≤ index &lt; Count）。</param>
+        /// <exception cref="IndexOutOfRangeException">索引越界。</exception>
+        /// <remarks>
+        /// TODO: 当前 <see cref="CheckIndex(int)"/> 允许 index == Count，会导致读取时潜在越界风险，应考虑修正。
+        /// </remarks>
         public T this[int index]
         {
             get
@@ -65,54 +81,44 @@ namespace ExtenderApp.Data
         }
 
         /// <summary>
-        /// 获取或设置用于比较元素的 EqualityComparer<T>。
+        /// 使用共享池初始化（延迟分配，首次添加时才真正租赁）。
         /// </summary>
-        private EqualityComparer<T>? _equalityComparer;
-        private EqualityComparer<T> equalityComparer
+        public ValueList() : this(ArrayPool<T>.Shared)
         {
-            get
-            {
-                if (_equalityComparer is null)
-                {
-                    _equalityComparer = EqualityComparer<T>.Default;
-                }
-                return _equalityComparer;
-            }
         }
 
         /// <summary>
-        /// 初始化 ValueList<T> 的新实例，使用默认长度。
+        /// 指定初始容量构造。容量为 0 时强制为 1。
         /// </summary>
-        public ValueList()
-            : this(m_DefaultLength) { }
-
-        /// <summary>
-        /// 初始化 ValueList<T> 的新实例，指定容量。
-        /// </summary>
-        /// <param name="capacity">集合的初始容量。</param>
-        public ValueList(int capacity)
+        /// <param name="capacity">期望初始容量。</param>
+        /// <param name="pool">可选指定数组池。</param>
+        public ValueList(int capacity, ArrayPool<T>? pool = null)
+            : this(pool ?? ArrayPool<T>.Shared)
         {
             Count = 0;
-            array = new T[capacity];
+            Ensure(capacity == 0 ? 1 : capacity);
         }
 
         /// <summary>
-        /// 初始化 ValueList<T> 的新实例，使用指定的数组元素。
+        /// 通过现有 <see cref="Span{T}"/> 初始化；数据复制到新租赁数组。
         /// </summary>
-        /// <param name="array">包含集合元素的数组。</param>
-        public ValueList(T[] array)
+        /// <param name="span">源数据。</param>
+        /// <param name="pool">数组池。</param>
+        public ValueList(Span<T> span, ArrayPool<T>? pool = null)
+            : this(span.Length, pool)
         {
-            Count = array.Length;
-            this.array = array;
+            Count = span.Length;
+            span.CopyTo(array);
         }
 
         /// <summary>
-        /// 初始化 ValueList<T> 的新实例，使用指定集合的元素。
+        /// 通过枚举源集合依次添加元素（O(n)）。
         /// </summary>
-        /// <param name="array">包含集合元素的 IEnumerable<T>。</param>
-        public ValueList(IEnumerable<T> array)
+        /// <param name="array">源集合。</param>
+        /// <param name="pool">数组池。</param>
+        public ValueList(IEnumerable<T> array, ArrayPool<T>? pool = null)
+            : this(pool ?? ArrayPool<T>.Shared)
         {
-            this.array = new T[m_DefaultLength];
             foreach (T item in array)
             {
                 Add(item);
@@ -120,65 +126,74 @@ namespace ExtenderApp.Data
         }
 
         /// <summary>
-        /// 检查索引是否有效。
+        /// 使用指定数组池的基础构造函数（不分配数组）。
+        /// </summary>
+        public ValueList(ArrayPool<T> pool)
+        {
+            _pool = pool;
+            _eComparer = EqualityComparer<T>.Default;
+        }
+
+        /// <summary>
+        /// 检查索引有效性。当前实现允许 index == Count，被访问时可能越界。
         /// </summary>
         /// <param name="index">要检查的索引。</param>
+        /// <exception cref="IndexOutOfRangeException">非法索引。</exception>
         private void CheckIndex(int index)
         {
             if (index < 0 || index > Count)
             {
-                throw new IndexOutOfRangeException("插入数据位置超过数据界限");
+                throw new IndexOutOfRangeException(string.Format("数据位置超过数据界限:{0}", index));
             }
         }
 
         /// <summary>
-        /// 检查数组是否为空。
+        /// 根据需要扩容。新容量 = Count + sizeHint。若已有容量足够则不操作。
         /// </summary>
-        private void CheckArrayEmpty()
+        /// <param name="sizeHint">附加需求量（不是最终容量）。</param>
+        /// <remarks>
+        /// 当前调用处多以 <c>Count + 1</c> 传入，导致实际新容量计算为 <c>Count + (Count + 1)</c>，可能过度扩容。
+        /// 建议调用位置只传递需要新增的元素数量（通常为 1）。
+        /// </remarks>
+        private void Ensure(int sizeHint = 1)
         {
-            ArgumentNullException.ThrowIfNull(LockObject, nameof(ValueList<T>));
-        }
-
-        /// <summary>
-        /// 扩展数组容量。
-        /// </summary>
-        private void Expansion()
-        {
-            if (IsEmpty)
+            int newCapacity = Count + sizeHint;
+            if (newCapacity <= Capacity)
             {
-                array = new T[m_DefaultLength];
                 return;
             }
 
-            if (Count + 1 < array.Length)
+            var oldArray = array;
+            array = _pool.Rent(newCapacity);
+            if (oldArray is null)
                 return;
-
-            int length = array.Length * 2;
-
-            T[] temp = array;
-            array = new T[length];
-            temp.CopyTo(array, 0);
+            if (Count > 0)
+            {
+                Array.Copy(oldArray, 0, array, 0, Count);
+            }
+            _pool.Return(oldArray);
         }
 
         /// <summary>
-        /// 在集合的末尾添加一个新元素。
+        /// 在尾部添加元素。均摊 O(1)，扩容时 O(n)。
         /// </summary>
-        /// <param name="item">要添加到集合末尾的元素。</param>
+        /// <param name="item">待添加元素。</param>
         public void Add(T item)
         {
-            Expansion();
-
+            Ensure(Count + 1); // 参见 Ensure 备注：可优化为 Ensure(1)
             SpanArray[Count] = item;
             Count++;
         }
 
         /// <summary>
-        /// 移除集合中满足指定条件的第一个元素。
+        /// 按谓词移除首个匹配元素。O(n)。
         /// </summary>
-        /// <param name="predicate">定义要搜索的条件的谓词。</param>
-        /// <returns>如果找到元素，则为该元素；否则为类型的默认值。</returns>
+        /// <param name="predicate">匹配条件。</param>
+        /// <returns>被移除的元素；未找到则返回 default。</returns>
         public T? Remove(Predicate<T> predicate)
         {
+            if (array == null)
+                return default;
             for (int i = 0; i < Count; i++)
             {
                 T temp = array[i];
@@ -193,10 +208,10 @@ namespace ExtenderApp.Data
         }
 
         /// <summary>
-        /// 从集合中移除特定对象的第一个匹配项。
+        /// 移除首个等于指定值的元素。O(n)。
         /// </summary>
-        /// <param name="item">要从集合中移除的对象。</param>
-        /// <returns>如果已从集合中成功移除 item，则为 true；否则为 false。如果在集合中未找到 item，该方法也返回 false。</returns>
+        /// <param name="item">目标值。</param>
+        /// <returns>是否成功移除。</returns>
         public bool Remove(T item)
         {
             int index = IndexOf(item);
@@ -208,13 +223,15 @@ namespace ExtenderApp.Data
         }
 
         /// <summary>
-        /// 移除集合中指定位置的元素。
+        /// 删除指定索引处元素，并向前移动后续元素。O(n)。
         /// </summary>
-        /// <param name="index">要移除的元素的从零开始的索引。</param>
+        /// <param name="index">元素索引。</param>
+        /// <exception cref="NullReferenceException">数组未分配。</exception>
+        /// <exception cref="IndexOutOfRangeException">索引越界。</exception>
         public void RemoveAt(int index)
         {
-            CheckArrayEmpty();
-
+            if (array is null)
+                return;
             CheckIndex(index);
 
             for (int i = index; i < Count - 1; i++)
@@ -225,7 +242,7 @@ namespace ExtenderApp.Data
         }
 
         /// <summary>
-        /// 从集合中移除所有元素。
+        /// 清空所有元素（将前 Count 个位置写为 default；不归还数组）。O(n)。
         /// </summary>
         public void Clear()
         {
@@ -237,28 +254,24 @@ namespace ExtenderApp.Data
         }
 
         /// <summary>
-        /// 在集合中搜索指定的对象，并返回该对象的从零开始的索引。
+        /// 查找元素首次出现的索引。O(n)。
         /// </summary>
-        /// <param name="item">要在集合中定位的对象。</param>
-        /// <returns>如果找到 item，则为该对象的从零开始的索引；否则为 -1。</returns>
         public int IndexOf(T item)
         {
             return IndexOf(item, null);
         }
 
         /// <summary>
-        /// 在集合中搜索指定的对象，并返回该对象的从零开始的索引。
+        /// 使用指定比较器查找元素索引。O(n)。
         /// </summary>
-        /// <param name="item">要在集合中定位的对象。</param>
-        /// <param name="comparer">用于比较元素的 IEqualityComparer<T> 实现。</param>
-        /// <returns>如果找到 item，则为该对象的从零开始的索引；否则为 -1。</returns>
-        public int IndexOf(T item, EqualityComparer<T> comparer)
+        /// <param name="item">目标元素。</param>
+        /// <param name="comparer">比较器（null 使用默认）。</param>
+        /// <returns>索引或 -1。</returns>
+        public int IndexOf(T item, EqualityComparer<T>? comparer = null)
         {
-            CheckArrayEmpty();
+            if (Count == 0 || array is null) return -1;
 
-            if (Count == 0) return -1;
-
-            comparer = comparer ?? equalityComparer;
+            comparer = comparer ?? _eComparer;
 
             for (int i = 0; i < Count; i++)
             {
@@ -272,14 +285,13 @@ namespace ExtenderApp.Data
         }
 
         /// <summary>
-        /// 在集合的指定位置插入一个新元素。
+        /// 在指定位置插入元素，后续元素后移。O(n)。
         /// </summary>
-        /// <param name="index">要在其中插入新元素的从零开始的索引。</param>
-        /// <param name="item">要插入集合中的元素。</param>
+        /// <param name="index">插入位置。</param>
+        /// <param name="item">元素。</param>
         public void Insert(int index, T item)
         {
-            Expansion();
-
+            Ensure(Count + 1); // 建议改为 Ensure(1) 以避免过度扩容
             for (int i = Count; i > index; i--)
             {
                 SpanArray[i] = SpanArray[i - 1];
@@ -290,31 +302,24 @@ namespace ExtenderApp.Data
         }
 
         /// <summary>
-        /// 确定集合是否包含指定的元素。
+        /// 判断是否包含元素。O(n)。
         /// </summary>
-        /// <param name="item">要在集合中定位的对象。</param>
-        /// <returns>如果在集合中找到 item，则为 true；否则为 false。</returns>
         public bool Contains(T item)
         {
             return Contains(item, null);
         }
 
         /// <summary>
-        /// 确定集合是否包含指定的元素。
+        /// 使用比较器判断是否包含元素。O(n)。
         /// </summary>
-        /// <param name="item">要在集合中定位的对象。</param>
-        /// <param name="comparer">用于比较元素的 IEqualityComparer<T> 实现。</param>
-        /// <returns>如果在集合中找到 item，则为 true；否则为 false。</returns>
-        public bool Contains(T item, EqualityComparer<T> comparer)
+        public bool Contains(T item, EqualityComparer<T>? comparer = null)
         {
             return IndexOf(item, comparer) >= 0;
         }
 
         /// <summary>
-        /// 确定集合中是否包含与指定谓词所定义的条件匹配的元素。
+        /// 判断是否存在满足谓词的元素。O(n)。
         /// </summary>
-        /// <param name="predicate">要应用于每个元素的谓词。</param>
-        /// <returns>如果集合中包含与谓词匹配的元素，则为 true；否则为 false。</returns>
         public bool Contains(Predicate<T> predicate)
         {
             for (int i = 0; i < Count; i++)
@@ -329,15 +334,14 @@ namespace ExtenderApp.Data
         }
 
         /// <summary>
-        /// 返回集合中满足指定条件的第一个元素的第一个匹配项。
+        /// 返回首个满足条件的元素，找不到返回 default。O(n)。
         /// </summary>
-        /// <param name="func">应用于每个元素的函数。</param>
-        /// <returns>集合中满足条件的第一个元素；如果未找到任何元素，则为类型的默认值。</returns>
-        public T FirstOrDefault(Func<T, bool> func)
+        public T? FirstOrDefault(Func<T, bool> func)
         {
-            CheckArrayEmpty();
+            if (array is null)
+                return default;
 
-            T item = default;
+            T? item = default;
             for (int i = 0; i < Count; i++)
             {
                 if (func(SpanArray[i]))
@@ -350,16 +354,14 @@ namespace ExtenderApp.Data
         }
 
         /// <summary>
-        /// 返回集合中满足指定条件的第一个元素的第一个匹配项。
+        /// 返回首个满足带额外参数对比条件的元素。O(n)。
         /// </summary>
-        /// <param name="func">应用于每个元素的函数。</param>
-        /// <param name="contrast">用于与集合元素进行比较的值。</param>
-        /// <returns>集合中满足条件的第一个元素；如果未找到任何元素，则为类型的默认值。</returns>
-        public T FirstOrDefault<T1>(Func<T, T1, bool> func, T1 contrast)
+        public T? FirstOrDefault<T1>(Func<T, T1, bool> func, T1 contrast)
         {
-            CheckArrayEmpty();
+            if (array is null)
+                return default;
 
-            T item = default;
+            T? item = default;
             for (int i = 0; i < Count; i++)
             {
                 if (func(SpanArray[i], contrast))
@@ -372,59 +374,52 @@ namespace ExtenderApp.Data
         }
 
         /// <summary>
-        /// 对集合中的每个元素执行指定的操作。
+        /// 判断与另一 <see cref="ValueList{T}"/> 是否引用同一底层数组（浅比较）。
         /// </summary>
-        /// <param name="action">要对集合中的每个元素执行的操作。</param>
-        public void LoopList(Action<T> action)
-        {
-            CheckArrayEmpty();
-
-            for (int i = 0; i < Count; i++)
-            {
-                action(SpanArray[i]);
-            }
-        }
-
-        /// <summary>
-        /// 确定指定的对象是否等于当前对象。
-        /// </summary>
-        /// <param name="list">要与当前对象进行比较的对象。</param>
-        /// <returns>如果指定的对象等于当前对象，则为 true；否则为 false。</returns>
         public bool Equals(ValueList<T> list)
         {
-            CheckArrayEmpty();
+            if (array is null && list.array is null)
+                return true;
+            if(array is null|| list.array is null)
+                return false;
             return array.Equals(list.array);
         }
 
         /// <summary>
-        /// 将集合的元素复制到新的数组中。
+        /// 复制当前元素到新数组（长度 = Count）。O(n)。
         /// </summary>
-        /// <returns>包含集合元素的数组。</returns>
         public T[] ToArray()
         {
             T[] result = new T[Count];
-            CopyTo(result, 0);
+            CopyTo(result);
             return result;
         }
 
         /// <summary>
-        /// 将集合的元素复制到兼容的一维数组中，从指定的数组索引开始。
+        /// 将元素复制到目标 Span。长度不足时抛出异常。O(n)。
         /// </summary>
-        /// <param name="array">一维 Array，其长度至少与集合中的元素数一样多。</param>
-        /// <param name="arrayIndex">array 中从零开始的索引，从该位置开始复制元素。</param>
-        public void CopyTo(T[] array, int arrayIndex)
+        /// <param name="span">目标 Span（长度 ≥ Count）。</param>
+        /// <exception cref="ArgumentOutOfRangeException">span 太小。</exception>
+        public void CopyTo(Span<T> span)
         {
-            //无法装下全部数据
-            if (array.Length - arrayIndex > Count)
-                throw new ArgumentException(nameof(array));
+            // 无法装下全部数据
+            if (span.Length < Count)
+                throw new ArgumentOutOfRangeException(nameof(span));
 
-            Array.Copy(array, 0, array, arrayIndex, Count);
+            array.AsSpan(0, Count).CopyTo(span);
         }
 
         /// <summary>
-        /// 返回循环访问集合的枚举器。
+        /// 将元素复制到数组的指定起始位置。O(n)。
         /// </summary>
-        /// <returns>可用于循环访问集合的 IEnumerator<T>。</returns>
+        public void CopyTo(T[] array, int arrayIndex)
+        {
+            CopyTo(array.AsSpan(arrayIndex));
+        }
+
+        /// <summary>
+        /// 返回迭代器（按索引顺序）。不分配。O(n)。
+        /// </summary>
         public IEnumerator<T> GetEnumerator()
         {
             for (int i = 0; i < Count; i++)
@@ -434,19 +429,16 @@ namespace ExtenderApp.Data
         }
 
         /// <summary>
-        /// 返回循环访问集合的枚举器。
+        /// 非泛型枚举器实现。
         /// </summary>
-        /// <returns>可用于循环访问集合的 IEnumerator。</returns>
         IEnumerator IEnumerable.GetEnumerator()
         {
             return GetEnumerator();
         }
 
         /// <summary>
-        /// 搜索与指定谓词所定义的条件相匹配的元素，并返回整个集合中的第一个匹配项。
+        /// 查找首个匹配谓词的元素。O(n)。
         /// </summary>
-        /// <param name="predicate">定义要搜索的条件的谓词。</param>
-        /// <returns>集合中与谓词匹配的第一个元素；如果未找到匹配项，则为类型的默认值。</returns>
         public T? Find(Predicate<T> predicate)
         {
             for (int i = 0; i < Count; i++)
@@ -457,15 +449,12 @@ namespace ExtenderApp.Data
                     return temp;
                 }
             }
-            return default(T);
+            return default;
         }
 
         /// <summary>
-        /// 搜索与指定谓词所定义的条件相匹配的元素，并返回整个集合中的第一个匹配项。
+        /// 查找首个匹配带外部值条件的元素。O(n)。
         /// </summary>
-        /// <param name="predicate">定义要搜索的条件的谓词。</param>
-        /// <param name="value">用于与集合元素进行比较的值。</param>
-        /// <returns>集合中与谓词匹配的第一个元素；如果未找到匹配项，则为类型的默认值。</returns>
         public T? Find<TValue>(Func<T, TValue, bool> predicate, TValue value)
         {
             for (int i = 0; i < Count; i++)
@@ -476,15 +465,12 @@ namespace ExtenderApp.Data
                     return temp;
                 }
             }
-            return default(T);
+            return default;
         }
 
         /// <summary>
-        /// 返回集合中与指定谓词所定义的条件相匹配的元素的索引。
+        /// 返回首个匹配带外部值条件的元素索引。O(n)。
         /// </summary>
-        /// <param name="predicate">定义要搜索的条件的谓词。</param>
-        /// <param name="value">用于与集合元素进行比较的值。</param>
-        /// <returns>集合中与谓词匹配的第一个元素的索引；如果未找到匹配项，则为 -1。</returns>
         public int FindIndex<TValue>(Func<T, TValue, bool> predicate, TValue value)
         {
             for (int i = 0; i < Count; i++)
@@ -499,26 +485,38 @@ namespace ExtenderApp.Data
         }
 
         /// <summary>
-        /// 对集合中的每个元素执行指定操作。
+        /// 获取最后一个元素，若为空返回 default。O(1)。
         /// </summary>
-        /// <param name="action">要对集合中的每个元素执行的操作。</param>
-        public void ForEach(Action<T> action)
-        {
-            for (int i = 0; i < Count; i++)
-            {
-                action(SpanArray[i]);
-            }
-        }
-
-        /// <summary>
-        /// 获取集合中的最后一个元素。
-        /// </summary>
-        /// <returns>集合中的最后一个元素。</returns>
-        public T GetLast()
+        public T? GetLast()
         {
             if (Count == 0)
                 return default;
             return SpanArray[Count - 1];
+        }
+
+        public override bool Equals(object? obj)
+            => obj is ValueList<T> other && Equals(other);
+
+        public override int GetHashCode()
+        {
+            var hash = new HashCode();
+            hash.Add(Count);
+            var span = array.AsSpan(0, Count);
+            for (int i = 0; i < span.Length; i++)
+            {
+                hash.Add(span[i], _eComparer);
+            }
+            return hash.ToHashCode();
+        }
+
+        public void Dispose()
+        {
+            if (array != null)
+            {
+                _pool.Return(array);
+                array = null;
+                Count = 0;
+            }
         }
     }
 }

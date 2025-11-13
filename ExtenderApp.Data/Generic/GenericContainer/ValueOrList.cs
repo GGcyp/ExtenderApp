@@ -37,8 +37,6 @@ namespace ExtenderApp.Data
         /// </summary>
         public bool IsReadOnly => false;
 
-        public bool IsList => list is not null;
-
         /// <summary>
         /// 获取或设置指定索引处的元素。
         /// </summary>

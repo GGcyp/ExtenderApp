@@ -21,13 +21,14 @@ namespace ExtenderApp.Common.DataBuffers
     /// 单值泛型数据缓冲区。
     /// </summary>
     /// <typeparam name="T">缓冲区存储的数据类型。</typeparam>
-    public class DataBuffer<T> : DataBuffer
     {
         /// <summary>
         /// 当前类型缓冲区的全局对象池。
         /// </summary>
         private static ObjectPool<DataBuffer<T>> pool
             = ObjectPool.CreateDefaultPool<DataBuffer<T>>();
+
+        public static EqualityComparer<T?> comparer = EqualityComparer<T?>.Default;
 
         /// <summary>
         /// 从对象池获取一个 <see cref="DataBuffer{T}"/> 实例，并可选初始化其值。
@@ -73,7 +74,17 @@ namespace ExtenderApp.Common.DataBuffers
             {
                 return false;
             }
-            return EqualityComparer<T?>.Default.Equals(this.Item1, otherBuffer.Item1);
+        }
+
+        public bool Equals(DataBuffer<T>? other)
+        {
+            if (other == null) return false;
+            return ItemEquals(this, other);
+        }
+
+        private static bool ItemEquals(DataBuffer<T> left, DataBuffer<T> right)
+        {
+            return comparer.Equals(left.Item1, right.Item1);
         }
 
         /// <summary>
@@ -83,7 +94,6 @@ namespace ExtenderApp.Common.DataBuffers
         {
             if (left == null && right == null) return true;
             if (left == null || right == null) return false;
-            return EqualityComparer<T?>.Default.Equals(left.Item1, right.Item1);
         }
 
         /// <summary>
@@ -99,6 +109,15 @@ namespace ExtenderApp.Common.DataBuffers
         /// <returns><see cref="Item1"/> 的值。</returns>
         public static implicit operator T?(DataBuffer<T> buffer)
             => buffer.Item1;
+
+        public override bool Equals(object? obj)
+            => obj is DataBuffer<T> buffer && ItemEquals(this, buffer);
+
+        public override int GetHashCode()
+        {
+            return Item1?.GetHashCode() ?? 0;
+        }
+
     }
 
     /// <summary>
@@ -156,6 +175,22 @@ namespace ExtenderApp.Common.DataBuffers
             set => item2Buffer.Item1 = value;
         }
 
+        public DataBuffer()
+        {
+            item1Buffer = DataBuffer<T1>.Get();
+            item2Buffer = DataBuffer<T2>.Get();
+        }
+
+        /// <summary>
+        /// 释放内部后备缓冲并将当前实例归还对象池。
+        /// </summary>
+        public void Release()
+        {
+            item1Buffer.Release();
+            item2Buffer.Release();
+            pool.Release(this);
+        }
+
         /// <summary>
         /// 值语义比较两个缓冲区。
         /// </summary>
@@ -167,18 +202,9 @@ namespace ExtenderApp.Common.DataBuffers
             {
                 return false;
             }
-            return EqualityComparer<T1?>.Default.Equals(this.Item1, otherBuffer.Item1)
-                && EqualityComparer<T2?>.Default.Equals(this.Item2, otherBuffer.Item2);
         }
 
-        /// <summary>
-        /// 释放内部后备缓冲并将当前实例归还对象池。
-        /// </summary>
-        public void Release()
         {
-            item1Buffer.Release();
-            item2Buffer.Release();
-            pool.Release(this);
         }
     }
 
@@ -254,6 +280,13 @@ namespace ExtenderApp.Common.DataBuffers
             set => item3Buffer.Item1 = value;
         }
 
+        public DataBuffer()
+        {
+            item1Buffer = DataBuffer<T1>.Get();
+            item2Buffer = DataBuffer<T2>.Get();
+            item3Buffer = DataBuffer<T3>.Get();
+        }
+
         /// <summary>
         /// 释放内部后备缓冲并将当前实例归还对象池。
         /// </summary>
@@ -265,6 +298,13 @@ namespace ExtenderApp.Common.DataBuffers
             pool.Release(this);
         }
 
+        private static bool ItemEquals(DataBuffer<T1, T2, T3> left, DataBuffer<T1, T2, T3> right)
+        {
+            return DataBuffer<T1>.comparer.Equals(left.Item1, right.Item1)
+                && DataBuffer<T2>.comparer.Equals(left.Item2, right.Item2)
+                && DataBuffer<T3>.comparer.Equals(left.Item3, right.Item3);
+        }
+
         /// <summary>
         /// 值语义比较两个缓冲区。
         /// </summary>
@@ -274,9 +314,23 @@ namespace ExtenderApp.Common.DataBuffers
                 return false;
             if (other is not DataBuffer<T1, T2, T3> otherBuffer)
                 return false;
-            return EqualityComparer<T1?>.Default.Equals(this.Item1, otherBuffer.Item1)
-                && EqualityComparer<T2?>.Default.Equals(this.Item2, otherBuffer.Item2)
-                && EqualityComparer<T3?>.Default.Equals(this.Item3, otherBuffer.Item3);
+            }
+
+            if (ReferenceEquals(obj, null))
+            {
+                return false;
+            }
+
+            if (obj is not DataBuffer<T1, T2, T3> otherBuffer)
+            {
+                return false;
+            }
+            return ItemEquals(this, otherBuffer);
+        }
+
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(Item1, Item2, Item3);
         }
     }
 
@@ -351,6 +405,14 @@ namespace ExtenderApp.Common.DataBuffers
             set => item4Buffer.Item1 = value;
         }
 
+        public DataBuffer()
+        {
+            item1Buffer = DataBuffer<T1>.Get();
+            item2Buffer = DataBuffer<T2>.Get();
+            item3Buffer = DataBuffer<T3>.Get();
+            item4Buffer = DataBuffer<T4>.Get();
+        }
+
         /// <summary>
         /// 值语义比较两个缓冲区。
         /// </summary>
@@ -360,10 +422,6 @@ namespace ExtenderApp.Common.DataBuffers
                 return false;
             if (other is not DataBuffer<T1, T2, T3, T4> otherBuffer)
                 return false;
-            return EqualityComparer<T1?>.Default.Equals(this.Item1, otherBuffer.Item1)
-                && EqualityComparer<T2?>.Default.Equals(this.Item2, otherBuffer.Item2)
-                && EqualityComparer<T3?>.Default.Equals(this.Item3, otherBuffer.Item3)
-                && EqualityComparer<T4?>.Default.Equals(this.Item4, otherBuffer.Item4);
         }
 
         /// <summary>
@@ -376,6 +434,48 @@ namespace ExtenderApp.Common.DataBuffers
             item3Buffer.Release();
             item4Buffer.Release();
             pool.Release(this);
+        }
+
+        private static bool ItemEquals(DataBuffer<T1, T2, T3, T4> left, DataBuffer<T1, T2, T3, T4> right)
+        {
+            return DataBuffer<T1>.comparer.Equals(left.Item1, right.Item1)
+                && DataBuffer<T2>.comparer.Equals(left.Item2, right.Item2)
+                && DataBuffer<T3>.comparer.Equals(left.Item3, right.Item3)
+                && DataBuffer<T4>.comparer.Equals(left.Item4, right.Item4);
+        }
+
+        public static bool operator ==(DataBuffer<T1, T2, T3, T4>? left, DataBuffer<T1, T2, T3, T4>? right)
+        {
+            if (left == null && right == null) return true;
+            if (left == null || right == null) return false;
+            return ItemEquals(left, right);
+        }
+
+        public static bool operator !=(DataBuffer<T1, T2, T3, T4>? left, DataBuffer<T1, T2, T3, T4>? right)
+            => !(left == right);
+
+        public override bool Equals(object? obj)
+        {
+            if (ReferenceEquals(this, obj))
+            {
+                return true;
+            }
+
+            if (ReferenceEquals(obj, null))
+            {
+                return false;
+            }
+
+            if (obj is not DataBuffer<T1, T2, T3, T4> otherBuffer)
+            {
+                return false;
+            }
+            return ItemEquals(this, otherBuffer);
+        }
+
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(Item1, Item2, Item3, Item4);
         }
     }
 }

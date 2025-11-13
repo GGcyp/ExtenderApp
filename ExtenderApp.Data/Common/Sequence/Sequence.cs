@@ -194,9 +194,9 @@ namespace ExtenderApp.Data
 
             //minBufferSize = minBufferSize == -1 ? DefaultLengthFromArrayPool : minBufferSize;
             //var segment = SegmentPool.Count > 0 ? SegmentPool.Pop() : new SequenceSegment();
-            //if (_arrayPool != null)
+            //if (_pool != null)
             //{
-            //    segment.Assign(_arrayPool.Rent(minBufferSize));
+            //    segment.Assign(_pool.Rent(minBufferSize));
             //}
             //else
             //{
