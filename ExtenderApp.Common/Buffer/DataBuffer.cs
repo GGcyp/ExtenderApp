@@ -13,7 +13,9 @@ namespace ExtenderApp.Common.DataBuffers
         /// 比较当前缓冲区与另一个缓冲区是否相等。
         /// </summary>
         /// <param name="other">要比较的另一个缓冲区。</param>
-        /// <returns>相等返回 <c>true</c>；否则返回 <c>false</c>。</returns>
+        /// <returns>
+        /// 相等返回 <c>true</c>；否则返回 <c>false</c>。
+        /// </returns>
         public abstract bool Equals(DataBuffer? other);
     }
 
@@ -21,6 +23,7 @@ namespace ExtenderApp.Common.DataBuffers
     /// 单值泛型数据缓冲区。
     /// </summary>
     /// <typeparam name="T">缓冲区存储的数据类型。</typeparam>
+    public class DataBuffer<T> : DataBuffer, IEquatable<DataBuffer<T>>
     {
         /// <summary>
         /// 当前类型缓冲区的全局对象池。
@@ -66,7 +69,11 @@ namespace ExtenderApp.Common.DataBuffers
         /// 比较与另一个缓冲区是否相等（基于值语义）。
         /// </summary>
         /// <param name="other">另一个缓冲区。</param>
-        /// <returns>当且仅当 <paramref name="other"/> 为相同泛型参数的缓冲区且两者 <see cref="Item1"/> 相等时返回 <c>true</c>。</returns>
+        /// <returns>
+        /// 当且仅当 <paramref name="other"/>
+        /// 为相同泛型参数的缓冲区且两者 <see cref="Item1"/>
+        /// 相等时返回 <c>true</c>。
+        /// </returns>
         public override bool Equals(DataBuffer? other)
         {
             if (other == null) return false;
@@ -74,6 +81,7 @@ namespace ExtenderApp.Common.DataBuffers
             {
                 return false;
             }
+            return comparer.Equals(Item1, otherBuffer.Item1);
         }
 
         public bool Equals(DataBuffer<T>? other)
@@ -94,6 +102,7 @@ namespace ExtenderApp.Common.DataBuffers
         {
             if (left == null && right == null) return true;
             if (left == null || right == null) return false;
+            return ItemEquals(left, right);
         }
 
         /// <summary>
@@ -117,15 +126,15 @@ namespace ExtenderApp.Common.DataBuffers
         {
             return Item1?.GetHashCode() ?? 0;
         }
-
     }
 
     /// <summary>
-    /// 双值泛型数据缓冲区，内部通过两个 <see cref="DataBuffer{T}"/> 作为后备缓冲承载值。
+    /// 双值泛型数据缓冲区，内部通过两个 <see
+    /// cref="DataBuffer{T}"/> 作为后备缓冲承载值。
     /// </summary>
     /// <typeparam name="T1">第一个泛型参数类型。</typeparam>
     /// <typeparam name="T2">第二个泛型参数类型。</typeparam>
-    public class DataBuffer<T1, T2> : DataBuffer
+    public class DataBuffer<T1, T2> : DataBuffer, IEquatable<DataBuffer<T1, T2>>
     {
         /// <summary>
         /// 数据缓冲区对象池。
@@ -191,6 +200,22 @@ namespace ExtenderApp.Common.DataBuffers
             pool.Release(this);
         }
 
+        private static bool ItemEquals(DataBuffer<T1, T2> left, DataBuffer<T1, T2> right)
+        {
+            return DataBuffer<T1>.comparer.Equals(left.Item1, right.Item1)
+                && DataBuffer<T2>.comparer.Equals(left.Item2, right.Item2);
+        }
+
+        public static bool operator ==(DataBuffer<T1, T2>? left, DataBuffer<T1, T2>? right)
+        {
+            if (left == null && right == null) return true;
+            if (left == null || right == null) return false;
+            return ItemEquals(left, right);
+        }
+
+        public static bool operator !=(DataBuffer<T1, T2>? left, DataBuffer<T1, T2>? right)
+            => !(left == right);
+
         /// <summary>
         /// 值语义比较两个缓冲区。
         /// </summary>
@@ -202,19 +227,35 @@ namespace ExtenderApp.Common.DataBuffers
             {
                 return false;
             }
+            return Equals(otherBuffer);
         }
 
+        public bool Equals(DataBuffer<T1, T2>? other)
         {
+            if (other == null)
+                return false;
+            return ItemEquals(this, other);
+        }
+
+        public override bool Equals(object? obj)
+        {
+            return Equals(obj as DataBuffer<T1, T2>);
+        }
+
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(Item1, Item2);
         }
     }
 
     /// <summary>
-    /// 三值泛型数据缓冲区，内部通过三个 <see cref="DataBuffer{T}"/> 作为后备缓冲承载值。
+    /// 三值泛型数据缓冲区，内部通过三个 <see
+    /// cref="DataBuffer{T}"/> 作为后备缓冲承载值。
     /// </summary>
     /// <typeparam name="T1">第一个泛型参数的类型。</typeparam>
     /// <typeparam name="T2">第二个泛型参数的类型。</typeparam>
     /// <typeparam name="T3">第三个泛型参数的类型。</typeparam>
-    public class DataBuffer<T1, T2, T3> : DataBuffer
+    public class DataBuffer<T1, T2, T3> : DataBuffer, IEquatable<DataBuffer<T1, T2, T3>>
     {
         /// <summary>
         /// 数据缓冲区对象池。
@@ -314,28 +355,40 @@ namespace ExtenderApp.Common.DataBuffers
                 return false;
             if (other is not DataBuffer<T1, T2, T3> otherBuffer)
                 return false;
-            }
-
-            if (ReferenceEquals(obj, null))
-            {
-                return false;
-            }
-
-            if (obj is not DataBuffer<T1, T2, T3> otherBuffer)
-            {
-                return false;
-            }
             return ItemEquals(this, otherBuffer);
+        }
+
+        public bool Equals(DataBuffer<T1, T2, T3>? other)
+        {
+            if (other == null)
+                return false;
+            return ItemEquals(this, other);
         }
 
         public override int GetHashCode()
         {
             return HashCode.Combine(Item1, Item2, Item3);
         }
+
+        public static bool operator ==(DataBuffer<T1, T2, T3>? left, DataBuffer<T1, T2, T3>? right)
+        {
+            if (left == null && right == null) return true;
+            if (left == null || right == null) return false;
+            return ItemEquals(left, right);
+        }
+        public static bool operator !=(DataBuffer<T1, T2, T3>? left, DataBuffer<T1, T2, T3>? right)
+            => !(left == right);
+
+        public override bool Equals(object? obj)
+        {
+            return Equals(obj as DataBuffer<T1, T2, T3>);
+        }
     }
 
+
     /// <summary>
-    /// 四值泛型数据缓冲区，内部通过四个 <see cref="DataBuffer{T}"/> 作为后备缓冲承载值。
+    /// 四值泛型数据缓冲区，内部通过四个 <see
+    /// cref="DataBuffer{T}"/> 作为后备缓冲承载值。
     /// </summary>
     /// <typeparam name="T1">缓冲区中第一个元素的类型。</typeparam>
     /// <typeparam name="T2">缓冲区中第二个元素的类型。</typeparam>
@@ -344,7 +397,8 @@ namespace ExtenderApp.Common.DataBuffers
     public class DataBuffer<T1, T2, T3, T4> : DataBuffer
     {
         /// <summary>
-        /// 静态对象池，用于存储和重用 <see cref="DataBuffer{T1, T2, T3, T4}"/> 实例。
+        /// 静态对象池，用于存储和重用 <see cref="DataBuffer{T1,
+        /// T2, T3, T4}"/> 实例。
         /// </summary>
         private static ObjectPool<DataBuffer<T1, T2, T3, T4>> pool
             = ObjectPool.CreateDefaultPool<DataBuffer<T1, T2, T3, T4>>();
@@ -422,6 +476,7 @@ namespace ExtenderApp.Common.DataBuffers
                 return false;
             if (other is not DataBuffer<T1, T2, T3, T4> otherBuffer)
                 return false;
+            return ItemEquals(this, otherBuffer);
         }
 
         /// <summary>
