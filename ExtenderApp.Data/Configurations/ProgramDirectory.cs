@@ -16,7 +16,7 @@ namespace ExtenderApp.Data
         /// 日志文件的目录名（相对于应用根目录）。
         /// 对应的完整路径可通过 <see cref="LoggingPath"/> 获取。
         /// </summary>
-        public const string LOOGINGNAME = "log";
+        public const string LOOGINGNAME = "logs";
 
         /// <summary>
         /// 动态库（主程序库）的目录名（相对于应用根目录）。

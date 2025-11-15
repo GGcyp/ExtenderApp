@@ -77,7 +77,7 @@ namespace ExtenderApp.Data
                 values = list;
                 return true;
             }
-            values = ValueOrList<string>.Empty;
+            values = null!;
             return false;
         }
 

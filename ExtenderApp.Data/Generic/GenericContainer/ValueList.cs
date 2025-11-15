@@ -186,6 +186,19 @@ namespace ExtenderApp.Data
         }
 
         /// <summary>
+        /// 将多个元素添加到尾部。O(m)，m 为添加元素数量。
+        /// </summary>
+        /// <param name="items"></param>
+        public void AddRange(IEnumerable<T> items)
+        {
+            ArgumentNullException.ThrowIfNull(items);
+            foreach (var item in items)
+            {
+                Add(item);
+            }
+        }
+
+        /// <summary>
         /// 按谓词移除首个匹配元素。O(n)。
         /// </summary>
         /// <param name="predicate">匹配条件。</param>
@@ -380,10 +393,11 @@ namespace ExtenderApp.Data
         {
             if (array is null && list.array is null)
                 return true;
-            if(array is null|| list.array is null)
+            if (array is null || list.array is null)
                 return false;
             return array.Equals(list.array);
         }
+
 
         /// <summary>
         /// 复制当前元素到新数组（长度 = Count）。O(n)。
@@ -496,6 +510,14 @@ namespace ExtenderApp.Data
 
         public override bool Equals(object? obj)
             => obj is ValueList<T> other && Equals(other);
+
+        public override string ToString()
+        {
+            if(Count == 0)
+                return "[]";
+            var span = array.AsSpan(0, Count);
+            return "[" + string.Join(", ", span.ToArray()) + "]";
+        }
 
         public override int GetHashCode()
         {

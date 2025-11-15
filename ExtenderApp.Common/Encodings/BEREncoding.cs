@@ -1,12 +1,10 @@
-﻿
-
-using System.Buffers;
+﻿using System.Buffers.Binary;
 using System.Text;
 using ExtenderApp.Data;
 
 namespace ExtenderApp.Common.Encodings
 {
-    public static class BerHelper
+    public static class BEREncoding
     {
         #region 标签(Tag)定义
 
@@ -18,7 +16,11 @@ namespace ExtenderApp.Common.Encodings
         public const byte PrivateClass = 0xC0; // 私有类
 
         // 通用类标签值（Universal Tag Number）
+        public const int BitStringTag = 0x03; // 位串
         public const int IntegerTag = 0x02; // 整数
+        public const int OctetStringTag = 0x04; // 八位字节串（Octet String
+        public const int NullTag = 0x05; // NULL
+        public const int ObjectIdentifierTag = 0x06; // 对象标识符（OBJECT IDENTIFIER）
 
         public const int Utf8StringTag = 0x0C; // UTF8字符串
         public const int SequenceTag = 0x10; // 序列（构造类型）
@@ -94,7 +96,7 @@ namespace ExtenderApp.Common.Encodings
         }
 
         /// <summary>
-        /// 编码UTF8字符串
+        /// 编码UTF8字符串（使用 UTF8String tag）
         /// </summary>
         /// <param name="value">字符串内容</param>
         /// <returns>BER编码后的字节数组</returns>
@@ -116,17 +118,78 @@ namespace ExtenderApp.Common.Encodings
         }
 
         /// <summary>
+        /// 编码 OctetString（通用的 OCTET STRING，适用于原始字节）
+        /// </summary>
+        /// <param name="content">原始字节</param>
+        /// <returns>完整 TLV 字节数组</returns>
+        public static byte[] EncodeOctetString(byte[] content)
+        {
+            if (content == null) throw new ArgumentNullException(nameof(content));
+            var tag = EncodeTag(UniversalClass, isConstructed: false, OctetStringTag);
+            var len = EncodeLength(content.Length);
+            return Combine(tag, len, content);
+        }
+
+        /// <summary>
+        /// 编码 NULL 项（Tag = NULL, Length = 0）
+        /// </summary>
+        public static byte[] EncodeNull()
+        {
+            return Combine(EncodeTag(UniversalClass, false, NullTag), new byte[] { 0x00 });
+        }
+
+        /// <summary>
+        /// 编码 OBJECT IDENTIFIER（传入点分字符串，例如 "1.3.6.1.2.1.1.1.0"）。
+        /// 返回完整 TLV 字节数组。
+        /// </summary>
+        public static byte[] EncodeOid(string oid)
+        {
+            if (string.IsNullOrWhiteSpace(oid)) throw new ArgumentNullException(nameof(oid));
+            var parts = oid.Split('.', StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Length < 2) throw new ArgumentException("OID 必须至少包含两个分量", nameof(oid));
+
+            using var ms = new MemoryStream();
+            int first = int.Parse(parts[0]);
+            int second = int.Parse(parts[1]);
+            ms.WriteByte((byte)(first * 40 + second));
+
+            for (int i = 2; i < parts.Length; i++)
+            {
+                uint v = uint.Parse(parts[i]);
+                var stack = new List<byte>();
+                do
+                {
+                    stack.Add((byte)(v & 0x7F));
+                    v >>= 7;
+                } while (v > 0);
+
+                for (int j = stack.Count - 1; j >= 0; j--)
+                {
+                    byte b = stack[j];
+                    if (j != 0) b |= 0x80;
+                    ms.WriteByte(b);
+                }
+            }
+
+            var content = ms.ToArray();
+            var tag = EncodeTag(UniversalClass, isConstructed: false, ObjectIdentifierTag);
+            var len = EncodeLength(content.Length);
+            return Combine(tag, len, content);
+        }
+
+        /// <summary>
         /// 编码序列（构造类型，包含多个“完整 TLV 子项”）。
         /// </summary>
         /// <param name="elements">
         /// 子项的 BER 编码（每个元素必须是完整的 TLV：Tag + Length + Item1）。
         /// </param>
         /// <returns>SEQUENCE 的完整 TLV 字节数组。</returns>
-        public static byte[] Encode(params byte[][] elements)
+        public static byte[] EncodeSequence(params byte[][] elements)
         {
             if (elements == null) throw new ArgumentNullException(nameof(elements));
 
-            // 1) 外层 Tag（通用类 + 构造类型 + TagNumber=0x10 -> 0x30）
+            // 1) 外层 Tag（通用类 + 构造类型 +
+            //    TagNumber=0x10 -> 0x30）
             byte[] tagBytes = EncodeTag(UniversalClass, isConstructed: true, SequenceTag);
 
             // 2) 将所有子项（完整 TLV）拼接为 Item1
@@ -231,10 +294,8 @@ namespace ExtenderApp.Common.Encodings
         }
 
         /// <summary>
-        /// 编码整数类型
+        /// 编码整数类型（写入到 ByteBlock）
         /// </summary>
-        /// <param name="value">整数数值</param>
-        /// <returns>BER编码后的字节数组</returns>
         public static void Encode(ref ByteBlock block, long value)
         {
             // 写标签：Universal, Primitive, INTEGER
@@ -270,11 +331,8 @@ namespace ExtenderApp.Common.Encodings
         }
 
         /// <summary>
-        /// 编码UTF8字符串
+        /// 编码UTF8字符串（写入到 ByteBlock）
         /// </summary>
-        /// <param name="block">字节块</param>
-        /// <param name="value">字符串内容</param>
-        /// <exception cref="ArgumentNullException">当value为空时触发</exception>
         public static void Encode(ref ByteBlock block, string value)
         {
             if (string.IsNullOrEmpty(value))
@@ -292,13 +350,10 @@ namespace ExtenderApp.Common.Encodings
         }
 
         /// <summary>
-        /// 将 <paramref name="buffer"/> 的剩余内容作为 SEQUENCE 的 Item1 写入（构造类型）。
+        /// 将 <paramref name="buffer"/> 的剩余内容作为
+        /// SEQUENCE 的 Item1 写入（构造类型）。
         /// </summary>
-        /// <param name="block">目标块，写入 SEQUENCE 的 TLV。</param>
-        /// <param name="buffer">作为 Item1 的内容；应由若干完整 TLV 子项顺序拼接而成。</param>
-        /// <exception cref="ArgumentNullException">当 <paramref name="buffer"/> 为空时抛出。</exception>
-        /// <remarks>本方法仅包裹外层 Tag 与 Length，不修改 <paramref name="buffer"/> 内的子项结构。</remarks>
-        public static void Encode(ref ByteBlock block, ByteBuffer buffer)
+        public static void EncodeSequence(ref ByteBlock block, ByteBuffer buffer)
         {
             if (buffer.IsEmpty)
                 throw new ArgumentNullException(nameof(buffer));
@@ -309,13 +364,10 @@ namespace ExtenderApp.Common.Encodings
         }
 
         /// <summary>
-        /// 将 <paramref name="buffer"/> 的未读内容作为 SEQUENCE 的 Item1 写入（构造类型）。
+        /// 将 <paramref name="buffer"/> 的未读内容作为
+        /// SEQUENCE 的 Item1 写入（构造类型）。
         /// </summary>
-        /// <param name="block">目标块，写入 SEQUENCE 的 TLV。</param>
-        /// <param name="buffer">作为 Item1 的内容；应由若干完整 TLV 子项顺序拼接而成。</param>
-        /// <exception cref="ArgumentNullException">当 <paramref name="buffer"/> 为空时抛出。</exception>
-        /// <remarks>本方法仅包裹外层 Tag 与 Length，不修改 <paramref name="buffer"/> 内的子项结构。</remarks>
-        public static void Encode(ref ByteBlock block, ByteBlock buffer)
+        public static void EncodeSequence(ref ByteBlock block, ByteBlock buffer)
         {
             if (buffer.IsEmpty)
                 throw new ArgumentNullException(nameof(buffer));
@@ -328,10 +380,7 @@ namespace ExtenderApp.Common.Encodings
         /// <summary>
         /// 将若干完整 TLV 子项打包为 SEQUENCE 并写入 <paramref name="block"/>（构造类型）。
         /// </summary>
-        /// <param name="block">目标块，写入 SEQUENCE 的 TLV。</param>
-        /// <param name="elements">每个元素必须是完整 TLV（Tag + Length + Item1）。</param>
-        /// <exception cref="ArgumentNullException">当 <paramref name="elements"/> 为空时抛出。</exception>
-        public static void Encode(ref ByteBlock block, params byte[][] elements)
+        public static void EncodeSequence(ref ByteBlock block, params byte[][] elements)
         {
             if (elements == null)
                 throw new ArgumentNullException(nameof(elements));
@@ -345,12 +394,42 @@ namespace ExtenderApp.Common.Encodings
         }
 
         /// <summary>
-        /// 编码标签（Tag）
+        /// 编码 OctetString 并写入 ByteBlock
         /// </summary>
-        /// <param name="block">字节块引用</param>
-        /// <param name="tagClass">标签类别（Class）</param>
-        /// <param name="isConstructed">是否为构造类型</param>
-        /// <param name="tagNumber">标签号</param>
+        /// <param name="block">被写入的字节块</param>
+        /// <param name="buffer">写入的数据</param>
+        public static void EncodeOctetString(ref ByteBlock block, ByteBlock buffer)
+        {
+            EncodeTag(ref block, UniversalClass, false, OctetStringTag);
+            EncodeLength(ref block, (int)buffer.Remaining);
+            block.Write(buffer);
+        }
+
+        /// <summary>
+        /// 编码 OctetString 并写入 ByteBlock
+        /// </summary>
+        /// <param name="block">被写入的字节块</param>
+        /// <param name="buffer">写入的数据</param>
+        public static void EncodeOctetString(ref ByteBlock block, ByteBuffer buffer)
+        {
+            EncodeTag(ref block, UniversalClass, false, OctetStringTag);
+            EncodeLength(ref block, (int)buffer.Remaining);
+            block.Write(buffer);
+        }
+
+        /// <summary>
+        /// 写入 NULL 项到 ByteBlock
+        /// </summary>
+        /// <param name="block">被写入的字节块</param>
+        public static void EncodeNull(ref ByteBlock block)
+        {
+            EncodeTag(ref block, UniversalClass, false, NullTag);
+            EncodeLength(ref block, 0);
+        }
+
+        /// <summary>
+        /// 编码标签（Tag）并写入 ByteBlock
+        /// </summary>
         public static void EncodeTag(ref ByteBlock block, byte tagClass, bool isConstructed, int tagNumber)
         {
             if (tagNumber < 0)
@@ -395,11 +474,8 @@ namespace ExtenderApp.Common.Encodings
         }
 
         /// <summary>
-        /// 编码长度（Length）
+        /// 编码长度（Length）并写入 ByteBlock
         /// </summary>
-        /// <param name="block">字节块引用</param>
-        /// <param name="length">内容长度</param>
-        /// <returns>编码后的长度字节</returns>
         public static void EncodeLength(ref ByteBlock block, int length)
         {
             if (length < 0) throw new ArgumentOutOfRangeException(nameof(length));
@@ -489,7 +565,7 @@ namespace ExtenderApp.Common.Encodings
         }
 
         /// <summary>
-        /// 解码BER数据为UTF8字符串
+        /// 解码BER数据为UTF8字符串（使用 UTF8String tag）
         /// </summary>
         /// <param name="berData">BER编码数据</param>
         /// <returns>解码后的字符串</returns>
@@ -511,6 +587,69 @@ namespace ExtenderApp.Common.Encodings
                 // 解析值
                 byte[] valueBytes = reader.ReadBytes(length);
                 return Encoding.UTF8.GetString(valueBytes);
+            }
+        }
+
+        /// <summary>
+        /// 解码 OctetString（返回原始字节）
+        /// </summary>
+        public static byte[] DecodeOctetStringBytes(byte[] berData)
+        {
+            using (MemoryStream ms = new MemoryStream(berData))
+            using (BinaryReader reader = new BinaryReader(ms))
+            {
+                var (_, isConstructed, tagNumber) = DecodeTag(reader);
+                if (isConstructed || tagNumber != OctetStringTag)
+                    throw new InvalidDataException("不是 OctetString 类型的BER数据");
+
+                int length = DecodeLength(reader);
+                return reader.ReadBytes(length);
+            }
+        }
+
+        /// <summary>
+        /// 解码 OctetString 并按 UTF-8 返回字符串（如果非文本会抛或返回 garbled）
+        /// </summary>
+        public static string DecodeOctetStringString(byte[] berData)
+        {
+            var bytes = DecodeOctetStringBytes(berData);
+            return Encoding.UTF8.GetString(bytes);
+        }
+
+        /// <summary>
+        /// 解码 OBJECT IDENTIFIER 并返回点分字符串形式
+        /// </summary>
+        public static string DecodeOid(byte[] berData)
+        {
+            using (MemoryStream ms = new MemoryStream(berData))
+            using (BinaryReader reader = new BinaryReader(ms))
+            {
+                var (_, isConstructed, tagNumber) = DecodeTag(reader);
+                if (isConstructed || tagNumber != ObjectIdentifierTag)
+                    throw new InvalidDataException("不是 OID 类型的BER数据");
+
+                int length = DecodeLength(reader);
+                var data = reader.ReadBytes(length);
+                if (data.Length == 0) return string.Empty;
+
+                var list = new List<int>();
+                int first = data[0];
+                list.Add(first / 40);
+                list.Add(first % 40);
+
+                int idx = 1;
+                while (idx < data.Length)
+                {
+                    uint v = 0;
+                    byte b;
+                    do
+                    {
+                        b = data[idx++];
+                        v = (v << 7) | (uint)(b & 0x7F);
+                    } while ((b & 0x80) != 0 && idx <= data.Length);
+                    list.Add((int)v);
+                }
+                return string.Join('.', list);
             }
         }
 
@@ -636,8 +775,6 @@ namespace ExtenderApp.Common.Encodings
         /// </summary>
         /// <param name="block">数据源（读指针将推进）。</param>
         /// <returns>解码得到的 Int64 值。</returns>
-        /// <exception cref="InvalidDataException">当标签不是 INTEGER 或长度非法时抛出。</exception>
-        /// <exception cref="OverflowException">当值超出 Int64 可表示范围时抛出。</exception>
         public static long DecodeInteger(ref ByteBlock block)
         {
             var (_, isConstructed, tagNumber) = DecodeTag(ref block);
@@ -672,7 +809,104 @@ namespace ExtenderApp.Common.Encodings
 
             return BinaryPrimitives.ReadInt64BigEndian(big);
         }
-        #endregion
+
+        /// <summary>
+        /// 从 <see cref="ByteBlock"/> 中解码一个 UTF-8 编码的 BER 字符串项，并返回解码后的字符串。
+        /// </summary>
+        public static string DecodeUtf8String(ref ByteBlock block)
+        {
+            var (tagClass, isConstructed, tagNumber) = DecodeTag(ref block);
+            if (tagNumber != Utf8StringTag)
+                throw new InvalidDataException("不是UTF8字符串类型的BER数据");
+            int length = DecodeLength(ref block);
+            ReadOnlySpan<byte> valueBytes = block.Read(length);
+            return Encoding.UTF8.GetString(valueBytes);
+        }
+
+        /// <summary>
+        /// 从 <see cref="ByteBlock"/> 解码一个 SEQUENCE 项，并将其内容（Item1）作为新的 <see cref="ByteBlock"/> 返回。
+        /// </summary>
+        public static void DecodeSequence(ref ByteBlock block, out ByteBlock sequenceContent)
+        {
+            var (tagClass, isConstructed, tagNumber) = DecodeTag(ref block);
+            if (tagNumber != SequenceTag || !isConstructed)
+                throw new InvalidDataException("不是序列类型的BER数据");
+            int length = DecodeLength(ref block);
+            sequenceContent = new ByteBlock(length);
+            block.Read(sequenceContent.GetSpan(length).Slice(0, length));
+            sequenceContent.WriteAdvance(length);
+        }
+
+        /// <summary>
+        /// 从 <see cref="ByteBlock"/> 读取一个 BER Tag 字段。
+        /// </summary>
+        /// <param name="block">数据源（读指针将推进到 Tag 之后）。</param>
+        /// <returns>(tagClass, isConstructed, tagNumber)。</returns>
+        public static (byte tagClass, bool isConstructed, int tagNumber) DecodeTag(ref ByteBlock block)
+        {
+            byte firstByte = block.Read();
+            byte tagClass = (byte)(firstByte & 0xC0);
+            bool isConstructed = (firstByte & 0x20) != 0;
+            int tagNumber = firstByte & 0x1F;
+
+            if (tagNumber == 0x1F)
+            {
+                tagNumber = 0;
+                byte b;
+                do
+                {
+                    b = block.Read();
+                    tagNumber = (tagNumber << 7) | (b & 0x7F);
+                } while ((b & 0x80) != 0);
+            }
+
+            return (tagClass, isConstructed, tagNumber);
+        }
+
+        /// <summary>
+        /// 从 <see cref="ByteBlock"/> 读取一个 BER Length 字段（仅支持确定长度）。
+        /// </summary>
+        /// <param name="block">数据源（读指针将推进到 Length 之后）。</param>
+        /// <returns>Item1 部分的长度。</returns>
+        public static int DecodeLength(ref ByteBlock block)
+        {
+            byte firstByte = block.Read();
+            if ((firstByte & 0x80) == 0)
+            {
+                // 短格式
+                return firstByte;
+            }
+            else
+            {
+                // 长格式：计算后续字节数
+                int byteCount = firstByte & 0x7F;
+                if (byteCount == 0)
+                {
+                    throw new InvalidDataException("不支持无限长度格式");
+                }
+                if (byteCount > 4)
+                {
+                    throw new InvalidDataException("长度超过支持的最大范围（4字节）");
+                }
+
+                ByteBlock lengthBlock = new ByteBlock(byteCount + 4);
+                block.Read(lengthBlock.GetSpan(byteCount).Slice(0, byteCount));
+                lengthBlock.Reverse();
+
+                if (lengthBlock.Remaining < 4)
+                {
+                    int remaining = lengthBlock.Remaining;
+                    var span = lengthBlock.Read(byteCount);
+                    span.CopyTo(lengthBlock.GetSpan(4).Slice(4 - remaining, remaining));
+                }
+
+                var result = BitConverter.ToInt32(lengthBlock.UnreadSpan.Slice(0, 4));
+                lengthBlock.Dispose();
+                return result;
+            }
+        }
+
+        #endregion 解码方法
 
         #region 辅助方法
 

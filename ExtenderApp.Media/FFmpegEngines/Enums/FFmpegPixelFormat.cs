@@ -1074,7 +1074,7 @@
         PIX_FMT_GBRAPF32LE = 177,
 
         /// <summary>
-        /// DRM-managed buffers exposed through
+        /// DRM-managed buffer exposed through
         /// PRIME buffer sharing.
         /// </summary>
         PIX_FMT_DRM_PRIME = 178,

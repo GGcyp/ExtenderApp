@@ -91,7 +91,7 @@ namespace ExtenderApp.Common.IO.Binary.LZ4
                             xxx_ref--;
                         }
 
-                        // Encode Literal length
+                        // EncodeSequence Literal length
                         length = (int)(src_p - src_anchor);
                         xxx_token = dst_p++;
 
@@ -141,7 +141,7 @@ namespace ExtenderApp.Common.IO.Binary.LZ4
 
                     _next_match:
 
-                        // Encode Offset
+                        // EncodeSequence Offset
                         *(ushort*)dst_p = (ushort)(src_p - xxx_ref);
                         dst_p += 2;
 
@@ -177,7 +177,7 @@ namespace ExtenderApp.Common.IO.Binary.LZ4
 
                     _endCount:
 
-                        // Encode MatchLength
+                        // EncodeSequence MatchLength
                         length = (int)(src_p - src_anchor);
 
                         if (dst_p + (length >> 8) > dst_LASTLITERALS_1)
@@ -237,7 +237,7 @@ namespace ExtenderApp.Common.IO.Binary.LZ4
 
                 _last_literals:
 
-                    // Encode Last Literals
+                    // EncodeSequence Last Literals
                     {
                         var lastRun = (int)(src_end - src_anchor);
 
@@ -358,7 +358,7 @@ namespace ExtenderApp.Common.IO.Binary.LZ4
                             xxx_ref--;
                         }
 
-                        // Encode Literal length
+                        // EncodeSequence Literal length
                         length = (int)(src_p - src_anchor);
                         xxx_token = dst_p++;
 
@@ -408,7 +408,7 @@ namespace ExtenderApp.Common.IO.Binary.LZ4
 
                     _next_match:
 
-                        // Encode Offset
+                        // EncodeSequence Offset
                         *(ushort*)dst_p = (ushort)(src_p - xxx_ref);
                         dst_p += 2;
 
@@ -444,7 +444,7 @@ namespace ExtenderApp.Common.IO.Binary.LZ4
 
                     _endCount:
 
-                        // Encode MatchLength
+                        // EncodeSequence MatchLength
                         len = (int)(src_p - src_anchor);
 
                         if (dst_p + (len >> 8) > dst_LASTLITERALS_1)
@@ -504,7 +504,7 @@ namespace ExtenderApp.Common.IO.Binary.LZ4
 
                 _last_literals:
 
-                    // Encode Last Literals
+                    // EncodeSequence Last Literals
                     {
                         var lastRun = (int)(src_end - src_anchor);
                         if (dst_p + lastRun + 1 + ((lastRun - RUN_MASK + 255) / 255) > dst_end)

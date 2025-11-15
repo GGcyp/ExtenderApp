@@ -7,7 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.10" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.0" />
     <PackageReference Include="Serilog" Version="4.3.0" />
     <PackageReference Include="Serilog.Extensions.Logging" Version="9.0.2" />
     <PackageReference Include="Serilog.Sinks.Debug" Version="3.0.0" />
@@ -18,9 +18,23 @@
     <ProjectReference Include="..\ExtenderApp.Abstract\ExtenderApp.Abstract.csproj" />
   </ItemGroup>
 
-	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
+	<!--<Target Name="PostBuild" AfterTargets="PostBuildEvent">
 		<ItemGroup>
 			<TargetFolder Include="E:\WPF_Project\ExtenderApp\ExtenderApp\bin\Debug\net8.0-windows" />
+		</ItemGroup>
+		<MakeDir Directories="%(TargetFolder.Identity)\lib" Condition="!Exists('%(TargetFolder.Identity)\lib')" />
+		<Exec Command="copy &quot;$(TargetDir)\$(ProjectName).dll&quot; &quot;%(TargetFolder.Identity)\lib\$(ProjectName).dll&quot;" />
+
+		<ItemGroup>
+			<PackageReferencePath Include="$(NuGetPackageRoot)\%(PackageReference.Identity)\%(PackageReference.Version)\lib\**\*.dll" />
+		</ItemGroup>
+		<MakeDir Directories="%(TargetFolder.Identity)" Condition="!Exists('%(TargetFolder.Identity)\pack')" />
+		<Copy SourceFiles="@(PackageReferencePath)" DestinationFolder="%(TargetFolder.Identity)\pack" SkipUnchangedFiles="true" />
+	</Target>-->
+
+	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
+		<ItemGroup>
+			<TargetFolder Include="E:\WPF_Project\ExtenderApp\ExtenderApp\bin\Debug\net8.0-windows7.0" />
 		</ItemGroup>
 		<MakeDir Directories="%(TargetFolder.Identity)\lib" Condition="!Exists('%(TargetFolder.Identity)\lib')" />
 		<Exec Command="copy &quot;$(TargetDir)\$(ProjectName).dll&quot; &quot;%(TargetFolder.Identity)\lib\$(ProjectName).dll&quot;" />

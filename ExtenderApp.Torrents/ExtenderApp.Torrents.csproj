@@ -41,6 +41,38 @@
 		</None>
 	</ItemGroup>
 
+	<!--<Target Name="CopyFilesAfterBuild" AfterTargets="PostBuildEvent">
+		--><!-- 收集要复制的动态库文件（.dll） --><!--
+		<ItemGroup>
+			<DllFiles Include="$(TargetDir)\$(ProjectName).dll" />
+		</ItemGroup>
+		--><!-- 收集要复制的 JSON 文件 --><!--
+		<ItemGroup>
+			<JsonFile Include="$(TargetDir)\init.json" />
+		</ItemGroup>
+		--><!--收集要复制的Tarcker文件--><!--
+		<ItemGroup>
+			<TrackerFile Include="$(TargetDir)\DefaultTrackerList.txt" />
+		</ItemGroup>
+		--><!--目标文件夹--><!--
+		<ItemGroup>
+			<TargetFolder Include="$(SolutionDir)ExtenderApp\bin\$(Configuration)\net8.0-windows\plugins" />
+		</ItemGroup>
+		--><!-- 创建目标文件夹（如果不存在）并复制动态库文件和init.json --><!--
+		<MakeDir Directories="%(TargetFolder.Identity)\$(ProjectName)" Condition="!Exists('%(TargetFolder.Identity)\$(ProjectName)')" />
+		<Copy SourceFiles="@(DllFiles)" DestinationFolder="%(TargetFolder.Identity)\$(ProjectName)" SkipUnchangedFiles="true" />
+		<Copy SourceFiles="@(JsonFile)" DestinationFolder="%(TargetFolder.Identity)\$(ProjectName)" SkipUnchangedFiles="true" />
+		<Copy SourceFiles="@(TrackerFile)" DestinationFolder="%(TargetFolder.Identity)\$(ProjectName)" SkipUnchangedFiles="true" />
+
+		<MakeDir Directories="%(TargetFolder.Identity)\$(ProjectName)" Condition="!Exists('%(TargetFolder.Identity)\$(ProjectName)\pack')" />
+
+		--><!-- 获取所有包引用的路径 --><!--
+		<ItemGroup>
+			<PackageReferencePath Include="$(NuGetPackageRoot)\%(PackageReference.Identity)\%(PackageReference.Version)\lib\**\*.dll" Condition="'%(PackageReference.Identity)' != 'PropertyChanged.Fody'" />
+		</ItemGroup>
+		<Copy SourceFiles="@(PackageReferencePath)" DestinationFolder="%(TargetFolder.Identity)\$(ProjectName)\pack" SkipUnchangedFiles="true" />
+	</Target>-->
+
 	<Target Name="CopyFilesAfterBuild" AfterTargets="PostBuildEvent">
 		<!-- 收集要复制的动态库文件（.dll） -->
 		<ItemGroup>
@@ -56,7 +88,7 @@
 		</ItemGroup>
 		<!--目标文件夹-->
 		<ItemGroup>
-			<TargetFolder Include="$(SolutionDir)ExtenderApp\bin\$(Configuration)\net8.0-windows\plugins" />
+			<TargetFolder Include="$(SolutionDir)ExtenderApp\bin\$(Configuration)\net8.0-windows7.0\plugins" />
 		</ItemGroup>
 		<!-- 创建目标文件夹（如果不存在）并复制动态库文件和init.json -->
 		<MakeDir Directories="%(TargetFolder.Identity)\$(ProjectName)" Condition="!Exists('%(TargetFolder.Identity)\$(ProjectName)')" />

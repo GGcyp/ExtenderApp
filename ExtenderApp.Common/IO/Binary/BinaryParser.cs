@@ -457,7 +457,7 @@ namespace ExtenderApp.Common.IO.Binary
         /// </summary>
         /// <param name="input">输入数据（可能由多段组成）。</param>
         /// <param name="output">输出缓冲区（调用方保证容量足够）。</param>
-        /// <param name="lz4Operation">要执行的 LZ4 变换（Encode/Decode）。</param>
+        /// <param name="lz4Operation">要执行的 LZ4 变换（EncodeSequence/Decode）。</param>
         /// <returns>变换后的实际字节数。</returns>
         /// <remarks>
         /// - 若 <paramref name="input"/> 为多段，会临时从 <see cref="ArrayPool{T}"/> 租用缓冲并拷贝为连续内存；

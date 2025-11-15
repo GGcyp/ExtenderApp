@@ -168,9 +168,9 @@ namespace ExtenderApp.Services
             if (string.IsNullOrEmpty(details.PluginFolderPath) || string.IsNullOrEmpty(details.StartupDll))
                 throw new ArgumentNullException("Mod详情中的路径或启动DLL不能为空");
 
-            ScopeLoadContext loadContext = new(details.Title!);
-            details.LoadContext = loadContext;
             string dllPath = Path.Combine(details.PluginFolderPath, details.StartupDll);
+            ScopeLoadContext loadContext = new(dllPath);
+            details.LoadContext = loadContext;
 
             //添加模组依赖库
             string packName = string.IsNullOrEmpty(details.PackPath) ? ProgramDirectory.PACKNAME : details.PackPath;

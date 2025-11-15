@@ -31,18 +31,31 @@
 		<ProjectReference Include="..\ExtenderApp.Views\ExtenderApp.Views.csproj" />
 	</ItemGroup>
 
-	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
+	<!--<Target Name="PostBuild" AfterTargets="PostBuildEvent">
 		<ItemGroup>
 			<TargetFolder Include="E:\WPF_Project\ExtenderApp\ExtenderApp\bin\Debug\net8.0-windows" />
 		</ItemGroup>
 		<MakeDir Directories="%(TargetFolder.Identity)\lib" Condition="!Exists('%(TargetFolder.Identity)\lib')" />
 
-
-		<!-- 收集要复制的动态库文件（.dll） -->
+		--><!-- 收集要复制的动态库文件（.dll） --><!--
 		<ItemGroup>
 			<DllFiles Include="$(TargetDir)\$(ProjectName).dll" />
 		</ItemGroup>
 		<Copy SourceFiles="@(DllFiles)" DestinationFolder="%(TargetFolder.Identity)\lib" />
+	</Target>-->
+
+	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
+		<ItemGroup>
+			<TargetFolder Include="E:\WPF_Project\ExtenderApp\ExtenderApp\bin\Debug\net8.0-windows7.0" />
+		</ItemGroup>
+		<MakeDir Directories="%(TargetFolder.Identity)\lib" Condition="!Exists('%(TargetFolder.Identity)\lib')" />
+		<Exec Command="copy &quot;$(TargetDir)\$(ProjectName).dll&quot; &quot;%(TargetFolder.Identity)\lib\$(ProjectName).dll&quot;" />
+
+		<ItemGroup>
+			<PackageReferencePath Include="$(NuGetPackageRoot)\%(PackageReference.Identity)\%(PackageReference.Version)\lib\**\*.dll" />
+		</ItemGroup>
+		<MakeDir Directories="%(TargetFolder.Identity)" Condition="!Exists('%(TargetFolder.Identity)\pack')" />
+		<Copy SourceFiles="@(PackageReferencePath)" DestinationFolder="%(TargetFolder.Identity)\pack" SkipUnchangedFiles="true" />
 	</Target>
 
 </Project>
