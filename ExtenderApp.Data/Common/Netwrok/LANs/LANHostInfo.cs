@@ -10,7 +10,7 @@ namespace ExtenderApp.Data
     /// 并提供 MAC 格式化与基于 IP+MAC 的相等性比较。
     /// </summary>
     [DebuggerDisplay("PhysicalAddress = {MacAddress}, IP = {Address}, Host = {HostName}")]
-    internal class LANHostInfo : IEquatable<LANHostInfo>
+    public class LANHostInfo : IEquatable<LANHostInfo>
     {
         public static LANHostInfo Empty { get; } = new LANHostInfo(IPAddress.Loopback);
 

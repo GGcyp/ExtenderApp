@@ -44,37 +44,5 @@ namespace ExtenderApp.Common.Networks.SNMP
         {
             Pdu.Dispose();
         }
-
-        /// <summary>
-        /// 尝试从 <see cref="ByteBlock"/> 的当前位置解析一个 SNMP 消息（version/community/pdu）。
-        /// </summary>
-        /// <param name="block">
-        /// 包含待解析数据的字节块引用。方法在成功解析后会推进该块的读取位置以消费对应的 SEQUENCE TLV（Tag+Length+Value）。
-        /// </param>
-        /// <param name="snmpMessage">解析成功时输出对应的 <see cref="SnmpMessage"/> 实例；失败或不为 SNMP 消息时为默认值。</param>
-        /// <returns>
-        /// 若当前位置为完整且有效的 SNMP Message TLV，则返回 <c>true</c> 并推进原始块的读取位置；否则返回 <c>false</c>（通常不推进读取位置）。
-        /// </returns>
-        /// <exception cref="ArgumentException">当传入的 <paramref name="block"/> 为空（无已写入数据）时抛出。</exception>
-        /// <exception cref="System.IO.InvalidDataException">
-        /// 当检测到 Message TLV 存在但内部长度或子项（version/community/pdu）不完整或格式非法时抛出。
-        /// </exception>
-        public static bool TryDecode(ref ByteBlock block, out SnmpMessage snmpMessage)
-        {
-            if (block.IsEmpty)
-                throw new ArgumentException("当前要解码字节块为空", nameof(block));
-
-            snmpMessage = default;
-            if (!BEREncoding.TryDecodeSequence(ref block))
-                return false;
-
-            SnmpVersionType versionType = (SnmpVersionType)BEREncoding.DecodeInteger(ref block);
-            string community = BEREncoding.DecodeUtf8String(ref block);
-            if (!SnmpPdu.TryDecode(ref block, out var pdu))
-                return false;
-
-            snmpMessage = new SnmpMessage(pdu, versionType, community);
-            return true;
-        }
     }
 }

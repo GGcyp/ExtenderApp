@@ -306,7 +306,7 @@ namespace ExtenderApp.Common.Networks.SNMP
         /// <param name="block">包含待解析数据的字节块（引用传入）。</param>
         /// <param name="message">解析成功时输出的 <see cref="SnmpMessage"/> 实例。</param>
         /// <returns>成功解析返回 <c>true</c>；否则返回 <c>false</c>（通常不会推进读取位置）。</returns>
-        public static bool TryBERDecode(ref ByteBlock block, out SnmpMessage message)
+        public static bool TryBERDecode(ref ByteBlock block, out SnmpMessage message, SnmpPduType pduType = SnmpPduType.GetRequest)
         {
             message = default;
             if (!BEREncoding.TryDecodeSequence(ref block))
@@ -317,7 +317,7 @@ namespace ExtenderApp.Common.Networks.SNMP
                 return false;
 
             string community = communityBlock.ReadString(Encoding.ASCII);
-            if (!TryBERDecode(ref block, out SnmpPdu pdu))
+            if (!TryBERDecode(ref block, out SnmpPdu pdu, pduType))
                 return false;
 
             message = new SnmpMessage(pdu, versionType, community);
@@ -330,10 +330,10 @@ namespace ExtenderApp.Common.Networks.SNMP
         /// <param name="block">包含待解析数据的字节块（引用传入）。</param>
         /// <param name="pdu">解析成功时输出的 <see cref="SnmpPdu"/> 实例。</param>
         /// <returns>成功解析返回 <c>true</c>；否则返回 <c>false</c>（通常不会推进读取位置）。</returns>
-        public static bool TryBERDecode(ref ByteBlock block, out SnmpPdu pdu)
+        public static bool TryBERDecode(ref ByteBlock block, out SnmpPdu pdu, SnmpPduType pduType = SnmpPduType.GetRequest)
         {
             pdu = default;
-            if (!BEREncoding.TryDecodeSequence(ref block))
+            if (!TryBERDecodeSequence(ref block, pduType))
                 return false;
 
             int requestId = (int)BEREncoding.DecodeInteger(ref block);
@@ -373,7 +373,7 @@ namespace ExtenderApp.Common.Networks.SNMP
                 return false;
             if (!TryBERDecode(ref block, out SnmpOid oid))
                 return false;
-            if (!TryDecode(ref block, out SnmpValue value))
+            if (!TryBERDecode(ref block, out SnmpValue value))
                 return false;
             varBind = new SnmpVarBind(oid, value);
             return true;
@@ -445,7 +445,7 @@ namespace ExtenderApp.Common.Networks.SNMP
         /// <param name="block">包含待解析数据的字节块（引用传入）。</param>
         /// <param name="snmpValue">解析成功时输出的 <see cref="SnmpValue"/> 实例。</param>
         /// <returns>若当前位置为可识别的 SNMP 值并成功解析，返回 <c>true</c>；否则返回 <c>false</c>（通常不推进读取位置）。</returns>
-        public static bool TryDecode(ref ByteBlock block, out SnmpValue snmpValue)
+        public static bool TryBERDecode(ref ByteBlock block, out SnmpValue snmpValue)
         {
             snmpValue = default;
             if (block.IsEmpty)
@@ -482,7 +482,7 @@ namespace ExtenderApp.Common.Networks.SNMP
                     snmpValue = new SnmpValue(UniversalTagNumber.OctetString, DataBuffer<ByteBlock>.Get(bb));
                     break;
                 //case BEREncoding.ObjectIdentifierTag:
-                //    if (!SnmpOid.TryDecode(ref block, out var oid))
+                //    if (!SnmpOid.TryBERDecodeSequence(ref block, out var oid))
                 //        return false;
                 //    // 将 OID 的点分字符串以 UTF8 存入 ByteBlock 作为值的表示（调用方可按需求转换）
                 //    var oidBytes = Encoding.UTF8.GetBytes(oid.Oid);
@@ -503,6 +503,24 @@ namespace ExtenderApp.Common.Networks.SNMP
                     snmpValue = new SnmpValue(UniversalTagNumber.Sequence, DataBuffer<ByteBlock>.Get(sb));
                     break;
             }
+            return true;
+        }
+
+        public static bool TryBERDecodeSequence(ref ByteBlock block, SnmpPduType type)
+        {
+            var temp = block.PeekByteBlock();
+            if (block.Remaining == 0)
+                return false;
+
+            var tag = BEREncoding.DecodeTag(ref temp);
+            if (tag.TagValue != (int)type || !tag.IsConstructed)
+                return false;
+
+            block.ReadAdvance(temp.Consumed - block.Consumed);
+            int length = BEREncoding.DecodeLength(ref block);
+            if (block.Remaining < length)
+                return false;
+
             return true;
         }
 

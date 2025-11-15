@@ -462,7 +462,7 @@ namespace ExtenderApp.Common.Encodings
             byte firstByte = block.Read();
             // 高两位为类别掩码
             byte classBits = (byte)(firstByte & 0xC0);
-            TagClass tc = classBits.ToTagClass(); // 0..3 对应 TagClass 枚举
+            TagClass tc = (TagClass)classBits; // 0..3 对应 TagClass 枚举
             bool isConstructed = (firstByte & 0x20) != 0;
             int tagNumber = firstByte & 0x1F;
 
@@ -510,16 +510,6 @@ namespace ExtenderApp.Common.Encodings
             }
 
             return BinaryPrimitives.ReadInt32BigEndian(buf);
-        }
-
-        /// <summary>
-        /// 将字节（0..3）的高两位映射为 <see cref="TagClass"/> 枚举。
-        /// </summary>
-        /// <param name="b">包含类别位的字节。</param>
-        /// <returns>对应的 <see cref="TagClass"/>。</returns>
-        public static TagClass ToTagClass(this byte b)
-        {
-            return (TagClass)(b >> 6);
         }
 
         /// <summary>
