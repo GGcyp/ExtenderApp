@@ -5,8 +5,8 @@ using System.Data;
 namespace ExtenderApp.Data
 {
     /// <summary>
-    /// 使用 <see cref="ArrayPool{T}"/> 进行内存租赁的轻量 List 结构体实现，避免频繁堆分配。
-    /// 非线程安全；适合短生命周期或热点路径。
+    /// 使用 <see cref="ArrayPool{T}"/> 进行内存租赁的轻量
+    /// List 结构体实现，避免频繁堆分配。 非线程安全；适合短生命周期或热点路径。
     /// </summary>
     /// <typeparam name="T">元素类型。</typeparam>
     public struct ValueList<T> : IList<T>, IEquatable<ValueList<T>>, IDisposable
@@ -22,8 +22,7 @@ namespace ExtenderApp.Data
         private readonly EqualityComparer<T> _eComparer;
 
         /// <summary>
-        /// 实际存储元素的池租赁数组。已使用区间为 [0, Count)。
-        /// 可能为 null（尚未分配）。
+        /// 实际存储元素的池租赁数组。已使用区间为 [0, Count)。 可能为 null（尚未分配）。
         /// </summary>
         private T[]? array;
 
@@ -43,7 +42,8 @@ namespace ExtenderApp.Data
         public bool IsReadOnly => false;
 
         /// <summary>
-        /// 返回底层数组的 Span 视图。注意：如果 <c>array</c> 为 null 将得到默认 <see cref="Span{T}"/>。
+        /// 返回底层数组的 Span 视图。注意：如果 <c>array</c> 为
+        /// null 将得到默认 <see cref="Span{T}"/>。
         /// 有效数据仅前 <see cref="Count"/> 个元素。
         /// </summary>
         public Span<T> SpanArray => array;
@@ -61,11 +61,13 @@ namespace ExtenderApp.Data
         /// <summary>
         /// 访问或设置指定索引处的元素。
         /// </summary>
-        /// <param name="index">索引（0 ≤ index &lt; Count）。</param>
-        /// <exception cref="IndexOutOfRangeException">索引越界。</exception>
-        /// <remarks>
-        /// TODO: 当前 <see cref="CheckIndex(int)"/> 允许 index == Count，会导致读取时潜在越界风险，应考虑修正。
-        /// </remarks>
+        /// <param name="index">
+        /// 索引（0 ≤ index &lt; Count）。
+        /// </param>
+        /// <exception cref="IndexOutOfRangeException">
+        /// 索引越界。
+        /// </exception>
+        /// <remarks>TODO: 当前 <see cref="CheckIndex(int)"/> 允许 index == Count，会导致读取时潜在越界风险，应考虑修正。</remarks>
         public T this[int index]
         {
             get
@@ -138,7 +140,9 @@ namespace ExtenderApp.Data
         /// 检查索引有效性。当前实现允许 index == Count，被访问时可能越界。
         /// </summary>
         /// <param name="index">要检查的索引。</param>
-        /// <exception cref="IndexOutOfRangeException">非法索引。</exception>
+        /// <exception cref="IndexOutOfRangeException">
+        /// 非法索引。
+        /// </exception>
         private void CheckIndex(int index)
         {
             if (index < 0 || index > Count)
@@ -152,7 +156,8 @@ namespace ExtenderApp.Data
         /// </summary>
         /// <param name="sizeHint">附加需求量（不是最终容量）。</param>
         /// <remarks>
-        /// 当前调用处多以 <c>Count + 1</c> 传入，导致实际新容量计算为 <c>Count + (Count + 1)</c>，可能过度扩容。
+        /// 当前调用处多以 <c>Count + 1</c> 传入，导致实际新容量计算为
+        /// <c>Count + (Count + 1)</c>，可能过度扩容。
         /// 建议调用位置只传递需要新增的元素数量（通常为 1）。
         /// </remarks>
         private void Ensure(int sizeHint = 1)
@@ -239,8 +244,12 @@ namespace ExtenderApp.Data
         /// 删除指定索引处元素，并向前移动后续元素。O(n)。
         /// </summary>
         /// <param name="index">元素索引。</param>
-        /// <exception cref="NullReferenceException">数组未分配。</exception>
-        /// <exception cref="IndexOutOfRangeException">索引越界。</exception>
+        /// <exception cref="NullReferenceException">
+        /// 数组未分配。
+        /// </exception>
+        /// <exception cref="IndexOutOfRangeException">
+        /// 索引越界。
+        /// </exception>
         public void RemoveAt(int index)
         {
             if (array is null)
@@ -398,7 +407,6 @@ namespace ExtenderApp.Data
             return array.Equals(list.array);
         }
 
-
         /// <summary>
         /// 复制当前元素到新数组（长度 = Count）。O(n)。
         /// </summary>
@@ -413,7 +421,9 @@ namespace ExtenderApp.Data
         /// 将元素复制到目标 Span。长度不足时抛出异常。O(n)。
         /// </summary>
         /// <param name="span">目标 Span（长度 ≥ Count）。</param>
-        /// <exception cref="ArgumentOutOfRangeException">span 太小。</exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// span 太小。
+        /// </exception>
         public void CopyTo(Span<T> span)
         {
             // 无法装下全部数据
@@ -513,7 +523,7 @@ namespace ExtenderApp.Data
 
         public override string ToString()
         {
-            if(Count == 0)
+            if (Count == 0)
                 return "[]";
             var span = array.AsSpan(0, Count);
             return "[" + string.Join(", ", span.ToArray()) + "]";

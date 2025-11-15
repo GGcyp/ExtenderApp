@@ -348,7 +348,7 @@ namespace ExtenderApp.Common.IO.Binary
                         buffer.ReadAdvance(tokenSize);
                         return true;
                     case DecodeResult.TokenMismatch:
-                        //throw ThrowInvalidCode(buffer.UnreadSpan[0]);
+                        //throw ThrowInvalidCode(Buffer.UnreadSpan[0]);
                         return false;
                     case DecodeResult.EmptyBuffer:
                     case DecodeResult.InsufficientBuffer:

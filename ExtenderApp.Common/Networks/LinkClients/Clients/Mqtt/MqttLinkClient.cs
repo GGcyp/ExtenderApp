@@ -369,21 +369,21 @@ namespace ExtenderApp.Common.Networks
         ///// <summary>
         ///// 尝试解析一个完整报文，返回消费的字节数（不足返回 0）。
         ///// </summary>
-        //private int TryParsePacket(ReadOnlySpan<byte> buffer)
+        //private int TryParsePacket(ReadOnlySpan<byte> Buffer)
         //{
-        //    if (buffer.Length < 2) return 0;
-        //    byte header = buffer[0];
+        //    if (Buffer.Length < 2) return 0;
+        //    byte header = Buffer[0];
 
         //    // 解析 RemainingLength (var-int)
         //    int remainingLength;
         //    int rlBytes;
-        //    if (!TryReadVarInt(buffer.Slice(1), out remainingLength, out rlBytes))
+        //    if (!TryReadVarInt(Buffer.Slice(1), out remainingLength, out rlBytes))
         //        return 0;
 
         //    int total = 1 + rlBytes + remainingLength;
-        //    if (buffer.Length < total) return 0; // 数据不足
+        //    if (Buffer.Length < total) return 0; // 数据不足
 
-        //    ReadOnlySpan<byte> body = buffer.Slice(1 + rlBytes, remainingLength);
+        //    ReadOnlySpan<byte> body = Buffer.Slice(1 + rlBytes, remainingLength);
         //    byte type = (byte)(header & 0xF0);
 
         //    switch (type)

@@ -11,8 +11,10 @@ namespace ExtenderApp.Data
     {
         /// <summary>
         /// 存储单个值。
+        /// 使用显式标志区分“未设置”（hasSingle=false）与“已设置为 default(T)”。
         /// </summary>
-        private T? single;
+        private T single;
+        private bool hasSingle;
 
         /// <summary>
         /// 存储值的列表。
@@ -27,7 +29,7 @@ namespace ExtenderApp.Data
             get
             {
                 if (!list.IsEmpty) return list.Count;
-                return single is not null ? 1 : 0;
+                return hasSingle ? 1 : 0;
             }
         }
 
@@ -46,7 +48,7 @@ namespace ExtenderApp.Data
             get
             {
                 if (!list.IsEmpty) return list[index];
-                if (index == 0 && single is not null) return single;
+                if (index == 0 && hasSingle) return single;
                 throw new IndexOutOfRangeException();
             }
             set
@@ -55,7 +57,7 @@ namespace ExtenderApp.Data
                 {
                     list[index] = value;
                 }
-                else if (index == 0 && single is not null)
+                else if (index == 0 && hasSingle)
                 {
                     single = value;
                 }
@@ -77,6 +79,9 @@ namespace ExtenderApp.Data
 
             if (capacity > 1)
                 list = new(capacity);
+
+            single = default!;
+            hasSingle = false;
         }
 
         /// <summary>
@@ -89,14 +94,16 @@ namespace ExtenderApp.Data
             {
                 list.Add(item);
             }
-            else if (single is null)
+            else if (!hasSingle)
             {
                 single = item;
+                hasSingle = true;
             }
             else
             {
-                list = new(2) { single!, item };
-                single = default;
+                list = new(2) { single, item };
+                single = default!;
+                hasSingle = false;
             }
         }
 
@@ -105,7 +112,8 @@ namespace ExtenderApp.Data
         /// </summary>
         public void Clear()
         {
-            single = default;
+            single = default!;
+            hasSingle = false;
             list.Clear();
         }
 
@@ -119,7 +127,7 @@ namespace ExtenderApp.Data
         public bool Contains(T item)
         {
             if (!list.IsEmpty) return list.Contains(item);
-            if (single is not null) return EqualityComparer<T>.Default.Equals(single, item);
+            if (hasSingle) return EqualityComparer<T>.Default.Equals(single, item);
             return false;
         }
 
@@ -134,7 +142,7 @@ namespace ExtenderApp.Data
             {
                 list.CopyTo(array, arrayIndex);
             }
-            else if (single is not null)
+            else if (hasSingle)
             {
                 array[arrayIndex] = single;
             }
@@ -153,7 +161,7 @@ namespace ExtenderApp.Data
                     yield return list[i];
                 }
             }
-            else if (single is not null)
+            else if (hasSingle)
             {
                 yield return single;
             }
@@ -175,7 +183,7 @@ namespace ExtenderApp.Data
         public int IndexOf(T item)
         {
             if (!list.IsEmpty) return list.IndexOf(item);
-            if (single is not null && EqualityComparer<T>.Default.Equals(single, item)) return 0;
+            if (hasSingle && EqualityComparer<T>.Default.Equals(single, item)) return 0;
             return -1;
         }
 
@@ -190,19 +198,22 @@ namespace ExtenderApp.Data
             {
                 list.Insert(index, item);
             }
-            else if (single is null && index == 0)
+            else if (!hasSingle && index == 0)
             {
                 single = item;
+                hasSingle = true;
             }
-            else if (single is not null && index == 0)
+            else if (hasSingle && index == 0)
             {
-                list = new(2) { item, single! };
-                single = default;
+                list = new(2) { item, single };
+                single = default!;
+                hasSingle = false;
             }
-            else if (single is not null && index == 1)
+            else if (hasSingle && index == 1)
             {
-                list = new(2) { single!, item };
-                single = default;
+                list = new(2) { single, item };
+                single = default!;
+                hasSingle = false;
             }
             else
             {
@@ -224,9 +235,10 @@ namespace ExtenderApp.Data
             {
                 return list.Remove(item);
             }
-            else if (single is not null && EqualityComparer<T>.Default.Equals(single, item))
+            else if (hasSingle && EqualityComparer<T>.Default.Equals(single, item))
             {
-                single = default;
+                single = default!;
+                hasSingle = false;
                 return true;
             }
             return false;
@@ -244,12 +256,14 @@ namespace ExtenderApp.Data
                 if (list.Count == 1)
                 {
                     single = list[0];
+                    hasSingle = true;
                     list.Dispose();
                 }
             }
-            else if (single is not null && index == 0)
+            else if (hasSingle && index == 0)
             {
-                single = default;
+                single = default!;
+                hasSingle = false;
             }
             else
             {
@@ -277,7 +291,7 @@ namespace ExtenderApp.Data
         public override string ToString()
         {
             if (Count == 0)
-                return single == null ? "<empty>" : single.ToString()!;
+                return "<empty>";
             StringBuilder sb = new();
 
             for (int i = 0; i < Count; i++)

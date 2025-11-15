@@ -32,10 +32,10 @@ namespace ExtenderApp.Common.IO
 
         //protected override void Read(FileInfoData infoData, Action<object> processAction)
         //{
-        //    using (Xmlbuffer buffer = Xmlbuffer.Create(infoData.Info.FullName))
+        //    using (Xmlbuffer Buffer = Xmlbuffer.Create(infoData.Info.FullName))
         //    {
         //        // 移动到根元素
-        //        processAction?.InvokePlugins(buffer);
+        //        processAction?.InvokePlugins(Buffer);
         //    }
         //}
 
@@ -66,9 +66,9 @@ namespace ExtenderApp.Common.IO
         //    //指定在缩进时要使用的字符串。 默认值为两个空格。
         //    settings.IndentChars = "    ";
         //    //如果自己未指定路径,xml文件默认创建在bin目录下的debug目录里
-        //    using (Xmlbuffer buffer = Xmlbuffer.Create(infoData.Path, settings))
+        //    using (Xmlbuffer Buffer = Xmlbuffer.Create(infoData.Path, settings))
         //    {
-        //        xmlDoc.Save(buffer);
+        //        xmlDoc.Save(Buffer);
         //    }
         //}
     }

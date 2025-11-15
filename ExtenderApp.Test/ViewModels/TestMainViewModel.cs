@@ -1,5 +1,9 @@
 ﻿using System.IO;
+using System.Net;
+using System.Net.Sockets;
+using System.Runtime.Intrinsics.Arm;
 using System.Text;
+using System.Windows.Documents;
 using ExtenderApp.Abstract;
 using ExtenderApp.Common.Encodings;
 using ExtenderApp.Common.Networks;
@@ -12,18 +16,12 @@ namespace ExtenderApp.Test
 {
     public class TestMainViewModel : ExtenderAppViewModel
     {
+        private UdpClient _udpClient;
+
         public TestMainViewModel(IServiceStore serviceStore) : base(serviceStore)
         {
             var info = CreatTestExpectLocalFileInfo("text");
             LogInformation("开始测试");
-
-            SnmpPdu pdu = new(SnmpPduType.GetRequest, 10);
-            pdu.AddVarBind(new(SnmpOid.SysDescr, 50));
-            //pdu.AddVarBind(new(SnmpOid.SysUpTime, "asdads"));
-            SnmpMessage message = new(pdu);
-            ByteBlock block = new ByteBlock();
-            message.Encode(ref block);
-            LogInformation($"SNMP 消息编码结果：{block.Length} 字节");
 
         }
 

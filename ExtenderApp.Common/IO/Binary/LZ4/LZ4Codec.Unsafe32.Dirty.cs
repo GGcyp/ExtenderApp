@@ -620,7 +620,7 @@ namespace ExtenderApp.Common.IO.Binary.LZ4
                         src_p += 2;
                         if (xxx_ref < dst)
                         {
-                            goto _output_error; // Error : offset outside destination buffer
+                            goto _output_error; // Error : offset outside destination Buffer
                         }
 
                         // get matchlength

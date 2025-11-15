@@ -35,6 +35,23 @@ namespace ExtenderApp.Common.DataBuffers
         {
             return buffer == null || buffer is EmptyDataBuffer;
         }
+
+        /// <summary>
+        /// 是否包含与指定类型相等的类型。
+        /// </summary>
+        /// <typeparam name="T">指定类型</typeparam>
+        /// <returns>是则返回true，否则返回false</returns>
+        public abstract bool HasValueType<T>();
+
+        public static DataBuffer<T> FromValue<T>(T value)
+        {
+            return DataBuffer<T>.Get(value);
+        }
+
+        public static DataBuffer<T1, T2> FromValues<T1, T2>(T1 item1, T2 item2)
+        {
+            return DataBuffer<T1, T2>.Get(item1, item2);
+        }
     }
 
     /// <summary>
@@ -69,6 +86,11 @@ namespace ExtenderApp.Common.DataBuffers
 
         }
 
+        public override bool HasValueType<T>()
+        {
+            return false;
+        }
+
         /// <summary>
         /// 返回用于显示的文本表示：<c>&lt;empty&gt;</c>。
         /// </summary>
@@ -82,15 +104,15 @@ namespace ExtenderApp.Common.DataBuffers
     /// 单值泛型数据缓冲区。
     /// </summary>
     /// <typeparam name="T">缓冲区存储的数据类型。</typeparam>
-    public class DataBuffer<T> : DataBuffer, IEquatable<DataBuffer<T>>
+    public class DataBuffer<T1> : DataBuffer, IEquatable<DataBuffer<T1>>
     {
         /// <summary>
         /// 当前类型缓冲区的全局对象池。
         /// </summary>
-        private static ObjectPool<DataBuffer<T>> pool
-            = ObjectPool.CreateDefaultPool<DataBuffer<T>>();
+        private static ObjectPool<DataBuffer<T1>> pool
+            = ObjectPool.CreateDefaultPool<DataBuffer<T1>>();
 
-        public static EqualityComparer<T?> comparer = EqualityComparer<T?>.Default;
+        public static EqualityComparer<T1?> comparer = EqualityComparer<T1?>.Default;
 
         /// <summary>
         /// 从对象池获取一个 <see cref="DataBuffer{T}"/> 实例，并可选初始化其值。
@@ -100,7 +122,7 @@ namespace ExtenderApp.Common.DataBuffers
         /// <remarks>
         /// 使用完成后请调用 <see cref="Release"/> 将实例归还对象池。
         /// </remarks>
-        public static DataBuffer<T> Get(T? value = default)
+        public static DataBuffer<T1> Get(T1? value = default)
         {
             var buffer = pool.Get();
             buffer.Item1 = value;
@@ -122,7 +144,12 @@ namespace ExtenderApp.Common.DataBuffers
         /// <summary>
         /// 当前缓冲区承载的值。
         /// </summary>
-        public T? Item1 { get; set; }
+        public T1? Item1 { get; set; }
+
+        public override bool HasValueType<T>()
+        {
+            return typeof(T) != typeof(T1);
+        }
 
         /// <summary>
         /// 比较与另一个缓冲区是否相等（基于值语义）。
@@ -136,20 +163,20 @@ namespace ExtenderApp.Common.DataBuffers
         public override bool Equals(DataBuffer? other)
         {
             if (other == null) return false;
-            if (other is not DataBuffer<T> otherBuffer)
+            if (other is not DataBuffer<T1> otherBuffer)
             {
                 return false;
             }
             return comparer.Equals(Item1, otherBuffer.Item1);
         }
 
-        public bool Equals(DataBuffer<T>? other)
+        public bool Equals(DataBuffer<T1>? other)
         {
             if (other == null) return false;
             return ItemEquals(this, other);
         }
 
-        private static bool ItemEquals(DataBuffer<T> left, DataBuffer<T> right)
+        private static bool ItemEquals(DataBuffer<T1> left, DataBuffer<T1> right)
         {
             return comparer.Equals(left.Item1, right.Item1);
         }
@@ -157,7 +184,7 @@ namespace ExtenderApp.Common.DataBuffers
         /// <summary>
         /// 使用值语义比较两个 <see cref="DataBuffer{T}"/> 实例。
         /// </summary>
-        public static bool operator ==(DataBuffer<T>? left, DataBuffer<T>? right)
+        public static bool operator ==(DataBuffer<T1>? left, DataBuffer<T1>? right)
         {
             if (left == null && right == null) return true;
             if (left == null || right == null) return false;
@@ -167,11 +194,11 @@ namespace ExtenderApp.Common.DataBuffers
         /// <summary>
         /// 使用值语义判断两个 <see cref="DataBuffer{T}"/> 实例不相等。
         /// </summary>
-        public static bool operator !=(DataBuffer<T>? left, DataBuffer<T>? right)
+        public static bool operator !=(DataBuffer<T1>? left, DataBuffer<T1>? right)
             => !(left == right);
 
         public override bool Equals(object? obj)
-            => obj is DataBuffer<T> buffer && ItemEquals(this, buffer);
+            => obj is DataBuffer<T1> buffer && ItemEquals(this, buffer);
 
         public override int GetHashCode()
         {
@@ -188,10 +215,10 @@ namespace ExtenderApp.Common.DataBuffers
         /// </summary>
         /// <param name="buffer">数据缓冲区。</param>
         /// <returns><see cref="Item1"/> 的值。</returns>
-        public static implicit operator T?(DataBuffer<T> buffer)
+        public static implicit operator T1?(DataBuffer<T1> buffer)
             => buffer.Item1;
 
-        public static implicit operator DataBuffer<T>(T? value)
+        public static implicit operator DataBuffer<T1>(T1? value)
             => Get(value);
     }
 
@@ -218,8 +245,8 @@ namespace ExtenderApp.Common.DataBuffers
         public static DataBuffer<T1, T2> Get(T1? item1 = default, T2? item2 = default)
         {
             var buffer = pool.Get();
-            buffer.item1Buffer = DataBuffer<T1>.Get(item1);
-            buffer.item2Buffer = DataBuffer<T2>.Get(item2);
+            buffer.item1Buffer = FromValue(item1!);
+            buffer.item2Buffer = FromValue(item2!);
             return buffer;
         }
 
@@ -319,6 +346,11 @@ namespace ExtenderApp.Common.DataBuffers
             return $"({Item1?.ToString() ?? "<null>"}, {Item2?.ToString() ?? "<null>"})";
         }
 
+        public override bool HasValueType<T>()
+        {
+            return typeof(T) != typeof(T1) || typeof(T) != typeof(T2);
+        }
+
         public static implicit operator (T1?, T2?)(DataBuffer<T1, T2> buffer)
             => (buffer.Item1, buffer.Item2);
 
@@ -362,11 +394,11 @@ namespace ExtenderApp.Common.DataBuffers
     //    /// <returns>数据缓冲区实例。</returns>
     //    public static DataBuffer<T1, T2, T3> Get(T1? item1 = default, T2? item2 = default, T3? item3 = default)
     //    {
-    //        var buffer = pool.Get();
-    //        buffer.item1Buffer = DataBuffer<T1>.Get(item1);
-    //        buffer.item2Buffer = DataBuffer<T2>.Get(item2);
-    //        buffer.item3Buffer = DataBuffer<T3>.Get(item3);
-    //        return buffer;
+    //        var Buffer = pool.Get();
+    //        Buffer.item1Buffer = DataBuffer<T1>.Get(item1);
+    //        Buffer.item2Buffer = DataBuffer<T2>.Get(item2);
+    //        Buffer.item3Buffer = DataBuffer<T3>.Get(item3);
+    //        return Buffer;
     //    }
 
     //    /// <summary>
@@ -480,8 +512,8 @@ namespace ExtenderApp.Common.DataBuffers
     //        return $"({Item1?.ToString() ?? "<null>"}, {Item2?.ToString() ?? "<null>"}, {Item3?.ToString() ?? "<null>"})";
     //    }
 
-    //    public static implicit operator (T1?, T2?, T3?)(DataBuffer<T1, T2, T3> buffer)
-    //        => (buffer.Item1, buffer.Item2, buffer.Item3);
+    //    public static implicit operator (T1?, T2?, T3?)(DataBuffer<T1, T2, T3> Buffer)
+    //        => (Buffer.Item1, Buffer.Item2, Buffer.Item3);
 
     //    public static implicit operator DataBuffer<T1, T2, T3>((T1? item1, T2? item2, T3? item3) value)
     //        => Get(value.item1, value.item2, value.item3);
@@ -528,12 +560,12 @@ namespace ExtenderApp.Common.DataBuffers
     //        T3? item3 = default,
     //        T4? item4 = default)
     //    {
-    //        var buffer = pool.Get();
-    //        buffer.item1Buffer = DataBuffer<T1>.Get(item1);
-    //        buffer.item2Buffer = DataBuffer<T2>.Get(item2);
-    //        buffer.item3Buffer = DataBuffer<T3>.Get(item3);
-    //        buffer.item4Buffer = DataBuffer<T4>.Get(item4);
-    //        return buffer;
+    //        var Buffer = pool.Get();
+    //        Buffer.item1Buffer = DataBuffer<T1>.Get(item1);
+    //        Buffer.item2Buffer = DataBuffer<T2>.Get(item2);
+    //        Buffer.item3Buffer = DataBuffer<T3>.Get(item3);
+    //        Buffer.item4Buffer = DataBuffer<T4>.Get(item4);
+    //        return Buffer;
     //    }
 
     //    /// <summary>
@@ -671,8 +703,8 @@ namespace ExtenderApp.Common.DataBuffers
     //        return $"({Item1?.ToString() ?? "<null>"}, {Item2?.ToString() ?? "<null>"}, {Item3?.ToString() ?? "<null>"}, {Item4?.ToString() ?? "<null>"})";
     //    }
 
-    //    public static implicit operator (T1?, T2?, T3?, T4?)(DataBuffer<T1, T2, T3, T4> buffer)
-    //        => (buffer.Item1, buffer.Item2, buffer.Item3, buffer.Item4);
+    //    public static implicit operator (T1?, T2?, T3?, T4?)(DataBuffer<T1, T2, T3, T4> Buffer)
+    //        => (Buffer.Item1, Buffer.Item2, Buffer.Item3, Buffer.Item4);
 
     //    public static implicit operator DataBuffer<T1, T2, T3, T4>((T1? item1, T2? item2, T3? item3, T4? item4) value)
     //        => Get(value.item1, value.item2, value.item3, value.item4);

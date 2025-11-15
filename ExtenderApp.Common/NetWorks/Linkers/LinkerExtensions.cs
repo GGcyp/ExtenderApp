@@ -239,7 +239,7 @@ namespace ExtenderApp.Common.Networks
         /// <param name="endPoint">目标远端终结点。</param>
         /// <param name="token">取消令牌。</param>
         /// <returns>一次发送操作的结果。</returns>
-        /// <exception cref="ArgumentNullException">buffer 为空（IsEmpty）。</exception>
+        /// <exception cref="ArgumentNullException">Buffer 为空（IsEmpty）。</exception>
         /// <remarks>
         /// - 内部将把 <paramref name="buffer"/> 克隆为 <see cref="ByteBlock"/>，避免直接处理 ref struct；
         ///   发送结束后自动释放克隆。<br/>

@@ -15,36 +15,36 @@ namespace ExtenderApp.Common.IO.Binary.Formatters
         //    switch (StartupType.GetTypeCode(type))
         //    {
         //        case TypeCode.Byte:
-        //            serializer = (ref ByteBuffer buffer, ref TLinkClient value) => _bufferConvert.Write(ref buffer, Unsafe.As<TLinkClient, Byte>(ref value));
-        //            deserializer = (ref ByteBuffer buffer) => { var v = _bufferConvert.ReadByte(ref buffer); return Unsafe.As<Byte, TLinkClient>(ref v); };
+        //            serializer = (ref ByteBuffer Buffer, ref TLinkClient value) => _bufferConvert.Write(ref Buffer, Unsafe.As<TLinkClient, Byte>(ref value));
+        //            deserializer = (ref ByteBuffer Buffer) => { var v = _bufferConvert.ReadByte(ref Buffer); return Unsafe.As<Byte, TLinkClient>(ref v); };
         //            break;
         //        case TypeCode.Int16:
-        //            serializer = (ref ByteBuffer buffer, ref TLinkClient value) => _bufferConvert.Write(ref buffer, Unsafe.As<TLinkClient, Int64>(ref value));
-        //            deserializer = (ref ByteBuffer buffer) => { var v = _bufferConvert.ReadInt16(ref buffer); return Unsafe.As<Int16, TLinkClient>(ref v); };
+        //            serializer = (ref ByteBuffer Buffer, ref TLinkClient value) => _bufferConvert.Write(ref Buffer, Unsafe.As<TLinkClient, Int64>(ref value));
+        //            deserializer = (ref ByteBuffer Buffer) => { var v = _bufferConvert.ReadInt16(ref Buffer); return Unsafe.As<Int16, TLinkClient>(ref v); };
         //            break;
         //        case TypeCode.Int32:
-        //            serializer = (ref ByteBuffer buffer, ref TLinkClient value) => _bufferConvert.Write(ref buffer, Unsafe.As<TLinkClient, Int32>(ref value));
-        //            deserializer = (ref ByteBuffer buffer) => { var v = _bufferConvert.ReadInt32(ref buffer); return Unsafe.As<Int32, TLinkClient>(ref v); };
+        //            serializer = (ref ByteBuffer Buffer, ref TLinkClient value) => _bufferConvert.Write(ref Buffer, Unsafe.As<TLinkClient, Int32>(ref value));
+        //            deserializer = (ref ByteBuffer Buffer) => { var v = _bufferConvert.ReadInt32(ref Buffer); return Unsafe.As<Int32, TLinkClient>(ref v); };
         //            break;
         //        case TypeCode.Int64:
-        //            serializer = (ref ByteBuffer buffer, ref TLinkClient value) => _bufferConvert.Write(ref buffer, Unsafe.As<TLinkClient, Int64>(ref value));
-        //            deserializer = (ref ByteBuffer buffer) => { var v = _bufferConvert.ReadInt64(ref buffer); return Unsafe.As<Int64, TLinkClient>(ref v); };
+        //            serializer = (ref ByteBuffer Buffer, ref TLinkClient value) => _bufferConvert.Write(ref Buffer, Unsafe.As<TLinkClient, Int64>(ref value));
+        //            deserializer = (ref ByteBuffer Buffer) => { var v = _bufferConvert.ReadInt64(ref Buffer); return Unsafe.As<Int64, TLinkClient>(ref v); };
         //            break;
         //        case TypeCode.SByte:
-        //            serializer = (ref ByteBuffer buffer, ref TLinkClient value) => _bufferConvert.Write(ref buffer, Unsafe.As<TLinkClient, SByte>(ref value));
-        //            deserializer = (ref ByteBuffer buffer) => { var v = _bufferConvert.ReadSByte(ref buffer); return Unsafe.As<SByte, TLinkClient>(ref v); };
+        //            serializer = (ref ByteBuffer Buffer, ref TLinkClient value) => _bufferConvert.Write(ref Buffer, Unsafe.As<TLinkClient, SByte>(ref value));
+        //            deserializer = (ref ByteBuffer Buffer) => { var v = _bufferConvert.ReadSByte(ref Buffer); return Unsafe.As<SByte, TLinkClient>(ref v); };
         //            break;
         //        case TypeCode.UInt16:
-        //            serializer = (ref ByteBuffer buffer, ref TLinkClient value) => _bufferConvert.Write(ref buffer, Unsafe.As<TLinkClient, UInt16>(ref value));
-        //            deserializer = (ref ByteBuffer buffer) => { var v = _bufferConvert.ReadUInt16(ref buffer); return Unsafe.As<UInt16, TLinkClient>(ref v); };
+        //            serializer = (ref ByteBuffer Buffer, ref TLinkClient value) => _bufferConvert.Write(ref Buffer, Unsafe.As<TLinkClient, UInt16>(ref value));
+        //            deserializer = (ref ByteBuffer Buffer) => { var v = _bufferConvert.ReadUInt16(ref Buffer); return Unsafe.As<UInt16, TLinkClient>(ref v); };
         //            break;
         //        case TypeCode.UInt32:
-        //            serializer = (ref ByteBuffer buffer, ref TLinkClient value) => _bufferConvert.Write(ref buffer, Unsafe.As<TLinkClient, UInt32>(ref value));
-        //            deserializer = (ref ByteBuffer buffer) => { var v = _bufferConvert.ReadUInt32(ref buffer); return Unsafe.As<UInt32, TLinkClient>(ref v); };
+        //            serializer = (ref ByteBuffer Buffer, ref TLinkClient value) => _bufferConvert.Write(ref Buffer, Unsafe.As<TLinkClient, UInt32>(ref value));
+        //            deserializer = (ref ByteBuffer Buffer) => { var v = _bufferConvert.ReadUInt32(ref Buffer); return Unsafe.As<UInt32, TLinkClient>(ref v); };
         //            break;
         //        case TypeCode.UInt64:
-        //            serializer = (ref ByteBuffer buffer, ref TLinkClient value) => _bufferConvert.Write(ref buffer, Unsafe.As<TLinkClient, UInt64>(ref value));
-        //            deserializer = (ref ByteBuffer buffer) => { var v = _bufferConvert.ReadUInt64(ref buffer); return Unsafe.As<UInt64, TLinkClient>(ref v); };
+        //            serializer = (ref ByteBuffer Buffer, ref TLinkClient value) => _bufferConvert.Write(ref Buffer, Unsafe.As<TLinkClient, UInt64>(ref value));
+        //            deserializer = (ref ByteBuffer Buffer) => { var v = _bufferConvert.ReadUInt64(ref Buffer); return Unsafe.As<UInt64, TLinkClient>(ref v); };
         //            break;
         //        default:
         //            throw new NotSupportedException(string.Format("这个枚举未找到转换类型{0}", type.FullName));

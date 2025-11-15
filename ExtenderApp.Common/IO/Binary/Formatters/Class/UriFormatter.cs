@@ -20,12 +20,12 @@ namespace ExtenderApp.Common.IO.Binary.Formatters
 
         public override Uri Deserialize(ref ByteBuffer buffer)
         {
-            //if(_bufferConvert.TryReadNil(ref buffer))
+            //if(_bufferConvert.TryReadNil(ref Buffer))
             //{
             //    return null;
             //}
 
-            //_bufferConvert.TryReadStringSpan(ref buffer, out ReadOnlySpan<byte> bytes);
+            //_bufferConvert.TryReadStringSpan(ref Buffer, out ReadOnlySpan<byte> bytes);
             //var value = _bufferConvert.UTF8ToString(bytes);
             //return new Uri(value);
 
@@ -37,11 +37,11 @@ namespace ExtenderApp.Common.IO.Binary.Formatters
         {
             //if(value == null)
             //{
-            //    _bufferConvert.WriteNil(ref buffer);
+            //    _bufferConvert.WriteNil(ref Buffer);
             //}
             //else
             //{
-            //    _bufferConvert.Write(ref buffer, value.ToString());
+            //    _bufferConvert.Write(ref Buffer, value.ToString());
             //}
 
             _formatter.Serialize(ref buffer, value.ToString());

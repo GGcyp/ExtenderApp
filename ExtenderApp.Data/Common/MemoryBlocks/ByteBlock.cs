@@ -412,6 +412,12 @@ namespace ExtenderApp.Data
         public bool TryPeek(long offset, out byte value) => _block.TryPeek(offset, out value);
 
         /// <summary>
+        /// 获取当前块的浅拷贝，可用于多次读取而不改变读写指针。
+        /// </summary>
+        /// <returns>浅拷贝实例</returns>
+        public ByteBlock PeekByteBlock() => this;
+
+        /// <summary>
         /// 将读指针设置为绝对位置（0..Length）。
         /// </summary>
         /// <param name="count">新的读指针位置。</param>
@@ -480,6 +486,17 @@ namespace ExtenderApp.Data
         /// 归还底层缓冲到数组池。调用后不应再使用此实例。
         /// </summary>
         public void Dispose() => _block.Dispose();
+
+        public override string ToString()
+        {
+            StringBuilder sb = new(Length);
+            ReadOnlySpan<byte> span = UnreadSpan;
+            for (int i = 0; i < Length; i++)
+            {
+                sb.AppendFormat("{0:X2} ", span[i]);
+            }
+            return sb.ToString();
+        }
 
         #region FormByteBlock
 
