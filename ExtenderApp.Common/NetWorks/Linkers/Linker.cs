@@ -34,6 +34,8 @@ namespace ExtenderApp.Common.Networks
 
         public abstract SocketType SocketType { get; }
 
+        public abstract AddressFamily AddressFamily { get; }
+
         #endregion 子类实现
 
         public Linker() : this(DefaultCapacity)

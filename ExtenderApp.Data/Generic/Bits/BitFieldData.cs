@@ -1,100 +1,107 @@
-﻿using System.Collections;
+﻿using System.Buffers;
+using System.Collections;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 
 namespace ExtenderApp.Data
 {
     /// <summary>
-    /// 高效表示和操作 BitField 的类，用于跟踪可用的文件分片
+    /// 表示一组位（BitField）的轻量结构，提供高效的位级操作与统计功能。
+    /// 设计为通用数据结构，可用于跟踪分片、块、槽位、标志集合或任意需要按位管理的资源。
+    /// 基于 <see cref="ArrayPool{T}"/>
+    /// 管理底层存储以减少短期分配；使用完毕应调用 <see
+    /// cref="Dispose"/> 归还资源。 支持序列化（ <see
+    /// cref="ToBytes"/>）、日志记录（ <see cref="ToString"/>）以及常用的按位运算（AND/OR/XOR/NOT）。
     /// </summary>
-    public class BitFieldData : IEnumerable<bool>
+    public struct BitFieldData : IEnumerable<bool>, IDisposable
     {
-        // 每个 ulong 存储 64 位
         /// <summary>
-        /// 每个 ulong 存储 64 位
+        /// 每个 <see cref="ulong"/> 存储的位数（64）。
         /// </summary>
         private const int BitsPerULong = 64;
 
         /// <summary>
-        /// 每个字节包含 8 位
+        /// 每个字节包含的位数（8）。
         /// </summary>
         private const int BitsPerByte = 8;
 
         /// <summary>
-        /// 每个字节的位移量是 3 位
+        /// 字节级位移量（2^3 = 8），保留以便未来位移计算优化使用。
         /// </summary>
         private const int ShiftPerByte = 3; // 2^3 = 8
 
-        // 底层存储
         /// <summary>
-        /// 底层存储结构
+        /// 底层存储单元（租用自 <see cref="ArrayPool{T}"/>）。
         /// </summary>
         private readonly ulong[] _data;
 
         /// <summary>
-        /// 真实值的计数
+        /// 当前为 true 的位的计数（用于统计与进度显示）。
         /// </summary>
         private int _trueCount;
 
         /// <summary>
-        /// BitField 的总位数（分片数）
+        /// 表示的总位数（资源数量或标志数量）。
         /// </summary>
         public int Length { get; }
 
         /// <summary>
-        /// 已设置为 true 的位的数量
+        /// 已设置为 true 的位的数量，便于快速获取完成度或已占用数。
         /// </summary>
         public int TrueCount => _trueCount;
 
         /// <summary>
-        /// 是否所有位都为 false
+        /// 是否所有位均为 false（未分配/未完成/未占用）。
         /// </summary>
         public bool AllFalse => _trueCount == 0;
 
         /// <summary>
-        /// 是否所有位都为 true
+        /// 是否所有位均为 true（全部分配/全部完成/全部占用）。
         /// </summary>
         public bool AllTrue => _trueCount == Length;
 
         /// <summary>
-        /// BitField 所需的字节数
+        /// 表示此位字段序列化为字节时所需的字节数（向上取整）。 适用于网络传输、持久化或日志输出的缓冲分配。
         /// </summary>
         public int LengthInBytes => (Length + BitsPerByte - 1) / BitsPerByte;
 
         /// <summary>
-        /// 已完成的百分比
+        /// 已完成百分比（0..100），便于展示进度或统计信息。
         /// </summary>
         public double PercentComplete => (double)_trueCount / Length * 100.0;
 
         /// <summary>
-        /// 以 UnreadSpan 形式访问内部数据
+        /// 是否未初始化或长度为 0。
         /// </summary>
-        public ReadOnlySpan<ulong> DataSpan => _data.AsSpan();
-
-        public BitFieldData(ReadOnlySpan<byte> span) : this(span, span.Length)
-        {
-        }
+        public bool IsEmpty => _data is null || Length == 0;
 
         /// <summary>
-        /// 从字节数组创建 BitField
+        /// 以 ulong
+        /// 单元访问内部数据的只读切片（注意：切片长度以单元数计，不等于位数）。 仅用于诊断或高性能场景的直接读取；对外语义应以位为单位访问。
         /// </summary>
-        public BitFieldData(ReadOnlySpan<byte> span, int length)
+        public ReadOnlySpan<ulong> DataSpan => _data.AsSpan(0, _data.Length);
+
+        /// <summary>
+        /// 从字节序列构造一个 BitField。常用于从网络/磁盘/日志中恢复位状态。
+        /// 参数 <paramref name="span"/>
+        /// 的长度应为所需字节数（见 <see cref="LengthInBytes"/>）。
+        /// </summary>
+        /// <param name="span">源字节序列（按实现约定解析为位，通常为大端字节序的块顺序）。</param>
+        public BitFieldData(ReadOnlySpan<byte> span)
         {
-            if (length <= 0)
-                throw new ArgumentException("长度必须为正数", nameof(length));
+            // 此构造按输入字节数量决定 Length（将 span.Length 视为字节长度）
+            int lengthInBits = span.Length * BitsPerByte;
+            Length = lengthInBits;
+            _data = ArrayPool<ulong>.Shared.Rent((Length + BitsPerULong - 1) / BitsPerULong);
+            _trueCount = 0;
 
-            if (span.Length < LengthInBytes)
-                throw new ArgumentException("字节数组太小", nameof(span));
-
-            Length = length;
-            _data = new ulong[(length + BitsPerULong - 1) / BitsPerULong];
-
-            // 从字节数组加载数据
+            // 将字节组装到 ulong 单元（保持实现内定义的位序）
             int byteIndex = 0;
-            for (int i = 0; i < _data.Length; i++)
+            int units = _data.Length;
+            for (int i = 0; i < units; i++)
             {
                 ulong value = 0;
-                int bitsToRead = Math.Min(BitsPerULong, length - i * BitsPerULong);
+                int bitsToRead = Math.Min(BitsPerULong, Length - i * BitsPerULong);
                 int bytesToRead = (bitsToRead + BitsPerByte - 1) / BitsPerByte;
 
                 for (int j = 0; j < bytesToRead; j++)
@@ -102,7 +109,6 @@ namespace ExtenderApp.Data
                     value = (value << BitsPerByte) | span[byteIndex++];
                 }
 
-                // 处理最后一个 ulong 可能不足 64 位的情况
                 if (bitsToRead < BitsPerULong)
                 {
                     value <<= BitsPerULong - bitsToRead;
@@ -114,24 +120,26 @@ namespace ExtenderApp.Data
         }
 
         /// <summary>
-        /// 创建指定长度的 BitField，初始值全为 false
+        /// 创建指定长度（位数）的 BitField，所有位初始化为 false。适合表示资源池或标志集合。
         /// </summary>
+        /// <param name="length">位数（必须为正数）。</param>
         public BitFieldData(int length)
         {
             if (length <= 0)
                 throw new ArgumentException("长度必须为正数", nameof(length));
 
             Length = length;
-            _data = new ulong[(length + BitsPerULong - 1) / BitsPerULong];
+            _data = ArrayPool<ulong>.Shared.Rent((Length + BitsPerULong - 1) / BitsPerULong);
             _trueCount = 0;
         }
 
         /// <summary>
-        /// 从现有 BitField 复制
+        /// 复制构造：从另一个 BitField 克隆值，创建独立副本（深拷贝）。
         /// </summary>
+        /// <param name="other">源 BitField（不得为空）。</param>
         public BitFieldData(BitFieldData other)
         {
-            if (other == null)
+            if (other.IsEmpty)
                 throw new ArgumentNullException(nameof(other));
 
             Length = other.Length;
@@ -140,19 +148,21 @@ namespace ExtenderApp.Data
         }
 
         /// <summary>
-        /// 从布尔数组创建 BitField
+        /// 从布尔序列构造 BitField（每个布尔值对应一位）。适合小规模初始化或测试场景。
         /// </summary>
-        public BitFieldData(bool[] array)
+        /// <param name="span">布尔序列（元素数量即位数）。</param>
+        public BitFieldData(ReadOnlySpan<bool> span)
         {
-            if (array == null)
-                throw new ArgumentNullException(nameof(array));
+            if (span == null)
+                throw new ArgumentNullException(nameof(span));
 
-            Length = array.Length;
-            _data = new ulong[(Length + BitsPerULong - 1) / BitsPerULong];
+            Length = span.Length;
+            _data = ArrayPool<ulong>.Shared.Rent((Length + BitsPerULong - 1) / BitsPerULong);
+            _trueCount = 0;
 
-            for (int i = 0; i < array.Length; i++)
+            for (int i = 0; i < span.Length; i++)
             {
-                if (array[i])
+                if (span[i])
                 {
                     Set(i);
                 }
@@ -160,7 +170,7 @@ namespace ExtenderApp.Data
         }
 
         /// <summary>
-        /// 索引器：获取或设置指定位置的位
+        /// 索引器：按位访问（零基索引）。用于读取或设置单个位状态。
         /// </summary>
         public bool this[int index]
         {
@@ -181,11 +191,12 @@ namespace ExtenderApp.Data
         }
 
         /// <summary>
-        /// 设置指定位置的位为 true
+        /// 将指定索引处的位设置为 true（并更新统计计数）。
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Set(int index)
         {
+            ValidateIndex(index);
             int arrayIndex = index / BitsPerULong;
             int bitIndex = index % BitsPerULong;
             ulong mask = 1UL << (BitsPerULong - 1 - bitIndex);
@@ -198,11 +209,12 @@ namespace ExtenderApp.Data
         }
 
         /// <summary>
-        /// 设置指定位置的位为 false
+        /// 将指定索引处的位清零（false），并更新统计计数。
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Clear(int index)
         {
+            ValidateIndex(index);
             int arrayIndex = index / BitsPerULong;
             int bitIndex = index % BitsPerULong;
             ulong mask = 1UL << (BitsPerULong - 1 - bitIndex);
@@ -215,11 +227,12 @@ namespace ExtenderApp.Data
         }
 
         /// <summary>
-        /// 获取指定位置的位值
+        /// 读取指定索引处的位值（true/false）。
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Get(int index)
         {
+            ValidateIndex(index);
             int arrayIndex = index / BitsPerULong;
             int bitIndex = index % BitsPerULong;
             ulong mask = 1UL << (BitsPerULong - 1 - bitIndex);
@@ -228,12 +241,12 @@ namespace ExtenderApp.Data
         }
 
         /// <summary>
-        /// 查找第一个值为 true 的位的索引
+        /// 查找第一个值为 true 的位索引；找不到返回 -1。
         /// </summary>
         public int FirstTrue() => FirstTrue(0, Length - 1);
 
         /// <summary>
-        /// 在指定范围内查找第一个值为 true 的位的索引
+        /// 在指定区间内查找第一个 true 位的索引；范围检查将在无效时抛出异常。
         /// </summary>
         public int FirstTrue(int startIndex, int endIndex)
         {
@@ -250,11 +263,9 @@ namespace ExtenderApp.Data
                 if (_data[i] == 0)
                     continue;
 
-                // 计算在当前 ulong 中的起始和结束位
                 int startBit = i == startArrayIndex ? startIndex % BitsPerULong : 0;
                 int endBit = i == endArrayIndex ? endIndex % BitsPerULong : BitsPerULong - 1;
 
-                // 处理起始位偏移
                 ulong masked = _data[i] & (ulong.MaxValue << (BitsPerULong - 1 - endBit));
                 masked &= ulong.MaxValue >> startBit;
 
@@ -269,12 +280,12 @@ namespace ExtenderApp.Data
         }
 
         /// <summary>
-        /// 查找第一个值为 false 的位的索引
+        /// 查找第一个值为 false 的位索引；找不到返回 -1。
         /// </summary>
         public int FirstFalse() => FirstFalse(0, Length - 1);
 
         /// <summary>
-        /// 在指定范围内查找第一个值为 false 的位的索引
+        /// 在指定区间内查找第一个 false 位的索引；范围检查将在无效时抛出异常。
         /// </summary>
         public int FirstFalse(int startIndex, int endIndex)
         {
@@ -292,11 +303,9 @@ namespace ExtenderApp.Data
                 if (inverted == 0)
                     continue;
 
-                // 计算在当前 ulong 中的起始和结束位
                 int startBit = i == startArrayIndex ? startIndex % BitsPerULong : 0;
                 int endBit = i == endArrayIndex ? endIndex % BitsPerULong : BitsPerULong - 1;
 
-                // 处理起始位偏移
                 ulong masked = inverted & (ulong.MaxValue << (BitsPerULong - 1 - endBit));
                 masked &= ulong.MaxValue >> startBit;
 
@@ -311,7 +320,7 @@ namespace ExtenderApp.Data
         }
 
         /// <summary>
-        /// 将 BitField 转换为字节数组
+        /// 将 BitField 按实现约定序列化为字节数组，适合用于持久化、网络传输或日志记录。
         /// </summary>
         public byte[] ToBytes()
         {
@@ -321,8 +330,10 @@ namespace ExtenderApp.Data
         }
 
         /// <summary>
-        /// 将 BitField 写入到给定的字节 UnreadSpan
+        /// 将 BitField 写入目标字节缓冲（零拷贝友好），目标长度应至少为
+        /// <see cref="LengthInBytes"/>。
         /// </summary>
+        /// <param name="destination">目标缓冲。</param>
         public void ToBytes(Span<byte> destination)
         {
             if (destination.Length < LengthInBytes)
@@ -343,7 +354,7 @@ namespace ExtenderApp.Data
         }
 
         /// <summary>
-        /// 对所有位执行逻辑非操作
+        /// 对所有位执行逻辑非（NOT），并更新统计信息。
         /// </summary>
         public void Not()
         {
@@ -352,10 +363,8 @@ namespace ExtenderApp.Data
                 _data[i] = ~_data[i];
             }
 
-            // 处理最后一个 ulong 中可能的无效位
             ZeroUnusedBits();
 
-            // 更新 TrueCount
             _trueCount = 0;
             foreach (ulong value in _data)
             {
@@ -364,16 +373,18 @@ namespace ExtenderApp.Data
         }
 
         /// <summary>
-        /// 对输入的字节序列执行按位与操作。
+        /// 对输入字节序列执行按位与（AND）操作（先按约定解码为 BitField）。
         /// </summary>
-        /// <param name="span">包含字节序列的<see cref="ReadOnlySpan{T}"/>。</param>
+        /// <param name="span">源字节序列。</param>
         public void And(ReadOnlySpan<byte> span)
         {
-            And(new BitFieldData(span));
+            var bitField = new BitFieldData(span);
+            And(bitField);
+            bitField.Dispose();
         }
 
         /// <summary>
-        /// 对两个 BitField 执行逻辑与操作
+        /// 将当前实例与另一个 BitField 执行按位与（AND）。
         /// </summary>
         public void And(BitFieldData other)
         {
@@ -388,16 +399,18 @@ namespace ExtenderApp.Data
         }
 
         /// <summary>
-        /// 对给定的字节数组进行按位或操作。
+        /// 对输入字节序列执行按位或（OR）操作（先按约定解码为 BitField）。
         /// </summary>
-        /// <param name="span">要进行按位或操作的字节数组。</param>
+        /// <param name="span">源字节序列。</param>
         public void Or(ReadOnlySpan<byte> span)
         {
-            Or(new BitFieldData(span));
+            var bitField = new BitFieldData(span);
+            Or(bitField);
+            bitField.Dispose();
         }
 
         /// <summary>
-        /// 对两个 BitField 执行逻辑或操作
+        /// 将当前实例与另一个 BitField 执行按位或（OR）。
         /// </summary>
         public void Or(BitFieldData other)
         {
@@ -412,16 +425,18 @@ namespace ExtenderApp.Data
         }
 
         /// <summary>
-        /// 对给定的字节序列进行异或操作。
+        /// 对输入字节序列执行按位异或（XOR）操作（先按约定解码为 BitField）。
         /// </summary>
-        /// <param name="span">包含要进行异或操作的字节序列的<see cref="ReadOnlySpan{byte}"/>。</param>
+        /// <param name="span">源字节序列。</param>
         public void Xor(ReadOnlySpan<byte> span)
         {
-            Xor(new BitFieldData(span));
+            var bitField = new BitFieldData(span);
+            Xor(bitField);
+            bitField.Dispose();
         }
 
         /// <summary>
-        /// 对两个 BitField 执行逻辑异或操作
+        /// 将当前实例与另一个 BitField 执行按位异或（XOR）。
         /// </summary>
         public void Xor(BitFieldData other)
         {
@@ -436,7 +451,7 @@ namespace ExtenderApp.Data
         }
 
         /// <summary>
-        /// 将所有位设置为 true
+        /// 将所有位设置为 true（并处理尾部无效位）。
         /// </summary>
         public void SetAll()
         {
@@ -446,7 +461,7 @@ namespace ExtenderApp.Data
         }
 
         /// <summary>
-        /// 将所有位设置为 false
+        /// 将所有位清零（false）。
         /// </summary>
         public void ClearAll()
         {
@@ -455,7 +470,7 @@ namespace ExtenderApp.Data
         }
 
         /// <summary>
-        /// 计算与另一个 BitField 相同的位的数量
+        /// 计算与另一个 BitField 相同为 true 的位数（用于比较或统计重叠）。
         /// </summary>
         public int CountSameBits(BitFieldData other)
         {
@@ -471,9 +486,9 @@ namespace ExtenderApp.Data
         }
 
         /// <summary>
-        /// 比较两个 BitField 是否相等
+        /// 比较两个 BitField 是否逐位相等（包含长度比较）。
         /// </summary>
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             if (obj is not BitFieldData other)
                 return false;
@@ -491,7 +506,7 @@ namespace ExtenderApp.Data
         }
 
         /// <summary>
-        /// 获取哈希码
+        /// 生成哈希值，适合用于集合键或快速比较。
         /// </summary>
         public override int GetHashCode()
         {
@@ -507,7 +522,7 @@ namespace ExtenderApp.Data
         }
 
         /// <summary>
-        /// 获取枚举器
+        /// 枚举位序列（按索引从 0 到 Length-1），可用于记录、导出或逐位处理。
         /// </summary>
         public IEnumerator<bool> GetEnumerator()
         {
@@ -520,7 +535,7 @@ namespace ExtenderApp.Data
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
         /// <summary>
-        /// 将 BitField 转换为字符串表示形式
+        /// 将 BitField 转换为 '1'/'0' 字符串，便于日志、调试或简易导出。
         /// </summary>
         public override string ToString()
         {
@@ -528,7 +543,7 @@ namespace ExtenderApp.Data
         }
 
         /// <summary>
-        /// 验证索引是否有效
+        /// 验证索引是否有效；在索引越界时抛出 <see cref="IndexOutOfRangeException"/>。
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void ValidateIndex(int index)
@@ -538,7 +553,7 @@ namespace ExtenderApp.Data
         }
 
         /// <summary>
-        /// 验证范围是否有效
+        /// 验证范围有效性（起止索引），在无效时抛出相应异常。
         /// </summary>
         private void ValidateRange(int startIndex, int endIndex)
         {
@@ -553,11 +568,11 @@ namespace ExtenderApp.Data
         }
 
         /// <summary>
-        /// 验证两个 BitField 长度是否相同
+        /// 验证两个 BitField 长度一致性并在不满足时抛出异常。
         /// </summary>
         private void ValidateSameLength(BitFieldData other)
         {
-            if (other == null)
+            if (other.IsEmpty)
                 throw new ArgumentNullException(nameof(other));
 
             if (Length != other.Length)
@@ -565,7 +580,7 @@ namespace ExtenderApp.Data
         }
 
         /// <summary>
-        /// 将最后一个 ulong 中超出实际长度的位清零
+        /// 将最后一个存储单元中超出实际长度的位清零，避免垃圾位影响统计或序列化。
         /// </summary>
         private void ZeroUnusedBits()
         {
@@ -577,6 +592,14 @@ namespace ExtenderApp.Data
             ulong mask = ulong.MaxValue >> unusedBits;
 
             _data[lastArrayIndex] &= mask;
+        }
+
+        /// <summary>
+        /// 归还底层租用数组到数组池；调用后不应再使用该实例。
+        /// </summary>
+        public void Dispose()
+        {
+            ArrayPool<ulong>.Shared.Return(_data);
         }
     }
 }

@@ -5,6 +5,9 @@ using ExtenderApp.Data;
 
 namespace ExtenderApp.Common.Networks
 {
+    /// <summary>
+    /// 套字节链接器的抽象基类。
+    /// </summary>
     public abstract class SocketLinker : Linker
     {
         private static readonly ObjectPool<AwaitableSocketEventArgs> _pool
@@ -13,7 +16,7 @@ namespace ExtenderApp.Common.Networks
         /// <summary>
         /// 当前链接器所使用的 Socket 实例。
         /// </summary>
-        protected Socket Socket { get; }
+        internal Socket Socket { get; }
 
         public SocketLinker(Socket socket)
         {
@@ -29,6 +32,8 @@ namespace ExtenderApp.Common.Networks
         public override SocketType SocketType => Socket.SocketType;
 
         public override ProtocolType ProtocolType => Socket.ProtocolType;
+
+        public override AddressFamily AddressFamily => Socket.AddressFamily;
 
         /// <summary>
         /// 从对象池中获取 AwaitableSocketEventArgs 实例。

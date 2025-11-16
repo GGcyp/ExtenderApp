@@ -79,7 +79,7 @@ namespace ExtenderApp.Common.Networks
             Parser = httpParser ?? new HttpParser();
             vts = new ManualResetValueTaskSourceCore<HttpResponseMessage>();
             vts.RunContinuationsAsynchronously = true;
-            _tcpLinkerStream = linker.ToStream();
+            _tcpLinkerStream = linker.GetStream();
             _sslStream = new(_tcpLinkerStream);
             AuthenticationOptions = new SslClientAuthenticationOptions
             {
