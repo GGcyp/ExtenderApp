@@ -63,8 +63,8 @@ namespace ExtenderApp.Common.IO.Binary
             store.AddClassFormatter<Version, VersionFoematter>();
             store.AddClassFormatter<IPAddress, IPAddressFormatter>();
             store.AddClassFormatter<IPEndPoint, IPEndPoinFormatter>();
-            store.AddClassFormatter<BitFieldData, BitFieldDataFormatter>();
 
+            store.AddStructFormatter<BitFieldData, BitFieldDataFormatter>();
             store.AddStructFormatter<LocalFileInfo, LocalFileInfoFormatter>();
             store.AddStructFormatter<ExtensionHeader, ExtensionHeaderFormatter>();
 

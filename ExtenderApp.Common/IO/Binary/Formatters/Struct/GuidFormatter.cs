@@ -8,29 +8,32 @@ namespace ExtenderApp.Common.IO.Binary.Formatters
     /// </summary>
     internal class GuidFormatter : ResolverFormatter<Guid>
     {
-        private readonly IBinaryFormatter<string> _formatter;
+        private const int GuidByteLength = 16;
 
-        public override int DefaultLength => throw new NotImplementedException();
+        public override int DefaultLength => GuidByteLength;
 
         public GuidFormatter(IBinaryFormatterResolver resolver) : base(resolver)
         {
-            _formatter = GetFormatter<string>();
         }
 
         public override Guid Deserialize(ref ByteBuffer buffer)
         {
-            var result = _formatter.Deserialize(ref buffer);
-            return Guid.Parse(result);
+            Span<byte> span = stackalloc byte[GuidByteLength];
+            buffer.TryCopyTo(span);
+            buffer.ReadAdvance(GuidByteLength);
+            return new Guid(span);
         }
 
         public override void Serialize(ref ByteBuffer buffer, Guid value)
         {
-            _formatter.Serialize(ref buffer, value.ToString());
+            var span = buffer.GetSpan(GuidByteLength);
+            value.TryWriteBytes(span);
+            buffer.WriteAdvance(GuidByteLength);
         }
 
         public override long GetLength(Guid value)
         {
-            return _formatter.GetLength(value.ToString());
+            return GuidByteLength;
         }
     }
 }

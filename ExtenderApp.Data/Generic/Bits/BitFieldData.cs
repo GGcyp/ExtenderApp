@@ -13,8 +13,10 @@ namespace ExtenderApp.Data
     /// cref="Dispose"/> 归还资源。 支持序列化（ <see
     /// cref="ToBytes"/>）、日志记录（ <see cref="ToString"/>）以及常用的按位运算（AND/OR/XOR/NOT）。
     /// </summary>
-    public struct BitFieldData : IEnumerable<bool>, IDisposable
+    public struct BitFieldData : IEnumerable<bool>, IDisposable, IEquatable<BitFieldData>
     {
+        public static BitFieldData Empty => new BitFieldData(0);
+
         /// <summary>
         /// 每个 <see cref="ulong"/> 存储的位数（64）。
         /// </summary>
@@ -125,7 +127,7 @@ namespace ExtenderApp.Data
         /// <param name="length">位数（必须为正数）。</param>
         public BitFieldData(int length)
         {
-            if (length <= 0)
+            if (length < 0)
                 throw new ArgumentException("长度必须为正数", nameof(length));
 
             Length = length;
@@ -600,6 +602,14 @@ namespace ExtenderApp.Data
         public void Dispose()
         {
             ArrayPool<ulong>.Shared.Return(_data);
+        }
+
+        public bool Equals(BitFieldData other)
+        {
+            if (IsEmpty && other.IsEmpty) return true;
+            if (IsEmpty || other.IsEmpty) return false;
+
+            return _data.AsSpan().SequenceEqual(other._data.AsSpan());
         }
     }
 }

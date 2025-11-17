@@ -1,6 +1,5 @@
 ﻿using System.Net;
 using ExtenderApp.Abstract;
-using ExtenderApp.Common.IO.Binary.Formatters;
 using ExtenderApp.Data;
 
 namespace ExtenderApp.Common.IO.Binary.Formatters.Class

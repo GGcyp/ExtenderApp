@@ -28,6 +28,8 @@ namespace ExtenderApp.Common.Networks
 
         public SocketType SocketType => Linker.SocketType;
 
+        public AddressFamily AddressFamily => Linker.AddressFamily;
+
         #endregion ILinker 直通属性
 
         public LinkClient(TLinker linker)

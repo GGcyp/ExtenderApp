@@ -1,7 +1,4 @@
 ﻿using System.Buffers;
-using ExtenderApp.Abstract;
-using ExtenderApp.Common.IO.Binary;
-using ExtenderApp.Common.IO.Binary.Formatters;
 using ExtenderApp.Data;
 
 namespace ExtenderApp.Common.IO.Binary.Formatters
@@ -18,7 +15,7 @@ namespace ExtenderApp.Common.IO.Binary.Formatters
         {
             if (!_bufferConvert.TryReadArrayHeader(ref buffer, out var length))
             {
-                return null;
+                return BitFieldData.Empty;
             }
             var bitFieldData = new BitFieldData(length);
 
@@ -42,7 +39,7 @@ namespace ExtenderApp.Common.IO.Binary.Formatters
 
         public override void Serialize(ref ByteBuffer buffer, BitFieldData value)
         {
-            if (value is null)
+            if (value.IsEmpty)
             {
                 _bufferConvert.WriteNil(ref buffer);
                 return;
@@ -57,7 +54,7 @@ namespace ExtenderApp.Common.IO.Binary.Formatters
 
         public override long GetLength(BitFieldData value)
         {
-            if (value is null)
+            if (value.IsEmpty)
                 return 1; // 如果是null，返回1字节表示null
 
             return 5 + value.Length;

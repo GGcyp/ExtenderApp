@@ -16,12 +16,12 @@ namespace ExtenderApp.Data
         /// <summary>
         /// IPv4 地址字节长度。
         /// </summary>
-        private const int IPv4Length = 4;
+        public const int IPv4Length = 4;
 
         /// <summary>
         /// IPv6 地址字节长度。
         /// </summary>
-        private const int IPv6Length = 16;
+        public const int IPv6Length = 16;
 
         /// <summary>
         /// 代表 IPv4 任意地址（0.0.0.0）的 <see
@@ -64,9 +64,27 @@ namespace ExtenderApp.Data
         public static ValueIPAddress IPv6None => IPv6Any;
 
         private byte[]? _buffer; // 租用数组（可能比实际长度更大）
-        private int _length;     // 有效字节长度：4 或 16
         private long _scopeId;   // IPv6 scope id（IPv4 时为 0）
-        private bool _returned;  // 是否已归还
+
+        public int Length { get; }
+
+        /// <summary>
+        /// 检查是否为空地址（未初始化或已释放）。
+        /// </summary>
+        public bool IsEmpty => _buffer == null || Length == 0;
+
+        /// <summary>
+        /// 地址族。
+        /// </summary>
+        public AddressFamily AddressFamily => Length == 16 ? AddressFamily.InterNetworkV6 : AddressFamily.InterNetwork;
+
+        /// <summary>
+        /// IPv6 时有效的 ScopeId；IPv4 时返回 0。
+        /// </summary>
+        public long ScopeId
+        {
+            get => Length == 16 ? _scopeId : 0;
+        }
 
         /// <summary>
         /// 构造：从字节数组及 scopeId 创建（会将字节复制到租用缓冲）。
@@ -85,14 +103,13 @@ namespace ExtenderApp.Data
             if (address.Length != IPv4Length && address.Length != IPv6Length)
                 throw new ArgumentException("address must be 4 (IPv4) or 16 (IPv6) bytes", nameof(address));
 
-            _length = address.Length;
+            Length = address.Length;
             _scopeId = scopeid;
-            _returned = false;
 
             // 租用最少长度为 16 可统一管理，也可按实际长度租用
-            int rentSize = _length;
+            int rentSize = Length;
             _buffer = ArrayPool<byte>.Shared.Rent(rentSize);
-            address.CopyTo(_buffer.AsSpan(0, _length));
+            address.CopyTo(_buffer.AsSpan(0, Length));
         }
 
         /// <summary>
@@ -124,12 +141,12 @@ namespace ExtenderApp.Data
         /// </summary>
         public IPAddress ToIPAddress()
         {
-            if (_buffer == null || _length == 0)
+            if (_buffer == null || Length == 0)
                 throw new ObjectDisposedException(nameof(ValueIPAddress));
 
             // IPAddress 有 Accept
             // ReadOnlySpan<byte> 构造
-            if (_length == IPv4Length)
+            if (Length == IPv4Length)
             {
                 // IPv4 constructor accepts ReadOnlySpan<byte>
                 return new IPAddress(new ReadOnlySpan<byte>(_buffer, 0, IPv4Length));
@@ -145,11 +162,11 @@ namespace ExtenderApp.Data
         /// </summary>
         public byte[] ToArray()
         {
-            if (_buffer == null || _length == 0)
+            if (_buffer == null || Length == 0)
                 throw new ObjectDisposedException(nameof(ValueIPAddress));
 
-            var result = new byte[_length];
-            Array.Copy(_buffer, 0, result, 0, _length);
+            var result = new byte[Length];
+            Array.Copy(_buffer, 0, result, 0, Length);
             return result;
         }
 
@@ -158,22 +175,34 @@ namespace ExtenderApp.Data
         /// </summary>
         public Span<byte> AsSpan()
         {
-            if (_buffer == null || _length == 0)
+            if (_buffer == null || Length == 0)
                 throw new ObjectDisposedException(nameof(ValueIPAddress));
-            return new Span<byte>(_buffer, 0, _length);
+            return new Span<byte>(_buffer, 0, Length);
         }
 
         /// <summary>
-        /// 地址族。
+        /// 将当前 IP 地址的有效字节复制到目标缓冲区。
         /// </summary>
-        public AddressFamily AddressFamily => _length == 16 ? AddressFamily.InterNetworkV6 : AddressFamily.InterNetwork;
-
-        /// <summary>
-        /// IPv6 时有效的 ScopeId；IPv4 时返回 0。
-        /// </summary>
-        public long ScopeId
+        /// <param name="destination">
+        /// 目标写入的字节跨度，长度必须大于等于 <see cref="Length"/>。
+        /// </param>
+        /// <param name="written">
+        /// 实际写入的字节数；复制成功时等于 <see cref="Length"/>。
+        /// </param>
+        /// <exception cref="ObjectDisposedException">
+        /// 当实例未初始化或已释放（内部缓冲为 null 或 <see cref="Length"/> 为 0）时抛出。
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        /// 当 <paramref name="destination"/> 的长度小于 <see cref="Length"/> 时抛出。
+        /// </exception>
+        public void TryWriteBytes(Span<byte> destination, out int written)
         {
-            get => _length == 16 ? _scopeId : 0;
+            if (_buffer == null || Length == 0)
+                throw new ObjectDisposedException(nameof(ValueIPAddress));
+            if (destination.Length < Length)
+                throw new ArgumentException("Destination span is too small", nameof(destination));
+            written = Length;
+            new Span<byte>(_buffer, 0, Length).CopyTo(destination);
         }
 
         /// <summary>
@@ -181,15 +210,13 @@ namespace ExtenderApp.Data
         /// </summary>
         public void Dispose()
         {
-            if (_returned) return;
             if (_buffer != null)
             {
                 ArrayPool<byte>.Shared.Return(_buffer, clearArray: RuntimeHelpers.IsReferenceOrContainsReferences<byte>());
                 _buffer = null;
             }
-            _length = 0;
+            Length = 0;
             _scopeId = 0;
-            _returned = true;
         }
 
         /// <summary>
@@ -203,8 +230,8 @@ namespace ExtenderApp.Data
 
         public bool Equals(ValueIPAddress other)
         {
-            if (_length != other._length) return false;
-            if (_length == 16 && _scopeId != other._scopeId) return false;
+            if (Length != other.Length) return false;
+            if (Length == 16 && _scopeId != other._scopeId) return false;
             return AsSpan().SequenceEqual(other.AsSpan());
         }
 
@@ -213,15 +240,15 @@ namespace ExtenderApp.Data
 
         public override int GetHashCode()
         {
-            if (_buffer == null || _length == 0) return 0;
+            if (_buffer == null || Length == 0) return 0;
             // 简单 hash：对前几字节与长度/ScopeId 做组合
-            int h = _length;
+            int h = Length;
             ReadOnlySpan<byte> s = AsSpan();
             for (int i = 0; i < Math.Min(8, s.Length); i++)
             {
                 h = (h * 31) ^ s[i];
             }
-            if (_length == 16)
+            if (Length == 16)
                 h = HashCode.Combine(h, _scopeId);
             return h;
         }

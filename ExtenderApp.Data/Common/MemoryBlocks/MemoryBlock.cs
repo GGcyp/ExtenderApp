@@ -183,11 +183,14 @@ namespace ExtenderApp.Data
         }
 
         /// <summary>
-        /// 将写指针向前推进指定数量（调用者保证已写入该数量）。
+        /// 将写指针向前推进指定数量（调用者保证已写入该数量）或全填默认值。
         /// </summary>
         /// <param name="count">推进的元素个数。</param>
         public void WriteAdvance(int count)
         {
+            if (WritableBytes < Length + count)
+                Ensure(Length + count - WritableBytes);
+
             Length += count;
         }
 
