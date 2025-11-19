@@ -10,9 +10,9 @@ namespace ExtenderApp.Data
     /// 并提供 MAC 格式化与基于 IP+MAC 的相等性比较。
     /// </summary>
     [DebuggerDisplay("PhysicalAddress = {MacAddress}, IP = {Address}, Host = {HostName}")]
-    public class LANHostInfo : IEquatable<LANHostInfo>
+    public class LanHostInfo : IEquatable<LanHostInfo>
     {
-        public static LANHostInfo Empty { get; } = new LANHostInfo(IPAddress.Loopback);
+        public static LanHostInfo Empty { get; } = new LanHostInfo(IPAddress.Loopback);
 
         /// <summary>
         /// 获取主机的物理地址（MAC）。若未知则为 <see cref="PhysicalAddress.None"/>。
@@ -57,7 +57,7 @@ namespace ExtenderApp.Data
         /// <see cref="HostName"/> = 空字符串，
         /// <see cref="MacAddress"/> = <see cref="PhysicalAddress.None"/>。
         /// </summary>
-        public LANHostInfo(IPAddress address) : this(address, string.Empty, PhysicalAddress.None)
+        public LanHostInfo(IPAddress address) : this(address, string.Empty, PhysicalAddress.None)
         {
         }
 
@@ -68,7 +68,7 @@ namespace ExtenderApp.Data
         /// <param name="hostName">主机名，可为 null 或空。</param>
         /// <param name="macAddress">物理地址，null 时回退为 <see cref="PhysicalAddress.None"/>。</param>
         /// <exception cref="ArgumentNullException"><paramref name="address"/> 为 null 时抛出。</exception>
-        public LANHostInfo(IPAddress address, string? hostName, PhysicalAddress? macAddress)
+        public LanHostInfo(IPAddress address, string? hostName, PhysicalAddress? macAddress)
         {
             ArgumentNullException.ThrowIfNull(address);
             if (address.Equals(IPAddress.None))
@@ -108,7 +108,7 @@ namespace ExtenderApp.Data
         /// <summary>
         /// 判断与另一实例是否相等（按 IP 与 MAC 比较，主机名不参与）。
         /// </summary>
-        public bool Equals(LANHostInfo? other)
+        public bool Equals(LanHostInfo? other)
         {
             if (ReferenceEquals(this, other)) return true;
             if (other is null) return false;
@@ -120,10 +120,10 @@ namespace ExtenderApp.Data
         }
 
         /// <inheritdoc />
-        public override bool Equals(object? obj) => obj is LANHostInfo other && Equals(other);
+        public override bool Equals(object? obj) => obj is LanHostInfo other && Equals(other);
 
         /// <summary>
-        /// 获取哈希码（与 <see cref="Equals(LANHostInfo?)"/> 一致，基于 IP + MAC）。
+        /// 获取哈希码（与 <see cref="Equals(LanHostInfo?)"/> 一致，基于 IP + MAC）。
         /// </summary>
         public override int GetHashCode()
         {
@@ -131,13 +131,13 @@ namespace ExtenderApp.Data
         }
 
         /// <summary>
-        /// 相等运算符，等价于 <see cref="Equals(LANHostInfo?)"/>。
+        /// 相等运算符，等价于 <see cref="Equals(LanHostInfo?)"/>。
         /// </summary>
-        public static bool operator ==(LANHostInfo? left, LANHostInfo? right) => Equals(left, right);
+        public static bool operator ==(LanHostInfo? left, LanHostInfo? right) => Equals(left, right);
 
         /// <summary>
         /// 不相等运算符。
         /// </summary>
-        public static bool operator !=(LANHostInfo? left, LANHostInfo? right) => !Equals(left, right);
+        public static bool operator !=(LanHostInfo? left, LanHostInfo? right) => !Equals(left, right);
     }
 }

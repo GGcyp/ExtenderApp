@@ -66,12 +66,12 @@ namespace ExtenderApp.Data
         private byte[]? _buffer; // 租用数组（可能比实际长度更大）
         private long _scopeId;   // IPv6 scope id（IPv4 时为 0）
 
-        public int Length { get; }
+        public int Length { get; private set; }
 
         /// <summary>
         /// 检查是否为空地址（未初始化或已释放）。
         /// </summary>
-        public bool IsEmpty => _buffer == null || Length == 0;
+        public bool IsEmpty => _buffer is null || Length == 0;
 
         /// <summary>
         /// 地址族。
@@ -110,6 +110,21 @@ namespace ExtenderApp.Data
             int rentSize = Length;
             _buffer = ArrayPool<byte>.Shared.Rent(rentSize);
             address.CopyTo(_buffer.AsSpan(0, Length));
+        }
+
+        /// <summary>
+        /// 通过 32 位无符号整数创建 IPv4 地址（按网络字节序 Big-Endian 解析）。
+        /// </summary>
+        /// <param name="ipv4Address"> 32 位无符号整数地址</param>
+        public ValueIPAddress(uint ipv4Address)
+        {
+            Length = IPv4Length;
+            _scopeId = 0;
+            _buffer = ArrayPool<byte>.Shared.Rent(IPv4Length);
+            _buffer[0] = (byte)((ipv4Address >> 24) & 0xFF);
+            _buffer[1] = (byte)((ipv4Address >> 16) & 0xFF);
+            _buffer[2] = (byte)((ipv4Address >> 8) & 0xFF);
+            _buffer[3] = (byte)(ipv4Address & 0xFF);
         }
 
         /// <summary>
@@ -171,7 +186,7 @@ namespace ExtenderApp.Data
         }
 
         /// <summary>
-        /// 获取有效字节作为 ReadOnlySpan。
+        /// 获取有效字节作为 Span。
         /// </summary>
         public Span<byte> AsSpan()
         {
@@ -206,7 +221,46 @@ namespace ExtenderApp.Data
         }
 
         /// <summary>
-        /// 释放并将租用缓冲归还到 ArrayPool（可重复调用但只归还一次）。
+        /// 将当前 IP 地址的有效字节写入到 <see cref="ByteBlock"/> 末尾。
+        /// </summary>
+        /// <param name="block">指定字节块</param>
+        public void CopyTo(ref ByteBlock block)
+        {
+            if (IsEmpty)
+                return;
+
+            block.Write(AsSpan());
+        }
+
+        /// <summary>
+        /// 将当前 IPv4 地址转换为 32 位无符号整数（按网络字节序 Big-Endian 组合）。
+        /// </summary>
+        /// <returns>
+        /// 与 IPv4 四段十进制等价的 32 位无符号整数值；高位为地址第一个字节。
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        /// 当当前实例为空（未初始化或已释放）时抛出。
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        /// 当当前地址不是 IPv4（长度非 4 字节）时抛出。
+        /// </exception>
+        /// <remarks>
+        /// 返回值按网络序（Big-Endian）计算，即 (b0 &lt;&lt; 24) | (b1 &lt;&lt; 16) | (b2 &lt;&lt; 8) | b3。
+        /// 若需主机字节序表示，可依据 <see cref="BitConverter.IsLittleEndian"/> 进行转换。
+        /// </remarks>
+        public uint ToUInt32()
+        {
+            if (IsEmpty)
+                throw new ArgumentNullException(nameof(ValueIPAddress));
+            if (AddressFamily != AddressFamily.InterNetwork)
+                throw new ArgumentException("仅支持 IPv4 地址转换为 UInt32");
+
+            ReadOnlySpan<byte> span = AsSpan();
+            return (uint)(span[0] << 24 | span[1] << 16 | span[2] << 8 | span[3]);
+        }
+
+        /// <summary>
+        /// 释放并将租用缓冲归还到 ArrayPool
         /// </summary>
         public void Dispose()
         {

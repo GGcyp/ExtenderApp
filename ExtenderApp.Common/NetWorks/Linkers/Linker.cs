@@ -12,9 +12,15 @@ namespace ExtenderApp.Common.Networks
     {
         private const int DefaultCapacity = 1024 * 512;
 
-        private readonly SemaphoreSlim _sendSlim;
-        private readonly SemaphoreSlim _receiveSlim;
-        private readonly SemaphoreSlim _lifecycleSlim;
+        /// <summary>
+        /// 发送操作的并发门控信号量。
+        /// </summary>
+        protected readonly SemaphoreSlim SendSlim;
+
+        /// <summary>
+        /// 接收操作的并发门控信号量。
+        /// </summary>
+        protected readonly SemaphoreSlim ReceiveSlim;
 
         public CapacityLimiter CapacityLimiter { get; }
 
@@ -44,9 +50,8 @@ namespace ExtenderApp.Common.Networks
 
         public Linker(long capacity)
         {
-            _sendSlim = new(1, 1);
-            _receiveSlim = new(1, 1);
-            _lifecycleSlim = new(1, 1);
+            SendSlim = new(1, 1);
+            ReceiveSlim = new(1, 1);
 
             CapacityLimiter = new(capacity);
 
@@ -65,9 +70,8 @@ namespace ExtenderApp.Common.Networks
         {
             ThrowIfDisposed();
             // 保证连接/断开与收发互斥，避免在 I/O 中途切换连接状态
-            _sendSlim.Wait();
-            _receiveSlim.Wait();
-            _lifecycleSlim.Wait();
+            SendSlim.Wait();
+            ReceiveSlim.Wait();
 
             if (Connected)
                 Disconnect();
@@ -78,8 +82,8 @@ namespace ExtenderApp.Common.Networks
             }
             finally
             {
-                _receiveSlim.Release();
-                _sendSlim.Release();
+                ReceiveSlim.Release();
+                SendSlim.Release();
             }
         }
 
@@ -89,9 +93,8 @@ namespace ExtenderApp.Common.Networks
         public async ValueTask ConnectAsync(EndPoint remoteEndPoint, CancellationToken token = default)
         {
             ThrowIfDisposed();
-            await _sendSlim.WaitAsync(token).ConfigureAwait(false);
-            await _receiveSlim.WaitAsync(token).ConfigureAwait(false);
-            await _lifecycleSlim.WaitAsync(token).ConfigureAwait(false);
+            await SendSlim.WaitAsync(token).ConfigureAwait(false);
+            await ReceiveSlim.WaitAsync(token).ConfigureAwait(false);
 
             if (Connected)
                 await DisconnectAsync(token).ConfigureAwait(false);
@@ -102,8 +105,8 @@ namespace ExtenderApp.Common.Networks
             }
             finally
             {
-                _receiveSlim.Release();
-                _sendSlim.Release();
+                ReceiveSlim.Release();
+                SendSlim.Release();
             }
         }
 
@@ -113,17 +116,16 @@ namespace ExtenderApp.Common.Networks
         public void Disconnect()
         {
             ThrowIfDisposed();
-            _sendSlim.Wait();
-            _receiveSlim.Wait();
-            _lifecycleSlim.Wait();
+            SendSlim.Wait();
+            ReceiveSlim.Wait();
             try
             {
                 ExecuteDisconnectAsync(default).GetAwaiter().GetResult();
             }
             finally
             {
-                _receiveSlim.Release();
-                _sendSlim.Release();
+                ReceiveSlim.Release();
+                SendSlim.Release();
             }
         }
 
@@ -133,17 +135,16 @@ namespace ExtenderApp.Common.Networks
         public async ValueTask DisconnectAsync(CancellationToken token = default)
         {
             ThrowIfDisposed();
-            await _sendSlim.WaitAsync(token).ConfigureAwait(false);
-            await _receiveSlim.WaitAsync(token).ConfigureAwait(false);
-            await _lifecycleSlim.WaitAsync(token).ConfigureAwait(false);
+            await SendSlim.WaitAsync(token).ConfigureAwait(false);
+            await ReceiveSlim.WaitAsync(token).ConfigureAwait(false);
             try
             {
                 await ExecuteDisconnectAsync(token).ConfigureAwait(false);
             }
             finally
             {
-                _receiveSlim.Release();
-                _sendSlim.Release();
+                ReceiveSlim.Release();
+                SendSlim.Release();
             }
         }
 
@@ -157,7 +158,7 @@ namespace ExtenderApp.Common.Networks
                 return new SocketOperationResult(0, RemoteEndPoint, null, default);
             ThrowIfDisposed();
             var lease = CapacityLimiter.Acquire(memory.Length);
-            _sendSlim.Wait();
+            SendSlim.Wait();
             try
             {
                 SocketOperationResult result = ExecuteSendAsync(memory, default).GetAwaiter().GetResult();
@@ -166,7 +167,7 @@ namespace ExtenderApp.Common.Networks
             }
             finally
             {
-                _sendSlim.Release();
+                SendSlim.Release();
                 lease.Dispose();
             }
         }
@@ -177,7 +178,7 @@ namespace ExtenderApp.Common.Networks
                 return new SocketOperationResult(0, RemoteEndPoint, null, default);
             ThrowIfDisposed();
             var lease = await CapacityLimiter.AcquireAsync(memory.Length, token).ConfigureAwait(false);
-            await _sendSlim.WaitAsync(token).ConfigureAwait(false);
+            await SendSlim.WaitAsync(token).ConfigureAwait(false);
             try
             {
                 var result = await ExecuteSendAsync(memory, token).ConfigureAwait(false);
@@ -186,7 +187,7 @@ namespace ExtenderApp.Common.Networks
             }
             finally
             {
-                _sendSlim.Release();
+                SendSlim.Release();
                 lease.Dispose();
             }
         }
@@ -199,7 +200,7 @@ namespace ExtenderApp.Common.Networks
         {
             ThrowIfDisposed();
             var lease = CapacityLimiter.Acquire(memory.Length);
-            _receiveSlim.Wait();
+            ReceiveSlim.Wait();
             try
             {
                 SocketOperationResult result = ExecuteReceiveAsync(memory, default).GetAwaiter().GetResult();
@@ -208,7 +209,7 @@ namespace ExtenderApp.Common.Networks
             }
             finally
             {
-                _receiveSlim.Release();
+                ReceiveSlim.Release();
                 lease.Dispose();
             }
         }
@@ -220,7 +221,7 @@ namespace ExtenderApp.Common.Networks
                 return new SocketOperationResult(0, RemoteEndPoint, null, default);
 
             var lease = await CapacityLimiter.AcquireAsync(memory.Length, token).ConfigureAwait(false);
-            await _receiveSlim.WaitAsync(token).ConfigureAwait(false);
+            await ReceiveSlim.WaitAsync(token).ConfigureAwait(false);
             try
             {
                 var result = await ExecuteReceiveAsync(memory, token).ConfigureAwait(false);
@@ -229,7 +230,7 @@ namespace ExtenderApp.Common.Networks
             }
             finally
             {
-                _receiveSlim.Release();
+                ReceiveSlim.Release();
                 lease.Dispose();
             }
         }
@@ -278,17 +279,15 @@ namespace ExtenderApp.Common.Networks
 
             Disconnect();
 
-            _sendSlim.Wait();
-            _receiveSlim.Wait();
-            _lifecycleSlim.Wait();
+            SendSlim.Wait();
+            ReceiveSlim.Wait();
 
             SendCounter.Dispose();
             ReceiveCounter.Dispose();
             CapacityLimiter.Dispose();
 
-            _sendSlim.Dispose();
-            _receiveSlim.Dispose();
-            _lifecycleSlim.Dispose();
+            SendSlim.Dispose();
+            ReceiveSlim.Dispose();
         }
     }
 }

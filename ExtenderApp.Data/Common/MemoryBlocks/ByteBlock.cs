@@ -177,7 +177,7 @@ namespace ExtenderApp.Data
         public Span<byte> GetSpan(int sizeHint = 0) => _block.GetSpan(sizeHint);
 
         /// <summary>
-        /// 将写指针前进指定字节数（调用者需保证已实际写入）或全填默认值。
+        /// 将写指针前进指定字节数（调用者需保证已实际写入）。
         /// </summary>
         /// <param name="count">推进的字节数。</param>
         public void WriteAdvance(int count) => _block.WriteAdvance(count);
@@ -398,6 +398,19 @@ namespace ExtenderApp.Data
             var memory = GetMemory(byteCount);
             encoding.GetBytes(value, memory.Span);
             WriteAdvance(byteCount);
+        }
+
+        /// <summary>
+        /// 写入多个相同字节到当前写指针位置。
+        /// </summary>
+        /// <param name="value">需要写入的字节</param>
+        /// <param name="count">写入个数</param>
+        public void Write(byte value, int count)
+        {
+            Ensure(count);
+            Span<byte> span = GetSpan(count).Slice(0, count);
+            span.Fill(value);
+            WriteAdvance(count);
         }
 
         /// <summary>

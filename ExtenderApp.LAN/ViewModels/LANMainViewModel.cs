@@ -1,7 +1,9 @@
-﻿using ExtenderApp.ViewModels;
+﻿using System.Collections.ObjectModel;
 using ExtenderApp.Abstract;
-using System.Collections.ObjectModel;
 using ExtenderApp.Common;
+using ExtenderApp.ViewModels;
+using PacketDotNet;
+using SharpPcap;
 
 namespace ExtenderApp.LAN
 {
@@ -9,7 +11,7 @@ namespace ExtenderApp.LAN
     {
         public LANMainViewModel(IServiceStore serviceStore) : base(serviceStore)
         {
-
+           //ArpPacket 
         }
     }
 }

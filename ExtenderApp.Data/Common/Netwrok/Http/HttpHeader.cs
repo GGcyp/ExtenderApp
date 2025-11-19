@@ -66,7 +66,7 @@ namespace ExtenderApp.Data
         }
 
         /// <summary>
-        /// 尝试获取头的所有值（返回数组副本）。不存在时返回 false，values 为 Empty。
+        /// 尝试获取头的所有值（返回数组副本）。不存在时返回 false，values 为 None。
         /// </summary>
         public bool TryGetValues(string name, out ValueOrList<string> values)
         {

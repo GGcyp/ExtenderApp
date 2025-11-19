@@ -1,8 +1,6 @@
-﻿
-using ExtenderApp.Abstract;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 
-namespace ExtenderApp.Common.Networks.LinkClients
+namespace ExtenderApp.Common.Networks
 {
     internal static class LinkClientExtensions
     {

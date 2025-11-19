@@ -26,6 +26,7 @@ namespace ExtenderApp.Common.Networks
         public static IServiceCollection AddLinker(this IServiceCollection services)
         {
             services.AddTcpLinker();
+            services.AddUdpLinker();
             return services;
         }
 

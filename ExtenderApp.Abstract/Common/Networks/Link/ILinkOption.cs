@@ -4,9 +4,9 @@ using System.Runtime.Versioning;
 namespace ExtenderApp.Abstract
 {
     /// <summary>
-    /// 扩展的链路器接口，提供对底层 socket 的自定义控制与选项设置能力。
+    /// 设置和获取链路器套接字选项的接口。
     /// </summary>
-    public interface ICustomizeLinker : ILinker
+    public interface ILinkOption
     {
         /// <summary>
         /// 对套接字执行原始 IO 控制调用（整数版）。

@@ -10,7 +10,7 @@ namespace ExtenderApp.FFmpegEngines
     public struct FFmpegDecoderContext
     {
         /// <summary>
-        /// 空实例，所有指针均为 Empty。
+        /// 空实例，所有指针均为 None。
         /// </summary>
         public static FFmpegDecoderContext Empty => new(NativeIntPtr<AVCodec>.Empty, NativeIntPtr<AVCodecParameters>.Empty, NativeIntPtr<AVCodecContext>.Empty, NativeIntPtr<AVStream>.Empty, -1, FFmpegMediaType.UNKNOWN);
 
