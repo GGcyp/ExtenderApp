@@ -5,23 +5,11 @@ namespace ExtenderApp.Abstract
     /// <summary>
     /// 定义对本地文件的同步/异步读写、容量扩展与元信息访问的契约。
     /// </summary>
-    /// <remarks>
-    /// 约定：
-    /// - 并发/线程安全模型由实现定义；如需统一并发策略，建议实现同时实现 <see cref="IConcurrentOperate"/>。<br/>
-    /// - 偏移与长度均以字节为单位；调用方需保证参数合法。<br/>
-    /// - 关于 ValueTask：通常应视为“单次消费”；若需多次等待或传递，请先调用 <c>AsTask()</c>。<br/>
-    /// - 读 API 返回“实际读取的字节数”，可能小于请求长度（例如遇到 EOF）；调用方可循环读取直至满足需求。<br/>
-    /// - 文档列举的异常为常见情形，具体行为以实现为准。
-    /// </remarks>
     public interface IFileOperate : IDisposable
     {
         /// <summary>
         /// 获取文件的本地信息快照。
         /// </summary>
-        /// <remarks>
-        /// 通常为读取当时的快照；是否实时更新由实现决定。需要刷新时，可调用
-        /// <see cref="LocalFileInfo.UpdateFileInfo"/>（若实现支持）。
-        /// </remarks>
         LocalFileInfo Info { get; }
 
         /// <summary>
@@ -38,7 +26,6 @@ namespace ExtenderApp.Abstract
         /// <summary>
         /// 获取当前逻辑容量（字节）。
         /// </summary>
-        /// <remarks>通常等于文件长度。写入超过容量时，实现可自动扩容或抛出异常。</remarks>
         long Capacity { get; }
 
         /// <summary>
