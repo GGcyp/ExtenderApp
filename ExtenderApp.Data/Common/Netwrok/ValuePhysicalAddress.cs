@@ -86,6 +86,31 @@ namespace ExtenderApp.Data
             }
         }
 
+        public override string ToString()
+        {
+            if (IsEmpty) return string.Empty;
+
+            var memory = _addressBytes.AsMemory(0, Length);
+            int len = memory.Length * 3 - 1; // 两位十六进制 + 分隔符
+            return string.Create(len, memory, static (dst, src) =>
+            {
+                int di = 0;
+                ReadOnlySpan<byte> span = src.Span;
+                for (int i = 0; i < src.Length; i++)
+                {
+                    byte b = span[i];
+                    int hi = b >> 4;
+                    int lo = b & 0xF;
+
+                    dst[di++] = (char)(hi < 10 ? '0' + hi : 'A' + (hi - 10));
+                    dst[di++] = (char)(lo < 10 ? '0' + lo : 'A' + (lo - 10));
+
+                    if (i < src.Length - 1)
+                        dst[di++] = '-';
+                }
+            });
+        }
+
         /// <summary>
         /// 比较两个 <see cref="ValuePhysicalAddress"/> 是否相等。
         /// </summary>

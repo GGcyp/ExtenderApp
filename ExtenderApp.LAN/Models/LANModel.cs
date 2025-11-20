@@ -1,7 +1,6 @@
 ﻿using System.Collections.Concurrent;
 using ExtenderApp.Models;
 using PacketDotNet;
-using SharpPcap;
 
 
 namespace ExtenderApp.LAN

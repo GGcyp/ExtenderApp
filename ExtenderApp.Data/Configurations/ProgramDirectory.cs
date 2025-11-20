@@ -1,4 +1,5 @@
 ﻿using System.Reflection;
+using System.Runtime.InteropServices;
 
 namespace ExtenderApp.Data
 {
@@ -9,7 +10,6 @@ namespace ExtenderApp.Data
     /// </summary>
     public static class ProgramDirectory
     {
-
         #region PathName
 
         /// <summary>
@@ -47,7 +47,7 @@ namespace ExtenderApp.Data
         /// </summary>
         public const string PLUGININITENAME = "init.json";
 
-        #endregion
+        #endregion PathName
 
         /// <summary>
         /// 应用程序根目录（解析结果）。例如可为 AppContext.BaseDirectory、EntryAssembly 目录或当前工作目录的回退值。
@@ -79,7 +79,6 @@ namespace ExtenderApp.Data
         /// </summary>
         public static string PackPath { get; }
 
-
         /// <summary>
         /// 静态构造函数：在类型首次访问时执行。
         /// - 解析应用根目录；
@@ -94,7 +93,6 @@ namespace ExtenderApp.Data
             DataPath = ChekAndCreateFolder(DATANAME);
             PackPath = ChekAndCreateFolder(PACKNAME);
         }
-
 
         /// <summary>
         /// 解析应用的根目录，兼容多种运行场景。
@@ -151,5 +149,8 @@ namespace ExtenderApp.Data
             }
             return path;
         }
+
+        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        public static extern IntPtr LoadLibrary(string lpFileName);
     }
 }

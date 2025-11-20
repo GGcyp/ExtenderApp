@@ -179,12 +179,12 @@ namespace ExtenderApp.Services
             {
                 await Task.Run(() =>
                 {
-                    foreach (var dir in Directory.GetFiles(packPath))
+                    foreach (var file in Directory.GetFiles(packPath))
                     {
-                        if (dir.IndexOf(".dll", StringComparison.OrdinalIgnoreCase) < 0)
+                        if (file.IndexOf(".dll", StringComparison.OrdinalIgnoreCase) < 0)
                             continue;
 
-                        loadContext.LoadFromAssemblyPath(dir);
+                        loadContext.LoadFromAssemblyPath(file);
                     }
                 });
             }
