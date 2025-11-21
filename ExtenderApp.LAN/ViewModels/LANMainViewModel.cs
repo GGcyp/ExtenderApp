@@ -2,6 +2,8 @@
 using System.Net.Sockets;
 using ExtenderApp.Abstract;
 using ExtenderApp.ViewModels;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using SharpPcap;
 using SharpPcap.LibPcap;
 
@@ -21,67 +23,47 @@ namespace ExtenderApp.LAN
             var activeDevice = LibPcapLiveDeviceList.Instance;
             foreach (var dev in activeDevice)
             {
-                var ipv4AddressInfo = dev.Addresses.First(a => a.Addr?.ipAddress?.AddressFamily == AddressFamily.InterNetwork);
-                if(ipv4AddressInfo == null)
+                //var ipv4AddressInfo = dev.Addresses.First(a => a.Addr?.ipAddress?.AddressFamily == AddressFamily.InterNetwork);
+                var ipv4AddressInfo = dev.Addresses.FirstOrDefault(a =>
+                {
+                    if (a.Addr?.ipAddress == null || a.Netmask == null)
+                    {
+                        return false;
+                    }
+                    if (a.Addr.ipAddress.AddressFamily != AddressFamily.InterNetwork)
+                        return false;
+                    // 过滤掉 APIPA 地址
+                    if (a.Addr.ipAddress.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork && a.Addr.ipAddress.ToString().StartsWith("169.254."))
+                    {
+                        return false;
+                    }
+                    if (!a.Addr.ipAddress.GetAddressBytes().SequenceEqual(IPAddress.Parse("192.168.3.2").GetAddressBytes()))
+                    {
+                        return false;
+                    }
+                    return true;
+                });
+                if (ipv4AddressInfo == null)
                 {
                     continue;
                 }
                 var ipAddress = ipv4AddressInfo.Addr.ipAddress;
                 var netmask = ipv4AddressInfo.Netmask.ipAddress;
 
-                ArpCommunicator arpCommunicator = new ArpCommunicator(dev, ipAddress, dev.MacAddress);
+                ArpCommunicator arpCommunicator = new ArpCommunicator(dev, ServiceStore.ServiceProvider.GetRequiredService<ILogger<ArpCommunicator>>(), ipAddress);
+                for (int i = 3; i < 255; i++)
+                {
+                    var targetIp = IPAddress.Parse($"{ipAddress.GetAddressBytes()[0]}.{ipAddress.GetAddressBytes()[1]}.{ipAddress.GetAddressBytes()[2]}.{i}");
+                    try
+                    {
+                        arpCommunicator.SendArpRequest(targetIp);
+                    }
+                    catch
+                    {
+                        // Resolve会因超时而抛出异常，这里忽略即可
+                    }
+                }
             }
-        }
-
-        private void ScanLanForDevices()
-        {
-            // 1. 筛选出已连接并启用的网络设备
-            const uint PCAP_IF_UP = 2; // 0x2
-            const uint PCAP_IF_RUNNING = 4; // 0x4
-            var activeDevice = LibPcapLiveDeviceList.Instance.FirstOrDefault(dev =>
-                !dev.Loopback &&
-                (dev.Flags & PCAP_IF_UP) == PCAP_IF_UP &&
-                (dev.Flags & PCAP_IF_RUNNING) == PCAP_IF_RUNNING &&
-                dev.Addresses.Any(a => a.Addr?.ipAddress.AddressFamily == AddressFamily.InterNetwork && a.Netmask != null));
-
-            if (activeDevice == null)
-            {
-                LogWarning("未找到活动的网络设备。");
-                return;
-            }
-
-            LogInformation($"使用设备进行扫描: {activeDevice.Description}");
-
-            // 获取设备的IPv4地址和子网掩码
-            var ipv4AddressInfo = activeDevice.Addresses.First(a => a.Addr.ipAddress.AddressFamily == AddressFamily.InterNetwork);
-            var ipAddress = ipv4AddressInfo.Addr.ipAddress;
-            var netmask = ipv4AddressInfo.Netmask.ipAddress;
-
-            // 2. 计算要扫描的IP地址范围
-            //var ipList = GetIpRange(ipAddress, netmask);
-            //LogInformation($"开始扫描 {ipList.Count} 个IP地址...");
-
-            // 打开设备以进行后续操作
-            activeDevice.Open(DeviceModes.Promiscuous, 1000);
-
-            ArpCommunicator arpCommunicator = new ArpCommunicator(activeDevice, ipAddress, activeDevice.MacAddress);
-
-            // 3. 并行发送ARP请求以扫描局域网
-            //Parallel.ForEach(ipList, ip =>
-            //{
-            //    try
-            //    {
-            //        arpCommunicator.SendArpRequest(ip);
-            //    }
-            //    catch
-            //    {
-            //        // Resolve会因超时而抛出异常，这里忽略即可
-            //    }
-            //});
-
-            //// 操作完成后关闭设备
-            //activeDevice.Close();
-
         }
 
         /// <summary>

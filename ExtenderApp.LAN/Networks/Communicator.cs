@@ -1,48 +1,143 @@
-﻿using System.Diagnostics;
-using System.Net;
-using System.Net.NetworkInformation;
+﻿using System.Net.NetworkInformation;
 using ExtenderApp.Data;
 using PacketDotNet;
 using SharpPcap;
+using System;
+using Microsoft.Extensions.Logging;
 
 namespace ExtenderApp.LAN
 {
+    /// <summary>
+    /// 提供一个通用的、抽象的基类，用于处理特定类型数据包的发送和接收。
+    /// 此类封装了 SharpPcap 的设备初始化、数据包捕获和资源释放的通用逻辑。
+    /// </summary>
+    /// <typeparam name="T">要处理的特定数据包类型，必须继承自 PacketDotNet.Packet。</typeparam>
     public abstract class Communicator<T> : DisposableObject
         where T : Packet
     {
-        protected ILiveDevice Device { get; }
-        protected IPAddress LocalIpAddress { get; }
-        protected PhysicalAddress LocalMacAddress { get; }
+        /// <summary>
+        /// 用于记录日志的记录器实例。
+        /// </summary>
+        private readonly ILogger _logger;
 
-        protected abstract string Filter { get; }
+        /// <summary>
+        /// 用于数据包捕获和发送的底层网络设备。
+        /// </summary>
+        protected ILiveDevice _device;
 
-        protected Communicator(ILiveDevice device, IPAddress localIpAddress, PhysicalAddress localMacAddress)
+        private EthernetPacket ethernetPacket;
+
+        public virtual PhysicalAddress SourceHardwareAddress
         {
-            Device = device;
-            LocalIpAddress = localIpAddress;
-            LocalMacAddress = localMacAddress;
-            Device.Open(DeviceModes.Promiscuous);
-            device.Filter = Filter;
-            device.OnPacketArrival += OnPacketArrival;
-            device.StartCapture();
+            get => ethernetPacket.SourceHardwareAddress;
+            set => ethernetPacket.SourceHardwareAddress = value;
         }
 
+        public virtual PhysicalAddress DestinationHardwareAddress
+        {
+            get => ethernetPacket.DestinationHardwareAddress;
+            set => ethernetPacket.DestinationHardwareAddress = value;
+        }
+
+
+        /// <summary>
+        /// 获取当前网络设备的物理（MAC）地址。
+        /// </summary>
+        protected PhysicalAddress? LocalMacAddress => _device.MacAddress;
+
+        /// <summary>
+        /// 获取一个由派生类定义的捕获过滤器字符串（BPF 语法）。
+        /// </summary>
+        protected abstract string Filter { get; }
+
+        protected abstract EthernetType EthernetType { get; }
+
+        protected T Packet { get; }
+
+        /// <summary>
+        /// 初始化 Communicator 的新实例。
+        /// </summary>
+        /// <param name="device">要用于通信的网络设备。</param>
+        /// <param name="logger">用于记录日志的记录器实例。</param>
+        protected Communicator(ILiveDevice device, ILogger logger)
+        {
+            _device = device ?? throw new ArgumentNullException(nameof(device));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+
+            _device.Open(DeviceModes.Promiscuous);
+            _device.Filter = Filter;
+            _device.OnPacketArrival += OnPacketArrival;
+            _device.StartCapture();
+            ethernetPacket = CreateEthernetPacket();
+        }
+
+        protected virtual EthernetPacket CreateEthernetPacket()
+        {
+            return new EthernetPacket(LocalMacAddress, PhysicalAddress.None, EthernetType);
+        }
+
+        /// <summary>
+        /// SharpPcap 设备捕获到数据包时的内部事件处理程序。
+        /// </summary>
         private void OnPacketArrival(object sender, PacketCapture e)
         {
-            RawCapture rawPacket = e.GetPacket();
-            Packet packet = rawPacket.GetPacket();
-            T specificPacket = packet.Extract<T>();
-            if (specificPacket != null)
+            try
             {
-                PacketArrival(specificPacket);
+                var packet = Packet.ParsePacket(e.Device.LinkType, e.Data.ToArray());
+                var specificPacket = packet.Extract<T>();
+                if (specificPacket != null)
+                {
+                    PacketArrival(specificPacket);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error parsing packet");
             }
         }
 
+        /// <summary>
+        /// 当派生类需要处理已到达的特定类型数据包时调用。
+        /// </summary>
+        /// <param name="packet">已捕获并解析的特定类型的数据包。</param>
         protected abstract void PacketArrival(T packet);
 
+        /// <summary>
+        /// 通过网络设备发送一个数据包。
+        /// </summary>
+        /// <param name="packet">要发送的数据包。</param>
         public void SendPacket(T packet)
         {
-            Device.SendPacket(packet);
+            ThrowIfDisposed();
+            ethernetPacket.PayloadPacket = packet;
+            _device.SendPacket(ethernetPacket);
+        }
+
+        /// <summary>
+        /// 释放资源，停止捕获并关闭设备。
+        /// </summary>
+        protected override void Dispose(bool disposing)
+        {
+            if (IsDisposed)
+            {
+                return;
+            }
+
+            if (disposing)
+            {
+                // 停止捕获并注销事件
+                if (_device != null)
+                {
+                    _device.OnPacketArrival -= OnPacketArrival;
+                    if (_device.Started)
+                    {
+                        _device.StopCapture();
+                    }
+                    _device.Close();
+                }
+            }
+
+            base.Dispose(disposing);
         }
     }
 }
