@@ -22,5 +22,10 @@ namespace ExtenderApp.Common.IO.Binary.Formatters
         {
             _bufferConvert.WriteInt64(ref buffer, value.Ticks);
         }
+
+        public override long GetLength(TimeSpan value)
+        {
+            return _bufferConvert.GetByteCount(value.Ticks);
+        }
     }
 }

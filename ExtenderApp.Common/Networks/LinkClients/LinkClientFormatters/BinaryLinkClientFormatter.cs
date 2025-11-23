@@ -1,7 +1,7 @@
 ﻿using ExtenderApp.Abstract;
 using ExtenderApp.Data;
 
-namespace ExtenderApp.Common.Networks
+namespace ExtenderApp.Common.Networks.LinkClients
 {
     internal class BinaryLinkClientFormatter<T> : LinkClientFormatter<T>
     {
@@ -12,7 +12,7 @@ namespace ExtenderApp.Common.Networks
             _formatter = formatter;
         }
 
-        protected override T Deserialize(ByteBuffer buffer)
+        protected override T Deserialize(ref ByteBuffer buffer)
         {
             return _formatter.Deserialize(ref buffer);
         }

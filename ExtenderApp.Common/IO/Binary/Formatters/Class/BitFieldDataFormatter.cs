@@ -57,7 +57,7 @@ namespace ExtenderApp.Common.IO.Binary.Formatters
             if (value.IsEmpty)
                 return 1; // 如果是null，返回1字节表示null
 
-            return 5 + value.Length;
+            return _bufferConvert.GetByteCountArrayHeader(value.Length) + value.Length;
         }
     }
 }

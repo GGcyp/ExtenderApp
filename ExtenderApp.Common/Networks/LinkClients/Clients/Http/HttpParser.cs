@@ -6,7 +6,7 @@ using HttpMethod = ExtenderApp.Data.HttpMethod;
 using HttpRequestMessage = ExtenderApp.Data.HttpRequestMessage;
 using HttpResponseMessage = ExtenderApp.Data.HttpResponseMessage;
 
-namespace ExtenderApp.Common.Networks
+namespace ExtenderApp.Common.Networks.LinkClients
 {
     /// <summary>
     /// 简单的 HTTP 请求/响应解析器。

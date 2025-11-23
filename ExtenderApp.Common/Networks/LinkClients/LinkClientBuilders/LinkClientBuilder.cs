@@ -1,5 +1,6 @@
 ﻿using System.Net.Sockets;
 using ExtenderApp.Abstract;
+using ExtenderApp.Common.Networks.LinkClients;
 
 namespace ExtenderApp.Common.Networks
 {
@@ -142,7 +143,7 @@ namespace ExtenderApp.Common.Networks
         /// - 如果 <see cref="FormatterManager"/> 或 <see cref="PluginManager"/> 非空，方法会调用客户端的相应设置方法进行注入。
         /// - 方法不会对客户端做进一步初始化或启动连接；仅完成依赖注入式的配置。
         /// </remarks>
-        public TLinkClient Build(TLinkClient client)
+        public virtual TLinkClient Build(TLinkClient client)
         {
             ArgumentNullException.ThrowIfNull(client, nameof(client));
 
@@ -160,7 +161,7 @@ namespace ExtenderApp.Common.Networks
                     magic = LinkClientFramer.UdpMagic;
                 }
 
-                Framer = Framer ?? new LinkClientFramer((int)Utility.KilobytesToBytes(4), magic.Span);
+                Framer = Framer ?? new LinkClientFramer((int)Utility.KilobytesToBytes(2), magic.Span);
                 client.SetClientFramer(Framer);
             }
 

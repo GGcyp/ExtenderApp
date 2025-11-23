@@ -272,6 +272,8 @@ namespace ExtenderApp.Common.Networks
 
         #endregion Execute
 
+        public abstract ILinker Clone();
+
         protected override void Dispose(bool disposing)
         {
             if (!disposing)

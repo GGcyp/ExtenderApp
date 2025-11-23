@@ -24,5 +24,10 @@ namespace ExtenderApp.Common.IO.Binary.Formatters
             var dateData = value.ToBinary();
             _bufferConvert.Write(ref buffer, dateData);
         }
+
+        public override long GetLength(DateTime value)
+        {
+            return _bufferConvert.GetByteCount(value);
+        }
     }
 }

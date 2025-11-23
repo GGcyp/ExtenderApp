@@ -42,6 +42,7 @@ namespace ExtenderApp.Common.IO.Binary.Formatters
 
             _store.AddFormatter(typeof(Memory<>), typeof(MemoryFormatter<>));
             _store.AddFormatter(typeof(ReadOnlyMemory<>), typeof(ReadOnlyMemoryFormatter<>));
+            _store.AddFormatter(typeof(Result<>), typeof(ResultFormatter<>));
 
             _store.AddFormatter(typeof(IEnumerable<>), typeof(IEnumerableFormatter<>));
         }

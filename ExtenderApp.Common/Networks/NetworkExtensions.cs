@@ -1,5 +1,5 @@
 ﻿using System.Net;
-using ExtenderApp.Common.Networks.Formatters;
+using ExtenderApp.Common.Networks.LinkClients;
 using ExtenderApp.Data;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -15,7 +15,6 @@ namespace ExtenderApp.Common.Networks
         /// </summary>
         public static IServiceCollection AddNetwork(this IServiceCollection services)
         {
-            services.AddFormatter();
             services.AddLinker();
             services.AddLinkerClient();
             services.AddFileSegmenter();

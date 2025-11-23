@@ -20,6 +20,11 @@ namespace ExtenderApp.Common.IO.Binary.Formatters
         /// </summary>
         protected readonly IBinaryFormatter<Nil> _nil;
 
+        /// <summary>
+        /// 空值编码的默认长度。
+        /// </summary>
+        protected int NilLength => _nil.DefaultLength;
+
         public override int DefaultLength { get; }
 
         /// <summary>

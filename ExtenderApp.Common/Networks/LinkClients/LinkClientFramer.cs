@@ -2,7 +2,7 @@
 using ExtenderApp.Abstract;
 using ExtenderApp.Data;
 
-namespace ExtenderApp.Common.Networks
+namespace ExtenderApp.Common.Networks.LinkClients
 {
     /// <summary>
     /// 链路客户端的帧化器实现。

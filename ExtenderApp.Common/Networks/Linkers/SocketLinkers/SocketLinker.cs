@@ -181,6 +181,14 @@ namespace ExtenderApp.Common.Networks
             return Socket.ConnectAsync(remoteEndPoint, token);
         }
 
+        public override ILinker Clone()
+        {
+            var socket = new Socket(AddressFamily, SocketType, ProtocolType);
+            return Clone(socket);
+        }
+
+        protected abstract ILinker Clone(Socket socket);
+
         protected override void Dispose(bool disposing)
         {
             base.Dispose(disposing);

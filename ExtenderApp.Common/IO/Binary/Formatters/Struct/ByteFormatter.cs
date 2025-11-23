@@ -23,11 +23,7 @@ namespace ExtenderApp.Common.IO.Binary.Formatters
 
         public override long GetLength(byte value)
         {
-            if (value < _binaryOptions.BinaryRang.MaxFixPositiveInt)
-            {
-                return 1;
-            }
-            return 2;
+            return _bufferConvert.GetByteCount(value);
         }
     }
 }

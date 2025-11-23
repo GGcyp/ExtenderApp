@@ -1,7 +1,7 @@
 ﻿using System.Net;
 using ExtenderApp.Abstract;
 
-namespace ExtenderApp.Common.Networks
+namespace ExtenderApp.Common.Networks.LinkClients
 {
     /// <summary>
     /// Tcp 链路客户端实现。

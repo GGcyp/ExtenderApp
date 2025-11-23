@@ -20,5 +20,10 @@ namespace ExtenderApp.Common.IO.Binary.Formatters
         {
             _bufferConvert.WriteExtensionFormatHeader(ref buffer, value);
         }
+
+        public override long GetLength(ExtensionHeader value)
+        {
+            return _bufferConvert.GetByteCountExtensionFormatHeader(value);
+        }
     }
 }

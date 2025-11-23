@@ -1,6 +1,6 @@
 ﻿using ExtenderApp.Abstract;
 
-namespace ExtenderApp.Common.Networks
+namespace ExtenderApp.Common.Networks.LinkClients
 {
     /// <summary>
     /// HTTP 链路客户端工厂。

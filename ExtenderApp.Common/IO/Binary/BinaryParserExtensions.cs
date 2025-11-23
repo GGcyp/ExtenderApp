@@ -68,6 +68,8 @@ namespace ExtenderApp.Common.IO.Binary
             store.AddStructFormatter<LocalFileInfo, LocalFileInfoFormatter>();
             store.AddStructFormatter<ExtensionHeader, ExtensionHeaderFormatter>();
 
+            store.Add<ByteBlock, ByteBlockFormatter>();
+            store.Add<Result, ResultFormatter>();
             store.AddByteArrayFormatter();
 
             return services.AddSingleton<IBinaryFormatterStore>(store);

@@ -25,11 +25,8 @@
 		<None Update="init.json">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>
-		<None Update="Npcap\Packet.dll">
-		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</None>
-		<None Update="Npcap\wpcap.dll">
-		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		<None Update="NpcapApp\npcap-1.85.exe">
+		  <CopyToOutputDirectory>Never</CopyToOutputDirectory>
 		</None>
 	</ItemGroup>
 
@@ -42,10 +39,6 @@
 		<ItemGroup>
 			<JsonFiles Include="$(TargetDir)\init.json" />
 		</ItemGroup>
-		<!--需要复制的Npcap动态库-->
-		<ItemGroup>
-			<NpcapFiles Include="$(TargetDir)\Npcap\*.dll" />
-		</ItemGroup>
 		<ItemGroup>
 			<TargetFolder Include="$(SolutionDir)ExtenderApp\bin\$(Configuration)\net8.0-windows7.0\plugins" />
 		</ItemGroup>
@@ -53,9 +46,6 @@
 		<MakeDir Directories="%(TargetFolder.Identity)\$(ProjectName)" Condition="!Exists('%(TargetFolder.Identity)\$(ProjectName)')" />
 		<Copy SourceFiles="@(DllFiles)" DestinationFolder="%(TargetFolder.Identity)\$(ProjectName)" SkipUnchangedFiles="true" />
 		<Copy SourceFiles="@(JsonFiles)" DestinationFolder="%(TargetFolder.Identity)\$(ProjectName)" SkipUnchangedFiles="true" />
-
-		<MakeDir Directories="%(TargetFolder.Identity)\$(ProjectName)\npcapLibs" Condition="!Exists('%(TargetFolder.Identity)\$(ProjectName)\npcapLibs')" />
-		<Copy SourceFiles="@(NpcapFiles)" DestinationFolder="%(TargetFolder.Identity)\$(ProjectName)\npcapLibs" SkipUnchangedFiles="true" />
 		
 		<!-- 获取所有包引用的路径 -->
 		<ItemGroup>

@@ -56,12 +56,6 @@ namespace ExtenderApp.Common.Networks
             return args.SendAsync(Socket, memory, token);
         }
 
-        public void Bind(EndPoint localEndPoint)
-        {
-            ThrowIfDisposed();
-            Socket.Bind(localEndPoint);
-        }
-
         public SocketOperationResult SendTo(Memory<byte> memory, EndPoint endPoint)
         {
             ThrowIfDisposed();
@@ -106,6 +100,11 @@ namespace ExtenderApp.Common.Networks
             {
                 ReleaseArgs(args);
             }
+        }
+
+        protected override ILinker Clone(Socket socket)
+        {
+            return new UdpLinker(socket);
         }
     }
 }

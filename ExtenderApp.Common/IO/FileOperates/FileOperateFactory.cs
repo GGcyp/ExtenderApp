@@ -28,7 +28,7 @@ namespace ExtenderApp.Common.IO.FileOperates
             return type switch
             {
                 FileOperateType.MemoryMapped => new MemoryMappedFileOperate(info),
-                FileOperateType.ConcurrentFileStream => new ConcurrentFileStreamFileOperate(info),
+                FileOperateType.ConcurrentFileStream => new ConcurrentFileOperate(info),
                 _ => new FileStreamFileOperate(info),
             };
         }

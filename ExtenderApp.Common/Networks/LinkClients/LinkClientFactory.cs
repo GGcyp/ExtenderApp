@@ -1,7 +1,7 @@
 ﻿using System.Net.Sockets;
 using ExtenderApp.Abstract;
 
-namespace ExtenderApp.Common.Networks
+namespace ExtenderApp.Common.Networks.LinkClients
 {
     /// <summary>
     /// LinkClientFactory 类用于创建 LinkClient 实例。

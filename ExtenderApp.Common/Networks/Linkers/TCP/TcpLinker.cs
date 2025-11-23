@@ -56,5 +56,14 @@ namespace ExtenderApp.Common
         {
             return args.SendAsync(Socket, memory, token);
         }
+
+        protected override ILinker Clone(Socket socket)
+        {
+            var result = new TcpLinker(socket)
+            {
+                NoDelay = NoDelay
+            };
+            return result;
+        }
     }
 }

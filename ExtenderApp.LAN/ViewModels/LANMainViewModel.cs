@@ -37,7 +37,7 @@ namespace ExtenderApp.LAN
                     {
                         return false;
                     }
-                    if (!a.Addr.ipAddress.GetAddressBytes().SequenceEqual(IPAddress.Parse("192.168.3.2").GetAddressBytes()))
+                    if (!a.Addr.ipAddress.GetAddressBytes().SequenceEqual(IPAddress.Parse("192.168.3.53").GetAddressBytes()))
                     {
                         return false;
                     }
@@ -51,7 +51,7 @@ namespace ExtenderApp.LAN
                 var netmask = ipv4AddressInfo.Netmask.ipAddress;
 
                 ArpCommunicator arpCommunicator = new ArpCommunicator(dev, ServiceStore.ServiceProvider.GetRequiredService<ILogger<ArpCommunicator>>(), ipAddress);
-                for (int i = 3; i < 255; i++)
+                for (int i = 2; i < 255; i++)
                 {
                     var targetIp = IPAddress.Parse($"{ipAddress.GetAddressBytes()[0]}.{ipAddress.GetAddressBytes()[1]}.{ipAddress.GetAddressBytes()[2]}.{i}");
                     try

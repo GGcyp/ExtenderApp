@@ -20,7 +20,7 @@ namespace ExtenderApp.Abstract
         /// - <see cref="SocketOperationResult.BytesTransferred"/>：本次实际接收的字节数。TCP 中返回 0 常表示对端已优雅关闭连接；UDP 中若缓冲不足可能导致截断（由实现通过额外字段或标志标识）。  
         /// - <see cref="SocketOperationResult.RemoteEndPoint"/>：若适用（例如 UDP/ReceiveFrom/ReceiveMessageFrom），包含发送方地址，否则为 null。  
         /// - <see cref="SocketOperationResult.SocketError"/>：底层套接字异常信息（失败时非 null）。  
-        /// - <see cref="SocketOperationResult.Code"/> / <see cref="SocketOperationResult.IsSuccess"/>：统一的操作结果状态。
+        /// - <see cref="SocketOperationResult.IsSuccess"/> / <see cref="SocketOperationResult.IsSuccess"/>：统一的操作结果状态。
         /// </returns>
         /// <remarks>
         /// 行为约定（建议实现）：
@@ -38,7 +38,7 @@ namespace ExtenderApp.Abstract
         /// <param name="token">用于取消异步接收操作的 <see cref="CancellationToken"/>。实现应尊重该令牌。</param>
         /// <returns>
         /// 异步返回 <see cref="SocketOperationResult"/>，语义与 <see cref="Receive(Memory{byte})"/> 相同。
-        /// 在取消情形下，优选返回 Code 为 <see cref="ResultCode.Canceled"/> 的结果；实现也可以选择在被取消时抛出 <see cref="OperationCanceledException"/>（应在文档中明确）。
+        /// 在取消情形下，优选返回 IsSuccess 为 <see cref="ResultCode.Canceled"/> 的结果；实现也可以选择在被取消时抛出 <see cref="OperationCanceledException"/>（应在文档中明确）。
         /// </returns>
         /// <remarks>
         /// - 此方法应对高并发、重复调用保持良好表现，建议避免在实现中造成线程池饥饿或资源竞争。  

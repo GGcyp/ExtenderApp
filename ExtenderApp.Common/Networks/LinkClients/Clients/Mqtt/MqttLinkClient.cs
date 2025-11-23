@@ -1,11 +1,6 @@
-﻿using System.Buffers;
-using System.Net;
-using System.Text;
-using System.Threading.Channels;
-using ExtenderApp.Abstract;
-using ExtenderApp.Data;
+﻿using ExtenderApp.Abstract;
 
-namespace ExtenderApp.Common.Networks
+namespace ExtenderApp.Common.Networks.LinkClients
 {
     /// <summary>
     /// 底层 MQTT 3.1.1 客户端（基础报文：CONNECT/CONNACK、PUBLISH QoS0、SUBSCRIBE/SUBACK、PINGREQ/PINGRESP、DISCONNECT）。
@@ -14,7 +9,7 @@ namespace ExtenderApp.Common.Networks
     /// - 解析采取增量方式，支持半包与多包粘连；
     /// - 自动心跳定时器（KeepAlive）;
     /// </summary>
-    internal class MqttLinkClient : LinkClientAwareSender<MqttLinkClient, ITcpLinker>, IMqttLinkClient
+    internal class MqttLinkClient : LinkClientAwareSender<IMqttLinkClient, ITcpLinker>, IMqttLinkClient
     {
         //#region 常量(报文类型 / 固定头高四位)
 

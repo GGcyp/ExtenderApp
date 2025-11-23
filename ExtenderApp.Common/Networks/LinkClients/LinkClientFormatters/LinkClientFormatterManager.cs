@@ -2,7 +2,7 @@
 using ExtenderApp.Abstract;
 using ExtenderApp.Common.Hash;
 
-namespace ExtenderApp.Common.Networks
+namespace ExtenderApp.Common.Networks.LinkClients
 {
     /// <summary>
     /// 客户端格式化器管理器：负责注册与查找 <see cref="ILinkClientFormatter"/>。

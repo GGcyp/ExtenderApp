@@ -1,10 +1,10 @@
-﻿using Microsoft.Extensions.Logging;
-using PacketDotNet;
-using SharpPcap;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Text;
+using Microsoft.Extensions.Logging;
+using PacketDotNet;
+using SharpPcap;
 
 namespace ExtenderApp.LAN
 {
@@ -22,8 +22,6 @@ namespace ExtenderApp.LAN
 
         private readonly IPAddress _localIpAddress;
 
-        private ArpPacket Packet;
-
         public override PhysicalAddress DestinationHardwareAddress
         {
             get => base.DestinationHardwareAddress;
@@ -33,7 +31,7 @@ namespace ExtenderApp.LAN
         public ArpCommunicator(ILiveDevice device, ILogger<ArpCommunicator> logger, IPAddress localIpAddress) : base(device, logger)
         {
             _localIpAddress = localIpAddress;
-
+            CommunicatorPacket.SenderProtocolAddress = _localIpAddress;
         }
 
         protected override EthernetPacket CreateEthernetPacket()
@@ -41,16 +39,20 @@ namespace ExtenderApp.LAN
             return new EthernetPacket(LocalMacAddress, BroadcastMacAddress, EthernetType);
         }
 
-
-
         public void SendArpRequest(IPAddress targetIpAddress)
         {
-            ArpPacket arpRequest = new ArpPacket(ArpOperation.Request, NoneMacAddress, targetIpAddress, LocalMacAddress, _localIpAddress);
-            SendPacket(arpRequest);
+            CommunicatorPacket.TargetProtocolAddress = targetIpAddress;
+            SendPacket();
         }
 
         protected override void PacketArrival(ArpPacket packet)
         {
+            if (packet.Operation == ArpOperation.Request)
+            {
+                // 忽略请求包
+                return;
+            }
+
             StringBuilder sb = new();
             sb.AppendLine("收到ARP数据包:");
             sb.AppendLine($"操作: {packet.Operation}");
@@ -60,8 +62,12 @@ namespace ExtenderApp.LAN
             sb.AppendLine($"目标协议地址: {packet.TargetProtocolAddress}");
             sb.AppendLine();
 
-
             Debug.Print(sb.ToString());
+        }
+
+        protected override ArpPacket CreateCommunicatorPacket()
+        {
+            return new ArpPacket(ArpOperation.Request, NoneMacAddress, IPAddress.None, LocalMacAddress, IPAddress.None);
         }
     }
 }

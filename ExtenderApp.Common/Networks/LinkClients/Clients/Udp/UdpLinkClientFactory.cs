@@ -1,6 +1,6 @@
 ﻿using ExtenderApp.Abstract;
 
-namespace ExtenderApp.Common.Networks
+namespace ExtenderApp.Common.Networks.LinkClients
 {
     internal class UdpLinkClientFactory : LinkClientFactory<IUdpLinkClient, IUdpLinker>
     {

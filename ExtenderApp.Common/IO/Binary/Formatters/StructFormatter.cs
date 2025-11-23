@@ -25,10 +25,5 @@ namespace ExtenderApp.Common.IO.Binary.Formatters
         {
             DefaultLength = Unsafe.SizeOf<T>() + 1;
         }
-
-        public override long GetLength(T value)
-        {
-            return DefaultLength;
-        }
     }
 }

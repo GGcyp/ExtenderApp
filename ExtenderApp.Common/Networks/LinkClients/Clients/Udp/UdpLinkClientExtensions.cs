@@ -1,7 +1,7 @@
 ﻿using ExtenderApp.Abstract;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace ExtenderApp.Common.Networks
+namespace ExtenderApp.Common.Networks.LinkClients
 {
     internal static class UdpLinkClientExtensions
     {

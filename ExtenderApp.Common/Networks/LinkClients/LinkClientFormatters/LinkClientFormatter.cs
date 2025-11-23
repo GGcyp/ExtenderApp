@@ -2,7 +2,7 @@
 using ExtenderApp.Common.Hash;
 using ExtenderApp.Data;
 
-namespace ExtenderApp.Common.Networks
+namespace ExtenderApp.Common.Networks.LinkClients
 {
     /// <summary>
     /// 客户端通用格式化器基类。
@@ -17,7 +17,7 @@ namespace ExtenderApp.Common.Networks
     /// - 线程安全：本类型本身无状态且通常可在多线程并发调用，但具体实现需保证对 <paramref name="buffer"/> 的读写只发生在调用栈内；
     /// - 资源管理：若工厂返回的是池化可写缓冲，调用方在使用完 <see cref="Serialize(T)"/> 的返回值后应调用 <see cref="ByteBuffer.Dispose"/> 归还资源。
     /// </remarks>
-    public abstract class LinkClientFormatter<T> : IClientFormatter<T>
+    internal abstract class LinkClientFormatter<T> : IClientFormatter<T>
     {
         /// <summary>
         /// 与业务数据类型 <typeparamref name="T"/> 关联的稳定哈希。
@@ -51,9 +51,9 @@ namespace ExtenderApp.Common.Networks
         /// - 若反序列化失败，应抛出明确的异常或由上层捕获处理；
         /// - 成功解析后会立即触发 <see cref="Receive"/> 事件。
         /// </remarks>
-        public void DeserializeAndInvoke(ByteBuffer buffer)
+        public void DeserializeAndInvoke(ref ByteBuffer buffer)
         {
-            T value = Deserialize(buffer);
+            T value = Deserialize(ref buffer);
             Receive?.Invoke(value);
         }
 
@@ -64,7 +64,7 @@ namespace ExtenderApp.Common.Networks
         /// <returns>解析得到的 <typeparamref name="T"/> 实例。</returns>
         /// <exception cref="System.IO.EndOfStreamException">数据不足。</exception>
         /// <exception cref="FormatException">格式不符合预期。</exception>
-        protected abstract T Deserialize(ByteBuffer buffer);
+        protected abstract T Deserialize(ref ByteBuffer buffer);
 
         /// <summary>
         /// 将值序列化为可发送的缓冲。

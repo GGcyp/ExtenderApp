@@ -8,7 +8,7 @@ using ExtenderApp.Data;
 using HttpRequestMessage = ExtenderApp.Data.HttpRequestMessage;
 using HttpResponseMessage = ExtenderApp.Data.HttpResponseMessage;
 
-namespace ExtenderApp.Common.Networks
+namespace ExtenderApp.Common.Networks.LinkClients
 {
     /// <summary>
     /// 简易的 HTTP 客户端，基于底层 ITcpLinker 封装为可发送请求并接收响应的客户端。
@@ -16,7 +16,7 @@ namespace ExtenderApp.Common.Networks
     /// - 使用 HttpParser 对响应进行增量解析（基于 Content-Length）。
     /// - 对外以 ValueTask&lt;HttpResponseMessage&gt; 形式返回解析结果。
     /// </summary>
-    public class HttpLinkClient : LinkClient<ITcpLinker>, IHttpLinkClient, IValueTaskSource<HttpResponseMessage>, IDisposable
+    internal class HttpLinkClient : LinkClient<ITcpLinker>, IHttpLinkClient, IValueTaskSource<HttpResponseMessage>, IDisposable
     {
         /// <summary>
         ///  发送或请求明文 HTTP 请求时使用的 TcpLinkerStream。

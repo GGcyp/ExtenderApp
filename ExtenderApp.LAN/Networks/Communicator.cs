@@ -52,7 +52,7 @@ namespace ExtenderApp.LAN
 
         protected abstract EthernetType EthernetType { get; }
 
-        protected T Packet { get; }
+        protected T CommunicatorPacket { get; }
 
         /// <summary>
         /// 初始化 Communicator 的新实例。
@@ -96,11 +96,10 @@ namespace ExtenderApp.LAN
             }
         }
 
-        /// <summary>
-        /// 当派生类需要处理已到达的特定类型数据包时调用。
-        /// </summary>
-        /// <param name="packet">已捕获并解析的特定类型的数据包。</param>
-        protected abstract void PacketArrival(T packet);
+        protected void SendPacket()
+        {
+            SendPacket(CommunicatorPacket);
+        }
 
         /// <summary>
         /// 通过网络设备发送一个数据包。
@@ -112,6 +111,18 @@ namespace ExtenderApp.LAN
             ethernetPacket.PayloadPacket = packet;
             _device.SendPacket(ethernetPacket);
         }
+
+        #region 子类生成
+
+        /// <summary>
+        /// 当派生类需要处理已到达的特定类型数据包时调用。
+        /// </summary>
+        /// <param name="packet">已捕获并解析的特定类型的数据包。</param>
+        protected abstract void PacketArrival(T packet);
+
+        protected abstract T CreateCommunicatorPacket();
+
+        #endregion
 
         /// <summary>
         /// 释放资源，停止捕获并关闭设备。

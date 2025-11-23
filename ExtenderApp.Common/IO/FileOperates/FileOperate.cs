@@ -1,8 +1,12 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿using System.Buffers;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
+using System.Security.Cryptography;
+using System.Text;
 using ExtenderApp.Abstract;
+using ExtenderApp.Common.Caches;
 using ExtenderApp.Data;
 using Microsoft.Win32.SafeHandles;
 
@@ -695,12 +699,58 @@ namespace ExtenderApp.Common.IO
 
         #endregion ExpandCanpacity
 
+        #region GetFileGuid
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct BY_HANDLE_FILE_INFORMATION
+        {
+            public uint FileAttributes;
+            public System.Runtime.InteropServices.ComTypes.FILETIME CreationTime;
+            public System.Runtime.InteropServices.ComTypes.FILETIME LastAccessTime;
+            public System.Runtime.InteropServices.ComTypes.FILETIME LastWriteTime;
+            public uint VolumeSerialNumber;
+            public uint FileSizeHigh;
+            public uint FileSizeLow;
+            public uint NumberOfLinks;
+            public uint FileIndexHigh;
+            public uint FileIndexLow;
+        }
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern bool GetFileInformationByHandle(SafeFileHandle hFile, out BY_HANDLE_FILE_INFORMATION lpFileInformation);
+
+
+        /// <summary>
+        /// 获取文件的唯一标识符 (GUID)。
+        /// 在 Windows 上，此 GUID 基于卷序列号和文件索引号，即使文件移动或重命名也能保持不变。
+        /// 在其他操作系统上，它基于文件完整路径的 SHA1 哈希值。
+        /// </summary>
+        /// <returns>表示文件的唯一 Guid。</returns>
+        public Guid GetFileGuid()
+        {
+            if (OperatingSystem.IsWindows())
+            {
+                if (GetFileInformationByHandle(Stream.SafeFileHandle, out var fileInfo))
+                {
+                    long fileId = ((long)fileInfo.FileIndexHigh << 32) | fileInfo.FileIndexLow;
+                    Span<byte> guidSpan = stackalloc byte[16];
+                    BitConverter.GetBytes(fileId).CopyTo(guidSpan.Slice(0, 8));
+                    BitConverter.GetBytes(fileInfo.VolumeSerialNumber).CopyTo(guidSpan.Slice(8, 8));
+                    return new Guid(guidSpan);
+                }
+            }
+
+            return Info.FileName.GetGuid();
+        }
+
+        #endregion
+
         /// <summary>
         /// 释放底层文件流等托管资源。
         /// </summary>
         protected override void Dispose(bool disposing)
         {
-            if (!disposing) 
+            if (!disposing)
                 return;
 
             Stream.Dispose();

@@ -522,10 +522,10 @@ namespace ExtenderApp.Common.Networks
         {
             if (this.SocketError != SocketError.Success)
             {
-                return new SocketOperationResult(default, default, socketError, default);
+                return new SocketOperationResult(false, default, default, socketError, default);
             }
 
-            return new SocketOperationResult(BytesTransferred, RemoteEndPoint, null, ReceiveMessageFromPacketInfo);
+            return new SocketOperationResult(true, BytesTransferred, RemoteEndPoint, null, ReceiveMessageFromPacketInfo);
         }
 
         #region Awaitable

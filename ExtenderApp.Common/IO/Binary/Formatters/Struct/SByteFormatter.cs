@@ -25,11 +25,7 @@ namespace ExtenderApp.Common.IO.Binary.Formatters
 
         public override long GetLength(sbyte value)
         {
-            if (value < _binaryOptions.BinaryRang.MaxFixPositiveInt)
-            {
-                return 1;
-            }
-            return 2;
+            return _bufferConvert.GetByteCount(value);
         }
     }
 }

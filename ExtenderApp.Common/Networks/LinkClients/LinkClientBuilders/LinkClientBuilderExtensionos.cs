@@ -1,17 +1,12 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 
-namespace ExtenderApp.Common.Networks
+namespace ExtenderApp.Common.Networks.LinkClients
 {
-    public static class LinkClientBuilderExtensionos
+    internal static class LinkClientBuilderExtensionos
     {
         public static IServiceCollection AddLinkClientBuilder(this IServiceCollection services)
         {
-            //services.AddTransient(typeof(ClientBuilder<>), (p, o) =>
-            //{
-            //    if (o is not StartupType[] types)
-            //        return null;
-
-            //});
+            services.AddTransient(typeof(LinkClientBuilder<>));
 
             return services;
         }
@@ -21,6 +16,15 @@ namespace ExtenderApp.Common.Networks
         public static FormatterManagerBuilder AddBinaryFormatter<T>(this FormatterManagerBuilder builder, Action<T>? callback = null)
         {
             var formatter = builder.Provider.GetRequiredService<BinaryLinkClientFormatter<T>>();
+            formatter.Receive += callback;
+            builder.Manager.AddFormatter(formatter);
+            return builder;
+        }
+
+        public static FormatterManagerBuilder AddJsonFormatter<T>(this FormatterManagerBuilder builder, Action<T>? callback = null)
+        {
+            var factory = builder.Provider.GetRequiredService<JsonLinkClientFormatterFactory>();
+            var formatter = factory.CreateFormatter<T>();
             formatter.Receive += callback;
             builder.Manager.AddFormatter(formatter);
             return builder;

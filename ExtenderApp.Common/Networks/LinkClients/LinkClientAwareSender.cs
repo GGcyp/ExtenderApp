@@ -3,7 +3,7 @@ using System.Net;
 using ExtenderApp.Abstract;
 using ExtenderApp.Data;
 
-namespace ExtenderApp.Common.Networks
+namespace ExtenderApp.Common.Networks.LinkClients
 {
     /// <summary>
     /// 支持插件与格式化器的链接客户端发送器基类。
@@ -39,9 +39,9 @@ namespace ExtenderApp.Common.Networks
         /// </summary>
         private Task? _receiveTask;
 
-        public ILinkClientFramer? Framer { get; private set; }
-        public ILinkClientFormatterManager? FormatterManager { get; private set; }
-        public ILinkClientPluginManager<TLinkClient>? PluginManager { get; private set; }
+        public ILinkClientFramer? Framer { get; protected set; }
+        public ILinkClientFormatterManager? FormatterManager { get; protected set; }
+        public ILinkClientPluginManager<TLinkClient>? PluginManager { get; protected set; }
 
         public LinkClientAwareSender(TLinker linker) : base(linker)
         {
@@ -83,7 +83,7 @@ namespace ExtenderApp.Common.Networks
 
             var sendBuffer = ValueToByteBuffer(data);
 
-            return PrivateSendAsync(sendBuffer.UnreadSequence, sendBuffer.Rental, token);
+            return ProtectedSendAsync(sendBuffer.UnreadSequence, sendBuffer.Rental, token);
         }
 
         /// <summary>
@@ -135,7 +135,14 @@ namespace ExtenderApp.Common.Networks
             return sendBuffer;
         }
 
-        private async ValueTask<SocketOperationResult> PrivateSendAsync(ReadOnlySequence<byte> memories, SequencePool<byte>.SequenceRental rental, CancellationToken token)
+        /// <summary>
+        /// 受保护的发送方法，负责调用底层链接器发送数据并释放租借的序列资源。
+        /// </summary>
+        /// <param name="memories">要发送的序列</param>
+        /// <param name="rental">要发送序列的租约</param>
+        /// <param name="token">可取消令牌</param>
+        /// <returns></returns>
+        protected virtual async ValueTask<SocketOperationResult> ProtectedSendAsync(ReadOnlySequence<byte> memories, SequencePool<byte>.SequenceRental rental, CancellationToken token)
         {
             var result = await Linker.SendAsync(memories, token);
             rental.Dispose();
@@ -225,6 +232,7 @@ namespace ExtenderApp.Common.Networks
                     formatter.DeserializeAndInvoke((ByteBuffer)frame.Payload);
                 }
             }
+            message.Dispose();
             return ValueTask.CompletedTask;
         }
 
@@ -274,7 +282,7 @@ namespace ExtenderApp.Common.Networks
 
         #region ILinker 直通方法
 
-        public virtual void Connect(EndPoint remoteEndPoint)
+        public virtual new void Connect(EndPoint remoteEndPoint)
         {
             ThrowIfDisposed();
             PluginManager?.OnConnecting(_thisClient, remoteEndPoint);
@@ -292,7 +300,7 @@ namespace ExtenderApp.Common.Networks
             }
         }
 
-        public virtual async ValueTask ConnectAsync(EndPoint remoteEndPoint, CancellationToken token = default)
+        public virtual async new ValueTask ConnectAsync(EndPoint remoteEndPoint, CancellationToken token = default)
         {
             ThrowIfDisposed();
             PluginManager?.OnConnecting(_thisClient, remoteEndPoint);
@@ -311,7 +319,7 @@ namespace ExtenderApp.Common.Networks
             }
         }
 
-        public virtual void Disconnect()
+        public virtual new void Disconnect()
         {
             ThrowIfDisposed();
             PluginManager?.OnDisconnecting(_thisClient);
@@ -329,7 +337,7 @@ namespace ExtenderApp.Common.Networks
             }
         }
 
-        public virtual async ValueTask DisconnectAsync(CancellationToken token = default)
+        public virtual async new ValueTask DisconnectAsync(CancellationToken token = default)
         {
             ThrowIfDisposed();
             PluginManager?.OnDisconnecting(_thisClient);
@@ -347,12 +355,12 @@ namespace ExtenderApp.Common.Networks
             }
         }
 
-        public virtual SocketOperationResult Send(Memory<byte> memory)
+        public virtual new SocketOperationResult Send(Memory<byte> memory)
         {
             return Linker.Send(memory);
         }
 
-        public virtual ValueTask<SocketOperationResult> SendAsync(Memory<byte> memory, CancellationToken token = default)
+        public virtual new ValueTask<SocketOperationResult> SendAsync(Memory<byte> memory, CancellationToken token = default)
         {
             return Linker.SendAsync(memory, token);
         }

@@ -682,8 +682,7 @@ namespace ExtenderApp.Common.IO.Binary
         /// <param name="buffer">Bytebuffer对象，用于写入数据。</param>
         /// <param name="extensionHeader">要写入的扩展头部信息。</param>
         /// <remarks>
-        /// 在编写数据头部信息时，同时请求足够空间来存储后续有效载荷数据的策略。 
-        /// 这样做的目的是为了提高程序的效率，通过减少内存分配的次数来避免潜在的性能问题。
+        /// 在编写数据头部信息时，同时请求足够空间来存储后续有效载荷数据的策略。 这样做的目的是为了提高程序的效率，通过减少内存分配的次数来避免潜在的性能问题。
         /// </remarks>
         public void WriteExtensionFormatHeader(ref ByteBuffer buffer, ExtensionHeader extensionHeader)
         {
@@ -703,5 +702,180 @@ namespace ExtenderApp.Common.IO.Binary
                 throw new Exception("Internal error.");
             }
         }
+
+        #region GetByteCount
+
+        /// <summary>
+        /// 获取 Nil 编码后的字节数。
+        /// </summary>
+        /// <returns>编码后的字节数，恒为 1。</returns>
+        public int GetByteCountNil() => _binaryConvert.GetByteCountNil();
+
+        /// <summary>
+        /// 获取数组头编码后的字节数。
+        /// </summary>
+        /// <param name="count">数组元素个数。</param>
+        /// <returns>
+        /// 根据元素个数，返回 1 (fixarray), 3 (array16), 或
+        /// 5 (array32)。
+        /// </returns>
+        public int GetByteCountArrayHeader(int count) => _binaryConvert.GetByteCountArrayHeader((uint)count);
+
+        /// <summary>
+        /// 获取数组头编码后的字节数。
+        /// </summary>
+        /// <param name="count">数组元素个数。</param>
+        /// <returns>
+        /// 根据元素个数，返回 1 (fixarray), 3 (array16), 或
+        /// 5 (array32)。
+        /// </returns>
+        public int GetByteCountArrayHeader(uint count) => _binaryConvert.GetByteCountArrayHeader(count);
+
+        /// <summary>
+        /// 获取映射头编码后的字节数。
+        /// </summary>
+        /// <param name="count">映射项个数。</param>
+        /// <returns>
+        /// 根据映射项个数，返回 1 (fixmap), 3 (map16), 或 5 (map32)。
+        /// </returns>
+        public int GetByteCountMapHeader(int count) => _binaryConvert.GetByteCountMapHeader((uint)count);
+
+        /// <summary>
+        /// 获取映射头编码后的字节数。
+        /// </summary>
+        /// <param name="count">映射项个数。</param>
+        /// <returns>
+        /// 根据映射项个数，返回 1 (fixmap), 3 (map16), 或 5 (map32)。
+        /// </returns>
+        public int GetByteCountMapHeader(uint count) => _binaryConvert.GetByteCountMapHeader(count);
+
+        /// <summary>
+        /// 获取二进制数据头编码后的字节数。
+        /// </summary>
+        /// <param name="length">二进制数据长度（字节）。</param>
+        /// <returns>
+        /// 根据数据长度，返回 2 (bin8), 3 (bin16), 或 5 (bin32)。
+        /// </returns>
+        public int GetByteCountBinHeader(int length) => _binaryConvert.GetByteCountBinHeader((uint)length);
+
+        /// <summary>
+        /// 获取字符串头编码后的字节数。
+        /// </summary>
+        /// <param name="byteCount">字符串的字节数（非字符数）。</param>
+        /// <returns>
+        /// 根据字节数，返回 1 (fixstr), 2 (str8), 3
+        /// (str16), 或 5 (str32)。
+        /// </returns>
+        public int GetByteCountStringHeader(int byteCount) => _binaryConvert.GetByteCountStringHeader((uint)byteCount);
+
+        /// <summary>
+        /// 获取扩展格式头编码后的字节数。
+        /// </summary>
+        /// <param name="extensionHeader">扩展头信息（包含类型码和长度）。</param>
+        /// <returns>
+        /// 根据数据长度，返回 2 (fixext), 3 (ext8), 4
+        /// (ext16), 或 6 (ext32)。
+        /// </returns>
+        public int GetByteCountExtensionFormatHeader(ExtensionHeader extensionHeader) => _binaryConvert.GetByteCountExtensionFormatHeader(extensionHeader);
+
+        /// <summary>
+        /// 获取 8 位有符号整数在最紧凑编码下的字节数。
+        /// </summary>
+        /// <param name="value">要计算的值。</param>
+        /// <returns>编码后的字节数 (1 或 2)。</returns>
+        public int GetByteCount(sbyte value) => _binaryConvert.GetByteCount(value);
+
+        /// <summary>
+        /// 获取 8 位无符号整数在最紧凑编码下的字节数。
+        /// </summary>
+        /// <param name="value">要计算的值。</param>
+        /// <returns>编码后的字节数 (1 或 2)。</returns>
+        public int GetByteCount(byte value) => _binaryConvert.GetByteCount(value);
+
+        /// <summary>
+        /// 获取 16 位有符号整数在最紧凑编码下的字节数。
+        /// </summary>
+        /// <param name="value">要计算的值。</param>
+        /// <returns>编码后的字节数 (1, 2, 或 3)。</returns>
+        public int GetByteCount(short value) => _binaryConvert.GetByteCount(value);
+
+        /// <summary>
+        /// 获取 16 位无符号整数在最紧凑编码下的字节数。
+        /// </summary>
+        /// <param name="value">要计算的值。</param>
+        /// <returns>编码后的字节数 (1, 2, 或 3)。</returns>
+        public int GetByteCount(ushort value) => _binaryConvert.GetByteCount(value);
+
+        /// <summary>
+        /// 获取 32 位有符号整数在最紧凑编码下的字节数。
+        /// </summary>
+        /// <param name="value">要计算的值。</param>
+        /// <returns>编码后的字节数 (1, 2, 3, 或 5)。</returns>
+        public int GetByteCount(int value) => _binaryConvert.GetByteCount(value);
+
+        /// <summary>
+        /// 获取 32 位无符号整数在最紧凑编码下的字节数。
+        /// </summary>
+        /// <param name="value">要计算的值。</param>
+        /// <returns>编码后的字节数 (1, 2, 3, 或 5)。</returns>
+        public int GetByteCount(uint value) => _binaryConvert.GetByteCount(value);
+
+        /// <summary>
+        /// 获取 64 位有符号整数在最紧凑编码下的字节数。
+        /// </summary>
+        /// <param name="value">要计算的值。</param>
+        /// <returns>
+        /// 编码后的字节数 (1, 2, 3, 5, 或 9)。
+        /// </returns>
+        public int GetByteCount(long value) => _binaryConvert.GetByteCount(value);
+
+        /// <summary>
+        /// 获取 64 位无符号整数在最紧凑编码下的字节数。
+        /// </summary>
+        /// <param name="value">要计算的值。</param>
+        /// <returns>
+        /// 编码后的字节数 (1, 2, 3, 5, 或 9)。
+        /// </returns>
+        public int GetByteCount(ulong value) => _binaryConvert.GetByteCount(value);
+
+        /// <summary>
+        /// 获取单精度浮点数编码后的字节数。
+        /// </summary>
+        /// <param name="value">要计算的值（未使用，仅用于方法重载）。</param>
+        /// <returns>编码后的字节数，恒为 5。</returns>
+        public int GetByteCount(float value) => _binaryConvert.GetByteCount(value);
+
+        /// <summary>
+        /// 获取双精度浮点数编码后的字节数。
+        /// </summary>
+        /// <param name="value">要计算的值（未使用，仅用于方法重载）。</param>
+        /// <returns>编码后的字节数，恒为 9。</returns>
+        public int GetByteCount(double value) => _binaryConvert.GetByteCount(value);
+
+        /// <summary>
+        /// 获取布尔值编码后的字节数。
+        /// </summary>
+        /// <param name="value">要计算的值（未使用，仅用于方法重载）。</param>
+        /// <returns>编码后的字节数，恒为 1。</returns>
+        public int GetByteCount(bool value) => _binaryConvert.GetByteCount(value);
+
+        /// <summary>
+        /// 获取字符在作为无符号16位整数编码时的字节数。
+        /// </summary>
+        /// <param name="value">要计算的字符。</param>
+        /// <returns>编码后的字节数。</returns>
+        public int GetByteCount(char value) => _binaryConvert.GetByteCount(value);
+
+        /// <summary>
+        /// 获取 DateTime 在 Timestamp 格式下的字节数。
+        /// </summary>
+        /// <param name="value">要计算的日期时间值。</param>
+        /// <returns>
+        /// 根据其值范围，返回 6 (timestamp 32), 10
+        /// (timestamp 64), 或 15 (timestamp 96)。
+        /// </returns>
+        public int GetByteCount(DateTime value) => _binaryConvert.GetByteCount(value);
+
+        #endregion GetByteCount
     }
 }

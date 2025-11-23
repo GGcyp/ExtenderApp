@@ -3,7 +3,7 @@ using System.Net.Sockets;
 using ExtenderApp.Abstract;
 using ExtenderApp.Data;
 
-namespace ExtenderApp.Common.Networks
+namespace ExtenderApp.Common.Networks.LinkClients
 {
     public abstract class LinkClient<TLinker> : DisposableObject, ILinkClient, ILinker
         where TLinker : ILinker
@@ -80,6 +80,11 @@ namespace ExtenderApp.Common.Networks
         public ValueTask DisconnectAsync(CancellationToken token = default)
         {
             return Linker.DisconnectAsync(token);
+        }
+
+        public ILinker Clone()
+        {
+            return Linker.Clone();
         }
     }
 }

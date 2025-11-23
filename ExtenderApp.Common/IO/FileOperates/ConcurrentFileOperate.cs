@@ -10,7 +10,7 @@ namespace ExtenderApp.Common.IO.FileOperates
     /// - 当新请求与已有区间重叠时，进入等待，直到有线程释放重叠区间；
     /// - 通过 <see cref="_wakeup"/> 以“单次唤醒”的方式通知等待者重新竞争，避免惊群。
     /// </summary>
-    internal class ConcurrentFileStreamFileOperate : FileOperate
+    internal class ConcurrentFileOperate : FileOperate
     {
         /// <summary>
         /// 当前已登记的正在操作的区间集合，元素为 (start, end)。
@@ -27,14 +27,14 @@ namespace ExtenderApp.Common.IO.FileOperates
         /// </summary>
         private readonly SemaphoreSlim _wakeup;
 
-        public ConcurrentFileStreamFileOperate(LocalFileInfo info) : base(info)
+        public ConcurrentFileOperate(LocalFileInfo info) : base(info)
         {
             _wrPositions = new();
             _wrLock = new();
             _wakeup = new(0, int.MaxValue);
         }
 
-        public ConcurrentFileStreamFileOperate(FileOperateInfo operateInfo) : base(operateInfo)
+        public ConcurrentFileOperate(FileOperateInfo operateInfo) : base(operateInfo)
         {
             _wrPositions = new();
             _wrLock = new();

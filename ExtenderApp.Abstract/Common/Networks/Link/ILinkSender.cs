@@ -23,7 +23,7 @@ namespace ExtenderApp.Abstract
         ///   cref="SocketOperationResult.BytesTransferred"/>：本次实际发送的字节数。对于面向连接的协议（如 TCP）可能发生部分发送。
         /// - <see cref="SocketOperationResult.SocketError"/>：若底层套接字发生错误，则包含对应的异常信息。
         /// - <see
-        ///   cref="SocketOperationResult.Code"/>
+        ///   cref="SocketOperationResult.IsSuccess"/>
         ///   / <see cref="SocketOperationResult.IsSuccess"/>：统一的操作状态描述。
         /// </returns>
         /// <remarks>
@@ -47,7 +47,7 @@ namespace ExtenderApp.Abstract
         /// 异步返回 <see
         /// cref="SocketOperationResult"/>，语义与
         /// <see cref="Send(Memory{byte})"/> 相同。
-        /// 在取消场景下，优先通过返回 Code 为 <see
+        /// 在取消场景下，优先通过返回 IsSuccess 为 <see
         /// cref="ResultCode.Canceled"/>
         /// 的结果表达取消；实现也可以选择抛出 <see cref="OperationCanceledException"/>（应在文档中明确）。
         /// </returns>

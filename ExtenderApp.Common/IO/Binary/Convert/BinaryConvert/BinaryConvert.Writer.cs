@@ -931,5 +931,241 @@ namespace ExtenderApp.Common.IO.Binary
             => WriteBigEndian(destination, unchecked((ulong)value));
 
         #endregion
+
+        #region GetByteCount
+
+        /// <summary>
+        /// 获取 Nil 编码后的字节数。
+        /// </summary>
+        /// <returns>编码后的字节数，恒为 1。</returns>
+        public int GetByteCountNil() => BinaryLength.Nil;
+
+        /// <summary>
+        /// 获取数组头编码后的字节数。
+        /// </summary>
+        /// <param name="count">数组元素个数。</param>
+        /// <returns>根据元素个数，返回 1 (fixarray), 3 (array16), 或 5 (array32)。</returns>
+        public int GetByteCountArrayHeader(uint count)
+        {
+            if (count <= BinaryRang.MaxFixArrayCount) return 1;
+            if (count <= ushort.MaxValue) return 3;
+            return 5;
+        }
+
+        /// <summary>
+        /// 获取映射头编码后的字节数。
+        /// </summary>
+        /// <param name="count">映射项个数。</param>
+        /// <returns>根据映射项个数，返回 1 (fixmap), 3 (map16), 或 5 (map32)。</returns>
+        public int GetByteCountMapHeader(uint count)
+        {
+            if (count <= BinaryRang.MaxFixMapCount) return 1;
+            if (count <= ushort.MaxValue) return 3;
+            return 5;
+        }
+
+        /// <summary>
+        /// 获取二进制数据头编码后的字节数。
+        /// </summary>
+        /// <param name="length">二进制数据长度（字节）。</param>
+        /// <returns>根据数据长度，返回 2 (bin8), 3 (bin16), 或 5 (bin32)。</returns>
+        public int GetByteCountBinHeader(uint length)
+        {
+            if (length <= byte.MaxValue) return 2;
+            if (length <= ushort.MaxValue) return 3;
+            return 5;
+        }
+
+        /// <summary>
+        /// 获取字符串头编码后的字节数。
+        /// </summary>
+        /// <param name="byteCount">字符串的字节数（非字符数）。</param>
+        /// <returns>根据字节数，返回 1 (fixstr), 2 (str8), 3 (str16), 或 5 (str32)。</returns>
+        public int GetByteCountStringHeader(uint byteCount)
+        {
+            if (byteCount <= BinaryRang.MaxFixStringLength) return 1;
+            if (byteCount <= byte.MaxValue) return 2;
+            if (byteCount <= ushort.MaxValue) return 3;
+            return 5;
+        }
+
+        /// <summary>
+        /// 获取扩展格式头编码后的字节数。
+        /// </summary>
+        /// <param name="extensionHeader">扩展头信息（包含类型码和长度）。</param>
+        /// <returns>根据数据长度，返回 2 (fixext), 3 (ext8), 4 (ext16), 或 6 (ext32)。</returns>
+        public int GetByteCountExtensionFormatHeader(ExtensionHeader extensionHeader)
+        {
+            return (int)extensionHeader.Length switch
+            {
+                1 or 2 or 4 or 8 or 16 => 2,
+                <= byte.MaxValue => 3,
+                <= ushort.MaxValue => 4,
+                _ => 6,
+            };
+        }
+
+        /// <summary>
+        /// 获取 8 位有符号整数在最紧凑编码下的字节数。
+        /// </summary>
+        /// <param name="value">要计算的值。</param>
+        /// <returns>编码后的字节数 (1 或 2)。</returns>
+        public int GetByteCount(sbyte value)
+        {
+            if (value >= 0) return GetByteCount((byte)value);
+            if (value >= BinaryRang.MinFixNegativeInt) return 1;
+            return 2; // Int8
+        }
+
+        /// <summary>
+        /// 获取 8 位无符号整数在最紧凑编码下的字节数。
+        /// </summary>
+        /// <param name="value">要计算的值。</param>
+        /// <returns>编码后的字节数 (1 或 2)。</returns>
+        public int GetByteCount(byte value)
+        {
+            if (value <= BinaryRang.MaxFixPositiveInt) return 1;
+            return 2; // UInt8
+        }
+
+        /// <summary>
+        /// 获取 16 位有符号整数在最紧凑编码下的字节数。
+        /// </summary>
+        /// <param name="value">要计算的值。</param>
+        /// <returns>编码后的字节数 (1, 2, 或 3)。</returns>
+        public int GetByteCount(short value)
+        {
+            if (value >= 0) return GetByteCount((ushort)value);
+            if (value >= BinaryRang.MinFixNegativeInt) return 1;
+            if (value >= sbyte.MinValue) return 2; // Int8
+            return 3; // Int16
+        }
+
+        /// <summary>
+        /// 获取 16 位无符号整数在最紧凑编码下的字节数。
+        /// </summary>
+        /// <param name="value">要计算的值。</param>
+        /// <returns>编码后的字节数 (1, 2, 或 3)。</returns>
+        public int GetByteCount(ushort value)
+        {
+            if (value <= BinaryRang.MaxFixPositiveInt) return 1;
+            if (value <= byte.MaxValue) return 2; // UInt8
+            return 3; // UInt16
+        }
+
+        /// <summary>
+        /// 获取 32 位有符号整数在最紧凑编码下的字节数。
+        /// </summary>
+        /// <param name="value">要计算的值。</param>
+        /// <returns>编码后的字节数 (1, 2, 3, 或 5)。</returns>
+        public int GetByteCount(int value)
+        {
+            if (value >= 0) return GetByteCount((uint)value);
+            if (value >= BinaryRang.MinFixNegativeInt) return 1;
+            if (value >= sbyte.MinValue) return 2; // Int8
+            if (value >= short.MinValue) return 3; // Int16
+            return 5; // Int32
+        }
+
+        /// <summary>
+        /// 获取 32 位无符号整数在最紧凑编码下的字节数。
+        /// </summary>
+        /// <param name="value">要计算的值。</param>
+        /// <returns>编码后的字节数 (1, 2, 3, 或 5)。</returns>
+        public int GetByteCount(uint value)
+        {
+            if (value <= BinaryRang.MaxFixPositiveInt) return 1;
+            if (value <= byte.MaxValue) return 2; // UInt8
+            if (value <= ushort.MaxValue) return 3; // UInt16
+            return 5; // UInt32
+        }
+
+        /// <summary>
+        /// 获取 64 位有符号整数在最紧凑编码下的字节数。
+        /// </summary>
+        /// <param name="value">要计算的值。</param>
+        /// <returns>编码后的字节数 (1, 2, 3, 5, 或 9)。</returns>
+        public int GetByteCount(long value)
+        {
+            if (value >= 0) return GetByteCount((ulong)value);
+            if (value >= BinaryRang.MinFixNegativeInt) return 1;
+            if (value >= sbyte.MinValue) return 2; // Int8
+            if (value >= short.MinValue) return 3; // Int16
+            if (value >= int.MinValue) return 5; // Int32
+            return 9; // Int64
+        }
+
+        /// <summary>
+        /// 获取 64 位无符号整数在最紧凑编码下的字节数。
+        /// </summary>
+        /// <param name="value">要计算的值。</param>
+        /// <returns>编码后的字节数 (1, 2, 3, 5, 或 9)。</returns>
+        public int GetByteCount(ulong value)
+        {
+            if (value <= (ulong)BinaryRang.MaxFixPositiveInt) return 1;
+            if (value <= byte.MaxValue) return 2; // UInt8
+            if (value <= ushort.MaxValue) return 3; // UInt16
+            if (value <= uint.MaxValue) return 5; // UInt32
+            return 9; // UInt64
+        }
+
+        /// <summary>
+        /// 获取单精度浮点数编码后的字节数。
+        /// </summary>
+        /// <param name="value">要计算的值（未使用，仅用于方法重载）。</param>
+        /// <returns>编码后的字节数，恒为 5。</returns>
+        public int GetByteCount(float value) => BinaryLength.Float32;
+
+        /// <summary>
+        /// 获取双精度浮点数编码后的字节数。
+        /// </summary>
+        /// <param name="value">要计算的值（未使用，仅用于方法重载）。</param>
+        /// <returns>编码后的字节数，恒为 9。</returns>
+        public int GetByteCount(double value) => BinaryLength.Float64;
+
+        /// <summary>
+        /// 获取布尔值编码后的字节数。
+        /// </summary>
+        /// <param name="value">要计算的值（未使用，仅用于方法重载）。</param>
+        /// <returns>编码后的字节数，恒为 1。</returns>
+        public int GetByteCount(bool value) => 1;
+
+        /// <summary>
+        /// 获取字符在作为无符号16位整数编码时的字节数。
+        /// </summary>
+        /// <param name="value">要计算的字符。</param>
+        /// <returns>编码后的字节数。</returns>
+        public int GetByteCount(char value) => GetByteCount((ushort)value);
+
+        /// <summary>
+        /// 获取 DateTime 在 Timestamp 格式下的字节数。
+        /// </summary>
+        /// <param name="value">要计算的日期时间值。</param>
+        /// <returns>根据其值范围，返回 6 (timestamp 32), 10 (timestamp 64), 或 15 (timestamp 96)。</returns>
+        public int GetByteCount(DateTime value)
+        {
+            if (value.Kind == DateTimeKind.Local)
+            {
+                value = value.ToUniversalTime();
+            }
+
+            long secondsSinceBclEpoch = value.Ticks / TimeSpan.TicksPerSecond;
+            long seconds = secondsSinceBclEpoch - BinaryDateTime.BclSecondsAtUnixEpoch;
+            long nanoseconds = (value.Ticks % TimeSpan.TicksPerSecond) * BinaryDateTime.NanosecondsPerTick;
+
+            if ((seconds >> 34) == 0)
+            {
+                // 纳秒为0且秒数在uint范围内，使用 timestamp 32
+                if (nanoseconds == 0 && seconds >= 0 && seconds <= uint.MaxValue)
+                {
+                    return 6; // fixext 4
+                }
+                return 10; // fixext 8
+            }
+
+            return 15; // ext 8
+        }
+
+        #endregion
     }
 }

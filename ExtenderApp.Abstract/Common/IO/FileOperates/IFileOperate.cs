@@ -408,5 +408,13 @@ namespace ExtenderApp.Abstract
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="newCapacity"/> 小于当前容量。</exception>
         /// <exception cref="IOException">底层 IO 错误。</exception>
         void ExpandCapacity(long newCapacity);
+
+        /// <summary>
+        /// 获取文件的唯一标识符 (GUID)。
+        /// 在 Windows 上，此 GUID 基于卷序列号和文件索引号，即使文件移动或重命名也能保持不变。
+        /// 在其他操作系统上，它基于文件完整路径的 SHA1 哈希值。
+        /// </summary>
+        /// <returns>表示文件的唯一 Guid。</returns>
+        Guid GetFileGuid();
     }
 }
