@@ -20,12 +20,7 @@ namespace ExtenderApp.Abstract
         /// 当有新连接被接受时触发。
         /// 事件参数为包装完成的 <see cref="ITcpLinker"/> 实例。
         /// </summary>
-        /// <remarks>
-        /// - 线程上下文：通常在线程池线程上触发；请避免在处理器中执行耗时/阻塞操作。<br/>
-        /// - 异常：订阅方抛出的异常应自行处理；实现一般会隔离异常以保证接入循环不中断。<br/>
-        /// - 语义：该事件仅用于通知，不提供背压；若需按消费速度取连接，请在实现层做队列/调度。
-        /// </remarks>
-        event EventHandler<ITcpLinker>? OnAccept;
+        event EventHandler<ITcpLinker>? Accept;
 
         /// <summary>
         /// 绑定本地终结点。
@@ -41,7 +36,7 @@ namespace ExtenderApp.Abstract
         /// <param name="backlog">挂起连接队列的最大长度（传递给 <see cref="Socket.Listen(int)"/>）。</param>
         /// <remarks>
         /// - 通常需要先调用 <see cref="Bind(EndPoint)"/> 再调用本方法；<br/>
-        /// - 调用后，新的连接接入将通过 <see cref="OnAccept"/> 事件通知订阅者。
+        /// - 调用后，新的连接接入将通过 <see cref="Accept"/> 事件通知订阅者。
         /// </remarks>
         /// <exception cref="InvalidOperationException">未绑定即开始监听，或实现不允许的状态。</exception>
         /// <exception cref="SocketException">底层开始监听失败。</exception>

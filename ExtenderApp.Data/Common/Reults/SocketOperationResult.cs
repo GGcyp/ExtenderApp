@@ -79,5 +79,20 @@ namespace ExtenderApp.Data
         /// <returns>一个表示操作结果的 <see cref="Result"/> 实例。</returns>
         public static implicit operator Result(SocketOperationResult result)
             => new Result(result.IsSuccess, result.SocketError?.Message, result.SocketError);
+
+        public static implicit operator bool(SocketOperationResult result)
+            => result.IsSuccess;
+
+        public static implicit operator int(SocketOperationResult result)
+            => result.BytesTransferred;
+
+        public static implicit operator SocketException?(SocketOperationResult result)
+            => result.SocketError;
+
+        public static implicit operator EndPoint?(SocketOperationResult result)
+            => result.RemoteEndPoint;
+
+        public static implicit operator IPPacketInformation(SocketOperationResult result)
+            => result.ReceiveMessageFromPacketInfo;
     }
 }

@@ -1,11 +1,9 @@
-﻿
-
-namespace ExtenderApp.Common.Networks.LinkClients
+﻿namespace ExtenderApp.Data
 {
     /// <summary>
-    /// 推送文件请求，由发送方发起，希望向接收方传输文件。
+    /// 文件数据传输对象。
     /// </summary>
-    internal readonly struct PushFileRequest
+    public readonly struct FileDto
     {
         /// <summary>
         /// 文件的唯一标识符。
@@ -33,20 +31,28 @@ namespace ExtenderApp.Common.Networks.LinkClients
         public int ChunkSize { get; }
 
         /// <summary>
-        /// 初始化 <see cref="PushFileRequest"/> 结构的新实例。
+        /// 文件块的位字段数据，指示哪些块已被接收。
         /// </summary>
-        /// <param name="fileId">文件的唯一标识符。</param>
-        /// <param name="fileName">文件名。</param>
-        /// <param name="fileSize">文件总大小（字节）。</param>
-        /// <param name="chunkCount">文件被分成的块总数。</param>
-        /// <param name="chunkSize">每个文件块的大小（字节）。</param>
-        public PushFileRequest(Guid fileId, string fileName, long fileSize, long chunkCount, int chunkSize)
+        public BitFieldData FileField { get; }
+
+        public FileDto(Guid fileId, string fileName, long fileSize, long chunkCount, int chunkSize)
         {
             FileId = fileId;
             FileName = fileName;
             FileSize = fileSize;
             ChunkCount = chunkCount;
             ChunkSize = chunkSize;
+            FileField = BitFieldData.Empty;
+        }
+
+        public FileDto(Guid fileId, string fileName, long fileSize, BitFieldData fileField, int chunkSize)
+        {
+            FileId = fileId;
+            FileName = fileName;
+            FileSize = fileSize;
+            ChunkCount = fileField.Length;
+            ChunkSize = chunkSize;
+            FileField = fileField;
         }
     }
 }

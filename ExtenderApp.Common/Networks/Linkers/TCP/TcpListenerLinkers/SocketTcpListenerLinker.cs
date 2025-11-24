@@ -8,7 +8,7 @@ namespace ExtenderApp.Common.Networks
 {
     /// <summary>
     /// 基于 <see cref="Socket"/> 的 TCP 监听器实现。
-    /// 通过 <see cref="ITcpListenerLinker.OnAccept"/> 事件将新连接以 <see cref="ITcpLinker"/> 的形式发布。
+    /// 通过 <see cref="ITcpListenerLinker.Accept"/> 事件将新连接以 <see cref="ITcpLinker"/> 的形式发布。
     /// 支持配置并行 Accept 数量（<see cref="AcceptConcurrency"/>）与运行时暂停/恢复（<see cref="Pause"/> / <see cref="Resume"/>）。
     /// </summary>
     internal class SocketTcpListenerLinker : TcpListenerLinker
@@ -101,7 +101,7 @@ namespace ExtenderApp.Common.Networks
         /// <param name="backlog">监听队列长度（传递给 <see cref="Socket.Listen(int)"/>）。</param>
         /// <remarks>
         /// - 幂等：多次调用仅首次生效。<br/>
-        /// - 接入通知：每当有新连接接入，将通过 <see cref="ITcpListenerLinker.OnAccept"/> 发布一个 <see cref="ITcpLinker"/> 实例。<br/>
+        /// - 接入通知：每当有新连接接入，将通过 <see cref="ITcpListenerLinker.Accept"/> 发布一个 <see cref="ITcpLinker"/> 实例。<br/>
         /// - 并行度：Accept 并行数量由 <see cref="AcceptConcurrency"/> 决定，需在启动前设置。<br/>
         /// - 暂停/恢复：可通过 <see cref="Pause"/> 与 <see cref="Resume"/> 控制是否发起新的 Accept。
         /// </remarks>

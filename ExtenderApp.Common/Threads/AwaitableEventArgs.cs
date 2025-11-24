@@ -1,7 +1,7 @@
 ﻿using System.Threading.Tasks.Sources;
 using ExtenderApp.Common.ObjectPools;
 
-namespace ExtenderApp.Common
+namespace ExtenderApp.Common.Threads
 {
     /// <summary>
     /// 表示一个可等待的、可池化的通用异步操作参数。
@@ -9,43 +9,45 @@ namespace ExtenderApp.Common
     /// 从而在异步操作同步完成时避免不必要的堆内存分配。
     /// </summary>
     /// <typeparam name="T">异步操作返回的结果类型。</typeparam>
-    public class AwaitableEventArgs<T> : IValueTaskSource<T>
+    public sealed class AwaitableEventArgs<T> : IValueTaskSource<T>
     {
-        private readonly static ObjectPool<AwaitableEventArgs<T>> _pool
+        public readonly static ObjectPool<AwaitableEventArgs<T>> _pool
             = ObjectPool.CreateDefaultPool<AwaitableEventArgs<T>>();
 
         /// <summary>
         /// 从对象池中获取一个 <see cref="AwaitableEventArgs{T}"/> 实例。
         /// </summary>
-        /// <returns>一个可用于执行异步操作的实例。</returns>
+        /// <returns><see cref="AwaitableEventArgs{T}"/> 实例</returns>
         public static AwaitableEventArgs<T> Get()
-        {
-            return _pool.Get();
-        }
+            => _pool.Get();
 
         /// <summary>
-        /// 将一个 <see cref="AwaitableEventArgs{T}"/> 实例释放回对象池。
+        /// 回收指定的 <see cref="AwaitableEventArgs{T}"/> 实例到对象池中以供重用。
         /// </summary>
-        /// <param name="args">要释放的实例。</param>
+        /// <param name="args">指定的 <see cref="AwaitableEventArgs{T}"/> 实例</param>
         public static void Release(AwaitableEventArgs<T> args)
-        {
-            args.Release();
-        }
+            => _pool.Release(args);
 
         /// <summary>
-        /// 将当前实例释放回对象池以便重用。
+        /// 回收当前实例到对象池中以供重用。
         /// </summary>
         public void Release()
-        {
-            _pool.Release(this);
-        }
+            => _pool.Release(this);
 
+        /// <summary>
+        /// 多线程重置值任务源的核心实现。
+        /// </summary>
         private ManualResetValueTaskSourceCore<T> vts;
 
         /// <summary>
         /// 获取当前操作的版本令牌，用于向 <see cref="ValueTask{TResult}"/> 验证此源的有效性。
         /// </summary>
         public short Version => vts.Version;
+
+        public AwaitableEventArgs()
+        {
+            vts = new();
+        }
 
         /// <summary>
         /// 标记操作成功完成并设置结果。
@@ -98,5 +100,8 @@ namespace ExtenderApp.Common
         {
             vts.OnCompleted(continuation, state, token, flags);
         }
+
+        public static implicit operator ValueTask<T>(AwaitableEventArgs<T> args)
+            => new ValueTask<T>(args, args.Version);
     }
 }

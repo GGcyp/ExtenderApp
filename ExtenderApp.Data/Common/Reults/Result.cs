@@ -70,6 +70,13 @@
         public static Result Success(string? message = "OK") => new(true, message);
 
         /// <summary>
+        /// 创建一个表示不成功的 <see cref="Result"/>。
+        /// </summary>
+        /// <param name="message"></param>
+        /// <returns></returns>
+        public static Result Unsuccess(string? message = "Unsuccess") => new(false, message);
+
+        /// <summary>
         /// 创建一个表示异常的 <see cref="Result"/>。
         /// </summary>
         /// <param name="exception">捕获到的异常。</param>
@@ -79,6 +86,14 @@
         /// 创建一个表示成功的 <see cref="Result{T}"/>。
         /// </summary>
         public static Result<T> Success<T>(T data, string? message = "OK") => new(true, data, message);
+
+        /// <summary>
+        /// 创建一个表示不成功的 <see cref="Result{T}"/>。
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="message"></param>
+        /// <returns></returns>
+        public static Result<T> Unsuccess<T>(string? message = "Unsuccess") => new(false, default(T), message);
 
         /// <summary>
         /// 创建一个表示异常的 <see cref="Result{T}"/>。

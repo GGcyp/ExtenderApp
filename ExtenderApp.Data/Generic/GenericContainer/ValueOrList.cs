@@ -301,5 +301,17 @@ namespace ExtenderApp.Data
             }
             return sb.ToString();
         }
+
+        /// <summary>
+        /// 将一组值添加到集合中。
+        /// </summary>
+        /// <param name="values">一组值</param>
+        public void AddRange(IEnumerable<T> values)
+        {
+            foreach (var item in values)
+            {
+                Add(item);
+            }
+        }
     }
 }

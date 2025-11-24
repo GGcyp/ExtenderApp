@@ -6,7 +6,7 @@ namespace ExtenderApp.Common.Networks
 {
     /// <summary>
     /// TCP 监听器链接器的抽象基类，实现 <see cref="ITcpListenerLinker"/>。
-    /// 封装 <see cref="ILinkerFactory{TLinker}"/> 注入与 <see cref="OnAccept"/> 事件分发。
+    /// 封装 <see cref="ILinkerFactory{TLinker}"/> 注入与 <see cref="Accept"/> 事件分发。
     /// </summary>
     public abstract class TcpListenerLinker : DisposableObject, ITcpListenerLinker
     {
@@ -24,15 +24,15 @@ namespace ExtenderApp.Common.Networks
         /// <summary>
         /// 新连接接入事件。事件参数为包装完成的 <see cref="ITcpLinker"/>。
         /// </summary>
-        public event EventHandler<ITcpLinker>? OnAccept;
+        public event EventHandler<ITcpLinker>? Accept;
 
         /// <summary>
-        /// 触发 <see cref="OnAccept"/> 事件的受保护辅助方法。
+        /// 触发 <see cref="Accept"/> 事件的受保护辅助方法。
         /// </summary>
         /// <param name="linker">已包装的连接器实例。</param>
         public void RaiseOnAccept(ITcpLinker linker)
         {
-            OnAccept?.Invoke(this, linker);
+            Accept?.Invoke(this, linker);
         }
 
         /// <summary>
