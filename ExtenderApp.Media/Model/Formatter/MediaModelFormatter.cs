@@ -38,7 +38,7 @@ namespace ExtenderApp.Media
                 throw new ArgumentNullException(nameof(value));
             }
 
-            //_videoInfoFormatter.Serialize(ref writer, value.MediaInfos);
+            //_videoInfoFormatter.Serialize(ref writer, Value.MediaInfos);
         }
 
         public override long GetLength(MediaModel value)

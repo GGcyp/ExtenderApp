@@ -33,7 +33,7 @@ namespace ExtenderApp.Media.Themes
         //public Geometry Icon
         //{
         //    get => (Geometry)GetValue(IconProperty);
-        //    set => SetValue(IconProperty, value);
+        //    set => SetValue(IconProperty, Value);
         //}
 
         //public static readonly DependencyProperty IconProperty =

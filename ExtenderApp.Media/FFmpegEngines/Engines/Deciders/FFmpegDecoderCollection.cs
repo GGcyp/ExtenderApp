@@ -13,7 +13,7 @@ namespace ExtenderApp.FFmpegEngines
         /// </summary>
         private readonly FFmpegEngine _engine;
 
-        private FFmpegDecoderContextCollection contexts;
+        private readonly FFmpegDecoderContextCollection _contexts;
 
         /// <summary>
         /// 视频解码器实例。
@@ -37,10 +37,10 @@ namespace ExtenderApp.FFmpegEngines
         {
             _engine = engine;
 
-            this.contexts = contexts;
+            this._contexts = contexts;
 
-            VideoDecoder = new FFmpegVideoDecoder(engine, contexts.VideoContext, info, settings);
-            AudioDecoder = new FFmpegAudioDecoder(engine, contexts.AudioContext, info, settings);
+            VideoDecoder = new FFmpegVideoDecoder(engine, contexts[FFmpegMediaType.VIDEO], info, settings);
+            AudioDecoder = new FFmpegAudioDecoder(engine, contexts[FFmpegMediaType.AUDIO], info, settings);
         }
 
         /// <summary>

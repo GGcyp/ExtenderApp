@@ -16,9 +16,9 @@ namespace ExtenderApp.Common.IO.Binary.Formatters
         /// <summary>
         /// 获取当前格式化器的版本信息
         /// </summary>
-        /// <value>
+        /// <Value>
         /// 返回 System.Version 对象，表示格式化器的版本号
-        /// </value>
+        /// </Value>
         /// <remarks>
         /// 1. 必须由派生类实现具体版本号
         /// 2. 用于版本兼容性检查

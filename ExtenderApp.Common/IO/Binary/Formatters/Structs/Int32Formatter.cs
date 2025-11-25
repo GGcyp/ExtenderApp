@@ -3,7 +3,7 @@
 namespace ExtenderApp.Common.IO.Binary.Formatters
 {
     /// <summary>
-    /// Int32Formatter 类，继承自 StructFormatter<Int32> 类，用于格式化 Int32 类型的数据。
+    /// Int32Value 类，继承自 StructFormatter<Int32> 类，用于格式化 Int32 类型的数据。
     /// </summary>
     internal sealed class Int32Formatter : StructFormatter<Int32>
     {

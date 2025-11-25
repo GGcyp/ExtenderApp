@@ -197,7 +197,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
 
                 if (!string.IsNullOrEmpty(line))
                 {
-                    // header 行：Name: value
+                    // header 行：Name: Value
                     int idx = line.IndexOf(':');
                     if (idx > 0)
                     {
@@ -286,7 +286,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
 
                 if (!string.IsNullOrEmpty(line))
                 {
-                    // header 行：Name: value
+                    // header 行：Name: Value
                     int idx = line.IndexOf(':');
                     if (idx > 0)
                     {

@@ -20,7 +20,7 @@ namespace ExtenderApp.Common.IO
         /// <summary>
         /// 获取或设置文件操作接口
         /// </summary>
-        /// <value>文件操作接口</value>
+        /// <Value>文件操作接口</Value>
         public IFileOperate? FileOperate { get; set; }
 
         /// <summary>

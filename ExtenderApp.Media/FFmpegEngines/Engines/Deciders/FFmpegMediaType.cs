@@ -5,7 +5,7 @@ namespace ExtenderApp.FFmpegEngines
     /// <summary>
     /// FFmpeg媒体类型枚举
     /// </summary>
-    public enum FFmpegMediaType
+    public enum FFmpegMediaType : int
     {
         /// <summary>
         /// 未知类型
@@ -14,26 +14,26 @@ namespace ExtenderApp.FFmpegEngines
         /// <summary>
         /// 视频类型
         /// </summary>
-        VIDEO,
+        VIDEO = 0,
         /// <summary>
         /// 音频类型
         /// </summary>
-        AUDIO,
+        AUDIO = 1,
         /// <summary>
         /// 数据类型
         /// </summary>
-        DATA,
+        DATA = 2,
         /// <summary>
         /// 字幕类型
         /// </summary>
-        SUBTITLE,
+        SUBTITLE = 3,
         /// <summary>
         /// 附件类型
         /// </summary>
-        ATTACHMENT,
+        ATTACHMENT = 4,
         /// <summary>
         /// 类型数量
         /// </summary>
-        NB
+        NB = 5,
     }
 }

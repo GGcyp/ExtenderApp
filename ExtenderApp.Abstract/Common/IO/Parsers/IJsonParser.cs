@@ -1,4 +1,5 @@
 ﻿
+
 namespace ExtenderApp.Abstract
 {
     /// <summary>
@@ -22,5 +23,13 @@ namespace ExtenderApp.Abstract
         /// <param name="options">可选的序列化选项。</param>
         /// <returns>序列化后的 JSON 字符串。</returns>
         string Serialize<T>(T value);
+
+        /// <summary>
+        /// 将给定的 JSON 字符串反序列化到指定类型的对象。
+        /// </summary>
+        /// <typeparam name="T">指定类型</typeparam>
+        /// <param name="value">指定类型值</param>
+        /// <param name="stream">流</param>
+        void Serialize<T>(T value, Stream stream);
     }
 }

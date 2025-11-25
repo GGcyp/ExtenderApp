@@ -21,10 +21,10 @@ namespace ExtenderApp.Common
         /// 获取单例实例的静态属性
         /// 采用表达式体成员语法简化实现
         /// </summary>
-        /// <value>
+        /// <Value>
         /// 返回类型为T的唯一实例
         /// 首次访问时自动创建实例
-        /// </value>
+        /// </Value>
         public static T Instance => _lazyInstance.Value;
     }
 }

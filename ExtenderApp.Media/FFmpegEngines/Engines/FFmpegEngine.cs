@@ -300,8 +300,8 @@ namespace ExtenderApp.FFmpegEngines
         /// <returns>FFmpegInfo实例。</returns>
         private FFmpegInfo CreateFFmpegInfo(string uri, FFmpegDecoderContextCollection collection)
         {
-            var videoContext = collection.VideoContext;
-            var audioContext = collection.AudioContext;
+            var videoContext = collection[FFmpegMediaType.VIDEO];
+            var audioContext = collection[FFmpegMediaType.AUDIO];
 
             FFmpegInfo info = new(uri, videoContext.CodecContext.Value->pix_fmt.Convert(), audioContext.CodecContext.Value->sample_fmt.Convert(), GetCodecNameOrDefault(videoContext), GetCodecNameOrDefault(audioContext));
             info.Width = videoContext.CodecParameters.Value->width;
@@ -521,21 +521,12 @@ namespace ExtenderApp.FFmpegEngines
         /// <returns>解码器上下文集合。</returns>
         public FFmpegDecoderContextCollection CreateDecoderContextCollection(AVFormatContext* formatContext, NativeIntPtr<AVDictionary> options, string? uri = null)
         {
-            if (!TryGetStreamIndex(formatContext, out int videoIndex, out int audioIndex, out int subtitleIndex))
-            {
-                throw new FFmpegException($"未找到视频或音频流:{uri}");
-            }
             var valure = options.Value;
             var vptr = &valure;
-            bool hasVideoDecoder = TryGetDecoderContext(formatContext, videoIndex, FFmpegMediaType.VIDEO, vptr, out FFmpegDecoderContext videoDecoder);
-            bool hasAudioDecoder = TryGetDecoderContext(formatContext, audioIndex, FFmpegMediaType.AUDIO, vptr, out FFmpegDecoderContext audioDecoder);
 
-            if (!hasVideoDecoder && !hasAudioDecoder)
-            {
-                throw new FFmpegException($"未找到可用的视频或音频解码器:{uri}");
-            }
+            TryGetDecoderContexts(formatContext, vptr, out var Decoders);
 
-            return new FFmpegDecoderContextCollection(videoDecoder, audioDecoder);
+            return new FFmpegDecoderContextCollection(Decoders);
         }
 
         /// <summary>
@@ -545,7 +536,9 @@ namespace ExtenderApp.FFmpegEngines
         /// <param name="context">FFmpeg上下文，包含解码器集合和媒体信息。</param>
         /// <param name="settings">可选的解码器设置，若为空则使用默认设置。</param>
         /// <param name="source">可选的取消令牌源，若为空则自动创建。</param>
-        /// <returns>FFmpegDecoderCollection 实例。</returns>
+        /// <returns>
+        /// FFmpegDecoderCollection 实例。
+        /// </returns>
         public FFmpegDecoderCollection CreateDecoderCollection(FFmpegContext context, FFmpegDecoderSettings? settings, CancellationTokenSource? source = null)
         {
             if (context.IsEmpty)
@@ -559,13 +552,14 @@ namespace ExtenderApp.FFmpegEngines
 
         /// <summary>
         /// 创建解码控制器（FFmpegDecoderController）。
-        /// 用于管理解码流程，包括解码启动、停止、跳转、资源释放等操作。
-        /// 支持多线程解码、取消令牌控制和解码器集合的统一管理。
+        /// 用于管理解码流程，包括解码启动、停止、跳转、资源释放等操作。 支持多线程解码、取消令牌控制和解码器集合的统一管理。
         /// </summary>
         /// <param name="context">FFmpeg上下文，包含媒体信息和解码器集合。</param>
         /// <param name="settings"></param>
         /// <param name="source">可选的取消令牌源，若为空则自动创建。</param>
-        /// <returns>FFmpegDecoderController 实例。</returns>
+        /// <returns>
+        /// FFmpegDecoderController 实例。
+        /// </returns>
         public FFmpegDecoderController CreateDecoderController(FFmpegContext context, FFmpegDecoderSettings settings, CancellationTokenSource? source = null)
         {
             source ??= new CancellationTokenSource();
@@ -604,42 +598,6 @@ namespace ExtenderApp.FFmpegEngines
         #region Get
 
         /// <summary>
-        /// 尝试获取视频流索引。
-        /// </summary>
-        /// <param name="formatContext">AVFormatContext指针。</param>
-        /// <param name="videoIndex">视频流索引。</param>
-        /// <returns>是否成功获取。</returns>
-        private bool TryGetVideoStreamIndex(AVFormatContext* formatContext, out int videoIndex)
-        {
-            videoIndex = GetStreamIndex(formatContext, AVMediaType.AVMEDIA_TYPE_VIDEO);
-            return videoIndex != DefaultStreamIndex;
-        }
-
-        /// <summary>
-        /// 尝试获取音频流索引。
-        /// </summary>
-        /// <param name="formatContext">AVFormatContext指针。</param>
-        /// <param name="audioIndex">音频流索引。</param>
-        /// <returns>是否成功获取。</returns>
-        private bool TryGetAudioStreamIndex(AVFormatContext* formatContext, out int audioIndex)
-        {
-            audioIndex = GetStreamIndex(formatContext, AVMediaType.AVMEDIA_TYPE_AUDIO);
-            return audioIndex != DefaultStreamIndex;
-        }
-
-        /// <summary>
-        /// 尝试获取字幕流索引。
-        /// </summary>
-        /// <param name="formatContext">AVFormatContext指针。</param>
-        /// <param name="subtitleIndex">字幕流索引。</param>
-        /// <returns>是否成功获取。</returns>
-        private bool TryGetSubtitleStreamIndex(AVFormatContext* formatContext, out int subtitleIndex)
-        {
-            subtitleIndex = GetStreamIndex(formatContext, AVMediaType.AVMEDIA_TYPE_SUBTITLE);
-            return subtitleIndex != DefaultStreamIndex;
-        }
-
-        /// <summary>
         /// 获取指定媒体类型的流索引。
         /// </summary>
         /// <param name="formatContext">AVFormatContext指针。</param>
@@ -658,51 +616,6 @@ namespace ExtenderApp.FFmpegEngines
                 }
             }
             return DefaultStreamIndex;
-        }
-
-        /// <summary>
-        /// 尝试获取视频、音频和字幕流的索引。
-        /// </summary>
-        /// <param name="formatContext">AVFormatContext指针。</param>
-        /// <param name="videoIndex">视频流索引。</param>
-        /// <param name="audioIndex">音频流索引。</param>
-        /// <param name="subtitleIndex">字幕流索引。</param>
-        /// <returns>是否成功获取视频或音频流索引。</returns>
-        private bool TryGetStreamIndex(AVFormatContext* formatContext, out int videoIndex, out int audioIndex, out int subtitleIndex)
-        {
-            videoIndex = DefaultStreamIndex;
-            audioIndex = DefaultStreamIndex;
-            subtitleIndex = DefaultStreamIndex;
-            uint count = formatContext->nb_streams;
-            for (int i = 0; i < count; i++)
-            {
-                AVStream* stream = formatContext->streams[i];
-                AVMediaType codecType = stream->codecpar->codec_type;
-
-                switch (codecType)
-                {
-                    case AVMediaType.AVMEDIA_TYPE_VIDEO:
-                        if (videoIndex == DefaultStreamIndex)
-                            videoIndex = i;
-                        break;
-
-                    case AVMediaType.AVMEDIA_TYPE_AUDIO:
-                        if (audioIndex == DefaultStreamIndex)
-                            audioIndex = i;
-                        break;
-
-                    case AVMediaType.AVMEDIA_TYPE_SUBTITLE:
-                        if (subtitleIndex == DefaultStreamIndex)
-                            subtitleIndex = i;
-                        break;
-                }
-
-                // 如果已经找到视频和音频流，提前退出
-                if (videoIndex != DefaultStreamIndex && audioIndex != DefaultStreamIndex && subtitleIndex != DefaultStreamIndex)
-                    break;
-            }
-
-            return videoIndex != DefaultStreamIndex || audioIndex != DefaultStreamIndex;
         }
 
         #endregion Get
@@ -785,6 +698,41 @@ namespace ExtenderApp.FFmpegEngines
         #endregion Format
 
         #region Decoder
+
+        /// <summary>
+        /// 尝试为给定格式上下文中的所有流创建解码器上下文。
+        /// 此方法会遍历所有流，并为每个流调用 <see
+        /// cref="TryGetDecoderContext(AVFormatContext*,
+        /// int, FFmpegMediaType, AVDictionary**,
+        /// out FFmpegDecoderContext)"/> 来初始化解码器。
+        /// </summary>
+        /// <param name="formatContext">
+        /// 指向 AVFormatContext 的指针，包含媒体文件的所有流信息。
+        /// </param>
+        /// <param name="options">
+        /// 指向 AVDictionary 的指针，用于传递给解码器的额外选项。
+        /// </param>
+        /// <param name="decoders">
+        /// 输出参数。当此方法返回时，该数组将包含为每个流成功初始化的 <see
+        /// cref="FFmpegDecoderContext"/>。如果某个流无法创建解码器，则数组中对应的元素将是
+        /// <see cref="FFmpegDecoderContext.Empty"/>。
+        /// </param>
+        /// <returns>总是返回 <c>true</c>，表示已完成对所有流的解码器创建尝试。</returns>
+        private bool TryGetDecoderContexts(AVFormatContext* formatContext, AVDictionary** options, out FFmpegDecoderContext[] decoders)
+        {
+            int count = (int)formatContext->nb_streams;
+            decoders = new FFmpegDecoderContext[count];
+            for (int i = 0; i < count; i++)
+            {
+                AVStream* stream = formatContext->streams[i];
+                AVMediaType codecType = stream->codecpar->codec_type;
+                if (TryGetDecoderContext(formatContext, (int)i, codecType.Convert(), options, out FFmpegDecoderContext decoder))
+                {
+                    decoders[i] = decoder;
+                }
+            }
+            return true;
+        }
 
         /// <summary>
         /// 尝试获取解码器。
@@ -1623,18 +1571,21 @@ namespace ExtenderApp.FFmpegEngines
         /// 释放 FFmpegDeciderContextCollection
         /// 集合中的所有解码器上下文资源。 会遍历集合并逐一释放每个解码器上下文。
         /// </summary>
-        /// <param name="ptr">
+        /// <param name="conllection">
         /// 待释放的 FFmpegDeciderContextCollection 实例。
         /// </param>
-        public void Free(ref FFmpegDecoderContextCollection ptr)
+        public void Free(ref FFmpegDecoderContextCollection conllection)
         {
-            if (ptr.IsEmpty)
+            if (conllection.IsEmpty)
             {
                 return;
             }
 
-            Free(ref ptr.VideoContext);
-            Free(ref ptr.AudioContext);
+            foreach (var decoder in conllection)
+            {
+                var temp = decoder;
+                Free(ref temp);
+            }
         }
 
         /// <summary>

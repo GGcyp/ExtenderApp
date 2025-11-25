@@ -112,5 +112,34 @@ namespace ExtenderApp.FFmpegEngines
         {
             return (FFmpegSampleFormat)format;
         }
+
+        /// <summary>
+        /// 将 FFmpeg.AutoGen.AVMediaType 枚举值转换为
+        /// FFmpegMediaType 枚举值。 用于非托管与托管媒体类型枚举的互转，便于业务逻辑处理。
+        /// </summary>
+        /// <param name="mediaType">
+        /// AVMediaType 枚举值。
+        /// </param>
+        /// <returns>
+        /// 对应的 FFmpegMediaType 枚举值。
+        /// </returns>
+        public static FFmpegMediaType Convert(this AVMediaType mediaType)
+        {
+            return (FFmpegMediaType)mediaType;
+        }
+
+        /// <summary>
+        /// 将 FFmpegMediaType 枚举值转换为
+        /// FFmpeg.AutoGen.AVMediaType 枚举值。
+        /// 用于托管与非托管媒体类型枚举的互转，便于与 FFmpeg API 交互。
+        /// </summary>
+        /// <param name="mediaType">
+        /// FFmpegMediaType 枚举值。
+        /// </param>
+        /// <returns>对应的 AVMediaType 枚举值。</returns>
+        public static AVMediaType Convert(this FFmpegMediaType mediaType)
+        {
+            return (AVMediaType)mediaType;
+        }
     }
 }

@@ -57,7 +57,7 @@ namespace ExtenderApp.Torrents.Models
         /// <summary>
         /// 获取或设置TorrentManagerFile属性
         /// </summary>
-        /// <value>TorrentManagerFile属性的值</value>
+        /// <Value>TorrentManagerFile属性的值</Value>
         public ITorrentManagerFile? TorrentManagerFile { get; set; }
 
         /// <summary>

@@ -285,17 +285,17 @@ namespace ExtenderApp.Common.Networks.LinkClients
         //    buf.WriteAdvance(len);
         //}
 
-        //private static void WriteUInt16BE(ref ByteBuffer buf, ushort value)
+        //private static void WriteUInt16BE(ref ByteBuffer buf, ushort Value)
         //{
         //    var s = buf.GetSpan(2);
-        //    s[0] = (byte)(value >> 8);
-        //    s[1] = (byte)(value & 0xFF);
+        //    s[0] = (byte)(Value >> 8);
+        //    s[1] = (byte)(Value & 0xFF);
         //    buf.WriteAdvance(2);
         //}
 
-        //private static void WriteVarInt(ref ByteBuffer buf, int value)
+        //private static void WriteVarInt(ref ByteBuffer buf, int Value)
         //{
-        //    uint v = (uint)value;
+        //    uint v = (uint)Value;
         //    do
         //    {
         //        byte b = (byte)(v % 128);
@@ -426,15 +426,15 @@ namespace ExtenderApp.Common.Networks.LinkClients
         //    return total;
         //}
 
-        //private static bool TryReadVarInt(ReadOnlySpan<byte> data, out int value, out int bytes)
+        //private static bool TryReadVarInt(ReadOnlySpan<byte> data, out int Value, out int bytes)
         //{
-        //    value = 0; bytes = 0;
+        //    Value = 0; bytes = 0;
         //    int multiplier = 1;
         //    for (int i = 0; i < 4 && i < data.Length; i++)
         //    {
         //        byte b = data[i];
         //        bytes++;
-        //        value += (b & 0x7F) * multiplier;
+        //        Value += (b & 0x7F) * multiplier;
         //        if ((b & 0x80) == 0) return true;
         //        multiplier *= 128;
         //    }

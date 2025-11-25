@@ -213,14 +213,14 @@
 
         /// <summary>
         /// packed RGB 16:16:16, 48bpp, 16R, 16G,
-        /// 16B, the 2-byte value for each R/G/B
+        /// 16B, the 2-byte Value for each R/G/B
         /// component is stored as big-endian
         /// </summary>
         PIX_FMT_RGB48BE = 34,
 
         /// <summary>
         /// packed RGB 16:16:16, 48bpp, 16R, 16G,
-        /// 16B, the 2-byte value for each R/G/B
+        /// 16B, the 2-byte Value for each R/G/B
         /// component is stored as little-endian
         /// </summary>
         PIX_FMT_RGB48LE = 35,
@@ -363,14 +363,14 @@
 
         /// <summary>
         /// packed RGB 16:16:16, 48bpp, 16B, 16G,
-        /// 16R, the 2-byte value for each R/G/B
+        /// 16R, the 2-byte Value for each R/G/B
         /// component is stored as big-endian
         /// </summary>
         PIX_FMT_BGR48BE = 57,
 
         /// <summary>
         /// packed RGB 16:16:16, 48bpp, 16B, 16G,
-        /// 16R, the 2-byte value for each R/G/B
+        /// 16R, the 2-byte Value for each R/G/B
         /// component is stored as little-endian
         /// </summary>
         PIX_FMT_BGR48LE = 58,
@@ -612,7 +612,7 @@
 
         /// <summary>
         /// packed XYZ 4:4:4, 36 bpp, (msb) 12X,
-        /// 12Y, 12Z (lsb), the 2-byte value for
+        /// 12Y, 12Z (lsb), the 2-byte Value for
         /// each X/Y/Z is stored as little-endian,
         /// the 4 lower bits are set to 0
         /// </summary>
@@ -620,7 +620,7 @@
 
         /// <summary>
         /// packed XYZ 4:4:4, 36 bpp, (msb) 12X,
-        /// 12Y, 12Z (lsb), the 2-byte value for
+        /// 12Y, 12Z (lsb), the 2-byte Value for
         /// each X/Y/Z is stored as big-endian,
         /// the 4 lower bits are set to 0
         /// </summary>
@@ -648,28 +648,28 @@
 
         /// <summary>
         /// packed RGBA 16:16:16:16, 64bpp, 16R,
-        /// 16G, 16B, 16A, the 2-byte value for
+        /// 16G, 16B, 16A, the 2-byte Value for
         /// each R/G/B/A component is stored as big-endian
         /// </summary>
         PIX_FMT_RGBA64BE = 104,
 
         /// <summary>
         /// packed RGBA 16:16:16:16, 64bpp, 16R,
-        /// 16G, 16B, 16A, the 2-byte value for
+        /// 16G, 16B, 16A, the 2-byte Value for
         /// each R/G/B/A component is stored as little-endian
         /// </summary>
         PIX_FMT_RGBA64LE = 105,
 
         /// <summary>
         /// packed RGBA 16:16:16:16, 64bpp, 16B,
-        /// 16G, 16R, 16A, the 2-byte value for
+        /// 16G, 16R, 16A, the 2-byte Value for
         /// each R/G/B/A component is stored as big-endian
         /// </summary>
         PIX_FMT_BGRA64BE = 106,
 
         /// <summary>
         /// packed RGBA 16:16:16:16, 64bpp, 16B,
-        /// 16G, 16R, 16A, the 2-byte value for
+        /// 16G, 16R, 16A, the 2-byte Value for
         /// each R/G/B/A component is stored as little-endian
         /// </summary>
         PIX_FMT_BGRA64LE = 107,

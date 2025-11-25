@@ -412,7 +412,7 @@ namespace ExtenderApp.Common.DataBuffers
     //    public T1? Item1
     //    {
     //        get => item1Buffer.Item1;
-    //        set => item1Buffer.Item1 = value;
+    //        set => item1Buffer.Item1 = Value;
     //    }
 
     //    /// <summary>
@@ -426,7 +426,7 @@ namespace ExtenderApp.Common.DataBuffers
     //    public T2? Item2
     //    {
     //        get => item2Buffer.Item1;
-    //        set => item2Buffer.Item1 = value;
+    //        set => item2Buffer.Item1 = Value;
     //    }
 
     //    /// <summary>
@@ -440,7 +440,7 @@ namespace ExtenderApp.Common.DataBuffers
     //    public T3? Item3
     //    {
     //        get => item3Buffer.Item1;
-    //        set => item3Buffer.Item1 = value;
+    //        set => item3Buffer.Item1 = Value;
     //    }
 
     //    public DataBuffer()
@@ -515,8 +515,8 @@ namespace ExtenderApp.Common.DataBuffers
     //    public static implicit operator (T1?, T2?, T3?)(DataBuffer<T1, T2, T3> Buffer)
     //        => (Buffer.Item1, Buffer.Item2, Buffer.Item3);
 
-    //    public static implicit operator DataBuffer<T1, T2, T3>((T1? item1, T2? item2, T3? item3) value)
-    //        => Get(value.item1, value.item2, value.item3);
+    //    public static implicit operator DataBuffer<T1, T2, T3>((T1? item1, T2? item2, T3? item3) Value)
+    //        => Get(Value.item1, Value.item2, Value.item3);
 
     //    public static implicit operator DataBuffer<T1, T2, T3>(T1? item1)
     //        => Get(item1, default, default);
@@ -527,14 +527,14 @@ namespace ExtenderApp.Common.DataBuffers
     //    public static implicit operator DataBuffer<T1, T2, T3>(T3? item3)
     //        => Get(default, default, item3);
 
-    //    public static implicit operator T1?(DataBuffer<T1, T2, T3> value)
-    //        => value.Item1;
+    //    public static implicit operator T1?(DataBuffer<T1, T2, T3> Value)
+    //        => Value.Item1;
 
-    //    public static implicit operator T2?(DataBuffer<T1, T2, T3> value)
-    //        => value.Item2;
+    //    public static implicit operator T2?(DataBuffer<T1, T2, T3> Value)
+    //        => Value.Item2;
 
-    //    public static implicit operator T3?(DataBuffer<T1, T2, T3> value)
-    //        => value.Item3;
+    //    public static implicit operator T3?(DataBuffer<T1, T2, T3> Value)
+    //        => Value.Item3;
     //}
 
     ///// <summary>
@@ -579,7 +579,7 @@ namespace ExtenderApp.Common.DataBuffers
     //    public T1? Item1
     //    {
     //        get => item1Buffer.Item1;
-    //        set => item1Buffer.Item1 = value;
+    //        set => item1Buffer.Item1 = Value;
     //    }
 
     //    /// <summary>
@@ -593,7 +593,7 @@ namespace ExtenderApp.Common.DataBuffers
     //    public T2? Item2
     //    {
     //        get => item2Buffer.Item1;
-    //        set => item2Buffer.Item1 = value;
+    //        set => item2Buffer.Item1 = Value;
     //    }
 
     //    /// <summary>
@@ -607,7 +607,7 @@ namespace ExtenderApp.Common.DataBuffers
     //    public T3? Item3
     //    {
     //        get => item3Buffer.Item1;
-    //        set => item3Buffer.Item1 = value;
+    //        set => item3Buffer.Item1 = Value;
     //    }
 
     //    /// <summary>
@@ -621,7 +621,7 @@ namespace ExtenderApp.Common.DataBuffers
     //    public T4? Item4
     //    {
     //        get => item4Buffer.Item1;
-    //        set => item4Buffer.Item1 = value;
+    //        set => item4Buffer.Item1 = Value;
     //    }
 
     //    public DataBuffer()
@@ -706,8 +706,8 @@ namespace ExtenderApp.Common.DataBuffers
     //    public static implicit operator (T1?, T2?, T3?, T4?)(DataBuffer<T1, T2, T3, T4> Buffer)
     //        => (Buffer.Item1, Buffer.Item2, Buffer.Item3, Buffer.Item4);
 
-    //    public static implicit operator DataBuffer<T1, T2, T3, T4>((T1? item1, T2? item2, T3? item3, T4? item4) value)
-    //        => Get(value.item1, value.item2, value.item3, value.item4);
+    //    public static implicit operator DataBuffer<T1, T2, T3, T4>((T1? item1, T2? item2, T3? item3, T4? item4) Value)
+    //        => Get(Value.item1, Value.item2, Value.item3, Value.item4);
 
     //    public static implicit operator DataBuffer<T1, T2, T3, T4>(T1? item1)
     //        => Get(item1, default, default, default);
@@ -721,16 +721,16 @@ namespace ExtenderApp.Common.DataBuffers
     //    public static implicit operator DataBuffer<T1, T2, T3, T4>(T4? item4)
     //        => Get(default, default, default, item4);
 
-    //    public static implicit operator T1?(DataBuffer<T1, T2, T3, T4> value)
-    //        => value.Item1;
+    //    public static implicit operator T1?(DataBuffer<T1, T2, T3, T4> Value)
+    //        => Value.Item1;
 
-    //    public static implicit operator T2?(DataBuffer<T1, T2, T3, T4> value)
-    //        => value.Item2;
+    //    public static implicit operator T2?(DataBuffer<T1, T2, T3, T4> Value)
+    //        => Value.Item2;
 
-    //    public static implicit operator T3?(DataBuffer<T1, T2, T3, T4> value)
-    //        => value.Item3;
+    //    public static implicit operator T3?(DataBuffer<T1, T2, T3, T4> Value)
+    //        => Value.Item3;
 
-    //    public static implicit operator T4?(DataBuffer<T1, T2, T3, T4> value)
-    //        => value.Item4;
+    //    public static implicit operator T4?(DataBuffer<T1, T2, T3, T4> Value)
+    //        => Value.Item4;
     //}
 }

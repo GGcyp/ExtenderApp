@@ -1,6 +1,4 @@
 ﻿using System.Collections.Concurrent;
-using System.Diagnostics;
-using ExtenderApp.Common;
 using ExtenderApp.Data;
 using FFmpeg.AutoGen;
 

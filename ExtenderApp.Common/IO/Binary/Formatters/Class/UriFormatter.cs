@@ -26,8 +26,8 @@ namespace ExtenderApp.Common.IO.Binary.Formatters
             //}
 
             //_bufferConvert.TryReadStringSpan(ref Buffer, out ReadOnlySpan<byte> bytes);
-            //var value = _bufferConvert.UTF8ToString(bytes);
-            //return new Uri(value);
+            //var Value = _bufferConvert.UTF8ToString(bytes);
+            //return new Uri(Value);
 
             var result = _formatter.Deserialize(ref buffer);
             return new Uri(result);
@@ -35,13 +35,13 @@ namespace ExtenderApp.Common.IO.Binary.Formatters
 
         public override void Serialize(ref ByteBuffer buffer, Uri value)
         {
-            //if(value == null)
+            //if(Value == null)
             //{
             //    _bufferConvert.WriteNil(ref Buffer);
             //}
             //else
             //{
-            //    _bufferConvert.Write(ref Buffer, value.ToString());
+            //    _bufferConvert.Write(ref Buffer, Value.ToString());
             //}
 
             _formatter.Serialize(ref buffer, value.ToString());

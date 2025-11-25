@@ -4,6 +4,9 @@ using System.Text.Json;
 
 namespace ExtenderApp.Common.IO
 {
+    /// <summary>
+    /// Json 文件解析器
+    /// </summary>
     internal class JsonParser : FileParser, IJsonParser
     {
         private readonly JsonSerializerOptions _jsonSerializerOptions;
@@ -29,6 +32,11 @@ namespace ExtenderApp.Common.IO
         public string Serialize<T>(T value)
         {
             return JsonSerializer.Serialize(value, _jsonSerializerOptions);
+        }
+
+        public void Serialize<T>(T value, Stream stream)
+        {
+            JsonSerializer.Serialize(stream, value, _jsonSerializerOptions);
         }
 
         protected override T? ExecuteRead<T>(IFileOperate fileOperate) where T : default
