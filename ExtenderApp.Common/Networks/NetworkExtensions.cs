@@ -17,7 +17,6 @@ namespace ExtenderApp.Common.Networks
         {
             services.AddLinker();
             services.AddLinkerClient();
-            services.AddFileSegmenter();
             return services;
         }
 

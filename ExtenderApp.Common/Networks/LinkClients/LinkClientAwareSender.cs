@@ -229,7 +229,8 @@ namespace ExtenderApp.Common.Networks.LinkClients
                         // 未找到对应格式化器，跳过
                         continue;
                     }
-                    formatter.DeserializeAndInvoke((ByteBuffer)frame.Payload);
+                    ByteBuffer dataBuffer = new(frame.Payload);
+                    formatter.DeserializeAndInvoke(ref dataBuffer);
                 }
             }
             message.Dispose();

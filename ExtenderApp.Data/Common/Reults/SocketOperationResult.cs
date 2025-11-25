@@ -73,6 +73,32 @@ namespace ExtenderApp.Data
         }
 
         /// <summary>
+        /// 创建一个表示成功操作的 <see cref="SocketOperationResult"/> 实例。
+        /// </summary>
+        /// <param name="bytesTransferred">成功传输的字节数。</param>
+        /// <param name="remoteEndPoint">相关的远端终结点（可选）。</param>
+        /// <param name="receiveMessageFromPacketInfo">相关的 IP 包信息（可选）。</param>
+        /// <returns>一个表示成功结果的 <see cref="SocketOperationResult"/> 新实例。</returns>
+        public static SocketOperationResult Success(int bytesTransferred, EndPoint? remoteEndPoint = null, IPPacketInformation receiveMessageFromPacketInfo = default)
+            => new SocketOperationResult(true, bytesTransferred, remoteEndPoint, null, receiveMessageFromPacketInfo);
+
+        /// <summary>
+        /// 创建一个表示通用失败（无具体异常）的 <see cref="SocketOperationResult"/> 实例。
+        /// </summary>
+        /// <returns>一个表示失败结果的 <see cref="SocketOperationResult"/> 新实例。</returns>
+        public static SocketOperationResult Failure()
+            => new SocketOperationResult(false, 0, null, null, default);
+
+        /// <summary>
+        /// 创建一个表示因特定异常而失败的 <see cref="SocketOperationResult"/> 实例。
+        /// </summary>
+        /// <param name="socketError">导致操作失败的 <see cref="SocketException"/>。</param>
+        /// <param name="remoteEndPoint">相关的远端终结点（可选），用于提供上下文。</param>
+        /// <returns>一个表示错误结果的 <see cref="SocketOperationResult"/> 新实例。</returns>
+        public static SocketOperationResult Error(SocketException? socketError, EndPoint? remoteEndPoint = null)
+            => new SocketOperationResult(false, 0, remoteEndPoint, socketError, default);
+
+        /// <summary>
         /// 定义从 <see cref="SocketOperationResult"/> 到 <see cref="Result"/> 的隐式转换。
         /// </summary>
         /// <param name="result">要转换的套接字操作结果。</param>

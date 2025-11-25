@@ -38,7 +38,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
         {
             if (!response.IsAccepted)
             {
-                vts.SetResult(Result.Unsuccess("文件推送请求被拒绝。"));
+                vts.SetResult(Result.Failure("文件推送请求被拒绝。"));
                 return;
             }
         }

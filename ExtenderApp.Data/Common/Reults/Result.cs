@@ -74,7 +74,7 @@
         /// </summary>
         /// <param name="message"></param>
         /// <returns></returns>
-        public static Result Unsuccess(string? message = "Unsuccess") => new(false, message);
+        public static Result Failure(string? message = "Failure") => new(false, message);
 
         /// <summary>
         /// 创建一个表示异常的 <see cref="Result"/>。
@@ -93,7 +93,7 @@
         /// <typeparam name="T"></typeparam>
         /// <param name="message"></param>
         /// <returns></returns>
-        public static Result<T> Unsuccess<T>(string? message = "Unsuccess") => new(false, default(T), message);
+        public static Result<T> Failure<T>(string? message = "Failure") => new(false, default(T), message);
 
         /// <summary>
         /// 创建一个表示异常的 <see cref="Result{T}"/>。

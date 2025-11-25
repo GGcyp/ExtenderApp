@@ -45,7 +45,7 @@ namespace ExtenderApp.Data
         {
             if (FileDecision.AllFalse)
             {
-                vts.SetResult(Result.Unsuccess<Result<BitFieldData>>("未选择任何文件"));
+                vts.SetResult(Result.Failure<Result<BitFieldData>>("未选择任何文件"));
             }
             else
             {
@@ -58,7 +58,7 @@ namespace ExtenderApp.Data
         /// </summary>
         public void Reject()
         {
-            vts.SetResult(Result.Unsuccess<Result<BitFieldData>>());
+            vts.SetResult(Result.Failure<Result<BitFieldData>>());
         }
 
         /// <summary>

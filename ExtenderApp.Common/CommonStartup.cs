@@ -16,7 +16,6 @@ namespace ExtenderApp.Common
         public override void AddService(IServiceCollection services)
         {
             services.AddIO();
-            services.AddObjectPool();
             services.AddNetwork();
             services.AddHash();
             services.AddCache();

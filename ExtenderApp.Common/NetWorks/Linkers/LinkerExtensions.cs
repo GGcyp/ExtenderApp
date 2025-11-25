@@ -103,10 +103,10 @@ namespace ExtenderApp.Common.Networks
                     last = linker.Send(remaining);
 
                     if (last.SocketError != null)
-                        return new SocketOperationResult(total, last.RemoteEndPoint, last.SocketError, default);
+                        return SocketOperationResult.Error(last.SocketError, last.RemoteEndPoint);
 
                     if (last.BytesTransferred <= 0)
-                        return new SocketOperationResult(total, last.RemoteEndPoint, last.SocketError, default);
+                        return SocketOperationResult.Error(last.SocketError, last.RemoteEndPoint);
 
                     total += last.BytesTransferred;
 
@@ -117,7 +117,7 @@ namespace ExtenderApp.Common.Networks
                 }
             }
 
-            return new SocketOperationResult(total, last.RemoteEndPoint, null, last.ReceiveMessageFromPacketInfo);
+            return SocketOperationResult.Success(total, last.RemoteEndPoint, last.ReceiveMessageFromPacketInfo);
         }
 
         /// <summary>
@@ -214,10 +214,10 @@ namespace ExtenderApp.Common.Networks
                     last = await linker.SendAsync(remaining, token).ConfigureAwait(false);
 
                     if (last.SocketError != null)
-                        return new SocketOperationResult(total, last.RemoteEndPoint, last.SocketError, default);
+                        return SocketOperationResult.Error(last.SocketError, last.RemoteEndPoint);
 
                     if (last.BytesTransferred <= 0)
-                        return new SocketOperationResult(total, last.RemoteEndPoint, last.SocketError, default);
+                        return SocketOperationResult.Error(last.SocketError, last.RemoteEndPoint);
 
                     total += last.BytesTransferred;
 
@@ -228,7 +228,7 @@ namespace ExtenderApp.Common.Networks
                 }
             }
 
-            return new SocketOperationResult(total, last.RemoteEndPoint, null, last.ReceiveMessageFromPacketInfo);
+            return SocketOperationResult.Error(null, last.RemoteEndPoint);
         }
 
         /// <summary>

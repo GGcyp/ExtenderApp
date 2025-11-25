@@ -155,7 +155,7 @@ namespace ExtenderApp.Common.Networks
         public SocketOperationResult Send(Memory<byte> memory)
         {
             if (memory.IsEmpty)
-                return new SocketOperationResult(0, RemoteEndPoint, null, default);
+                return new SocketOperationResult(false, 0, RemoteEndPoint, null, default);
             ThrowIfDisposed();
             var lease = CapacityLimiter.Acquire(memory.Length);
             SendSlim.Wait();
@@ -175,7 +175,7 @@ namespace ExtenderApp.Common.Networks
         public async ValueTask<SocketOperationResult> SendAsync(Memory<byte> memory, CancellationToken token = default)
         {
             if (memory.IsEmpty)
-                return new SocketOperationResult(0, RemoteEndPoint, null, default);
+                return SocketOperationResult.Failure();
             ThrowIfDisposed();
             var lease = await CapacityLimiter.AcquireAsync(memory.Length, token).ConfigureAwait(false);
             await SendSlim.WaitAsync(token).ConfigureAwait(false);
@@ -218,7 +218,7 @@ namespace ExtenderApp.Common.Networks
         {
             ThrowIfDisposed();
             if (memory.IsEmpty || memory.Length == 0)
-                return new SocketOperationResult(0, RemoteEndPoint, null, default);
+                return SocketOperationResult.Failure();
 
             var lease = await CapacityLimiter.AcquireAsync(memory.Length, token).ConfigureAwait(false);
             await ReceiveSlim.WaitAsync(token).ConfigureAwait(false);

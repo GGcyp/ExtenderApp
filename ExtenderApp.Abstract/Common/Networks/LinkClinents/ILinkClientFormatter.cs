@@ -32,7 +32,7 @@ namespace ExtenderApp.Abstract
         /// - 反序列化成功后应调用 <see cref="IClientFormatter{T}.Receive"/> 事件通知订阅者；<br/>
         /// - 建议对异常（长度不足/格式不符等）进行显式处理（抛出或上报）。
         /// </remarks>
-        void DeserializeAndInvoke(ByteBuffer buffer);
+        void DeserializeAndInvoke(ref ByteBuffer buffer);
     }
 
     /// <summary>
