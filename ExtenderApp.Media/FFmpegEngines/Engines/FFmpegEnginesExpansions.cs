@@ -1,4 +1,5 @@
 ﻿using ExtenderApp.Data;
+using ExtenderApp.FFmpegEngines.Decoders;
 using FFmpeg.AutoGen;
 
 namespace ExtenderApp.FFmpegEngines
@@ -36,8 +37,10 @@ namespace ExtenderApp.FFmpegEngines
         /// <param name="dContext">解码器上下文集合。</param>
         public static void Seek(this FFmpegEngine engine, NativeIntPtr<AVFormatContext> context, long targetTime, FFmpegDecoderContextCollection dContext)
         {
-            engine.Seek(context, targetTime, dContext.AudioContext);
-            engine.Seek(context, targetTime, dContext.VideoContext);
+            foreach (var c in dContext)
+            {
+                engine.Seek(context, targetTime, c);
+            }
         }
 
         /// <summary>

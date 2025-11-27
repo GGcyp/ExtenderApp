@@ -19,7 +19,7 @@ namespace ExtenderApp.Common.ScheduledTasks
         /// </summary>
         private Timer? _timer;
 
-        #endregion
+        #endregion 线程安全字段
 
         #region 状态属性（原子操作）
 
@@ -53,7 +53,7 @@ namespace ExtenderApp.Common.ScheduledTasks
         /// </summary>
         public bool CanOperate => _canOperate;
 
-        #endregion
+        #endregion 状态属性（原子操作）
 
         #region 事件回调
 
@@ -67,7 +67,7 @@ namespace ExtenderApp.Common.ScheduledTasks
         /// </summary>
         private Action? _scheduledAction;
 
-        #endregion
+        #endregion 事件回调
 
         #region 定时器管理（线程安全）
 
@@ -90,7 +90,7 @@ namespace ExtenderApp.Common.ScheduledTasks
             }
         }
 
-        #endregion
+        #endregion 定时器管理（线程安全）
 
         #region 核心操作方法
 
@@ -129,7 +129,7 @@ namespace ExtenderApp.Common.ScheduledTasks
             });
         }
 
-        #endregion
+        #endregion 核心操作方法
 
         #region 抽象方法
 
@@ -148,7 +148,7 @@ namespace ExtenderApp.Common.ScheduledTasks
         /// </summary>
         protected abstract void CoreStop();
 
-        #endregion
+        #endregion 抽象方法
 
         #region 公共方法（线程安全）
 
@@ -233,7 +233,7 @@ namespace ExtenderApp.Common.ScheduledTasks
             });
         });
 
-        #endregion
+        #endregion 公共方法（线程安全）
 
         #region 回调与资源释放
 
@@ -269,10 +269,8 @@ namespace ExtenderApp.Common.ScheduledTasks
             }
         }
 
-        protected override void Dispose(bool disposing)
+        protected override void DisposeManagedResources()
         {
-            if (!disposing) return;
-
             lock (_syncRoot)
             {
                 _timer?.Dispose();
@@ -282,6 +280,6 @@ namespace ExtenderApp.Common.ScheduledTasks
             }
         }
 
-        #endregion
+        #endregion 回调与资源释放
     }
 }

@@ -594,7 +594,7 @@ namespace ExtenderApp.Common.IO.Binary.LZ4
                         {
                             if (dst_cpy != dst_end)
                             {
-                                goto _output_error; // Error : not enough place for another match (min 4) + 5 literals
+                                goto _output_error; // FromException : not enough place for another match (min 4) + 5 literals
                             }
 
                             BlockCopy32(src_p, dst_p, length);
@@ -620,7 +620,7 @@ namespace ExtenderApp.Common.IO.Binary.LZ4
                         src_p += 2;
                         if (xxx_ref < dst)
                         {
-                            goto _output_error; // Error : offset outside destination Buffer
+                            goto _output_error; // FromException : offset outside destination Buffer
                         }
 
                         // get matchlength
@@ -663,7 +663,7 @@ namespace ExtenderApp.Common.IO.Binary.LZ4
                         {
                             if (dst_cpy > dst_LASTLITERALS)
                             {
-                                goto _output_error; // Error : last 5 bytes must be literals
+                                goto _output_error; // FromException : last 5 bytes must be literals
                             }
 
                             {

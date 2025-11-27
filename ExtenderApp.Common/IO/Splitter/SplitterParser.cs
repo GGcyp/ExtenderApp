@@ -62,7 +62,7 @@ namespace ExtenderApp.Common.IO.Splitter
                 return;
             }
 
-            //var infoFile = fileOperate.Data.OperateInfo.LocalFileInfo.ChangeFileExtension(infoExtensions);
+            //var infoFile = fileOperate.Value.OperateInfo.LocalFileInfo.ChangeFileExtension(infoExtensions);
             //_binaryParser.Write(infoFile, sInfo);
         }
 

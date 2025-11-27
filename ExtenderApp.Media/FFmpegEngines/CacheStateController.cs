@@ -1,4 +1,5 @@
-﻿using ExtenderApp.Data;
+﻿using ExtenderApp.Common.Threads;
+using ExtenderApp.Data;
 
 namespace ExtenderApp.FFmpegEngines
 {
@@ -7,7 +8,9 @@ namespace ExtenderApp.FFmpegEngines
     /// </summary>
     public class CacheStateController : DisposableObject
     {
+        private const int DefaultWaitTimeoutMs = 10;
         private readonly AutoResetEvent _cacheAvailableEvent; // 缓存可用信号（用于唤醒等待的解码线程）
+        private readonly Action<int, CancellationToken> _waitForCacheSpaceAction;
         private int maxCacheLength; // 最大缓存长度（如100帧）
         private int currentCacheCount; // 当前缓存帧数量（线程安全访问）
 
@@ -16,6 +19,7 @@ namespace ExtenderApp.FFmpegEngines
             this.maxCacheLength = maxCacheLength;
             currentCacheCount = 0;
             _cacheAvailableEvent = new(true); // 初始状态：缓存可用
+            _waitForCacheSpaceAction = WaitForCacheSpace;
         }
 
         /// <summary>
@@ -24,23 +28,42 @@ namespace ExtenderApp.FFmpegEngines
         public bool HasCacheSpace => Volatile.Read(ref currentCacheCount) < maxCacheLength;
 
         /// <summary>
-        /// 等待缓存空间（非阻塞，支持取消）
+        /// 同步等待，直到缓存中有可用空间。
+        /// 此方法会阻塞当前线程，直到 <see cref="HasCacheSpace"/> 为 true 或取消请求被触发。
         /// </summary>
-        /// <param name="cancellationToken">取消令牌</param>
-        /// <param name="timeoutMs">单次等待超时时间（避免死等）</param>
-        /// <returns>true：缓存有空间；false：等待超时或被取消</returns>
-        public bool WaitForCacheSpace(CancellationToken cancellationToken, int timeoutMs = 50)
+        /// <remarks>
+        /// 此方法适用于可以安全阻塞的后台解码线程。它会循环调用 <c>WaitOne</c>，
+        /// 直到有信号通知缓存空间已释放或操作被取消。
+        /// </remarks>
+        /// <param name="timeoutMs">单次等待的超时时间（毫秒）。</param>
+        /// <param name="cancellationToken">用于取消等待操作的令牌。</param>
+        public void WaitForCacheSpace(int timeoutMs = DefaultWaitTimeoutMs, CancellationToken cancellationToken = default)
         {
-            // 循环等待：直到缓存有空间、被取消或超时
             while (!HasCacheSpace && !cancellationToken.IsCancellationRequested)
             {
-                // 等待信号：超时50ms后重试（避免线程长期阻塞）
-                if (!_cacheAvailableEvent.WaitOne(timeoutMs, !cancellationToken.IsCancellationRequested))
-                {
-                    continue; // 超时后继续轮询
-                }
+                // 等待信号，如果超时则继续循环检查
+                _cacheAvailableEvent.WaitOne(timeoutMs, !cancellationToken.IsCancellationRequested);
             }
-            return HasCacheSpace && !cancellationToken.IsCancellationRequested;
+        }
+
+        /// <summary>
+        /// 异步等待，直到缓存中有可用空间。
+        /// 如果当前没有可用空间，此方法将返回一个在空间可用时完成的 <see cref="ValueTask"/>。
+        /// </summary>
+        /// <remarks>
+        /// 此方法是<see cref="WaitForCacheSpace"/>的非阻塞版本。它将同步的等待操作卸载到线程池，
+        /// 从而允许调用方（如UI线程）保持响应。
+        /// </remarks>
+        /// <param name="timeoutMs">传递给同步等待逻辑的单次等待超时时间（毫秒）。</param>
+        /// <param name="cancellationToken">用于取消等待操作的令牌。</param>
+        /// <returns>一个在缓存空间可用或操作被取消时完成的 <see cref="ValueTask"/>。</returns>
+        public ValueTask WaitForCacheSpaceAsync(int timeoutMs = DefaultWaitTimeoutMs, CancellationToken cancellationToken = default)
+        {
+            if (HasCacheSpace)
+                return ValueTask.CompletedTask;
+
+            var awaiter = AwaitableEventArgs.Get();
+            return awaiter.SetResult(_waitForCacheSpaceAction, timeoutMs, cancellationToken);
         }
 
         /// <summary>
@@ -117,7 +140,7 @@ namespace ExtenderApp.FFmpegEngines
             _cacheAvailableEvent.Set(); // 重置后允许解码
         }
 
-        protected override void Dispose(bool disposing)
+        protected override void DisposeManagedResources()
         {
             _cacheAvailableEvent.Dispose();
         }

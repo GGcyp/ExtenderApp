@@ -15,6 +15,7 @@ namespace ExtenderApp.Media.Audios
         private readonly SoundTouchProcessor _soundTouch;
 
         private float volume;
+
         public float Volume
         {
             get => volume;
@@ -25,8 +26,8 @@ namespace ExtenderApp.Media.Audios
             }
         }
 
-
         private double rate;
+
         public double Rate
         {
             get => rate;
@@ -37,8 +38,8 @@ namespace ExtenderApp.Media.Audios
             }
         }
 
-
         private double tempo;
+
         public double Tempo
         {
             get => tempo;
@@ -151,13 +152,11 @@ namespace ExtenderApp.Media.Audios
             try
             {
                 _bufferedWave.AddSamples(result, offset, count);
-
             }
             catch (Exception ex)
             {
                 _bufferedWave.ClearBuffer();
             }
-
         }
 
         private float[] ConvertPcm16BytesToFloat(byte[] pcmBytes, int offset, int length)
@@ -172,7 +171,7 @@ namespace ExtenderApp.Media.Audios
             return floatSamples;
         }
 
-        protected override void Dispose(bool disposing)
+        protected override void DisposeManagedResources()
         {
             _waveOut.Stop();
             _waveOut.Dispose();

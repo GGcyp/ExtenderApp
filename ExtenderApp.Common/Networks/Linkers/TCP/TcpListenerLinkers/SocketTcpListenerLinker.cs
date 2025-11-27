@@ -1,7 +1,6 @@
 ﻿using System.Net;
 using System.Net.Sockets;
 using ExtenderApp.Abstract;
-using ExtenderApp.Common.Networks;
 using ExtenderApp.Common.ObjectPools;
 
 namespace ExtenderApp.Common.Networks
@@ -30,6 +29,7 @@ namespace ExtenderApp.Common.Networks
         /// <exception cref="ArgumentOutOfRangeException">设置的值小于 1。</exception>
         /// <exception cref="InvalidOperationException">监听已开始仍尝试修改。</exception>
         private int _acceptConcurrency = 1;
+
         public int AcceptConcurrency
         {
             get => Volatile.Read(ref _acceptConcurrency);
@@ -168,16 +168,7 @@ namespace ExtenderApp.Common.Networks
                 await _pauseGate.WaitAsync().ConfigureAwait(false);
                 if (token.IsCancellationRequested) break;
 
-                Socket? accepted = null;
-                try
-                {
-                    accepted = await args.AcceptAsync(_listenerSocket, token).ConfigureAwait(false);
-                }
-                catch (SocketException)
-                {
-                    // 监听Socket可能短暂异常，继续尝试
-                    continue;
-                }
+                Socket? accepted = await args.AcceptAsync(_listenerSocket, token).ConfigureAwait(false);
 
                 if (accepted is null)
                     continue;
@@ -198,26 +189,20 @@ namespace ExtenderApp.Common.Networks
             _pool.Release(args);
         }
 
-        /// <inheritdoc />
-        protected override void Dispose(bool disposing)
+        protected override ValueTask DisposeAsyncManagedResources()
         {
-            base.Dispose(disposing);
-            if (!disposing)
-                return;
-
             // 确保不因暂停而阻塞退出
-            try { _pauseGate.Set(); } catch { /* ignore */ }
+            _pauseGate.Set();
 
-            try { _cts?.Cancel(); } catch { /* ignore */ }
-            try { _listenerSocket.Dispose(); } catch { /* ignore */ }
+            _cts?.Cancel();
+            _cts?.Dispose();
+            _listenerSocket.Dispose();
 
             if (_acceptTasks is { Length: > 0 })
             {
-                try { Task.WhenAll(_acceptTasks).Wait(TimeSpan.FromSeconds(1)); } catch { /* ignore */ }
+                return new ValueTask(Task.WhenAll(_acceptTasks).WaitAsync(TimeSpan.FromSeconds(1)));
             }
-
-            _cts?.Dispose();
-            _cts = null;
+            return ValueTask.CompletedTask;
         }
 
         /// <summary>

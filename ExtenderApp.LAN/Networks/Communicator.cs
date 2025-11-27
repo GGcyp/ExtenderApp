@@ -39,7 +39,6 @@ namespace ExtenderApp.LAN
             set => ethernetPacket.DestinationHardwareAddress = value;
         }
 
-
         /// <summary>
         /// 获取当前网络设备的物理（MAC）地址。
         /// </summary>
@@ -92,7 +91,7 @@ namespace ExtenderApp.LAN
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error parsing packet");
+                _logger.LogError(ex, "FromException parsing packet");
             }
         }
 
@@ -122,33 +121,20 @@ namespace ExtenderApp.LAN
 
         protected abstract T CreateCommunicatorPacket();
 
-        #endregion
+        #endregion 子类生成
 
-        /// <summary>
-        /// 释放资源，停止捕获并关闭设备。
-        /// </summary>
-        protected override void Dispose(bool disposing)
+        protected override void DisposeManagedResources()
         {
-            if (IsDisposed)
+            // 停止捕获并注销事件
+            if (_device != null)
             {
-                return;
-            }
-
-            if (disposing)
-            {
-                // 停止捕获并注销事件
-                if (_device != null)
+                _device.OnPacketArrival -= OnPacketArrival;
+                if (_device.Started)
                 {
-                    _device.OnPacketArrival -= OnPacketArrival;
-                    if (_device.Started)
-                    {
-                        _device.StopCapture();
-                    }
-                    _device.Close();
+                    _device.StopCapture();
                 }
+                _device.Close();
             }
-
-            base.Dispose(disposing);
         }
     }
 }

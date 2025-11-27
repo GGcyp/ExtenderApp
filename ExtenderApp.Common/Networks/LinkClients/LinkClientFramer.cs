@@ -187,14 +187,9 @@ namespace ExtenderApp.Common.Networks.LinkClients
             framedMessage.WriteAdvance(headerLen);
         }
 
-        /// <summary>
-        /// 释放托管资源（主要是接收缓存），并清理内部状态引用。
-        /// </summary>
-        /// <param name="disposing">指示是否由 Dispose 调用。</param>
-        protected override void Dispose(bool disposing)
+        protected override void DisposeManagedResources()
         {
             receiveCacheBlock.Dispose();
-            Magic = null!;
         }
     }
 }

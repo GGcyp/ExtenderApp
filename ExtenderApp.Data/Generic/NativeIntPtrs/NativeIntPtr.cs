@@ -1,5 +1,7 @@
 ﻿
 
+using System.Runtime.CompilerServices;
+
 namespace ExtenderApp.Data
 {
     /// <summary>
@@ -89,19 +91,54 @@ namespace ExtenderApp.Data
         public static bool operator !=(NativeIntPtr<T> left, NativeIntPtr<T> right)
             => !left.Equals(right);
 
-        public override bool Equals(object obj)
+        /// <summary>
+        /// 将指针解引用为对目标值的可读写引用。
+        /// 这允许您直接修改指针指向的内存。
+        /// </summary>
+        /// <returns>对 <typeparamref name="T"/> 类型值的引用。</returns>
+        /// <exception cref="NullReferenceException">当指针为空时抛出。</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public ref T AsRef()
+        {
+            if (IsEmpty)
+                ThrowIfNull();
+            return ref *Value;
+        }
+
+        /// <summary>
+        /// 将指针解引用为对目标值的只读引用。
+        /// </summary>
+        /// <returns>对 <typeparamref name="T"/> 类型值的只读引用。</returns>
+        /// <exception cref="NullReferenceException">当指针为空时抛出。</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public ref readonly T AsRefReadOnly()
+        {
+            if (IsEmpty)
+                ThrowIfNull();
+            return ref *Value;
+        }
+
+        /// <inheritdoc/>
+        public override bool Equals(object? obj)
         {
             return obj is NativeIntPtr<T> && Equals((NativeIntPtr<T>)obj);
         }
 
+        /// <inheritdoc/>
         public override int GetHashCode()
         {
             return Ptr.GetHashCode();
         }
 
+        /// <inheritdoc/>
         public void Dispose()
         {
             Ptr = IntPtr.Zero;
+        }
+
+        private static void ThrowIfNull()
+        {
+            throw new NullReferenceException("当前指针为空");
         }
 
         #region Implicit

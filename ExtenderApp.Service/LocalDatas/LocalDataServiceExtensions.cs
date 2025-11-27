@@ -32,7 +32,7 @@ namespace ExtenderApp.Services
         /// <returns>如果成功获取数据，则返回 true；否则返回 false。</returns>
         /// <exception cref="ArgumentNullException">如果 details 参数为 null，则抛出 ArgumentNullException 异常。</exception>
         public static bool LoadData<T>(this ILocalDataService service, PluginDetails details, out LocalData<T>? data)
-            where T : class
+            where T : class, new()
         {
             if (details is null)
                 throw new ArgumentNullException(nameof(details));

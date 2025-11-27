@@ -1,6 +1,4 @@
-﻿
-
-using System.Net;
+﻿using System.Net;
 
 namespace ExtenderApp.Abstract
 {
@@ -27,12 +25,6 @@ namespace ExtenderApp.Abstract
         /// <param name="port">
         /// 目标端口号，应在有效端口范围（0-65535）内。非法端口应导致 <see cref="System.ArgumentOutOfRangeException"/>。
         /// </param>
-        /// <remarks>
-        /// - 对于面向连接的协议（例如 TCP），应尝试对 <paramref name="addresses"/> 中的地址建立连接，通常按顺序重试。
-        /// - 对于无连接协议（例如 UDP），实现可选择将套接字的默认远端设置为成功的地址/端口或以等效方式配置。
-        /// - 若当前已处于连接状态，重复调用应抛出异常或由实现明确文档化其行为。
-        /// - 参数非法或对象已释放应抛出相应异常（例如 <see cref="System.ArgumentNullException"/>、<see cref="System.ArgumentOutOfRangeException"/>、<see cref="System.ObjectDisposedException"/>）。
-        /// </remarks>
         void Connect(IPAddress[] addresses, int port);
 
         /// <summary>
@@ -50,11 +42,6 @@ namespace ExtenderApp.Abstract
         /// <returns>
         /// 一个表示异步连接操作的 <see cref="ValueTask"/>。在取消时可以抛出 <see cref="OperationCanceledException"/> 或以已取消的语义完成任务（应在实现文档中说明）。
         /// </returns>
-        /// <remarks>
-        /// - 实现可以选择按顺序尝试地址、并行尝试或使用其他重试策略；应在实现文档中说明所采用的策略。
-        /// - 对于面向连接的协议，成功完成表示已建立到某个地址的连接；对于无连接协议，成功完成表示已完成必要的配置（例如设置默认远端）。
-        /// - 参数非法或对象已释放应抛出相应异常。
-        /// </remarks>
         ValueTask ConnectAsync(IPAddress[] addresses, int port, CancellationToken token = default);
     }
 }

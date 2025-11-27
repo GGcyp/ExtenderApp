@@ -41,22 +41,22 @@ namespace ExtenderApp.Common.IO
 
         protected override T? ExecuteRead<T>(IFileOperate fileOperate) where T : default
         {
-            return JsonSerializer.Deserialize<T>(fileOperate.Read(), _jsonSerializerOptions);
+            return JsonSerializer.Deserialize<T>(fileOperate.Read().Value, _jsonSerializerOptions);
         }
 
         protected override T? ExecuteRead<T>(IFileOperate fileOperate, long position, int length) where T : default
         {
-            return JsonSerializer.Deserialize<T>(fileOperate.Read(position, length), _jsonSerializerOptions);
+            return JsonSerializer.Deserialize<T>(fileOperate.Read(position, length).Value, _jsonSerializerOptions);
         }
 
         protected override Task<T?> ExecuteReadAsync<T>(IFileOperate fileOperate, CancellationToken token) where T : default
         {
-            return Task.FromResult(JsonSerializer.Deserialize<T>(fileOperate.Read(), _jsonSerializerOptions));
+            return Task.FromResult(JsonSerializer.Deserialize<T>(fileOperate.Read().Value, _jsonSerializerOptions));
         }
 
         protected override Task<T?> ExecuteReadAsync<T>(IFileOperate fileOperate, long position, int length, CancellationToken token) where T : default
         {
-            return Task.FromResult(JsonSerializer.Deserialize<T>(fileOperate.Read(position, length), _jsonSerializerOptions));
+            return Task.FromResult(JsonSerializer.Deserialize<T>(fileOperate.Read(position, length).Value, _jsonSerializerOptions));
         }
 
         protected override void ExecuteWrite<T>(IFileOperate fileOperate, T value)

@@ -11,9 +11,6 @@ namespace ExtenderApp.Common.Networks
     /// </summary>
     public abstract class SocketLinker : Linker, ILinker, ILinkBind
     {
-        private static readonly ObjectPool<AwaitableSocketEventArgs> _pool
-            = ObjectPool.CreateDefaultPool<AwaitableSocketEventArgs>();
-
         /// <summary>
         /// 当前链接器所使用的 Socket 实例。
         /// </summary>
@@ -36,20 +33,6 @@ namespace ExtenderApp.Common.Networks
 
         public override AddressFamily AddressFamily => Socket.AddressFamily;
 
-        /// <summary>
-        /// 从对象池中获取 AwaitableSocketEventArgs 实例。
-        /// </summary>
-        /// <returns>
-        /// AwaitableSocketEventArgs 实例
-        /// </returns>
-        protected AwaitableSocketEventArgs GetArgs() => _pool.Get();
-
-        /// <summary>
-        /// 向对象池中释放 AwaitableSocketEventArgs 实例。
-        /// </summary>
-        /// <param name="args">要被释放的实例</param>
-        protected void ReleaseArgs(AwaitableSocketEventArgs args) => _pool.Release(args);
-
         public void Bind(EndPoint endPoint)
         {
             SendSlim.Wait();
@@ -65,62 +48,16 @@ namespace ExtenderApp.Common.Networks
             }
         }
 
-        protected override sealed ValueTask<SocketOperationResult> ExecuteSendAsync(Memory<byte> memory, CancellationToken token)
+        protected override sealed ValueTask<Result<SocketOperationValue>> ExecuteSendAsync(Memory<byte> memory, CancellationToken token)
         {
-            var args = _pool.Get();
-            var vt = ExecuteSendAsync(args, memory, token);
-
-            if (vt.IsCompletedSuccessfully)
-            {
-                try
-                {
-                    var result = vt.Result; // 同步完成，安全读取
-                    _pool.Release(args);
-                    return new ValueTask<SocketOperationResult>(result);
-                }
-                catch
-                {
-                    _pool.Release(args);
-                    throw;
-                }
-            }
-
-            return AwaitAndReleaseAsync(vt, args);
+            var args = AwaitableSocketEventArgs.Get();
+            return ExecuteSendAsync(args, memory, token);
         }
 
-        protected override sealed ValueTask<SocketOperationResult> ExecuteReceiveAsync(Memory<byte> memory, CancellationToken token)
+        protected override sealed ValueTask<Result<SocketOperationValue>> ExecuteReceiveAsync(Memory<byte> memory, CancellationToken token)
         {
-            var args = _pool.Get();
-            var vt = ExecuteReceiveAsync(args, memory, token);
-
-            if (vt.IsCompletedSuccessfully)
-            {
-                try
-                {
-                    var result = vt.Result;
-                    _pool.Release(args);
-                    return new ValueTask<SocketOperationResult>(result);
-                }
-                catch
-                {
-                    _pool.Release(args);
-                    throw;
-                }
-            }
-
-            return AwaitAndReleaseAsync(vt, args);
-        }
-
-        private async ValueTask<SocketOperationResult> AwaitAndReleaseAsync(ValueTask<SocketOperationResult> pending, AwaitableSocketEventArgs a)
-        {
-            try
-            {
-                return await pending.ConfigureAwait(false);
-            }
-            finally
-            {
-                _pool.Release(a);
-            }
+            var args = AwaitableSocketEventArgs.Get();
+            return ExecuteReceiveAsync(args, memory, token);
         }
 
         protected SocketException CreateSocketException(SocketError error)
@@ -146,12 +83,12 @@ namespace ExtenderApp.Common.Networks
         /// <see cref="OperationCanceledException"/>。若已完成则忽略取消。
         /// </param>
         /// <returns>
-        /// 表示发送结果的 <see cref="SocketOperationResult"/>：
+        /// 表示发送结果的 <see cref="SocketOperationValue"/>：
         /// - 成功：BytesTransferred 为实际发送字节数，SocketError 为 null；
         /// - 失败：await 抛出 <see cref="SocketException"/>（由 args 的完成回调产生）；
         /// - 取消：await 抛出 <see cref="OperationCanceledException"/>。
         /// </returns>
-        protected abstract ValueTask<SocketOperationResult> ExecuteSendAsync(AwaitableSocketEventArgs args, Memory<byte> memory, CancellationToken token);
+        protected abstract ValueTask<Result<SocketOperationValue>> ExecuteSendAsync(AwaitableSocketEventArgs args, Memory<byte> memory, CancellationToken token);
 
         /// <summary>
         /// 使用提供的 <paramref name="args"/> 执行一次底层接收逻辑（单次 I/O）。
@@ -168,13 +105,13 @@ namespace ExtenderApp.Common.Networks
         /// 取消令牌；取消时应关闭套接字或触发 args 的取消流程，使 await 抛出 <see cref="OperationCanceledException"/>。
         /// </param>
         /// <returns>
-        /// 表示接收结果的 <see cref="SocketOperationResult"/>：
+        /// 表示接收结果的 <see cref="SocketOperationValue"/>：
         /// - 成功：BytesTransferred 为收到字节数，可能包含 RemoteEndPoint（UDP/ReceiveFrom）及 PacketInfo；
         /// - 对端关闭（TCP）：BytesTransferred == 0；
         /// - 失败：await 抛出 <see cref="SocketException"/>；
         /// - 取消：await 抛出 <see cref="OperationCanceledException"/>。
         /// </returns>
-        protected abstract ValueTask<SocketOperationResult> ExecuteReceiveAsync(AwaitableSocketEventArgs args, Memory<byte> memory, CancellationToken token);
+        protected abstract ValueTask<Result<SocketOperationValue>> ExecuteReceiveAsync(AwaitableSocketEventArgs args, Memory<byte> memory, CancellationToken token);
 
         protected override ValueTask ExecuteConnectAsync(EndPoint remoteEndPoint, CancellationToken token)
         {
@@ -189,12 +126,9 @@ namespace ExtenderApp.Common.Networks
 
         protected abstract ILinker Clone(Socket socket);
 
-        protected override void Dispose(bool disposing)
+        protected override async ValueTask DisposeAsyncManagedResources()
         {
-            base.Dispose(disposing);
-            if (!disposing)
-                return;
-
+            await base.DisposeAsyncManagedResources();
             Socket.Dispose();
         }
     }

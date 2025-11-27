@@ -18,7 +18,7 @@ namespace ExtenderApp.Abstract
         /// <param name="isVersionDataFormatter">是否为版本格式化器</param>
         /// <exception cref="ArgumentNullException">当 <paramref name="type"/> 或 <paramref name="typeFormatter"/> 为 null 时抛出。</exception>
         /// <exception cref="ArgumentException">当 <paramref name="typeFormatter"/> 未实现 <see cref="IBinaryFormatter{T}"/> 接口时抛出。</exception>
-        void AddFormatter(Type type, Type typeFormatter,bool isVersionDataFormatter = false);
+        void AddFormatter(Type type, Type typeFormatter, bool isVersionDataFormatter = false);
 
         /// <summary>
         /// 尝试获取指定类型的二进制格式化程序详细信息。

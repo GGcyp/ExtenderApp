@@ -8,7 +8,7 @@
         /// <summary>
         /// 底层接收操作的结果，包含已接收字节数、远端终结点、底层错误信息及统一的结果码等。
         /// </summary>
-        public SocketOperationResult Result;
+        public SocketOperationValue Result;
 
         /// <summary>
         /// 输出的已解析帧集合。解析器/插件可在此填充若干 <see cref="Frame"/> 以便上层消费。
@@ -20,7 +20,7 @@
         /// </summary>
         /// <param name="result">底层接收操作结果。</param>
         /// <param name="resultMessage">本次接收的原始只读字节数据视图。</param>
-        public LinkClientPluginReceiveMessage(SocketOperationResult result, PooledFrameList frames = default)
+        public LinkClientPluginReceiveMessage(SocketOperationValue result, PooledFrameList frames = default)
         {
             Result = result;
             OutMessageFrames = frames;

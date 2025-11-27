@@ -1,5 +1,5 @@
-﻿using System.Collections.Concurrent;
-using ExtenderApp.Data;
+﻿using ExtenderApp.Data;
+using ExtenderApp.FFmpegEngines.Decoders;
 using FFmpeg.AutoGen;
 
 namespace ExtenderApp.FFmpegEngines
@@ -40,37 +40,12 @@ namespace ExtenderApp.FFmpegEngines
         /// </summary>
         private FFmpegContext _context;
 
-        /// <summary>
-        /// 解码处理任务。
-        /// </summary>
-        private Task? processTask;
-
-        /// <summary>
-        /// 音频解码任务。
-        /// </summary>
-        private Task? audioTask;
-
-        /// <summary>
-        /// 视频解码任务。
-        /// </summary>
-        private Task? videoTask;
+        private Task[]? processTasks;
 
         /// <summary>
         /// 当前解码流程的取消令牌源。
         /// </summary>
         private CancellationTokenSource? source;
-
-        /// <summary>
-        /// 音频数据包队列。 用于缓存待解码的音频
-        /// AVPacket，支持多线程安全入队和出队。 解码主循环将音频包分发到该队列，由音频解码器异步处理。
-        /// </summary>
-        private readonly ConcurrentQueue<NativeIntPtr<AVPacket>> _audioQueue;
-
-        /// <summary>
-        /// 视频数据包队列。 用于缓存待解码的视频
-        /// AVPacket，支持多线程安全入队和出队。 解码主循环将视频包分发到该队列，由视频解码器异步处理。
-        /// </summary>
-        private readonly ConcurrentQueue<NativeIntPtr<AVPacket>> _videoQueue;
 
         #region Events
 
@@ -95,14 +70,11 @@ namespace ExtenderApp.FFmpegEngines
         /// <param name="source">全局取消令牌源。</param>
         public FFmpegDecoderController(FFmpegEngine engine, FFmpegContext context, FFmpegDecoderCollection collection, CancellationTokenSource source)
         {
-            _audioQueue = new();
-            _videoQueue = new();
-
             _engine = engine;
             _allSource = source;
             _decoderCollection = collection;
             _context = context;
-            _decodingController = new(false, () => _videoQueue.Count > 1 && _audioQueue.Count > 1);
+            _decodingController = new(false, () => _decoderCollection.All(d => d.CacheStateController.HasCacheSpace));
         }
 
         /// <summary>
@@ -111,14 +83,20 @@ namespace ExtenderApp.FFmpegEngines
         public void StartDecode()
         {
             ThrowIfDisposed();
-            if (processTask != null)
+            if (processTasks != null)
             {
                 throw new InvalidOperationException($"不能重复解析:{_context.Info.MediaUri}");
             }
             source = source ?? CancellationTokenSource.CreateLinkedTokenSource(_allSource.Token);
-            processTask = Task.Run(() => Decoding(source.Token), _allSource.Token);
-            videoTask = Task.Run(() => ProcessPacket(_videoQueue, _decoderCollection.VideoDecoder, source.Token), _allSource.Token);
-            audioTask = Task.Run(() => ProcessPacket(_audioQueue, _decoderCollection.AudioDecoder, source.Token), _allSource.Token);
+
+            processTasks = new Task[_decoderCollection.Length + 1];
+            processTasks[0] = Task.Run(() => Decoding(source.Token), _allSource.Token);
+
+            for (int i = 1; i < _decoderCollection.Length; i++)
+            {
+                var decoder = _decoderCollection[i];
+                processTasks[i] = Task.Run(() => ProcessPacket(decoder, source.Token), _allSource.Token);
+            }
         }
 
         /// <summary>
@@ -127,54 +105,13 @@ namespace ExtenderApp.FFmpegEngines
         /// 以及相关取消令牌的释放。若所有任务均为空则直接返回。
         /// 任务取消异常会被忽略，确保资源安全释放。
         /// </summary>
-        public async Task StopDecodeAsync()
+        public Task StopDecodeAsync()
         {
             ThrowIfDisposed();
             source?.Cancel();
             source?.Dispose();
 
-            Task? ptask = processTask;
-            Task? atask = audioTask;
-            Task? vtask = videoTask;
-            processTask = null;
-            audioTask = null;
-            videoTask = null;
-            source = null;
-
-            if (ptask == null && atask == null && vtask == null)
-                return;
-
-            try
-            {
-                var tasks = new List<Task>();
-                if (ptask != null) tasks.Add(ptask);
-                if (atask != null) tasks.Add(atask);
-                if (vtask != null) tasks.Add(vtask);
-                if (tasks.Count > 0)
-                    await Task.WhenAll(tasks);
-
-                ptask?.Dispose();
-                atask?.Dispose();
-                vtask?.Dispose();
-            }
-            catch (Exception ex)
-            {
-                // 忽略任务取消引发的异常
-            }
-
-            //Task.Run(async () =>
-            //{
-            //    if (ptask != null)
-            //        await ptask;
-            //    if (atask != null)
-            //        await atask;
-            //    if (vtask != null)
-            //        await vtask;
-
-            //    ptask?.Dispose();
-            //    atask?.Dispose();
-            //    vtask?.Dispose();
-            //});
+            return WaitForAllTasksComplete();
         }
 
         /// <summary>
@@ -196,7 +133,7 @@ namespace ExtenderApp.FFmpegEngines
                 _decoderCollection.Flush();
 
                 _engine.Seek(_context.FormatContext, position, _context);
-                Clear();
+                Flush();
             });
         }
 
@@ -210,10 +147,9 @@ namespace ExtenderApp.FFmpegEngines
         {
             while (!token.IsCancellationRequested && !_allSource.IsCancellationRequested)
             {
-                if (!_decodingController.WaitForTargetState(token, MaxTimeout))
-                {
-                    continue;
-                }
+                _decodingController.WaitForTargetState(MaxTimeout, token);
+                if (token.IsCancellationRequested || _allSource.IsCancellationRequested)
+                    return Task.CompletedTask;
 
                 NativeIntPtr<AVPacket> packet = _engine.GetPacket();
                 int result = _engine.ReadPacket(_context.FormatContext, ref packet);
@@ -226,7 +162,7 @@ namespace ExtenderApp.FFmpegEngines
                     }
                     else
                     {
-                        _engine.ShowError("读取帧失败", result);
+                        _engine.ShowException("读取帧失败", result);
                     }
                     break;
                 }
@@ -237,31 +173,9 @@ namespace ExtenderApp.FFmpegEngines
                 }
 
                 int index = _engine.GetPacketStreamIndex(packet);
-                var queue = GetQueue(index);
-                queue?.Enqueue(packet);
+                _decoderCollection[index].EnqueuePacket(packet);
             }
             return Task.CompletedTask;
-        }
-
-        /// <summary>
-        /// 根据流索引获取对应的解码器（视频或音频）。
-        /// </summary>
-        /// <param name="streamIndex">流索引。</param>
-        /// <returns>对应的 FFmpegDecoder 实例。</returns>
-        /// <exception cref="ArgumentOutOfRangeException">
-        /// 流索引无效时抛出异常。
-        /// </exception>
-        private ConcurrentQueue<NativeIntPtr<AVPacket>>? GetQueue(int streamIndex)
-        {
-            if (_decoderCollection.VideoDecoder?.StreamIndex == streamIndex)
-            {
-                return _videoQueue;
-            }
-            else if (_decoderCollection.AudioDecoder?.StreamIndex == streamIndex)
-            {
-                return _audioQueue;
-            }
-            return null;
         }
 
         /// <summary>
@@ -300,71 +214,51 @@ namespace ExtenderApp.FFmpegEngines
             _decoderCollection.AudioDecoder?.CacheStateController.OnFrameRemoved();
         }
 
-        /// <summary>
-        /// 解码器数据包处理任务。 持续从指定队列中取出 AVPacket
-        /// 并交由解码器进行解码， 解码完成后回收数据包资源。支持异步等待和取消。 适用于音视频解码的多线程处理场景。
-        /// </summary>
-        /// <param name="queue">待处理的数据包队列（音频或视频）。</param>
-        /// <param name="decoder">对应的解码器实例。</param>
-        private async Task ProcessPacket(ConcurrentQueue<NativeIntPtr<AVPacket>> queue, FFmpegDecoder decoder, CancellationToken token)
+        private async Task ProcessPacket(FFmpegDecoder decoder, CancellationToken token)
         {
             while (!token.IsCancellationRequested)
             {
-                if (!queue.TryDequeue(out var packet))
-                {
-                    try
-                    {
-                        await Task.Delay(MaxTimeout, token);
-                    }
-                    catch (TaskCanceledException ex)
-                    {
-                        break;
-                    }
-                    continue;
-                }
-                decoder.Decoding(packet, token);
-                _engine.ReturnPacket(ref packet);
+                await decoder.ProcessPacket(token);
             }
         }
 
         /// <summary>
         /// 清除音视频数据包队列，释放所有未处理的 AVPacket 资源。
         /// </summary>
-        private void Clear()
+        private void Flush()
         {
-            while (_audioQueue.TryDequeue(out var packet))
+            for (int i = 0; i < _decoderCollection.Length; i++)
             {
-                _engine.ReturnPacket(ref packet);
-            }
-            while (_videoQueue.TryDequeue(out var packet))
-            {
-                _engine.ReturnPacket(ref packet);
+                var decoder = _decoderCollection[i];
+                decoder.Flush();
             }
         }
 
         /// <summary>
-        /// 释放解码控制器相关资源。 包括取消任务、释放上下文和等待解码任务完成。
+        /// 可等待所有解码相关任务完成。
         /// </summary>
-        /// <param name="disposing">
-        /// 指示是否由 Dispose 方法调用。
-        /// </param>
-        protected override void Dispose(bool disposing)
+        /// <returns></returns>
+        private Task WaitForAllTasksComplete()
+        {
+            if (processTasks == null)
+                return Task.CompletedTask;
+
+            return Task.WhenAll(processTasks);
+        }
+
+        protected override void DisposeManagedResources()
         {
             _allSource.Cancel();
             _allSource.Dispose();
             source?.Cancel();
             source?.Dispose();
-            processTask?.Wait();
-            audioTask?.Wait();
-            videoTask?.Wait();
-            Clear();
-            processTask?.Dispose();
-            audioTask?.Dispose();
-            videoTask?.Dispose();
-            processTask = null;
-            audioTask = null;
-            videoTask = null;
-            source = null;
+
+            Flush();
+            WaitForAllTasksComplete().GetAwaiter().GetResult();
+        }
+
+        protected override void DisposeUnmanagedResources()
+        {
             _context.Dispose();
             _decoderCollection.Dispose();
         }

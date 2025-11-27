@@ -38,68 +38,54 @@ namespace ExtenderApp.Common.Networks
             return ValueTask.CompletedTask;
         }
 
-        protected override ValueTask<SocketOperationResult> ExecuteReceiveAsync(AwaitableSocketEventArgs args, Memory<byte> memory, CancellationToken token)
+        protected override ValueTask<Result<SocketOperationValue>> ExecuteReceiveAsync(AwaitableSocketEventArgs args, Memory<byte> memory, CancellationToken token)
         {
             if (!Socket.Connected)
             {
-                return ValueTask.FromResult(new SocketOperationResult(CreateSocketException(SocketError.NotConnected)));
+                return ValueTask.FromResult(Result.FromException<SocketOperationValue>(CreateSocketException(SocketError.NotConnected)));
             }
             return args.ReceiveAsync(Socket, memory, token);
         }
 
-        protected override ValueTask<SocketOperationResult> ExecuteSendAsync(AwaitableSocketEventArgs args, Memory<byte> memory, CancellationToken token)
+        protected override ValueTask<Result<SocketOperationValue>> ExecuteSendAsync(AwaitableSocketEventArgs args, Memory<byte> memory, CancellationToken token)
         {
             if (!Socket.Connected)
             {
-                return ValueTask.FromResult(new SocketOperationResult(CreateSocketException(SocketError.NotConnected)));
+                return ValueTask.FromResult(Result.FromException<SocketOperationValue>(CreateSocketException(SocketError.NotConnected)));
             }
             return args.SendAsync(Socket, memory, token);
         }
 
-        public SocketOperationResult SendTo(Memory<byte> memory, EndPoint endPoint)
+        public Result<SocketOperationValue> SendTo(Memory<byte> memory, EndPoint endPoint)
         {
             ThrowIfDisposed();
             if (memory.IsEmpty || memory.Length <= 0)
             {
-                return new SocketOperationResult(CreateSocketException(SocketError.NoBufferSpaceAvailable));
+                return Result.FromException<SocketOperationValue>(CreateSocketException(SocketError.NoBufferSpaceAvailable));
             }
             if (endPoint == null)
             {
-                return new SocketOperationResult(CreateSocketException(SocketError.NotConnected));
+                return Result.FromException<SocketOperationValue>(CreateSocketException(SocketError.NotConnected));
             }
 
-            var args = GetArgs();
-            try
-            {
-                return args.SendToAsync(Socket, memory, endPoint, default).GetAwaiter().GetResult();
-            }
-            finally
-            {
-                ReleaseArgs(args);
-            }
+            var args = AwaitableSocketEventArgs.Get();
+            return args.SendToAsync(Socket, memory, endPoint, default).GetAwaiter().GetResult();
         }
 
-        public ValueTask<SocketOperationResult> SendToAsync(Memory<byte> memory, EndPoint endPoint, CancellationToken token = default)
+        public ValueTask<Result<SocketOperationValue>> SendToAsync(Memory<byte> memory, EndPoint endPoint, CancellationToken token = default)
         {
             ThrowIfDisposed();
             if (memory.IsEmpty || memory.Length <= 0)
             {
-                return ValueTask.FromResult(new SocketOperationResult(CreateSocketException(SocketError.NoBufferSpaceAvailable)));
+                return ValueTask.FromResult(Result.FromException<SocketOperationValue>(CreateSocketException(SocketError.NoBufferSpaceAvailable)));
             }
             if (endPoint == null)
             {
-                return ValueTask.FromResult(new SocketOperationResult(CreateSocketException(SocketError.NotConnected)));
+                return ValueTask.FromResult(Result.FromException<SocketOperationValue>(CreateSocketException(SocketError.NotConnected)));
             }
 
-            var args = GetArgs();
-            try
-            {
-                return args.SendToAsync(Socket, memory, endPoint, token);
-            }
-            finally
-            {
-                ReleaseArgs(args);
-            }
+            var args = AwaitableSocketEventArgs.Get();
+            return args.SendToAsync(Socket, memory, endPoint, token);
         }
 
         protected override ILinker Clone(Socket socket)

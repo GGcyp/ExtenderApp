@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using ExtenderApp.Abstract;
+﻿using ExtenderApp.Abstract;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace ExtenderApp.Common.Scopes

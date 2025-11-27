@@ -1,4 +1,5 @@
-﻿
+﻿using ExtenderApp.Data;
+
 namespace ExtenderApp.FFmpegEngines
 {
     /// <summary>
@@ -7,8 +8,10 @@ namespace ExtenderApp.FFmpegEngines
     /// 适用于多线程环境下的状态同步场景。
     /// </summary>
     /// <typeparam name="T">状态类型，需支持比较。</typeparam>
-    public class StateController<T>
+    public class StateController<T> : DisposableObject
     {
+        private const int DefaultWaitTimeoutMs = 10;
+
         /// <summary>
         /// 状态变更信号，用于线程间同步。
         /// </summary>
@@ -79,25 +82,23 @@ namespace ExtenderApp.FFmpegEngines
         /// <param name="token">取消令牌。</param>
         /// <param name="timeoutMs">每次等待的超时时间（毫秒）。</param>
         /// <returns>是否成功达到目标状态。</returns>
-        public bool WaitForTargetState(CancellationToken token, int timeoutMs = 50)
+        public void WaitForTargetState(int timeoutMs = DefaultWaitTimeoutMs, CancellationToken token = default)
         {
-            if (UpdateStateFunc != null)
-            {
-                State = UpdateStateFunc.Invoke();
-            }
+            Update();
 
             while (!IsInTargetState && !token.IsCancellationRequested)
             {
                 if (!_cacheAvailableEvent.WaitOne(timeoutMs, !token.IsCancellationRequested))
                 {
-                    if (UpdateStateFunc != null)
-                    {
-                        State = UpdateStateFunc.Invoke();
-                    }
+                    Update();
                     continue;
                 }
             }
-            return !token.IsCancellationRequested;
+        }
+
+        public void Update()
+        {
+            State = UpdateStateFunc is null ? State : UpdateStateFunc.Invoke();
         }
 
         /// <summary>
@@ -112,6 +113,11 @@ namespace ExtenderApp.FFmpegEngines
             {
                 _cacheAvailableEvent.Set();
             }
+        }
+
+        protected override void DisposeManagedResources()
+        {
+            _cacheAvailableEvent.Dispose();
         }
     }
 }

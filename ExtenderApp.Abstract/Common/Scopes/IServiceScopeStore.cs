@@ -7,7 +7,7 @@ namespace ExtenderApp.Abstract
     /// 存储与管理以名称区分的 IServiceScope / IServiceProvider。
     /// 用于宿主在不同插件或模块间按作用域（scopeName）保存和检索依赖注入作用域。
     /// </summary>
-    public interface IServiceScopeStore
+    public interface IServiceScopeStore : IServiceProvider
     {
         /// <summary>
         /// 根据作用域名称获取对应的 <see cref="IServiceProvider"/>。

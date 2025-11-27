@@ -1,4 +1,6 @@
-﻿namespace ExtenderApp.Data
+﻿using System.Runtime.ExceptionServices;
+
+namespace ExtenderApp.Data
 {
     /// <summary>
     /// 表示一个操作的结果，不包含返回值。
@@ -39,7 +41,15 @@
         /// <returns>描述结果状态和消息的字符串。</returns>
         public override string ToString()
         {
-            return string.Format("{0}，返回信息{1}", IsSuccess ? "OK" : "Error", Message ?? (IsSuccess ? "OK" : "未发现返回信息"));
+            return string.Format("{0}，返回信息{1}", IsSuccess ? "OK" : "FromException", Message ?? (IsSuccess ? "OK" : "未发现返回信息"));
+        }
+
+        /// <inheritdoc/>
+        public bool Equals(Result other)
+        {
+            return IsSuccess == other.IsSuccess &&
+                   Message == other.Message &&
+                   EqualityComparer<Exception?>.Default.Equals(Exception, other.Exception);
         }
 
         /// <inheritdoc/>
@@ -54,12 +64,37 @@
             return HashCode.Combine(IsSuccess, Message, Exception);
         }
 
-        /// <inheritdoc/>
-        public bool Equals(Result other)
+        /// <summary>
+        /// 如果操作失败且包含异常，则重新抛出该异常。
+        /// 注意：此方法会重置堆栈跟踪，使其始于当前调用点。
+        /// </summary>
+        public void ThrowExceptionIfError()
         {
-            return IsSuccess == other.IsSuccess &&
-                   Message == other.Message &&
-                   EqualityComparer<Exception?>.Default.Equals(Exception, other.Exception);
+            if (!IsSuccess && Exception != null)
+            {
+                throw Exception;
+            }
+        }
+
+        /// <summary>
+        /// 如果操作失败且包含异常，则重新抛出该异常，并保留原始的堆栈跟踪信息。
+        /// </summary>
+        public void ThrowExceptionWithOriginalStackTraceIfError()
+        {
+            if (!IsSuccess && Exception != null)
+            {
+                ExceptionDispatchInfo.Capture(Exception).Throw();
+            }
+        }
+
+        public static bool operator ==(Result left, Result right)
+        {
+            return left.Equals(right);
+        }
+
+        public static bool operator !=(Result left, Result right)
+        {
+            return !(left == right);
         }
 
         #region Static Members
@@ -80,7 +115,19 @@
         /// 创建一个表示异常的 <see cref="Result"/>。
         /// </summary>
         /// <param name="exception">捕获到的异常。</param>
-        public static Result Error(Exception exception) => new(false, exception.Message, exception);
+        public static Result FromException(Exception exception) => new(false, exception.Message, exception);
+
+        public static Result FromException<T>() where T : Exception, new()
+        {
+            try
+            {
+                throw new T();
+            }
+            catch (Exception)
+            {
+                return FromException(new T());
+            }
+        }
 
         /// <summary>
         /// 创建一个表示成功的 <see cref="Result{T}"/>。
@@ -98,25 +145,21 @@
         /// <summary>
         /// 创建一个表示异常的 <see cref="Result{T}"/>。
         /// </summary>
-        public static Result<T> Error<T>(Exception exception) => new(false, default, exception.Message, exception);
+        public static Result<T> FromException<T>(Exception exception) => new(false, default, exception.Message, exception);
+
+        public static Result FromException<TValue, TException>() where TException : Exception, new()
+        {
+            try
+            {
+                throw new TException();
+            }
+            catch (Exception)
+            {
+                return FromException<TValue>(new TException());
+            }
+        }
 
         #endregion Static Members
-
-        /// <summary>
-        /// 比较两个 <see cref="Result"/> 实例是否相等。
-        /// </summary>
-        public static bool operator ==(Result left, Result right)
-        {
-            return left.Equals(right);
-        }
-
-        /// <summary>
-        /// 比较两个 <see cref="Result"/> 实例是否不相等。
-        /// </summary>
-        public static bool operator !=(Result left, Result right)
-        {
-            return !(left == right);
-        }
 
         /// <summary>
         /// 定义从 <see cref="Result"/> 到其成功状态 <see cref="bool"/> 的隐式转换。
@@ -155,7 +198,7 @@
         /// <summary>
         /// 获取操作返回的数据。
         /// </summary>
-        public T? Data { get; }
+        public T? Value { get; }
 
         /// <summary>
         /// 初始化一个不带数据的 <see cref="Result{T}"/> 新实例。
@@ -176,16 +219,39 @@
         public Result(bool isSuccess, T? data, string? message = null, Exception? exception = null)
         {
             IsSuccess = isSuccess;
-            Data = data;
+            Value = data;
             Message = message;
             Exception = exception;
+        }
+
+        /// <summary>
+        /// 如果操作失败且包含异常，则重新抛出该异常。
+        /// 注意：此方法会重置堆栈跟踪，使其始于当前调用点。
+        /// </summary>
+        public void ThrowExceptionIfError()
+        {
+            if (!IsSuccess && Exception != null)
+            {
+                throw Exception;
+            }
+        }
+
+        /// <summary>
+        /// 如果操作失败且包含异常，则重新抛出该异常，并保留原始的堆栈跟踪信息。
+        /// </summary>
+        public void ThrowExceptionWithOriginalStackTraceIfError()
+        {
+            if (!IsSuccess && Exception != null)
+            {
+                ExceptionDispatchInfo.Capture(Exception).Throw();
+            }
         }
 
         /// <inheritdoc/>
         public bool Equals(Result<T> other)
         {
             return IsSuccess == other.IsSuccess &&
-                   EqualityComparer<T?>.Default.Equals(Data, other.Data) &&
+                   EqualityComparer<T?>.Default.Equals(Value, other.Value) &&
                    Message == other.Message &&
                    EqualityComparer<Exception?>.Default.Equals(Exception, other.Exception);
         }
@@ -199,7 +265,7 @@
         /// <inheritdoc/>
         public override int GetHashCode()
         {
-            return HashCode.Combine(IsSuccess, Data, Message, Exception);
+            return HashCode.Combine(IsSuccess, Value, Message, Exception);
         }
 
         /// <summary>
@@ -208,20 +274,14 @@
         /// <returns>描述结果状态、消息和数据的字符串。</returns>
         public override string ToString()
         {
-            return string.Format("{0}，返回信息{1}，数据：{2}", IsSuccess ? "OK" : "Error", Message ?? (IsSuccess ? "OK" : "未发现返回信息"), Data?.ToString() ?? "null");
+            return string.Format("{0}，返回信息{1}，数据：{2}", IsSuccess ? "OK" : "FromException", Message ?? (IsSuccess ? "OK" : "未发现返回信息"), Value?.ToString() ?? "null");
         }
 
-        /// <summary>
-        /// 比较两个 <see cref="Result{T}"/> 实例是否相等。
-        /// </summary>
         public static bool operator ==(Result<T> left, Result<T> right)
         {
             return left.Equals(right);
         }
 
-        /// <summary>
-        /// 比较两个 <see cref="Result{T}"/> 实例是否不相等。
-        /// </summary>
         public static bool operator !=(Result<T> left, Result<T> right)
         {
             return !(left == right);
@@ -249,6 +309,9 @@
         /// 定义从 <see cref="Result{T}"/> 到其数据类型 <typeparamref name="T"/> 的隐式转换。
         /// </summary>
         public static implicit operator T?(Result<T> result)
-            => result.Data;
+            => result.Value;
+
+        public static explicit operator Result<T>(T data)
+            => Result.Success(data);
     }
 }

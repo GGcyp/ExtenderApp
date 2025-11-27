@@ -308,10 +308,5 @@ namespace ExtenderApp.Common.IO.FileParsers
         }
 
         #endregion Operate
-
-        protected override void Dispose(bool disposing)
-        {
-            base.Dispose(disposing);
-        }
     }
 }

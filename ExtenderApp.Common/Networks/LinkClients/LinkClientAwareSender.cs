@@ -77,7 +77,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
 
         #region Send And Receive
 
-        public virtual ValueTask<SocketOperationResult> SendAsync<T>(T data, CancellationToken token = default)
+        public virtual ValueTask<Result<SocketOperationValue>> SendAsync<T>(T data, CancellationToken token = default)
         {
             ThrowIfDisposed();
 
@@ -142,7 +142,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
         /// <param name="rental">要发送序列的租约</param>
         /// <param name="token">可取消令牌</param>
         /// <returns></returns>
-        protected virtual async ValueTask<SocketOperationResult> ProtectedSendAsync(ReadOnlySequence<byte> memories, SequencePool<byte>.SequenceRental rental, CancellationToken token)
+        protected virtual async ValueTask<Result<SocketOperationValue>> ProtectedSendAsync(ReadOnlySequence<byte> memories, SequencePool<byte>.SequenceRental rental, CancellationToken token)
         {
             var result = await Linker.SendAsync(memories, token);
             rental.Dispose();
@@ -156,7 +156,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
             {
                 while (!token.IsCancellationRequested)
                 {
-                    SocketOperationResult result;
+                    Result<SocketOperationValue> result;
                     try
                     {
                         // ReceiveAsync 接受
@@ -175,8 +175,9 @@ namespace ExtenderApp.Common.Networks.LinkClients
                         break;
                     }
 
+                    var value = result.Value;
                     // 若对端优雅关闭（TCP）通常返回 0，或者实现以 0 表示已断开，退出接收循环以进入暂停状态
-                    if (result.BytesTransferred <= 0)
+                    if (value.BytesTransferred <= 0)
                     {
                         break;
                     }
@@ -185,7 +186,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
                     // BytesTransferred 为 0，也通知一次）
                     try
                     {
-                        await PrivatePluginReceiveMessage(result, bytes.AsMemory(0, result.BytesTransferred));
+                        await PrivatePluginReceiveMessage(result, bytes.AsMemory(0, value.BytesTransferred));
                     }
                     catch
                     {
@@ -199,7 +200,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
             }
         }
 
-        private ValueTask PrivatePluginReceiveMessage(SocketOperationResult result, ReadOnlyMemory<byte> resultMessage)
+        private ValueTask PrivatePluginReceiveMessage(Result<SocketOperationValue> result, ReadOnlyMemory<byte> resultMessage)
         {
             ByteBuffer buffer = new(resultMessage);
             LinkClientPluginReceiveMessage message = default;
@@ -356,12 +357,12 @@ namespace ExtenderApp.Common.Networks.LinkClients
             }
         }
 
-        public virtual new SocketOperationResult Send(Memory<byte> memory)
+        public virtual new Result<SocketOperationValue> Send(Memory<byte> memory)
         {
             return Linker.Send(memory);
         }
 
-        public virtual new ValueTask<SocketOperationResult> SendAsync(Memory<byte> memory, CancellationToken token = default)
+        public virtual new ValueTask<Result<SocketOperationValue>> SendAsync(Memory<byte> memory, CancellationToken token = default)
         {
             return Linker.SendAsync(memory, token);
         }

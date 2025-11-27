@@ -21,6 +21,7 @@ namespace ExtenderApp.Data
         public HttpMethod Method { get; set; }
 
         private Uri? requestUri;
+
         /// <summary>
         /// 请求 URI（可以为 null，但序列化时需非空）。
         /// </summary>
@@ -241,7 +242,7 @@ namespace ExtenderApp.Data
             return buffer;
         }
 
-        protected override void Dispose(bool disposing)
+        protected override void DisposeManagedResources()
         {
             Body.Dispose();
         }

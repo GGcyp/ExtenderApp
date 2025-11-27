@@ -31,9 +31,16 @@ namespace ExtenderApp.Common.IO.Binary
 
             details = new BinaryFormatterDetails(type, isVersionDataFormatter);
             details.FormatterTypes.Add(typeFormatter);
-            TryAdd(type, details);
-            if (isVersionDataFormatter && details.VersionDataBinaryType != null)
-                TryAdd(details.VersionDataBinaryType, details);
+
+            if (isVersionDataFormatter)
+            {
+                TryAdd(details.BinaryType, details);
+                TryAdd(details.VersionDataBinaryType!, details);
+            }
+            else
+            {
+                TryAdd(type, details);
+            }
         }
 
         public bool TryGetSingleFormatterType(Type type, out Type formatterType)

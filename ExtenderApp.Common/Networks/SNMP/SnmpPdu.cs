@@ -5,7 +5,7 @@ using ExtenderApp.Data;
 namespace ExtenderApp.Common.Networks.SNMP
 {
     /// <summary>
-    /// 表示一个 SNMP PDU（Protocol Data Unit），如
+    /// 表示一个 SNMP PDU（Protocol Value Unit），如
     /// GetRequest/GetResponse/SetRequest 等。
     /// 该类型为值类型（readonly struct），承载 PDU 的元信息与
     /// varbind 列表（变量绑定序列）。

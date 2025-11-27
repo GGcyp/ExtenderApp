@@ -1,9 +1,10 @@
 ﻿using System.Runtime.CompilerServices;
+using System.Threading;
 
 namespace ExtenderApp.Data
 {
     /// <summary>
-    /// 一个实现了IDisposable接口的抽象类，用于管理可释放资源。
+    /// 一个实现了IDisposable和IAsyncDisposable接口的抽象类，用于管理可释放资源。
     /// </summary>
     public abstract class DisposableObject : IDisposable, IAsyncDisposable
     {
@@ -18,11 +19,10 @@ namespace ExtenderApp.Data
         public bool IsDisposed => _disposed == 1;
 
         /// <summary>
-        /// 析构函数，用于在对象被垃圾回收时释放资源。
+        /// 析构函数，用于在对象被垃圾回收时释放非托管资源。
         /// </summary>
         ~DisposableObject()
         {
-            DisposeAsync(false);
             Dispose(false);
         }
 
@@ -52,30 +52,62 @@ namespace ExtenderApp.Data
         /// <summary>
         /// 释放或重置由DisposableObject使用的资源。
         /// </summary>
-        /// <param name="disposing">指示是否由Dispose方法调用。</param>
+        /// <param name="disposing">指示是否应释放托管资源。</param>
         protected virtual void Dispose(bool disposing)
         {
-            // 子类实现具体释放逻辑
+            if (disposing)
+            {
+                // 释放托管资源
+                DisposeManagedResources();
+            }
+
+            // 释放非托管资源
+            DisposeUnmanagedResources();
         }
 
+        /// <summary>
+        /// 异步释放或重置由DisposableObject使用的所有资源。
+        /// </summary>
         public async ValueTask DisposeAsync()
         {
             if (Interlocked.Exchange(ref _disposed, 1) != 0)
                 return;
 
-            await DisposeAsync(true);
+            await DisposeAsyncCore();
+            Dispose(false); // 同步释放非托管资源
             GC.SuppressFinalize(this);
         }
 
         /// <summary>
-        /// 释放或重置由DisposableObject使用的资源。
+        /// 提供异步释放的核心实现。
         /// </summary>
-        /// <param name="disposing">指示是否由Dispose方法调用。</param>
-        /// <returns>异步调用结束时返回</returns>
-        protected virtual ValueTask DisposeAsync(bool disposing)
+        protected async ValueTask DisposeAsyncCore()
         {
-            // 子类实现具体释放逻辑
+            await DisposeAsyncManagedResources();
+        }
+
+        /// <summary>
+        /// 子类应重写此方法以异步释放托管资源。
+        /// </summary>
+        protected virtual ValueTask DisposeAsyncManagedResources()
+        {
             return ValueTask.CompletedTask;
+        }
+
+        /// <summary>
+        /// 子类应重写此方法以同步释放托管资源。
+        /// </summary>
+        protected virtual void DisposeManagedResources()
+        {
+            // 子类实现具体的托管资源释放逻辑
+        }
+
+        /// <summary>
+        /// 子类应重写此方法以释放非托管资源。
+        /// </summary>
+        protected virtual void DisposeUnmanagedResources()
+        {
+            // 子类实现具体的非托管资源释放逻辑
         }
     }
 }

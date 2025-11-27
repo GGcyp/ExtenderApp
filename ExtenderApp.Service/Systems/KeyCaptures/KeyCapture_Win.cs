@@ -203,7 +203,6 @@ namespace ExtenderApp.Services.Systems.KeyCaptures
             consume.Add(obj, modifierKeys, keyDownHandler, keyupHandler);
         }
 
-
         public void Register(object obj,
             EventHandler<KeyEvent>? keyDownHandler,
             EventHandler<KeyEvent>? keyupHandler,
@@ -272,10 +271,7 @@ namespace ExtenderApp.Services.Systems.KeyCaptures
             VK_MENU = 0x12
         }
 
-        /// <summary>
-        /// 释放钩子与相关资源。
-        /// </summary>
-        protected override void Dispose(bool disposing)
+        protected override void DisposeUnmanagedResources()
         {
             Unhook();
         }

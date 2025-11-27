@@ -16,7 +16,7 @@ namespace ExtenderApp.Services
             KeyCapture = new KeyCapture_Win();
         }
 
-        protected override void Dispose(bool disposing)
+        protected override void DisposeUnmanagedResources()
         {
             KeyCapture.Dispose();
         }

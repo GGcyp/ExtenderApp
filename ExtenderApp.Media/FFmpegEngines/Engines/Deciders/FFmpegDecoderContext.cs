@@ -1,7 +1,7 @@
 ﻿using ExtenderApp.Data;
 using FFmpeg.AutoGen;
 
-namespace ExtenderApp.FFmpegEngines
+namespace ExtenderApp.FFmpegEngines.Decoders
 {
     /// <summary>
     /// 解码器上下文封装，包含解码器、流参数和解码器实例指针。

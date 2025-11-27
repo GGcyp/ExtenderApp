@@ -47,12 +47,12 @@ namespace ExtenderApp.Common
             return Socket.DisconnectAsync(true, token);
         }
 
-        protected override ValueTask<SocketOperationResult> ExecuteReceiveAsync(AwaitableSocketEventArgs args, Memory<byte> memory, CancellationToken token)
+        protected override ValueTask<Result<SocketOperationValue>> ExecuteReceiveAsync(AwaitableSocketEventArgs args, Memory<byte> memory, CancellationToken token)
         {
             return args.ReceiveAsync(Socket, memory, token);
         }
 
-        protected override ValueTask<SocketOperationResult> ExecuteSendAsync(AwaitableSocketEventArgs args, Memory<byte> memory, CancellationToken token)
+        protected override ValueTask<Result<SocketOperationValue>> ExecuteSendAsync(AwaitableSocketEventArgs args, Memory<byte> memory, CancellationToken token)
         {
             return args.SendAsync(Socket, memory, token);
         }

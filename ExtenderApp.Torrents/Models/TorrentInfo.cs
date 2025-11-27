@@ -5,7 +5,6 @@ using ExtenderApp.Data;
 using ExtenderApp.Models;
 using MonoTorrent;
 using MonoTorrent.Client;
-using MonoTorrent.Trackers;
 
 namespace ExtenderApp.Torrents.Models
 {
@@ -151,7 +150,7 @@ namespace ExtenderApp.Torrents.Models
         /// </remarks>
         public HashValue V1orV2 => V1.IsEmpty ? V2 : V1;
 
-        #endregion
+        #endregion Properties
 
         #region TorrentFiles
 
@@ -161,7 +160,7 @@ namespace ExtenderApp.Torrents.Models
 
         public bool SelecrAll { get; set; }
 
-        #endregion
+        #endregion TorrentFiles
 
         #region MonoTorrent
 
@@ -184,7 +183,7 @@ namespace ExtenderApp.Torrents.Models
             }
         }
 
-        #endregion
+        #endregion MonoTorrent
 
         #region Peers
 
@@ -210,13 +209,13 @@ namespace ExtenderApp.Torrents.Models
 
         public ObservableCollection<TorrentPeer> ConnectPeers { get; set; }
 
-        #endregion
+        #endregion Peers
 
         #region Tracker
 
         public ObservableCollection<TorrentTracker> Trackers { get; set; }
 
-        #endregion
+        #endregion Tracker
 
         #region Piece
 
@@ -229,7 +228,7 @@ namespace ExtenderApp.Torrents.Models
 
         public int SelectedBitfieldCount { get; set; }
 
-        #endregion
+        #endregion Piece
 
         public TorrentInfo(Torrent torrent, string torrentPath, string savePath, IDispatcherService service) : this(service)
         {
@@ -385,7 +384,6 @@ namespace ExtenderApp.Torrents.Models
             };
             manager.TrackerManager.ScrapeComplete += (o, e) =>
             {
-
             };
         }
 
@@ -515,7 +513,6 @@ namespace ExtenderApp.Torrents.Models
                     parentNode.Add(node);
                     node.Depth = parentNode.Depth + 1;
                 }
-
             }
         }
 
@@ -744,6 +741,6 @@ namespace ExtenderApp.Torrents.Models
             return result;
         }
 
-        #endregion      
+        #endregion Update
     }
 }

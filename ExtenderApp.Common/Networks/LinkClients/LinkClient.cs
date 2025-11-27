@@ -37,27 +37,22 @@ namespace ExtenderApp.Common.Networks.LinkClients
             Linker = linker ?? throw new ArgumentNullException(nameof(linker));
         }
 
-        protected override void Dispose(bool disposing)
-        {
-            Linker.Dispose();
-        }
-
-        public SocketOperationResult Receive(Memory<byte> memory)
+        public Result<SocketOperationValue> Receive(Memory<byte> memory)
         {
             return Linker.Receive(memory);
         }
 
-        public ValueTask<SocketOperationResult> ReceiveAsync(Memory<byte> memory, CancellationToken token = default)
+        public ValueTask<Result<SocketOperationValue>> ReceiveAsync(Memory<byte> memory, CancellationToken token = default)
         {
             return Linker.ReceiveAsync(memory, token);
         }
 
-        public SocketOperationResult Send(Memory<byte> memory)
+        public Result<SocketOperationValue> Send(Memory<byte> memory)
         {
             return Linker.Send(memory);
         }
 
-        public ValueTask<SocketOperationResult> SendAsync(Memory<byte> memory, CancellationToken token = default)
+        public ValueTask<Result<SocketOperationValue>> SendAsync(Memory<byte> memory, CancellationToken token = default)
         {
             return Linker.SendAsync(memory, token);
         }
@@ -80,6 +75,14 @@ namespace ExtenderApp.Common.Networks.LinkClients
         public ValueTask DisconnectAsync(CancellationToken token = default)
         {
             return Linker.DisconnectAsync(token);
+        }
+
+        protected override ValueTask DisposeAsyncManagedResources()
+        {
+            if (!Linker.Connected)
+                return ValueTask.CompletedTask;
+
+            return Linker.DisconnectAsync();
         }
 
         public ILinker Clone()

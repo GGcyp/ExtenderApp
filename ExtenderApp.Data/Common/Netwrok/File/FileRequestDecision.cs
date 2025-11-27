@@ -98,11 +98,8 @@ namespace ExtenderApp.Data
             return new ValueTask<Result<BitFieldData>>(this, Version);
         }
 
-        protected override void Dispose(bool disposing)
+        protected override void DisposeManagedResources()
         {
-            if (!disposing)
-                return;
-
             FileDecision.Dispose();
         }
     }

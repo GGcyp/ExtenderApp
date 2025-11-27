@@ -1,10 +1,7 @@
 ﻿using System.Buffers;
 using System.Diagnostics.CodeAnalysis;
-using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
-using System.Security.Cryptography;
-using System.Text;
 using ExtenderApp.Abstract;
 using ExtenderApp.Common.Caches;
 using ExtenderApp.Data;
@@ -93,406 +90,455 @@ namespace ExtenderApp.Common.IO
 
         #region Read
 
-        /// <summary>
-        /// 读取整个文件并返回字节数组。
-        /// </summary>
-        public byte[] Read()
+        /// <inheritdoc/>
+        public Result<byte[]> Read()
         {
             return Read(0, (int)Info.Length);
         }
 
-        /// <summary>
-        /// 从指定位置读取指定长度的数据并返回字节数组。
-        /// </summary>
-        /// <param name="filePosition">起始偏移。</param>
-        /// <param name="length">读取长度。</param>
-        /// <exception cref="ArgumentOutOfRangeException">读取范围越界。</exception>
-        public byte[] Read(long filePosition, int length)
+        /// <inheritdoc/>
+        public Result<byte[]> Read(long filePosition, int length)
         {
-            ThrowIfDisposed();
-            if (length == 0)
-                return Array.Empty<byte>();
-            if (filePosition < 0)
-                throw new ArgumentOutOfRangeException(nameof(filePosition));
-            if (length < 0)
-                throw new ArgumentOutOfRangeException(nameof(length));
-            if (!CanRead)
-                throw new InvalidOperationException("文件不支持读取操作。");
+            try
+            {
+                ThrowIfDisposed();
+                if (length == 0)
+                    return Result.Success(Array.Empty<byte>());
+                if (filePosition < 0)
+                    throw new ArgumentOutOfRangeException(nameof(filePosition));
+                if (length < 0)
+                    throw new ArgumentOutOfRangeException(nameof(length));
+                if (!CanRead)
+                    return Result.Failure<byte[]>("文件不支持读取操作。");
 
-            // 如需强边界，可改用 Stream.DefaultLength；或允许短读由 ExecuteRead 实现处理
-            var result = ExecuteRead(filePosition, length);
-            LastOperateTime = DateTime.Now;
-            return result;
+                var result = ExecuteRead(filePosition, length);
+                LastOperateTime = DateTime.Now;
+                return Result.Success(result);
+            }
+            catch (Exception ex)
+            {
+                return Result.FromException<byte[]>(ex);
+            }
         }
 
-        /// <summary>
-        /// 从指定位置读取指定长度的数据到目标数组。
-        /// </summary>
-        /// <returns>实际读取的字节数。</returns>
-        public int Read(long filePosition, byte[] bytes, int bytesStart, int length)
+        /// <inheritdoc/>
+        public Result<int> Read(long filePosition, byte[] bytes, int bytesStart, int length)
         {
-            ThrowIfDisposed();
-            if (length == 0) return 0;
-            if (bytes is null) throw new ArgumentNullException(nameof(bytes));
-            if (bytesStart < 0 || length < 0 || bytesStart > bytes.Length - length)
-                throw new ArgumentOutOfRangeException("目标数组区间无效。");
-            if (filePosition < 0) throw new ArgumentOutOfRangeException(nameof(filePosition));
-            if (!CanRead) throw new InvalidOperationException("文件不支持读取操作。");
+            try
+            {
+                ThrowIfDisposed();
+                if (length == 0) return Result.Success(0);
+                if (bytes is null) throw new ArgumentNullException(nameof(bytes));
+                if (bytesStart < 0 || length < 0 || bytesStart > bytes.Length - length)
+                    throw new ArgumentOutOfRangeException("目标数组区间无效。");
+                if (filePosition < 0) throw new ArgumentOutOfRangeException(nameof(filePosition));
+                if (!CanRead) return Result.Failure<int>("文件不支持读取操作。");
 
-            var read = ExecuteRead(filePosition, bytes, bytesStart, length);
-            LastOperateTime = DateTime.Now;
-            return read;
+                var read = ExecuteRead(filePosition, bytes, bytesStart, length);
+                LastOperateTime = DateTime.Now;
+                return Result.Success(read);
+            }
+            catch (Exception ex)
+            {
+                return Result.FromException<int>(ex);
+            }
         }
 
-        /// <summary>
-        /// 从文件起始位置读取数据到给定跨度。
-        /// </summary>
-        public int Read(Span<byte> span)
+        /// <inheritdoc/>
+        public Result<int> Read(Span<byte> span)
         {
             return Read(0, span);
         }
 
-        /// <summary>
-        /// 从指定位置读取数据到给定跨度。
-        /// </summary>
-        /// <exception cref="ArgumentOutOfRangeException">读取范围越界。</exception>
-        public int Read(long filePosition, Span<byte> span)
+        /// <inheritdoc/>
+        public Result<int> Read(long filePosition, Span<byte> span)
         {
-            if (span.Length == 0)
-                return 0;
+            try
+            {
+                if (span.Length == 0)
+                    return Result.Success(0);
 
-            CheckSpan(span);
-            if (filePosition + span.Length > Info.Length)
-                throw new ArgumentOutOfRangeException(nameof(span), "读取范围超出文件长度。");
-            if (!CanRead)
-                throw new InvalidOperationException("文件不支持读取操作。");
+                CheckSpan(span);
+                if (filePosition + span.Length > Info.Length)
+                    throw new ArgumentOutOfRangeException(nameof(span), "读取范围超出文件长度。");
+                if (!CanRead)
+                    return Result.Failure<int>("文件不支持读取操作。");
 
-            LastOperateTime = DateTime.Now;
-            return ExecuteRead(filePosition, span);
+                var read = ExecuteRead(filePosition, span);
+                LastOperateTime = DateTime.Now;
+                return Result.Success(read);
+            }
+            catch (Exception ex)
+            {
+                return Result.FromException<int>(ex);
+            }
         }
 
-        /// <summary>
-        /// 从文件起始位置读取数据到给定内存块。
-        /// </summary>
-        public int Read(Memory<byte> memory)
+        /// <inheritdoc/>
+        public Result<int> Read(Memory<byte> memory)
         {
             return Read(0, memory);
         }
 
-        /// <summary>
-        /// 从指定位置读取数据到给定内存块。
-        /// </summary>
-        public int Read(long filePosition, Memory<byte> memory)
+        /// <inheritdoc/>
+        public Result<int> Read(long filePosition, Memory<byte> memory)
         {
-            if (memory.Length == 0)
-                return 0;
+            try
+            {
+                if (memory.Length == 0)
+                    return Result.Success(0);
 
-            if (!CanRead)
-                throw new InvalidOperationException("文件不支持读取操作。");
+                if (!CanRead)
+                    return Result.Failure<int>("文件不支持读取操作。");
 
-            LastOperateTime = DateTime.Now;
-            return ExecuteRead(filePosition, memory);
+                var read = ExecuteRead(filePosition, memory);
+                LastOperateTime = DateTime.Now;
+                return Result.Success(read);
+            }
+            catch (Exception ex)
+            {
+                return Result.FromException<int>(ex);
+            }
         }
 
-        public int Read(ref ByteBuffer buffer)
+        /// <inheritdoc/>
+        public Result<int> Read(ref ByteBuffer buffer)
         {
             return Read(0, ref buffer);
         }
 
-        public int Read(long filePosition, ref ByteBuffer buffer)
+        /// <inheritdoc/>
+        public Result<int> Read(long filePosition, ref ByteBuffer buffer)
         {
             return Read(filePosition, (int)(Info.Length - filePosition), ref buffer);
         }
 
-        public int Read(long filePosition, int length, ref ByteBuffer buffer)
+        /// <inheritdoc/>
+        public Result<int> Read(long filePosition, int length, ref ByteBuffer buffer)
         {
-            if (length == 0)
-                return 0;
-            if (length < 0)
-                throw new ArgumentOutOfRangeException(nameof(length), "读取长度必须大于零。");
+            try
+            {
+                if (length == 0)
+                    return Result.Success(0);
+                if (length < 0)
+                    throw new ArgumentOutOfRangeException(nameof(length), "读取长度必须大于零。");
 
-            return ExecuteRead(filePosition, length, ref buffer);
-        }
-
-        public int Read(ref ByteBlock block)
-        {
-            return Read(0, ref block);
-        }
-
-        public int Read(long filePosition, ref ByteBlock block)
-        {
-            return Read(filePosition, (int)(Info.Length - filePosition), ref block);
-        }
-
-        public int Read(long filePosition, int length, ref ByteBlock block)
-        {
-            if (length == 0)
-                return 0;
-            if (length < 0)
-                throw new ArgumentOutOfRangeException(nameof(length), "读取长度必须大于零。");
-
-            return ExecuteRead(filePosition, length, ref block);
+                var read = ExecuteRead(filePosition, length, ref buffer);
+                return Result.Success(read);
+            }
+            catch (Exception ex)
+            {
+                return Result.FromException<int>(ex);
+            }
         }
 
         #endregion Read
 
         #region ReadAsync
 
-        /// <summary>
-        /// 异步读取整个文件。
-        /// </summary>
-        public ValueTask<byte[]> ReadAsync(CancellationToken token = default)
+        /// <inheritdoc/>
+        public ValueTask<Result<byte[]>> ReadAsync(CancellationToken token = default)
         {
             return ReadAsync(0, (int)Info.Length, token);
         }
 
-        /// <summary>
-        /// 异步从指定位置读取指定长度的数据并返回字节数组。
-        /// </summary>
-        public ValueTask<byte[]> ReadAsync(long filePosition, int length, CancellationToken token = default)
+        /// <inheritdoc/>
+        public async ValueTask<Result<byte[]>> ReadAsync(long filePosition, int length, CancellationToken token = default)
         {
-            if (length == 0)
-                return ValueTask.FromResult(Array.Empty<byte>());
-            if (length < 0)
-                throw new ArgumentOutOfRangeException(nameof(length), "读取长度必须大于零。");
+            try
+            {
+                if (length == 0)
+                    return Result.Success(Array.Empty<byte>());
+                if (length < 0)
+                    throw new ArgumentOutOfRangeException(nameof(length), "读取长度必须大于零。");
 
-            if (!CanRead)
-                throw new InvalidOperationException("文件不支持读取操作。");
+                if (!CanRead)
+                    return Result.Failure<byte[]>("文件不支持读取操作。");
 
-            LastOperateTime = DateTime.Now;
-
-            return ExecuteReadAsync(filePosition, length, token);
+                var result = await ExecuteReadAsync(filePosition, length, token);
+                LastOperateTime = DateTime.Now;
+                return Result.Success(result);
+            }
+            catch (Exception ex)
+            {
+                return Result.FromException<byte[]>(ex);
+            }
         }
 
-        /// <summary>
-        /// 异步读取到目标数组。
-        /// </summary>
-        /// <returns>实际读取的字节数。</returns>
-        public ValueTask<int> ReadAsync(long filePosition, int length, byte[] bytes, int bytesStart, CancellationToken token = default)
+        /// <inheritdoc/>
+        public async ValueTask<Result<int>> ReadAsync(long filePosition, int length, byte[] bytes, int bytesStart, CancellationToken token = default)
         {
-            if (length == 0)
-                return ValueTask.FromResult(0);
-            if (length < 0)
-                throw new ArgumentOutOfRangeException(nameof(length), "读取长度必须大于零。");
+            try
+            {
+                if (length == 0)
+                    return Result.Success(0);
+                if (length < 0)
+                    throw new ArgumentOutOfRangeException(nameof(length), "读取长度必须大于零。");
 
-            CheckBytes(bytes);
-            if (bytesStart < 0 || bytesStart >= bytes.Length)
-                throw new ArgumentOutOfRangeException(nameof(bytesStart));
-            if (filePosition + length > Info.Length)
-                throw new ArgumentOutOfRangeException(nameof(length), "读取范围超出文件长度。");
-            if (!CanRead)
-                throw new InvalidOperationException("文件不支持读取操作。");
+                CheckBytes(bytes);
+                if (bytesStart < 0 || bytesStart >= bytes.Length)
+                    throw new ArgumentOutOfRangeException(nameof(bytesStart));
+                if (filePosition + length > Info.Length)
+                    throw new ArgumentOutOfRangeException(nameof(length), "读取范围超出文件长度。");
+                if (!CanRead)
+                    return Result.Failure<int>("文件不支持读取操作。");
 
-            LastOperateTime = DateTime.Now;
-            return ExecuteReadAsync(filePosition, bytes, bytesStart, length, token);
+                var read = await ExecuteReadAsync(filePosition, bytes, bytesStart, length, token);
+                LastOperateTime = DateTime.Now;
+                return Result.Success(read);
+            }
+            catch (Exception ex)
+            {
+                return Result.FromException<int>(ex);
+            }
         }
 
-        /// <summary>
-        /// 异步从文件起始位置读取到内存块。
-        /// </summary>
-        public ValueTask<int> ReadAsync(Memory<byte> memory, CancellationToken token = default)
+        /// <inheritdoc/>
+        public ValueTask<Result<int>> ReadAsync(Memory<byte> memory, CancellationToken token = default)
         {
             return ReadAsync(0, memory, token);
         }
 
-        /// <summary>
-        /// 异步从指定位置读取到内存块。
-        /// </summary>
-        public ValueTask<int> ReadAsync(long filePosition, Memory<byte> memory, CancellationToken token = default)
+        /// <inheritdoc/>
+        public async ValueTask<Result<int>> ReadAsync(long filePosition, Memory<byte> memory, CancellationToken token = default)
         {
-            if (memory.Length == 0)
-                return ValueTask.FromResult(0);
+            try
+            {
+                if (memory.Length == 0)
+                    return Result.Success(0);
 
-            CheckMemory(memory);
-            if (!CanRead)
-                throw new InvalidOperationException("文件不支持读取操作。");
+                CheckMemory(memory);
+                if (!CanRead)
+                    return Result.Failure<int>("文件不支持读取操作。");
 
-            LastOperateTime = DateTime.Now;
-            return ExecuteReadAsync(filePosition, memory, token);
+                var read = await ExecuteReadAsync(filePosition, memory, token);
+                LastOperateTime = DateTime.Now;
+                return Result.Success(read);
+            }
+            catch (Exception ex)
+            {
+                return Result.FromException<int>(ex);
+            }
         }
 
         #endregion ReadAsync
 
         #region Write
 
-        /// <summary>
-        /// 将整个字节数组写入文件起始位置。
-        /// </summary>
-        public void Write(byte[] bytes)
+        /// <inheritdoc/>
+        public Result Write(byte[] bytes)
         {
-            Write(0, bytes);
+            return Write(0, bytes);
         }
 
-        /// <summary>
-        /// 将字节数组写入到指定文件偏移。
-        /// </summary>
-        public void Write(long filePosition, byte[] bytes)
+        /// <inheritdoc/>
+        public Result Write(long filePosition, byte[] bytes)
         {
-            Write(filePosition, bytes, 0, bytes.Length);
+            return Write(filePosition, bytes, 0, bytes.Length);
         }
 
-        /// <summary>
-        /// 将字节数组的指定区间写入到指定文件偏移。
-        /// </summary>
-        public void Write(long filePosition, byte[] bytes, int bytesPosition, int bytesLength)
+        /// <inheritdoc/>
+        public Result Write(long filePosition, byte[] bytes, int bytesPosition, int bytesLength)
         {
-            ThrowIfDisposed();
-            if (bytesLength == 0) return;
-            if (bytes is null) throw new ArgumentNullException(nameof(bytes));
-            if (bytesPosition < 0 || bytesLength < 0 || bytesPosition > bytes.Length - bytesLength)
-                throw new ArgumentOutOfRangeException("源数组区间无效。");
-            if (filePosition < 0) throw new ArgumentOutOfRangeException(nameof(filePosition));
-            if (!CanWrite) throw new InvalidOperationException("文件不支持写入操作。");
+            try
+            {
+                ThrowIfDisposed();
+                if (bytesLength == 0) return Result.Success();
+                if (bytes is null) throw new ArgumentNullException(nameof(bytes));
+                if (bytesPosition < 0 || bytesLength < 0 || bytesPosition > bytes.Length - bytesLength)
+                    throw new ArgumentOutOfRangeException("源数组区间无效。");
+                if (filePosition < 0) throw new ArgumentOutOfRangeException(nameof(filePosition));
+                if (!CanWrite) return Result.Failure("文件不支持写入操作。");
 
-            EnsureCapacityForWrite(filePosition, bytesLength);
-            ExecuteWrite(filePosition, bytes, bytesPosition, bytesLength);
-            LastOperateTime = DateTime.Now;
+                EnsureCapacityForWrite(filePosition, bytesLength);
+                ExecuteWrite(filePosition, bytes, bytesPosition, bytesLength);
+                LastOperateTime = DateTime.Now;
+                return Result.Success();
+            }
+            catch (Exception ex)
+            {
+                return Result.FromException(ex);
+            }
         }
 
-        /// <summary>
-        /// 将只读跨度写入文件起始位置。
-        /// </summary>
-        public void Write(ReadOnlySpan<byte> span)
+        /// <inheritdoc/>
+        public Result Write(ReadOnlySpan<byte> span)
         {
-            Write(0, span);
+            return Write(0, span);
         }
 
-        /// <summary>
-        /// 将只读跨度写入到指定文件偏移。
-        /// </summary>
-        public void Write(long filePosition, ReadOnlySpan<byte> span)
+        /// <inheritdoc/>
+        public Result Write(long filePosition, ReadOnlySpan<byte> span)
         {
-            if (span.Length == 0)
-                return;
+            try
+            {
+                if (span.Length == 0)
+                    return Result.Success();
 
-            CheckSpan(span);
-            if (!CanWrite)
-                throw new InvalidOperationException("文件不支持写入操作。");
+                CheckSpan(span);
+                if (!CanWrite)
+                    return Result.Failure("文件不支持写入操作。");
 
-            EnsureCapacityForWrite(filePosition, span.Length);
-            ExecuteWrite(filePosition, span);
-            LastOperateTime = DateTime.Now;
+                EnsureCapacityForWrite(filePosition, span.Length);
+                ExecuteWrite(filePosition, span);
+                LastOperateTime = DateTime.Now;
+                return Result.Success();
+            }
+            catch (Exception ex)
+            {
+                return Result.FromException(ex);
+            }
         }
 
-        /// <summary>
-        /// 将只读内存写入文件起始位置。
-        /// </summary>
-        public void Write(ReadOnlyMemory<byte> memory)
+        /// <inheritdoc/>
+        public Result Write(ReadOnlyMemory<byte> memory)
         {
-            Write(0, memory);
+            return Write(0, memory);
         }
 
-        /// <summary>
-        /// 将只读内存写入到指定文件偏移。
-        /// </summary>
-        public void Write(long filePosition, ReadOnlyMemory<byte> memory)
+        /// <inheritdoc/>
+        public Result Write(long filePosition, ReadOnlyMemory<byte> memory)
         {
-            if (memory.Length == 0)
-                return;
+            try
+            {
+                if (memory.Length == 0)
+                    return Result.Success();
 
-            CheckMemory(memory);
-            if (!CanWrite)
-                throw new InvalidOperationException("文件不支持写入操作。");
+                CheckMemory(memory);
+                if (!CanWrite)
+                    return Result.Failure("文件不支持写入操作。");
 
-            EnsureCapacityForWrite(filePosition, memory.Length);
-            ExecuteWrite(filePosition, memory);
-            LastOperateTime = DateTime.Now;
+                EnsureCapacityForWrite(filePosition, memory.Length);
+                ExecuteWrite(filePosition, memory);
+                LastOperateTime = DateTime.Now;
+                return Result.Success();
+            }
+            catch (Exception ex)
+            {
+                return Result.FromException(ex);
+            }
         }
 
-        public void Write(ref ByteBuffer buffer)
+        /// <inheritdoc/>
+        public Result Write(ref ByteBuffer buffer)
         {
-            Write(0, ref buffer);
+            return Write(0, ref buffer);
         }
 
-        public void Write(long filePosition, ref ByteBuffer buffer)
+        /// <inheritdoc/>
+        public Result Write(long filePosition, ref ByteBuffer buffer)
         {
-            if (buffer.Length == 0)
-                return;
+            try
+            {
+                if (buffer.Length == 0)
+                    return Result.Success();
 
-            if (buffer.IsEmpty)
-                throw new ArgumentNullException(nameof(buffer));
-            if (!CanWrite)
-                throw new InvalidOperationException("文件不支持写入操作。");
-            ExecuteWrite(filePosition, ref buffer);
+                if (buffer.IsEmpty)
+                    throw new ArgumentNullException(nameof(buffer));
+                if (!CanWrite)
+                    return Result.Failure("文件不支持写入操作。");
+                ExecuteWrite(filePosition, ref buffer);
+                return Result.Success();
+            }
+            catch (Exception ex)
+            {
+                return Result.FromException(ex);
+            }
         }
 
-        public void Write(ref ByteBlock block)
+        /// <inheritdoc/>
+        public Result Write(ref ByteBlock block)
         {
-            Write(0, ref block);
+            return Write(0, ref block);
         }
 
-        public void Write(long filePosition, ref ByteBlock block)
+        /// <inheritdoc/>
+        public Result Write(long filePosition, ref ByteBlock block)
         {
-            if (block.Length == 0)
-                return;
+            try
+            {
+                if (block.Length == 0)
+                    return Result.Success();
 
-            if (block.IsEmpty)
-                throw new ArgumentNullException(nameof(block));
-            if (!CanWrite)
-                throw new InvalidOperationException("文件不支持写入操作。");
-            ExecuteWrite(filePosition, ref block);
+                if (block.IsEmpty)
+                    throw new ArgumentNullException(nameof(block));
+                if (!CanWrite)
+                    return Result.Failure("文件不支持写入操作。");
+                ExecuteWrite(filePosition, ref block);
+                return Result.Success();
+            }
+            catch (Exception ex)
+            {
+                return Result.FromException(ex);
+            }
         }
 
         #endregion Write
 
         #region WriteAsync
 
-        /// <summary>
-        /// 异步将整个字节数组写入文件起始位置。
-        /// </summary>
-        public ValueTask WriteAsync(byte[] bytes, CancellationToken token = default)
+        /// <inheritdoc/>
+        public ValueTask<Result> WriteAsync(byte[] bytes, CancellationToken token = default)
         {
             return WriteAsync(0, bytes, token);
         }
 
-        /// <summary>
-        /// 异步将字节数组写入到指定文件偏移。
-        /// </summary>
-        public ValueTask WriteAsync(long filePosition, byte[] bytes, CancellationToken token = default)
+        /// <inheritdoc/>
+        public ValueTask<Result> WriteAsync(long filePosition, byte[] bytes, CancellationToken token = default)
         {
             return WriteAsync(filePosition, bytes, 0, bytes.Length, token);
         }
 
-        /// <summary>
-        /// 异步将字节数组的指定区间写入到指定文件偏移。
-        /// </summary>
-        public ValueTask WriteAsync(long filePosition, byte[] bytes, int bytesPosition, int bytesLength, CancellationToken token = default)
+        /// <inheritdoc/>
+        public async ValueTask<Result> WriteAsync(long filePosition, byte[] bytes, int bytesPosition, int bytesLength, CancellationToken token = default)
         {
-            if (bytesLength == 0)
-                return ValueTask.CompletedTask;
+            try
+            {
+                if (bytesLength == 0)
+                    return Result.Success();
 
-            CheckBytes(bytes);
-            if (!CanWrite)
-                throw new InvalidOperationException("文件不支持写入操作。");
+                CheckBytes(bytes);
+                if (!CanWrite)
+                    return Result.Failure("文件不支持写入操作。");
 
-            LastOperateTime = DateTime.Now;
-            EnsureCapacityForWrite(filePosition, bytesLength);
-            return ExecuteWriteAsync(filePosition, bytes, bytesPosition, bytesLength, token);
+                EnsureCapacityForWrite(filePosition, bytesLength);
+                await ExecuteWriteAsync(filePosition, bytes, bytesPosition, bytesLength, token);
+                LastOperateTime = DateTime.Now;
+                return Result.Success();
+            }
+            catch (Exception ex)
+            {
+                return Result.FromException(ex);
+            }
         }
 
-        /// <summary>
-        /// 异步将只读内存写入文件起始位置。
-        /// </summary>
-        public ValueTask WriteAsync(ReadOnlyMemory<byte> memory, CancellationToken token = default)
+        /// <inheritdoc/>
+        public ValueTask<Result> WriteAsync(ReadOnlyMemory<byte> memory, CancellationToken token = default)
         {
             return WriteAsync(0, memory, token);
         }
 
-        /// <summary>
-        /// 异步将只读内存写入到指定文件偏移。
-        /// </summary>
-        public ValueTask WriteAsync(long filePosition, ReadOnlyMemory<byte> memory, CancellationToken token = default)
+        /// <inheritdoc/>
+        public async ValueTask<Result> WriteAsync(long filePosition, ReadOnlyMemory<byte> memory, CancellationToken token = default)
         {
-            if (memory.Length == 0)
-                return ValueTask.CompletedTask;
+            try
+            {
+                if (memory.Length == 0)
+                    return Result.Success();
 
-            CheckMemory(memory);
-            if (!CanWrite)
-                throw new InvalidOperationException("文件不支持写入操作。");
+                CheckMemory(memory);
+                if (!CanWrite)
+                    return Result.Failure("文件不支持写入操作。");
 
-            LastOperateTime = DateTime.Now;
-            EnsureCapacityForWrite(filePosition, memory.Length);
-            return ExecuteWriteAsync(filePosition, memory, token);
+                EnsureCapacityForWrite(filePosition, memory.Length);
+                await ExecuteWriteAsync(filePosition, memory, token);
+                LastOperateTime = DateTime.Now;
+                return Result.Success();
+            }
+            catch (Exception ex)
+            {
+                return Result.FromException(ex);
+            }
         }
 
         #endregion WriteAsync
@@ -719,7 +765,6 @@ namespace ExtenderApp.Common.IO
         [DllImport("kernel32.dll", SetLastError = true)]
         private static extern bool GetFileInformationByHandle(SafeFileHandle hFile, out BY_HANDLE_FILE_INFORMATION lpFileInformation);
 
-
         /// <summary>
         /// 获取文件的唯一标识符 (GUID)。
         /// 在 Windows 上，此 GUID 基于卷序列号和文件索引号，即使文件移动或重命名也能保持不变。
@@ -743,16 +788,10 @@ namespace ExtenderApp.Common.IO
             return Info.FileName.GetGuid();
         }
 
-        #endregion
+        #endregion GetFileGuid
 
-        /// <summary>
-        /// 释放底层文件流等托管资源。
-        /// </summary>
-        protected override void Dispose(bool disposing)
+        protected override void DisposeManagedResources()
         {
-            if (!disposing)
-                return;
-
             Stream.Dispose();
         }
     }

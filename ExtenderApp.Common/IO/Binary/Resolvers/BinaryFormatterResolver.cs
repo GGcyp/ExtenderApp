@@ -1,6 +1,5 @@
 ﻿using ExtenderApp.Abstract;
 using ExtenderApp.Common.IO.Binary.Formatters;
-using ExtenderApp.Data;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace ExtenderApp.Common
@@ -21,9 +20,6 @@ namespace ExtenderApp.Common
         /// </summary>
         private readonly IBinaryFormatterStore _store;
 
-        /// <summary>
-        /// 服务提供者实例
-        /// </summary>
         private readonly IServiceProvider _serviceProvider;
 
         /// <summary>
@@ -67,11 +63,11 @@ namespace ExtenderApp.Common
                         if (formatterType is null)
                             throw new InvalidOperationException($"未找到转换器类型：{type.FullName}.");
 
-                        formatter = _serviceProvider.GetService(formatterType!) as IBinaryFormatter;
+                        formatter = formatter = ActivatorUtilities.CreateInstance(_serviceProvider, formatterType!) as IBinaryFormatter;
                     }
                     else
                     {
-                        if (details.FormatterTypes.Count == 0)
+                        if (details!.FormatterTypes.Count == 0)
                         {
                             throw new ArgumentNullException($"转换器类型为空：{type}");
                         }
@@ -81,13 +77,15 @@ namespace ExtenderApp.Common
                         {
                             var managerType = typeof(VersionDataFormatterManager<>).MakeGenericType(details.BinaryType);
                             var obj = Activator.CreateInstance(managerType, this);
-                            var manager = obj as IVersionDataFormatterManager;
+
+                            if (obj is not IVersionDataFormatterManager manager)
+                                throw new InvalidOperationException($"无法创建版本数据转换器管理器：{managerType.FullName}");
 
                             formatter = manager;
                             var formatterTypes = details.FormatterTypes;
                             for (int i = 0; i < formatterTypes.Count; i++)
                             {
-                                var vdFormatter = _serviceProvider.GetRequiredService(formatterTypes[i]);
+                                var vdFormatter = ActivatorUtilities.CreateInstance(_serviceProvider, formatterTypes[i])!;
                                 manager.AddFormatter(vdFormatter);
                             }
 

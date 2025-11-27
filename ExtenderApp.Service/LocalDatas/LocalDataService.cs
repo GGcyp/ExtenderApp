@@ -27,11 +27,6 @@ namespace ExtenderApp.Services
         private readonly ILogger<ILocalDataService> _logger;
 
         /// <summary>
-        /// 服务提供者实例，用于解析依赖服务。
-        /// </summary>
-        private readonly IServiceProvider _serviceProvider;
-
-        /// <summary>
         /// 默认数据版本号。 用于初始化本地数据的版本信息，未指定时采用此版本。
         /// </summary>
         private readonly Version _version;
@@ -41,7 +36,7 @@ namespace ExtenderApp.Services
         /// </summary>
         private ScheduledTask autosaveTokn;
 
-        public LocalDataService(IBinaryParser parser, IBinaryFormatterStore store, ILogger<ILocalDataService> logger, IServiceProvider serviceProvider)
+        public LocalDataService(IBinaryParser parser, IBinaryFormatterStore store, ILogger<ILocalDataService> logger)
         {
             _parser = parser;
 
@@ -51,11 +46,10 @@ namespace ExtenderApp.Services
 
             autosaveTokn = new ScheduledTask();
             autosaveTokn.StartCycle(o => SaveAllData(), TimeSpan.FromMinutes(5));
-            _serviceProvider = serviceProvider;
         }
 
         public bool LoadData<T>(string? dataName, out LocalData<T>? data)
-            where T : class
+            where T : class, new()
         {
             data = default;
 
@@ -73,7 +67,7 @@ namespace ExtenderApp.Services
                     ExpectLocalFileInfo fileInfo = new(ProgramDirectory.DataPath, dataName);
                     var tempdata = _parser.Read<VersionData<T>>(fileInfo);
 
-                    localData = new LocalData<T>(tempdata.Data ?? _serviceProvider.GetRequiredService<T>(), SaveLocalData, tempdata.DataVersion ?? _version);
+                    localData = new LocalData<T>(tempdata.Data ?? new T(), SaveLocalData, tempdata.DataVersion ?? _version);
 
                     info = new LocalDataInfo(ProgramDirectory.DataPath, dataName, localData);
                     _localDataDict.Add(dataName, info);
@@ -93,7 +87,7 @@ namespace ExtenderApp.Services
                 if (typeof(T).GetConstructor(Type.EmptyTypes) == null)
                     return false;
 
-                data = new LocalData<T>(Activator.CreateInstance(typeof(T)) as T, SaveLocalData, _version);
+                data = new LocalData<T>(new T(), SaveLocalData, _version);
                 var info = new LocalDataInfo(ProgramDirectory.DataPath, dataName, data);
                 _localDataDict.Add(dataName, info);
                 return true;

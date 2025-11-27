@@ -18,23 +18,23 @@ namespace ExtenderApp.Common.Networks.LinkClients
             Linker.Bind(endPoint);
         }
 
-        public SocketOperationResult SendTo(Memory<byte> memory, EndPoint endPoint)
+        public Result<SocketOperationValue> SendTo(Memory<byte> memory, EndPoint endPoint)
         {
             return Linker.SendTo(memory, endPoint);
         }
 
-        public SocketOperationResult SendToAsync<T>(T value, EndPoint endPoint)
+        public Result<SocketOperationValue> SendToAsync<T>(T value, EndPoint endPoint)
         {
             var sendBuffer = ValueToByteBuffer(value);
             return Linker.SendToAsync(sendBuffer, endPoint).GetAwaiter().GetResult();
         }
 
-        public ValueTask<SocketOperationResult> SendToAsync(Memory<byte> memory, EndPoint endPoint, CancellationToken token = default)
+        public ValueTask<Result<SocketOperationValue>> SendToAsync(Memory<byte> memory, EndPoint endPoint, CancellationToken token = default)
         {
             return Linker.SendToAsync(memory, endPoint, token);
         }
 
-        public ValueTask<SocketOperationResult> SendToAsync<T>(T value, EndPoint endPoint, CancellationToken token = default)
+        public ValueTask<Result<SocketOperationValue>> SendToAsync<T>(T value, EndPoint endPoint, CancellationToken token = default)
         {
             var sendBuffer = ValueToByteBuffer(value);
             return Linker.SendToAsync(sendBuffer, endPoint, token);

@@ -11,14 +11,16 @@ namespace ExtenderApp.Common.Scopes
     /// </summary>
     internal class ServiceScopeStore : IServiceScopeStore
     {
+        private readonly IServiceProvider _serviceProvider;
         private readonly ConcurrentDictionary<string, IServiceScope> _scopeServiceDict;
 
         /// <summary>
         /// 创建一个新的 <see cref="ServiceScopeStore"/> 实例。
         /// </summary>
-        public ServiceScopeStore()
+        public ServiceScopeStore(IServiceProvider serviceProvider)
         {
             _scopeServiceDict = new();
+            _serviceProvider = serviceProvider;
         }
 
         /// <summary>
@@ -31,6 +33,18 @@ namespace ExtenderApp.Common.Scopes
         {
             TryGet(scopeName, out var provider);
             return provider;
+        }
+
+        public object? GetService(Type serviceType)
+        {
+            object? service = null;
+            foreach (var scope in _scopeServiceDict.Values)
+            {
+                service = scope.ServiceProvider.GetService(serviceType);
+                if (service is not null)
+                    return service;
+            }
+            return _serviceProvider.GetService(serviceType);
         }
 
         /// <summary>

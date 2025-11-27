@@ -31,6 +31,7 @@ namespace ExtenderApp.Media.Models
         public MediaInfo? SelectedVideoInfo { get; set; }
 
         private double volume;
+
         /// <summary>
         /// 音量
         /// </summary>
@@ -48,6 +49,7 @@ namespace ExtenderApp.Media.Models
         }
 
         private double rate;
+
         public double Rate
         {
             get => rate;
@@ -110,7 +112,6 @@ namespace ExtenderApp.Media.Models
         {
             if (player == null)
                 throw new ArgumentNullException(nameof(player));
-
 
             APlayer = new AudioPlayer(player.Settings, (float)volume);
             MPlayer = player;
@@ -211,7 +212,7 @@ namespace ExtenderApp.Media.Models
             });
         }
 
-        protected override void Dispose(bool disposing)
+        protected override void DisposeManagedResources()
         {
             Stop();
             MPlayer?.Dispose();

@@ -347,7 +347,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
             return encoding.GetString(lineSpan);
         }
 
-        protected override void Dispose(bool disposing)
+        protected override void DisposeManagedResources()
         {
             block.Dispose();
         }

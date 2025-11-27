@@ -3,6 +3,7 @@ using System.Net.Sockets;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks.Sources;
+using ExtenderApp.Common.ObjectPools;
 using ExtenderApp.Data;
 
 namespace ExtenderApp.Common.Networks
@@ -17,8 +18,8 @@ namespace ExtenderApp.Common.Networks
     /// - 单实例不可并发使用：一次仅能有一个未完成的操作；开始下一次操作前会调用 <see cref="ManualResetValueTaskSourceCore{TResult}.Reset"/>。
     /// - 通过 <see cref="ManualResetValueTaskSourceCore{TResult}"/>
     /// 实现零分配等待，并将延续异步投递（ <see cref="ManualResetValueTaskSourceCore{TResult}.RunContinuationsAsynchronously"/>）。
-    /// - 成功完成时返回 <see
-    ///   cref="SocketOperationResult"/>；失败时以 <see
+    /// - 成功完成时，任务结果为包含 <see
+    ///   cref="SocketOperationValue"/> 的 <see cref="Result{T}"/>；失败时以 <see
     ///   cref="SocketException"/> 或 <see cref="OperationCanceledException"/>
     /// 结束任务（await 时抛出）。
     /// - 接收需由调用方提供可写缓冲（ <see
@@ -29,8 +30,17 @@ namespace ExtenderApp.Common.Networks
     ///   SocketFlags, CancellationToken)"/>）。
     /// - 取消策略：取消时默认关闭 Socket 以中断 I/O；SAEA 不支持细粒度取消单个操作。
     /// </remarks>
-    public class AwaitableSocketEventArgs : SocketAsyncEventArgs, IValueTaskSource<SocketOperationResult>, IValueTaskSource<Socket>
+    public class AwaitableSocketEventArgs : SocketAsyncEventArgs, IValueTaskSource<Result<SocketOperationValue>>, IValueTaskSource<Result<Socket>>
     {
+        // 对象池
+        private static readonly ObjectPool<AwaitableSocketEventArgs> _pool
+            = ObjectPool.CreateDefaultPool<AwaitableSocketEventArgs>();
+
+        /// <summary>
+        /// 从对象池获取一个实例。
+        /// </summary>
+        public static AwaitableSocketEventArgs Get() => _pool.Get();
+
         private enum PendingOperation : byte
         {
             None = 0,
@@ -45,12 +55,12 @@ namespace ExtenderApp.Common.Networks
         /// <summary>
         /// 一次基于缓冲的收发操作的 awaitable 核心。
         /// </summary>
-        private ManualResetValueTaskSourceCore<SocketOperationResult> vts;
+        private ManualResetValueTaskSourceCore<Result<SocketOperationValue>> vts;
 
         /// <summary>
         /// 一次 Accept 操作的 awaitable 核心。
         /// </summary>
-        private ManualResetValueTaskSourceCore<Socket> vtsAccept;
+        private ManualResetValueTaskSourceCore<Result<Socket>> vtsAccept;
 
         /// <summary>
         /// 缓存的 <see cref="SocketException"/>，用于异常完成路径减少临时分配。
@@ -93,16 +103,7 @@ namespace ExtenderApp.Common.Networks
         public short AcceptVersion => vtsAccept.Version;
 
         /// <summary>
-        /// 初始化 AwaitableSocketEventArgs 实例，并启用异步延续投递。
-        /// </summary>
-        public AwaitableSocketEventArgs() : base()
-        {
-            vts.RunContinuationsAsynchronously = true;
-        }
-
-        /// <summary>
-        /// Socket 操作完成回调：根据 <see
-        /// cref="SocketAsyncEventArgs.SocketError"/> 触发成功或异常完成，并清理取消注册。
+        /// Socket 操作完成回调：根据操作类型（收发或Accept）和结果（成功或失败）设置相应的 <see cref="ValueTask"/> 状态，并清理取消注册。
         /// </summary>
         /// <param name="e">完成的事件参数（即自身）。</param>
         protected override void OnCompleted(SocketAsyncEventArgs e)
@@ -117,14 +118,12 @@ namespace ExtenderApp.Common.Networks
             }
 
             ctr.Dispose();
-            currentSocket = null;
-            token = default;
 
             if (SocketError == SocketError.Success)
             {
                 if (pendingOperation == PendingOperation.Accept)
                 {
-                    vtsAccept.SetResult(AcceptSocket!);
+                    vtsAccept.SetResult(Result.Success(AcceptSocket!));
                 }
                 else
                 {
@@ -134,11 +133,15 @@ namespace ExtenderApp.Common.Networks
             else
             {
                 socketError ??= CreateSocketException(SocketError);
-                vtsAccept.SetException(socketError);
-                vts.SetException(socketError);
+                if (pendingOperation == PendingOperation.Accept)
+                {
+                    vtsAccept.SetResult(Result.FromException<Socket>(socketError));
+                }
+                else
+                {
+                    vts.SetException(socketError);
+                }
             }
-
-            pendingOperation = PendingOperation.None;
         }
 
         #region Send
@@ -158,11 +161,8 @@ namespace ExtenderApp.Common.Networks
         /// 发送标志，通常为 <see cref="SocketFlags.None"/>。
         /// </param>
         /// <returns>
-        /// 成功时返回 <see
-        /// cref="SocketOperationResult"/>（其中
-        /// BytesTransferred 为本次实际发送的字节数）； 失败时
-        /// await 抛出 <see
-        /// cref="SocketException"/>；取消时抛出 <see cref="OperationCanceledException"/>。
+        /// 一个表示操作结果的 <see cref="ValueTask"/>。成功时，其结果为包含 <see cref="SocketOperationValue"/> 的 <see cref="Result{T}"/>；
+        /// 失败时 await 会抛出 <see cref="SocketException"/>；取消时则抛出 <see cref="OperationCanceledException"/>。
         /// </returns>
         /// <remarks>
         /// - TCP
@@ -170,15 +170,13 @@ namespace ExtenderApp.Common.Networks
         /// - 对于 UDP，若套接字已 Connect 则可使用本方法；未
         ///   Connect 的 UDP 请使用 <see
         ///   cref="SendToAsync(Socket,
-        ///   ReadOnlyMemory{byte}, EndPoint,
-        ///   SocketFlags, CancellationToken)"/>。
+        ///   Memory{byte}, EndPoint,
+        ///   CancellationToken, SocketFlags)"/>。
         /// </remarks>
-        public ValueTask<SocketOperationResult> SendAsync(Socket socket, Memory<byte> memory, CancellationToken token, SocketFlags flags = SocketFlags.None)
+        public ValueTask<Result<SocketOperationValue>> SendAsync(Socket socket, Memory<byte> memory, CancellationToken token, SocketFlags flags = SocketFlags.None)
         {
-            socketError = null;
-            vts.Reset();
+            ResetState();
             SocketFlags = flags;
-            completion = 0;
             this.token = token;
             pendingOperation = PendingOperation.Send;
 
@@ -192,18 +190,11 @@ namespace ExtenderApp.Common.Networks
 
             if (!socket.SendAsync(this))
             {
-                // 同步完成路径：释放注册并返回
-                ctr.Dispose();
-                currentSocket = null;
-                this.token = default;
-
-                if (SocketError == SocketError.Success)
-                    return ValueTask.FromResult(GetSocketOperationResult());
-
-                return ValueTask.FromException<SocketOperationResult>(CreateSocketException(SocketError));
+                // 同步完成
+                OnCompleted(this);
             }
 
-            return new ValueTask<SocketOperationResult>(this, Version);
+            return this;
         }
 
         /// <summary>
@@ -224,10 +215,8 @@ namespace ExtenderApp.Common.Networks
         /// 发送标志，通常为 <see cref="SocketFlags.None"/>。
         /// </param>
         /// <returns>
-        /// 成功返回 <see
-        /// cref="SocketOperationResult"/>；失败抛出
-        /// <see cref="SocketException"/>；取消抛出
-        /// <see cref="OperationCanceledException"/>。
+        /// 一个表示操作结果的 <see cref="ValueTask"/>。成功时，其结果为包含 <see cref="SocketOperationValue"/> 的 <see cref="Result{T}"/>；
+        /// 失败时 await 会抛出 <see cref="SocketException"/>；取消时则抛出 <see cref="OperationCanceledException"/>。
         /// </returns>
         /// <remarks>
         /// - 若要发送广播，请先设置
@@ -238,12 +227,10 @@ namespace ExtenderApp.Common.Networks
         ///   cref="SendAsync(Socket,
         ///   Memory{byte}, CancellationToken, SocketFlags)"/>。
         /// </remarks>
-        public ValueTask<SocketOperationResult> SendToAsync(Socket socket, ReadOnlyMemory<byte> buffer, EndPoint remoteEndPoint, CancellationToken token = default, SocketFlags flags = SocketFlags.None)
+        public ValueTask<Result<SocketOperationValue>> SendToAsync(Socket socket, Memory<byte> buffer, EndPoint remoteEndPoint, CancellationToken token = default, SocketFlags flags = SocketFlags.None)
         {
-            socketError = null;
-            vts.Reset();
+            ResetState();
             SocketFlags = flags;
-            completion = 0;
             this.token = token;
             pendingOperation = PendingOperation.SendTo;
 
@@ -253,22 +240,15 @@ namespace ExtenderApp.Common.Networks
                 ctr = token.UnsafeRegister(static s => ((AwaitableSocketEventArgs)s!).Cancel(), this);
             }
 
-            RemoteEndPoint = remoteEndPoint;                    // 必须指定远端
-            SetBuffer(MemoryMarshal.AsMemory(buffer));          // ReadOnlyMemory -> ResultMessage
+            RemoteEndPoint = remoteEndPoint;
+            SetBuffer(buffer);
 
             if (!socket.SendToAsync(this))
             {
-                ctr.Dispose();
-                currentSocket = null;
-                this.token = default;
-
-                if (SocketError == SocketError.Success)
-                    return ValueTask.FromResult(GetSocketOperationResult());
-
-                return ValueTask.FromException<SocketOperationResult>(CreateSocketException(SocketError));
+                OnCompleted(this);
             }
 
-            return new ValueTask<SocketOperationResult>(this, Version);
+            return this;
         }
 
         #endregion Send
@@ -287,10 +267,8 @@ namespace ExtenderApp.Common.Networks
         /// 以中断 I/O。
         /// </param>
         /// <returns>
-        /// 成功返回 <see
-        /// cref="SocketOperationResult"/>；失败抛出
-        /// <see cref="SocketException"/>；取消抛出
-        /// <see cref="OperationCanceledException"/>。
+        /// 一个表示操作结果的 <see cref="ValueTask"/>。成功时，其结果为包含 <see cref="SocketOperationValue"/> 的 <see cref="Result{T}"/>；
+        /// 失败时 await 会抛出 <see cref="SocketException"/>；取消时则抛出 <see cref="OperationCanceledException"/>。
         /// </returns>
         /// <remarks>
         /// - TCP：返回字节数为 0 通常表示对端优雅关闭。 <br/>
@@ -298,11 +276,9 @@ namespace ExtenderApp.Common.Networks
         ///   cref="SocketAsyncEventArgs.SocketFlags"/>
         ///   检查 <see cref="SocketFlags.Truncated"/>。
         /// </remarks>
-        public ValueTask<SocketOperationResult> ReceiveAsync(Socket socket, Memory<byte> buffer, CancellationToken token)
+        public ValueTask<Result<SocketOperationValue>> ReceiveAsync(Socket socket, Memory<byte> buffer, CancellationToken token)
         {
-            socketError = null;
-            vts.Reset();
-            completion = 0;
+            ResetState();
             this.token = token;
             pendingOperation = PendingOperation.Receive;
 
@@ -316,18 +292,10 @@ namespace ExtenderApp.Common.Networks
 
             if (!socket.ReceiveAsync(this))
             {
-                ctr.Dispose();
-                currentSocket = null;
-                this.token = default;
-
-                if (SocketError == SocketError.Success)
-                    return ValueTask.FromResult(GetSocketOperationResult());
-
-                socketError = CreateSocketException(SocketError);
-                return ValueTask.FromException<SocketOperationResult>(CreateSocketException(SocketError));
+                OnCompleted(this);
             }
 
-            return new ValueTask<SocketOperationResult>(this, Version);
+            return this;
         }
 
         /// <summary>
@@ -347,10 +315,8 @@ namespace ExtenderApp.Common.Networks
         /// 以中断 I/O。
         /// </param>
         /// <returns>
-        /// 成功返回 <see
-        /// cref="SocketOperationResult"/>（包含来源地址）；失败抛出
-        /// <see cref="SocketException"/>；取消抛出
-        /// <see cref="OperationCanceledException"/>。
+        /// 一个表示操作结果的 <see cref="ValueTask"/>。成功时，其结果为包含 <see cref="SocketOperationValue"/> 的 <see cref="Result{T}"/>；
+        /// 失败时 await 会抛出 <see cref="SocketException"/>；取消时则抛出 <see cref="OperationCanceledException"/>。
         /// </returns>
         /// <remarks>
         /// 广播/组播可通过 <see
@@ -358,11 +324,9 @@ namespace ExtenderApp.Common.Networks
         /// 检查 <see cref="SocketFlags.Broadcast"/>
         /// 与 <see cref="SocketFlags.Multicast"/>。
         /// </remarks>
-        public ValueTask<SocketOperationResult> ReceiveFromAsync(Socket socket, Memory<byte> buffer, EndPoint anyEndPoint, CancellationToken token = default)
+        public ValueTask<Result<SocketOperationValue>> ReceiveFromAsync(Socket socket, Memory<byte> buffer, EndPoint anyEndPoint, CancellationToken token = default)
         {
-            socketError = null;
-            vts.Reset();
-            completion = 0;
+            ResetState();
             this.token = token;
             pendingOperation = PendingOperation.ReceiveFrom;
 
@@ -377,18 +341,10 @@ namespace ExtenderApp.Common.Networks
 
             if (!socket.ReceiveFromAsync(this))
             {
-                ctr.Dispose();
-                currentSocket = null;
-                this.token = default;
-
-                if (SocketError == SocketError.Success)
-                    return ValueTask.FromResult(GetSocketOperationResult());
-
-                socketError = CreateSocketException(SocketError);
-                return ValueTask.FromException<SocketOperationResult>(CreateSocketException(SocketError));
+                OnCompleted(this);
             }
 
-            return new ValueTask<SocketOperationResult>(this, Version);
+            return this;
         }
 
         /// <summary>
@@ -409,12 +365,8 @@ namespace ExtenderApp.Common.Networks
         /// 以中断 I/O。
         /// </param>
         /// <returns>
-        /// 成功返回 <see
-        /// cref="SocketOperationResult"/>（包含来源地址与
-        /// <see
-        /// cref="SocketAsyncEventArgs.ReceiveMessageFromPacketInfo"/>
-        /// 信息）； 失败抛出 <see
-        /// cref="SocketException"/>；取消抛出 <see cref="OperationCanceledException"/>。
+        /// 一个表示操作结果的 <see cref="ValueTask"/>。成功时，其结果为包含 <see cref="SocketOperationValue"/> 的 <see cref="Result{T}"/>；
+        /// 失败时 await 会抛出 <see cref="SocketException"/>；取消时则抛出 <see cref="OperationCanceledException"/>。
         /// </returns>
         /// <remarks>
         /// 要获取 <see
@@ -426,11 +378,9 @@ namespace ExtenderApp.Common.Networks
         /// <c>socket.SetSocketOption(SocketOptionLevel.IPv6,
         /// SocketOptionName.PacketInformation, true)</c>。
         /// </remarks>
-        public ValueTask<SocketOperationResult> ReceiveMessageFromAsync(Socket socket, Memory<byte> buffer, EndPoint anyEndPoint, CancellationToken token = default)
+        public ValueTask<Result<SocketOperationValue>> ReceiveMessageFromAsync(Socket socket, Memory<byte> buffer, EndPoint anyEndPoint, CancellationToken token = default)
         {
-            socketError = null;
-            vts.Reset();
-            completion = 0;
+            ResetState();
             this.token = token;
             pendingOperation = PendingOperation.ReceiveMessageFrom;
 
@@ -445,18 +395,10 @@ namespace ExtenderApp.Common.Networks
 
             if (!socket.ReceiveMessageFromAsync(this))
             {
-                ctr.Dispose();
-                currentSocket = null;
-                this.token = default;
-
-                if (SocketError == SocketError.Success)
-                    return ValueTask.FromResult(GetSocketOperationResult());
-
-                socketError = CreateSocketException(SocketError);
-                return ValueTask.FromException<SocketOperationResult>(CreateSocketException(SocketError));
+                OnCompleted(this);
             }
 
-            return new ValueTask<SocketOperationResult>(this, Version);
+            return this;
         }
 
         #endregion Receive
@@ -472,14 +414,11 @@ namespace ExtenderApp.Common.Networks
         /// 以中断 Accept。
         /// </param>
         /// <returns>
-        /// 成功时返回已建立连接的 Socket；失败抛出
-        /// SocketException；取消抛出 OperationCanceledException。
+        /// 一个表示操作结果的 <see cref="Result{Socket}"/>。成功时包含已连接的 Socket，失败时包含异常信息。
         /// </returns>
-        public ValueTask<Socket> AcceptAsync(Socket socket, CancellationToken token = default)
+        public ValueTask<Result<Socket>> AcceptAsync(Socket socket, CancellationToken token = default)
         {
-            socketError = null;
-            vtsAccept.Reset();
-            completion = 0;
+            ResetState();
             this.token = token;
             pendingOperation = PendingOperation.Accept;
 
@@ -493,52 +432,50 @@ namespace ExtenderApp.Common.Networks
 
             if (!socket.AcceptAsync(this))
             {
-                ctr.Dispose();
-                currentSocket = null;
-                this.token = default;
-
-                if (SocketError == SocketError.Success)
-                {
-                    var accepted = AcceptSocket!;
-                    AcceptSocket = null;
-                    return ValueTask.FromResult(accepted);
-                }
-
-                return ValueTask.FromException<Socket>(CreateSocketException(SocketError));
+                OnCompleted(this);
             }
 
-            socketError = CreateSocketException(SocketError);
-            return new ValueTask<Socket>(this, AcceptVersion);
+            return this;
         }
 
         #endregion Accept
 
         /// <summary>
-        /// 构造统一的操作结果对象。仅在 <see
-        /// cref="SocketError.Success"/> 时填充成功结果。
+        /// 根据当前 <see cref="SocketAsyncEventArgs"/> 的状态，构造一个 <see cref="Result{SocketOperationValue}"/>。
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected SocketOperationResult GetSocketOperationResult()
+        protected Result<SocketOperationValue> GetSocketOperationResult()
         {
             if (this.SocketError != SocketError.Success)
             {
-                return new SocketOperationResult(false, default, default, socketError, default);
+                return Result.FromException<SocketOperationValue>(socketError!);
             }
 
-            return new SocketOperationResult(true, BytesTransferred, RemoteEndPoint, null, ReceiveMessageFromPacketInfo);
+            SocketOperationValue value = new SocketOperationValue(BytesTransferred, RemoteEndPoint, ReceiveMessageFromPacketInfo);
+            return Result.Success(value);
         }
 
         #region Awaitable
 
-        #region SocketOperationResult
+        #region SocketOperationValue
 
-        SocketOperationResult IValueTaskSource<SocketOperationResult>.GetResult(short token)
-            => vts.GetResult(token);
+        Result<SocketOperationValue> IValueTaskSource<Result<SocketOperationValue>>.GetResult(short token)
+        {
+            try
+            {
+                return vts.GetResult(token);
+            }
+            finally
+            {
+                ResetState();
+                _pool.Release(this);
+            }
+        }
 
-        ValueTaskSourceStatus IValueTaskSource<SocketOperationResult>.GetStatus(short token)
+        ValueTaskSourceStatus IValueTaskSource<Result<SocketOperationValue>>.GetStatus(short token)
             => vts.GetStatus(token);
 
-        void IValueTaskSource<SocketOperationResult>.OnCompleted(
+        void IValueTaskSource<Result<SocketOperationValue>>.OnCompleted(
             Action<object?> continuation, object? state, short token, ValueTaskSourceOnCompletedFlags flags)
             => vts.OnCompleted(continuation, state, token, flags);
 
@@ -546,17 +483,41 @@ namespace ExtenderApp.Common.Networks
 
         #region SocketAccept
 
-        Socket IValueTaskSource<Socket>.GetResult(short token)
-            => vtsAccept.GetResult(token);
+        Result<Socket> IValueTaskSource<Result<Socket>>.GetResult(short token)
+        {
+            try
+            {
+                return vtsAccept.GetResult(token);
+            }
+            finally
+            {
+                ResetState();
+                _pool.Release(this);
+            }
+        }
 
-        ValueTaskSourceStatus IValueTaskSource<Socket>.GetStatus(short token)
+        ValueTaskSourceStatus IValueTaskSource<Result<Socket>>.GetStatus(short token)
             => vtsAccept.GetStatus(token);
 
-        void IValueTaskSource<Socket>.OnCompleted(
+        void IValueTaskSource<Result<Socket>>.OnCompleted(
             Action<object?> continuation, object? state, short token, ValueTaskSourceOnCompletedFlags flags)
             => vtsAccept.OnCompleted(continuation, state, token, flags);
 
         #endregion SocketAccept
+
+        private void ResetState()
+        {
+            socketError = null;
+            vts.Reset();
+            vtsAccept.Reset();
+            completion = 0;
+            pendingOperation = PendingOperation.None;
+            currentSocket = null;
+            token = default;
+            AcceptSocket = null;
+            RemoteEndPoint = null;
+            // SetBuffer(null, 0, 0) is implicitly handled by new SetBuffer calls
+        }
 
         #endregion Awaitable
 
@@ -572,17 +533,14 @@ namespace ExtenderApp.Common.Networks
                 return;
 
             try { currentSocket?.Dispose(); } catch { /* 忽略 */ }
-            currentSocket = null;
 
             ctr.Dispose();
 
             var oce = new OperationCanceledException(token);
             if (pendingOperation == PendingOperation.Accept)
-                vtsAccept.SetException(oce);
+                vtsAccept.SetResult(Result.FromException<Socket>(oce));
             else
                 vts.SetException(oce);
-
-            pendingOperation = PendingOperation.None;
         }
 
         /// <summary>
@@ -593,5 +551,11 @@ namespace ExtenderApp.Common.Networks
         {
             return new SocketException((int)e);
         }
+
+        public static implicit operator ValueTask<Result<SocketOperationValue>>(AwaitableSocketEventArgs args)
+            => new ValueTask<Result<SocketOperationValue>>(args, args.Version);
+
+        public static implicit operator ValueTask<Result<Socket>>(AwaitableSocketEventArgs args)
+            => new ValueTask<Result<Socket>>(args, args.AcceptVersion);
     }
 }

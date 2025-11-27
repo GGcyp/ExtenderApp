@@ -31,7 +31,6 @@ namespace ExtenderApp.Common.Caches
         /// </summary>
         public EvictionCache() : this(TimeSpan.FromMinutes(5))
         {
-
         }
 
         /// <summary>
@@ -170,7 +169,6 @@ namespace ExtenderApp.Common.Caches
         /// <param name="value">与键对应的值。</param>
         protected virtual void Evict(Tkey key, TValue value)
         {
-
         }
 
         /// <summary>
@@ -202,11 +200,8 @@ namespace ExtenderApp.Common.Caches
             }
         }
 
-        protected override void Dispose(bool disposing)
+        protected override void DisposeManagedResources()
         {
-            if (!disposing)
-                return;
-
             foreach (var value in Values)
             {
                 if (value is IDisposable disposable)

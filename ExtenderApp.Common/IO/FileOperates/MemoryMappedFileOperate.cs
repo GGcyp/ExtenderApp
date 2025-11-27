@@ -87,7 +87,7 @@ namespace ExtenderApp.Common.IO
 
         #endregion MemoryMappedOperate
 
-        private void DisposeMapping()
+        protected override void DisposeManagedResources()
         {
             if (mmViewAccessor != null)
             {
@@ -99,12 +99,6 @@ namespace ExtenderApp.Common.IO
                 mmFile.Dispose();
                 mmFile = null!;
             }
-        }
-
-        protected override void Dispose(bool disposing)
-        {
-            base.Dispose(disposing);
-            DisposeMapping();
         }
 
         protected override void ExecuteWrite(long filePosition, byte[] bytes, int bytesPosition, int bytesLength)

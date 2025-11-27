@@ -38,7 +38,7 @@
         ReadOnly = 4,
 
         /// <summary>
-        /// GenErr（Generic Error，值 = 5）。
+        /// GenErr（Generic FromException，值 = 5）。
         /// 通用错误：用于无法用更精确错误码表示的内部错误或未指定错误。
         /// </summary>
         GenErr = 5,

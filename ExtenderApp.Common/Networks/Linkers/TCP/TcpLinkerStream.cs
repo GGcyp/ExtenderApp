@@ -68,7 +68,7 @@ namespace ExtenderApp.Common.Networks
             if (offset < 0 || count < 0 || offset + count > buffer.Length) throw new ArgumentOutOfRangeException();
 
             var result = await _linker.ReceiveAsync(buffer.AsMemory(offset, count), cancellationToken).ConfigureAwait(false);
-            int read = result.BytesTransferred;
+            int read = result.Value.BytesTransferred;
             if (read <= 0) return 0; // EOF 或已断开
             return System.Math.Min(read, count);
         }
@@ -78,7 +78,7 @@ namespace ExtenderApp.Common.Networks
             if (buffer.IsEmpty || buffer.Length == 0) return 0;
 
             var result = await _linker.ReceiveAsync(buffer, cancellationToken).ConfigureAwait(false);
-            int read = result.BytesTransferred;
+            int read = result.Value.BytesTransferred;
             if (read <= 0) return 0; // EOF 或已断开
             return System.Math.Min(read, buffer.Length);
         }

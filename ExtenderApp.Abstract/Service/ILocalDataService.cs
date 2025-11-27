@@ -14,7 +14,7 @@ namespace ExtenderApp.Abstract
         /// <param name="dataName">插件名称。</param>
         /// <param name="data">加载的数据，如果数据不存在则为null。</param>
         /// <returns>如果加载成功返回true，否则返回false。</returns>
-        bool LoadData<T>(string? dataName, out LocalData<T>? data) where T : class;
+        bool LoadData<T>(string? dataName, out LocalData<T>? data) where T : class, new();
 
         /// <summary>
         /// 保存指定插件的数据。

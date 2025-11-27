@@ -25,6 +25,7 @@ namespace ExtenderApp.ViewModels
         /// 当前日志记录器实例
         /// </summary>
         private ILogger? logger;
+
         /// <summary>
         /// 当前视图模型的日志记录器
         /// </summary>
@@ -307,7 +308,7 @@ namespace ExtenderApp.ViewModels
         /// <param name="data">输出参数，用于存储获取的数据</param>
         /// <returns>如果成功获取到数据则返回true，否则返回false</returns>
         protected bool LoadLocalData<T>(out T? data, Action<LocalData<T>> checkAction = null)
-            where T : class
+            where T : class, new()
         {
             data = default;
             if (!ServiceStore.LocalDataService.LoadData(Details, out LocalData<T> localData))
@@ -818,7 +819,7 @@ namespace ExtenderApp.ViewModels
     /// <typeparam name="TModle">模型类型</typeparam>
     public abstract class ExtenderAppViewModel<TView, TModle> : ExtenderAppViewModel<TView>
         where TView : class, IView
-        where TModle : ExtenderAppModel
+        where TModle : ExtenderAppModel, new()
     {
         /// <summary>
         /// 模型实例
@@ -840,7 +841,6 @@ namespace ExtenderApp.ViewModels
                 return model;
             }
         }
-
 
         protected ExtenderAppViewModel(IServiceStore serviceStore) : base(serviceStore)
         {

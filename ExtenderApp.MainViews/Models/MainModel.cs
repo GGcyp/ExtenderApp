@@ -76,6 +76,10 @@ namespace ExtenderApp.MainViews.Models
             MessageVerticalAlignment = VerticalAlignment.Center;
         }
 
+        public MainModel()
+        {
+        }
+
         public void ShowMessage(string message,
             ExHorizontalAlignment horizontalAlignment,
             ExVerticalAlignment verticalAlignment,

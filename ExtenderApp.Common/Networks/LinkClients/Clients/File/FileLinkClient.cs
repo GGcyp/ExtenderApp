@@ -66,7 +66,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
                 return;
             }
 
-            var bitField = result.Data;
+            var bitField = result.Value;
             var requestList = request.FileDtos;
             ValueOrList<FileDto> dtos = new(bitField.TrueCount);
             for (int i = 0; i < bitField.Length; i++)
@@ -130,7 +130,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
                 var result = sendValueTask.GetAwaiter().GetResult();
                 if (!result)
                 {
-                    return ValueTask.FromException<Result>(result.SocketError ?? new Exception("发送文件推送请求失败。"));
+                    return ValueTask.FromException<Result>(result.Exception ?? new Exception("发送文件推送请求失败。"));
                 }
             }
 

@@ -1,8 +1,8 @@
 ﻿using System.Buffers;
 using System.Collections.Concurrent;
 using System.Runtime.InteropServices;
-using System.Windows;
 using ExtenderApp.Data;
+using ExtenderApp.FFmpegEngines.Decoders;
 using FFmpeg.AutoGen;
 
 namespace ExtenderApp.FFmpegEngines
@@ -272,7 +272,7 @@ namespace ExtenderApp.FFmpegEngines
 
             if (result < 0)
             {
-                ShowError($"未找到指定uri：{uri}", result);
+                ShowException($"未找到指定uri：{uri}", result);
             }
 
             result = ffmpeg.avformat_find_stream_info(formatContext, inputOptionsIntPtr);
@@ -654,7 +654,7 @@ namespace ExtenderApp.FFmpegEngines
             int ret = ffmpeg.av_seek_frame(context, streamIndex, timestamp, ffmpeg.AVSEEK_FLAG_BACKWARD);
             if (ret < 0)
             {
-                ShowError($"跳转到指定时间失败{targetTime}", ret);
+                ShowException($"跳转到指定时间失败{targetTime}", ret);
             }
         }
 
@@ -883,7 +883,7 @@ namespace ExtenderApp.FFmpegEngines
             int result = ffmpeg.av_read_frame(context, packet);
             if (result < 0)
             {
-                ShowError("从解码器接收数据包失败", result);
+                ShowException("从解码器接收数据包失败", result);
             }
             return result;
         }
@@ -907,7 +907,7 @@ namespace ExtenderApp.FFmpegEngines
             int result = ffmpeg.avcodec_send_packet(codecContext, packet);
             if (result < 0)
             {
-                ShowError("向解码器发送数据包失败", result);
+                ShowException("向解码器发送数据包失败", result);
             }
             return result;
         }
@@ -931,7 +931,7 @@ namespace ExtenderApp.FFmpegEngines
             int result = ffmpeg.avcodec_receive_packet(codecContext, packet);
             if (result < 0)
             {
-                ShowError("从解码器接收数据包失败", result);
+                ShowException("从解码器接收数据包失败", result);
             }
             return result;
         }
@@ -1009,7 +1009,7 @@ namespace ExtenderApp.FFmpegEngines
             int result = ffmpeg.avcodec_send_frame(codecContext, frame);
             if (result < 0)
             {
-                ShowError("从解码器发送数据包失败", result);
+                ShowException("从解码器发送数据包失败", result);
             }
             return result;
         }
@@ -1033,7 +1033,7 @@ namespace ExtenderApp.FFmpegEngines
             int result = ffmpeg.avcodec_receive_frame(codecContext, frame);
             if (result < 0 && !IsTryAgain(result))
             {
-                ShowError("从解码器接收数据包失败", result);
+                ShowException("从解码器接收数据包失败", result);
             }
             return result;
         }
@@ -1059,7 +1059,7 @@ namespace ExtenderApp.FFmpegEngines
             int result = ffmpeg.av_frame_get_buffer(frame, align);
             if (result < 0)
             {
-                ShowError("为 AVFrame 分配缓冲区失败", result);
+                ShowException("为 AVFrame 分配缓冲区失败", result);
             }
             return result;
         }
@@ -1323,7 +1323,7 @@ namespace ExtenderApp.FFmpegEngines
             int result = ffmpeg.swr_init(swrContext);
             if (result < 0)
             {
-                ShowError("无法初始化 SwrContext", result);
+                ShowException("无法初始化 SwrContext", result);
             }
         }
 
@@ -1466,7 +1466,7 @@ namespace ExtenderApp.FFmpegEngines
             result = ffmpeg.swr_convert_frame(swrContext, outFrame, inFrame);
             if (result < 0)
             {
-                ShowError("SwrContext 转换失败", result);
+                ShowException("SwrContext 转换失败", result);
             }
             return result;
         }
@@ -1880,7 +1880,7 @@ namespace ExtenderApp.FFmpegEngines
             if (IsSuccess(result))
                 return true;
 
-            ShowError("FFmpeg操作失败", result);
+            ShowException("FFmpeg操作失败", result);
             return false;
         }
 
@@ -2097,30 +2097,39 @@ namespace ExtenderApp.FFmpegEngines
 
         #endregion Common
 
-        #region Error
-
-        /// <summary>
-        /// 显示并抛出 FFmpeg 错误信息（支持延迟格式化）。
-        /// 接收一个可延迟格式化的字符串（FormattableString），在需要时转换为普通字符串并调用重载方法。 常用于日志、异常处理等场景，便于国际化和性能优化。
-        /// </summary>
-        /// <param name="message">
-        /// 可延迟格式化的错误信息（FormattableString），如 $"跳转到指定时间失败{targetTime}"。
-        /// </param>
-        /// <param name="errorCode">FFmpeg 返回的错误码。</param>
-        public void ShowError(FormattableString message, int errorCode)
-        {
-            ShowError(message.ToString(), errorCode);
-        }
+        #region Exception
 
         /// <summary>
         /// 显示并抛出 FFmpeg 错误信息。 根据 FFmpeg 错误码获取详细错误描述，并抛出自定义异常（FFmpegException）。
         /// </summary>
-        /// <param name="message">错误信息字符串。</param>
         /// <param name="errorCode">FFmpeg 返回的错误码。</param>
         /// <exception cref="FFmpegException">
         /// 始终抛出，包含详细错误描述和错误码。
         /// </exception>
-        public void ShowError(string message, int errorCode)
+        public void ShowException(int errorCode)
+        {
+            throw GetException(errorCode);
+        }
+
+        /// <summary>
+        /// 显示并抛出带有自定义消息的 FFmpeg 错误信息。
+        /// 此方法会根据 FFmpeg 错误码获取标准错误描述，并将其与提供的自定义消息结合，最终抛出一个包含详细信息的 FFmpegException。
+        /// </summary>
+        /// <param name="message">自定义错误消息，将附加在 FFmpeg 标准错误描述之前。</param>
+        /// <param name="errorCode">FFmpeg 返回的错误码。</param>
+        /// <exception cref="FFmpegException">始终抛出，包含自定义消息和详细的 FFmpeg 错误描述。</exception>
+        public void ShowException(string message, int errorCode)
+        {
+            FFmpegException ex = GetException(errorCode);
+            throw new FFmpegException(message + "，" + ex.Message, ex);
+        }
+
+        /// <summary>
+        /// 获取 FFmpeg 错误信息异常。 根据 FFmpeg 错误码获取详细错误描述，并封装为自定义异常（FFmpegException）。
+        /// </summary>
+        /// <param name="errorCode"></param>
+        /// <returns></returns>
+        public FFmpegException GetException(int errorCode)
         {
             ulong errorBufferLength = 1024;
             byte[] errorBuffer = new byte[errorBufferLength];
@@ -2130,12 +2139,12 @@ namespace ExtenderApp.FFmpegEngines
                 ffmpeg.av_strerror(errorCode, errorBufferPtr, errorBufferLength);
 
                 IntPtr ptr = (IntPtr)errorBufferPtr;
-                errorMessage = Marshal.PtrToStringAnsi(ptr);
+                errorMessage = Marshal.PtrToStringAnsi(ptr)!;
                 Marshal.FreeHGlobal(ptr);
             }
-            throw new FFmpegException($"{message}: {errorMessage} (错误代码: {errorCode})");
+            return new FFmpegException($"错误消息: {errorMessage} (错误代码: {errorCode})");
         }
 
-        #endregion Error
+        #endregion Exception
     }
 }

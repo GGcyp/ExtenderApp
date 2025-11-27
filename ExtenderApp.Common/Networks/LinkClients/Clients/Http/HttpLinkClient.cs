@@ -289,7 +289,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
             }
         }
 
-        protected override void Dispose(bool disposing)
+        protected override void DisposeManagedResources()
         {
             receiveCts?.Cancel();
             receiveTask?.Wait();
@@ -297,7 +297,6 @@ namespace ExtenderApp.Common.Networks.LinkClients
             receiveTask?.Dispose();
             _sslStream.Dispose();
             _tcpLinkerStream.Dispose();
-            base.Dispose(disposing);
         }
 
         #region IValueTaskSource<HttpResponseMessage>（委托 vts）

@@ -277,7 +277,6 @@ namespace ExtenderApp.FFmpegEngines
                     }
                     catch (TaskCanceledException ex)
                     {
-
                     }
                     continue;
                 }
@@ -341,7 +340,6 @@ namespace ExtenderApp.FFmpegEngines
                     }
                     catch (TaskCanceledException ex)
                     {
-
                     }
                 }
             }
@@ -388,20 +386,9 @@ namespace ExtenderApp.FFmpegEngines
             }
         }
 
-        /// <summary>
-        /// 释放播放器相关资源，包括解码器和帧队列。
-        /// </summary>
-        /// <param name="disposing">指示是否由 Dispose 方法调用。</param>
-        protected override void Dispose(bool disposing)
+        protected override void DisposeManagedResources()
         {
-            try
-            {
-                _controller.Dispose();
-            }
-            catch (Exception ex)
-            {
-                throw;
-            }
+            _controller.Dispose();
             Clear();
         }
     }

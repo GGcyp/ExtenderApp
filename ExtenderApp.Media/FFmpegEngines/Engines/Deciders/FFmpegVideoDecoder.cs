@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 using ExtenderApp.Data;
 using FFmpeg.AutoGen;
 
-namespace ExtenderApp.FFmpegEngines
+namespace ExtenderApp.FFmpegEngines.Decoders
 {
     /// <summary>
     /// FFmpeg 视频解码器。
@@ -51,12 +51,7 @@ namespace ExtenderApp.FFmpegEngines
             swsContext = engine.CreateSwsContext(info.Width, info.Height, info.PixelFormat.Convert(), info.Width, info.Height, settings.PixelFormat.Convert());
         }
 
-        /// <summary>
-        /// 解码并转换视频帧，将其转换为目标像素格式并调度到上层。
-        /// </summary>
-        /// <param name="frame">输入的原始视频帧。</param>
-        /// <param name="framePts">帧的时间戳。</param>
-        protected override void ProtectedDecoding(NativeIntPtr<AVFrame> frame, long framePts)
+        protected override void ProcessFrame(NativeIntPtr<AVFrame> frame, long framePts)
         {
             // 使用 SwsContext 进行像素格式转换，输出到 rgbFrame
             Engine.Scale(swsContext, frame, rgbFrame, Info);
@@ -69,12 +64,18 @@ namespace ExtenderApp.FFmpegEngines
         }
 
         /// <summary>
-        /// 释放视频解码器相关资源，包括像素格式转换上下文、帧和缓冲区。
+        /// 根据解码器设置和媒体信息，计算视频帧的行跨度（Stride，单位：字节）。
+        /// 行跨度用于表示一行像素在内存中的实际字节数，常用于图像处理和视频帧数据读取。
         /// </summary>
-        /// <param name="disposing">指示是否由 Dispose 方法调用。</param>
-        protected override void Dispose(bool disposing)
+        /// <returns>视频帧的行跨度（字节数）。</returns>
+        private int GetStride()
         {
-            base.Dispose(disposing);
+            return FFmpegEngine.GetStride(Settings, Info);
+        }
+
+        protected override void DisposeUnmanagedResources()
+        {
+            base.DisposeUnmanagedResources();
             Engine.Free(ref swsContext);
             Engine.ReturnFrame(ref rgbFrame);
             Marshal.FreeHGlobal(rgbBuffer);

@@ -1,7 +1,7 @@
 ﻿using FFmpeg.AutoGen;
 using ExtenderApp.Data;
 
-namespace ExtenderApp.FFmpegEngines
+namespace ExtenderApp.FFmpegEngines.Decoders
 {
     /// <summary>
     /// FFmpeg 音频解码器。
@@ -40,12 +40,7 @@ namespace ExtenderApp.FFmpegEngines
             engine.SetSwrContextOptionsAndInit(swrContext, context, settings);
         }
 
-        /// <summary>
-        /// 解码并重采样音频帧，将其转换为标准 PCM 数据并调度到上层。
-        /// </summary>
-        /// <param name="frame">输入的原始音频帧。</param>
-        /// <param name="framePts">帧的时间戳。</param>
-        protected override void ProtectedDecoding(NativeIntPtr<AVFrame> frame, long framePts)
+        protected override void ProcessFrame(NativeIntPtr<AVFrame> frame, long framePts)
         {
             // 使用 SwrContext 进行音频重采样，输出到 pcmFrame
             Engine.SwrConvert(swrContext, pcmFrame, frame);
@@ -61,18 +56,11 @@ namespace ExtenderApp.FFmpegEngines
             Settings.OnAudioScheduling(audioFrame);
         }
 
-        /// <summary>
-        /// 释放音频解码器相关资源，包括重采样上下文和 PCM 帧。
-        /// </summary>
-        /// <param name="disposing">指示是否由 Dispose 方法调用。</param>
-        protected override void Dispose(bool disposing)
+        protected override void DisposeUnmanagedResources()
         {
-            base.Dispose(disposing);
+            base.DisposeUnmanagedResources();
             Engine.Free(ref swrContext);
             Engine.Free(ref pcmFrame);
         }
     }
 }
-
-
-

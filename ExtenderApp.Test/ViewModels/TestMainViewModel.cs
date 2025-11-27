@@ -10,11 +10,15 @@ namespace ExtenderApp.Test
     {
         private UdpClient _udpClient;
 
-        public TestMainViewModel(IServiceStore serviceStore) : base(serviceStore)
+        public TestMainViewModel(IServiceStore serviceStore, IHttpLinkClient http) : base(serviceStore)
         {
             var info = CreatTestExpectLocalFileInfo("text");
             LogInformation("开始测试");
-
+            Task.Run(async () =>
+            {
+                var result = await http.SendAsync(new HttpRequestMessage(HttpMethod.Get, "http://www.baidu.com/"));
+                LogDebug("测试结果：" + result.StatusCode);
+            });
         }
 
 
