@@ -15,7 +15,7 @@ namespace ExtenderApp.Media.Models
     {
         private readonly Action<VideoFrame> _videoFrameAction;
         private readonly Action<long> _playbackAction;
-        private IDispatcherService? dispatcherService;
+        private IDispatcherService dispatcherService;
 
         /// <summary>
         /// 视频信息集合

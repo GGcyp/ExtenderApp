@@ -1,5 +1,4 @@
 ﻿using System.Runtime.CompilerServices;
-using System.Threading;
 
 namespace ExtenderApp.Data
 {
@@ -11,7 +10,8 @@ namespace ExtenderApp.Data
         /// <summary>
         /// 用于标记对象是否已被释放。
         /// </summary>
-        private int _disposed;
+        [NonSerialized]
+        private volatile int _disposed;
 
         /// <summary>
         /// 获取一个值，指示对象是否已被释放。
@@ -45,8 +45,14 @@ namespace ExtenderApp.Data
             if (Interlocked.Exchange(ref _disposed, 1) != 0)
                 return;
 
-            Dispose(true);
-            GC.SuppressFinalize(this);
+            try
+            {
+                Dispose(true); // 主动释放：托管+非托管资源
+            }
+            finally
+            {
+                GC.SuppressFinalize(this); // 抑制析构函数，避免重复释放
+            }
         }
 
         /// <summary>
@@ -55,14 +61,19 @@ namespace ExtenderApp.Data
         /// <param name="disposing">指示是否应释放托管资源。</param>
         protected virtual void Dispose(bool disposing)
         {
-            if (disposing)
+            try
             {
-                // 释放托管资源
-                DisposeManagedResources();
+                if (disposing)
+                {
+                    // 主动释放：释放托管资源
+                    DisposeManagedResources();
+                }
             }
-
-            // 释放非托管资源
-            DisposeUnmanagedResources();
+            finally
+            {
+                // 无论托管资源是否释放成功，都必须释放非托管资源
+                DisposeUnmanagedResources();
+            }
         }
 
         /// <summary>
@@ -73,7 +84,7 @@ namespace ExtenderApp.Data
             if (Interlocked.Exchange(ref _disposed, 1) != 0)
                 return;
 
-            await DisposeAsyncCore();
+            await DisposeAsyncCore().ConfigureAwait(false);
             Dispose(false); // 同步释放非托管资源
             GC.SuppressFinalize(this);
         }
