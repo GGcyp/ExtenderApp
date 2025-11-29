@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFramework>net8.0-windows</TargetFramework>
+		<TargetFramework>net8.0-windows8.0</TargetFramework>
 		<Nullable>enable</Nullable>
 		<UseWPF>true</UseWPF>
 		<ImplicitUsings>enable</ImplicitUsings>
@@ -31,22 +31,9 @@
 		<ProjectReference Include="..\ExtenderApp.Views\ExtenderApp.Views.csproj" />
 	</ItemGroup>
 
-	<!--<Target Name="PostBuild" AfterTargets="PostBuildEvent">
-		<ItemGroup>
-			<TargetFolder Include="E:\WPF_Project\ExtenderApp\ExtenderApp\bin\Debug\net8.0-windows" />
-		</ItemGroup>
-		<MakeDir Directories="%(TargetFolder.Identity)\lib" Condition="!Exists('%(TargetFolder.Identity)\lib')" />
-
-		--><!-- 收集要复制的动态库文件（.dll） --><!--
-		<ItemGroup>
-			<DllFiles Include="$(TargetDir)\$(ProjectName).dll" />
-		</ItemGroup>
-		<Copy SourceFiles="@(DllFiles)" DestinationFolder="%(TargetFolder.Identity)\lib" />
-	</Target>-->
-
 	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
 		<ItemGroup>
-			<TargetFolder Include="E:\WPF_Project\ExtenderApp\ExtenderApp\bin\Debug\net8.0-windows7.0" />
+			<TargetFolder Include="E:\WPF_Project\ExtenderApp\ExtenderApp\bin\Debug\net8.0-windows8.0" />
 		</ItemGroup>
 		<MakeDir Directories="%(TargetFolder.Identity)\lib" Condition="!Exists('%(TargetFolder.Identity)\lib')" />
 		<Exec Command="copy &quot;$(TargetDir)\$(ProjectName).dll&quot; &quot;%(TargetFolder.Identity)\lib\$(ProjectName).dll&quot;" />

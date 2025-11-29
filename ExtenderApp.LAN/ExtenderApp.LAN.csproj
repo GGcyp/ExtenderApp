@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFramework>net8.0-windows</TargetFramework>
+		<TargetFramework>net8.0-windows8.0</TargetFramework>
 		<Nullable>enable</Nullable>
 		<UseWPF>true</UseWPF>
 		<ImplicitUsings>enable</ImplicitUsings>
@@ -40,7 +40,7 @@
 			<JsonFiles Include="$(TargetDir)\init.json" />
 		</ItemGroup>
 		<ItemGroup>
-			<TargetFolder Include="$(SolutionDir)ExtenderApp\bin\$(Configuration)\net8.0-windows7.0\plugins" />
+			<TargetFolder Include="$(SolutionDir)ExtenderApp\bin\$(Configuration)\net8.0-windows8.0\plugins" />
 		</ItemGroup>
 		<!-- 创建目标文件夹（如果不存在）并复制动态库文件和init.json -->
 		<MakeDir Directories="%(TargetFolder.Identity)\$(ProjectName)" Condition="!Exists('%(TargetFolder.Identity)\$(ProjectName)')" />

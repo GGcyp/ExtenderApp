@@ -26,11 +26,6 @@ namespace ExtenderApp.FFmpegEngines
         private readonly FFmpegDecoderCollection _decoderCollection;
 
         /// <summary>
-        /// 全局取消令牌源，用于控制解码流程的终止。
-        /// </summary>
-        private readonly CancellationTokenSource _allSource;
-
-        /// <summary>
         /// 解码状态控制器，用于同步解码状态和缓存空间。
         /// </summary>
         private readonly StateController<bool> _decodingController;
@@ -46,6 +41,11 @@ namespace ExtenderApp.FFmpegEngines
         /// 当前解码流程的取消令牌源。
         /// </summary>
         private CancellationTokenSource? source;
+
+        /// <summary>
+        /// 全局取消令牌源，用于控制解码流程的终止。
+        /// </summary>
+        public CancellationTokenSource AllSource { get; }
 
         #region Events
 
@@ -67,14 +67,14 @@ namespace ExtenderApp.FFmpegEngines
         /// <param name="engine">FFmpeg 引擎实例。</param>
         /// <param name="context">解码上下文。</param>
         /// <param name="collection">解码器集合。</param>
-        /// <param name="source">全局取消令牌源。</param>
-        public FFmpegDecoderController(FFmpegEngine engine, FFmpegContext context, FFmpegDecoderCollection collection, CancellationTokenSource source)
+        /// <param name="allSource">全局取消令牌源。</param>
+        public FFmpegDecoderController(FFmpegEngine engine, FFmpegContext context, FFmpegDecoderCollection collection, CancellationTokenSource allSource)
         {
             _engine = engine;
-            _allSource = source;
             _decoderCollection = collection;
             _context = context;
-            _decodingController = new(false, () => _decoderCollection.All(d => d.CacheStateController.HasCacheSpace));
+            _decodingController = new(true, () => _decoderCollection.All(d => d.CacheStateController.HasCacheSpace));
+            AllSource = allSource;
         }
 
         /// <summary>
@@ -87,23 +87,23 @@ namespace ExtenderApp.FFmpegEngines
             {
                 throw new InvalidOperationException($"不能重复解析:{_context.Info.MediaUri}");
             }
-            source = source ?? CancellationTokenSource.CreateLinkedTokenSource(_allSource.Token);
+            source = CancellationTokenSource.CreateLinkedTokenSource(AllSource.Token);
 
-            processTasks = new Task[_decoderCollection.Length + 1];
-            processTasks[0] = Task.Run(() => Decoding(source.Token), _allSource.Token);
+            int length = _decoderCollection.Length + 1;
+            processTasks = new Task[length];
+            processTasks[0] = Task.Run(() => Decoding(source.Token), AllSource.Token);
 
-            for (int i = 1; i < _decoderCollection.Length; i++)
+            for (int i = 1; i < length; i++)
             {
-                var decoder = _decoderCollection[i];
-                processTasks[i] = Task.Run(() => ProcessPacket(decoder, source.Token), _allSource.Token);
+                var decoder = _decoderCollection[i - 1];
+                processTasks[i] = Task.Run(() => ProcessPacket(decoder, source.Token), AllSource.Token);
             }
         }
 
         /// <summary>
         /// 停止解码流程，取消所有解码相关任务并释放资源。
         /// 包括主解码任务、音频解码任务、视频解码任务的取消和等待，
-        /// 以及相关取消令牌的释放。若所有任务均为空则直接返回。
-        /// 任务取消异常会被忽略，确保资源安全释放。
+        /// 以及相关取消令牌的释放。若所有任务均为空则直接返回。 任务取消异常会被忽略，确保资源安全释放。
         /// </summary>
         public Task StopDecodeAsync()
         {
@@ -111,30 +111,26 @@ namespace ExtenderApp.FFmpegEngines
             source?.Cancel();
             source?.Dispose();
 
+            source = null;
             return WaitForAllTasksComplete();
         }
 
         /// <summary>
-        /// 跳转解码器到指定时间戳（毫秒）。
-        /// 先停止当前解码流程，刷新解码器集合缓存，
+        /// 跳转解码器到指定时间戳（毫秒）。 先停止当前解码流程，刷新解码器集合缓存，
         /// 调用 FFmpegEngine 的 Seek 方法将媒体流定位到目标时间点，
-        /// 然后清空音视频数据包队列，实现解码器的时间跳转和状态重置。
-        /// 适用于音视频播放进度跳转、快进/快退等场景。
+        /// 然后清空音视频数据包队列，实现解码器的时间跳转和状态重置。 适用于音视频播放进度跳转、快进/快退等场景。
         /// </summary>
         /// <param name="position">目标跳转时间（毫秒）。</param>
         public async Task SeekDecoderAsync(long position)
         {
             ThrowIfDisposed();
-            await Task.Run(async () =>
-            {
-                await StopDecodeAsync();
 
-                var collection = _context.ContextCollection;
-                _decoderCollection.Flush();
+            await StopDecodeAsync();
 
-                _engine.Seek(_context.FormatContext, position, _context);
-                Flush();
-            });
+            var collection = _context.ContextCollection;
+            _decoderCollection.Flush();
+
+            _engine.Seek(_context.FormatContext, position, _context);
         }
 
         /// <summary>
@@ -145,10 +141,10 @@ namespace ExtenderApp.FFmpegEngines
         /// <returns>已完成的任务。</returns>
         private Task Decoding(CancellationToken token)
         {
-            while (!token.IsCancellationRequested && !_allSource.IsCancellationRequested)
+            while (!token.IsCancellationRequested && !AllSource.IsCancellationRequested)
             {
                 _decodingController.WaitForTargetState(MaxTimeout, token);
-                if (token.IsCancellationRequested || _allSource.IsCancellationRequested)
+                if (token.IsCancellationRequested || AllSource.IsCancellationRequested)
                     return Task.CompletedTask;
 
                 NativeIntPtr<AVPacket> packet = _engine.GetPacket();
@@ -218,19 +214,14 @@ namespace ExtenderApp.FFmpegEngines
         {
             while (!token.IsCancellationRequested)
             {
-                await decoder.ProcessPacket(token);
-            }
-        }
-
-        /// <summary>
-        /// 清除音视频数据包队列，释放所有未处理的 AVPacket 资源。
-        /// </summary>
-        private void Flush()
-        {
-            for (int i = 0; i < _decoderCollection.Length; i++)
-            {
-                var decoder = _decoderCollection[i];
-                decoder.Flush();
+                try
+                {
+                    await decoder.ProcessPacket(token);
+                }
+                catch (TaskCanceledException)
+                {
+                    // 忽略任务取消异常
+                }
             }
         }
 
@@ -238,22 +229,29 @@ namespace ExtenderApp.FFmpegEngines
         /// 可等待所有解码相关任务完成。
         /// </summary>
         /// <returns></returns>
-        private Task WaitForAllTasksComplete()
+        private async Task WaitForAllTasksComplete()
         {
             if (processTasks == null)
-                return Task.CompletedTask;
-
-            return Task.WhenAll(processTasks);
+                return;
+            try
+            {
+                await Task.WhenAll(processTasks);
+            }
+            catch (TaskCanceledException)
+            {
+                // 忽略任务取消异常
+            }
+            processTasks = null;
         }
 
         protected override void DisposeManagedResources()
         {
-            _allSource.Cancel();
-            _allSource.Dispose();
+            AllSource.Cancel();
+            AllSource.Dispose();
             source?.Cancel();
             source?.Dispose();
 
-            Flush();
+            _decoderCollection.Dispose();
             WaitForAllTasksComplete().GetAwaiter().GetResult();
         }
 

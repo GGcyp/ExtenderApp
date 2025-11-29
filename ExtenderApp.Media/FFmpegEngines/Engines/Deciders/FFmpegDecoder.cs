@@ -158,6 +158,9 @@ namespace ExtenderApp.FFmpegEngines.Decoders
             CacheStateController.Reset();
         }
 
+        /// <summary>
+        /// 清空数据包队列，释放所有未处理的数据包资源。
+        /// </summary>
         private void ClearPackets()
         {
             while (_packets.TryDequeue(out var packet))

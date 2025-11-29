@@ -129,11 +129,12 @@ namespace ExtenderApp.FFmpegEngines
 
         /// <summary>
         /// 停止媒体播放流程。
-        /// 以异步方式调用 StopAsync，终止解码和播放任务，释放相关资源并清空帧队列。
+        /// 以同步方式调用 StopAsync，终止解码和播放任务，释放相关资源并清空帧队列。
         /// </summary>
         public void Stop()
         {
-            Task.Run(StopAsync);
+            // 修正：同步等待异步方法完成，以确保在 Dispose 期间正确清理。
+            StopAsync().GetAwaiter().GetResult();
         }
 
         /// <summary>
@@ -149,17 +150,18 @@ namespace ExtenderApp.FFmpegEngines
 
             await _controller.StopDecodeAsync(); // 停止解码流程
             State = PlayerState.Stopped;
-            await ReleaseAsync();                // 释放播放任务资源
+            await FlushAsync();                // 释放播放任务资源
             Clear();                             // 清空音视频帧队列
         }
 
         /// <summary>
         /// 暂停媒体播放流程。
-        /// 以异步方式调用 PauseAsync，终止解码和播放任务，释放相关资源。
+        /// 以同步方式调用 PauseAsync，终止解码和播放任务，释放相关资源。
         /// </summary>
         public void Pause()
         {
-            Task.Run(PauseAsync);
+            // 修正：同步等待异步方法完成。
+            PauseAsync().GetAwaiter().GetResult();
         }
 
         /// <summary>
@@ -175,7 +177,7 @@ namespace ExtenderApp.FFmpegEngines
 
             await _controller.StopDecodeAsync(); // 停止解码流程
             State = PlayerState.Paused;
-            await ReleaseAsync();                // 释放播放任务资源
+            await FlushAsync();                // 释放播放任务资源
         }
 
         /// <summary>
@@ -207,7 +209,7 @@ namespace ExtenderApp.FFmpegEngines
             {
                 position = 0;
             }
-            await ReleaseAsync();                   // 释放播放任务资源
+            await FlushAsync();                   // 释放播放任务资源
             await _controller.SeekDecoderAsync(position); // 跳转解码器
 
             Position = position;
@@ -220,7 +222,7 @@ namespace ExtenderApp.FFmpegEngines
         /// 释放媒体播放任务相关资源，取消并等待播放任务完成，释放取消令牌。
         /// 若播放任务不存在则直接返回。
         /// </summary>
-        private async Task ReleaseAsync()
+        private async Task FlushAsync()
         {
             mediaSource?.Cancel();
             mediaSource?.Dispose();
@@ -238,20 +240,10 @@ namespace ExtenderApp.FFmpegEngines
                 await task;      // 等待播放任务完成
                 task.Dispose();  // 释放任务资源
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 // 忽略任务取消异常
             }
-
-            //try
-            //{
-            //    Task.WaitAll(task);
-            //    task.Dispose();
-            //}
-            //catch (AggregateException ex)
-            //{
-            //    // 忽略任务取消异常
-            //}
         }
 
         /// <summary>
@@ -275,8 +267,9 @@ namespace ExtenderApp.FFmpegEngines
                     {
                         await Task.Delay(lastDelay, token);
                     }
-                    catch (TaskCanceledException ex)
+                    catch (TaskCanceledException)
                     {
+                        // 忽略 Task.Delay 因取消而引发的异常
                     }
                     continue;
                 }
@@ -338,8 +331,9 @@ namespace ExtenderApp.FFmpegEngines
                     {
                         await Task.Delay(waitTime, token);
                     }
-                    catch (TaskCanceledException ex)
+                    catch (TaskCanceledException)
                     {
+                        // 忽略 Task.Delay 因取消而引发的异常
                     }
                 }
             }

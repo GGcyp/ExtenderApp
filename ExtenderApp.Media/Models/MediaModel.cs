@@ -1,10 +1,11 @@
 ﻿using System.Collections.ObjectModel;
-using System.Numerics;
+using System.Windows;
 using System.Windows.Media.Imaging;
 using ExtenderApp.Abstract;
 using ExtenderApp.FFmpegEngines;
 using ExtenderApp.Media.Audios;
 using ExtenderApp.Models;
+using ExtenderApp.Views;
 
 namespace ExtenderApp.Media.Models
 {
@@ -24,7 +25,7 @@ namespace ExtenderApp.Media.Models
 
         public MediaPlayer? MPlayer { get; set; }
         public AudioPlayer? APlayer { get; set; }
-        public WriteableBitmap? Bitmap { get; set; }
+        public SharedMemoryBitmap? Bitmap { get; set; }
         public IView? CurrentVideoView { get; set; }
         public IView? CurrentVideoListView { get; set; }
 
@@ -118,7 +119,7 @@ namespace ExtenderApp.Media.Models
 
             TotalTime = MPlayer.Info.DurationTimeSpan;
 
-            Bitmap = new(player.Info.Width, player.Info.Height, 96, 96, System.Windows.Media.PixelFormats.Bgr24, null);
+            Bitmap = new(player.Info.Width, player.Info.Height, System.Windows.Media.PixelFormats.Bgr24);
 
             player.OnAudioFrame += APlayer.AddSamples;
             player.OnPlayback += _playbackAction;
@@ -193,12 +194,10 @@ namespace ExtenderApp.Media.Models
             }
         }
 
-        private void OnVideoFrame(VideoFrame frame)
+        private unsafe void OnVideoFrame(VideoFrame frame)
         {
-            dispatcherService.Invoke(() =>
-            {
-                Bitmap?.WritePixels(new System.Windows.Int32Rect(0, 0, frame.Width, frame.Height), frame.Data, frame.Stride, 0);
-            });
+            Bitmap!.Write(frame.Data.AsSpan());
+            dispatcherService.Invoke(Bitmap.Invalidate);
         }
 
         private void OnPlayback(long current)
@@ -217,6 +216,22 @@ namespace ExtenderApp.Media.Models
             Stop();
             MPlayer?.Dispose();
             APlayer?.Dispose();
+        }
+
+        private class WriteBitmap : BitmapSource
+        {
+            private class WriteBitmapFreezable : Freezable
+            {
+                protected override Freezable CreateInstanceCore()
+                {
+                    throw new NotImplementedException();
+                }
+            }
+
+            protected override Freezable CreateInstanceCore()
+            {
+                throw new NotImplementedException();
+            }
         }
     }
 }

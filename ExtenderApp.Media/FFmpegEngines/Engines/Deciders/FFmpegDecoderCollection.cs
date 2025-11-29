@@ -47,6 +47,9 @@ namespace ExtenderApp.FFmpegEngines.Decoders
                 var context = contexts[i];
                 _decoders[i] = FFmpegDecoderFactory.CreateDecoder(engine, context, info, settings);
             }
+
+            VideoDecoder = GetDecoder<FFmpegVideoDecoder>(FFmpegMediaType.VIDEO);
+            AudioDecoder = GetDecoder<FFmpegAudioDecoder>(FFmpegMediaType.AUDIO);
         }
 
         protected override void DisposeManagedResources()

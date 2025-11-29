@@ -706,7 +706,7 @@ namespace ExtenderApp.Media
         ///// </summary>
         //private unsafe void ShowFFmpegError(string message, int errorCode)
         //{
-        //    //IntPtr Buffer = Marshal.AllocHGlobal(1024);
+        //    //IntPtr BitmapBuffer = Marshal.AllocHGlobal(1024);
         //    ulong errorBufferLength = 1024;
         //    byte[] errorBuffer = new byte[errorBufferLength];
         //    fixed (byte* errorBufferPtr = errorBuffer)

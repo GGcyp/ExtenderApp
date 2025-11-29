@@ -14,8 +14,9 @@ using Microsoft.Extensions.Logging;
 namespace ExtenderApp
 {
     /// <summary>
-    /// WPF 应用程序入口类（使用 Microsoft.Extensions.DependencyInjection + Autofac）。
-    /// 负责：
+    /// WPF 应用程序入口类（使用
+    /// Microsoft.Extensions.DependencyInjection +
+    /// Autofac）。 负责：
     /// - 解析应用根路径并构建 IConfiguration；
     /// - 动态加载插件/库到独立的 AssemblyLoadContext；
     /// - 构建并填充 DI 容器（Autofac）；
@@ -26,8 +27,9 @@ namespace ExtenderApp
     internal class ExtenderApplication_WPF : Application
     {
         /// <summary>
-        /// 根服务提供者（由 Autofac 封装的 IServiceProvider）。
-        /// 在应用退出时如果实现了 IDisposable 将被释放。
+        /// 根服务提供者（由 Autofac 封装的
+        /// IServiceProvider）。 在应用退出时如果实现了
+        /// IDisposable 将被释放。
         /// </summary>
         private IServiceProvider serviceProvider;
 
@@ -42,8 +44,7 @@ namespace ExtenderApp
         private ILogger<ExtenderApplication_WPF> _logger;
 
         /// <summary>
-        /// 构造函数：执行启动前的初始化、配置构建、程序集加载及 DI 容器构建，
-        /// 并记录启动耗时信息。
+        /// 构造函数：执行启动前的初始化、配置构建、程序集加载及 DI 容器构建， 并记录启动耗时信息。
         /// </summary>
         public ExtenderApplication_WPF()
         {
@@ -54,13 +55,15 @@ namespace ExtenderApp
 
             DebugMessage($"开始生成服务 : {DateTime.Now}");
 
-            // 使用 Microsoft DI 构建 IServiceCollection，随后由 Autofac 填充
+            // 使用 Microsoft DI 构建
+            // IServiceCollection，随后由 Autofac 填充
             IServiceCollection services = new ServiceCollection();
 
             // 为插件加载创建独立的 AssemblyLoadContext，设置isCollectible为true以便卸载
             context = new("ExtenderApp_WPF", true);
 
-            // 在 DI 中注册 IConfiguration（基于 appsettings.json + 环境变量）
+            // 在 DI 中注册 IConfiguration（基于
+            // appsettings.json + 环境变量）
             services.AddSingleton<IConfiguration>(provider =>
             {
                 var configBuilder = new ConfigurationBuilder()
@@ -76,7 +79,8 @@ namespace ExtenderApp
             // 从指定的库目录加载程序集并调用扩展的加载逻辑（扩展方法在其他位置实现）
             context.LoadAssemblyAndStartupFormFolderPath(ProgramDirectory.LibPath, services);
 
-            // 使用 Autofac 构建容器并将 IServiceCollection 中的服务填充进去
+            // 使用 Autofac 构建容器并将
+            // IServiceCollection 中的服务填充进去
             var builder = new ContainerBuilder();
             builder.Populate(services);
             serviceProvider = new AutofacServiceProvider(builder.Build());
@@ -91,7 +95,8 @@ namespace ExtenderApp
 
         /// <summary>
         /// WPF 启动时调用。初始化主线程上下文并触发启动执行器。
-        /// 注意：IStartupExecuter.ExecuteAsync() 未在此处等待（fire-and-forget / 自行处理异步行为）。
+        /// 注意：IStartupExecuter.ExecuteAsync()
+        /// 未在此处等待（fire-and-forget / 自行处理异步行为）。
         /// </summary>
         protected override void OnStartup(StartupEventArgs e)
         {
@@ -117,8 +122,8 @@ namespace ExtenderApp
         }
 
         /// <summary>
-        /// 将指定文件夹（及其子目录）下的所有 .dll 加载到给定的 AssemblyLoadContext。
-        /// 跳过空或无效的路径参数。
+        /// 将指定文件夹（及其子目录）下的所有 .dll 加载到给定的
+        /// AssemblyLoadContext。 跳过空或无效的路径参数。
         /// </summary>
         /// <param name="context">目标 AssemblyLoadContext。</param>
         /// <param name="fullPath">目标文件全称</param>
@@ -127,7 +132,8 @@ namespace ExtenderApp
             if (string.IsNullOrEmpty(fullPath))
                 return;
 
-            // 查找所有 DLL 并加载到指定的 AssemblyLoadContext 中
+            // 查找所有 DLL 并加载到指定的
+            // AssemblyLoadContext 中
             var dllFiles = Directory.GetFiles(fullPath, "*.dll", SearchOption.AllDirectories);
             foreach (var dllFile in dllFiles)
             {
@@ -136,8 +142,8 @@ namespace ExtenderApp
         }
 
         /// <summary>
-        /// 对外的错误记录入口（方法名保留原拼写 LogEorrer）。
-        /// 使用注入的 ILogger 记录未处理异常信息（若 _logger 为 null 则静默忽略）。
+        /// 对外的错误记录入口（方法名保留原拼写 LogEorrer）。 使用注入的
+        /// ILogger 记录未处理异常信息（若 _logger 为 null 则静默忽略）。
         /// </summary>
         /// <param name="ex">需记录的异常。</param>
         internal void LogEorrer(Exception ex)
@@ -148,7 +154,8 @@ namespace ExtenderApp
 #if DEBUG
 
         /// <summary>
-        /// 调试用信息输出，使用 System.Diagnostics.Debug 打印（仅在 DEBUG 编译符下有效）。
+        /// 调试用信息输出，使用 System.Diagnostics.Debug
+        /// 打印（仅在 DEBUG 编译符下有效）。
         /// </summary>
         private static void DebugMessage(string message)
         {

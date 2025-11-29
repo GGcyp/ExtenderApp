@@ -19,5 +19,13 @@ namespace ExtenderApp.Common.Startups
                 await startupExecute.ExecuteAsync();
             }
         }
+
+        protected override void DisposeManagedResources()
+        {
+            foreach (var startupExecute in _startupExecutes)
+            {
+                startupExecute.Dispose();
+            }
+        }
     }
 }
