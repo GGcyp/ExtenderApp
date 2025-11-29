@@ -185,14 +185,14 @@ namespace ExtenderApp.FFmpegEngines
         /// 控制解码过程中可缓存的 AVPacket 数量，防止内存占用过高。
         /// 建议根据实际业务场景和内存压力调整，默认值为 20。
         /// </summary>
-        private int MaxCachePacketCount = 20;
+        private int MaxCachePacketCount = 5;
 
         /// <summary>
         /// 最大缓存帧数量（用于限制 _frameQueue 队列长度）。
         /// 控制解码过程中可缓存的 AVFrame 数量，防止内存占用过高。
         /// 建议根据实际业务场景和解码速率调整，默认值为 30。
         /// </summary>
-        private int MaxCacheFrameCount = 30;
+        private int MaxCacheFrameCount = 3;
 
         /// <summary>
         /// 默认流索引。
@@ -1117,13 +1117,13 @@ namespace ExtenderApp.FFmpegEngines
         /// FFmpeg 帧的 data 数组下标（一般为 0）。
         /// 注意：返回的字节数组来自共享内存池，使用完毕后应归还（ArrayPool<byte>.Shared.Return）。
         /// </summary> <param
-        /// name="frame">音频帧指针（NativeIntPtr&lt;AVFrame&gt;），包含
-        /// PCM 数据。</param> <param
-        /// name="targetChannel">目标声道数（如
-        /// 1=单声道，2=立体声）。</param> <param
+        /// name="frame">音频帧指针（NativeIntPtr&lt;AVFrame&gt;），包含PCM
+        /// 数据。</param> <param
+        /// name="targetChannel">目标声道数（如1=单声道，2=立体声）。</param>
+        /// <param
         /// name="length">输出参数，返回实际拷贝的数据长度（字节）。</param>
-        /// <param name="dataIndex">FFmpeg 帧的 data
-        /// 数组下标，默认 0。</param> <returns>包含 PCM 音频数据的字节数组。</returns>
+        /// <param name="dataIndex">FFmpeg 帧的
+        /// data数组下标，默认 0。</param> <returns>包含 PCM 音频数据的字节数组。</returns>
         public byte[] CopyFrameToBuffer(NativeIntPtr<AVFrame> frame, long targetChannel, out int length, uint dataIndex = 0)
         {
             if (frame.IsEmpty)
@@ -2112,12 +2112,17 @@ namespace ExtenderApp.FFmpegEngines
         }
 
         /// <summary>
-        /// 显示并抛出带有自定义消息的 FFmpeg 错误信息。
-        /// 此方法会根据 FFmpeg 错误码获取标准错误描述，并将其与提供的自定义消息结合，最终抛出一个包含详细信息的 FFmpegException。
+        /// 显示并抛出带有自定义消息的 FFmpeg 错误信息。 此方法会根据
+        /// FFmpeg
+        /// 错误码获取标准错误描述，并将其与提供的自定义消息结合，最终抛出一个包含详细信息的 FFmpegException。
         /// </summary>
-        /// <param name="message">自定义错误消息，将附加在 FFmpeg 标准错误描述之前。</param>
+        /// <param name="message">
+        /// 自定义错误消息，将附加在 FFmpeg 标准错误描述之前。
+        /// </param>
         /// <param name="errorCode">FFmpeg 返回的错误码。</param>
-        /// <exception cref="FFmpegException">始终抛出，包含自定义消息和详细的 FFmpeg 错误描述。</exception>
+        /// <exception cref="FFmpegException">
+        /// 始终抛出，包含自定义消息和详细的 FFmpeg 错误描述。
+        /// </exception>
         public void ShowException(string message, int errorCode)
         {
             FFmpegException ex = GetException(errorCode);

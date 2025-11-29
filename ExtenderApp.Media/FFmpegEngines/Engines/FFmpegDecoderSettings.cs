@@ -36,27 +36,5 @@ namespace ExtenderApp.FFmpegEngines
         /// 音频采样率（Hz），默认 44100。
         /// </summary>
         public int SampleRate { get; } = 44100;
-
-        /// <summary>
-        /// 视频帧调度事件，解码后触发。
-        /// </summary>
-        public event Action<VideoFrame>? VideoScheduling;
-        /// <summary>
-        /// 触发视频帧调度事件。
-        /// </summary>
-        /// <param name="videoFrame">待调度的视频帧。</param>
-        public void OnVideoScheduling(VideoFrame videoFrame)
-            => VideoScheduling?.Invoke(videoFrame);
-
-        /// <summary>
-        /// 音频帧调度事件，解码后触发。
-        /// </summary>
-        public event Action<AudioFrame>? AudioScheduling;
-        /// <summary>
-        /// 触发音频帧调度事件。
-        /// </summary>
-        /// <param name="audioFrame">待调度的音频帧。</param>
-        public void OnAudioScheduling(AudioFrame audioFrame)
-            => AudioScheduling?.Invoke(audioFrame);
     }
 }

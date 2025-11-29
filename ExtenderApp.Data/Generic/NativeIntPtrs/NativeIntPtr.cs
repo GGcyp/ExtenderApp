@@ -118,6 +118,17 @@ namespace ExtenderApp.Data
             return ref *Value;
         }
 
+        /// <summary>
+        /// 获取原生指针。
+        /// </summary>
+        /// <returns>返回原生指针</returns>
+        public void* GetPointer()
+        {
+            if (IsEmpty)
+                ThrowIfNull();
+            return Value;
+        }
+
         /// <inheritdoc/>
         public override bool Equals(object? obj)
         {

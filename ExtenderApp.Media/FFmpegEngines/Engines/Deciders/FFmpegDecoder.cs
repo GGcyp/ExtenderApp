@@ -11,56 +11,72 @@ namespace ExtenderApp.FFmpegEngines.Decoders
     public abstract class FFmpegDecoder : DisposableObject
     {
         /// <summary>
-        /// 当前解码器的数据包队列。
+        /// 存储待解码数据包的队列。
         /// </summary>
         private readonly ConcurrentQueue<NativeIntPtr<AVPacket>> _packets;
 
         /// <summary>
-        /// FFmpeg 引擎实例，用于底层解码操作和资源管理。
+        /// 存储已解码并处理完成的帧的队列。
+        /// </summary>
+        private readonly ConcurrentQueue<FFmpegFrame> _frames;
+
+        /// <summary>
+        /// 缓存状态控制器，用于管理解码缓存和控制生产/消费节奏。
+        /// </summary>
+        private readonly CacheStateController _cacheStateController;
+
+        /// <summary>
+        /// 获取 FFmpeg 引擎实例，用于底层解码操作和资源管理。
         /// </summary>
         protected FFmpegEngine Engine { get; }
 
         /// <summary>
-        /// 解码器上下文，包含解码器指针、流参数等信息。
+        /// 获取解码器上下文，包含解码器指针、流参数等核心信息。
         /// </summary>
         protected FFmpegDecoderContext Context { get; }
 
         /// <summary>
-        /// 媒体基础信息（如时长、格式等），便于界面展示和业务逻辑处理。
+        /// 获取媒体基础信息（如时长、格式等），便于界面展示和业务逻辑处理。
         /// </summary>
         protected FFmpegInfo Info { get; }
 
         /// <summary>
-        /// 解析器设置，用于配置解码器行为和参数。
+        /// 获取或设置解码器设置，用于配置解码器行为和参数。
         /// </summary>
         protected FFmpegDecoderSettings Settings { get; private set; }
 
         /// <summary>
-        /// 缓存状态控制器，用于管理解码缓存和节奏。
+        /// 获取一个值，该值指示缓存队列是否还有空间。
         /// </summary>
-        public CacheStateController CacheStateController { get; }
+        public bool HasCacheSpace => _cacheStateController.HasCacheSpace;
 
         /// <summary>
-        /// 当前解码器对应的流索引。
+        /// 获取当前已缓存的帧数。
+        /// </summary>
+        public int CachedFrameCount => _frames.Count;
+
+        /// <summary>
+        /// 获取当前解码器对应的流索引。
         /// </summary>
         public int StreamIndex => Context.StreamIndex;
 
         /// <summary>
-        /// 初始化 FFmpegDecoder 实例。
+        /// 初始化 <see cref="FFmpegDecoder"/> 类的新实例。
         /// </summary>
         /// <param name="engine">FFmpeg 引擎实例。</param>
         /// <param name="context">解码器上下文。</param>
         /// <param name="info">媒体基础信息。</param>
-        /// <param name="maxCacheLength">最大缓存长度。</param>
         /// <param name="settings">解码器设置。</param>
+        /// <param name="maxCacheLength">已解码帧的最大缓存数量。</param>
         public FFmpegDecoder(FFmpegEngine engine, FFmpegDecoderContext context, FFmpegInfo info, FFmpegDecoderSettings settings, int maxCacheLength)
         {
             Settings = settings;
             Engine = engine;
             Context = context;
             Info = info;
-            CacheStateController = new(maxCacheLength);
+            _cacheStateController = new(maxCacheLength);
             _packets = new();
+            _frames = new();
         }
 
         /// <summary>
@@ -86,9 +102,9 @@ namespace ExtenderApp.FFmpegEngines.Decoders
                 }
 
                 // 如果缓存已满，则异步等待空间
-                if (!CacheStateController.HasCacheSpace)
+                if (!_cacheStateController.HasCacheSpace)
                 {
-                    await CacheStateController.WaitForCacheSpaceAsync(cancellationToken: token); // 先尝试非阻塞检查
+                    await _cacheStateController.WaitForCacheSpaceAsync(cancellationToken: token); // 先尝试非阻塞检查
                 }
 
                 // 同步处理所有可用的帧
@@ -101,14 +117,15 @@ namespace ExtenderApp.FFmpegEngines.Decoders
         }
 
         /// <summary>
-        /// 同步循环，从解码器接收并处理所有可用的帧。
+        /// 同步循环，从解码器接收并处理所有可用的帧，直到没有更多帧或缓存已满。
         /// </summary>
+        /// <param name="token">用于取消操作的取消令牌。</param>
         private void ProcessFrames(CancellationToken token)
         {
             while (!token.IsCancellationRequested)
             {
                 // 检查是否有缓存空间，但这次不阻塞等待
-                if (!CacheStateController.HasCacheSpace)
+                if (!_cacheStateController.HasCacheSpace)
                 {
                     break;
                 }
@@ -119,7 +136,7 @@ namespace ExtenderApp.FFmpegEngines.Decoders
                     int ret = Engine.ReceiveFrame(Context.CodecContext, ref frame);
 
                     // 如果需要重试或没有更多帧，则退出循环
-                    if (Engine.IsTryAgain(ret))
+                    if (Engine.IsTryAgain(ret) || Engine.IsEndOfFile(ret))
                     {
                         break;
                     }
@@ -131,7 +148,8 @@ namespace ExtenderApp.FFmpegEngines.Decoders
                     }
 
                     long framePts = Engine.GetFrameTimestampMs(frame, Context);
-                    ProcessFrame(frame, framePts);
+                    ProcessFrame(frame, out var block);
+                    EnqueueFrame(new FFmpegFrame(block, framePts));
                 }
                 finally
                 {
@@ -150,22 +168,52 @@ namespace ExtenderApp.FFmpegEngines.Decoders
         }
 
         /// <summary>
-        /// 刷新解码器，清空所有未处理的数据包。
+        /// 将一个已处理的帧加入到输出队列，并更新缓存计数。
         /// </summary>
-        public void Flush()
+        /// <param name="frame">要入队的帧。</param>
+        private void EnqueueFrame(FFmpegFrame frame)
         {
-            ClearPackets();
-            CacheStateController.Reset();
+            _frames.Enqueue(frame);
+            _cacheStateController.OnFrameAdded();
         }
 
         /// <summary>
-        /// 清空数据包队列，释放所有未处理的数据包资源。
+        /// 尝试从输出队列中取出一个已解码的帧。
         /// </summary>
-        private void ClearPackets()
+        /// <param name="frame">当此方法返回时，如果成功，则包含取出的帧；否则为默认值。</param>
+        /// <returns>如果成功取出一个帧，则为 <c>true</c>；否则为 <c>false</c>。</returns>
+        public bool TryDequeueFrame(out FFmpegFrame frame)
+        {
+            if (_frames.TryDequeue(out frame))
+            {
+                _cacheStateController.OnFrameRemoved();
+                return true;
+            }
+            frame = default;
+            return false;
+        }
+
+        /// <summary>
+        /// 刷新解码器，清空所有内部队列和缓存状态。
+        /// </summary>
+        public void Flush()
+        {
+            Clear();
+            _cacheStateController.Reset();
+        }
+
+        /// <summary>
+        /// 清空内部的数据包和帧队列，并释放相关资源。
+        /// </summary>
+        private void Clear()
         {
             while (_packets.TryDequeue(out var packet))
             {
                 Engine.ReturnPacket(ref packet);
+            }
+            while (_frames.TryDequeue(out var frame))
+            {
+                frame.Dispose();
             }
         }
 
@@ -180,34 +228,19 @@ namespace ExtenderApp.FFmpegEngines.Decoders
         }
 
         /// <summary>
-        /// 通知缓存控制器已添加一帧。
-        /// 调用此方法会增加缓存计数，并可能唤醒等待缓存空间的解码线程。
-        /// </summary>
-        public void OnFrameAdded()
-        {
-            CacheStateController.OnFrameAdded();
-        }
-
-        /// <summary>
-        /// 通知缓存控制器已移除一帧。
-        /// 调用此方法会减少缓存计数，并可能在缓存已满时唤醒解码线程以继续解码。
-        /// </summary>
-        public void OnFrameRemoved()
-        {
-            CacheStateController.OnFrameRemoved();
-        }
-
-        /// <summary>
         /// 处理解码后的帧。子类应实现此方法以处理具体的帧数据，例如进行格式转换、渲染或缓存。
         /// </summary>
         /// <param name="frame">解码后的 AVFrame 指针。</param>
-        /// <param name="framePts">帧的显示时间戳（毫秒）。</param>
-        protected abstract void ProcessFrame(NativeIntPtr<AVFrame> frame, long framePts);
+        /// <param name="block">输出参数，包含处理后的帧数据。</param>
+        protected abstract void ProcessFrame(NativeIntPtr<AVFrame> frame, out ByteBlock block);
 
+        /// <summary>
+        /// 释放由 <see cref="FFmpegDecoder"/> 占用的托管资源。
+        /// </summary>
         protected override void DisposeManagedResources()
         {
-            ClearPackets();
-            CacheStateController.Dispose();
+            Clear();
+            _cacheStateController.Dispose();
         }
     }
 }

@@ -1,12 +1,11 @@
-﻿using FFmpeg.AutoGen;
-using ExtenderApp.Data;
+﻿using ExtenderApp.Data;
+using FFmpeg.AutoGen;
 
 namespace ExtenderApp.FFmpegEngines.Decoders
 {
     /// <summary>
-    /// FFmpeg 音频解码器。
-    /// 负责将音频帧解码为指定格式的 PCM 数据，并通过重采样（SwrContext）输出标准音频帧。
-    /// 支持音频格式转换、采样率变换和声道布局调整，适用于多媒体播放和处理场景。
+    /// FFmpeg 音频解码器。 负责将音频帧解码为指定格式的 PCM
+    /// 数据，并通过重采样（SwrContext）输出标准音频帧。 支持音频格式转换、采样率变换和声道布局调整，适用于多媒体播放和处理场景。
     /// </summary>
     public class FFmpegAudioDecoder : FFmpegDecoder
     {
@@ -40,20 +39,16 @@ namespace ExtenderApp.FFmpegEngines.Decoders
             engine.SetSwrContextOptionsAndInit(swrContext, context, settings);
         }
 
-        protected override void ProcessFrame(NativeIntPtr<AVFrame> frame, long framePts)
+        protected override unsafe void ProcessFrame(NativeIntPtr<AVFrame> frame, out ByteBlock block)
         {
             // 使用 SwrContext 进行音频重采样，输出到 pcmFrame
             Engine.SwrConvert(swrContext, pcmFrame, frame);
 
-            // 拷贝 PCM 数据到托管缓冲区
-            var buffer = Engine.CopyFrameToBuffer(pcmFrame, (long)Settings.Channels, out int length);
+            var dataLength = Engine.GetBufferSizeForSamples(frame);
+            block = new(dataLength);
 
-            // 获取帧持续时间
-            long duration = Engine.GetFrameDuration(frame, Context);
-
-            // 构造音频帧并调度到上层
-            AudioFrame audioFrame = new AudioFrame(buffer, length, Settings.SampleRate, (int)Settings.Channels, 16, framePts, duration);
-            Settings.OnAudioScheduling(audioFrame);
+            Span<byte> span = new(frame.Value->data[0], dataLength);
+            block.Write(span);
         }
 
         protected override void DisposeUnmanagedResources()

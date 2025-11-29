@@ -1,5 +1,4 @@
-﻿using System.Buffers;
-using System.Runtime.InteropServices;
+﻿using System.Runtime.InteropServices;
 using ExtenderApp.Data;
 using FFmpeg.AutoGen;
 
@@ -7,8 +6,7 @@ namespace ExtenderApp.FFmpegEngines.Decoders
 {
     /// <summary>
     /// FFmpeg 视频解码器。
-    /// 负责将解码后的视频帧转换为指定像素格式（如RGB），并输出标准化的视频帧数据。
-    /// 支持像素格式转换、缓冲区管理和帧调度，适用于多媒体播放和图像处理场景。
+    /// 负责将解码后的视频帧转换为指定像素格式（如RGB），并输出标准化的视频帧数据。 支持像素格式转换、缓冲区管理和帧调度，适用于多媒体播放和图像处理场景。
     /// </summary>
     public class FFmpegVideoDecoder : FFmpegDecoder
     {
@@ -51,26 +49,14 @@ namespace ExtenderApp.FFmpegEngines.Decoders
             swsContext = engine.CreateSwsContext(info.Width, info.Height, info.PixelFormat.Convert(), info.Width, info.Height, settings.PixelFormat.Convert());
         }
 
-        protected override void ProcessFrame(NativeIntPtr<AVFrame> frame, long framePts)
+        protected override unsafe void ProcessFrame(NativeIntPtr<AVFrame> frame, out ByteBlock block)
         {
             // 使用 SwsContext 进行像素格式转换，输出到 rgbFrame
             Engine.Scale(swsContext, frame, rgbFrame, Info);
-            // 从 native 缓冲区拷贝数据到托管缓冲区
-            var buffer = ArrayPool<byte>.Shared.Rent(rgbBufferLength);
-            Marshal.Copy(rgbBuffer, buffer, 0, rgbBufferLength);
-            // 构造视频帧并调度到上层
-            VideoFrame videoFrame = new(buffer, framePts, Info.Width, Info.Height, GetStride());
-            Settings.OnVideoScheduling(videoFrame);
-        }
 
-        /// <summary>
-        /// 根据解码器设置和媒体信息，计算视频帧的行跨度（Stride，单位：字节）。
-        /// 行跨度用于表示一行像素在内存中的实际字节数，常用于图像处理和视频帧数据读取。
-        /// </summary>
-        /// <returns>视频帧的行跨度（字节数）。</returns>
-        private int GetStride()
-        {
-            return FFmpegEngine.GetStride(Settings, Info);
+            block = new ByteBlock(rgbBufferLength);
+            Span<byte> rgbSpan = new(rgbBuffer.GetPointer(), rgbBufferLength);
+            block.Write(rgbSpan);
         }
 
         protected override void DisposeUnmanagedResources()

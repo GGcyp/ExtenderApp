@@ -107,8 +107,6 @@ namespace ExtenderApp.FFmpegEngines
             _controller = collection;
             _allSource = allSource;
             Settings = settings;
-            settings.VideoScheduling += VideoSchedule;
-            settings.AudioScheduling += AudioSchedule;
             Rate = 1;
             State = PlayerState.Initializing;
         }
@@ -237,10 +235,10 @@ namespace ExtenderApp.FFmpegEngines
 
             try
             {
-                await task;      // 等待播放任务完成
+                await task.ConfigureAwait(false);      // 等待播放任务完成
                 task.Dispose();  // 释放任务资源
             }
-            catch (Exception)
+            catch (TaskCanceledException)
             {
                 // 忽略任务取消异常
             }
@@ -283,7 +281,6 @@ namespace ExtenderApp.FFmpegEngines
                     {
                         _audioFrameQueue.TryDequeue(out audioFrame);
                         OnAudioFrame?.Invoke(audioFrame);
-                        _controller.OnAudioFrameRemoved();
 
                         Position = audioFrame.Pts;
 
@@ -304,13 +301,11 @@ namespace ExtenderApp.FFmpegEngines
                     {
                         _videoFrameQueue.TryDequeue(out videoFrame);
                         OnVideoFrame?.Invoke(videoFrame);
-                        _controller.OnVideoFrameRemoved();
                         videoFrame.Dispose();
                     }
                     else if (videoTimeDiff < -VideoFrameOutTime)
                     {
                         _videoFrameQueue.TryDequeue(out videoFrame);
-                        _controller.OnVideoFrameRemoved();
                         videoFrame.Dispose();
                     }
                     else
@@ -337,32 +332,6 @@ namespace ExtenderApp.FFmpegEngines
                     }
                 }
             }
-        }
-
-        /// <summary>
-        /// 音频帧调度回调，将音频帧加入队列并通知解码器。
-        /// </summary>
-        /// <param name="audioFrame">待调度的音频帧。</param>
-        private void AudioSchedule(AudioFrame audioFrame)
-        {
-            if (audioFrame.IsEmpty)
-                throw new Exception("传入音频帧不能为空");
-
-            _audioFrameQueue.Enqueue(audioFrame);
-            _controller.OnAudioFrameAdded();
-        }
-
-        /// <summary>
-        /// 视频帧调度回调，将视频帧加入队列并通知解码器。
-        /// </summary>
-        /// <param name="item">待调度的视频帧。</param>
-        private void VideoSchedule(VideoFrame item)
-        {
-            if (item.IsEmpty)
-                throw new Exception("传入视频帧不能为空");
-
-            _videoFrameQueue.Enqueue(item);
-            _controller.OnVideoFrameAdded();
         }
 
         /// <summary>

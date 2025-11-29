@@ -1,5 +1,7 @@
 ﻿using System.Collections.ObjectModel;
+using System.Drawing;
 using System.Windows;
+using System.Windows.Interop;
 using System.Windows.Media.Imaging;
 using ExtenderApp.Abstract;
 using ExtenderApp.FFmpegEngines;
@@ -25,7 +27,10 @@ namespace ExtenderApp.Media.Models
 
         public MediaPlayer? MPlayer { get; set; }
         public AudioPlayer? APlayer { get; set; }
-        public SharedMemoryBitmap? Bitmap { get; set; }
+
+        public InteropBitmap? Bitmap => sharedMemoryBitmap?.Bitmap;
+        public SharedMemoryBitmap? sharedMemoryBitmap { get; set; }
+
         public IView? CurrentVideoView { get; set; }
         public IView? CurrentVideoListView { get; set; }
 
@@ -119,7 +124,7 @@ namespace ExtenderApp.Media.Models
 
             TotalTime = MPlayer.Info.DurationTimeSpan;
 
-            Bitmap = new(player.Info.Width, player.Info.Height, System.Windows.Media.PixelFormats.Bgr24);
+            sharedMemoryBitmap = new(player.Info.Width, player.Info.Height, System.Windows.Media.PixelFormats.Bgr24);
 
             player.OnAudioFrame += APlayer.AddSamples;
             player.OnPlayback += _playbackAction;
@@ -194,10 +199,10 @@ namespace ExtenderApp.Media.Models
             }
         }
 
-        private unsafe void OnVideoFrame(VideoFrame frame)
+        private void OnVideoFrame(VideoFrame frame)
         {
-            Bitmap!.Write(frame.Data.AsSpan());
-            dispatcherService.Invoke(Bitmap.Invalidate);
+            sharedMemoryBitmap!.Write(frame.Data.AsSpan(0, 2764800));
+            sharedMemoryBitmap.Invalidate();
         }
 
         private void OnPlayback(long current)
@@ -216,22 +221,6 @@ namespace ExtenderApp.Media.Models
             Stop();
             MPlayer?.Dispose();
             APlayer?.Dispose();
-        }
-
-        private class WriteBitmap : BitmapSource
-        {
-            private class WriteBitmapFreezable : Freezable
-            {
-                protected override Freezable CreateInstanceCore()
-                {
-                    throw new NotImplementedException();
-                }
-            }
-
-            protected override Freezable CreateInstanceCore()
-            {
-                throw new NotImplementedException();
-            }
         }
     }
 }
