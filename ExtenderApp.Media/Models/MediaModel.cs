@@ -16,7 +16,7 @@ namespace ExtenderApp.Media.Models
     /// </summary>
     public class MediaModel : ExtenderAppModel
     {
-        private readonly Action<VideoFrame> _videoFrameAction;
+        private readonly Action<FFmpegFrame> _videoFrameAction;
         private readonly Action<long> _playbackAction;
         private IDispatcherService dispatcherService;
 
@@ -126,15 +126,15 @@ namespace ExtenderApp.Media.Models
 
             sharedMemoryBitmap = new(player.Info.Width, player.Info.Height, System.Windows.Media.PixelFormats.Bgr24);
 
-            player.OnAudioFrame += APlayer.AddSamples;
-            player.OnPlayback += _playbackAction;
+            player.AudioFrameReceived += APlayer.AddSamples;
+            player.PlaybackReceived += _playbackAction;
         }
 
         public void Play()
         {
             if (MPlayer == null) return;
 
-            MPlayer.OnVideoFrame += _videoFrameAction;
+            MPlayer.VideoFrameReceived += _videoFrameAction;
 
             MPlayer?.Play();
             APlayer?.Play();
@@ -144,7 +144,7 @@ namespace ExtenderApp.Media.Models
         {
             if (MPlayer == null) return;
 
-            MPlayer.OnVideoFrame -= _videoFrameAction;
+            MPlayer.VideoFrameReceived -= _videoFrameAction;
             MPlayer?.Pause();
             APlayer?.Pause();
         }
@@ -199,9 +199,9 @@ namespace ExtenderApp.Media.Models
             }
         }
 
-        private void OnVideoFrame(VideoFrame frame)
+        private void OnVideoFrame(FFmpegFrame frame)
         {
-            sharedMemoryBitmap!.Write(frame.Data.AsSpan(0, 2764800));
+            sharedMemoryBitmap!.Write(frame.Block);
             sharedMemoryBitmap.Invalidate();
         }
 

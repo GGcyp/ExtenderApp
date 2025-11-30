@@ -11,7 +11,7 @@ namespace ExtenderApp.Media.Audios
         private const double DefaultRateSpeed = 1.0f;
 
         private readonly WaveOutEvent _waveOut;
-        private readonly BufferedWaveProvider _bufferedWave;
+        private readonly SpanBufferProvider _bufferedWave;
         private readonly SoundTouchProcessor _soundTouch;
 
         private float volume;
@@ -104,14 +104,65 @@ namespace ExtenderApp.Media.Audios
             _bufferedWave.ClearBuffer();
         }
 
-        public void AddSamples(AudioFrame frame)
+        public void AddSamples(FFmpegFrame frame)
         {
-            AddSamples(frame.Data, 0, frame.Length);
+            AddSamples(frame.Block);
         }
 
-        public void AddSamples(byte[] buffer)
+        public void AddSamples(ByteBlock block)
         {
-            AddSamples(buffer, 0, buffer.Length);
+            AddSamples(block.UnreadSpan);
+        }
+
+        public void AddSamples(ReadOnlySpan<byte> span)
+        {
+            if (Tempo != DefaultRateSpeed || Rate != DefaultRateSpeed)
+            {
+                float[] floatSamples = ConvertPcm16BytesToFloat(span);
+                int numSamples = floatSamples.Length / _soundTouch.Channels;
+                _soundTouch.PutSamples(floatSamples, numSamples);
+                ArrayPool<float>.Shared.Return(floatSamples);
+                // 获取可输出样本数
+                int available = _soundTouch.AvailableSamples;
+                if (available <= 0)
+                    return;
+
+                float[] processed = ArrayPool<float>.Shared.Rent(available * _soundTouch.Channels);
+                int samplesProcessed = _soundTouch.ReceiveSamples(processed, available);
+
+                // 将 float 数组转换回 byte 数组
+                int count = samplesProcessed * _soundTouch.Channels * 2;
+                byte[] processedBytes = ArrayPool<byte>.Shared.Rent(count);
+                for (int i = 0; i < samplesProcessed * _soundTouch.Channels; i++)
+                {
+                    short s = (short)(Math.Clamp(processed[i], -1f, 1f) * 32767);
+                    processedBytes[i * 2] = (byte)(s & 0xFF);
+                    processedBytes[i * 2 + 1] = (byte)((s >> 8) & 0xFF);
+                }
+
+                try
+                {
+                    _bufferedWave.AddSamples(processedBytes.AsSpan(0, count));
+                }
+                catch (Exception)
+                {
+                    _bufferedWave.ClearBuffer();
+                }
+
+                ArrayPool<float>.Shared.Return(processed);
+                ArrayPool<byte>.Shared.Return(processedBytes);
+            }
+            else
+            {
+                try
+                {
+                    _bufferedWave.AddSamples(span);
+                }
+                catch (Exception)
+                {
+                    _bufferedWave.ClearBuffer();
+                }
+            }
         }
 
         public void AddSamples(byte[] buffer, int offset, int count)
@@ -141,22 +192,41 @@ namespace ExtenderApp.Media.Audios
                     processedBytes[i * 2 + 1] = (byte)((s >> 8) & 0xFF);
                 }
 
+                try
+                {
+                    _bufferedWave.AddSamples(processedBytes.AsSpan(0, count));
+                }
+                catch (Exception)
+                {
+                    _bufferedWave.ClearBuffer();
+                }
+
                 ArrayPool<float>.Shared.Return(processed);
                 ArrayPool<byte>.Shared.Return(processedBytes);
             }
             else
             {
-                result = buffer;
+                try
+                {
+                    _bufferedWave.AddSamples(result.AsSpan(0, count));
+                }
+                catch (Exception)
+                {
+                    _bufferedWave.ClearBuffer();
+                }
             }
+        }
 
-            try
+        private float[] ConvertPcm16BytesToFloat(ReadOnlySpan<byte> span)
+        {
+            int samples = span.Length / 2;
+            float[] floatSamples = ArrayPool<float>.Shared.Rent(samples);
+            for (int i = 0; i < samples; i++)
             {
-                _bufferedWave.AddSamples(result, offset, count);
+                short sample = BitConverter.ToInt16(span.Slice(i * 2));
+                floatSamples[i] = sample / 32768f; // 归一化到[-1,1]
             }
-            catch (Exception ex)
-            {
-                _bufferedWave.ClearBuffer();
-            }
+            return floatSamples;
         }
 
         private float[] ConvertPcm16BytesToFloat(byte[] pcmBytes, int offset, int length)

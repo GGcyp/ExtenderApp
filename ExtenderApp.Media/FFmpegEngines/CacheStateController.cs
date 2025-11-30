@@ -8,9 +8,13 @@ namespace ExtenderApp.FFmpegEngines
     /// </summary>
     public class CacheStateController : DisposableObject
     {
+        /// <summary>
+        /// 默认等待超时时间（毫秒）
+        /// </summary>
         private const int DefaultWaitTimeoutMs = 10;
+
         private readonly AutoResetEvent _cacheAvailableEvent; // 缓存可用信号（用于唤醒等待的解码线程）
-        private readonly Action<int, CancellationToken> _waitForCacheSpaceAction;
+        private readonly Action<int, CancellationToken> _waitForCacheSpaceAction;// 异步等待委托
         private int maxCacheLength; // 最大缓存长度（如100帧）
         private int currentCacheCount; // 当前缓存帧数量（线程安全访问）
 
@@ -28,13 +32,9 @@ namespace ExtenderApp.FFmpegEngines
         public bool HasCacheSpace => Volatile.Read(ref currentCacheCount) < maxCacheLength;
 
         /// <summary>
-        /// 同步等待，直到缓存中有可用空间。
-        /// 此方法会阻塞当前线程，直到 <see cref="HasCacheSpace"/> 为 true 或取消请求被触发。
+        /// 同步等待，直到缓存中有可用空间。 此方法会阻塞当前线程，直到 <see cref="HasCacheSpace"/> 为 true 或取消请求被触发。
         /// </summary>
-        /// <remarks>
-        /// 此方法适用于可以安全阻塞的后台解码线程。它会循环调用 <c>WaitOne</c>，
-        /// 直到有信号通知缓存空间已释放或操作被取消。
-        /// </remarks>
+        /// <remarks>此方法适用于可以安全阻塞的后台解码线程。它会循环调用 <c>WaitOne</c>， 直到有信号通知缓存空间已释放或操作被取消。</remarks>
         /// <param name="timeoutMs">单次等待的超时时间（毫秒）。</param>
         /// <param name="cancellationToken">用于取消等待操作的令牌。</param>
         public void WaitForCacheSpace(int timeoutMs = DefaultWaitTimeoutMs, CancellationToken cancellationToken = default)
@@ -47,13 +47,9 @@ namespace ExtenderApp.FFmpegEngines
         }
 
         /// <summary>
-        /// 异步等待，直到缓存中有可用空间。
-        /// 如果当前没有可用空间，此方法将返回一个在空间可用时完成的 <see cref="ValueTask"/>。
+        /// 异步等待，直到缓存中有可用空间。 如果当前没有可用空间，此方法将返回一个在空间可用时完成的 <see cref="ValueTask"/>。
         /// </summary>
-        /// <remarks>
-        /// 此方法是<see cref="WaitForCacheSpace"/>的非阻塞版本。它将同步的等待操作卸载到线程池，
-        /// 从而允许调用方（如UI线程）保持响应。
-        /// </remarks>
+        /// <remarks>此方法是 <see cref="WaitForCacheSpace"/> 的非阻塞版本。它将同步的等待操作卸载到线程池， 从而允许调用方（如UI线程）保持响应。</remarks>
         /// <param name="timeoutMs">传递给同步等待逻辑的单次等待超时时间（毫秒）。</param>
         /// <param name="cancellationToken">用于取消等待操作的令牌。</param>
         /// <returns>一个在缓存空间可用或操作被取消时完成的 <see cref="ValueTask"/>。</returns>

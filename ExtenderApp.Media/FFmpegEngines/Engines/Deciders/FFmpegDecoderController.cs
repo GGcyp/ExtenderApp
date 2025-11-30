@@ -1,12 +1,12 @@
-﻿using ExtenderApp.Data;
+﻿using System.Runtime.CompilerServices;
+using ExtenderApp.Data;
 using ExtenderApp.FFmpegEngines.Decoders;
 using FFmpeg.AutoGen;
 
 namespace ExtenderApp.FFmpegEngines
 {
     /// <summary>
-    /// FFmpeg 解码控制器。
-    /// 管理解码流程的启动、停止、资源释放及解码状态同步，支持异步解码和取消操作。 适用于音视频流的多线程解码场景。
+    /// FFmpeg 解码控制器。 管理解码流程的启动、停止、资源释放及解码状态同步，支持异步解码和取消操作。 适用于音视频流的多线程解码场景。
     /// </summary>
     public class FFmpegDecoderController : DisposableObject
     {
@@ -39,6 +39,8 @@ namespace ExtenderApp.FFmpegEngines
         /// 用于控制当前解码会话（启动到停止/跳转）的取消令牌源。
         /// </summary>
         private CancellationTokenSource? source;
+
+        private FFmpegDecodeMode decodeMode;
 
         /// <summary>
         /// 获取解码器集合，其中包含此控制器管理的所有解码器（例如，视频和音频）。
@@ -81,11 +83,11 @@ namespace ExtenderApp.FFmpegEngines
         }
 
         /// <summary>
-        /// 启动解码流程。
-        /// 此方法会为数据包读取和每个解码器创建一个后台任务。如果解码已在运行，则会抛出 <see cref="InvalidOperationException"/>。
+        /// 启动解码流程。 此方法会为数据包读取和每个解码器创建一个后台任务。如果解码已在运行，则会抛出 <see cref="InvalidOperationException"/>。
         /// </summary>
+        /// <param name="mode">解码模式，默认为正常模式。</param>
         /// <exception cref="InvalidOperationException">当解码任务已在运行时调用此方法。</exception>
-        public void StartDecode()
+        public void StartDecode(FFmpegDecodeMode mode = FFmpegDecodeMode.Normal)
         {
             ThrowIfDisposed();
             if (processTasks != null)
@@ -95,19 +97,32 @@ namespace ExtenderApp.FFmpegEngines
             source = CancellationTokenSource.CreateLinkedTokenSource(AllSource.Token);
 
             int length = DecoderCollection.Length + 1;
+            if (mode != FFmpegDecodeMode.Normal)
+            {
+                FFmpegMediaType targetType = Convert(mode);
+                length = DecoderCollection.ContainsDecoder(targetType) ? length - 1 : length;
+            }
+
+            if (length <= 1)
+                throw new InvalidOperationException(string.Format("没有可用的解码器:{0},解码模式：{1}", _context.Info.MediaUri, mode));
+
+            decodeMode = mode;
+
             processTasks = new Task[length];
             processTasks[0] = Task.Run(() => Decoding(source.Token), AllSource.Token);
 
             for (int i = 1; i < length; i++)
             {
                 var decoder = DecoderCollection[i - 1];
+                if (mode != FFmpegDecodeMode.Normal && decoder.MediaType == Convert(mode))
+                    continue;
+
                 processTasks[i] = Task.Run(() => ProcessPacket(decoder, source.Token), AllSource.Token);
             }
         }
 
         /// <summary>
-        /// 异步停止当前解码流程。
-        /// 此方法会取消所有正在运行的解码任务并等待它们完成。
+        /// 异步停止当前解码流程。 此方法会取消所有正在运行的解码任务并等待它们完成。
         /// </summary>
         /// <returns>一个表示异步停止操作的任务。</returns>
         public Task StopDecodeAsync()
@@ -121,8 +136,7 @@ namespace ExtenderApp.FFmpegEngines
         }
 
         /// <summary>
-        /// 异步跳转到媒体流的指定位置。
-        /// 此方法会先停止当前解码，然后执行跳转操作，并清空所有解码器的内部缓存。
+        /// 异步跳转到媒体流的指定位置。 此方法会先停止当前解码，然后执行跳转操作，并清空所有解码器的内部缓存。
         /// </summary>
         /// <param name="position">目标跳转时间（毫秒）。</param>
         public async Task SeekDecoderAsync(long position)
@@ -172,7 +186,14 @@ namespace ExtenderApp.FFmpegEngines
                 }
 
                 int index = _engine.GetPacketStreamIndex(packet);
-                DecoderCollection[index].EnqueuePacket(packet);
+                var decoder = DecoderCollection[index];
+                if (decodeMode != FFmpegDecodeMode.Normal && decoder.MediaType == Convert(decodeMode))
+                {
+                    // 丢弃不需要的包
+                    _engine.Free(ref packet);
+                    continue;
+                }
+                decoder.EnqueuePacket(packet);
             }
             return Task.CompletedTask;
         }
@@ -236,6 +257,22 @@ namespace ExtenderApp.FFmpegEngines
         {
             _context.Dispose();
             DecoderCollection.Dispose();
+        }
+
+        /// <summary>
+        /// 将解码模式转换为对应的媒体类型。
+        /// </summary>
+        /// <param name="mode">解码模式。</param>
+        /// <returns>对应的媒体类型。</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private FFmpegMediaType Convert(FFmpegDecodeMode mode)
+        {
+            return mode switch
+            {
+                FFmpegDecodeMode.AudioOnly => FFmpegMediaType.AUDIO,
+                FFmpegDecodeMode.VideoOnly => FFmpegMediaType.VIDEO,
+                _ => FFmpegMediaType.UNKNOWN,
+            };
         }
     }
 }

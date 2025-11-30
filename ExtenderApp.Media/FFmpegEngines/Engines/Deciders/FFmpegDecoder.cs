@@ -5,8 +5,7 @@ using FFmpeg.AutoGen;
 namespace ExtenderApp.FFmpegEngines.Decoders
 {
     /// <summary>
-    /// FFmpeg 解码器抽象基类。
-    /// 封装解码器的通用属性和生命周期管理，具体解码逻辑由子类实现。
+    /// FFmpeg 解码器抽象基类。 封装解码器的通用属性和生命周期管理，具体解码逻辑由子类实现。
     /// </summary>
     public abstract class FFmpegDecoder : DisposableObject
     {
@@ -61,6 +60,21 @@ namespace ExtenderApp.FFmpegEngines.Decoders
         public int StreamIndex => Context.StreamIndex;
 
         /// <summary>
+        /// 获取一个值，该值指示是否有已解码的帧可供消费。
+        /// </summary>
+        public bool HasFrames => !_frames.IsEmpty;
+
+        /// <summary>
+        /// 获取下一帧的时间戳（以毫秒为单位）。
+        /// </summary>
+        public long NextFramePts => _frames.TryPeek(out var frame) ? frame.Pts : long.MinValue;
+
+        /// <summary>
+        /// 获取当前解码器对应的媒体类型（音频或视频）。
+        /// </summary>
+        public FFmpegMediaType MediaType => Context.MediaType;
+
+        /// <summary>
         /// 初始化 <see cref="FFmpegDecoder"/> 类的新实例。
         /// </summary>
         /// <param name="engine">FFmpeg 引擎实例。</param>
@@ -80,8 +94,7 @@ namespace ExtenderApp.FFmpegEngines.Decoders
         }
 
         /// <summary>
-        /// 从队列中取出一个数据包并进行解码。
-        /// 如果缓存已满，此方法将异步等待；否则将同步处理并立即返回。
+        /// 从队列中取出一个数据包并进行解码。 如果缓存已满，此方法将异步等待；否则将同步处理并立即返回。
         /// </summary>
         /// <param name="token">用于取消操作的取消令牌。</param>
         public async ValueTask ProcessPacket(CancellationToken token)
@@ -218,8 +231,7 @@ namespace ExtenderApp.FFmpegEngines.Decoders
         }
 
         /// <summary>
-        /// 更新解码器设置。
-        /// 允许在运行时动态更改解码参数，例如输出格式。
+        /// 更新解码器设置。 允许在运行时动态更改解码参数，例如输出格式。
         /// </summary>
         /// <param name="settings">新的解码器设置。</param>
         public void UpdateSettings(FFmpegDecoderSettings settings)

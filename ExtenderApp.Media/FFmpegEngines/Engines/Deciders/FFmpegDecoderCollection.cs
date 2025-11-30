@@ -4,8 +4,7 @@ using ExtenderApp.Data;
 namespace ExtenderApp.FFmpegEngines.Decoders
 {
     /// <summary>
-    /// FFmpeg 解码器集合类。
-    /// 封装视频和音频解码器的统一管理，便于解码流程的调度与资源释放。 支持根据流索引获取对应解码器，并自动管理解码器的生命周期。
+    /// FFmpeg 解码器集合类。 封装视频和音频解码器的统一管理，便于解码流程的调度与资源释放。 支持根据流索引获取对应解码器，并自动管理解码器的生命周期。
     /// </summary>
     public class FFmpegDecoderCollection : DisposableObject, IEnumerable<FFmpegDecoder>
     {
@@ -27,8 +26,7 @@ namespace ExtenderApp.FFmpegEngines.Decoders
         public int Length => _decoders.Length;
 
         /// <summary>
-        /// 初始化 <see
-        /// cref="FFmpegDecoderCollection"/> 实例，并根据上下文创建所有必需的解码器。
+        /// 初始化 <see cref="FFmpegDecoderCollection"/> 实例，并根据上下文创建所有必需的解码器。
         /// </summary>
         /// <param name="engine">FFmpeg 引擎实例。</param>
         /// <param name="contexts">解码器上下文集合。</param>
@@ -57,14 +55,25 @@ namespace ExtenderApp.FFmpegEngines.Decoders
         }
 
         /// <summary>
-        /// 获取指定媒体类型的解码器，并将其转换为指定的类型。
+        /// 根据媒体类型获取对应的解码器实例。
         /// </summary>
-        /// <typeparam name="T">要转换到的解码器类型，必须是 <see cref="FFmpegDecoder"/> 的子类。</typeparam>
-        /// <param name="mediaType">要获取的解码器的媒体类型（例如，视频或音频）。</param>
-        /// <returns>如果找到并成功转换，则返回指定类型的解码器；否则返回 <c>null</c>。</returns>
-        public T? GetDecoder<T>(FFmpegMediaType mediaType) where T : FFmpegDecoder
+        /// <param name="mediaType">
+        /// 要获取的媒体类型（例如 <see cref="FFmpegMediaType.AVMEDIA_TYPE_VIDEO"/> 或 <see cref="FFmpegMediaType.AVMEDIA_TYPE_AUDIO"/>）。
+        /// </param>
+        /// <returns>对应媒体类型的 <see cref="FFmpegDecoder"/> 实例；如果集合中不存在对应索引则可能抛出 <see cref="IndexOutOfRangeException"/>。</returns>
+        public FFmpegDecoder? GetDecoder(FFmpegMediaType mediaType)
         {
-            return _decoders[(int)mediaType] as T;
+            return _decoders.FirstOrDefault(d => d.MediaType == mediaType);
+        }
+
+        /// <summary>
+        /// 检查集合中是否包含指定媒体类型的解码器。
+        /// </summary>
+        /// <param name="mediaType">要检查的媒体类型。</param>
+        /// <returns>如果集合中包含指定媒体类型的解码器，则为 <c>true</c>；否则为 <c>false</c>。</returns>
+        public bool ContainsDecoder(FFmpegMediaType mediaType)
+        {
+            return _decoders.Any(d => d.MediaType == mediaType);
         }
 
         /// <summary>
