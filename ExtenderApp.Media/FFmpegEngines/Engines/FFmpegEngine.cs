@@ -179,12 +179,12 @@ namespace ExtenderApp.FFmpegEngines
         /// 最大缓存数据包数量（用于限制 _packetQueue 队列长度）。 控制解码过程中可缓存的 AVPacket 数量，防止内存占用过高。
         /// 建议根据实际业务场景和内存压力调整，默认值为 20。
         /// </summary>
-        public int MaxCachePacketCount = 5;
+        public int MaxCachePacketCount = 20;
 
         /// <summary>
         /// 最大缓存帧数量（用于限制 _frameQueue 队列长度）。 控制解码过程中可缓存的 AVFrame 数量，防止内存占用过高。 建议根据实际业务场景和解码速率调整，默认值为 30。
         /// </summary>
-        public int MaxCacheFrameCount = 3;
+        public int MaxCacheFrameCount = 30;
 
         /// <summary>
         /// 默认流索引。
@@ -204,7 +204,7 @@ namespace ExtenderApp.FFmpegEngines
         /// <summary>
         /// 数据包队列。
         /// </summary>
-        private readonly ConcurrentQueue<NativeIntPtr<AVPacket>> _packetQueue;
+        public readonly ConcurrentQueue<NativeIntPtr<AVPacket>> _packetQueue;
 
         /// <summary>
         /// 帧队列。
@@ -905,7 +905,7 @@ namespace ExtenderApp.FFmpegEngines
         /// 回收一个AVPacket实例，将其放回数据包队列以供重用。
         /// </summary>
         /// <param name="packet">需要被回收的地址</param>
-        public void ReturnPacket(ref NativeIntPtr<AVPacket> packet)
+        public void Return(ref NativeIntPtr<AVPacket> packet)
         {
             if (packet.IsEmpty)
             {
@@ -1109,7 +1109,7 @@ namespace ExtenderApp.FFmpegEngines
         /// 回收一个 AVFrame 实例，将其放回帧队列以供后续复用。 会先清空帧内容（调用 FFmpeg 的 av_frame_unref），再入队，避免内存泄漏和脏数据。 推荐在帧处理完毕后调用，便于资源管理和性能优化。
         /// </summary>
         /// <param name="frame">需要被回收的 AVFrame 指针封装。</param>
-        public void ReturnFrame(ref NativeIntPtr<AVFrame> frame)
+        public void Return(ref NativeIntPtr<AVFrame> frame)
         {
             if (frame.IsEmpty)
             {
@@ -1589,14 +1589,14 @@ namespace ExtenderApp.FFmpegEngines
         }
 
         /// <summary>
-        /// 检查指针是否有效并从内部集合移除。 用于辅助资源释放，防止重复释放或未管理的指针。
+        /// 检查指针是否有效并从内部集合移除。 用于辅助资源释放。
         /// </summary>
         /// <typeparam name="T">非托管类型。</typeparam>
         /// <param name="ptr">待检查的指针封装。</param>
         /// <returns>如果指针有效并已移除则返回 true，否则返回 false。</returns>
         private bool CheckIntPtrAndRemove<T>(NativeIntPtr<T> ptr) where T : unmanaged
         {
-            if (ptr.IsEmpty || !_intPtrHashSet.Contains(ptr))
+            if (ptr.IsEmpty)
             {
                 return false;
             }

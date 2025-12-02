@@ -164,7 +164,7 @@ namespace ExtenderApp.FFmpegEngines
                 if (token.IsCancellationRequested || AllSource.IsCancellationRequested)
                     return Task.CompletedTask;
 
-                NativeIntPtr<AVPacket> packet = _engine.GetPacket();
+                var packet = _engine.GetPacket();
                 int result = _engine.ReadPacket(_context.FormatContext, ref packet);
                 if (result < 0)
                 {
@@ -177,11 +177,13 @@ namespace ExtenderApp.FFmpegEngines
                     {
                         _engine.ShowException("读取帧失败", result);
                     }
+                    _engine.Return(ref packet);
                     break;
                 }
                 else if (_engine.IsTryAgain(result))
                 {
                     // 重试读取
+                    _engine.Return(ref packet);
                     continue;
                 }
 
@@ -190,7 +192,7 @@ namespace ExtenderApp.FFmpegEngines
                 if (decodeMode != FFmpegDecodeMode.Normal && decoder.MediaType == Convert(decodeMode))
                 {
                     // 丢弃不需要的包
-                    _engine.Free(ref packet);
+                    _engine.Return(ref packet);
                     continue;
                 }
                 decoder.EnqueuePacket(packet);
@@ -203,18 +205,11 @@ namespace ExtenderApp.FFmpegEngines
         /// </summary>
         /// <param name="decoder">要处理的解码器。</param>
         /// <param name="token">用于取消操作的取消令牌。</param>
-        private async Task ProcessPacket(FFmpegDecoder decoder, CancellationToken token)
+        private void ProcessPacket(FFmpegDecoder decoder, CancellationToken token)
         {
             while (!token.IsCancellationRequested)
             {
-                try
-                {
-                    await decoder.ProcessPacket(token);
-                }
-                catch (TaskCanceledException)
-                {
-                    // 忽略任务取消异常
-                }
+                decoder.ProcessPacket(token);
             }
         }
 

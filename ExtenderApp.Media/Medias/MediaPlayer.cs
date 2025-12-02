@@ -234,7 +234,7 @@ namespace ExtenderApp.FFmpegEngines
         /// <summary>
         /// 媒体播放主循环任务，负责音视频帧的调度与播放。
         /// </summary>
-        private async Task PlaybackLoop()
+        private void PlaybackLoop()
         {
             var allToken = _allSource.Token;
             mediaSource = CancellationTokenSource.CreateLinkedTokenSource(allToken);
@@ -259,14 +259,7 @@ namespace ExtenderApp.FFmpegEngines
                 // 如果两个流都没有帧，等待上一次的延时然后继续循环
                 if (!HasFrames())
                 {
-                    try
-                    {
-                        await Task.Delay(lastDelay, token);
-                    }
-                    catch (TaskCanceledException)
-                    {
-                        // 忽略取消带来的异常，循环会根据 token 退出
-                    }
+                    Thread.Sleep(lastDelay);
                     continue;
                 }
 
@@ -288,30 +281,19 @@ namespace ExtenderApp.FFmpegEngines
 
                 if (scaledWait >= SkipWaitingTime)
                 {
-                    try
-                    {
-                        await Task.Delay(scaledWait, token);
-                    }
-                    catch (TaskCanceledException)
-                    {
-                        // 忽略取消异常
-                    }
+                    Thread.Sleep(scaledWait);
                 }
                 else
                 {
                     // 若等待时间过短，yield 给线程池以避免 busy-loop
-                    await Task.Yield();
+                    Thread.Yield();
                 }
             }
         }
 
         private bool HasFrames()
         {
-            bool hasFrames = true;
-            hasFrames = HasFrames(_audioDecoder);
-            hasFrames = HasFrames(_videoDecoder);
-
-            return hasFrames;
+            return HasFrames(_audioDecoder) || HasFrames(_videoDecoder);
         }
 
         private bool HasFrames(FFmpegDecoder? decoder)

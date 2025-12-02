@@ -24,6 +24,8 @@ namespace ExtenderApp.FFmpegEngines.Decoders
         /// </summary>
         private readonly CacheStateController _cacheStateController;
 
+        private readonly int _maxCacheLength;
+
         /// <summary>
         /// 获取 FFmpeg 引擎实例，用于底层解码操作和资源管理。
         /// </summary>
@@ -47,7 +49,7 @@ namespace ExtenderApp.FFmpegEngines.Decoders
         /// <summary>
         /// 获取一个值，该值指示缓存队列是否还有空间。
         /// </summary>
-        public bool HasCacheSpace => _cacheStateController.HasCacheSpace;
+        public bool HasPacketCacheSpace => _packets.Count == 0;
 
         /// <summary>
         /// 获取当前已缓存的帧数。
@@ -91,42 +93,34 @@ namespace ExtenderApp.FFmpegEngines.Decoders
             _cacheStateController = new(maxCacheLength);
             _packets = new();
             _frames = new();
+            _maxCacheLength = maxCacheLength;
         }
 
         /// <summary>
         /// 从队列中取出一个数据包并进行解码。 如果缓存已满，此方法将异步等待；否则将同步处理并立即返回。
         /// </summary>
         /// <param name="token">用于取消操作的取消令牌。</param>
-        public async ValueTask ProcessPacket(CancellationToken token)
+        public void ProcessPacket(CancellationToken token)
         {
-            if (token.IsCancellationRequested)
+            if (token.IsCancellationRequested ||
+                !_packets.TryDequeue(out var packet))
                 return;
 
-            if (!_packets.TryDequeue(out NativeIntPtr<AVPacket> packet))
+            // 如果缓存已满，则先阻塞检查
+            if (!_cacheStateController.HasCacheSpace)
+                _cacheStateController.WaitForCacheSpace(cancellationToken: token);
+
+            int result = Engine.SendPacket(Context.CodecContext, ref packet);
+            if (result < 0)
+            {
+                // 如果发送失败，直接返回，因为不太可能恢复
+                Engine.Return(ref packet);
                 return;
-
-            try
-            {
-                int result = Engine.SendPacket(Context.CodecContext, ref packet);
-                if (result < 0)
-                {
-                    // 如果发送失败，直接返回，因为不太可能恢复
-                    return;
-                }
-
-                // 如果缓存已满，则异步等待空间
-                if (!_cacheStateController.HasCacheSpace)
-                {
-                    await _cacheStateController.WaitForCacheSpaceAsync(cancellationToken: token); // 先尝试非阻塞检查
-                }
-
-                // 同步处理所有可用的帧
-                ProcessFrames(token);
             }
-            finally
-            {
-                Engine.ReturnPacket(ref packet);
-            }
+
+            // 同步处理所有可用的帧
+            ProcessFrames(token);
+            Engine.Return(ref packet);
         }
 
         /// <summary>
@@ -135,16 +129,13 @@ namespace ExtenderApp.FFmpegEngines.Decoders
         /// <param name="token">用于取消操作的取消令牌。</param>
         private void ProcessFrames(CancellationToken token)
         {
-            while (!token.IsCancellationRequested)
-            {
-                // 检查是否有缓存空间，但这次不阻塞等待
-                if (!_cacheStateController.HasCacheSpace)
-                {
-                    break;
-                }
+            if (token.IsCancellationRequested)
+                return;
 
-                NativeIntPtr<AVFrame> frame = Engine.GetFrame();
-                try
+            var frame = Engine.GetFrame();
+            try
+            {
+                while (!token.IsCancellationRequested)
                 {
                     int ret = Engine.ReceiveFrame(Context.CodecContext, ref frame);
 
@@ -153,21 +144,22 @@ namespace ExtenderApp.FFmpegEngines.Decoders
                     {
                         break;
                     }
-                    // 检查其他错误
+                    // 检查是否已完成
                     if (!Engine.IsSuccess(ret))
                     {
                         Engine.ShowException("接收帧失败", ret);
                         break;
                     }
 
-                    long framePts = Engine.GetFrameTimestampMs(frame, Context);
                     ProcessFrame(frame, out var block);
+
+                    long framePts = Engine.GetFrameTimestampMs(frame, Context);
                     EnqueueFrame(new FFmpegFrame(block, framePts));
                 }
-                finally
-                {
-                    Engine.ReturnFrame(ref frame);
-                }
+            }
+            finally
+            {
+                Engine.Return(ref frame);
             }
         }
 
@@ -222,7 +214,7 @@ namespace ExtenderApp.FFmpegEngines.Decoders
         {
             while (_packets.TryDequeue(out var packet))
             {
-                Engine.ReturnPacket(ref packet);
+                Engine.Return(ref packet);
             }
             while (_frames.TryDequeue(out var frame))
             {

@@ -16,11 +16,11 @@ namespace ExtenderApp.FFmpegEngines
         /// <summary>
         /// 视频帧最大缓存数量。
         /// </summary>
-        public int VideoMaxCacheLength { get; } = 10;
+        public int VideoMaxCacheLength { get; } = 5;
         /// <summary>
         /// 音频帧最大缓存数量。
         /// </summary>
-        public int AudioMaxCacheLength { get; } = 10;
+        public int AudioMaxCacheLength { get; } = 5;
 
         /// <summary>
         /// 音频通道布局（如立体声=2）。

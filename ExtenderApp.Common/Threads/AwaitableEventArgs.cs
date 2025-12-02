@@ -1,9 +1,10 @@
 ﻿using System.Threading.Tasks.Sources;
+using ExtenderApp.Common.DataBuffers;
 using ExtenderApp.Common.ObjectPools;
 
 namespace ExtenderApp.Common.Threads
 {
-    public sealed class AwaitableEventArgs : IValueTaskSource
+    public sealed class AwaitableEventArgs : IValueTaskSource, IThreadPoolWorkItem
     {
         public static readonly ObjectPool<AwaitableEventArgs> _pool
             = ObjectPool.CreateDefaultPool<AwaitableEventArgs>();
@@ -19,6 +20,16 @@ namespace ExtenderApp.Common.Threads
         /// 多线程重置值任务源的核心实现。
         /// </summary>
         private ManualResetValueTaskSourceCore<bool> vts;
+
+        /// <summary>
+        /// 数据缓冲区，用于在线程池线程中传递状态。
+        /// </summary>
+        private DataBuffer? _buffer;
+
+        /// <summary>
+        /// 数据缓冲回调，用于在线程池线程中执行操作。
+        /// </summary>
+        private Action<DataBuffer>? _callback;
 
         public AwaitableEventArgs()
         {
@@ -49,9 +60,23 @@ namespace ExtenderApp.Common.Threads
             if (action == null)
                 throw new ArgumentNullException(nameof(action));
 
-            ThreadPool.UnsafeQueueUserWorkItem(static s =>
+            _callback = Execute;
+            _buffer = DataBuffer.FromValue(this, action);
+
+            ThreadPool.UnsafeQueueUserWorkItem(this, false);
+            return this;
+
+            static void Execute(DataBuffer buffer)
             {
-                var (args, action) = s;
+                if (buffer is not DataBuffer<AwaitableEventArgs, Action> data)
+                {
+                    buffer.Release();
+                    return;
+                }
+
+                AwaitableEventArgs args = data.Item1!;
+                Action action = data.Item2!;
+
                 try
                 {
                     action();
@@ -61,8 +86,7 @@ namespace ExtenderApp.Common.Threads
                 {
                     args.SetException(ex);
                 }
-            }, (this, action), false);
-            return this;
+            }
         }
 
         /// <summary>
@@ -77,9 +101,24 @@ namespace ExtenderApp.Common.Threads
             if (action == null)
                 throw new ArgumentNullException(nameof(action));
 
-            ThreadPool.UnsafeQueueUserWorkItem(static s =>
+            _callback = Execute;
+            _buffer = DataBuffer.FromValue(this, action, item);
+
+            ThreadPool.UnsafeQueueUserWorkItem(this, false);
+            return this;
+
+            static void Execute(DataBuffer buffer)
             {
-                var (args, action, item) = s;
+                if (buffer is not DataBuffer<AwaitableEventArgs, Action<T>, T> data)
+                {
+                    buffer.Release();
+                    return;
+                }
+
+                AwaitableEventArgs args = data.Item1!;
+                Action<T> action = data.Item2!;
+                T item = data.Item3!;
+
                 try
                 {
                     action(item);
@@ -89,8 +128,7 @@ namespace ExtenderApp.Common.Threads
                 {
                     args.SetException(ex);
                 }
-            }, (this, action, item), false);
-            return this;
+            }
         }
 
         /// <summary>
@@ -107,9 +145,25 @@ namespace ExtenderApp.Common.Threads
             if (action == null)
                 throw new ArgumentNullException(nameof(action));
 
-            ThreadPool.UnsafeQueueUserWorkItem(static s =>
+            _callback = Execute;
+            _buffer = DataBuffer.FromValue(this, action, item1, item2);
+
+            ThreadPool.UnsafeQueueUserWorkItem(this, false);
+            return this;
+
+            static void Execute(DataBuffer buffer)
             {
-                var (args, action, item1, item2) = s;
+                if (buffer is not DataBuffer<AwaitableEventArgs, Action<T1, T2>, T1, T2> data)
+                {
+                    buffer.Release();
+                    return;
+                }
+
+                AwaitableEventArgs args = data.Item1!;
+                Action<T1, T2> action = data.Item2!;
+                T1 item1 = data.Item3!;
+                T2 item2 = data.Item4!;
+
                 try
                 {
                     action(item1, item2);
@@ -119,8 +173,7 @@ namespace ExtenderApp.Common.Threads
                 {
                     args.SetException(ex);
                 }
-            }, (this, action, item1, item2), false);
-            return this;
+            }
         }
 
         /// <summary>
@@ -143,6 +196,9 @@ namespace ExtenderApp.Common.Threads
             finally
             {
                 // 获取结果后立即重置，为下一次操作做准备
+                _buffer?.Release();
+                _buffer = null;
+                _callback = null;
                 vts.Reset();
                 _pool.Release(this);
             }
@@ -160,8 +216,19 @@ namespace ExtenderApp.Common.Threads
             vts.OnCompleted(continuation, state, token, flags);
         }
 
+        public void Execute()
+        {
+            _callback?.Invoke(_buffer!);
+        }
+
         public static implicit operator ValueTask(AwaitableEventArgs args)
-            => new ValueTask(args, args.Version);
+        {
+            // 如果已经完成，返回缓存的CompletedTask
+            if (args.GetStatus(args.Version) == ValueTaskSourceStatus.Succeeded)
+                return ValueTask.CompletedTask;
+
+            return new(args, args.Version);
+        }
     }
 
     /// <summary>
@@ -170,7 +237,7 @@ namespace ExtenderApp.Common.Threads
     /// 从而在异步操作同步完成时避免不必要的堆内存分配。
     /// </summary>
     /// <typeparam name="T">异步操作返回的结果类型。</typeparam>
-    public sealed class AwaitableEventArgs<T> : IValueTaskSource<T>
+    public sealed class AwaitableEventArgs<T> : IValueTaskSource<T>, IThreadPoolWorkItem
     {
         public static readonly ObjectPool<AwaitableEventArgs<T>> _pool
             = ObjectPool.CreateDefaultPool<AwaitableEventArgs<T>>();
@@ -186,6 +253,16 @@ namespace ExtenderApp.Common.Threads
         /// 多线程重置值任务源的核心实现。
         /// </summary>
         private ManualResetValueTaskSourceCore<T> vts;
+
+        /// <summary>
+        /// 数据缓冲区，用于在线程池线程中传递状态。
+        /// </summary>
+        private DataBuffer? _buffer;
+
+        /// <summary>
+        /// 数据缓冲回调，用于在线程池线程中执行操作。
+        /// </summary>
+        private Action<DataBuffer>? _callback;
 
         /// <summary>
         /// 获取当前操作的版本令牌，用于向 <see cref="ValueTask{TResult}"/> 验证此源的有效性。
@@ -226,26 +303,32 @@ namespace ExtenderApp.Common.Threads
             if (func == null)
                 throw new ArgumentNullException(nameof(func));
 
-            // 将状态打包成元组，以避免闭包分配
-            var state = (args: this, func: func);
+            _callback = Execute;
+            _buffer = DataBuffer.FromValue(this, func);
 
-            ThreadPool.UnsafeQueueUserWorkItem(static s =>
+            ThreadPool.UnsafeQueueUserWorkItem(this, false);
+            return this;
+
+            static void Execute(DataBuffer buffer)
             {
-                // 解包状态
-                var (args, func) = s;
+                if (buffer is not DataBuffer<AwaitableEventArgs<T>, Func<T>> data)
+                {
+                    buffer.Release();
+                    return;
+                }
+                AwaitableEventArgs<T> args = data.Item1!;
+                Func<T> func = data.Item2!;
+
                 try
                 {
-                    // 在线程池线程上执行函数并设置结果
-                    var result = func();
+                    T result = func();
                     args.SetResult(result);
                 }
                 catch (Exception ex)
                 {
-                    // 如果函数执行引发异常，则设置异常
                     args.SetException(ex);
                 }
-            }, state, false);
-            return this;
+            }
         }
 
         /// <summary>
@@ -259,26 +342,34 @@ namespace ExtenderApp.Common.Threads
         {
             if (func == null)
                 throw new ArgumentNullException(nameof(func));
-            // 将状态打包成元组，以避免闭包分配
-            var state = (args: this, func: func, item1: item1);
 
-            ThreadPool.UnsafeQueueUserWorkItem(static s =>
+            _callback = Execute;
+            _buffer = DataBuffer.FromValue(this, func, item1);
+
+            ThreadPool.UnsafeQueueUserWorkItem(this, false);
+            return this;
+
+            static void Execute(DataBuffer buffer)
             {
-                // 解包状态
-                var (args, func, item) = s;
+                if (buffer is not DataBuffer<AwaitableEventArgs<T>, Func<T1, T>, T1> data)
+                {
+                    buffer.Release();
+                    return;
+                }
+                AwaitableEventArgs<T> args = data.Item1!;
+                Func<T1, T> func = data.Item2!;
+                T1 item1 = data.Item3!;
+
                 try
                 {
-                    // 在线程池线程上执行函数并设置结果
-                    var result = func(item);
+                    T result = func(item1);
                     args.SetResult(result);
                 }
                 catch (Exception ex)
                 {
-                    // 如果函数执行引发异常，则设置异常
                     args.SetException(ex);
                 }
-            }, state, false);
-            return this;
+            }
         }
 
         /// <summary>
@@ -294,26 +385,35 @@ namespace ExtenderApp.Common.Threads
         {
             if (func == null)
                 throw new ArgumentNullException(nameof(func));
-            // 将状态打包成元组，以避免闭包分配
-            var state = (args: this, func: func, item1: item1, item2: item2);
 
-            ThreadPool.UnsafeQueueUserWorkItem(static s =>
+            _callback = Execute;
+            _buffer = DataBuffer.FromValue(this, func, item1, item2);
+
+            ThreadPool.UnsafeQueueUserWorkItem(this, false);
+            return this;
+
+            static void Execute(DataBuffer buffer)
             {
-                // 解包状态
-                var (args, func, item1, item2) = s;
+                if (buffer is not DataBuffer<AwaitableEventArgs<T>, Func<T1, T2, T>, T1, T2> data)
+                {
+                    buffer.Release();
+                    return;
+                }
+
+                AwaitableEventArgs<T> args = data.Item1!;
+                Func<T1, T2, T> func = data.Item2!;
+                T1 item1 = data.Item3!;
+                T2 item2 = data.Item4!;
                 try
                 {
-                    // 在线程池线程上执行函数并设置结果
-                    var result = func(item1, item2);
+                    T result = func(item1, item2);
                     args.SetResult(result);
                 }
                 catch (Exception ex)
                 {
-                    // 如果函数执行引发异常，则设置异常
                     args.SetException(ex);
                 }
-            }, state, false);
-            return this;
+            }
         }
 
         /// <summary>
@@ -336,6 +436,9 @@ namespace ExtenderApp.Common.Threads
             finally
             {
                 // 获取结果后立即重置，为下一次操作做准备
+                _buffer?.Release();
+                _buffer = null;
+                _callback = null;
                 vts.Reset();
                 _pool.Release(this);
             }
@@ -353,7 +456,18 @@ namespace ExtenderApp.Common.Threads
             vts.OnCompleted(continuation, state, token, flags);
         }
 
+        public void Execute()
+        {
+            _callback?.Invoke(_buffer!);
+        }
+
         public static implicit operator ValueTask<T>(AwaitableEventArgs<T> args)
-            => new ValueTask<T>(args, args.Version);
+        {
+            // 如果已经完成，返回缓存的CompletedTask
+            if (args.GetStatus(args.Version) == ValueTaskSourceStatus.Succeeded)
+                return ValueTask.FromResult(args.GetResult(args.Version));
+
+            return new(args, args.Version);
+        }
     }
 }

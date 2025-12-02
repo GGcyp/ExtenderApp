@@ -1,5 +1,4 @@
-﻿
-namespace ExtenderApp.Abstract
+﻿namespace ExtenderApp.Abstract
 {
     /// <summary>
     /// 对象池接口
@@ -34,7 +33,7 @@ namespace ExtenderApp.Abstract
         /// 从池中获取一个对象（如果有），否则创建一个对象。
         /// </summary>
         /// <returns>返回对象</returns>
-        new T Get();
+        T Get();
 
         /// <summary>
         /// 将对象返回到池中。

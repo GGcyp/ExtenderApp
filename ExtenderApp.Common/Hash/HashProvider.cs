@@ -152,13 +152,13 @@ namespace ExtenderApp.Common.Hash
 
         //public async Task<HashValue> ComputeHashAsync<TLinkClient>(FileOperateInfo fileOperate) where TLinkClient : HashAlgorithm
         //{
-        //    var pool = GetPool<TLinkClient>();
-        //    var hashAlgorithm = pool.Get();
+        //    var _pool = GetPool<TLinkClient>();
+        //    var hashAlgorithm = _pool.Get();
         //    var fileConcurrent = _fileOperateProvider.GetOperate(fileOperate);
 
         //    byte[] bytes = await fileConcurrent.ReadForArrayPoolAsync(out var length);
         //    byte[] reslut = await hashAlgorithm.ComputeHashAsync(new MemoryStream(bytes));
-        //    pool.Release(hashAlgorithm);
+        //    _pool.Release(hashAlgorithm);
 
         //    return new HashValue(reslut);
         //}

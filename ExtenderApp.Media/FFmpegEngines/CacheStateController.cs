@@ -46,21 +46,6 @@ namespace ExtenderApp.FFmpegEngines
             }
         }
 
-        /// <summary>
-        /// 异步等待，直到缓存中有可用空间。 如果当前没有可用空间，此方法将返回一个在空间可用时完成的 <see cref="ValueTask"/>。
-        /// </summary>
-        /// <remarks>此方法是 <see cref="WaitForCacheSpace"/> 的非阻塞版本。它将同步的等待操作卸载到线程池， 从而允许调用方（如UI线程）保持响应。</remarks>
-        /// <param name="timeoutMs">传递给同步等待逻辑的单次等待超时时间（毫秒）。</param>
-        /// <param name="cancellationToken">用于取消等待操作的令牌。</param>
-        /// <returns>一个在缓存空间可用或操作被取消时完成的 <see cref="ValueTask"/>。</returns>
-        public ValueTask WaitForCacheSpaceAsync(int timeoutMs = DefaultWaitTimeoutMs, CancellationToken cancellationToken = default)
-        {
-            if (HasCacheSpace)
-                return ValueTask.CompletedTask;
-
-            var awaiter = AwaitableEventArgs.Get();
-            return awaiter.SetResult(_waitForCacheSpaceAction, timeoutMs, cancellationToken);
-        }
 
         /// <summary>
         /// 缓存添加帧（更新计数并唤醒等待的解码线程）

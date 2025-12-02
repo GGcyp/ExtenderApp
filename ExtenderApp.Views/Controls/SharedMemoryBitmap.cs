@@ -26,6 +26,11 @@ namespace ExtenderApp.Views
         private readonly int _dataLength;
 
         /// <summary>
+        /// 通知UI线程刷新的委托。
+        /// </summary>
+        private readonly Action _invalidateAction;
+
+        /// <summary>
         /// 获取由该管理器创建的、可直接用于WPF绑定的 <see cref="InteropBitmap"/>。
         /// </summary>
         public InteropBitmap Bitmap { get; }
@@ -69,6 +74,7 @@ namespace ExtenderApp.Views
             PixelWidth = pixelWidth;
             PixelHeight = pixelHeight;
             Format = pixelFormat;
+            _invalidateAction = Invalidate;
 
             Stride = (pixelWidth * Format.BitsPerPixel + 7) / 8;
             _dataLength = Stride * PixelHeight;
@@ -102,11 +108,8 @@ namespace ExtenderApp.Views
         /// <param name="sourceSpan">包含要写入的像素数据的内存跨度。</param>
         public unsafe void Write(ReadOnlySpan<byte> sourceSpan)
         {
-            if (BitmapBuffer == IntPtr.Zero || sourceSpan.IsEmpty)
-                return;
-
             var destinationSpan = new Span<byte>(BitmapBuffer.ToPointer(), _dataLength);
-            sourceSpan.CopyTo(destinationSpan);
+            sourceSpan.Slice(0, _dataLength).CopyTo(destinationSpan);
         }
 
         /// <summary>
@@ -116,7 +119,7 @@ namespace ExtenderApp.Views
         {
             if (!Bitmap.Dispatcher.CheckAccess())
             {
-                Bitmap.Dispatcher.Invoke(Invalidate);
+                Bitmap.Dispatcher.InvokeAsync(_invalidateAction);
                 return;
             }
             Bitmap.Invalidate();

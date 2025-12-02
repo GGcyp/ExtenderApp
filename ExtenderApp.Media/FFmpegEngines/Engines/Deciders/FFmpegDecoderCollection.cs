@@ -77,12 +77,12 @@ namespace ExtenderApp.FFmpegEngines.Decoders
         }
 
         /// <summary>
-        /// 检查集合中是否所有解码器都还有缓存空间。
+        /// 获取解码器中是否任意一个解码器具有缓存空间。
         /// </summary>
-        /// <returns>如果所有解码器都有缓存空间，则为 <c>true</c>；否则为 <c>false</c>。</returns>
+        /// <returns>如果有任意解码器有缓存空间，则为 <c>true</c>；否则为 <c>false</c>。</returns>
         public bool GetHasCacheSpace()
         {
-            return _decoders.All(decoder => decoder.HasCacheSpace);
+            return _decoders.Any(decoder => decoder.HasPacketCacheSpace);
         }
 
         /// <summary>
