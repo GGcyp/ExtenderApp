@@ -13,7 +13,7 @@ namespace ExtenderApp.Data
     /// 2) 非线程安全：同一实例请勿在多线程并发读写。
     /// </summary>
     /// <typeparam name="T">元素类型，必须为非托管并实现 <see cref="IEquatable{T}"/>。</typeparam>
-    public ref struct SequenceBuffer<T>
+    public struct SequenceBuffer<T>
         where T : unmanaged, IEquatable<T>
     {
         /// <summary>
@@ -126,6 +126,18 @@ namespace ExtenderApp.Data
         }
 
         /// <summary>
+        /// 未读取的只读序列。
+        /// </summary>
+        public ReadOnlySequence<T> UnreadSequence
+        {
+            get
+            {
+                UpdateReader();
+                return reader.UnreadSequence;
+            }
+        }
+
+        /// <summary>
         /// 当前数据片段的只读跨度。
         /// </summary>
         public ReadOnlySpan<T> CurrentSpan
@@ -150,18 +162,6 @@ namespace ExtenderApp.Data
         }
 
         /// <summary>
-        /// 未读取的只读序列。
-        /// </summary>
-        public ReadOnlySequence<T> UnreadSequence
-        {
-            get
-            {
-                UpdateReader();
-                return reader.UnreadSequence;
-            }
-        }
-
-        /// <summary>
         /// 获取当前块是否支持写入（持有可写序列）。
         /// </summary>
         public bool CanWrite => _sequence != null;
@@ -173,7 +173,6 @@ namespace ExtenderApp.Data
 
         public SequenceBuffer(MemoryBlock<T> block) : this(readOnlySequence: new(block.UnreadMemory))
         {
-
         }
 
         /// <summary>
@@ -201,7 +200,6 @@ namespace ExtenderApp.Data
         /// <param name="readOnlySequence">只读序列快照。</param>
         public SequenceBuffer(ReadOnlySequence<T> readOnlySequence) : this(new SequenceReader<T>(readOnlySequence))
         {
-
         }
 
         public SequenceBuffer(SequenceReader<T> reader)
@@ -220,6 +218,7 @@ namespace ExtenderApp.Data
         /// </summary>
         /// <param name="sizeHint">期望大小（提示值，可为 0）。</param>
         /// <exception cref="ObjectDisposedException">当未持有可写序列时抛出。</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Span<T> GetSpan(int sizeHint = 0)
         {
             return _sequence!.GetSpan(sizeHint);
@@ -231,6 +230,7 @@ namespace ExtenderApp.Data
         /// </summary>
         /// <param name="sizeHint">期望大小（提示值，可为 0）。</param>
         /// <exception cref="ObjectDisposedException">当未持有可写序列时抛出。</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Memory<T> GetMemory(int sizeHint = 0)
         {
             return _sequence!.GetMemory(sizeHint);
@@ -281,6 +281,7 @@ namespace ExtenderApp.Data
         /// </summary>
         /// <param name="count">要前进的元素数量。</param>
         /// <returns>若剩余长度不足 <paramref name="count"/>，则不移动并返回 false；否则前进并返回 true。</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool TryReadAdvance(long count)
         {
             if (Remaining < count)
@@ -295,6 +296,7 @@ namespace ExtenderApp.Data
         /// </summary>
         /// <param name="value">要追加的元素。</param>
         /// <exception cref="ObjectDisposedException">当未持有可写序列时抛出。</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Write(in T value)
         {
             _sequence!.Write(new(in value));
@@ -306,7 +308,8 @@ namespace ExtenderApp.Data
         /// </summary>
         /// <param name="value">要追加的数据。</param>
         /// <exception cref="ObjectDisposedException">当未持有可写序列时抛出。</exception>
-        public void Write(in ReadOnlySpan<T> value)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Write(scoped ReadOnlySpan<T> value)
         {
             if (value.IsEmpty)
                 return;
@@ -319,6 +322,7 @@ namespace ExtenderApp.Data
         /// 追加一段只读内存数据。
         /// </summary>
         /// <param name="value">要追加的数据。</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Write(in ReadOnlyMemory<T> value)
         {
             Write(value.Span);
@@ -328,6 +332,7 @@ namespace ExtenderApp.Data
         /// 追加一个只读序列（可能为多段）。
         /// </summary>
         /// <param name="value">要追加的数据。</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Write(in ReadOnlySequence<T> value)
         {
             if (value.IsEmpty)
@@ -345,6 +350,7 @@ namespace ExtenderApp.Data
         /// </summary>
         /// <param name="value">输出读取到的元素。</param>
         /// <returns>读取成功返回 true，否则 false。</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool TryRead(out T value)
         {
             UpdateReader();
@@ -361,6 +367,7 @@ namespace ExtenderApp.Data
         /// <param name="count">需要读取的元素数量。</param>
         /// <param name="value">输出读取到的只读切片。</param>
         /// <returns>若剩余长度不足 count，返回 false 且不前进。</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool TryRead(int count, out ReadOnlySequence<T> value)
         {
             UpdateReader();
@@ -374,6 +381,56 @@ namespace ExtenderApp.Data
             var end = reader.Position;
             value = reader.Sequence.Slice(start, end);
             return true;
+        }
+
+        /// <summary>
+        /// 读取数据到目标缓冲区，同时前进读取位置。
+        /// </summary>
+        /// <param name="value">目标缓冲区</param>
+        /// <returns>读取数量</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public int Read(Span<T> value)
+        {
+            if (value.IsEmpty || value.Length == 0)
+                return 0;
+
+            UpdateReader();
+            int totalRead = 0;
+            int index = 0;
+            foreach (var segment in Sequence.Slice(CurrentSpanIndex))
+            {
+                int minLength = Math.Min(segment.Length, value.Length - totalRead);
+
+                segment.Slice(0, minLength).Span.CopyTo(value.Slice(index));
+                index += minLength;
+            }
+            ReadAdvance(totalRead);
+            return totalRead;
+        }
+
+        /// <summary>
+        /// 读取数据到目标缓冲区，同时前进读取位置。
+        /// </summary>
+        /// <param name="value">目标缓冲区</param>
+        /// <returns>读取数量</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public int Read(Memory<T> value)
+        {
+            if (value.IsEmpty || value.Length == 0)
+                return 0;
+
+            UpdateReader();
+            int totalRead = 0;
+            int index = 0;
+            foreach (var segment in Sequence.Slice(CurrentSpanIndex))
+            {
+                int minLength = Math.Min(segment.Length, value.Length - totalRead);
+
+                segment.Slice(0, minLength).CopyTo(value.Slice(index));
+                index += minLength;
+            }
+            ReadAdvance(totalRead);
+            return totalRead;
         }
 
         /// <summary>
@@ -409,6 +466,7 @@ namespace ExtenderApp.Data
         /// </summary>
         /// <param name="value">输出预览到的元素。</param>
         /// <returns>预览成功返回 true。</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool TryPeek(out T value)
         {
             UpdateReader();
@@ -421,6 +479,7 @@ namespace ExtenderApp.Data
         /// <param name="offset">相对当前位置的偏移量。</param>
         /// <param name="value">输出预览到的元素。</param>
         /// <returns>预览成功返回 true。</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool TryPeek(long offset, out T value)
         {
             UpdateReader();
@@ -432,6 +491,7 @@ namespace ExtenderApp.Data
         /// </summary>
         /// <param name="pos">指定位置</param>
         /// <exception cref="ArgumentOutOfRangeException">当位置小于0或大于已写入长度时触发</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Seek(long pos)
         {
             if (pos < 0 || pos > Length)
@@ -455,6 +515,7 @@ namespace ExtenderApp.Data
         /// 将读取位置回退指定数量。
         /// </summary>
         /// <param name="count">回退的元素数量。</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Rewind(long count)
         {
             UpdateReader();
@@ -558,7 +619,7 @@ namespace ExtenderApp.Data
             }
         }
 
-        #endregion
+        #endregion FromSequenceBuffer
 
         #region ToSequenceBuffer
 
@@ -574,6 +635,6 @@ namespace ExtenderApp.Data
         public static implicit operator SequenceBuffer<T>(SequenceReader<T> reader)
             => new SequenceBuffer<T>(reader);
 
-        #endregion
+        #endregion ToSequenceBuffer
     }
 }

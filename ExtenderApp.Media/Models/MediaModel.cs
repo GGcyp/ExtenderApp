@@ -1,5 +1,7 @@
 ﻿using System.Collections.ObjectModel;
 using System.Drawing;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Interop;
 using System.Windows.Media.Imaging;
@@ -28,8 +30,8 @@ namespace ExtenderApp.Media.Models
         public MediaPlayer? MPlayer { get; set; }
         public AudioPlayer? APlayer { get; set; }
 
-        public InteropBitmap? Bitmap => sharedMemoryBitmap?.Bitmap;
-        public SharedMemoryBitmap? sharedMemoryBitmap { get; set; }
+        public WriteableBitmap? Bitmap => nativeMemoryBitmap?.Bitmap;
+        public NativeMemoryBitmap? nativeMemoryBitmap { get; set; }
 
         public IView? CurrentVideoView { get; set; }
         public IView? CurrentVideoListView { get; set; }
@@ -124,7 +126,7 @@ namespace ExtenderApp.Media.Models
 
             TotalTime = MPlayer.Info.DurationTimeSpan;
 
-            sharedMemoryBitmap = new(player.Info.Width, player.Info.Height, System.Windows.Media.PixelFormats.Bgr24);
+            nativeMemoryBitmap = new(player.Info.Width, player.Info.Height, 96, 96, System.Windows.Media.PixelFormats.Bgr24, null);
 
             player.AudioFrameReceived += APlayer.AddSamples;
             player.PlaybackReceived += _playbackAction;
@@ -199,10 +201,10 @@ namespace ExtenderApp.Media.Models
             }
         }
 
-        private void OnVideoFrame(FFmpegFrame frame)
+        private unsafe void OnVideoFrame(FFmpegFrame frame)
         {
-            sharedMemoryBitmap!.Write(frame.Block);
-            sharedMemoryBitmap.Invalidate();
+            nativeMemoryBitmap!.Write(frame.Block.UnreadSpan);
+            nativeMemoryBitmap.UpdateBitmap();
         }
 
         private void OnPlayback(long current)

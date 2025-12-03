@@ -1,5 +1,4 @@
 ﻿using System.Buffers;
-using static ExtenderApp.Data.ValueCounter;
 
 namespace ExtenderApp.Data
 {

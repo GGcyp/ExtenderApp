@@ -198,40 +198,6 @@ namespace ExtenderApp.Data
         }
 
         /// <summary>
-        /// 使用指定编码读取剩余全部未读字节为字符串，并将读指针前进相应字节数（不影响写指针）。
-        /// </summary>
-        /// <param name="encoding">字符编码，默认 UTF-8。</param>
-        /// <returns>解析得到的字符串。</returns>
-        /// <exception cref="ArgumentOutOfRangeException">
-        /// 当没有可读数据（Remaining == 0）时抛出。
-        /// </exception>
-        public string ReadString(Encoding? encoding = null)
-        {
-            return ReadString(Remaining, encoding);
-        }
-
-        /// <summary>
-        /// 使用指定编码读取给定字节数为字符串，并将读指针前进相应字节数（不影响写指针）。
-        /// </summary>
-        /// <param name="byteCount">
-        /// 要读取并解码的字节数（必须在 1..Remaining 范围内）。
-        /// </param>
-        /// <param name="encoding">字符编码，默认 UTF-8。</param>
-        /// <returns>解析得到的字符串。</returns>
-        /// <exception cref="ArgumentOutOfRangeException">
-        /// 当 <paramref name="byteCount"/> ≤ 0 或大于可读字节数（Remaining）时抛出。
-        /// </exception>
-        public string ReadString(int byteCount, Encoding? encoding = null)
-        {
-            if (byteCount <= 0 || byteCount > Remaining)
-                throw new ArgumentOutOfRangeException(nameof(byteCount));
-            encoding ??= Encoding.UTF8;
-            var span = _block.Read(byteCount);
-            var result = encoding.GetString(span);
-            return result;
-        }
-
-        /// <summary>
         /// 将当前块的可读数据（Length - Consumed）复制到目标 <see cref="ByteBuffer"/>，不改变当前块的读指针。
         /// </summary>
         /// <param name="buffer">目标缓冲，将在其末尾追加写入。</param>
@@ -726,10 +692,9 @@ namespace ExtenderApp.Data
             Write(ticks, isBigEndian);
         }
 
-        #endregion
+        #endregion Write
 
         #region Read
-
 
         /// <summary>
         /// 读取当前未读的第一个字节，并将读指针前进 1（不影响写指针）。
@@ -798,84 +763,28 @@ namespace ExtenderApp.Data
         public T Read<T>(bool isBigEndian = true)
         {
             var type = typeof(T);
-            object? result;
-
-            if (type == typeof(byte))
+            object result = type switch
             {
-                result = Read();
-            }
-            else if (type == typeof(sbyte))
-            {
-                result = unchecked((sbyte)Read());
-            }
-            else if (type == typeof(short))
-            {
-                result = ReadInt16(isBigEndian);
-            }
-            else if (type == typeof(ushort))
-            {
-                result = ReadUInt16(isBigEndian);
-            }
-            else if (type == typeof(int))
-            {
-                result = ReadInt32(isBigEndian);
-            }
-            else if (type == typeof(uint))
-            {
-                result = ReadUInt32(isBigEndian);
-            }
-            else if (type == typeof(long))
-            {
-                result = ReadInt64(isBigEndian);
-            }
-            else if (type == typeof(ulong))
-            {
-                result = ReadUInt64(isBigEndian);
-            }
-            else if (type == typeof(float))
-            {
-                result = ReadSingle(isBigEndian: true);
-            }
-            else if (type == typeof(double))
-            {
-                result = ReadDouble(isBigEndian);
-            }
-            else if (type == typeof(decimal))
-            {
-                result = ReadDecimal();
-            }
-            else if (type == typeof(bool))
-            {
-                result = ReadBoolean();
-            }
-            else if (type == typeof(char))
-            {
-                result = ReadChar(); // 默认 UTF-8
-            }
-            else if (type == typeof(Guid))
-            {
-                result = ReadGuid();
-            }
-            else if (type == typeof(DateTime))
-            {
-                result = ReadDateTime(isBigEndian);
-            }
-            else if (type == typeof(DateTimeOffset))
-            {
-                result = ReadDateTimeOffset(isBigEndian);
-            }
-            else if (type == typeof(TimeSpan))
-            {
-                result = ReadTimeSpan(isBigEndian);
-            }
-            else if (type == typeof(string))
-            {
-                result = ReadString(); // 读取剩余全部为字符串
-            }
-            else
-            {
-                throw new NotSupportedException($"ByteBlock.Read<T> 不支持类型: {type.FullName}");
-            }
+                _ when type == typeof(byte) => Read(),
+                _ when type == typeof(sbyte) => unchecked((sbyte)Read()),
+                _ when type == typeof(short) => ReadInt16(isBigEndian),
+                _ when type == typeof(ushort) => ReadUInt16(isBigEndian),
+                _ when type == typeof(int) => ReadInt32(isBigEndian),
+                _ when type == typeof(uint) => ReadUInt32(isBigEndian),
+                _ when type == typeof(long) => ReadInt64(isBigEndian),
+                _ when type == typeof(ulong) => ReadUInt64(isBigEndian),
+                _ when type == typeof(float) => ReadSingle(isBigEndian),
+                _ when type == typeof(double) => ReadDouble(isBigEndian),
+                _ when type == typeof(decimal) => ReadDecimal(),
+                _ when type == typeof(bool) => ReadBoolean(),
+                _ when type == typeof(char) => ReadChar(), // 默认 UTF-8
+                _ when type == typeof(Guid) => ReadGuid(),
+                _ when type == typeof(DateTime) => ReadDateTime(isBigEndian),
+                _ when type == typeof(DateTimeOffset) => ReadDateTimeOffset(isBigEndian),
+                _ when type == typeof(TimeSpan) => ReadTimeSpan(isBigEndian),
+                _ when type == typeof(string) => ReadString(), // 读取剩余全部为字符串
+                _ => throw new NotSupportedException($"ByteBlock.Read<T> 不支持类型: {type.FullName}")
+            };
 
             return (T)result;
         }
@@ -1037,8 +946,6 @@ namespace ExtenderApp.Data
             int charCount = encoding.GetCharCount(byteSpan);
             Span<char> charSpan = stackalloc char[charCount];
             int actualCharCount = encoding.GetChars(byteSpan, charSpan);
-            if (actualCharCount != 1)
-                throw new InvalidOperationException("Unable to decode a single character.");
             return charSpan[0];
         }
 
@@ -1090,7 +997,41 @@ namespace ExtenderApp.Data
             return new TimeSpan(ticks);
         }
 
-        #endregion
+        /// <summary>
+        /// 使用指定编码读取剩余全部未读字节为字符串，并将读指针前进相应字节数（不影响写指针）。
+        /// </summary>
+        /// <param name="encoding">字符编码，默认 UTF-8。</param>
+        /// <returns>解析得到的字符串。</returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// 当没有可读数据（Remaining == 0）时抛出。
+        /// </exception>
+        public string ReadString(Encoding? encoding = null)
+        {
+            return ReadString(Remaining, encoding);
+        }
+
+        /// <summary>
+        /// 使用指定编码读取给定字节数为字符串，并将读指针前进相应字节数（不影响写指针）。
+        /// </summary>
+        /// <param name="byteCount">
+        /// 要读取并解码的字节数（必须在 1..Remaining 范围内）。
+        /// </param>
+        /// <param name="encoding">字符编码，默认 UTF-8。</param>
+        /// <returns>解析得到的字符串。</returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// 当 <paramref name="byteCount"/> ≤ 0 或大于可读字节数（Remaining）时抛出。
+        /// </exception>
+        public string ReadString(int byteCount, Encoding? encoding = null)
+        {
+            if (byteCount <= 0 || byteCount > Remaining)
+                throw new ArgumentOutOfRangeException(nameof(byteCount));
+            encoding ??= Encoding.UTF8;
+            var span = _block.Read(byteCount);
+            var result = encoding.GetString(span);
+            return result;
+        }
+
+        #endregion Read
 
         #region FormByteBlock
 
