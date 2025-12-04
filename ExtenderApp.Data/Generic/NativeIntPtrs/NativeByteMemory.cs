@@ -220,6 +220,31 @@ namespace ExtenderApp.Data
             source.Span.CopyTo(Span);
         }
 
+        /// <summary>
+        /// 将 <see cref="ByteBuffer"/> 的未读数据写入此 <see cref="NativeByteMemory"/>。
+        /// </summary>
+        /// <param name="buffer">需要被写入的字节缓存空间</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Write(ref ByteBuffer buffer)
+        {
+            foreach (var memory in buffer.UnreadSequence)
+            {
+                Write(memory.Span);
+            }
+            buffer.ReadAdvance(buffer.Remaining);
+        }
+
+        /// <summary>
+        /// 将字节块的未读数据写入此 <see cref="NativeByteMemory"/>。
+        /// </summary>
+        /// <param name="block">需要写入数据的字节块</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Write(ref ByteBlock block)
+        {
+            Write(block.UnreadSpan);
+            block.ReadAdvance(block.Remaining);
+        }
+
         #endregion
 
         /// <summary>

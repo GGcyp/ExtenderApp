@@ -13,7 +13,7 @@ namespace ExtenderApp.Data
     /// 2) 非线程安全：同一实例请勿在多线程并发读写。
     /// </summary>
     /// <typeparam name="T">元素类型，必须为非托管并实现 <see cref="IEquatable{T}"/>。</typeparam>
-    public struct SequenceBuffer<T>
+    public ref struct SequenceBuffer<T>
         where T : unmanaged, IEquatable<T>
     {
         /// <summary>

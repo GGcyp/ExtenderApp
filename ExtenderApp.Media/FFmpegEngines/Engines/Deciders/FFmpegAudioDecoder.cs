@@ -44,10 +44,10 @@ namespace ExtenderApp.FFmpegEngines.Decoders
             // 使用 SwrContext 进行音频重采样，输出到 pcmFrame
             Engine.SwrConvert(swrContext, pcmFrame, frame);
 
-            var dataLength = Engine.GetBufferSizeForSamples(frame);
+            var dataLength = Engine.GetBufferSizeForSamples(pcmFrame);
             block = new(dataLength);
 
-            Span<byte> span = new(frame.Value->data[0], dataLength);
+            Span<byte> span = new(pcmFrame.Value->data[0], dataLength);
             block.Write(span);
         }
 

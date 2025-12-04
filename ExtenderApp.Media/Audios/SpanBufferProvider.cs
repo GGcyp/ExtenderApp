@@ -1,4 +1,5 @@
-﻿using NAudio.Wave;
+﻿using ExtenderApp.Data;
+using NAudio.Wave;
 
 namespace ExtenderApp.Media.Audios
 {
@@ -16,29 +17,16 @@ namespace ExtenderApp.Media.Audios
         #region 私有字段
 
         /// <summary>
-        /// 环形缓冲底层存储
+        /// 用于保证线程安全的锁对象。
         /// </summary>
-        private readonly byte[] _buffer;
+        private readonly object _lockObject = new object();
+
+        private CircularQueue<byte> _buffer;
 
         /// <summary>
         /// 缓冲总时长（预计算，避免重复计算）
         /// </summary>
         private readonly TimeSpan _bufferDuration;
-
-        /// <summary>
-        /// 写指针（下一次写入的起始索引）
-        /// </summary>
-        private int _writePosition;
-
-        /// <summary>
-        /// 读指针（下一次读取的起始索引）
-        /// </summary>
-        private int _readPosition;
-
-        /// <summary>
-        /// 当前可用读取字节数（已写入未读取）
-        /// </summary>
-        private int _availableBytes;
 
         /// <summary>
         /// 音频帧大小（bitsPerSample/8 * channels），用于确保数据对齐
@@ -68,28 +56,6 @@ namespace ExtenderApp.Media.Audios
         /// 缓冲总时长（只读）
         /// </summary>
         public TimeSpan BufferDuration => _bufferDuration;
-
-        /// <summary>
-        /// 当前可用读取字节数（线程安全）
-        /// </summary>
-        public int AvailableBytes
-        {
-            get
-            {
-                return _availableBytes;
-            }
-        }
-
-        /// <summary>
-        /// 缓冲填充比例（0.0 ~ 1.0，线程安全）
-        /// </summary>
-        public double FillPercentage
-        {
-            get
-            {
-                return (double)_availableBytes / BufferLength;
-            }
-        }
 
         #endregion 公共属性
 
@@ -131,11 +97,8 @@ namespace ExtenderApp.Media.Audios
             BufferLength = AlignToFrameSize(rawLength);
 
             // 初始化核心字段
-            _buffer = new byte[BufferLength];
+            _buffer = new(BufferLength);
             _bufferDuration = TimeSpan.FromSeconds((double)BufferLength / waveFormat.AverageBytesPerSecond);
-            _writePosition = 0;
-            _readPosition = 0;
-            _availableBytes = 0;
         }
 
         /// <summary>
@@ -161,11 +124,8 @@ namespace ExtenderApp.Media.Audios
             BufferLength = AlignToFrameSize(bufferLengthInBytes);
 
             // 初始化核心字段
-            _buffer = new byte[BufferLength];
+            _buffer = new(BufferLength);
             _bufferDuration = TimeSpan.FromSeconds((double)BufferLength / waveFormat.AverageBytesPerSecond);
-            _writePosition = 0;
-            _readPosition = 0;
-            _availableBytes = 0;
         }
 
         #endregion 构造函数（重载增强灵活性）
@@ -181,34 +141,10 @@ namespace ExtenderApp.Media.Audios
             if (samples.IsEmpty)
                 return;
 
-            int freeSpace = BufferLength - _availableBytes;
-            int samplesLength = samples.Length;
-
-            // 溢出处理：数据超过剩余空间时，覆盖最旧数据
-            if (samplesLength > freeSpace)
+            lock (_lockObject)
             {
-                int bytesToDiscard = samplesLength - freeSpace;
-                // 移动读指针，丢弃旧数据（取模确保环形特性）
-                _readPosition = (_readPosition + bytesToDiscard) % BufferLength;
-                _availableBytes -= bytesToDiscard;
+                _buffer.Enqueue(samples);
             }
-
-            // 分两段写入（处理环形边界）
-            int writeToEndLength = Math.Min(samplesLength, BufferLength - _writePosition);
-            // 第一段：从写指针到缓冲末尾
-            samples.Slice(0, writeToEndLength).CopyTo(_buffer.AsSpan(_writePosition, writeToEndLength));
-
-            int remainingLength = samplesLength - writeToEndLength;
-            if (remainingLength > 0)
-            {
-                // 第二段：从缓冲开头到剩余长度
-                samples.Slice(writeToEndLength, remainingLength).CopyTo(_buffer.AsSpan(0, remainingLength));
-            }
-
-            // 更新写指针（取模简化逻辑，避免边界判断）
-            _writePosition = (_writePosition + samplesLength) % BufferLength;
-            // 更新可用字节数
-            _availableBytes += samplesLength;
         }
 
         /// <summary>
@@ -221,15 +157,6 @@ namespace ExtenderApp.Media.Audios
         /// <exception cref="ArgumentOutOfRangeException">偏移量或长度无效时抛出</exception>
         public void AddSamples(byte[] samples, int offset, int count)
         {
-            if (samples == null)
-                throw new ArgumentNullException(nameof(samples));
-            if (offset < 0)
-                throw new ArgumentOutOfRangeException(nameof(offset), "偏移量不能为负数");
-            if (count < 0)
-                throw new ArgumentOutOfRangeException(nameof(count), "写入长度不能为负数");
-            if (offset + count > samples.Length)
-                throw new ArgumentOutOfRangeException($"偏移量({offset}) + 写入长度({count}) 超过源数组长度({samples.Length})");
-
             AddSamples(samples.AsSpan(offset, count));
         }
 
@@ -240,50 +167,17 @@ namespace ExtenderApp.Media.Audios
         /// <param name="offset">目标数组起始偏移量</param>
         /// <param name="count">请求读取的字节数</param>
         /// <returns>实际读取的字节数（ReadFully=true 时返回 count，否则返回可用字节数）</returns>
-        /// <exception cref="ArgumentNullException">buffer 为 null 时抛出</exception>
-        /// <exception cref="ArgumentOutOfRangeException">偏移量或长度无效时抛出</exception>
         public int Read(byte[] buffer, int offset, int count)
         {
-            // 输入参数严格校验
-            if (buffer == null)
-                throw new ArgumentNullException(nameof(buffer));
-            if (offset < 0)
-                throw new ArgumentOutOfRangeException(nameof(offset), "偏移量不能为负数");
-            if (count < 0)
-                throw new ArgumentOutOfRangeException(nameof(count), "读取长度不能为负数");
-            if (offset + count > buffer.Length)
-                throw new ArgumentOutOfRangeException($"偏移量({offset}) + 读取长度({count}) 超过目标数组长度({buffer.Length})");
-
             int bytesRead = 0;
-
-            // 最多读取可用字节数
-            int actualReadLength = Math.Min(count, _availableBytes);
-            if (actualReadLength <= 0)
-                goto FillSilenceIfNeeded; // 无数据可读，直接跳转到静音填充
-
-            // 分两段读取（处理环形边界）
-            int readToEndLength = Math.Min(actualReadLength, BufferLength - _readPosition);
-            // 第一段：从读指针到缓冲末尾
-            _buffer.AsSpan(_readPosition, readToEndLength).CopyTo(buffer.AsSpan(offset, readToEndLength));
-
-            int remainingReadLength = actualReadLength - readToEndLength;
-            if (remainingReadLength > 0)
+            lock (_lockObject)
             {
-                // 第二段：从缓冲开头到剩余长度
-                _buffer.AsSpan(0, remainingReadLength).CopyTo(buffer.AsSpan(offset + readToEndLength, remainingReadLength));
+                bytesRead = _buffer.Dequeue(buffer.AsSpan(offset, count));
             }
 
-            // 更新读指针和可用字节数
-            _readPosition = (_readPosition + actualReadLength) % BufferLength;
-            _availableBytes -= actualReadLength;
-            bytesRead = actualReadLength;
-
-        FillSilenceIfNeeded:
-            // 不足时填充静音（PCM 静音为 0 字节）
             if (ReadFully && bytesRead < count)
             {
-                int silenceLength = count - bytesRead;
-                buffer.AsSpan(offset + bytesRead, silenceLength).Clear();
+                Array.Clear(buffer, offset + bytesRead, count - bytesRead);
                 return count;
             }
 
@@ -295,9 +189,10 @@ namespace ExtenderApp.Media.Audios
         /// </summary>
         public void ClearBuffer()
         {
-            _writePosition = 0;
-            _readPosition = 0;
-            _availableBytes = 0;
+            lock (_lockObject)
+            {
+                _buffer.Clear();
+            }
         }
 
         #endregion 公共方法
@@ -311,6 +206,7 @@ namespace ExtenderApp.Media.Audios
         /// <returns>对齐后的长度</returns>
         private int AlignToFrameSize(int rawLength)
         {
+            if (_frameSize == 0) return rawLength; // 避免除以零
             if (rawLength % _frameSize == 0)
                 return rawLength;
 

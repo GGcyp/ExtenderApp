@@ -226,6 +226,19 @@ namespace ExtenderApp.Data
             => _block.TryCopyTo(destination, out written);
 
         /// <summary>
+        /// 尝试将可读数据复制到目标原生内存块。
+        /// </summary>
+        /// <param name="memory">目标原生内存块</param>
+        /// <returns>若目标有足够空间则返回 true。</returns>
+        public bool TryCopyTo(NativeByteMemory memory)
+        {
+            if (memory.IsEmpty || Remaining > memory.Length)
+                return false;
+
+            return UnreadSpan.Slice(0, memory.Length).TryCopyTo(memory.Span);
+        }
+
+        /// <summary>
         /// 查看当前读指针位置的字节而不移动指针。
         /// </summary>
         /// <param name="value">输出字节。</param>
@@ -434,6 +447,15 @@ namespace ExtenderApp.Data
         public void Write(in MemoryBlock<byte> block)
         {
             Write(block.UnreadSpan);
+        }
+
+        /// <summary>
+        /// 将 <see cref="NativeByteMemory"/> 的内容写入当前块。
+        /// </summary>
+        /// <param name="memory">指定原生内存块</param>
+        public void Write(NativeByteMemory memory)
+        {
+            Write(memory.Span);
         }
 
         /// <summary>

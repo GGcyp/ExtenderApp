@@ -15,7 +15,7 @@ namespace ExtenderApp.Data
     /// 2) 非线程安全：同一实例请勿在多线程并发读写；
     /// 3) 生命周期结束请调用 <see cref="Dispose"/> 释放底层租约（若由池构造）。
     /// </summary>
-    public struct ByteBuffer
+    public ref struct ByteBuffer
     {
         public static ByteBuffer CreateBuffer() => new ByteBuffer(SequencePool<byte>.Shared);
 

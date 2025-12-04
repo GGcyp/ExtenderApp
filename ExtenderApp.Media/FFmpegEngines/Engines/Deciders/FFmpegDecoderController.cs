@@ -16,6 +16,26 @@ namespace ExtenderApp.FFmpegEngines
         private const int MaxTimeout = 10;
 
         /// <summary>
+        /// 默认启用多线程解码的高度阈值（像素）。
+        /// </summary>
+        private const int DefaultMultiThreadingHeight = 1080;
+
+        /// <summary>
+        /// 默认启用多线程解码的宽度阈值（像素）。
+        /// </summary>
+        private const int DefaultMultiThreadingWidth = 1920;
+
+        /// <summary>
+        /// 启用多线程解码的总像素阈值 (1920 * 1080)。
+        /// </summary>
+        private const int MultiThreadingPixelThreshold = DefaultMultiThreadingHeight * DefaultMultiThreadingWidth;
+
+        /// <summary>
+        /// 启用多线程解码的帧率阈值。
+        /// </summary>
+        private const double MultiThreadingFrameRateThreshold = 50.0;
+
+        /// <summary>
         /// FFmpeg 引擎实例，用于执行底层的 FFmpeg 操作。
         /// </summary>
         private readonly FFmpegEngine _engine;
@@ -40,7 +60,10 @@ namespace ExtenderApp.FFmpegEngines
         /// </summary>
         private CancellationTokenSource? source;
 
-        private FFmpegDecodeMode decodeMode;
+        /// <summary>
+        /// 解析模式
+        /// </summary>
+        private FFmpegDecodeModel decodeMode;
 
         /// <summary>
         /// 获取解码器集合，其中包含此控制器管理的所有解码器（例如，视频和音频）。
@@ -57,7 +80,7 @@ namespace ExtenderApp.FFmpegEngines
         /// <summary>
         /// 当读取到文件末尾（EOF）时触发的事件。
         /// </summary>
-        public event EventHandler? OnCompletedDecoded;
+        public event Action<FFmpegDecoderController>? OnCompletedDecoded;
 
         #endregion Events
 
@@ -78,47 +101,31 @@ namespace ExtenderApp.FFmpegEngines
             _engine = engine;
             DecoderCollection = collection;
             _context = context;
-            _decodingController = new(true, () => DecoderCollection.GetHasCacheSpace());
+            _decodingController = new(true, () => DecoderCollection.GetHasPacketCacheSpace());
             AllSource = allSource;
         }
 
         /// <summary>
         /// 启动解码流程。 此方法会为数据包读取和每个解码器创建一个后台任务。如果解码已在运行，则会抛出 <see cref="InvalidOperationException"/>。
         /// </summary>
-        /// <param name="mode">解码模式，默认为正常模式。</param>
+        /// <param name="decodeMode">解码模式，默认为正常模式。</param>
+        /// <param name="threadingModel">解码线程模型，默认为自动选择。</param>
         /// <exception cref="InvalidOperationException">当解码任务已在运行时调用此方法。</exception>
-        public void StartDecode(FFmpegDecodeMode mode = FFmpegDecodeMode.Normal)
+        public void StartDecode(FFmpegDecodeModel decodeMode = FFmpegDecodeModel.Normal, FFmpegDecodeThreadingModel threadingModel = FFmpegDecodeThreadingModel.Auto)
         {
             ThrowIfDisposed();
             if (processTasks != null)
             {
                 throw new InvalidOperationException($"不能重复解析:{_context.Info.MediaUri}");
             }
+            if (AllSource.Token.IsCancellationRequested)
+            {
+                throw new InvalidOperationException($"控制器已被取消，不能解析:{_context.Info.MediaUri}");
+            }
             source = CancellationTokenSource.CreateLinkedTokenSource(AllSource.Token);
+            this.decodeMode = decodeMode;
 
-            int length = DecoderCollection.Length + 1;
-            if (mode != FFmpegDecodeMode.Normal)
-            {
-                FFmpegMediaType targetType = Convert(mode);
-                length = DecoderCollection.ContainsDecoder(targetType) ? length - 1 : length;
-            }
-
-            if (length <= 1)
-                throw new InvalidOperationException(string.Format("没有可用的解码器:{0},解码模式：{1}", _context.Info.MediaUri, mode));
-
-            decodeMode = mode;
-
-            processTasks = new Task[length];
-            processTasks[0] = Task.Run(() => Decoding(source.Token), AllSource.Token);
-
-            for (int i = 1; i < length; i++)
-            {
-                var decoder = DecoderCollection[i - 1];
-                if (mode != FFmpegDecodeMode.Normal && decoder.MediaType == Convert(mode))
-                    continue;
-
-                processTasks[i] = Task.Run(() => ProcessPacket(decoder, source.Token), AllSource.Token);
-            }
+            PrivateStartDecoding(threadingModel);
         }
 
         /// <summary>
@@ -151,45 +158,113 @@ namespace ExtenderApp.FFmpegEngines
             _engine.Seek(_context.FormatContext, position, _context);
         }
 
-        /// <summary>
-        /// 解码主循环任务，负责从媒体文件读取数据包并分发到相应的解码器队列。
-        /// </summary>
-        /// <param name="token">用于取消操作的取消令牌。</param>
-        /// <returns>一个表示异步解码操作的任务。</returns>
-        private Task Decoding(CancellationToken token)
-        {
-            while (!token.IsCancellationRequested && !AllSource.IsCancellationRequested)
-            {
-                _decodingController.WaitForTargetState(MaxTimeout, token);
-                if (token.IsCancellationRequested || AllSource.IsCancellationRequested)
-                    return Task.CompletedTask;
+        #region ThreadDecodes
 
-                var packet = _engine.GetPacket();
-                int result = _engine.ReadPacket(_context.FormatContext, ref packet);
-                if (result < 0)
-                {
-                    // 读取完毕，退出循环
-                    if (result == ffmpeg.AVERROR_EOF)
-                    {
-                        OnCompletedDecoded?.Invoke(this, EventArgs.Empty);
-                    }
-                    else
-                    {
-                        _engine.ShowException("读取帧失败", result);
-                    }
-                    _engine.Return(ref packet);
+        private void PrivateStartDecoding(FFmpegDecodeThreadingModel threadingModel)
+        {
+            int length = 1;
+            int decoderIndex = 0;
+            int threadIndex = 1;
+            var token = source!.Token;
+            switch (threadingModel)
+            {
+                case FFmpegDecodeThreadingModel.Single:
+                    processTasks = new Task[length];
+                    processTasks[0] = Task.Run(SingleThreadDecoding, token);
                     break;
-                }
-                else if (_engine.IsTryAgain(result))
+
+                case FFmpegDecodeThreadingModel.Hybrid:
+                    length = DecoderCollection.Length;
+                    if (decodeMode != FFmpegDecodeModel.Normal)
+                    {
+                        FFmpegMediaType targetType = Convert(decodeMode);
+                        length = DecoderCollection.ContainsDecoder(targetType) ? length - 1 : length;
+                    }
+                    processTasks = new Task[length];
+                    processTasks[0] = Task.Run(HybridDecodingLoop, token);
+
+                    while (threadIndex < length)
+                    {
+                        var decoder = DecoderCollection[decoderIndex];
+                        if (decodeMode != FFmpegDecodeModel.Normal
+                            && decoder.MediaType == Convert(decodeMode)
+                            || decoder.MediaType == FFmpegMediaType.AUDIO)
+                        {
+                            decoderIndex++;
+                            continue;
+                        }
+                        processTasks[threadIndex] = Task.Run(() => ProcessPacket(decoder, token), token);
+                        threadIndex++;
+                        decoderIndex++;
+                    }
+
+                    break;
+
+                case FFmpegDecodeThreadingModel.Multi:
+                    length = DecoderCollection.Length + 1;
+                    if (decodeMode != FFmpegDecodeModel.Normal)
+                    {
+                        FFmpegMediaType targetType = Convert(decodeMode);
+                        length = DecoderCollection.ContainsDecoder(targetType) ? length - 1 : length;
+                    }
+
+                    processTasks = new Task[length];
+                    processTasks[0] = Task.Run(MultithreadingDecoding, token);
+
+                    while (threadIndex < length)
+                    {
+                        var decoder = DecoderCollection[decoderIndex];
+                        if (decodeMode != FFmpegDecodeModel.Normal && decoder.MediaType == Convert(decodeMode))
+                        {
+                            decoderIndex++;
+                            continue;
+                        }
+                        processTasks[threadIndex] = Task.Run(() => ProcessPacket(decoder, token), token);
+                        threadIndex++;
+                        decoderIndex++;
+                    }
+                    break;
+
+                case FFmpegDecodeThreadingModel.Auto:
+                default:
+                    threadingModel = GetThreadingModel();
+                    PrivateStartDecoding(threadingModel);
+                    break;
+            }
+        }
+
+        /// <summary>
+        /// 单线程解码主循环，负责从媒体文件读取数据包并分发到相应的解码器队列。
+        /// </summary>
+        private void SingleThreadDecoding()
+        {
+            var token = source!.Token;
+
+            while (!token.IsCancellationRequested)
+            {
+                FFmpegDecoder decoder;
+                if (!DecoderCollection.GetHasPacketCacheSpace())
                 {
-                    // 重试读取
-                    _engine.Return(ref packet);
+                    for (int i = 0; i < DecoderCollection.Length; i++)
+                    {
+                        decoder = DecoderCollection[i];
+                        decoder.ProcessPacket(false, token);
+                    }
+                    Thread.Sleep(MaxTimeout);
                     continue;
                 }
 
+                if (token.IsCancellationRequested)
+                    return;
+                var packet = _engine.GetPacket();
+                int result = ReadPacket(packet);
+
+                if (result == -1) break;
+                if (result == -2) continue;
+
                 int index = _engine.GetPacketStreamIndex(packet);
-                var decoder = DecoderCollection[index];
-                if (decodeMode != FFmpegDecodeMode.Normal && decoder.MediaType == Convert(decodeMode))
+                decoder = DecoderCollection[index];
+                if (decodeMode != FFmpegDecodeModel.Normal && decoder.MediaType == Convert(decodeMode))
                 {
                     // 丢弃不需要的包
                     _engine.Return(ref packet);
@@ -197,7 +272,104 @@ namespace ExtenderApp.FFmpegEngines
                 }
                 decoder.EnqueuePacket(packet);
             }
-            return Task.CompletedTask;
+        }
+
+        private void HybridDecodingLoop()
+        {
+            var token = source!.Token;
+            var audioDecoder = DecoderCollection.GetDecoder(FFmpegMediaType.AUDIO);
+
+            while (!token.IsCancellationRequested)
+            {
+                audioDecoder?.ProcessPacket(true, token);
+
+                _decodingController.WaitForTargetState(MaxTimeout, token);
+                if (token.IsCancellationRequested) return;
+
+                var packet = _engine.GetPacket();
+                int result = ReadPacket(packet);
+                if (result == -1) break;
+                if (result == -2) continue;
+
+                int index = _engine.GetPacketStreamIndex(packet);
+                var decoder = DecoderCollection[index];
+
+                if (decodeMode != FFmpegDecodeModel.Normal && decoder.MediaType == Convert(decodeMode))
+                {
+                    _engine.Return(ref packet);
+                    continue;
+                }
+
+                decoder.EnqueuePacket(packet);
+            }
+        }
+
+        /// <summary>
+        /// 解码主循环任务，负责从媒体文件读取数据包并分发到相应的解码器队列。
+        /// </summary>
+        /// <param name="token">用于取消操作的取消令牌。</param>
+        /// <returns>一个表示异步解码操作的任务。</returns>
+        private void MultithreadingDecoding()
+        {
+            var token = source!.Token;
+
+            while (!token.IsCancellationRequested)
+            {
+                _decodingController.WaitForTargetState(MaxTimeout, token);
+                if (token.IsCancellationRequested || AllSource.IsCancellationRequested)
+                    return;
+
+                var packet = _engine.GetPacket();
+                int result = ReadPacket(packet);
+
+                if (result == -1) break;
+                if (result == -2) continue;
+
+                int index = _engine.GetPacketStreamIndex(packet);
+                var decoder = DecoderCollection[index];
+                if (decodeMode != FFmpegDecodeModel.Normal && decoder.MediaType == Convert(decodeMode))
+                {
+                    // 丢弃不需要的包
+                    _engine.Return(ref packet);
+                    continue;
+                }
+                decoder.EnqueuePacket(packet);
+            }
+        }
+
+        #endregion ThreadDecodes
+
+        #region Packets
+
+        /// <summary>
+        /// 读取单个数据包的方法。 如果读取成功，返回 0；如果读取到文件末尾，返回 -1；如果需要重试读取，返回 -2。
+        /// </summary>
+        /// <param name="packet">需要读取的包</param>
+        /// <returns>返回结果</returns>
+        private int ReadPacket(NativeIntPtr<AVPacket> packet)
+        {
+            int result = _engine.ReadPacket(_context.FormatContext, ref packet);
+            if (result < 0)
+            {
+                // 读取完毕，退出循环
+                if (result == ffmpeg.AVERROR_EOF)
+                {
+                    OnCompletedDecoded?.Invoke(this);
+                }
+                else
+                {
+                    _engine.ShowException("读取帧失败", result);
+                }
+                _engine.Return(ref packet);
+                return -1;
+            }
+            else if (_engine.IsTryAgain(result))
+            {
+                // 重试读取
+                _engine.Return(ref packet);
+                return -2;
+            }
+            return 0;
         }
 
         /// <summary>
@@ -209,27 +381,13 @@ namespace ExtenderApp.FFmpegEngines
         {
             while (!token.IsCancellationRequested)
             {
-                decoder.ProcessPacket(token);
+                decoder.ProcessPacket(true, token);
             }
         }
 
-        /// <summary>
-        /// 异步等待所有正在运行的解码任务完成。
-        /// </summary>
-        private async Task WaitForAllTasksComplete()
-        {
-            if (processTasks == null)
-                return;
-            try
-            {
-                await Task.WhenAll(processTasks);
-            }
-            catch (TaskCanceledException)
-            {
-                // 忽略任务取消异常
-            }
-            processTasks = null;
-        }
+        #endregion Packets
+
+        #region Dispose
 
         /// <summary>
         /// 释放由 <see cref="FFmpegDecoderController"/> 占用的托管资源。
@@ -254,20 +412,99 @@ namespace ExtenderApp.FFmpegEngines
             DecoderCollection.Dispose();
         }
 
+        #endregion Dispose
+
+        #region Uitls
+
+        /// <summary>
+        /// 异步等待所有正在运行的解码任务完成。
+        /// </summary>
+        private async Task WaitForAllTasksComplete()
+        {
+            if (processTasks == null)
+                return;
+            try
+            {
+                await Task.WhenAll(processTasks);
+            }
+            catch (TaskCanceledException)
+            {
+                // 忽略任务取消异常
+            }
+            finally
+            {
+                foreach (var decoder in DecoderCollection)
+                {
+                    decoder.Flush();
+                }
+                processTasks = null;
+            }
+        }
+
         /// <summary>
         /// 将解码模式转换为对应的媒体类型。
         /// </summary>
         /// <param name="mode">解码模式。</param>
         /// <returns>对应的媒体类型。</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private FFmpegMediaType Convert(FFmpegDecodeMode mode)
+        private FFmpegMediaType Convert(FFmpegDecodeModel mode)
         {
             return mode switch
             {
-                FFmpegDecodeMode.AudioOnly => FFmpegMediaType.AUDIO,
-                FFmpegDecodeMode.VideoOnly => FFmpegMediaType.VIDEO,
+                FFmpegDecodeModel.AudioOnly => FFmpegMediaType.AUDIO,
+                FFmpegDecodeModel.VideoOnly => FFmpegMediaType.VIDEO,
                 _ => FFmpegMediaType.UNKNOWN,
             };
         }
+
+        /// <summary>
+        /// 根据视频信息决定使用的解码线程模型。
+        /// </summary>
+        /// <returns>适用的解码线程模型。</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private FFmpegDecodeThreadingModel GetThreadingModel()
+        {
+            // 如果没有视频流，或者视频规格很低，使用单线程
+            if (!DecoderCollection.ContainsDecoder(FFmpegMediaType.VIDEO)
+                || (Info.Width * Info.Height < 1280 * 720))
+            {
+                return FFmpegDecodeThreadingModel.Single;
+            }
+
+            // 对于高规格视频，使用完全多线程
+            if (ShouldUseMultithreading())
+            {
+                return FFmpegDecodeThreadingModel.Multi;
+            }
+
+            // 其他情况（如720p, 普通1080p）使用混合模式，这是对低性能PC的优化
+            return FFmpegDecodeThreadingModel.Hybrid;
+        }
+
+        /// <summary>
+        /// 根据视频信息决定是否应使用多线程解码。
+        /// </summary>
+        /// <returns>如果应使用多线程，则为 true；否则为 false。</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private bool ShouldUseMultithreading()
+        {
+            // 检查总像素数
+            if (Info.Width * Info.Height >= MultiThreadingPixelThreshold)
+            {
+                return true;
+            }
+
+            // 检查帧率
+            if (Info.Rate >= MultiThreadingFrameRateThreshold)
+            {
+                return true;
+            }
+
+            // 检查是否为计算密集型编码
+            return Info.VideoCodecName.Contains("hevc", StringComparison.OrdinalIgnoreCase) ||
+                   Info.VideoCodecName.Contains("av1", StringComparison.OrdinalIgnoreCase);
+        }
+
+        #endregion Uitls
     }
 }

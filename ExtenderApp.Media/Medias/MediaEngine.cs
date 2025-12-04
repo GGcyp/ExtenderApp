@@ -24,7 +24,7 @@ namespace ExtenderApp.Media
             var context = _engine.OpenUri(mediaPath);
             CancellationTokenSource source = new();
             var controller = _engine.CreateDecoderController(context, settings, source);
-            return new MediaPlayer(controller, source, settings);
+            return new MediaPlayer(controller, settings);
         }
     }
 }

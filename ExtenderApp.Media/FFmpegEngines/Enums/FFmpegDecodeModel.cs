@@ -3,7 +3,7 @@
     /// <summary>
     /// FFmpeg 解码模式枚举。
     /// </summary>
-    public enum FFmpegDecodeMode
+    public enum FFmpegDecodeModel
     {
         /// <summary>
         /// 默认：音视频正常播放

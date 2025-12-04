@@ -1,8 +1,7 @@
 ﻿namespace ExtenderApp.Data.Data
 {
-    /// <summary
+    /// <summary>
     /// 泛型值队列结构
-    /// (注意：最好不要传值使用！)
     /// </summary>
     /// <typeparam name="T">队列中元素的类型</typeparam>
     public struct ValueQueue<T> : IEquatable<ValueQueue<T>>
@@ -23,7 +22,6 @@
 
         public ValueQueue() : this(m_DefaultLength)
         {
-
         }
 
         public ValueQueue(int capacity)

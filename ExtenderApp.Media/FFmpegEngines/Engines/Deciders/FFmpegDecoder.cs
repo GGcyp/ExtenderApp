@@ -52,6 +52,11 @@ namespace ExtenderApp.FFmpegEngines.Decoders
         public bool HasPacketCacheSpace => _packets.Count == 0;
 
         /// <summary>
+        /// 获取一个值，该值指示帧缓存队列是否还有空间。
+        /// </summary>
+        public bool HasFrameCacheSpace => _cacheStateController.HasCacheSpace;
+
+        /// <summary>
         /// 获取当前已缓存的帧数。
         /// </summary>
         public int CachedFrameCount => _frames.Count;
@@ -99,28 +104,36 @@ namespace ExtenderApp.FFmpegEngines.Decoders
         /// <summary>
         /// 从队列中取出一个数据包并进行解码。 如果缓存已满，此方法将异步等待；否则将同步处理并立即返回。
         /// </summary>
+        /// <param name="canWait">是否需要等待缓存</param>
         /// <param name="token">用于取消操作的取消令牌。</param>
-        public void ProcessPacket(CancellationToken token)
+        public void ProcessPacket(bool canWait, CancellationToken token)
         {
-            if (token.IsCancellationRequested ||
-                !_packets.TryDequeue(out var packet))
+            if (token.IsCancellationRequested || _packets.IsEmpty)
                 return;
 
-            // 如果缓存已满，则先阻塞检查
-            if (!_cacheStateController.HasCacheSpace)
-                _cacheStateController.WaitForCacheSpace(cancellationToken: token);
-
-            int result = Engine.SendPacket(Context.CodecContext, ref packet);
-            if (result < 0)
+            while (true)
             {
-                // 如果发送失败，直接返回，因为不太可能恢复
-                Engine.Return(ref packet);
-                return;
-            }
+                // 如果缓存已满，则先阻塞检查
+                if (!_cacheStateController.HasCacheSpace)
+                {
+                    if (!canWait)
+                        return;
+                    _cacheStateController.WaitForCacheSpace(cancellationToken: token);
+                }
 
-            // 同步处理所有可用的帧
-            ProcessFrames(token);
-            Engine.Return(ref packet);
+                if (!_packets.TryDequeue(out var packet))
+                    return;
+
+                int result = Engine.SendPacket(Context.CodecContext, ref packet);
+                if (result < 0)
+                {
+                    Engine.Return(ref packet);
+                    return;
+                }
+
+                ProcessFrames(token);
+                Engine.Return(ref packet);
+            }
         }
 
         /// <summary>

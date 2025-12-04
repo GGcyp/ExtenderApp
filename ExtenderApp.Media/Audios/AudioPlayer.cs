@@ -167,7 +167,6 @@ namespace ExtenderApp.Media.Audios
 
         public void AddSamples(byte[] buffer, int offset, int count)
         {
-            byte[] result = null;
             if (Tempo != DefaultRateSpeed || Rate != DefaultRateSpeed)
             {
                 float[] floatSamples = ConvertPcm16BytesToFloat(buffer, offset, count);
@@ -208,7 +207,7 @@ namespace ExtenderApp.Media.Audios
             {
                 try
                 {
-                    _bufferedWave.AddSamples(result.AsSpan(0, count));
+                    _bufferedWave.AddSamples(buffer.AsSpan(offset, count));
                 }
                 catch (Exception)
                 {
@@ -233,9 +232,9 @@ namespace ExtenderApp.Media.Audios
         {
             int samples = length / 2;
             float[] floatSamples = ArrayPool<float>.Shared.Rent(samples);
-            for (int i = offset; i < samples; i++)
+            for (int i = 0; i < samples; i++)
             {
-                short sample = BitConverter.ToInt16(pcmBytes, i * 2);
+                short sample = BitConverter.ToInt16(pcmBytes, offset + i * 2);
                 floatSamples[i] = sample / 32768f; // 归一化到[-1,1]
             }
             return floatSamples;

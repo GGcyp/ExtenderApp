@@ -23,12 +23,6 @@ namespace ExtenderApp.FFmpegEngines
         /// </summary>
         private readonly FFmpegDecoderController _controller;
 
-        /// <summary>
-        /// 全局取消令牌源，用于控制播放流程的终止。
-        /// </summary>
-
-        private readonly CancellationTokenSource _allSource;
-
         private readonly FFmpegDecoder? _videoDecoder;
         private readonly FFmpegDecoder? _audioDecoder;
 
@@ -92,11 +86,10 @@ namespace ExtenderApp.FFmpegEngines
         /// <param name="contriller">解码控制器。</param>
         /// <param name="allSource">全局取消令牌源。</param>
         /// <param name="settings">解码器设置。</param>
-        public MediaPlayer(FFmpegDecoderController contriller, CancellationTokenSource allSource, FFmpegDecoderSettings settings)
+        public MediaPlayer(FFmpegDecoderController contriller, FFmpegDecoderSettings settings)
         {
             State = PlayerState.Uninitialized;
             _controller = contriller;
-            _allSource = allSource;
             Settings = settings;
             Rate = 1;
             State = PlayerState.Initializing;
@@ -117,7 +110,8 @@ namespace ExtenderApp.FFmpegEngines
             }
             State = PlayerState.Playing;
             _controller.StartDecode();
-            mediaTask = Task.Run(PlaybackLoop, _allSource.Token);
+            mediaSource = CancellationTokenSource.CreateLinkedTokenSource(_controller.AllSource.Token);
+            mediaTask = Task.Run(PlaybackLoop, mediaSource.Token);
         }
 
         /// <summary>
@@ -236,13 +230,10 @@ namespace ExtenderApp.FFmpegEngines
         /// </summary>
         private void PlaybackLoop()
         {
-            var allToken = _allSource.Token;
-            mediaSource = CancellationTokenSource.CreateLinkedTokenSource(allToken);
-            var token = mediaSource.Token;
+            var token = mediaSource!.Token;
 
             // 使用当前播放速率计算基础帧间隔（毫秒）
             int frameInterval = (int)(Rate > 0 ? 1000.0 / Rate : 1000.0 / FFmpegEngine.DefaultFrameRate);
-            int lastDelay = frameInterval;
 
             // 选择主解码器（优先音频）
             FFmpegDecoder? mainDecoder = _audioDecoder ?? _videoDecoder;
@@ -259,7 +250,7 @@ namespace ExtenderApp.FFmpegEngines
                 // 如果两个流都没有帧，等待上一次的延时然后继续循环
                 if (!HasFrames())
                 {
-                    Thread.Sleep(lastDelay);
+                    Thread.Sleep(frameInterval);
                     continue;
                 }
 
@@ -269,7 +260,7 @@ namespace ExtenderApp.FFmpegEngines
                 // 处理非主流的帧（如果存在）
                 ProcessFrame(_videoDecoder, VideoFrameReceived, VideoFrameOutTime);
 
-                // 计算下一次等待时间：优先使用主流返回的时间差（若为正），否则根据是否有音频选择 audioDelay 或 frameInterval
+                // 计算下一次等待时间
                 int waitTime = (mainDelay > 0) ? mainDelay : frameInterval;
 
                 // 推进播放时间（以毫秒为单位）
@@ -313,16 +304,12 @@ namespace ExtenderApp.FFmpegEngines
             {
                 timeDiff = decoder.NextFramePts - Position;
 
-                if (timeDiff <= 0)
-                {
-                    decoder.TryDequeueFrame(out var frame);
-                    action?.Invoke(frame);
-                    frame.Dispose();
-                }
-                else
-                {
+                if (timeDiff > 0)
                     break;
-                }
+
+                decoder.TryDequeueFrame(out var frame);
+                action?.Invoke(frame);
+                frame.Dispose();
             }
             return (int)timeDiff;
         }

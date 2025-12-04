@@ -1,6 +1,4 @@
-﻿using FFmpeg.AutoGen;
-
-namespace ExtenderApp.FFmpegEngines
+﻿namespace ExtenderApp.FFmpegEngines
 {
     /// <summary>
     /// FFmpeg 解码器参数设置类。
@@ -16,11 +14,12 @@ namespace ExtenderApp.FFmpegEngines
         /// <summary>
         /// 视频帧最大缓存数量。
         /// </summary>
-        public int VideoMaxCacheLength { get; } = 5;
+        public int VideoMaxCacheLength { get; } = 3;
+
         /// <summary>
         /// 音频帧最大缓存数量。
         /// </summary>
-        public int AudioMaxCacheLength { get; } = 5;
+        public int AudioMaxCacheLength { get; } = 6;
 
         /// <summary>
         /// 音频通道布局（如立体声=2）。
