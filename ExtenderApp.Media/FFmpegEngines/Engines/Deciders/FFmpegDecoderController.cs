@@ -132,14 +132,14 @@ namespace ExtenderApp.FFmpegEngines
         /// 异步停止当前解码流程。 此方法会取消所有正在运行的解码任务并等待它们完成。
         /// </summary>
         /// <returns>一个表示异步停止操作的任务。</returns>
-        public Task StopDecodeAsync()
+        public async Task StopDecodeAsync()
         {
             ThrowIfDisposed();
             source?.Cancel();
             source?.Dispose();
 
+            await WaitForAllTasksComplete();
             source = null;
-            return WaitForAllTasksComplete();
         }
 
         /// <summary>
@@ -152,7 +152,6 @@ namespace ExtenderApp.FFmpegEngines
 
             await StopDecodeAsync();
 
-            var collection = _context.ContextCollection;
             DecoderCollection.Flush();
 
             _engine.Seek(_context.FormatContext, position, _context);

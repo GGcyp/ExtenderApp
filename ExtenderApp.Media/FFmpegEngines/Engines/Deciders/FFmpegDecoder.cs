@@ -119,6 +119,8 @@ namespace ExtenderApp.FFmpegEngines.Decoders
                     if (!canWait)
                         return;
                     _cacheStateController.WaitForCacheSpace(cancellationToken: token);
+                    if (token.IsCancellationRequested)
+                        return;
                 }
 
                 if (!_packets.TryDequeue(out var packet))
