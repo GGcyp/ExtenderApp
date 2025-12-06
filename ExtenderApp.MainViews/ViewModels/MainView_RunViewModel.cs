@@ -61,19 +61,14 @@ namespace ExtenderApp.MainViews.ViewModels
             settingWindow.Height = 400;
             settingWindow.Width = 600;
             settingWindow.WindowStartupLocation = 2;
-            settingWindow.Owner = CurrrentMainWindow;
+            settingWindow.Owner = MainWindow;
             settingWindow.Topmost = true;
 
             settingWindow.ShowDialog();
         }
 
-        /// <summary>
-        /// 将视图注入到视图模型中，并设置按钮集合。
-        /// </summary>
-        /// <param name="view">MainView_RunView 实例，提供视图模型所需的视图。</param>
-        public override void InjectView(MainView_RunView view)
+        protected override void ProtectedInjectView(MainView_RunView view)
         {
-            base.InjectView(view);
             SetCollection(view.buttonStackPanel.Children);
         }
 

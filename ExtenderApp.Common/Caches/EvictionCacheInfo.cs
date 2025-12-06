@@ -6,7 +6,7 @@ namespace ExtenderApp.Common.Caches
     /// <summary>
     /// 驱逐缓存信息类，实现了IResettable接口
     /// </summary>
-    public class EvictionCacheInfo<T> : IResettable
+    internal class EvictionCacheInfo<T> : IResettable
     {
         /// <summary>
         /// 静态对象池，用于复用EvictionCacheInfo对象

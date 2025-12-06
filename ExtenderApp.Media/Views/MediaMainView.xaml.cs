@@ -76,7 +76,8 @@ namespace ExtenderApp.Media
         //    //AddKey(viewModel.RewindCommand, Key.Left);
         //}
 
-        bool isRate = false;
+        private bool isRate = false;
+
         protected override void OnKeyDown(KeyEventArgs e)
         {
             base.OnKeyDown(e);
@@ -179,6 +180,6 @@ namespace ExtenderApp.Media
             e.Handled = true;
         }
 
-        #endregion MediaSlider动画
+        #endregion MediaSlider滑块位置
     }
 }

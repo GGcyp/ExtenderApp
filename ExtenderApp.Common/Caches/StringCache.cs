@@ -3,9 +3,7 @@ using ExtenderApp.Common.Hash;
 
 namespace ExtenderApp.Common.Caches
 {
-    /// <summary>
-    /// 字符串缓存类，继承自 EvictionCache<int, string> 类
-    /// </summary>
+    /// <summary> 字符串缓存类，继承自 EvictionCache<int, string> 类 </summary>
     public class StringCache : EvictionCache<int, string>
     {
         /// <summary>

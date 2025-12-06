@@ -49,7 +49,6 @@ namespace ExtenderApp.Views
         /// <param name="list">顶部设置项集合。</param>
         public virtual void TopSetting(IList list)
         {
-
         }
 
         /// <summary>
@@ -165,7 +164,7 @@ namespace ExtenderApp.Views
             };
         }
 
-        #endregion
+        #endregion CreateTopButton
     }
 
     /// <summary>

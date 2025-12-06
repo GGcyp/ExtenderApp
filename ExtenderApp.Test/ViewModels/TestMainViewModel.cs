@@ -1,6 +1,4 @@
-﻿using System.Net.NetworkInformation;
-using System.Net.Sockets;
-using ExtenderApp.Abstract;
+﻿using ExtenderApp.Abstract;
 using ExtenderApp.Data;
 using ExtenderApp.ViewModels;
 
@@ -8,8 +6,6 @@ namespace ExtenderApp.Test
 {
     public class TestMainViewModel : ExtenderAppViewModel
     {
-        private UdpClient _udpClient;
-
         public TestMainViewModel(IServiceStore serviceStore, IHttpLinkClient http) : base(serviceStore)
         {
             var info = CreatTestExpectLocalFileInfo("text");
@@ -19,8 +15,8 @@ namespace ExtenderApp.Test
                 var result = await http.SendAsync(new HttpRequestMessage(HttpMethod.Get, "http://www.baidu.com/"));
                 LogDebug("测试结果：" + result.StatusCode);
             });
+            RegisterKeyCapture(Key.Space, e => LogInformation("按下"), e => LogInformation("抬起"));
         }
-
 
         private ExpectLocalFileInfo CreatTestExpectLocalFileInfo(string fileName)
         {

@@ -1,6 +1,6 @@
 ﻿using ExtenderApp.Data;
 
-namespace ExtenderApp.Common.Systems
+namespace ExtenderApp.Common.Systems.KeyCaptures
 {
     /// <summary>
     /// 提供 Key 与系统虚拟键码（int）之间的转换方法。
@@ -31,8 +31,7 @@ namespace ExtenderApp.Common.Systems
         }
 
         /// <summary>
-        /// 初始化常见 VK ↔ Key 的映射表。
-        /// 仅设置 VK→Key 的映射条目。
+        /// 初始化常见 VK ↔ Key 的映射表。 仅设置 VK→Key 的映射条目。
         /// </summary>
         private void InitVKCode()
         {
@@ -155,9 +154,7 @@ namespace ExtenderApp.Common.Systems
         /// 将系统虚拟键码（int）转换为 <see cref="Key"/>。
         /// </summary>
         /// <param name="vkCode">系统虚拟键码，建议范围 0~255。</param>
-        /// <returns>
-        /// 对应的 <see cref="Key"/> 枚举值；若未映射则返回 <see cref="Key.None"/>。
-        /// </returns>
+        /// <returns>对应的 <see cref="Key"/> 枚举值；若未映射则返回 <see cref="Key.None"/>。</returns>
         public Key Convert(int vkCode)
         {
             return (Key)keys[vkCode + MaxVkCode];

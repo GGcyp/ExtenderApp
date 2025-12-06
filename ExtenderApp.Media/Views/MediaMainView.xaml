@@ -32,28 +32,26 @@
                 <ColumnDefinition />
                 <ColumnDefinition Width="200" />
             </Grid.ColumnDefinitions>
-            <!--视频播放区-->
-            <ContentControl Content="{Binding Model.CurrentVideoView}" />
             <!-- 视频列表区域 -->
             <Grid Grid.Column="1">
                 <ContentControl Content="{Binding Model.CurrentVideoListView}" />
             </Grid>
         </Grid>
         <mt:MediaSlider x:Name="mediaSlider"
-                                Grid.Row="1"
-                                Minimum="0"
-                                Maximum="{Binding Model.TotalTime.TotalSeconds,Mode=OneWay}"
-                                Value="{Binding Model.Position.TotalSeconds,Mode=OneWay}"
-                                TrackHeight="5"
-                                ThumbSize="0"
-                                ThumbColor="White"
-                                TrackBackground="Transparent"
-                                LeftBackground="LightBlue"
-                                RightBackground="Gray"
-                                Mouse.PreviewMouseUp="mediaSlider_PreviewMouseUp"
-                                Thumb.DragStarted="mediaSlider_DragStarted"
-                                Thumb.DragDelta="mediaSlider_DragDelta"
-                                Thumb.DragCompleted="mediaSlider_DragCompleted"/>
+                        Grid.Row="1"
+                        Minimum="0"
+                        Maximum="{Binding Model.TotalTime.TotalSeconds,Mode=OneWay}"
+                        Value="{Binding Model.Position.TotalSeconds,Mode=OneWay}"
+                        TrackHeight="5"
+                        ThumbSize="0"
+                        ThumbColor="White"
+                        TrackBackground="Transparent"
+                        LeftBackground="LightBlue"
+                        RightBackground="Gray"
+                        Mouse.PreviewMouseUp="mediaSlider_PreviewMouseUp"
+                        Thumb.DragStarted="mediaSlider_DragStarted"
+                        Thumb.DragDelta="mediaSlider_DragDelta"
+                        Thumb.DragCompleted="mediaSlider_DragCompleted"/>
         <Grid Grid.Row="2" VerticalAlignment="Center">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="200"/>
@@ -66,16 +64,16 @@
                            Foreground="{DynamicResource GlobalForegroundBrush}"
                            FontSize="20"/>
                 <TextBlock Text="/"
-                           Foreground="{DynamicResource GlobalForegroundBrush}" 
+                           Foreground="{DynamicResource GlobalForegroundBrush}"
                            FontSize="20"/>
                 <TextBlock Text="{Binding Model.TotalTime,StringFormat={}{0:hh\\:mm\\:ss}}"
-                           Foreground="{DynamicResource GlobalForegroundBrush}" 
+                           Foreground="{DynamicResource GlobalForegroundBrush}"
                            FontSize="20"/>
             </StackPanel>
             <StackPanel Grid.Column="1"
-                      HorizontalAlignment="Center"
-                      VerticalAlignment="Center"
-                      Orientation="Horizontal">
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        Orientation="Horizontal">
                 <Button Margin="5 0 0 0"
                         Command="{Binding StopCommand}"
                         Width="35"
@@ -95,37 +93,37 @@
                             CornerRadius="2"/>
                 </Button>
                 <vt:SwitchButton Command="{Binding MediaStateChangeCommand}"
-                                     DefaultGeometry="{DynamicResource PlayGemetry}"
-                                     TargetGeometry="{DynamicResource PauseGemetry}"
-                                     Fill="White"
-                                     Stroke="White"
-                                     Width="60"
-                                     Margin="5 0 0 0"
-                                     Height="50" />
+                                 DefaultGeometry="{DynamicResource PlayGemetry}"
+                                 TargetGeometry="{DynamicResource PauseGemetry}"
+                                 Fill="White"
+                                 Stroke="White"
+                                 Width="60"
+                                 Margin="5 0 0 0"
+                                 Height="50" />
                 <vt:SwitchButton Margin="10 0 0 0"
-                                    Command="{Binding FastForwardCommand}" 
-                                    Fill="White"
-                                    Stroke="White"
-                                    DefaultGeometry="{DynamicResource ForwardGemetry}"
-                                    TargetGeometry="{DynamicResource ForwardGemetry}"
-                                    Width="30"
-                                    Height="30" />
+                                 Command="{Binding FastForwardCommand}"
+                                 Fill="White"
+                                 Stroke="White"
+                                 DefaultGeometry="{DynamicResource ForwardGemetry}"
+                                 TargetGeometry="{DynamicResource ForwardGemetry}"
+                                 Width="30"
+                                 Height="30" />
             </StackPanel>
             <mt:MediaSlider x:Name="volumeSlider"
-                                Grid.Column="2"
-                                Minimum="0"
-                                Maximum="1"
-                                Value="{Binding Model.Volume}"
-                                TrackHeight="5"
-                                ThumbSize="18"
-                                ThumbColor="White"
-                                TrackBackground="Transparent"
-                                LeftBackground="LightBlue"
-                                RightBackground="Gray"
-                                Orientation="Horizontal"
-                                TickFrequency="0.01"
-                                HorizontalAlignment="Stretch"
-                                VerticalAlignment="Stretch" />
+                            Grid.Column="2"
+                            Minimum="0"
+                            Maximum="1"
+                            Value="{Binding Model.Volume}"
+                            TrackHeight="5"
+                            ThumbSize="18"
+                            ThumbColor="White"
+                            TrackBackground="Transparent"
+                            LeftBackground="LightBlue"
+                            RightBackground="Gray"
+                            Orientation="Horizontal"
+                            TickFrequency="0.01"
+                            HorizontalAlignment="Stretch"
+                            VerticalAlignment="Stretch" />
         </Grid>
     </Grid>
 </v:ExtenderAppView>

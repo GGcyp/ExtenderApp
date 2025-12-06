@@ -33,7 +33,7 @@ namespace ExtenderApp.Torrents.ViewModels
             StartTorrentCommand = new(StartTorrent);
         }
 
-        public override void Enter(ViewInfo oldViewInfo)
+        protected override void ProtectedEnter(ViewInfo newViewInfo)
         {
             View.Window.Closed += (s, e) => MainWindowTopmost();
         }
@@ -63,7 +63,7 @@ namespace ExtenderApp.Torrents.ViewModels
                             window.MinWidth = 400;
                             window.Height = 400;
                             window.Width = 350;
-                            window.Owner = CurrrentMainWindow;
+                            window.Owner = MainWindow;
                             window.WindowStartupLocation = 2;
                             window.Show();
                             View.Window?.Close();

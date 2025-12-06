@@ -12,7 +12,7 @@ namespace ExtenderApp.Common.Caches
         where TValue : class
     {
         /// <summary>
-        /// 存储缓存项的字典，键为整数类型，值为<see cref="EvictionCacheInfo"/>类型。
+        /// 存储缓存项的字典，键为整数类型，值为 <see cref="EvictionCacheInfo"/> 类型。
         /// </summary>
         private readonly ConcurrentDictionary<Tkey, EvictionCacheInfo<TValue>> _dict;
 
@@ -27,7 +27,7 @@ namespace ExtenderApp.Common.Caches
         private TimeSpan checkInterval { get; set; }
 
         /// <summary>
-        /// 初始化<see cref="EvictionCache{T}"/>类的新实例。
+        /// 初始化 <see cref="EvictionCache{T}"/> 类的新实例。
         /// </summary>
         public EvictionCache() : this(TimeSpan.FromMinutes(5))
         {

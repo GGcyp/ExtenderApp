@@ -18,7 +18,7 @@ namespace ExtenderApp.Torrents.ViewModels
         public NoValueCommand StartDownloadCommand { get; set; }
         public NoValueCommand SelectedAllCommand { get; set; }
 
-        #endregion
+        #endregion Command
 
         public TorrentAddFileInfoViewModel(IServiceStore serviceStore) : base(serviceStore)
         {
@@ -29,7 +29,7 @@ namespace ExtenderApp.Torrents.ViewModels
             });
         }
 
-        public override void Enter(ViewInfo oldViewInfo)
+        protected override void ProtectedEnter(ViewInfo oldViewInfo)
         {
             var torrentAddViewModel = oldViewInfo.ViewModel as TorrentAddViewModel;
             CurrentTorrentInfo = torrentAddViewModel?.CurrentTorrentInfo;

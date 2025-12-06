@@ -1,6 +1,6 @@
 ﻿using ExtenderApp.Abstract;
 using ExtenderApp.Data;
-using ExtenderApp.Services.Systems.KeyCaptures;
+using ExtenderApp.Common.Systems.KeyCaptures;
 
 namespace ExtenderApp.Services
 {
@@ -13,12 +13,7 @@ namespace ExtenderApp.Services
         public SystemService(IClipboard clipboard)
         {
             Clipboard = clipboard;
-            KeyCapture = new KeyCapture_Win();
-        }
-
-        protected override void DisposeUnmanagedResources()
-        {
-            KeyCapture.Dispose();
+            KeyCapture = default!;
         }
     }
 }

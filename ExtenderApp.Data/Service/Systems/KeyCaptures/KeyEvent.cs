@@ -1,12 +1,9 @@
-﻿
-
-namespace ExtenderApp.Data
+﻿namespace ExtenderApp.Data
 {
     /// <summary>
-    /// 表示一次键盘事件，包括主键和修饰键。
-    /// 用于记录或传递用户按下的具体按键及其组合状态。
+    /// 表示一次键盘事件，包括主键和修饰键。 用于记录或传递用户按下的具体按键及其组合状态。
     /// </summary>
-    public struct KeyEvent
+    public readonly struct KeyEvent
     {
         /// <summary>
         /// 触发事件的主键。

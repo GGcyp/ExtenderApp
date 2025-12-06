@@ -41,10 +41,10 @@ namespace ExtenderApp.Torrents.ViewModels
 #if DEBUG
             LoggerFactory.Register(factory.CreateTorrentLonging);
 #endif
-            if (CurrrentMainWindow != null)
+            if (MainWindow != null)
             {
-                CurrrentMainWindow.MinWidth = 800;
-                CurrrentMainWindow.MinHeight = 600;
+                MainWindow.MinWidth = 800;
+                MainWindow.MinHeight = 600;
             }
 
             ToDownloadListCommand = CreateTorrentListCommand<TorrentDownloadListView>();
@@ -110,7 +110,7 @@ namespace ExtenderApp.Torrents.ViewModels
             var view = window.CurrentView as TorrentAddView;
             window.Height = 300;
             window.Width = 300;
-            window.Owner = CurrrentMainWindow;
+            window.Owner = MainWindow;
             window.WindowStartupLocation = 2;
             window.Show();
         }

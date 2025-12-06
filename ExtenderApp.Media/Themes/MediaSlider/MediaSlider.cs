@@ -37,7 +37,7 @@ namespace ExtenderApp.Media.Themes
         //}
 
         //public static readonly DependencyProperty IconProperty =
-        //    DependencyProperty.Register(nameof(Icon), 
+        //    DependencyProperty.RegisterKeyCapture(nameof(Icon), 
         //        typeof(Geometry), 
         //        typeof(MediaSlider), 
         //        new PropertyMetadata(null));

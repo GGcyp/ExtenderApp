@@ -110,14 +110,14 @@ namespace ExtenderApp.Common.Networks.LinkClients
         //{
         //    if (string.IsNullOrEmpty(topic)) throw new ArgumentException(nameof(topic));
         //    if (qos != QosLevel.AtMostOnce) throw new NotSupportedException("示例仅实现 QoS0");
-        //    var publish = BuildPublishQoS0(topic, payload.Span, retain);
+        //    var Publish = BuildPublishQoS0(topic, payload.Span, retain);
         //    try
         //    {
-        //        return SendRawAsync(publish, token);
+        //        return SendRawAsync(Publish, token);
         //    }
         //    finally
         //    {
-        //        publish.Dispose();
+        //        Publish.Dispose();
         //    }
         //}
 
@@ -143,7 +143,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
 
         //    using var cts = CancellationTokenSource.CreateLinkedTokenSource(token);
         //    cts.CancelAfter(TimeSpan.FromSeconds(10));
-        //    using (cts.Token.Register(() => _waitSubAck.TrySetCanceled(cts.Token)))
+        //    using (cts.Token.RegisterKeyCapture(() => _waitSubAck.TrySetCanceled(cts.Token)))
         //    {
         //        byte granted = await _waitSubAck.Task.ConfigureAwait(false);
         //        OnSubAck?.Invoke(granted);
@@ -164,7 +164,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
         //    }
 
         //    using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
-        //    using (cts.Token.Register(() => _waitPingResp.TrySetCanceled(cts.Token)))
+        //    using (cts.Token.RegisterKeyCapture(() => _waitPingResp.TrySetCanceled(cts.Token)))
         //    {
         //        await _waitPingResp.Task.ConfigureAwait(false);
         //    }

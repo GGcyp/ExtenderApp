@@ -5,7 +5,6 @@ using ExtenderApp.ViewModels;
 using ExtenderApp.Views.Commands;
 using Microsoft.Win32;
 
-
 namespace ExtenderApp.Media.ViewModels
 {
     public class MediaMainViewModel : ExtenderAppViewModel<MediaMainView, MediaModel>
@@ -31,7 +30,7 @@ namespace ExtenderApp.Media.ViewModels
         /// </summary>
         public NoValueCommand RewindCommand { get; private set; }
 
-        #endregion
+        #endregion 按钮
 
         public MediaMainViewModel(IServiceStore serviceStore, MediaEngine engine) : base(serviceStore)
         {
@@ -53,7 +52,6 @@ namespace ExtenderApp.Media.ViewModels
             try
             {
                 Model.SelectedVideoInfo = new MediaInfo(new Uri(openFileDialog.FileName));
-
             }
             catch (Exception ex)
             {
@@ -62,9 +60,6 @@ namespace ExtenderApp.Media.ViewModels
             }
             var player = _engine.OpenMedia(Model.SelectedVideoInfo.MediaUri);
             Model.SetPlayer(player);
-
-            RegisterKeyCaptureDown(Data.Key.Space, (s, e) => OnMediaStateChange());
-            StartKeyCapture();
         }
 
         public void OnFastForward()
@@ -86,7 +81,7 @@ namespace ExtenderApp.Media.ViewModels
 
         private void OnMediaStateChange()
         {
-             if (Model.SelectedVideoInfo == null || Model.MPlayer == null)
+            if (Model.SelectedVideoInfo == null || Model.MPlayer == null)
             {
                 return;
             }
