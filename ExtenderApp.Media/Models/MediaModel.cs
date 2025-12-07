@@ -1,9 +1,4 @@
 ﻿using System.Collections.ObjectModel;
-using System.Drawing;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using System.Windows;
-using System.Windows.Interop;
 using System.Windows.Media.Imaging;
 using ExtenderApp.Abstract;
 using ExtenderApp.FFmpegEngines;
@@ -33,7 +28,6 @@ namespace ExtenderApp.Media.Models
         public WriteableBitmap? Bitmap => nativeMemoryBitmap?.Bitmap;
         public NativeMemoryBitmap? nativeMemoryBitmap { get; set; }
 
-        public IView? CurrentVideoView { get; set; }
         public IView? CurrentVideoListView { get; set; }
 
         public MediaInfo? SelectedVideoInfo { get; set; }

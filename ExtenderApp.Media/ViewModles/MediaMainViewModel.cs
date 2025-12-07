@@ -36,7 +36,6 @@ namespace ExtenderApp.Media.ViewModels
         {
             _engine = engine;
 
-            Model.CurrentVideoView = NavigateTo<VideoView>();
             Model.CurrentVideoListView = NavigateTo<VideoListView>();
 
             MediaStateChangeCommand = new(OnMediaStateChange);

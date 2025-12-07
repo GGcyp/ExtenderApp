@@ -1,14 +1,12 @@
-﻿
+﻿using System.IO;
 using ExtenderApp.Abstract;
-using ExtenderApp.Services;
 using ExtenderApp.Common;
+using ExtenderApp.Data;
+using ExtenderApp.FFmpegEngines;
 using ExtenderApp.Media.Models;
 using ExtenderApp.Media.ViewModels;
-using ExtenderApp.Data;
-using System.IO;
-using ExtenderApp.FFmpegEngines;
+using ExtenderApp.Services;
 using Microsoft.Extensions.DependencyInjection;
-
 
 namespace ExtenderApp.Media
 {
@@ -22,15 +20,11 @@ namespace ExtenderApp.Media
         {
             //View
             services.AddTransient<MediaMainView>();
-            services.AddTransient<VideoView>();
             services.AddTransient<VideoListView>();
-
 
             //ViewModel
             services.AddTransient<MediaMainViewModel>();
-            services.AddTransient<VideoViewModel>();
             services.AddTransient<VideoListViewModel>();
-
 
             //FFmpegEngine
             AddFFmpegEngines(services);

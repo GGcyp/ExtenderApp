@@ -18,7 +18,7 @@ namespace ExtenderApp.Media.ViewModels
         /// <summary>
         /// 视频列表集合
         /// </summary>
-        public ObservableCollection<MediaInfo> Videos => Model.MediaInfos;
+        public ObservableCollection<MediaInfo> Videos => Model.MediaInfos!;
 
         /// <summary>
         /// 初始化 VideoListViewModle 类的新实例。
