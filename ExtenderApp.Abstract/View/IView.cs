@@ -13,8 +13,7 @@ namespace ExtenderApp.Abstract
         ViewInfo ViewInfo { get; }
 
         /// <summary>
-        /// 获取当前视图的窗口对象。
-        /// 获取的窗口不包含主窗口，只能是新建的窗口
+        /// 获取当前视图的窗口对象。 获取的窗口不包含主窗口，只能是新建的窗口
         /// </summary>
         /// <returns>返回窗口对象，如果窗口不存在则返回null。</returns>
         IWindow? Window { get; }

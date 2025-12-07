@@ -12,8 +12,8 @@
                       d:DesignHeight="450" d:DesignWidth="800">
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="40"/>
-            <RowDefinition/>
+            <RowDefinition Height="{Binding ButtonHeight}" />
+            <RowDefinition />
         </Grid.RowDefinitions>
         <StackPanel x:Name="buttonStackPanel"
                     Grid.Row="0"
@@ -24,17 +24,17 @@
                     VerticalAlignment="Center"
                     Margin="5 0 0 0"
                     Command="{Binding ToMainViewCommand}"
-                    Style="{DynamicResource EllipticalButton}"/>
+                    Style="{DynamicResource EllipticalButton}" />
             <Button Content="设置"
                     HorizontalAlignment="Center"
                     VerticalAlignment="Center"
                     Margin="5 0 0 0"
                     Command="{Binding OpenSettingsWindowCommand}"
-                    Style="{DynamicResource EllipticalButton}"/>
+                    Style="{DynamicResource EllipticalButton}" />
         </StackPanel>
         <Grid Grid.Row="1"
               t:ThemeProps.Background="{DynamicResource GlobalBackgroundBrush}">
-            <ContentControl Content="{Binding Model.CurrentView}"/>
+            <ContentControl Content="{Binding Model.CurrentView}" />
         </Grid>
     </Grid>
 </view:ExtenderAppView>

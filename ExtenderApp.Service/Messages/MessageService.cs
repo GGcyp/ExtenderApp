@@ -7,8 +7,7 @@ using Microsoft.Extensions.Logging;
 namespace ExtenderApp.Services
 {
     /// <summary>
-    /// 消息服务实现类，负责管理消息的发布、订阅和取消订阅。
-    /// 支持多类型消息的线程安全发布-订阅机制。
+    /// 消息服务实现类，负责管理消息的发布、订阅和取消订阅。 支持多类型消息的线程安全发布-订阅机制。
     /// </summary>
     internal class MessageService : IMessageService
     {

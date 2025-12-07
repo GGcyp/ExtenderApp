@@ -5,7 +5,6 @@ using ExtenderApp.MainViews.Views;
 using ExtenderApp.ViewModels;
 using ExtenderApp.Views.Commands;
 using ExtenderApp.Views.CutsceneViews;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace ExtenderApp.MainViews.ViewModels
 {
@@ -26,6 +25,9 @@ namespace ExtenderApp.MainViews.ViewModels
         /// </summary>
         public NoValueCommand OpenSettingsWindowCommand { get; set; }
 
+        private int lastButtonHeight;
+        public int ButtonHeight { get; set; }
+
         /// <summary>
         /// 构造函数，初始化视图模型并设置依赖注入的实例。
         /// </summary>
@@ -36,6 +38,8 @@ namespace ExtenderApp.MainViews.ViewModels
         {
             ToMainViewCommand = new NoValueCommand(ToMainView);
             OpenSettingsWindowCommand = new NoValueCommand(OpenSettingsWindow);
+
+            ButtonHeight = 40;
 
             var details = Model.CurrentPluginDetails;
         }
@@ -51,13 +55,13 @@ namespace ExtenderApp.MainViews.ViewModels
             var settingWindow = NavigateToWindow<SettingsView>()!;
 
             var view = settingWindow.CurrentView as SettingsView;
-            var settingsViewModel = view.ViewModel<SettingsViewModel>();
+            var settingsViewModel = view!.ViewModel<SettingsViewModel>()!;
             settingsViewModel.CurrentPluginSettingsView = currentMainViewSettings.SettingsView;
             settingsViewModel.SetMainViewSettings(currentMainViewSettings);
             currentMainViewSettings.SettingNavigationConfig(view.navigationBar.Children);
             settingsViewModel.InitMainViewSettings();
 
-            settingWindow.Title = "下载设置";
+            settingWindow.Title = "全局设置";
             settingWindow.Height = 400;
             settingWindow.Width = 600;
             settingWindow.WindowStartupLocation = 2;

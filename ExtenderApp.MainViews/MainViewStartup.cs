@@ -1,10 +1,10 @@
 ﻿using ExtenderApp.Abstract;
-using ExtenderApp.MainViews.ViewModels;
-using ExtenderApp.MainViews.Models;
-using ExtenderApp.MainViews.Windows;
-using ExtenderApp.MainViews.Views;
-using Microsoft.Extensions.DependencyInjection;
 using ExtenderApp.Common;
+using ExtenderApp.MainViews.Models;
+using ExtenderApp.MainViews.ViewModels;
+using ExtenderApp.MainViews.Views;
+using ExtenderApp.MainViews.Windows;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace ExtenderApp.MainViews
 {

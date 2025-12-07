@@ -28,16 +28,6 @@ namespace ExtenderApp.MainViews.Models
         public IView? CurrentView { get; set; }
 
         /// <summary>
-        /// 返回主页的动作委托
-        /// </summary>
-        public Action? ToHomeAction { get; set; }
-
-        /// <summary>
-        /// 执行运行的动作委托
-        /// </summary>
-        public Action? ToRunAction { get; set; }
-
-        /// <summary>
         /// 选中的插件详情信息
         /// </summary>
         public PluginDetails? CurrentPluginDetails { get; set; }
@@ -63,7 +53,7 @@ namespace ExtenderApp.MainViews.Models
 
         public VerticalAlignment MessageVerticalAlignment { get; set; }
 
-        #endregion
+        #endregion Message
 
         /// <summary>
         /// 构造函数

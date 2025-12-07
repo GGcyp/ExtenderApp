@@ -53,8 +53,7 @@ namespace ExtenderApp.Services.Messages
         }
 
         /// <summary>
-        /// 发布消息给所有存活的订阅者。
-        /// 已被回收的订阅者会自动移除。
+        /// 发布消息给所有存活的订阅者。 已被回收的订阅者会自动移除。
         /// </summary>
         /// <param name="sender">消息发送者</param>
         /// <param name="message">消息内容</param>
