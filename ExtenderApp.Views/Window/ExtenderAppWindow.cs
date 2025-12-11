@@ -2,7 +2,6 @@
 using System.Windows.Input;
 using System.Windows.Media;
 using ExtenderApp.Abstract;
-using ExtenderApp.Common.Systems.KeyCaptures;
 using ExtenderApp.Data;
 
 namespace ExtenderApp.Views
@@ -10,8 +9,7 @@ namespace ExtenderApp.Views
     public class ExtenderAppWindow : Window, IWindow
     {
         private readonly Lazy<FullScreenManager> _fullManagerLazy;
-        private readonly Lazy<KeyCaptureManager> _keyCaptureManagerLazy;
-
+        private readonly IMessageService _messageService;
         public ViewInfo ViewInfo { get; }
 
         public virtual IView? CurrentView
@@ -49,12 +47,12 @@ namespace ExtenderApp.Views
         protected T? ViewModel<T>() where T : class, IViewModel
             => DataContext as T;
 
-        public ExtenderAppWindow(IViewModel? dataContext = null)
+        public ExtenderAppWindow(IMessageService messageService, IViewModel? dataContext = null)
         {
             ViewInfo = new ViewInfo(GetType().Name);
             DataContext = dataContext;
             _fullManagerLazy = new(() => new FullScreenManager(this));
-            _keyCaptureManagerLazy = new(static () => new KeyCaptureManager());
+            _messageService = messageService;
         }
 
         public virtual void Enter(ViewInfo oldViewInfo)
@@ -106,7 +104,7 @@ namespace ExtenderApp.Views
             Data.Key key = (Data.Key)e.Key;
             Data.ModifierKeys modifiers = (Data.ModifierKeys)Keyboard.Modifiers;
             bool isRepeat = e.IsRepeat;
-            _keyCaptureManagerLazy.Value.PushConsume(key, true, new KeyEvent(key, modifiers, isRepeat));
+            _messageService.Publish(this, new KeyEvent(key, modifiers, isRepeat, false));
 
             if (IsTextInputFocused())
                 return;
@@ -124,7 +122,7 @@ namespace ExtenderApp.Views
             Data.Key key = (Data.Key)e.Key;
             Data.ModifierKeys modifiers = (Data.ModifierKeys)Keyboard.Modifiers;
             bool isRepeat = e.IsRepeat;
-            _keyCaptureManagerLazy.Value.PushConsume(key, false, new KeyEvent(key, modifiers, isRepeat));
+            _messageService.Publish(this, new KeyEvent(key, modifiers, isRepeat, false));
 
             if (IsTextInputFocused())
                 return;
@@ -181,31 +179,6 @@ namespace ExtenderApp.Views
             }
 
             return false;
-        }
-
-        public void RegisterKeyCapture(Data.Key key, object obj, Action<KeyEvent>? keyDownCallbcak, Action<KeyEvent>? keyUpCallback, Data.ModifierKeys modifierKeys = Data.ModifierKeys.None)
-        {
-            ArgumentNullException.ThrowIfNull(obj);
-            if (keyDownCallbcak == null && keyUpCallback == null)
-                throw new ArgumentException("keyDownHandler和keyUpHandler不能同时为null");
-
-            _keyCaptureManagerLazy.Value.RegisterConsume(key, new(obj, modifierKeys, keyDownCallbcak, keyUpCallback));
-        }
-
-        public void RegisterKeyCapture(object obj, Action<KeyEvent>? keyDownCallbcak, Action<KeyEvent>? keyUpCallback, Data.ModifierKeys modifierKeys = Data.ModifierKeys.None)
-        {
-            _keyCaptureManagerLazy.Value.RegisterConsume(new(obj, modifierKeys, keyDownCallbcak, keyUpCallback));
-        }
-
-        public void UnRegisterKeyCapture(Data.Key key, object obj)
-        {
-            ArgumentNullException.ThrowIfNull(obj);
-            _keyCaptureManagerLazy.Value.UnregisterConsume(key, obj);
-        }
-
-        public void UnRegisterKeyCapture(object obj)
-        {
-            _keyCaptureManagerLazy.Value.UnregisterConsume(obj);
         }
 
         #endregion KeyCapture

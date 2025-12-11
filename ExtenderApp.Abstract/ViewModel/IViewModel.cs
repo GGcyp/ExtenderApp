@@ -1,6 +1,4 @@
-﻿
-
-using ExtenderApp.Data;
+﻿using ExtenderApp.Data;
 
 namespace ExtenderApp.Abstract
 {

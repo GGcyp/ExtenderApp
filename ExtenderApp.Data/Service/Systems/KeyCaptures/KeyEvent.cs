@@ -21,16 +21,23 @@
         public bool IsRepeat { get; }
 
         /// <summary>
+        /// 获取此键盘事件是否为全局事件。
+        /// </summary>
+        public bool IsGlobal { get; }
+
+        /// <summary>
         /// 构造键盘事件。
         /// </summary>
         /// <param name="key">主键</param>
         /// <param name="modifierKeys">修饰键</param>
         /// <param name="isRepeat">是否为重复按键</param>
-        public KeyEvent(Key key, ModifierKeys modifierKeys, bool isRepeat)
+        /// <param name="isGlobal">是否为全局事件</param>
+        public KeyEvent(Key key, ModifierKeys modifierKeys, bool isRepeat, bool isGlobal)
         {
             Key = key;
             ModifierKeys = modifierKeys;
             IsRepeat = isRepeat;
+            IsGlobal = isGlobal;
         }
     }
 }

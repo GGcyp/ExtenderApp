@@ -1,12 +1,10 @@
-﻿
-
-namespace ExtenderApp.Data
+﻿namespace ExtenderApp.Data
 {
     /// <summary>
     /// 消息订阅句柄，用于标识一次消息订阅。
     /// 包含消息类型和订阅者对象，可用于取消订阅等操作。
     /// </summary>
-    public readonly struct MessageHandle
+    public readonly struct MessageHandle : IEquatable<MessageHandle>
     {
         /// <summary>
         /// 为空订阅句柄实例。
@@ -37,6 +35,31 @@ namespace ExtenderApp.Data
         {
             MessageName = messageName;
             SubscriptionId = subscriptionId;
+        }
+
+        public bool Equals(MessageHandle other)
+        {
+            return MessageName == other.MessageName && SubscriptionId == other.SubscriptionId;
+        }
+
+        public static bool operator ==(MessageHandle left, MessageHandle right)
+        {
+            return left.Equals(right);
+        }
+
+        public static bool operator !=(MessageHandle left, MessageHandle right)
+        {
+            return !(left == right);
+        }
+
+        public override bool Equals(object? obj)
+        {
+            return obj is MessageHandle handle && Equals(handle);
+        }
+
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(MessageName, SubscriptionId);
         }
     }
 }

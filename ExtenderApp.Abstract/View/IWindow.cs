@@ -1,12 +1,11 @@
 ﻿using System.ComponentModel;
-using ExtenderApp.Data;
 
 namespace ExtenderApp.Abstract
 {
     /// <summary>
     /// 定义一个窗口接口。
     /// </summary>
-    public interface IWindow : IView, IKeyCapture
+    public interface IWindow : IView
     {
         #region Properties
 

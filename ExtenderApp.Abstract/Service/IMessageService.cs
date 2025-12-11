@@ -27,7 +27,7 @@ namespace ExtenderApp.Abstract
         /// <param name="target">订阅者对象（用于弱引用跟踪）</param>
         /// <param name="eventHandler">消息处理委托</param>
         /// <returns>订阅句柄，可用于取消订阅</returns>
-        MessageHandle Subscribe<TMessage>(string messageName, object target, EventHandler<TMessage> eventHandler);
+        MessageHandle Subscribe(string messageName, object target, EventHandler<object> eventHandler);
 
         /// <summary>
         /// 通过订阅句柄取消指定类型消息的订阅。
@@ -44,14 +44,6 @@ namespace ExtenderApp.Abstract
         /// <param name="target">订阅者对象</param>
         /// <returns>是否成功取消订阅</returns>
         bool Unsubscribe(Type messageType, object target);
-
-        /// <summary>
-        /// 通过订阅者对象取消指定类型消息的所有订阅。
-        /// </summary>
-        /// <typeparam name="TMessage">消息类型</typeparam>
-        /// <param name="target">订阅者对象</param>
-        /// <returns>是否成功取消订阅</returns>
-        bool Unsubscribe<TMessage>(object target);
 
         /// <summary>
         /// 通过消息处理委托取消指定类型消息的订阅。
@@ -76,14 +68,6 @@ namespace ExtenderApp.Abstract
         /// <param name="target">订阅者对象</param>
         /// <returns>是否成功取消所有订阅</returns>
         bool UnsubscribeAll(object target);
-
-        /// <summary>
-        /// 发布消息给所有订阅者。
-        /// 所有已订阅该类型消息的处理委托都会被调用。
-        /// </summary>
-        /// <typeparam name="TMessage">消息类型</typeparam>
-        /// <param name="message">消息实例</param>
-        void Publish<TMessage>(TMessage message);
 
         /// <summary>
         /// 发布消息给所有订阅者。

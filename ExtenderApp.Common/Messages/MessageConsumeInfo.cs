@@ -1,4 +1,4 @@
-﻿namespace ExtenderApp.Services.Messages
+﻿namespace ExtenderApp.Common.Messages
 {
     /// <summary>
     /// 泛型消息信息类，用于存储对象的弱引用
