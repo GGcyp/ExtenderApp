@@ -15,7 +15,7 @@ namespace ExtenderApp.Test
                 var result = await http.SendAsync(new HttpRequestMessage(HttpMethod.Get, "http://www.baidu.com/"));
                 LogDebug("测试结果：" + result.StatusCode);
             });
-            RegisterKeyCapture(Key.Space, e => LogInformation("按下"), e => LogInformation("抬起"));
+            SubscribeMessage<KeyUpEvent>((o, e) => LogInformation("收到按键消息：" + e.Key));
         }
 
         private ExpectLocalFileInfo CreatTestExpectLocalFileInfo(string fileName)

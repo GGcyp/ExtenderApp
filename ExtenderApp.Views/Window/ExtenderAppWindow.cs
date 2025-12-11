@@ -104,15 +104,12 @@ namespace ExtenderApp.Views
             Data.Key key = (Data.Key)e.Key;
             Data.ModifierKeys modifiers = (Data.ModifierKeys)Keyboard.Modifiers;
             bool isRepeat = e.IsRepeat;
-            _messageService.Publish(this, new KeyEvent(key, modifiers, isRepeat, false));
+            _messageService.Publish(this, new KeyDownEvent(key, modifiers, isRepeat, false));
 
             if (IsTextInputFocused())
                 return;
 
-            if (OnGlobalPreviewKeyDown(e))
-            {
-                e.Handled = true;
-            }
+            e.Handled = OnGlobalPreviewKeyDown(e);
         }
 
         protected override void OnPreviewKeyUp(KeyEventArgs e)
@@ -122,7 +119,7 @@ namespace ExtenderApp.Views
             Data.Key key = (Data.Key)e.Key;
             Data.ModifierKeys modifiers = (Data.ModifierKeys)Keyboard.Modifiers;
             bool isRepeat = e.IsRepeat;
-            _messageService.Publish(this, new KeyEvent(key, modifiers, isRepeat, false));
+            _messageService.Publish(this, new KeyUpEvent(key, modifiers, isRepeat, false));
 
             if (IsTextInputFocused())
                 return;
@@ -139,7 +136,7 @@ namespace ExtenderApp.Views
         /// <param name="e">按键事件参数。</param>
         /// <returns>如果事件已被处理，则返回 true；否则返回 false。</returns>
         protected virtual bool OnGlobalPreviewKeyDown(KeyEventArgs e)
-            => false;
+            => true;
 
         /// <summary>
         /// 全局按键预览抬起事件的回调方法，供派生类重写以实现自定义逻辑。
@@ -147,7 +144,7 @@ namespace ExtenderApp.Views
         /// <param name="e">按键事件参数。</param>
         /// <returns>如果事件已被处理，则返回 true；否则返回 false。</returns>
         protected virtual bool OnGlobalPreviewKeyUp(KeyEventArgs e)
-            => false;
+            => true;
 
         /// <summary>
         /// 检查当前拥有键盘焦点的元素是否为文本输入控件。

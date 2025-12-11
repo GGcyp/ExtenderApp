@@ -21,12 +21,12 @@ namespace ExtenderApp.Common.Systems.KeyCaptures
         /// <summary>
         /// 按键按下时的事件处理器（可选）。
         /// </summary>
-        public Action<KeyEvent>? KeyDownHandler { get; set; }
+        public Action<KeyUpEvent>? KeyDownHandler { get; set; }
 
         /// <summary>
         /// 按键抬起时的事件处理器（可选）。
         /// </summary>
-        public Action<KeyEvent>? KeyUpHandler { get; set; }
+        public Action<KeyUpEvent>? KeyUpHandler { get; set; }
 
         /// <summary>
         /// 订阅者期望匹配的修饰键掩码。 当触发事件的修饰键与该值匹配时，才应调用相应的处理器。
@@ -39,8 +39,8 @@ namespace ExtenderApp.Common.Systems.KeyCaptures
         public bool IsAlive => Target is not null;
 
         public KeyConsumeDetails(object targetObj, ModifierKeys modifier,
-            Action<KeyEvent>? keyDownHandler = null,
-            Action<KeyEvent>? keyUpHandler = null)
+            Action<KeyUpEvent>? keyDownHandler = null,
+            Action<KeyUpEvent>? keyUpHandler = null)
         {
             _weakReference = new(targetObj);
             KeyDownHandler = keyDownHandler;

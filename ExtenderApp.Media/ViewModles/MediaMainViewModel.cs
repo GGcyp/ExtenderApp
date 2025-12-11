@@ -1,4 +1,5 @@
 ﻿using ExtenderApp.Abstract;
+using ExtenderApp.Data;
 using ExtenderApp.FFmpegEngines;
 using ExtenderApp.Media.Models;
 using ExtenderApp.ViewModels;
@@ -59,6 +60,15 @@ namespace ExtenderApp.Media.ViewModels
             }
             var player = _engine.OpenMedia(Model.SelectedVideoInfo.MediaUri);
             Model.SetPlayer(player);
+            SubscribeMessage<KeyDownEvent>(OnKeyDown);
+        }
+
+        private void OnKeyDown(object? sender, KeyDownEvent e)
+        {
+            if (e.Key == Key.Space && !e.IsRepeat)
+            {
+                OnMediaStateChange();
+            }
         }
 
         public void OnFastForward()

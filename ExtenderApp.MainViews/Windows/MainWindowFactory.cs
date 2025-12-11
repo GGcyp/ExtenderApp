@@ -1,5 +1,4 @@
-﻿
-using ExtenderApp.Abstract;
+﻿using ExtenderApp.Abstract;
 using ExtenderApp.MainViews.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -17,7 +16,8 @@ namespace ExtenderApp.MainViews.Windows
         public IMainWindow CreateMainWindow()
         {
             var viewModel = _serviceProvider.GetRequiredService<MainWindowViewModel>();
-            return new MainViewWindow(viewModel);
+            var messageService = _serviceProvider.GetRequiredService<IMessageService>();
+            return new MainViewWindow(messageService, viewModel);
         }
     }
 }

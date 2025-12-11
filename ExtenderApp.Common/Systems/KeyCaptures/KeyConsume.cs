@@ -3,7 +3,7 @@
 namespace ExtenderApp.Common.Systems.KeyCaptures
 {
     /// <summary>
-    /// 表示对某个按键组合（主键 + 修饰键）的消费配置与状态。 提供重复按键判定及生成 <see cref="KeyEvent"/> 的能力，并维护订阅此按键组合的处理器集合。
+    /// 表示对某个按键组合（主键 + 修饰键）的消费配置与状态。 提供重复按键判定及生成 <see cref="KeyUpEvent"/> 的能力，并维护订阅此按键组合的处理器集合。
     /// </summary>
     public class KeyConsume
     {
@@ -77,7 +77,7 @@ namespace ExtenderApp.Common.Systems.KeyCaptures
         /// </summary>
         /// <param name="isKeyDown">true 表示按下（KeyDown）；false 表示抬起（KeyUp）。</param>
         /// <param name="modifierKeys">当前修饰键状态。</param>
-        public void Publish(bool isKeyDown, KeyEvent keyEvent)
+        public void Publish(bool isKeyDown, KeyUpEvent keyEvent)
         {
             // 在通知之前，首先清理那些目标对象已被垃圾回收的无效订阅。
             PruneDeadSubscribers();
@@ -98,7 +98,7 @@ namespace ExtenderApp.Common.Systems.KeyCaptures
                     if (d.ModifierKeys == ModifierKeys.None || d.ModifierKeys == keyEvent.ModifierKeys)
                     {
                         // 根据是按键按下还是抬起，选择相应的事件处理器。
-                        Action<KeyEvent>? action = isKeyDown ? d.KeyDownHandler : d.KeyUpHandler;
+                        Action<KeyUpEvent>? action = isKeyDown ? d.KeyDownHandler : d.KeyUpHandler;
                         // 如果存在对应的处理器，则调用它并传入事件参数。
                         action?.Invoke(keyEvent);
                     }

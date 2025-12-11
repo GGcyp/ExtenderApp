@@ -78,6 +78,7 @@ namespace ExtenderApp.Media.Audios
         {
             if (_waveOut.PlaybackState != PlaybackState.Playing)
             {
+                _bufferedWave.ClearBuffer();
                 _waveOut.Play();
             }
         }

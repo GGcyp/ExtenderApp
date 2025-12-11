@@ -22,7 +22,7 @@ namespace ExtenderApp.MainViews.Windows
     /// </summary>
     public partial class ExtenderDefaultWindow : ExtenderAppWindow
     {
-        public ExtenderDefaultWindow(ExtenderDefaultWindowViewModel viewModel) : base(viewModel)
+        public ExtenderDefaultWindow(IMessageService messageService, ExtenderDefaultWindowViewModel viewModel) : base(messageService, viewModel)
         {
             InitializeComponent();
         }

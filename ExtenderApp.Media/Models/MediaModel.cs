@@ -141,7 +141,7 @@ namespace ExtenderApp.Media.Models
             if (MPlayer == null) return;
 
             MPlayer.VideoFrameReceived -= _videoFrameAction;
-            MPlayer?.Pause();
+            MPlayer?.PauseAsync().ConfigureAwait(false);
             APlayer?.Pause();
         }
 

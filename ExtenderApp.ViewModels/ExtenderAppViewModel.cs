@@ -21,6 +21,8 @@ namespace ExtenderApp.ViewModels
         /// </summary>
         protected readonly IServiceStore ServiceStore;
 
+        private bool hasSubscribeMessage;
+
         /// <summary>
         /// 内部持有的日志记录器实例。
         /// </summary>
@@ -110,6 +112,9 @@ namespace ExtenderApp.ViewModels
         public void Exit(ViewInfo newViewInfo)
         {
             ProtectedExit(newViewInfo);
+
+            if (hasSubscribeMessage)
+                ServiceStore.MessageService.UnsubscribeAll(this);
         }
 
         /// <summary>
@@ -581,80 +586,6 @@ namespace ExtenderApp.ViewModels
 
         #endregion MainWindow
 
-        #region KeyCapture
-
-        /// <summary>
-        /// 注册按键捕获事件处理器。
-        /// </summary>
-        /// <param name="key">要监听的主键。</param>
-        /// <param name="downCallback">按键按下时调用的回调。</param>
-        /// <param name="upCallback">按键抬起时调用的回调。</param>
-        /// <param name="modifier">需要匹配的修饰键（如 Ctrl, Shift, Alt）。</param>
-        /// <param name="isGlobal">
-        /// 指定钩子类型： <c>true</c> 表示注册一个全局系统钩子，即使应用在后台也能捕获按键； <c>false</c> （默认）表示注册一个窗口内钩子，仅在应用窗口激活时生效。
-        /// </param>
-        protected void RegisterKeyCapture(Key key, Action<KeyEvent>? downCallback, Action<KeyEvent>? upCallback, ModifierKeys modifier = ModifierKeys.None, bool isGlobal = false)
-        {
-            if (downCallback is null && upCallback is null)
-                throw new ArgumentNullException("按下和抬起回调不能同时为空");
-
-            if (isGlobal)
-            {
-                ServiceStore.SystemService.KeyCapture.RegisterKeyCapture(key, this, downCallback, upCallback, modifier);
-            }
-            else
-            {
-                MainWindow?.RegisterKeyCapture(key, this, downCallback, upCallback, modifier);
-            }
-        }
-
-        /// <summary>
-        /// 仅注册按键按下的事件处理器。
-        /// </summary>
-        /// <param name="key">要监听的主键。</param>
-        /// <param name="downCallback">按键按下时调用的回调。</param>
-        /// <param name="modifier">需要匹配的修饰键。</param>
-        /// <param name="isGlobal">指定是全局钩子 ( <c>true</c>) 还是窗口内钩子 ( <c>false</c>)。</param>
-        protected void RegisterKeyCaptureDown(Key key, Action<KeyEvent> downCallback, ModifierKeys modifier = ModifierKeys.None, bool isGlobal = false)
-        {
-            RegisterKeyCapture(key, downCallback, null, modifier, isGlobal);
-        }
-
-        /// <summary>
-        /// 仅注册按键抬起的事件处理器。
-        /// </summary>
-        /// <param name="key">要监听的主键。</param>
-        /// <param name="upCallback">按键抬起时调用的回调。</param>
-        /// <param name="modifier">需要匹配的修饰键。</param>
-        /// <param name="isGlobal">指定是全局钩子 ( <c>true</c>) 还是窗口内钩子 ( <c>false</c>)。</param>
-        protected void RegisterKeyCaptureUp(Key key, Action<KeyEvent> upCallback, ModifierKeys modifier = ModifierKeys.None, bool isGlobal = false)
-        {
-            RegisterKeyCapture(key, null, upCallback, modifier, isGlobal);
-        }
-
-        /// <summary>
-        /// 注销当前视图模型在指定主键上的所有按键捕获回调（包括全局和窗口内）。
-        /// </summary>
-        /// <param name="key">要取消注册的目标主键。</param>
-        protected void UnRegisterKeyCapture(Key key)
-        {
-            // 同时注销两种类型的钩子以确保清理干净
-            MainWindow?.UnRegisterKeyCapture(key, this);
-            ServiceStore.SystemService.KeyCapture.UnRegisterKeyCapture(key, this);
-        }
-
-        /// <summary>
-        /// 注销当前视图模型注册的所有按键捕获回调（包括全局和窗口内）。
-        /// </summary>
-        protected void UnRegisterKeyCapture()
-        {
-            // 同时注销两种类型的钩子以确保清理干净
-            MainWindow?.UnRegisterKeyCapture(this);
-            ServiceStore.SystemService.KeyCapture.UnRegisterKeyCapture(this);
-        }
-
-        #endregion KeyCapture
-
         #region Path
 
         /// <summary>
@@ -775,6 +706,18 @@ namespace ExtenderApp.ViewModels
         protected void SubscribeMessage<TMessage>(EventHandler<TMessage> handleMessage)
         {
             ServiceStore.MessageService.Subscribe(this, handleMessage);
+            hasSubscribeMessage = true;
+        }
+
+        /// <summary>
+        /// 订阅指定类型名称的消息。
+        /// </summary>
+        /// <param name="messageName">消息名称。</param>
+        /// <param name="handleMessage">处理消息的回调委托。</param>
+        protected void SubscribeMessage(string messageName, EventHandler<object> handleMessage)
+        {
+            ServiceStore.MessageService.Subscribe(messageName, this, handleMessage);
+            hasSubscribeMessage = true;
         }
 
         /// <summary>

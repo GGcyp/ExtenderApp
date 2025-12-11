@@ -21,7 +21,7 @@ namespace ExtenderApp.Abstract
         /// 如果使用相同的 <paramref name="obj"/> 为同一 <paramref name="key"/> 和 <paramref
         /// name="modifierKeys"/> 组合重复注册，将会抛出异常，以防止意外的重复订阅。
         /// </remarks>
-        void RegisterKeyCapture(Key key, object obj, Action<KeyEvent>? keyDownHandler, Action<KeyEvent>? keyupHandler, ModifierKeys modifierKeys = ModifierKeys.None);
+        void RegisterKeyCapture(Key key, object obj, Action<KeyUpEvent>? keyDownHandler, Action<KeyUpEvent>? keyupHandler, ModifierKeys modifierKeys = ModifierKeys.None);
 
         /// <summary>
         /// 注册一个“任意键”处理器，它会响应所有按键事件，只要当前的修饰键状态与指定条件匹配。
@@ -33,7 +33,7 @@ namespace ExtenderApp.Abstract
         /// <remarks>
         /// 此重载用于捕获不关心具体主键、只关心修饰键的场景。 接口的实现者可以选择是否支持此功能。如果不支持，应在其文档中明确说明行为（例如，忽略此注册或抛出 <see cref="NotSupportedException"/>）。
         /// </remarks>
-        void RegisterKeyCapture(object obj, Action<KeyEvent>? keyDownHandler, Action<KeyEvent>? keyupHandler, ModifierKeys modifierKeys = ModifierKeys.None);
+        void RegisterKeyCapture(object obj, Action<KeyUpEvent>? keyDownHandler, Action<KeyUpEvent>? keyupHandler, ModifierKeys modifierKeys = ModifierKeys.None);
 
         /// <summary>
         /// 注销指定订阅者在特定主键上的所有事件处理器（无论修饰键如何）。

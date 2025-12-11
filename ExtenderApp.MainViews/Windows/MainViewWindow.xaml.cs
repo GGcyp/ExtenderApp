@@ -10,7 +10,7 @@ namespace ExtenderApp.MainViews
     /// </summary>
     public partial class MainViewWindow : ExtenderAppWindow, IMainWindow
     {
-        public MainViewWindow(MainWindowViewModel viewModel) : base(viewModel)
+        public MainViewWindow(IMessageService messageService, MainWindowViewModel viewModel) : base(messageService, viewModel)
         {
             InitializeComponent();
         }
