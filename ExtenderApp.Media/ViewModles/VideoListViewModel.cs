@@ -39,7 +39,7 @@ namespace ExtenderApp.Media.ViewModels
         /// </summary>
         /// <param name="videoPath">视频路径</param>
         /// <returns>如果视频路径已存在，则返回 false；否则返回 true。</returns>
-        private MediaInfo AddVideoPath(string videoPath)
+        private MediaInfo? AddVideoPath(string videoPath)
         {
             Uri uri = new Uri(videoPath);
             if (_medaiPathHash.Contains(uri))
@@ -47,7 +47,7 @@ namespace ExtenderApp.Media.ViewModels
                 return null;
             }
 
-            var videoInfo = new MediaInfo(null);
+            MediaInfo videoInfo = new(uri);
             Videos.Add(videoInfo);
             _medaiPathHash.Add(uri);
             SaveModel();
@@ -70,7 +70,7 @@ namespace ExtenderApp.Media.ViewModels
                     return;
                 }
 
-                var videoInfo = new MediaInfo(null);
+                MediaInfo videoInfo = new(uri);
                 Videos.Add(videoInfo);
                 _medaiPathHash.Add(uri);
             }
@@ -90,10 +90,10 @@ namespace ExtenderApp.Media.ViewModels
 
                     foreach (var videoFile in videoFiles)
                     {
-                        Uri uri = new Uri(videoFile);
+                        Uri uri = new(videoFile);
                         if (!_medaiPathHash.Contains(uri))
                         {
-                            var videoInfo = new MediaInfo(null);
+                            MediaInfo videoInfo = new(uri);
                             Videos.Add(videoInfo);
                             _medaiPathHash.Add(uri);
                         }

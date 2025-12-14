@@ -127,7 +127,7 @@ namespace ExtenderApp.FFmpegEngines.Decoders
                     return;
 
                 int result = Engine.SendPacket(Context.CodecContext, ref packet);
-                if (result < 0)
+                if (result < 0 || token.IsCancellationRequested)
                 {
                     Engine.Return(ref packet);
                     return;
@@ -155,13 +155,13 @@ namespace ExtenderApp.FFmpegEngines.Decoders
                     int ret = Engine.ReceiveFrame(Context.CodecContext, ref frame);
 
                     // 如果需要重试或没有更多帧，则退出循环
-                    if (Engine.IsTryAgain(ret) || Engine.IsEndOfFile(ret))
+                    if (token.IsCancellationRequested || Engine.IsTryAgain(ret) || Engine.IsEndOfFile(ret))
                     {
                         break;
                     }
-                    // 检查是否已完成
-                    if (!Engine.IsSuccess(ret))
+                    else if (!Engine.IsSuccess(ret))
                     {
+                        // 检查是否已完成
                         Engine.ShowException("接收帧失败", ret);
                         break;
                     }

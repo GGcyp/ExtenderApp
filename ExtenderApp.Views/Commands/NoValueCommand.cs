@@ -20,7 +20,7 @@ namespace ExtenderApp.Views.Commands
         /// <summary>
         /// 当命令可执行状态改变时触发的事件
         /// </summary>
-        public event EventHandler CanExecuteChanged
+        public event EventHandler? CanExecuteChanged
         {
             add { CommandManager.RequerySuggested += value; }
             remove { CommandManager.RequerySuggested -= value; }
@@ -53,7 +53,7 @@ namespace ExtenderApp.Views.Commands
         /// </summary>
         /// <param name="parameter">命令参数</param>
         /// <returns>如果命令可执行，则为 true；否则为 false</returns>
-        public bool CanExecute(object parameter)
+        public bool CanExecute(object? parameter)
         {
             return _canExecute == null || _canExecute.Invoke();
         }
@@ -62,11 +62,12 @@ namespace ExtenderApp.Views.Commands
         /// 执行命令
         /// </summary>
         /// <param name="parameter">命令参数</param>
-        public void Execute(object parameter)
+        public void Execute(object? parameter)
         {
             _execute.Invoke();
         }
+
+        public static implicit operator NoValueCommand(Action execute)
+            => new NoValueCommand(execute);
     }
-
-
 }

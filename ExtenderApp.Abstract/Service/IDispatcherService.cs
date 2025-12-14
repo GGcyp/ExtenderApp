@@ -35,7 +35,7 @@ namespace ExtenderApp.Abstract
         /// 适合更新 UI 等无需等待完成的场景。
         /// </summary>
         /// <param name="action">要执行的委托。</param>
-        void BeginInvoke(Action action);
+        void InvokeAsync(Action action);
 
         /// <summary>
         /// 在目标线程上“异步”执行带参数的委托，立即返回，不阻塞调用方。
@@ -43,14 +43,14 @@ namespace ExtenderApp.Abstract
         /// <typeparam name="T">参数类型。</typeparam>
         /// <param name="action">要执行的委托。</param>
         /// <param name="send">传递给委托的参数。</param>
-        void BeginInvoke<T>(Action<T> action, T send);
+        void InvokeAsync<T>(Action<T> action, T send);
 
         /// <summary>
         /// 使用 SynchronizationContext.Post 在目标线程上“异步”执行回调，立即返回。
         /// </summary>
         /// <param name="callback">回调。</param>
         /// <param name="obj">传递给回调的状态对象。</param>
-        void BeginInvoke(SendOrPostCallback callback, object? obj);
+        void InvokeAsync(SendOrPostCallback callback, object? obj);
 
         /// <summary>
         /// 在目标线程上执行委托并返回结果的任务形式。

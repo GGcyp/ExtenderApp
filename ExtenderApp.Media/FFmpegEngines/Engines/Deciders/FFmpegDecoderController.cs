@@ -138,7 +138,7 @@ namespace ExtenderApp.FFmpegEngines
             source?.Cancel();
             source?.Dispose();
 
-            await WaitForAllTasksComplete();
+            await WaitForAllTasksComplete().ConfigureAwait(false);
             source = null;
         }
 
@@ -150,7 +150,7 @@ namespace ExtenderApp.FFmpegEngines
         {
             ThrowIfDisposed();
 
-            await StopDecodeAsync();
+            await StopDecodeAsync().ConfigureAwait(false);
 
             DecoderCollection.Flush();
 
@@ -424,7 +424,7 @@ namespace ExtenderApp.FFmpegEngines
                 return;
             try
             {
-                await Task.WhenAll(processTasks);
+                await Task.WhenAll(processTasks).ConfigureAwait(false);
             }
             catch (TaskCanceledException)
             {

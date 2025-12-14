@@ -126,16 +126,16 @@ namespace ExtenderApp.FFmpegEngines
         /// <summary>
         /// 停止媒体播放流程，终止解码和播放任务，释放相关资源并清空帧队列。 若当前已处于停止状态则直接返回。
         /// </summary>
-        public async Task StopAsync()
+        public ValueTask StopAsync()
         {
             if (State == PlayerState.Stopped)
             {
-                return;
+                return ValueTask.CompletedTask;
             }
 
-            await _controller.StopDecodeAsync(); // 停止解码流程
             State = PlayerState.Stopped;
-            await FlushAsync();                // 释放播放任务资源
+            // 停止解码流程 释放播放任务资源
+            return new(Task.WhenAll(_controller.StopDecodeAsync(), FlushAsync()));
         }
 
         /// <summary>
@@ -150,37 +150,34 @@ namespace ExtenderApp.FFmpegEngines
         /// <summary>
         /// 暂停媒体播放流程，终止解码和播放任务，释放相关资源。 若当前已处于暂停状态则直接返回。
         /// </summary>
-        public async Task PauseAsync()
+        public ValueTask PauseAsync()
         {
             if (State == PlayerState.Paused)
             {
-                return;
+                return ValueTask.CompletedTask;
             }
 
-            await _controller.StopDecodeAsync(); // 停止解码流程
             State = PlayerState.Paused;
-            await FlushAsync();                // 释放播放任务资源
+            return new(Task.WhenAll(_controller.StopDecodeAsync(), FlushAsync()));
         }
 
         /// <summary>
         /// 跳转到指定时间点（TimeSpan），内部按毫秒处理。
         /// </summary>
         /// <param name="timeSpan">目标跳转时间（TimeSpan）。</param>
-        public async Task SeekAsync(TimeSpan timeSpan)
+        public ValueTask SeekAsync(TimeSpan timeSpan)
         {
-            await SeekAsync((long)timeSpan.TotalMilliseconds);
+            return SeekAsync((long)timeSpan.TotalMilliseconds);
         }
 
         /// <summary>
         /// 跳转到指定时间点（毫秒），重置解码器和播放状态，清空帧队列并触发进度回调。 若未初始化则直接返回，跳转超出范围时自动修正。
         /// </summary>
         /// <param name="position">目标跳转时间（毫秒）。</param>
-        public async Task SeekAsync(long position)
+        public async ValueTask SeekAsync(long position)
         {
             if (State == PlayerState.Uninitialized)
-            {
                 return;
-            }
 
             if (position > Info.Duration)
             {
@@ -190,8 +187,8 @@ namespace ExtenderApp.FFmpegEngines
             {
                 position = 0;
             }
-            await FlushAsync();                   // 释放播放任务资源
-            await _controller.SeekDecoderAsync(position); // 跳转解码器
+            // 跳转解码器 释放播放任务资源
+            await Task.WhenAll(_controller.SeekDecoderAsync(position), FlushAsync()).ConfigureAwait(false);
 
             Position = position;
             PlaybackReceived?.Invoke(Position);          // 触发进度回调

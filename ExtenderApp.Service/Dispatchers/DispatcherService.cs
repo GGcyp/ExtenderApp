@@ -5,8 +5,7 @@ using Microsoft.Extensions.Logging;
 namespace ExtenderApp.Services
 {
     /// <summary>
-    /// WPF调度器服务实现类，用于在UI线程上执行操作
-    /// 实现IDispatcherService接口，提供同步/异步调用方法
+    /// WPF调度器服务实现类，用于在UI线程上执行操作 实现IDispatcherService接口，提供同步/异步调用方法
     /// </summary>
     internal class DispatcherService : IDispatcherService
     {
@@ -14,6 +13,7 @@ namespace ExtenderApp.Services
         /// 日志服务接口，用于记录异常信息
         /// </summary>
         private readonly ILogger<IDispatcherService> _logeer;
+
         private readonly IMainThreadContext _mainThreadContext;
         private readonly Action<Action> _toMainThread;
         private readonly Action<Action> _awayMainThread;
@@ -30,7 +30,7 @@ namespace ExtenderApp.Services
             _logeer = logger;
             _mainThreadContext = mainThreadContext;
 
-            _toMainThread = BeginInvoke;
+            _toMainThread = InvokeAsync;
             _awayMainThread = AwayMainThread;
         }
 
@@ -70,21 +70,21 @@ namespace ExtenderApp.Services
             }
         }
 
-        public void BeginInvoke(Action action)
+        public void InvokeAsync(Action action)
         {
             if (action == null)
                 return;
-            BeginInvoke(new SendOrPostCallback(_ => action()), null);
+            InvokeAsync(new SendOrPostCallback(_ => action()), null);
         }
 
-        public void BeginInvoke<T>(Action<T> action, T send)
+        public void InvokeAsync<T>(Action<T> action, T send)
         {
             if (action == null)
                 return;
-            BeginInvoke(CreateCallback(action), send);
+            InvokeAsync(CreateCallback(action), send);
         }
 
-        public void BeginInvoke(SendOrPostCallback callback, object? obj)
+        public void InvokeAsync(SendOrPostCallback callback, object? obj)
         {
             try
             {
@@ -115,7 +115,7 @@ namespace ExtenderApp.Services
             return result;
         }
 
-        #endregion
+        #endregion Invoke
 
         #region SwitchThreads
 
@@ -129,7 +129,7 @@ namespace ExtenderApp.Services
             return new ThreadSwitchAwaitable(_awayMainThread, null, !CheckAccess(), token);
         }
 
-        #endregion
+        #endregion SwitchThreads
 
         private SendOrPostCallback CreateCallback<T>(Action<T> action)
         {

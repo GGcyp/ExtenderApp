@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
@@ -37,11 +32,10 @@ namespace ExtenderApp.Media.Themes
         //}
 
         //public static readonly DependencyProperty IconProperty =
-        //    DependencyProperty.RegisterKeyCapture(nameof(Icon), 
-        //        typeof(Geometry), 
-        //        typeof(MediaSlider), 
+        //    DependencyProperty.RegisterKeyCapture(nameof(Icon),
+        //        typeof(Geometry),
+        //        typeof(MediaSlider),
         //        new PropertyMetadata(null));
-
 
         /// <summary>
         /// 图标尺寸
@@ -58,7 +52,6 @@ namespace ExtenderApp.Media.Themes
                 typeof(MediaSlider),
                 new PropertyMetadata(10d));
 
-
         /// <summary>
         /// 滑块背景颜色
         /// </summary>
@@ -73,7 +66,6 @@ namespace ExtenderApp.Media.Themes
                 typeof(Brush),
                 typeof(MediaSlider),
                 new PropertyMetadata(Brushes.Transparent));
-
 
         /// <summary>
         /// 已看完显示颜色
@@ -90,7 +82,6 @@ namespace ExtenderApp.Media.Themes
                 typeof(MediaSlider),
                 new PropertyMetadata(null));
 
-
         /// <summary>
         /// 还没看的视频长度背景色
         /// </summary>
@@ -106,9 +97,6 @@ namespace ExtenderApp.Media.Themes
                 typeof(MediaSlider),
                 new PropertyMetadata(null));
 
-
-
-
         /// <summary>
         /// 圆块的颜色
         /// </summary>
@@ -123,8 +111,6 @@ namespace ExtenderApp.Media.Themes
                 typeof(Brush),
                 typeof(MediaSlider),
                 new PropertyMetadata(null));
-
-
 
         /// <summary>
         /// 滑动条高度

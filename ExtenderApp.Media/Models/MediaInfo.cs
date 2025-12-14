@@ -82,6 +82,10 @@ namespace ExtenderApp.Media.Models
         /// </summary>
         public bool IsFavorite { get; set; }
 
+        public MediaInfo(string uri) : this(new(uri), string.Empty)
+        {
+        }
+
         public MediaInfo(Uri mediaUri) : this(mediaUri, string.Empty)
         {
             Rate = 0;

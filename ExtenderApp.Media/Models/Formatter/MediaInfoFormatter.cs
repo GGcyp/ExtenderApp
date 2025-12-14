@@ -5,12 +5,9 @@ using ExtenderApp.Abstract;
 namespace ExtenderApp.Media.Models
 {
     /// <summary>
-    /// VideoInfoFormatter 类是一个扩展格式化器，用于格式化
-    /// VideoInfo 对象。
+    /// VideoInfoFormatter 类是一个扩展格式化器，用于格式化 VideoInfo 对象。
     /// </summary>
-    /// <typeparam name="VideoInfo">
-    /// 表示要格式化的 VideoInfo 类型。
-    /// </typeparam>
+    /// <typeparam name="VideoInfo">表示要格式化的 VideoInfo 类型。</typeparam>
     internal class MediaInfoFormatter : ResolverFormatter<MediaInfo>
     {
         private readonly IBinaryFormatter<string> _string;
@@ -47,7 +44,8 @@ namespace ExtenderApp.Media.Models
 
         public override MediaInfo Deserialize(ref ByteBuffer buffer)
         {
-            MediaInfo info = new MediaInfo(null);
+            Uri mediaUri = _uri.Deserialize(ref buffer);
+            MediaInfo info = new MediaInfo(mediaUri);
 
             info.Title = _string.Deserialize(ref buffer);
 

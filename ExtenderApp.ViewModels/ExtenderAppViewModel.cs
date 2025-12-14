@@ -522,7 +522,7 @@ namespace ExtenderApp.ViewModels
         protected void DispatcherBeginInvoke(Action callback)
         {
             if (callback is null) return;
-            ServiceStore.DispatcherService.BeginInvoke(callback);
+            ServiceStore.DispatcherService.InvokeAsync(callback);
         }
 
         /// <summary>

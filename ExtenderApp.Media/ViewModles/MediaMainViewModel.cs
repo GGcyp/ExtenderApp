@@ -51,29 +51,48 @@ namespace ExtenderApp.Media.ViewModels
             openFileDialog.ShowDialog();
             try
             {
-                Model.SelectedVideoInfo = new MediaInfo(new Uri(openFileDialog.FileName));
+                Model.OpenMedia(openFileDialog.FileName);
             }
             catch (Exception ex)
             {
                 System.Windows.MessageBox.Show("未选择文件或选择的文件无法打开！" + ex.Message);
                 return;
             }
-            var player = _engine.OpenMedia(Model.SelectedVideoInfo.MediaUri);
-            Model.SetPlayer(player);
             SubscribeMessage<KeyDownEvent>(OnKeyDown);
         }
 
         private void OnKeyDown(object? sender, KeyDownEvent e)
         {
-            if (e.Key == Key.Space && !e.IsRepeat)
+            if (e.IsRepeat)
+                return;
+
+            switch (e.Key)
             {
-                OnMediaStateChange();
+                case Key.Left:
+                    OnReverseOrForward(false);
+                    break;
+
+                case Key.Right:
+                    OnReverseOrForward(true);
+                    break;
+
+                case Key.Space:
+                    OnMediaStateChange();
+                    break;
+
+                case Key.Up:
+                    Model.Volume += 5;
+                    break;
+
+                case Key.Down:
+                    Model.Volume -= 5;
+                    break;
             }
         }
 
         public void OnFastForward()
         {
-            Model.Seek(Model.Position + TimeSpan.FromSeconds(Model.JumpTime));
+            OnReverseOrForward(true);
         }
 
         public void OnReverseOrForward(bool isForward)
@@ -83,25 +102,18 @@ namespace ExtenderApp.Media.ViewModels
             Model.Seek(targetTime);
         }
 
-        internal void OnRate(double rate)
-        {
-            Model.Rate = rate;
-        }
-
         private void OnMediaStateChange()
         {
-            if (Model.SelectedVideoInfo == null || Model.MPlayer == null)
+            switch (Model.State)
             {
-                return;
-            }
+                case PlayerState.Playing:
+                    Model.Pause();
+                    break;
 
-            if (Model.MPlayer.State == PlayerState.Paused || Model.MPlayer.State == PlayerState.Initializing)
-            {
-                Model.Play();
-            }
-            else if (Model.MPlayer.State == PlayerState.Playing)
-            {
-                Model.Pause();
+                case PlayerState.Paused:
+                case PlayerState.Initializing:
+                    Model.Play();
+                    break;
             }
         }
 

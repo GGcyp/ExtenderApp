@@ -1,10 +1,13 @@
 ﻿using System.Collections.ObjectModel;
+using System.Diagnostics;
+using System.Threading.Tasks;
 using System.Windows.Media.Imaging;
 using ExtenderApp.Abstract;
 using ExtenderApp.FFmpegEngines;
 using ExtenderApp.Media.Audios;
 using ExtenderApp.Models;
 using ExtenderApp.Views;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace ExtenderApp.Media.Models
 {
@@ -15,7 +18,9 @@ namespace ExtenderApp.Media.Models
     {
         private readonly Action<FFmpegFrame> _videoFrameAction;
         private readonly Action<long> _playbackAction;
-        private IDispatcherService? dispatcherService;
+        private readonly Action _positionAction;
+        private MediaEngine mediaEngine;
+        private IDispatcherService dispatcherService;
 
         /// <summary>
         /// 视频信息集合
@@ -39,13 +44,15 @@ namespace ExtenderApp.Media.Models
         /// </summary>
         public double Volume
         {
-            get => volume;
+            get => volume * 100f;
             set
             {
-                volume = value;
+                volume = value / 100f;
+                volume = volume >= 1f ? 1f : volume <= 0f ? 0f : volume;
                 if (APlayer != null)
                 {
                     APlayer.Volume = (float)volume;
+                    Debug.Print(volume.ToString());
                 }
             }
         }
@@ -69,6 +76,17 @@ namespace ExtenderApp.Media.Models
             }
         }
 
+        public PlayerState? State
+        {
+            get
+            {
+                if (MPlayer is not null)
+                    return MPlayer.State;
+
+                return PlayerState.Uninitialized;
+            }
+        }
+
         /// <summary>
         /// 是否记录观看时间
         /// </summary>
@@ -78,6 +96,8 @@ namespace ExtenderApp.Media.Models
         /// 视频文件不存在则删除
         /// </summary>
         public bool VideoNotExist { get; set; }
+
+        private TimeSpan position;
 
         /// <summary>
         /// 播放进度
@@ -100,6 +120,8 @@ namespace ExtenderApp.Media.Models
         {
             _videoFrameAction = OnVideoFrame;
             _playbackAction = OnPlayback;
+            _positionAction = () => Position = position;
+            dispatcherService = default!;
             JumpTime = 10;
             rate = 1.0;
         }
@@ -107,13 +129,22 @@ namespace ExtenderApp.Media.Models
         protected override void Init(IPuginServiceStore store)
         {
             dispatcherService = store.DispatcherService;
+            mediaEngine = store.ServiceProvider.GetService<MediaEngine>() ?? throw new InvalidOperationException("MediaEngine服务未注册。");
             MediaInfos ??= new();
         }
 
-        public void SetPlayer(MediaPlayer player)
+        public void OpenMedia(string mediaUri)
         {
-            if (player == null)
-                throw new ArgumentNullException(nameof(player));
+            var player = mediaEngine.OpenMedia(mediaUri);
+
+            SelectedVideoInfo = new(mediaUri);
+
+            OpenMedia(player);
+        }
+
+        private void OpenMedia(MediaPlayer player)
+        {
+            ArgumentNullException.ThrowIfNull(player, nameof(player));
 
             APlayer = new AudioPlayer(player.Settings, (float)volume);
             MPlayer = player;
@@ -123,14 +154,15 @@ namespace ExtenderApp.Media.Models
             nativeMemoryBitmap = new(player.Info.Width, player.Info.Height, 96, 96, System.Windows.Media.PixelFormats.Bgr24, null);
 
             player.AudioFrameReceived += APlayer.AddSamples;
-            player.PlaybackReceived += _playbackAction;
         }
 
         public void Play()
         {
-            if (MPlayer == null) return;
-
-            MPlayer.VideoFrameReceived += _videoFrameAction;
+            if (MPlayer != null)
+            {
+                MPlayer.VideoFrameReceived += _videoFrameAction;
+                MPlayer.PlaybackReceived += _playbackAction;
+            }
 
             MPlayer?.Play();
             APlayer?.Play();
@@ -138,54 +170,57 @@ namespace ExtenderApp.Media.Models
 
         public void Pause()
         {
-            if (MPlayer == null) return;
+            if (MPlayer != null)
+            {
+                MPlayer.VideoFrameReceived -= _videoFrameAction;
+                MPlayer.PlaybackReceived -= _playbackAction;
+            }
 
-            MPlayer.VideoFrameReceived -= _videoFrameAction;
-            MPlayer?.PauseAsync().ConfigureAwait(false);
             APlayer?.Pause();
+            MPlayer?.PauseAsync().ConfigureAwait(false);
         }
 
         public void Stop()
         {
-            if (MPlayer == null) return;
+            if (MPlayer != null)
+            {
+                MPlayer.Stop();
+                MPlayer.VideoFrameReceived -= _videoFrameAction;
+                MPlayer.PlaybackReceived -= _playbackAction;
+            }
 
-            MPlayer?.Stop();
-            APlayer?.Stop();
+            if (APlayer != null)
+                APlayer?.Stop();
         }
 
-        public void Seek(TimeSpan position, bool auotPlay = true)
+        public Task Seek(TimeSpan position, bool auotPlay = true)
         {
-            Seek((long)position.TotalMilliseconds, auotPlay);
+            return Seek((long)position.TotalMilliseconds, auotPlay);
         }
 
-        public void Seek(long position, bool auotPlay = true)
+        public async Task Seek(long position, bool auotPlay = true)
         {
-            if (MPlayer == null) return;
+            if (MPlayer == null)
+                return;
 
             if (position > TotalTime.TotalMilliseconds)
                 position = (long)TotalTime.TotalMilliseconds;
             else if (position < 0)
                 position = 0;
 
+            await MPlayer.SeekAsync(position).ConfigureAwait(false);
             APlayer?.Pause();
+            APlayer?.Clear();
 
-            if (MPlayer == null) return;
-
-            Task.Run(async () =>
-            {
-                await MPlayer.SeekAsync(position);
-                APlayer?.Clear();
-
-                if (!auotPlay)
-                    return;
-
-                Play();
-            });
+            if (!auotPlay)
+                return;
+            Play();
         }
 
         public void Forward(double rate)
         {
-            if (MPlayer == null) return;
+            if (IsSeeking || MPlayer == null)
+                return;
 
             MPlayer.Rate = rate;
 
@@ -197,6 +232,9 @@ namespace ExtenderApp.Media.Models
 
         private unsafe void OnVideoFrame(FFmpegFrame frame)
         {
+            if (IsSeeking)
+                return;
+
             nativeMemoryBitmap!.Write(frame.Block.UnreadSpan);
             nativeMemoryBitmap.UpdateBitmap();
         }
@@ -205,11 +243,8 @@ namespace ExtenderApp.Media.Models
         {
             if (IsSeeking)
                 return;
-
-            dispatcherService.Invoke(() =>
-            {
-                Position = TimeSpan.FromMilliseconds(current);
-            });
+            position = TimeSpan.FromMilliseconds(current);
+            dispatcherService.InvokeAsync(_positionAction);
         }
 
         protected override void DisposeManagedResources()

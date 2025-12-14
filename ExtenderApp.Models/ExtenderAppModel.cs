@@ -1,34 +1,17 @@
 ﻿using System.ComponentModel;
-using System.Runtime.CompilerServices;
 using ExtenderApp.Abstract;
-using ExtenderApp.Common;
-using ExtenderApp.Data;
 
 namespace ExtenderApp.Models
 {
     /// <summary>
-    /// 扩展应用程序模型基类，继承自<see cref="INotifyPropertyChanged"/>，用于支持属性变更通知和资源释放。
+    /// 扩展应用程序模型基类，继承自 <see cref="INotifyPropertyChanged"/>，用于支持属性变更通知和资源释放。
     /// </summary>
-    public class ExtenderAppModel : DisposableObject, INotifyPropertyChanged
+    public class ExtenderAppModel : DataModel
     {
         /// <summary>
         /// 标记模型是否已初始化。
         /// </summary>
         private bool _isInitialized;
-
-        /// <summary>
-        /// 属性变更事件，当属性值发生变化时触发。
-        /// </summary>
-        public event PropertyChangedEventHandler? PropertyChanged;
-
-        /// <summary>
-        /// 触发属性变更通知。
-        /// </summary>
-        /// <param name="propertyName">属性名称，自动获取调用成员名。</param>
-        protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
-        {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-        }
 
         /// <summary>
         /// 初始化模型，确保只初始化一次。
