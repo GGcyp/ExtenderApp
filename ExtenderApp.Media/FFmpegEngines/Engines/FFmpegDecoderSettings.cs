@@ -35,5 +35,14 @@
         /// 音频采样率（Hz），默认 44100。
         /// </summary>
         public int SampleRate { get; } = 44100;
+
+        /// <summary>
+        /// 获取每个音频样本的字节数。
+        /// </summary>
+        /// <returns>返回每个音频样本的字节数。</returns>
+        public int GetBytesPerSample()
+        {
+            return FFmpegEngine.GetBytesPerSample(SampleFormat);
+        }
     }
 }

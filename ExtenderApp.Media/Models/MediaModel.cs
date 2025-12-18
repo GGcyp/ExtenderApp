@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using System.Windows.Media.Imaging;
 using ExtenderApp.Abstract;
 using ExtenderApp.FFmpegEngines;
+using ExtenderApp.FFmpegEngines.Medias;
 using ExtenderApp.Media.Audios;
 using ExtenderApp.Models;
 using ExtenderApp.Views;
@@ -28,10 +29,8 @@ namespace ExtenderApp.Media.Models
         public ObservableCollection<MediaInfo>? MediaInfos { get; set; }
 
         public MediaPlayer? MPlayer { get; set; }
-        public AudioPlayer? APlayer { get; set; }
 
-        public WriteableBitmap? Bitmap => nativeMemoryBitmap?.Bitmap;
-        public NativeMemoryBitmap? nativeMemoryBitmap { get; set; }
+        public WriteableBitmap? Bitmap {  get; set; }
 
         public IView? CurrentVideoListView { get; set; }
 
@@ -137,15 +136,6 @@ namespace ExtenderApp.Media.Models
         {
             var player = mediaEngine.OpenMedia(mediaUri);
 
-            SelectedVideoInfo = new(mediaUri);
-
-            OpenMedia(player);
-        }
-
-        private void OpenMedia(MediaPlayer player)
-        {
-            ArgumentNullException.ThrowIfNull(player, nameof(player));
-
             APlayer = new AudioPlayer(player.Settings, (float)volume);
             MPlayer = player;
 
@@ -154,18 +144,16 @@ namespace ExtenderApp.Media.Models
             nativeMemoryBitmap = new(player.Info.Width, player.Info.Height, 96, 96, System.Windows.Media.PixelFormats.Bgr24, null);
 
             player.AudioFrameReceived += APlayer.AddSamples;
+            player.PlaybackReceived += _playbackAction;
         }
 
         public void Play()
         {
-            if (MPlayer != null)
-            {
-                MPlayer.VideoFrameReceived += _videoFrameAction;
-                MPlayer.PlaybackReceived += _playbackAction;
-            }
+            if (MPlayer == null) return;
+
+            MPlayer.VideoFrameReceived += _videoFrameAction;
 
             MPlayer?.Play();
-            APlayer?.Play();
         }
 
         public void Pause()
@@ -232,14 +220,11 @@ namespace ExtenderApp.Media.Models
 
         private unsafe void OnVideoFrame(FFmpegFrame frame)
         {
-            if (IsSeeking)
-                return;
-
             nativeMemoryBitmap!.Write(frame.Block.UnreadSpan);
             nativeMemoryBitmap.UpdateBitmap();
         }
 
-        private void OnPlayback(long current)
+        private void OnPlayback()
         {
             if (IsSeeking)
                 return;

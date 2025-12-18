@@ -1,7 +1,9 @@
 ﻿using ExtenderApp.Abstract;
 using ExtenderApp.Data;
 using ExtenderApp.FFmpegEngines;
+using ExtenderApp.FFmpegEngines.Medias;
 using ExtenderApp.Media.Models;
+using ExtenderApp.Models;
 using ExtenderApp.ViewModels;
 using ExtenderApp.Views.Commands;
 using Microsoft.Win32;

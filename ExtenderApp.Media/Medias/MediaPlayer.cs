@@ -1,7 +1,10 @@
-﻿using ExtenderApp.Data;
+﻿using System;
+using System.Drawing.Imaging;
+using System.Text;
+using ExtenderApp.Data;
 using ExtenderApp.FFmpegEngines.Decoders;
 
-namespace ExtenderApp.FFmpegEngines
+namespace ExtenderApp.FFmpegEngines.Medias
 {
     /// <summary>
     /// FFmpeg 媒体播放器，负责音视频解码、播放、暂停、停止、跳转等控制。 支持多线程解码和帧调度，适用于 WPF 播放场景。
@@ -16,15 +19,36 @@ namespace ExtenderApp.FFmpegEngines
         /// <summary>
         /// 每个视频帧的最大允许输出时间差（毫秒），用于同步音视频。
         /// </summary>
-        private const int VideoFrameOutTime = 15;
+        private const int FrameOutTime = 15;
 
         /// <summary>
         /// 解码控制器，负责解码流程的启动、停止和跳转。
         /// </summary>
         private readonly FFmpegDecoderController _controller;
 
+        /// <summary>
+        /// 视频画面解码器实例。
+        /// </summary>
         private readonly FFmpegDecoder? _videoDecoder;
+
+        /// <summary>
+        /// 音频解码器实例。
+        /// </summary>
         private readonly FFmpegDecoder? _audioDecoder;
+
+        /// <summary>
+        /// 媒体播放任务。
+        /// </summary>
+        private Task? mediaTask;
+
+        /// <summary>
+        /// 媒体播放流程的取消令牌源。
+        /// </summary>
+        private CancellationTokenSource? mediaSource;
+
+        private IAudioOutput? audioOutput;
+
+        private IVideoOutput? videoOutput;
 
         /// <summary>
         /// 解码器设置参数。
@@ -42,16 +66,6 @@ namespace ExtenderApp.FFmpegEngines
         public double Rate { get; set; }
 
         /// <summary>
-        /// 媒体播放任务。
-        /// </summary>
-        private Task? mediaTask;
-
-        /// <summary>
-        /// 媒体播放流程的取消令牌源。
-        /// </summary>
-        private CancellationTokenSource? mediaSource;
-
-        /// <summary>
         /// 媒体流基本信息（如时长、帧率等）。
         /// </summary>
         public FFmpegInfo Info => _controller.Info;
@@ -64,19 +78,9 @@ namespace ExtenderApp.FFmpegEngines
         #region Events
 
         /// <summary>
-        /// 视频帧回调事件，每次播放视频帧时触发。
-        /// </summary>
-        public event Action<FFmpegFrame>? VideoFrameReceived;
-
-        /// <summary>
-        /// 音频帧回调事件，每次播放音频帧时触发。
-        /// </summary>
-        public event Action<FFmpegFrame>? AudioFrameReceived;
-
-        /// <summary>
         /// 每次播放进度更新时触发，传递当前播放时间（微秒）。
         /// </summary>
-        public event Action<long>? PlaybackReceived;
+        public event Action? Playback;
 
         #endregion Events
 
@@ -98,6 +102,23 @@ namespace ExtenderApp.FFmpegEngines
             _videoDecoder = collection.GetDecoder(FFmpegMediaType.VIDEO);
             _audioDecoder = collection.GetDecoder(FFmpegMediaType.AUDIO);
         }
+
+        public void SetAudioOutput(IAudioOutput output)
+        {
+            if (mediaTask != null)
+                throw new InvalidOperationException("在播放过程中无法更改音频输出。");
+
+            audioOutput = output;
+        }
+
+        public void SetVideoOutput(IVideoOutput output)
+        {
+            if (mediaTask != null)
+                throw new InvalidOperationException("在播放过程中无法更改视频输出。");
+            videoOutput = output;
+        }
+
+        #region Output Methods
 
         /// <summary>
         /// 启动媒体播放流程，开始解码和播放。
@@ -191,7 +212,7 @@ namespace ExtenderApp.FFmpegEngines
             await Task.WhenAll(_controller.SeekDecoderAsync(position), FlushAsync()).ConfigureAwait(false);
 
             Position = position;
-            PlaybackReceived?.Invoke(Position);          // 触发进度回调
+            Playback?.Invoke();          // 触发进度回调
             State = PlayerState.Initializing;
         }
 
@@ -227,6 +248,8 @@ namespace ExtenderApp.FFmpegEngines
         /// </summary>
         private void PlaybackLoop()
         {
+            const int ResultCount = 1;
+
             var token = mediaSource!.Token;
 
             // 使用当前播放速率计算基础帧间隔（毫秒）
@@ -234,13 +257,19 @@ namespace ExtenderApp.FFmpegEngines
 
             // 选择主解码器（优先音频）
             FFmpegDecoder? mainDecoder = _audioDecoder ?? _videoDecoder;
-            if (mainDecoder is null)
-            {
-                // 无可用解码器，直接返回
-                return;
-            }
 
-            Action<FFmpegFrame>? mainAction = mainDecoder == _audioDecoder ? AudioFrameReceived : VideoFrameReceived;
+            ProcessFrameResult audioResult = new(audioOutput!, _audioDecoder!, this);
+            ProcessFrameResult videoResult = new(videoOutput!, _videoDecoder!, this);
+
+            ProcessFrameResult mainResult = audioResult.IsEmpty ? videoResult : audioResult;
+            List<ProcessFrameResult>? otherResults = new(ResultCount);
+            if (mainResult.IsEmpty)
+            {
+                throw new ArgumentNullException("没有可用的解码器进行播放。");
+            }
+            else
+            {
+            }
 
             while (!token.IsCancellationRequested)
             {
@@ -251,11 +280,8 @@ namespace ExtenderApp.FFmpegEngines
                     continue;
                 }
 
-                // 处理主流（音频优先），返回与当前播放位置的时间差（毫秒）
-                int mainDelay = ProcessMainFrame(mainDecoder, mainAction);
-
-                // 处理非主流的帧（如果存在）
-                ProcessFrame(_videoDecoder, VideoFrameReceived, VideoFrameOutTime);
+                int mainDelay = mainResult.Process(0);
+                videoResult.Process(FrameOutTime);
 
                 // 计算下一次等待时间
                 int waitTime = (mainDelay > 0) ? mainDelay : frameInterval;
@@ -265,7 +291,7 @@ namespace ExtenderApp.FFmpegEngines
 
                 // 根据播放速率缩放实际等待时间
                 int scaledWait = Math.Max(0, (int)(waitTime / Rate));
-                PlaybackReceived?.Invoke(Position);
+                Playback?.Invoke();
 
                 if (scaledWait >= SkipWaitingTime)
                 {
@@ -289,58 +315,57 @@ namespace ExtenderApp.FFmpegEngines
             return decoder is null ? true : decoder.HasFrames;
         }
 
-        private int ProcessMainFrame(FFmpegDecoder? decoder, Action<FFmpegFrame>? action)
+        #endregion Output Methods
+
+        #region Process Frame Methods
+
+        private struct ProcessFrameResult
         {
-            if (decoder is null || !decoder.HasFrames)
+            private readonly IMediaOutput _output;
+            private readonly FFmpegDecoder _decoder;
+            private readonly MediaPlayer _player;
+
+            public bool IsEmpty => _output == null || _decoder == null;
+
+            public ProcessFrameResult(IMediaOutput output, FFmpegDecoder decoder, MediaPlayer player)
             {
-                return -1;
+                _output = output;
+                _decoder = decoder;
+                _player = player;
             }
 
-            long timeDiff = 0;
-            while (decoder.HasFrames)
+            public int Process(int outTime)
             {
-                timeDiff = decoder.NextFramePts - Position;
+                long timeDiff = 0;
+                while (_decoder.HasFrames)
+                {
+                    timeDiff = _decoder.NextFramePts - _player.Position;
 
-                if (timeDiff > 0)
-                    break;
-
-                decoder.TryDequeueFrame(out var frame);
-                action?.Invoke(frame);
-                frame.Dispose();
+                    if (timeDiff > 0)
+                    {
+                        break;
+                    }
+                    else if (Math.Abs(timeDiff) <= outTime)
+                    {
+                        _decoder.TryDequeueFrame(out var frame);
+                        _output.WriteFrame(frame);
+                        frame.Dispose();
+                    }
+                    else if (timeDiff < -outTime)
+                    {
+                        _decoder.TryDequeueFrame(out var frame);
+                        frame.Dispose();
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+                return (int)timeDiff;
             }
-            return (int)timeDiff;
         }
 
-        private int ProcessFrame(FFmpegDecoder? decoder, Action<FFmpegFrame>? action, int outTime)
-        {
-            if (decoder is null || !decoder.HasFrames)
-            {
-                return -1;
-            }
-
-            long timeDiff = 0;
-            while (decoder.HasFrames)
-            {
-                timeDiff = decoder.NextFramePts - Position;
-
-                if (Math.Abs(timeDiff) <= outTime)
-                {
-                    decoder.TryDequeueFrame(out var frame);
-                    action?.Invoke(frame);
-                    frame.Dispose();
-                }
-                else if (timeDiff < -outTime)
-                {
-                    decoder.TryDequeueFrame(out var frame);
-                    frame.Dispose();
-                }
-                else
-                {
-                    break;
-                }
-            }
-            return (int)timeDiff;
-        }
+        #endregion Process Frame Methods
 
         protected override void DisposeManagedResources()
         {

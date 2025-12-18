@@ -1,6 +1,7 @@
-﻿using ExtenderApp.FFmpegEngines;
+﻿using System.IO;
+using ExtenderApp.FFmpegEngines;
 
-namespace ExtenderApp.Media.Models
+namespace ExtenderApp.Models
 {
     /// <summary>
     /// 视频信息类，用于存储视频相关的各种信息。
@@ -87,6 +88,7 @@ namespace ExtenderApp.Media.Models
         }
 
         public MediaInfo(Uri mediaUri) : this(mediaUri, string.Empty)
+        public MediaInfo()
         {
             Rate = 0;
             Width = 0;
@@ -102,13 +104,37 @@ namespace ExtenderApp.Media.Models
             PixelFormat = FFmpegPixelFormat.PIX_FMT_NONE;
             SampleFormat = FFmpegSampleFormat.SAMPLE_FMT_NONE;
             IsFavorite = false;
+
+            MediaUri = default!;
+            Title = default!;
         }
 
-        public MediaInfo(string title, FFmpegInfo info) : this(info.MediaUri, title)
+        public MediaInfo(Uri mediaUri)
+        {
+            Rate = 0;
+            Width = 0;
+            Height = 0;
+            BitRate = 0;
+            Channels = 0;
+            Duration = 0;
+            PlayCount = 0;
+            SampleRate = 0;
+            IsFavorite = false;
+            MediaWatchedPosition = 0;
+            TotalVideoDuration = 0;
+            PixelFormat = FFmpegPixelFormat.PIX_FMT_NONE;
+            SampleFormat = FFmpegSampleFormat.SAMPLE_FMT_NONE;
+            IsFavorite = false;
+
+            MediaUri = mediaUri;
+            Title = mediaUri.IsFile ? Path.GetFileName(mediaUri.LocalPath) : mediaUri.AbsoluteUri;
+        }
+
+        public MediaInfo(FFmpegInfo info)
         {
             TotalVideoDuration = info.Duration;
-            Width = info.IsStreamMedia ? 0 : info.Width;
-            Height = info.IsStreamMedia ? 0 : info.Height;
+            Width = info.Width;
+            Height = info.Height;
             PixelFormat = info.PixelFormat;
             SampleFormat = info.SampleFormat;
             Rate = info.Rate;
@@ -119,12 +145,9 @@ namespace ExtenderApp.Media.Models
             PlayCount = 0;
             IsFavorite = false;
             MediaWatchedPosition = 0;
-        }
 
-        public MediaInfo(Uri mediaUri, string title)
-        {
-            MediaUri = mediaUri;
-            Title = title;
+            MediaUri = info.MediaUri;
+            Title = info.MediaUri.IsFile ? Path.GetFileName(info.MediaUri.LocalPath) : info.MediaUri.AbsoluteUri;
         }
 
         public static bool operator ==(MediaInfo? left, MediaInfo? right)

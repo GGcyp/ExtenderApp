@@ -1,7 +1,4 @@
-﻿using System.IO;
-using ExtenderApp.FFmpegEngines;
-
-namespace ExtenderApp.Media
+﻿namespace ExtenderApp.FFmpegEngines.Medias
 {
     public class MediaEngine
     {
