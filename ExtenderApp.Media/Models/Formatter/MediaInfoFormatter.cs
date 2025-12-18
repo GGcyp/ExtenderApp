@@ -1,6 +1,6 @@
-﻿using ExtenderApp.Common.IO.Binary.Formatters;
+﻿using ExtenderApp.Abstract;
+using ExtenderApp.Common.IO.Binary.Formatters;
 using ExtenderApp.Data;
-using ExtenderApp.Abstract;
 
 namespace ExtenderApp.Media.Models
 {

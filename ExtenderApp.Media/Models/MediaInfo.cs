@@ -1,7 +1,7 @@
 ﻿using System.IO;
 using ExtenderApp.FFmpegEngines;
 
-namespace ExtenderApp.Models
+namespace ExtenderApp.Media.Models
 {
     /// <summary>
     /// 视频信息类，用于存储视频相关的各种信息。
@@ -83,11 +83,6 @@ namespace ExtenderApp.Models
         /// </summary>
         public bool IsFavorite { get; set; }
 
-        public MediaInfo(string uri) : this(new(uri), string.Empty)
-        {
-        }
-
-        public MediaInfo(Uri mediaUri) : this(mediaUri, string.Empty)
         public MediaInfo()
         {
             Rate = 0;

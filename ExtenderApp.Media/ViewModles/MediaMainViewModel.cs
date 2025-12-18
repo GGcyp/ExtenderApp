@@ -83,11 +83,11 @@ namespace ExtenderApp.Media.ViewModels
                     break;
 
                 case Key.Up:
-                    Model.Volume += 5;
+                    Model.Volume += 0.05f;
                     break;
 
                 case Key.Down:
-                    Model.Volume -= 5;
+                    Model.Volume -= 0.05f;
                     break;
             }
         }
