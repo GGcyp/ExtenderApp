@@ -1,7 +1,4 @@
-﻿using System;
-using System.Drawing.Imaging;
-using System.Text;
-using ExtenderApp.Data;
+﻿using ExtenderApp.Data;
 using ExtenderApp.FFmpegEngines.Decoders;
 
 namespace ExtenderApp.FFmpegEngines.Medias
@@ -46,9 +43,9 @@ namespace ExtenderApp.FFmpegEngines.Medias
         /// </summary>
         private CancellationTokenSource? mediaSource;
 
-        private IAudioOutput? audioOutput;
+        public IAudioOutput? AudioOutput { get; private set; }
 
-        private IVideoOutput? videoOutput;
+        public IVideoOutput? VideoOutput { get; private set; }
 
         /// <summary>
         /// 解码器设置参数。
@@ -108,14 +105,14 @@ namespace ExtenderApp.FFmpegEngines.Medias
             if (mediaTask != null)
                 throw new InvalidOperationException("在播放过程中无法更改音频输出。");
 
-            audioOutput = output;
+            AudioOutput = output;
         }
 
         public void SetVideoOutput(IVideoOutput output)
         {
             if (mediaTask != null)
                 throw new InvalidOperationException("在播放过程中无法更改视频输出。");
-            videoOutput = output;
+            VideoOutput = output;
         }
 
         #region Output Methods
@@ -133,6 +130,8 @@ namespace ExtenderApp.FFmpegEngines.Medias
             _controller.StartDecode();
             mediaSource = CancellationTokenSource.CreateLinkedTokenSource(_controller.AllSource.Token);
             mediaTask = Task.Run(PlaybackLoop, mediaSource.Token);
+            AudioOutput?.PlayerStateChange(State);
+            VideoOutput?.PlayerStateChange(State);
         }
 
         /// <summary>
@@ -155,6 +154,8 @@ namespace ExtenderApp.FFmpegEngines.Medias
             }
 
             State = PlayerState.Stopped;
+            AudioOutput?.PlayerStateChange(State);
+            VideoOutput?.PlayerStateChange(State);
             // 停止解码流程 释放播放任务资源
             return new(Task.WhenAll(_controller.StopDecodeAsync(), FlushAsync()));
         }
@@ -179,6 +180,8 @@ namespace ExtenderApp.FFmpegEngines.Medias
             }
 
             State = PlayerState.Paused;
+            AudioOutput?.PlayerStateChange(State);
+            VideoOutput?.PlayerStateChange(State);
             return new(Task.WhenAll(_controller.StopDecodeAsync(), FlushAsync()));
         }
 
@@ -208,6 +211,7 @@ namespace ExtenderApp.FFmpegEngines.Medias
             {
                 position = 0;
             }
+
             // 跳转解码器 释放播放任务资源
             await Task.WhenAll(_controller.SeekDecoderAsync(position), FlushAsync()).ConfigureAwait(false);
 
@@ -258,8 +262,8 @@ namespace ExtenderApp.FFmpegEngines.Medias
             // 选择主解码器（优先音频）
             FFmpegDecoder? mainDecoder = _audioDecoder ?? _videoDecoder;
 
-            ProcessFrameResult audioResult = new(audioOutput!, _audioDecoder!, this);
-            ProcessFrameResult videoResult = new(videoOutput!, _videoDecoder!, this);
+            ProcessFrameResult audioResult = new(AudioOutput!, _audioDecoder!, this);
+            ProcessFrameResult videoResult = new(VideoOutput!, _videoDecoder!, this);
 
             ProcessFrameResult mainResult = audioResult.IsEmpty ? videoResult : audioResult;
             List<ProcessFrameResult>? otherResults = new(ResultCount);

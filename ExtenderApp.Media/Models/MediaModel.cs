@@ -3,7 +3,6 @@ using System.Windows.Media.Imaging;
 using ExtenderApp.Abstract;
 using ExtenderApp.FFmpegEngines;
 using ExtenderApp.FFmpegEngines.Medias;
-using ExtenderApp.FFmpegEngines.Medias.Outputs;
 using ExtenderApp.Models;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -25,21 +24,29 @@ namespace ExtenderApp.Media.Models
 
         public MediaPlayer? MPlayer { get; set; }
 
-        public WriteableBitmap? Bitmap { get; set; }
+        public BitmapSource? Bitmap { get; set; }
 
         public IView? CurrentVideoListView { get; set; }
 
         public MediaInfo? SelectedVideoInfo { get; set; }
 
-        private double volume;
+        private float volume;
 
         /// <summary>
         /// 音量
         /// </summary>
-        public double Volume
+        public float Volume
         {
             get => volume;
-            set => volume = value;
+            set
+            {
+                volume = value;
+                var audioOutput = MPlayer?.AudioOutput;
+                if (MPlayer == null || audioOutput == null)
+                    return;
+
+                audioOutput.Volume = volume;
+            }
         }
 
         private double rate;
@@ -47,7 +54,15 @@ namespace ExtenderApp.Media.Models
         public double Rate
         {
             get => rate;
-            set => rate = value;
+            set
+            {
+                rate = value;
+                var audioOutput = MPlayer?.AudioOutput;
+                if (MPlayer == null || audioOutput == null)
+                    return;
+
+                audioOutput.Rate = rate;
+            }
         }
 
         public PlayerState? State
@@ -71,8 +86,6 @@ namespace ExtenderApp.Media.Models
         /// </summary>
         public bool VideoNotExist { get; set; }
 
-        private TimeSpan position;
-
         /// <summary>
         /// 播放进度
         /// </summary>
@@ -81,7 +94,15 @@ namespace ExtenderApp.Media.Models
         /// <summary>
         /// 总时间
         /// </summary>
-        public TimeSpan TotalTime { get; set; }
+        public TimeSpan TotalTime
+        {
+            get
+            {
+                if (MPlayer != null)
+                    return TimeSpan.FromMilliseconds(MPlayer.Info.Duration);
+                return TimeSpan.Zero;
+            }
+        }
 
         /// <summary>
         /// 获取或设置一个值，该值指示媒体是否正在寻求新的播放位置。
@@ -112,23 +133,23 @@ namespace ExtenderApp.Media.Models
 
             MPlayer = player;
 
-            VideoOutput videoOutput = new(MPlayer.Info.Width, MPlayer.Info.Height, 96, 96, System.Windows.Media.PixelFormats.Rgb24, null);
-            Bitmap = videoOutput.NativeMemoryBitmap.Bitmap;
-            MPlayer.SetVideoOutput(videoOutput);
+            // 使用 Bgr24 以匹配 FFmpegDecoderSettings 的默认输出格式 (PIX_FMT_BGR24)
+            // 解决颜色通道互换（偏蓝）的问题
+            Bitmap = MPlayer.SetVideoOutput();
+            MPlayer.SetAudioOutput();
 
-            AudioOutput audioOutput = new(MPlayer.Settings);
-            MPlayer.SetAudioOutput(audioOutput);
+            Volume = volume;
 
             MPlayer.Playback += () =>
             {
                 dispatcherService.InvokeAsync(_positionAction);
             };
-            TotalTime = MPlayer.Info.DurationTimeSpan;
         }
 
         public void Play()
         {
-            if (MPlayer == null) return;
+            if (MPlayer == null)
+                return;
 
             MPlayer?.Play();
         }

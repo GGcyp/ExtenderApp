@@ -1,5 +1,4 @@
-﻿using System.Runtime.InteropServices;
-using ExtenderApp.Data;
+﻿using ExtenderApp.Data;
 using FFmpeg.AutoGen;
 
 namespace ExtenderApp.FFmpegEngines.Decoders
@@ -23,7 +22,7 @@ namespace ExtenderApp.FFmpegEngines.Decoders
         /// <summary>
         /// RGB 图像缓冲区指针，存储转换后的视频帧字节数据。
         /// </summary>
-        private NativeIntPtr<byte> rgbBuffer;
+        private NativeByteMemory rgbBuffer;
 
         /// <summary>
         /// RGB 图像缓冲区长度（字节）。
@@ -54,9 +53,8 @@ namespace ExtenderApp.FFmpegEngines.Decoders
             // 使用 SwsContext 进行像素格式转换，输出到 rgbFrame
             Engine.Scale(swsContext, frame, rgbFrame, Info);
 
-            block = new ByteBlock(rgbBufferLength);
-            Span<byte> rgbSpan = new(rgbBuffer.GetPointer(), rgbBufferLength);
-            block.Write(rgbSpan);
+            block = new(rgbBufferLength);
+            block.Write(rgbBuffer);
         }
 
         protected override void DisposeUnmanagedResources()
@@ -64,7 +62,7 @@ namespace ExtenderApp.FFmpegEngines.Decoders
             base.DisposeUnmanagedResources();
             Engine.Free(ref swsContext);
             Engine.Return(ref rgbFrame);
-            Marshal.FreeHGlobal(rgbBuffer);
+            rgbBuffer.Dispose();
         }
     }
 }

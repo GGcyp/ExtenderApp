@@ -426,19 +426,19 @@ namespace ExtenderApp.FFmpegEngines
         /// <param name="width">图像宽度（像素）。</param>
         /// <param name="height">图像高度（像素）。</param>
         /// <returns>分配好的 RGB 图像缓冲区（byte数组地址）。</returns>
-        public NativeIntPtr<byte> CreateRGBBuffer(ref NativeIntPtr<AVFrame> rgbFrame, int rgbBufferLength, AVPixelFormat pixelFormat, int width, int height)
+        public NativeByteMemory CreateRGBBuffer(ref NativeIntPtr<AVFrame> rgbFrame, int rgbBufferLength, AVPixelFormat pixelFormat, int width, int height)
         {
-            IntPtr ptr = Marshal.AllocHGlobal(rgbBufferLength * sizeof(byte));
+            NativeByteMemory memory = new(rgbBufferLength);
             try
             {
-                CreateRGBBuffer(ref rgbFrame, ptr, pixelFormat, width, height);
+                CreateRGBBuffer(ref rgbFrame, memory.Ptr, pixelFormat, width, height);
             }
             catch
             {
-                Marshal.FreeHGlobal(ptr);
+                memory.Dispose();
                 throw;
             }
-            return ptr;
+            return memory;
         }
 
         /// <summary>

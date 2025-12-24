@@ -91,5 +91,8 @@ namespace ExtenderApp.Views
                 block.Dispose();
             }
         }
+
+        public static implicit operator BitmapSource(NativeMemoryBitmap memoryBitmap)
+            => memoryBitmap.Bitmap;
     }
 }
