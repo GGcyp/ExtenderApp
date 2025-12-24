@@ -40,7 +40,7 @@ namespace ExtenderApp.FFmpegEngines.Medias.Outputs
             }
         }
 
-        public double Rate
+        public double SpeedRatio
         {
             get => _soundTouch.Rate;
             set
@@ -68,7 +68,7 @@ namespace ExtenderApp.FFmpegEngines.Medias.Outputs
 
             Volume = 0.0f;
             //初始为原速
-            Rate = DefaultRateSpeed;
+            SpeedRatio = DefaultRateSpeed;
             Tempo = DefaultRateSpeed;
         }
 
@@ -124,7 +124,7 @@ namespace ExtenderApp.FFmpegEngines.Medias.Outputs
 
         public void AddSamples(ReadOnlySpan<byte> span)
         {
-            if (Tempo != DefaultRateSpeed || Rate != DefaultRateSpeed)
+            if (Tempo != DefaultRateSpeed || SpeedRatio != DefaultRateSpeed)
             {
                 float[] floatSamples = ConvertPcm16BytesToFloat(span);
                 int numSamples = floatSamples.Length / _soundTouch.Channels;
@@ -175,7 +175,7 @@ namespace ExtenderApp.FFmpegEngines.Medias.Outputs
 
         public void AddSamples(byte[] buffer, int offset, int count)
         {
-            if (Tempo != DefaultRateSpeed || Rate != DefaultRateSpeed)
+            if (Tempo != DefaultRateSpeed || SpeedRatio != DefaultRateSpeed)
             {
                 float[] floatSamples = ConvertPcm16BytesToFloat(buffer, offset, count);
                 int numSamples = floatSamples.Length / _soundTouch.Channels;

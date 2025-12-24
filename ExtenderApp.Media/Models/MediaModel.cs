@@ -13,6 +13,7 @@ namespace ExtenderApp.Media.Models
     /// </summary>
     public class MediaModel : ExtenderAppModel
     {
+        private const float VOLUME_STEP = 0.05f;
         private readonly Action _positionAction;
         private MediaEngine mediaEngine;
         private IDispatcherService dispatcherService;
@@ -41,11 +42,10 @@ namespace ExtenderApp.Media.Models
             set
             {
                 volume = value;
-                var audioOutput = MPlayer?.AudioOutput;
-                if (MPlayer == null || audioOutput == null)
-                    return;
-
-                audioOutput.Volume = volume;
+                if (MPlayer != null)
+                {
+                    MPlayer.Volume = volume;
+                }
             }
         }
 
@@ -57,11 +57,10 @@ namespace ExtenderApp.Media.Models
             set
             {
                 rate = value;
-                var audioOutput = MPlayer?.AudioOutput;
-                if (MPlayer == null || audioOutput == null)
-                    return;
-
-                audioOutput.Rate = rate;
+                if (MPlayer != null)
+                {
+                    MPlayer.SpeedRatio = rate;
+                }
             }
         }
 
@@ -189,12 +188,9 @@ namespace ExtenderApp.Media.Models
             Play();
         }
 
-        public void Forward(double rate)
+        public void UpdateVolume(bool isIncrease, float volume = VOLUME_STEP)
         {
-            if (IsSeeking || MPlayer == null)
-                return;
-
-            MPlayer.Rate = rate;
+            Volume = isIncrease ? Volume + volume : Volume - volume;
         }
 
         protected override void DisposeManagedResources()

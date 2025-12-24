@@ -8,7 +8,7 @@
         /// <summary>
         /// 播放速率，1表示正常速度，2表示两倍速，0.5表示半速。
         /// </summary>
-        public double Rate { get; set; }
+        public double SpeedRatio { get; set; }
 
         /// <summary>
         /// 获取或设置音频的播放速度（节奏）。

@@ -3,7 +3,6 @@ using ExtenderApp.Data;
 using ExtenderApp.FFmpegEngines;
 using ExtenderApp.FFmpegEngines.Medias;
 using ExtenderApp.Media.Models;
-using ExtenderApp.Models;
 using ExtenderApp.ViewModels;
 using ExtenderApp.Views.Commands;
 using Microsoft.Win32;
@@ -61,33 +60,58 @@ namespace ExtenderApp.Media.ViewModels
                 return;
             }
             SubscribeMessage<KeyDownEvent>(OnKeyDown);
+            SubscribeMessage<KeyUpEvent>(OnKeyUp);
         }
 
-        private void OnKeyDown(object? sender, KeyDownEvent e)
+        private void OnKeyUp(object? sender, KeyUpEvent e)
         {
-            if (e.IsRepeat)
-                return;
+            Key key = e.Key;
+            bool isRepeat = e.IsRepeat;
 
-            switch (e.Key)
+            switch (key)
             {
                 case Key.Left:
                     OnReverseOrForward(false);
                     break;
 
                 case Key.Right:
-                    OnReverseOrForward(true);
+                    if(Model.Rate != 1.0d)
+                    {
+                        Model.Rate = 1.0d;
+                    }
+                    else
+                    {
+                        OnReverseOrForward(true);
+                    }
+                    break;
+            }
+        }
+
+        private void OnKeyDown(object? sender, KeyDownEvent e)
+        {
+            Key key = e.Key;
+            bool isRepeat = e.IsRepeat;
+
+            switch (key)
+            {
+                case Key.Right:
+                    if (isRepeat)
+                    {
+                        Model.Rate = 2.0d;
+                    }
                     break;
 
                 case Key.Space:
-                    OnMediaStateChange();
+                    if (!isRepeat)
+                        OnMediaStateChange();
                     break;
 
                 case Key.Up:
-                    Model.Volume += 0.05f;
+                    Model.UpdateVolume(true);
                     break;
 
                 case Key.Down:
-                    Model.Volume -= 0.05f;
+                    Model.UpdateVolume(false);
                     break;
             }
         }

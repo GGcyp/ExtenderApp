@@ -57,10 +57,57 @@ namespace ExtenderApp.FFmpegEngines.Medias
         /// </summary>
         public long Position { get; private set; }
 
+        private float volume;
+
+        /// <summary>
+        /// 音量
+        /// </summary>
+        public float Volume
+        {
+            get => volume;
+            set
+            {
+                if (value < 0f)
+                {
+                    if (volume == 0f)
+                        return;
+                    value = 0f;
+                }
+                else if (value > 1f)
+                {
+                    if (volume == 1f)
+                        return;
+                    value = 1f;
+                }
+
+                volume = value;
+                if (AudioOutput != null)
+                {
+                    AudioOutput.Volume = volume;
+                }
+            }
+        }
+
+        private double speedRatio;
+
         /// <summary>
         /// 播放速率，1表示正常速度，2表示两倍速，0.5表示半速。
         /// </summary>
-        public double Rate { get; set; }
+        public double SpeedRatio
+        {
+            get => speedRatio;
+            set
+            {
+                if (speedRatio == value)
+                    return;
+
+                speedRatio = value;
+                if (AudioOutput != null)
+                {
+                    AudioOutput.SpeedRatio = speedRatio;
+                }
+            }
+        }
 
         /// <summary>
         /// 媒体流基本信息（如时长、帧率等）。
@@ -92,7 +139,7 @@ namespace ExtenderApp.FFmpegEngines.Medias
             State = PlayerState.Uninitialized;
             _controller = contriller;
             Settings = settings;
-            Rate = 1;
+            SpeedRatio = 1;
             State = PlayerState.Initializing;
 
             var collection = _controller.DecoderCollection;
@@ -257,7 +304,7 @@ namespace ExtenderApp.FFmpegEngines.Medias
             var token = mediaSource!.Token;
 
             // 使用当前播放速率计算基础帧间隔（毫秒）
-            int frameInterval = (int)(Rate > 0 ? 1000.0 / Rate : 1000.0 / FFmpegEngine.DefaultFrameRate);
+            int frameInterval = (int)(Info.Rate > 0 ? 1000.0 / Info.Rate : 1000.0 / FFmpegEngine.DefaultFrameRate);
 
             // 选择主解码器（优先音频）
             FFmpegDecoder? mainDecoder = _audioDecoder ?? _videoDecoder;
@@ -290,16 +337,17 @@ namespace ExtenderApp.FFmpegEngines.Medias
                 // 计算下一次等待时间
                 int waitTime = (mainDelay > 0) ? mainDelay : frameInterval;
 
+                waitTime = (int)(waitTime * speedRatio);
+
                 // 推进播放时间（以毫秒为单位）
                 Position += waitTime;
 
                 // 根据播放速率缩放实际等待时间
-                int scaledWait = Math.Max(0, (int)(waitTime / Rate));
                 Playback?.Invoke();
 
-                if (scaledWait >= SkipWaitingTime)
+                if (waitTime >= SkipWaitingTime)
                 {
-                    Thread.Sleep(scaledWait);
+                    Thread.Sleep(waitTime);
                 }
                 else
                 {
