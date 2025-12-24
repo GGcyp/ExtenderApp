@@ -176,15 +176,15 @@ namespace ExtenderApp.FFmpegEngines
         #endregion SWS_Const
 
         /// <summary>
-        /// 最大缓存数据包数量（用于限制 _packetQueue 队列长度）。 
+        /// 最大缓存数据包数量（用于限制 _packetQueue 队列长度）。
         /// 控制解码过程中可缓存的 AVPacket 数量，防止内存占用过高。
         /// 建议根据实际业务场景和内存压力调整，默认值为 10。
         /// </summary>
         public int MaxCachePacketCount = 10;
 
         /// <summary>
-        /// 最大缓存帧数量（用于限制 _frameQueue 队列长度）。 
-        /// 控制解码过程中可缓存的 AVFrame 数量，防止内存占用过高。 
+        /// 最大缓存帧数量（用于限制 _frameQueue 队列长度）。
+        /// 控制解码过程中可缓存的 AVFrame 数量，防止内存占用过高。
         /// 建议根据实际业务场景和解码速率调整，默认值为 10。
         /// </summary>
         public int MaxCacheFrameCount = 10;
@@ -1911,7 +1911,6 @@ namespace ExtenderApp.FFmpegEngines
 
                 IntPtr ptr = (IntPtr)errorBufferPtr;
                 errorMessage = Marshal.PtrToStringAnsi(ptr)!;
-                Marshal.FreeHGlobal(ptr);
             }
             return new FFmpegException($"错误消息: {errorMessage} (错误代码: {errorCode})");
         }
