@@ -176,15 +176,18 @@ namespace ExtenderApp.FFmpegEngines
         #endregion SWS_Const
 
         /// <summary>
-        /// 最大缓存数据包数量（用于限制 _packetQueue 队列长度）。 控制解码过程中可缓存的 AVPacket 数量，防止内存占用过高。
-        /// 建议根据实际业务场景和内存压力调整，默认值为 20。
+        /// 最大缓存数据包数量（用于限制 _packetQueue 队列长度）。 
+        /// 控制解码过程中可缓存的 AVPacket 数量，防止内存占用过高。
+        /// 建议根据实际业务场景和内存压力调整，默认值为 10。
         /// </summary>
-        public int MaxCachePacketCount = 20;
+        public int MaxCachePacketCount = 10;
 
         /// <summary>
-        /// 最大缓存帧数量（用于限制 _frameQueue 队列长度）。 控制解码过程中可缓存的 AVFrame 数量，防止内存占用过高。 建议根据实际业务场景和解码速率调整，默认值为 30。
+        /// 最大缓存帧数量（用于限制 _frameQueue 队列长度）。 
+        /// 控制解码过程中可缓存的 AVFrame 数量，防止内存占用过高。 
+        /// 建议根据实际业务场景和解码速率调整，默认值为 10。
         /// </summary>
-        public int MaxCacheFrameCount = 30;
+        public int MaxCacheFrameCount = 10;
 
         /// <summary>
         /// 默认流索引。

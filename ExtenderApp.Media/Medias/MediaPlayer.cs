@@ -299,8 +299,6 @@ namespace ExtenderApp.FFmpegEngines.Medias
         /// </summary>
         private void PlaybackLoop()
         {
-            const int ResultCount = 1;
-
             var token = mediaSource!.Token;
 
             // 使用当前播放速率计算基础帧间隔（毫秒）
@@ -311,15 +309,24 @@ namespace ExtenderApp.FFmpegEngines.Medias
 
             ProcessFrameResult audioResult = new(AudioOutput!, _audioDecoder!, this);
             ProcessFrameResult videoResult = new(VideoOutput!, _videoDecoder!, this);
+            // TODO: 以后在此处添加字幕处理结果
+            // ProcessFrameResult subtitleResult = new(SubtitleOutput!, _subtitleDecoder!, this);
 
-            ProcessFrameResult mainResult = audioResult.IsEmpty ? videoResult : audioResult;
-            List<ProcessFrameResult>? otherResults = new(ResultCount);
-            if (mainResult.IsEmpty)
+            ProcessFrameResult mainResult = default;
+
+            if (!audioResult.IsEmpty)
             {
-                throw new ArgumentNullException("没有可用的解码器进行播放。");
+                mainResult = audioResult;
             }
             else
             {
+                mainResult = videoResult;
+                videoResult = default;
+            }
+
+            if (mainResult.IsEmpty)
+            {
+                throw new ArgumentNullException("没有可用的解码器进行播放。");
             }
 
             while (!token.IsCancellationRequested)
@@ -333,21 +340,29 @@ namespace ExtenderApp.FFmpegEngines.Medias
 
                 int mainDelay = mainResult.Process(0);
                 videoResult.Process(FrameOutTime);
+                // TODO: 处理字幕帧。字幕是稀疏流，不应参与主时钟同步 (mainDelay) 的计算。
+                // 仅需检查是否有帧需要显示即可。
+                // subtitleResult.Process(0);
 
-                // 计算下一次等待时间
-                int waitTime = (mainDelay > 0) ? mainDelay : frameInterval;
-
-                waitTime = (int)(waitTime * speedRatio);
+                // 计算媒体时间间隔（Media Time Interval）
+                int mediaInterval = (mainDelay > 0) ? mainDelay : frameInterval;
 
                 // 推进播放时间（以毫秒为单位）
-                Position += waitTime;
+                // Position 代表媒体流的逻辑时间，应按媒体时间间隔推进
+                Position += mediaInterval;
+
+                // 计算实际物理等待时间
+                // 实际等待时间 = 媒体时间间隔 / 播放倍速
+                // 例如：2倍速播放，媒体走40ms，实际只需等待20ms
+                double currentSpeed = speedRatio <= 0.01 ? 0.01 : speedRatio; // 防止除零或过小
+                int realWaitTime = (int)(mediaInterval / currentSpeed);
 
                 // 根据播放速率缩放实际等待时间
                 Playback?.Invoke();
 
-                if (waitTime >= SkipWaitingTime)
+                if (realWaitTime >= SkipWaitingTime)
                 {
-                    Thread.Sleep(waitTime);
+                    Thread.Sleep(realWaitTime);
                 }
                 else
                 {
@@ -388,6 +403,9 @@ namespace ExtenderApp.FFmpegEngines.Medias
 
             public int Process(int outTime)
             {
+                if (IsEmpty)
+                    return 0;
+
                 long timeDiff = 0;
                 while (_decoder.HasFrames)
                 {
