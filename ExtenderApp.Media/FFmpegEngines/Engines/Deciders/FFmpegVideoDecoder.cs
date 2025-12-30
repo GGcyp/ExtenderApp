@@ -41,7 +41,7 @@ namespace ExtenderApp.FFmpegEngines.Decoders
             : base(engine, context, info, settings, settings.VideoMaxCacheLength)
         {
             // 分配 RGB 帧和缓冲区
-            rgbFrame = engine.CreateFrame();
+            rgbFrame = engine.GetFrame();
             rgbBufferLength = engine.GetBufferSizeForImage(settings.PixelFormat.Convert(), info.Width, info.Height);
             rgbBuffer = engine.CreateRGBBuffer(ref rgbFrame, rgbBufferLength, settings.PixelFormat.Convert(), info.Width, info.Height);
             // 创建像素格式转换上下文

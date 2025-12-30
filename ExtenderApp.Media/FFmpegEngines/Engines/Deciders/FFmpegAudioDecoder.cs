@@ -31,7 +31,7 @@ namespace ExtenderApp.FFmpegEngines.Decoders
             : base(engine, context, info, settings, settings.AudioMaxCacheLength)
         {
             // 创建 PCM 输出帧并设置参数
-            pcmFrame = engine.CreateFrame();
+            pcmFrame = engine.GetFrame();
             engine.SettingsAudioFrame(pcmFrame, context, settings);
 
             // 创建并初始化音频重采样上下文

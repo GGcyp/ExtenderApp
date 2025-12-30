@@ -1,5 +1,4 @@
-﻿using System.Buffers;
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using System.Runtime.InteropServices;
 using ExtenderApp.Data;
 using ExtenderApp.FFmpegEngines.Decoders;
@@ -197,7 +196,7 @@ namespace ExtenderApp.FFmpegEngines
         /// <summary>
         /// 默认帧率。
         /// </summary>
-        public const double DefaultFrameRate = 25.0;
+        public const double DefaultFrameRate = 25.0d;
 
         /// <summary>
         /// 存储指针的HashSet。
@@ -866,7 +865,7 @@ namespace ExtenderApp.FFmpegEngines
             }
             if (packet.IsEmpty)
             {
-                packet = CreatePacket();
+                packet = GetPacket();
             }
             int result = ffmpeg.avcodec_receive_packet(codecContext, packet);
             if (result < 0)
@@ -917,11 +916,20 @@ namespace ExtenderApp.FFmpegEngines
             else if (_packetQueue.Count >= MaxCachePacketCount)
             {
                 Free(ref packet);
-                return;
+                for (int i = 0; i < MaxCachePacketCount / 2; i++)
+                {
+                    if (_packetQueue.TryDequeue(out var tempPacket))
+                    {
+                        Free(ref tempPacket);
+                    }
+                }
             }
-            Flush(ref packet);
-            _packetQueue.Enqueue(packet);
-            packet = NativeIntPtr<AVPacket>.Empty;
+            else
+            {
+                Flush(ref packet);
+                _packetQueue.Enqueue(packet);
+                packet = NativeIntPtr<AVPacket>.Empty;
+            }
         }
 
         #endregion Packet
@@ -1030,26 +1038,6 @@ namespace ExtenderApp.FFmpegEngines
             return 0;
         }
 
-        /// <summary> 将 FFmpeg 解码得到的音频帧数据（AVFrame）拷贝到托管字节数组，并返回实际数据长度。 该方法用于将 native PCM 数据从 FFmpeg
-        /// 的 AVFrame 结构体中提取出来，便于后续播放或处理。 参数 targetChannel 通常为声道数（如 1=单声道，2=立体声），dataIndex 表示 FFmpeg
-        /// 帧的 data 数组下标（一般为 0）。 注意：返回的字节数组来自共享内存池，使用完毕后应归还（ArrayPool<byte>.Shared.Return）。
-        /// </summary> <param name="frame">音频帧指针（NativeIntPtr&lt;AVFrame&gt;），包含PCM 数据。</param>
-        /// <param name="targetChannel">目标声道数（如1=单声道，2=立体声）。</param> <param
-        /// name="length">输出参数，返回实际拷贝的数据长度（字节）。</param> <param name="dataIndex">FFmpeg 帧的
-        /// data数组下标，默认 0。</param> <returns>包含 PCM 音频数据的字节数组。</returns>
-        public byte[] CopyFrameToBuffer(NativeIntPtr<AVFrame> frame, long targetChannel, out int length, uint dataIndex = 0)
-        {
-            if (frame.IsEmpty)
-            {
-                throw new ArgumentNullException(nameof(frame));
-            }
-            int dataSize = GetBufferSizeForSamples(frame);
-            byte[] data = ArrayPool<byte>.Shared.Rent(dataSize);
-            Marshal.Copy((IntPtr)frame.Value->data[dataIndex], data, 0, dataSize);
-            length = dataSize;
-            return data;
-        }
-
         /// <summary>
         /// 获取指定帧的时间戳（毫秒）。
         /// </summary>
@@ -1121,11 +1109,20 @@ namespace ExtenderApp.FFmpegEngines
             else if (_frameQueue.Count >= MaxCacheFrameCount)
             {
                 Free(ref frame);
-                return;
+                for (int i = 0; i < MaxCacheFrameCount / 2; i++)
+                {
+                    if (_frameQueue.TryDequeue(out var tempFrame))
+                    {
+                        Free(ref tempFrame);
+                    }
+                }
             }
-            Flush(ref frame);
-            _frameQueue.Enqueue(frame);
-            frame = NativeIntPtr<AVFrame>.Empty;
+            else
+            {
+                Flush(ref frame);
+                _frameQueue.Enqueue(frame);
+                frame = NativeIntPtr<AVFrame>.Empty;
+            }
         }
 
         #endregion Frame
