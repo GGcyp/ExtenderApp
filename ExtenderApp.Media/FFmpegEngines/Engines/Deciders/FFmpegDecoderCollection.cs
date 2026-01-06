@@ -88,12 +88,17 @@ namespace ExtenderApp.FFmpegEngines.Decoders
         /// <summary>
         /// 刷新解码器集合的所有解码器缓存状态。 此操作会重置所有解码器的内部缓存，通常在执行跳转（Seek）操作后调用，以确保解码从新的位置干净地开始。
         /// </summary>
-        internal void Flush()
+        internal void FlushAll()
         {
-            foreach (var decoder in _decoders)
-            {
-                decoder.Flush();
-            }
+            Array.ForEach(_decoders, static d => d.Flush());
+        }
+
+        /// <summary>
+        /// 释放所有解码器的等待状态。 此操作会中断所有解码器当前的等待操作，通常在停止解码或需要立即响应用户操作时调用。
+        /// </summary>
+        internal void ReleaseAllWait()
+        {
+            Array.ForEach(_decoders, static d => d.ReleaseWait());
         }
 
         /// <summary>

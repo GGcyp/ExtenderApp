@@ -20,6 +20,9 @@ namespace ExtenderApp.Media.ViewModels
         /// </summary>
         public NoValueCommand MediaStateChangeCommand { get; private set; }
 
+        /// <summary>
+        /// 停止命令。
+        /// </summary>
         public NoValueCommand StopCommand { get; private set; }
 
         /// <summary>
@@ -41,7 +44,9 @@ namespace ExtenderApp.Media.ViewModels
             Model.CurrentVideoListView = NavigateTo<VideoListView>();
 
             MediaStateChangeCommand = new(OnMediaStateChange);
-            FastForwardCommand = new(OnFastForward);
+            FastForwardCommand = new(() => OnReverseOrForward(true));
+            RewindCommand = new(() => OnReverseOrForward(false));
+            StopCommand = new(Model.Stop);
 
             OpenFileDialog openFileDialog = new OpenFileDialog
             {
@@ -75,9 +80,9 @@ namespace ExtenderApp.Media.ViewModels
                     break;
 
                 case Key.Right:
-                    if(Model.Rate != 1.0d)
+                    if (Model.SpeedRatio != 1.0d)
                     {
-                        Model.Rate = 1.0d;
+                        Model.SpeedRatio = 1.0d;
                     }
                     else
                     {
@@ -97,7 +102,7 @@ namespace ExtenderApp.Media.ViewModels
                 case Key.Right:
                     if (isRepeat)
                     {
-                        Model.Rate = 2.0d;
+                        Model.SpeedRatio = 2.0d;
                     }
                     break;
 
@@ -116,11 +121,6 @@ namespace ExtenderApp.Media.ViewModels
             }
         }
 
-        public void OnFastForward()
-        {
-            OnReverseOrForward(true);
-        }
-
         public void OnReverseOrForward(bool isForward)
         {
             TimeSpan jumpTime = TimeSpan.FromSeconds(Model.JumpTime);
@@ -137,6 +137,7 @@ namespace ExtenderApp.Media.ViewModels
                     break;
 
                 case PlayerState.Paused:
+                case PlayerState.Stopped:
                 case PlayerState.Initializing:
                     Model.Play();
                     break;
@@ -146,7 +147,6 @@ namespace ExtenderApp.Media.ViewModels
         internal void Seek(TimeSpan timeSpan)
         {
             Model.Seek(timeSpan);
-            //Model.Play();
         }
     }
 }

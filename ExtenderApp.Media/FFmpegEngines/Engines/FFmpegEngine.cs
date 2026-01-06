@@ -177,16 +177,16 @@ namespace ExtenderApp.FFmpegEngines
         /// <summary>
         /// 最大缓存数据包数量（用于限制 _packetQueue 队列长度）。
         /// 控制解码过程中可缓存的 AVPacket 数量，防止内存占用过高。
-        /// 建议根据实际业务场景和内存压力调整，默认值为 10。
+        /// 建议根据实际业务场景和内存压力调整，默认值为 100。
         /// </summary>
-        public int MaxCachePacketCount = 10;
+        public const int DefaultMaxCachePacketCount = 100;
 
         /// <summary>
         /// 最大缓存帧数量（用于限制 _frameQueue 队列长度）。
         /// 控制解码过程中可缓存的 AVFrame 数量，防止内存占用过高。
-        /// 建议根据实际业务场景和解码速率调整，默认值为 10。
+        /// 建议根据实际业务场景和解码速率调整，默认值为 30。
         /// </summary>
-        public int MaxCacheFrameCount = 10;
+        public const int DefaultMaxCacheFrameCount = 30;
 
         /// <summary>
         /// 默认流索引。
@@ -224,6 +224,20 @@ namespace ExtenderApp.FFmpegEngines
         public string FFmpegPath => ffmpeg.RootPath;
 
         /// <summary>
+        /// 获取或设置最大缓存数据包数量（用于限制 _packetQueue 队列长度）。
+        /// 控制解码过程中可缓存的 AVPacket 数量，防止内存占用过高。
+        /// 建议根据实际业务场景和内存压力调整，默认值为 <see cref="DefaultMaxCachePacketCount"/> (100)。
+        /// </summary>
+        public int MaxCachePacketCount { get; set; }
+
+        /// <summary>
+        /// 获取或设置最大缓存帧数量（用于限制 _frameQueue 队列长度）。
+        /// 控制解码过程中可缓存的 AVFrame 数量，防止内存占用过高。
+        /// 建议根据实际业务场景和解码速率调整，默认值为 <see cref="DefaultMaxCacheFrameCount"/> (30)。
+        /// </summary>
+        public int MaxCacheFrameCount { get; set; }
+
+        /// <summary>
         /// 初始化FFmpegEngine实例。
         /// </summary>
         /// <param name="ffmpegPath">FFmpeg的安装路径。</param>
@@ -232,6 +246,10 @@ namespace ExtenderApp.FFmpegEngines
             _intPtrHashSet = new();
             _packetQueue = new();
             _frameQueue = new();
+
+            MaxCacheFrameCount = DefaultMaxCacheFrameCount;
+            MaxCachePacketCount = DefaultMaxCachePacketCount;
+
             ffmpeg.RootPath = ffmpegPath;
             ffmpeg.avformat_network_init();
         }

@@ -32,7 +32,6 @@ namespace ExtenderApp.Media.Models
         public MediaInfo? SelectedVideoInfo { get; set; }
 
         private float volume;
-
         /// <summary>
         /// 音量
         /// </summary>
@@ -41,25 +40,33 @@ namespace ExtenderApp.Media.Models
             get => volume;
             set
             {
-                volume = value;
                 if (MPlayer != null)
                 {
-                    MPlayer.Volume = volume;
+                    MPlayer.Volume = value;
+                    volume = MPlayer.Volume;
+                }
+                else
+                {
+                    volume = value;
                 }
             }
         }
 
-        private double rate;
+        private double speedRatio;
 
-        public double Rate
+        public double SpeedRatio
         {
-            get => rate;
+            get => speedRatio;
             set
             {
-                rate = value;
                 if (MPlayer != null)
                 {
-                    MPlayer.SpeedRatio = rate;
+                    MPlayer.SpeedRatio = value;
+                    speedRatio = MPlayer.SpeedRatio;
+                }
+                else
+                {
+                    speedRatio = value;
                 }
             }
         }
@@ -115,7 +122,7 @@ namespace ExtenderApp.Media.Models
             _positionAction = () => Position = TimeSpan.FromMilliseconds(MPlayer!.Position);
             dispatcherService = default!;
             JumpTime = 10;
-            rate = 1.0;
+            speedRatio = 1.0d;
             mediaEngine = default!;
         }
 
@@ -147,31 +154,25 @@ namespace ExtenderApp.Media.Models
 
         public void Play()
         {
-            if (MPlayer == null)
-                return;
-
             MPlayer?.Play();
         }
 
         public void Pause()
         {
-            MPlayer?.PauseAsync().ConfigureAwait(false);
+            MPlayer?.PauseAsync();
         }
 
         public void Stop()
         {
-            if (MPlayer != null)
-            {
-                MPlayer.Stop();
-            }
+            MPlayer?.StopAsync();
         }
 
-        public Task Seek(TimeSpan position, bool auotPlay = true)
+        public void Seek(TimeSpan position)
         {
-            return Seek((long)position.TotalMilliseconds, auotPlay);
+            Seek((long)position.TotalMilliseconds);
         }
 
-        public async Task Seek(long position, bool auotPlay = true)
+        public void Seek(long position)
         {
             if (MPlayer == null)
                 return;
@@ -181,11 +182,7 @@ namespace ExtenderApp.Media.Models
             else if (position < 0)
                 position = 0;
 
-            await MPlayer.SeekAsync(position).ConfigureAwait(false);
-
-            if (!auotPlay)
-                return;
-            Play();
+            MPlayer.Seek(position);
         }
 
         public void UpdateVolume(bool isIncrease, float volume = VOLUME_STEP)

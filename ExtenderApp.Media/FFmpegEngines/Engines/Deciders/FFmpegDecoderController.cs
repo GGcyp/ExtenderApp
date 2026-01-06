@@ -1,4 +1,5 @@
 ﻿using System.Runtime.CompilerServices;
+using ExtenderApp.Common;
 using ExtenderApp.Data;
 using ExtenderApp.FFmpegEngines.Decoders;
 using FFmpeg.AutoGen;
@@ -13,7 +14,7 @@ namespace ExtenderApp.FFmpegEngines
         /// <summary>
         /// 在等待缓存空间时，状态检查的最大超时时间（毫秒）。
         /// </summary>
-        private const int MaxTimeout = 10;
+        private const int MaxTimeout = 5;
 
         /// <summary>
         /// 默认启用多线程解码的高度阈值（像素）。
@@ -40,10 +41,15 @@ namespace ExtenderApp.FFmpegEngines
         /// </summary>
         private readonly FFmpegEngine _engine;
 
+        private readonly object _seekLock;
+
         /// <summary>
         /// 解码状态控制器，用于在解码器缓存已满时阻塞读取线程。
         /// </summary>
-        private readonly StateController<bool> _decodingController;
+        private readonly CacheStateController<bool> _cacheStateController;
+
+        private readonly ManualResetEventSlim _seekResetEvent;
+        private CountdownEvent _pauseAckEvent;
 
         /// <summary>
         /// 当前媒体文件的 FFmpeg 上下文。
@@ -61,11 +67,6 @@ namespace ExtenderApp.FFmpegEngines
         private CancellationTokenSource? source;
 
         /// <summary>
-        /// 解析模式
-        /// </summary>
-        private FFmpegDecodeModel decodeMode;
-
-        /// <summary>
         /// 获取解码器集合，其中包含此控制器管理的所有解码器（例如，视频和音频）。
         /// </summary>
         public FFmpegDecoderCollection DecoderCollection { get; }
@@ -74,6 +75,10 @@ namespace ExtenderApp.FFmpegEngines
         /// 获取全局取消令牌源，用于终止控制器的整个生命周期。
         /// </summary>
         public CancellationTokenSource AllSource { get; }
+
+        public FFmpegDecodeThreadingModel DecodeThreadingModel { get; private set; }
+
+        public FFmpegDecodeModel DecodeMode { get; private set; }
 
         #region Events
 
@@ -101,9 +106,14 @@ namespace ExtenderApp.FFmpegEngines
             _engine = engine;
             DecoderCollection = collection;
             _context = context;
-            _decodingController = new(true, () => DecoderCollection.GetHasPacketCacheSpace());
+            _cacheStateController = new(true, () => DecoderCollection.GetHasPacketCacheSpace());
             AllSource = allSource;
+            _seekResetEvent = new(true);
+            _pauseAckEvent = new(1);
+            _seekLock = new();
         }
+
+        #region Operation
 
         /// <summary>
         /// 启动解码流程。 此方法会为数据包读取和每个解码器创建一个后台任务。如果解码已在运行，则会抛出 <see cref="InvalidOperationException"/>。
@@ -123,7 +133,7 @@ namespace ExtenderApp.FFmpegEngines
                 throw new InvalidOperationException($"控制器已被取消，不能解析:{_context.Info.MediaUri}");
             }
             source = CancellationTokenSource.CreateLinkedTokenSource(AllSource.Token);
-            this.decodeMode = decodeMode;
+            this.DecodeMode = decodeMode;
 
             PrivateStartDecoding(threadingModel);
         }
@@ -135,10 +145,10 @@ namespace ExtenderApp.FFmpegEngines
         public async Task StopDecodeAsync()
         {
             ThrowIfDisposed();
-            source?.Cancel();
-            source?.Dispose();
 
-            await WaitForAllTasksComplete().ConfigureAwait(false);
+            source?.Cancel();
+            await WaitForAllTasksComplete();
+            source?.Dispose();
             source = null;
         }
 
@@ -146,16 +156,57 @@ namespace ExtenderApp.FFmpegEngines
         /// 异步跳转到媒体流的指定位置。 此方法会先停止当前解码，然后执行跳转操作，并清空所有解码器的内部缓存。
         /// </summary>
         /// <param name="position">目标跳转时间（毫秒）。</param>
-        public async Task SeekDecoderAsync(long position)
+        public void SeekDecoder(long position)
         {
             ThrowIfDisposed();
 
-            await StopDecodeAsync().ConfigureAwait(false);
-
-            DecoderCollection.Flush();
-
-            _engine.Seek(_context.FormatContext, position, _context);
+            lock (_seekLock)
+            {
+                PrivateSeekDecoder(position);
+            }
         }
+
+        private void PrivateSeekDecoder(long position)
+        {
+            // 必须确保有任务在运行，否则不需要同步
+            int threadCount = processTasks?.Length ?? 0;
+            if (threadCount == 0)
+            {
+                _engine.Seek(_context.FormatContext, position, _context);
+                return;
+            }
+
+            try
+            {
+                _pauseAckEvent.Reset(threadCount);
+                _seekResetEvent.Reset();
+
+                if (source == null || source.IsCancellationRequested)
+                    return;
+                DecoderCollection.ReleaseAllWait();
+                _cacheStateController.ReleaseWait();
+
+                if (source == null || source.IsCancellationRequested)
+                    return;
+                _pauseAckEvent.Wait(source?.Token ?? CancellationToken.None);
+            }
+            catch (OperationCanceledException)
+            {
+                return;
+            }
+            finally
+            {
+                if (source != null && !source.IsCancellationRequested)
+                {
+                    _engine.Seek(_context.FormatContext, position, _context);
+                    _cacheStateController.Reset();
+                    DecoderCollection.FlushAll();
+                    _seekResetEvent.Set();
+                }
+            }
+        }
+
+        #endregion Operation
 
         #region ThreadDecodes
 
@@ -165,6 +216,7 @@ namespace ExtenderApp.FFmpegEngines
             int decoderIndex = 0;
             int threadIndex = 1;
             var token = source!.Token;
+            FFmpegDecoder decoder = default!;
             switch (threadingModel)
             {
                 case FFmpegDecodeThreadingModel.Single:
@@ -173,37 +225,27 @@ namespace ExtenderApp.FFmpegEngines
                     break;
 
                 case FFmpegDecodeThreadingModel.Hybrid:
-                    length = DecoderCollection.Length;
-                    if (decodeMode != FFmpegDecodeModel.Normal)
+                    if (DecodeMode != FFmpegDecodeModel.Normal ||
+                        DecoderCollection.GetDecoder(FFmpegMediaType.AUDIO) == null ||
+                        DecoderCollection.GetDecoder(FFmpegMediaType.VIDEO) == null)
                     {
-                        FFmpegMediaType targetType = Convert(decodeMode);
-                        length = DecoderCollection.ContainsDecoder(targetType) ? length - 1 : length;
+                        PrivateStartDecoding(FFmpegDecodeThreadingModel.Single);
+                        return;
                     }
+
+                    length = 2;
                     processTasks = new Task[length];
                     processTasks[0] = Task.Run(HybridDecodingLoop, token);
 
-                    while (threadIndex < length)
-                    {
-                        var decoder = DecoderCollection[decoderIndex];
-                        if (decodeMode != FFmpegDecodeModel.Normal
-                            && decoder.MediaType == Convert(decodeMode)
-                            || decoder.MediaType == FFmpegMediaType.AUDIO)
-                        {
-                            decoderIndex++;
-                            continue;
-                        }
-                        processTasks[threadIndex] = Task.Run(() => ProcessPacket(decoder, token), token);
-                        threadIndex++;
-                        decoderIndex++;
-                    }
-
+                    decoder = DecoderCollection.GetDecoder(FFmpegMediaType.VIDEO)!;
+                    processTasks[1] = Task.Run(() => ProcessPacket(decoder, token), token);
                     break;
 
                 case FFmpegDecodeThreadingModel.Multi:
                     length = DecoderCollection.Length + 1;
-                    if (decodeMode != FFmpegDecodeModel.Normal)
+                    if (DecodeMode != FFmpegDecodeModel.Normal)
                     {
-                        FFmpegMediaType targetType = Convert(decodeMode);
+                        FFmpegMediaType targetType = Convert(DecodeMode);
                         length = DecoderCollection.ContainsDecoder(targetType) ? length - 1 : length;
                     }
 
@@ -212,8 +254,9 @@ namespace ExtenderApp.FFmpegEngines
 
                     while (threadIndex < length)
                     {
-                        var decoder = DecoderCollection[decoderIndex];
-                        if (decodeMode != FFmpegDecodeModel.Normal && decoder.MediaType == Convert(decodeMode))
+                        decoder = DecoderCollection[decoderIndex];
+                        if (DecodeMode != FFmpegDecodeModel.Normal &&
+                            decoder.MediaType == Convert(DecodeMode))
                         {
                             decoderIndex++;
                             continue;
@@ -228,8 +271,34 @@ namespace ExtenderApp.FFmpegEngines
                 default:
                     threadingModel = GetThreadingModel();
                     PrivateStartDecoding(threadingModel);
-                    break;
+                    return;
             }
+            DecodeThreadingModel = threadingModel;
+        }
+
+        /// <summary>
+        /// 检查是否需要暂停，并处理确认逻辑。
+        /// </summary>
+        /// <returns>如果未取消，则返回 true；否则返回 false。</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private bool WaitPause(CancellationToken token)
+        {
+            if (_seekResetEvent.IsSet)
+            {
+                return true;
+            }
+
+            _pauseAckEvent.Signal();
+            try
+            {
+                _seekResetEvent.Wait(token);
+            }
+            catch (OperationCanceledException)
+            {
+                // 忽略取消异常，由调用方处理
+                return false;
+            }
+            return true;
         }
 
         /// <summary>
@@ -241,35 +310,22 @@ namespace ExtenderApp.FFmpegEngines
 
             while (!token.IsCancellationRequested)
             {
+                if (!WaitPause(token))
+                    continue;
+
                 FFmpegDecoder decoder;
                 if (!DecoderCollection.GetHasPacketCacheSpace())
                 {
                     for (int i = 0; i < DecoderCollection.Length; i++)
                     {
                         decoder = DecoderCollection[i];
-                        decoder.ProcessPacket(false, token);
+                        decoder.ProcessPacket(token);
                     }
-                    Thread.Sleep(MaxTimeout);
+                    token.WaitHandle.WaitOne(MaxTimeout);
                     continue;
                 }
 
-                if (token.IsCancellationRequested)
-                    return;
-                var packet = _engine.GetPacket();
-                int result = ReadPacket(packet);
-
-                if (result == -1) break;
-                if (result == -2) continue;
-
-                int index = _engine.GetPacketStreamIndex(packet);
-                decoder = DecoderCollection[index];
-                if (decodeMode != FFmpegDecodeModel.Normal && decoder.MediaType == Convert(decodeMode))
-                {
-                    // 丢弃不需要的包
-                    _engine.Return(ref packet);
-                    continue;
-                }
-                decoder.EnqueuePacket(packet);
+                ReadPackets(token);
             }
         }
 
@@ -280,26 +336,15 @@ namespace ExtenderApp.FFmpegEngines
 
             while (!token.IsCancellationRequested)
             {
-                audioDecoder?.ProcessPacket(true, token);
-
-                _decodingController.WaitForTargetState(MaxTimeout, token);
-                if (token.IsCancellationRequested) return;
-
-                var packet = _engine.GetPacket();
-                int result = ReadPacket(packet);
-                if (result == -1) break;
-                if (result == -2) continue;
-
-                int index = _engine.GetPacketStreamIndex(packet);
-                var decoder = DecoderCollection[index];
-
-                if (decodeMode != FFmpegDecodeModel.Normal && decoder.MediaType == Convert(decodeMode))
-                {
-                    _engine.Return(ref packet);
+                if (!WaitPause(token))
                     continue;
-                }
 
-                decoder.EnqueuePacket(packet);
+                audioDecoder?.ProcessPacket(token);
+
+                if (!_cacheStateController.WaitForTargetState(token, MaxTimeout))
+                    continue;
+
+                ReadPackets(token);
             }
         }
 
@@ -314,31 +359,35 @@ namespace ExtenderApp.FFmpegEngines
 
             while (!token.IsCancellationRequested)
             {
-                _decodingController.WaitForTargetState(MaxTimeout, token);
-                if (token.IsCancellationRequested || AllSource.IsCancellationRequested)
-                    return;
-
-                var packet = _engine.GetPacket();
-                int result = ReadPacket(packet);
-
-                if (result == -1) break;
-                if (result == -2) continue;
-
-                int index = _engine.GetPacketStreamIndex(packet);
-                var decoder = DecoderCollection[index];
-                if (decodeMode != FFmpegDecodeModel.Normal && decoder.MediaType == Convert(decodeMode))
-                {
-                    // 丢弃不需要的包
-                    _engine.Return(ref packet);
+                if (!WaitPause(token) ||
+                    !_cacheStateController.WaitForTargetState(token, MaxTimeout))
                     continue;
-                }
-                decoder.EnqueuePacket(packet);
+
+                ReadPackets(token);
             }
         }
 
         #endregion ThreadDecodes
 
         #region Packets
+
+        private void ReadPackets(CancellationToken token)
+        {
+            bool hasPacketCacheSpace = true;
+            while (hasPacketCacheSpace)
+            {
+                var packet = _engine.GetPacket();
+                int result = ReadPacket(packet);
+                if (result == -1) break;
+                if (result == -2) continue;
+
+                int index = _engine.GetPacketStreamIndex(packet);
+                var decoder = DecoderCollection[index];
+
+                decoder.EnqueuePacket(packet);
+                hasPacketCacheSpace = DecoderCollection.GetHasPacketCacheSpace();
+            }
+        }
 
         /// <summary>
         /// 读取单个数据包的方法。 如果读取成功，返回 0；如果读取到文件末尾，返回 -1；如果需要重试读取，返回 -2。
@@ -380,7 +429,8 @@ namespace ExtenderApp.FFmpegEngines
         {
             while (!token.IsCancellationRequested)
             {
-                decoder.ProcessPacket(true, token);
+                if (!WaitPause(token)) continue;
+                decoder.WaitProcessPacket(token);
             }
         }
 
@@ -394,12 +444,14 @@ namespace ExtenderApp.FFmpegEngines
         protected override void DisposeManagedResources()
         {
             AllSource.Cancel();
-            AllSource.Dispose();
             source?.Cancel();
-            source?.Dispose();
-
-            DecoderCollection.Dispose();
             WaitForAllTasksComplete().GetAwaiter().GetResult();
+
+            DecoderCollection.DisposeSafe();
+            AllSource.DisposeSafe();
+            source?.DisposeSafe();
+            _seekResetEvent.DisposeSafe();
+            _pauseAckEvent.DisposeSafe();
         }
 
         /// <summary>
@@ -418,6 +470,7 @@ namespace ExtenderApp.FFmpegEngines
         /// <summary>
         /// 异步等待所有正在运行的解码任务完成。
         /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private async Task WaitForAllTasksComplete()
         {
             if (processTasks == null)
@@ -432,10 +485,7 @@ namespace ExtenderApp.FFmpegEngines
             }
             finally
             {
-                foreach (var decoder in DecoderCollection)
-                {
-                    decoder.Flush();
-                }
+                DecoderCollection.FlushAll();
                 processTasks = null;
             }
         }

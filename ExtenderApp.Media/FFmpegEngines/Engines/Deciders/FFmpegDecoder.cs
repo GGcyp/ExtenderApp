@@ -1,4 +1,5 @@
 ﻿using System.Collections.Concurrent;
+using System.Runtime.CompilerServices;
 using ExtenderApp.Data;
 using FFmpeg.AutoGen;
 
@@ -22,8 +23,11 @@ namespace ExtenderApp.FFmpegEngines.Decoders
         /// <summary>
         /// 缓存状态控制器，用于管理解码缓存和控制生产/消费节奏。
         /// </summary>
-        private readonly CacheStateController _cacheStateController;
+        private readonly CacheCountStateController _cacheStateController;
 
+        /// <summary>
+        /// 最大缓存长度。
+        /// </summary>
         private readonly int _maxCacheLength;
 
         /// <summary>
@@ -49,7 +53,7 @@ namespace ExtenderApp.FFmpegEngines.Decoders
         /// <summary>
         /// 获取一个值，该值指示缓存队列是否还有空间。
         /// </summary>
-        public bool HasPacketCacheSpace => _packets.Count == 0;
+        public bool HasPacketCacheSpace => _packets.Count <= 1;
 
         /// <summary>
         /// 获取一个值，该值指示帧缓存队列是否还有空间。
@@ -102,60 +106,81 @@ namespace ExtenderApp.FFmpegEngines.Decoders
         }
 
         /// <summary>
-        /// 从队列中取出一个数据包并进行解码。 如果缓存已满，此方法将异步等待；否则将同步处理并立即返回。
+        /// 等待并处理数据包。如果缓存已满，此方法会阻塞等待直到有空间可用，然后进行解码。
         /// </summary>
-        /// <param name="canWait">是否需要等待缓存</param>
         /// <param name="token">用于取消操作的取消令牌。</param>
-        public void ProcessPacket(bool canWait, CancellationToken token)
+        public void WaitProcessPacket(CancellationToken token)
         {
             if (token.IsCancellationRequested || _packets.IsEmpty)
                 return;
 
-            while (true)
+            // 如果缓存已满，则先阻塞检查
+            if (!HasFrameCacheSpace ||
+                !_cacheStateController.WaitForCacheSpace(token))
+                return;
+
+            PrivateProcessPacket(token);
+        }
+
+        /// <summary>
+        /// 尝试处理数据包。如果缓存已满，此方法会直接返回而不进行解码（非阻塞模式）。
+        /// </summary>
+        /// <param name="token">用于取消操作的取消令牌。</param>
+        public void ProcessPacket(CancellationToken token)
+        {
+            if (token.IsCancellationRequested || _packets.IsEmpty)
+                return;
+
+            // 如果缓存已满，则直接返回
+            if (!HasFrameCacheSpace)
+                return;
+
+            PrivateProcessPacket(token);
+        }
+
+        /// <summary>
+        /// 内部核心处理逻辑：从队列取出数据包，发送给解码器，并触发帧接收循环。
+        /// </summary>
+        /// <param name="token">用于取消操作的取消令牌。</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void PrivateProcessPacket(CancellationToken token)
+        {
+            while (!token.IsCancellationRequested &&
+                HasFrameCacheSpace &&
+                _packets.TryDequeue(out var packet))
             {
-                // 如果缓存已满，则先阻塞检查
-                if (!_cacheStateController.HasCacheSpace)
+                try
                 {
-                    if (!canWait)
+                    int result = Engine.SendPacket(Context.CodecContext, ref packet);
+                    if (result < 0 || token.IsCancellationRequested)
                         return;
-                    _cacheStateController.WaitForCacheSpace(cancellationToken: token);
-                    if (token.IsCancellationRequested)
-                        return;
+
+                    ProcessFrames(token);
                 }
-
-                if (!_packets.TryDequeue(out var packet))
-                    return;
-
-                int result = Engine.SendPacket(Context.CodecContext, ref packet);
-                if (result < 0 || token.IsCancellationRequested)
+                finally
                 {
                     Engine.Return(ref packet);
-                    return;
                 }
-
-                ProcessFrames(token);
-                Engine.Return(ref packet);
             }
         }
 
         /// <summary>
-        /// 同步循环，从解码器接收并处理所有可用的帧，直到没有更多帧或缓存已满。
+        /// 同步循环，从解码器接收并处理所有可用的帧，直到没有更多帧（EAGAIN）、文件结束或发生错误。
         /// </summary>
         /// <param name="token">用于取消操作的取消令牌。</param>
         private void ProcessFrames(CancellationToken token)
         {
-            if (token.IsCancellationRequested)
-                return;
-
             var frame = Engine.GetFrame();
             try
             {
-                while (!token.IsCancellationRequested)
+                while (!token.IsCancellationRequested && !_cacheStateController.IsFlushing)
                 {
                     int ret = Engine.ReceiveFrame(Context.CodecContext, ref frame);
 
-                    // 如果需要重试或没有更多帧，则退出循环
-                    if (token.IsCancellationRequested || Engine.IsTryAgain(ret) || Engine.IsEndOfFile(ret))
+                    // 如果需要重试（EAGAIN）或没有更多帧（EOF），则退出循环
+                    if (token.IsCancellationRequested ||
+                        Engine.IsTryAgain(ret) ||
+                        Engine.IsEndOfFile(ret))
                     {
                         break;
                     }
@@ -169,7 +194,7 @@ namespace ExtenderApp.FFmpegEngines.Decoders
                     ProcessFrame(frame, out var block);
 
                     long framePts = Engine.GetFrameTimestampMs(frame, Context);
-                    EnqueueFrame(new FFmpegFrame(block, framePts));
+                    EnqueueFrame(new(block, framePts));
                 }
             }
             finally
@@ -213,11 +238,19 @@ namespace ExtenderApp.FFmpegEngines.Decoders
             return false;
         }
 
-        /// <summary>
-        /// 刷新解码器，清空所有内部队列和缓存状态。
-        /// </summary>
-        public void Flush()
+        internal void ReleaseWait()
         {
+            _cacheStateController.ReleaseWait();
+        }
+
+        /// <summary>
+        /// 清空解码器的缓存状态，包括数据包和帧队列，并重置缓存控制器。
+        /// </summary>
+        internal void Flush()
+        {
+            if (!_cacheStateController.IsFlushing)
+                _cacheStateController.ReleaseWait();
+
             Clear();
             _cacheStateController.Reset();
         }
