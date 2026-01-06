@@ -214,6 +214,11 @@ namespace ExtenderApp.FFmpegEngines
         private readonly ConcurrentQueue<NativeIntPtr<AVFrame>> _frameQueue;
 
         /// <summary>
+        /// 获取全局取消令牌源，用于终止控制器的整个生命周期。
+        /// </summary>
+        private readonly CancellationTokenSource _allSource;
+
+        /// <summary>
         /// 获取FFmpeg的版本信息。
         /// </summary>
         public string FFmpegVersion => ffmpeg.av_version_info();
@@ -238,6 +243,11 @@ namespace ExtenderApp.FFmpegEngines
         public int MaxCacheFrameCount { get; set; }
 
         /// <summary>
+        /// 获取用于<see cref="FFmpegEngine"/>操作的取消令牌。
+        /// </summary>
+        public CancellationToken FFmpegToken => _allSource.Token;
+
+        /// <summary>
         /// 初始化FFmpegEngine实例。
         /// </summary>
         /// <param name="ffmpegPath">FFmpeg的安装路径。</param>
@@ -246,6 +256,7 @@ namespace ExtenderApp.FFmpegEngines
             _intPtrHashSet = new();
             _packetQueue = new();
             _frameQueue = new();
+            _allSource = new();
 
             MaxCacheFrameCount = DefaultMaxCacheFrameCount;
             MaxCachePacketCount = DefaultMaxCachePacketCount;
@@ -547,7 +558,7 @@ namespace ExtenderApp.FFmpegEngines
         {
             source ??= new CancellationTokenSource();
             var collection = CreateDecoderCollection(context, settings, source);
-            return new FFmpegDecoderController(this, context, collection, source);
+            return new FFmpegDecoderController(this, context, collection, settings);
         }
 
         /// <summary>
@@ -948,6 +959,16 @@ namespace ExtenderApp.FFmpegEngines
                 _packetQueue.Enqueue(packet);
                 packet = NativeIntPtr<AVPacket>.Empty;
             }
+        }
+
+        /// <summary>
+        /// 将<see cref="FFmpegPacket"/>实例回收到数据包队列中以供重用。
+        /// </summary>
+        /// <param name="packet">需要被回收的<see cref="FFmpegPacket"/>实例</param>
+        public void Return(ref FFmpegPacket packet)
+        {
+            var ptr = packet.PacketPtr;
+            Return(ref ptr);
         }
 
         #endregion Packet
@@ -1396,6 +1417,16 @@ namespace ExtenderApp.FFmpegEngines
         #endregion ChannelLayout
 
         #region Free
+
+        /// <summary>
+        /// 释放 <see cref="FFmpegPacket"/> 相关资源，包括底层 AVPacket 指针。 用于确保数据包相关的底层资源被正确释放，防止内存泄漏。
+        /// </summary>
+        /// <param name="packet">要被释放的<see cref="FFmpegPacket"/></param>
+        public void Free(ref FFmpegPacket packet)
+        {
+            var ptr = packet.PacketPtr;
+            Free(ref ptr);
+        }
 
         /// <summary>
         /// 释放 FFmpegContext 相关资源，包括格式上下文、选项字典和解码器上下文集合。 用于确保所有底层指针和资源被正确释放，防止内存泄漏。
@@ -1934,6 +1965,7 @@ namespace ExtenderApp.FFmpegEngines
 
         protected override void DisposeUnmanagedResources()
         {
+            _allSource.Cancel();
             while (_frameQueue.TryDequeue(out var frame))
             {
                 Free(ref frame);
@@ -1942,6 +1974,7 @@ namespace ExtenderApp.FFmpegEngines
             {
                 Free(ref packet);
             }
+            _allSource.Dispose();
             ffmpeg.avformat_network_deinit();
         }
     }

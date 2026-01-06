@@ -49,11 +49,6 @@ namespace ExtenderApp.FFmpegEngines.Medias
         private Task? mediaTask;
 
         /// <summary>
-        /// 媒体播放流程的取消令牌源。与解码控制器的全局令牌链接。
-        /// </summary>
-        private CancellationTokenSource? mediaSource;
-
-        /// <summary>
         /// 是否正在跳转。跳转期间主时钟会重置以避免时间累积误差。
         /// </summary>
         private volatile bool isSeeking;
@@ -220,9 +215,9 @@ namespace ExtenderApp.FFmpegEngines.Medias
                 return;
             }
             State = PlayerState.Playing;
+
             _controller.StartDecode();
-            mediaSource = CancellationTokenSource.CreateLinkedTokenSource(_controller.AllSource.Token);
-            mediaTask = Task.Run(PlaybackLoop, mediaSource.Token);
+            mediaTask = Task.Run(PlaybackLoop, _controller.Source?.Token ?? CancellationToken.None);
             AudioOutput?.PlayerStateChange(State);
             VideoOutput?.PlayerStateChange(State);
         }
@@ -246,7 +241,7 @@ namespace ExtenderApp.FFmpegEngines.Medias
             State = PlayerState.Stopped;
             AudioOutput?.PlayerStateChange(State);
             VideoOutput?.PlayerStateChange(State);
-            return new(Task.WhenAll(_controller.StopDecodeAsync(), FlushAsync()));
+            return new(_controller.StopDecodeAsync());
         }
 
         /// <summary>
@@ -268,7 +263,7 @@ namespace ExtenderApp.FFmpegEngines.Medias
             State = PlayerState.Paused;
             AudioOutput?.PlayerStateChange(State);
             VideoOutput?.PlayerStateChange(State);
-            return new(Task.WhenAll(_controller.StopDecodeAsync(), FlushAsync()));
+            return new(_controller.StopDecodeAsync());
         }
 
         /// <summary>
@@ -313,35 +308,6 @@ namespace ExtenderApp.FFmpegEngines.Medias
         }
 
         /// <summary>
-        /// 刷新媒体播放任务，取消当前播放并清理资源。
-        /// </summary>
-        /// <remarks>
-        /// - 取消并等待后台播放循环结束。
-        /// - 释放并清空取消源与任务引用。
-        /// - 该方法仅管理播放循环本身，解码器停止由调用方并行负责。
-        /// </remarks>
-        private async Task FlushAsync()
-        {
-            mediaSource?.Cancel();
-
-            try
-            {
-                if (mediaTask == null)
-                {
-                    return;
-                }
-
-                await mediaTask.ConfigureAwait(false);
-            }
-            finally
-            {
-                mediaSource?.Dispose();
-                mediaSource = null;
-                mediaTask = null;
-            }
-        }
-
-        /// <summary>
         /// 媒体播放主循环任务（强对齐版）：
         /// - 以 Stopwatch 为单调主时钟，将 Position 强制对齐到“起点 + 实际经过时间 * SpeedRatio”
         /// - 等待策略：Sleep(粗) + 最后 2ms 自旋(细)，避免长忙等同时减少 Sleep 过头抖动
@@ -353,7 +319,7 @@ namespace ExtenderApp.FFmpegEngines.Medias
         /// </remarks>
         private void PlaybackLoop()
         {
-            var token = mediaSource!.Token;
+            var token = _controller.Source!.Token;
 
             int frameInterval = (int)(Info.Rate > 0 ? 1000.0 / Info.Rate : 1000.0 / FFmpegEngine.DefaultFrameRate);
             if (frameInterval <= 0)
@@ -449,10 +415,14 @@ namespace ExtenderApp.FFmpegEngines.Medias
 
             long start = Stopwatch.GetTimestamp();
             long thresholdTicks = SpinThresholdMs * Stopwatch.Frequency / 1000;
+            int count = 0;
 
-            while (!token.IsCancellationRequested && (Stopwatch.GetTimestamp() - start) < thresholdTicks)
+            while (!token.IsCancellationRequested &&
+                (Stopwatch.GetTimestamp() - start) < thresholdTicks &&
+                count < 10)
             {
                 Thread.SpinWait(30);
+                count++;
             }
         }
 
@@ -472,7 +442,7 @@ namespace ExtenderApp.FFmpegEngines.Medias
         /// <returns>如果解码器为 null 或有帧，则为 true；否则为 false。</returns>
         private static bool HasFrames(FFmpegDecoder? decoder)
         {
-            return decoder is null ? true : decoder.HasFrames;
+            return decoder is null ? false : decoder.HasFrameCached;
         }
 
         #endregion Output Methods
@@ -521,7 +491,7 @@ namespace ExtenderApp.FFmpegEngines.Medias
                     return 0;
 
                 long timeDiff = 0;
-                while (_decoder.HasFrames)
+                while (_decoder.HasFrameCached)
                 {
                     timeDiff = _decoder.NextFramePts - _player.Position;
 

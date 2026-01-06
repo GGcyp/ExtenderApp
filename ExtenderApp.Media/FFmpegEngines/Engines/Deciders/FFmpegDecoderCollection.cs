@@ -23,7 +23,7 @@ namespace ExtenderApp.FFmpegEngines.Decoders
         /// <summary>
         /// 获取解码器集合中的解码器数量。
         /// </summary>
-        public int Length => _decoders.Length;
+        public int Count => _decoders.Length;
 
         /// <summary>
         /// 初始化 <see cref="FFmpegDecoderCollection"/> 实例，并根据上下文创建所有必需的解码器。
@@ -77,28 +77,11 @@ namespace ExtenderApp.FFmpegEngines.Decoders
         }
 
         /// <summary>
-        /// 获取解码器中任意解码器中有存在可用的包缓存空间。
+        /// 将所有解码器的内部缓冲区刷新，确保所有待处理的数据包均被处理。
         /// </summary>
-        /// <returns>如果有任意解码器有包缓存空间，则为 <c>true</c>；否则为 <c>false</c>。</returns>
-        public bool GetHasPacketCacheSpace()
+        public void FlushAll()
         {
-            return _decoders.Any(decoder => decoder.HasPacketCacheSpace);
-        }
-
-        /// <summary>
-        /// 刷新解码器集合的所有解码器缓存状态。 此操作会重置所有解码器的内部缓存，通常在执行跳转（Seek）操作后调用，以确保解码从新的位置干净地开始。
-        /// </summary>
-        internal void FlushAll()
-        {
-            Array.ForEach(_decoders, static d => d.Flush());
-        }
-
-        /// <summary>
-        /// 释放所有解码器的等待状态。 此操作会中断所有解码器当前的等待操作，通常在停止解码或需要立即响应用户操作时调用。
-        /// </summary>
-        internal void ReleaseAllWait()
-        {
-            Array.ForEach(_decoders, static d => d.ReleaseWait());
+            Array.ForEach(_decoders, static decoder => decoder.FlushInternal());
         }
 
         /// <summary>

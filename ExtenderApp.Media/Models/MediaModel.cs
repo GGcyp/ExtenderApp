@@ -32,6 +32,7 @@ namespace ExtenderApp.Media.Models
         public MediaInfo? SelectedVideoInfo { get; set; }
 
         private float volume;
+
         /// <summary>
         /// 音量
         /// </summary>
