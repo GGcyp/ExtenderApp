@@ -1,4 +1,5 @@
-﻿using System.Runtime.CompilerServices;
+﻿using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using ExtenderApp.Common;
 using ExtenderApp.Data;
 using ExtenderApp.FFmpegEngines.Decoders;
@@ -182,7 +183,6 @@ namespace ExtenderApp.FFmpegEngines
                 }
                 catch
                 {
-                    // 投递失败必须归还包，避免泄漏
                     _engine.Return(ref packetPtr);
                     throw;
                 }

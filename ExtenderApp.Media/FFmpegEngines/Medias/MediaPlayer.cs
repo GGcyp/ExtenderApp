@@ -20,7 +20,7 @@ namespace ExtenderApp.FFmpegEngines.Medias
         /// 每个视频帧的最大允许输出时间差（毫秒），用于同步音视频。
         /// 当下一帧时间戳与当前位置误差在此阈值内时输出，否则丢弃过期帧。
         /// </summary>
-        private const int FrameOutTime = 15;
+        private const int FrameOutTime = 15;    
 
         /// <summary>
         /// 细等待阈值（毫秒）。当剩余等待时间很短时使用自旋来降低 Sleep(1) 带来的抖动。
@@ -370,8 +370,8 @@ namespace ExtenderApp.FFmpegEngines.Medias
                     continue;
                 }
 
-                int mainDelay = mainResult.Process(0);
-                videoResult.Process(FrameOutTime);
+                int mainDelay = mainResult.Process(frameInterval);
+                videoResult.Process(frameInterval);
 
                 // mainDelay > 0：下一帧还未到时间；<=0：按照帧率给一个节奏下限
                 int waitMs = (mainDelay > 0) ? (int)(mainDelay / SpeedRatio) : frameInterval;
@@ -442,7 +442,7 @@ namespace ExtenderApp.FFmpegEngines.Medias
         /// <returns>如果解码器为 null 或有帧，则为 true；否则为 false。</returns>
         private static bool HasFrames(FFmpegDecoder? decoder)
         {
-            return decoder is null ? false : decoder.HasFrameCached;
+            return decoder is null ? false : decoder.HasFrames;
         }
 
         #endregion Output Methods
@@ -490,29 +490,34 @@ namespace ExtenderApp.FFmpegEngines.Medias
                 if (IsEmpty)
                     return 0;
 
+                int generation = _player.Settings.GetCurrentGeneration();
+                FFmpegFrame frame = default;
                 long timeDiff = 0;
-                while (_decoder.HasFrameCached)
+                while (_decoder.HasFrames)
                 {
                     timeDiff = _decoder.NextFramePts - _player.Position;
 
-                    if (timeDiff > 0)
+                    if (timeDiff > 0 || !_decoder.TryDequeueFrame(out frame))
                     {
                         break;
                     }
-                    else if (Math.Abs(timeDiff) <= outTime)
+
+                    try
                     {
-                        _decoder.TryDequeueFrame(out var frame);
-                        _output.WriteFrame(frame);
-                        frame.Dispose();
+                        if (frame.Generation != generation)
+                        {
+                            continue;
+                        }
+
+                        if (Math.Abs(timeDiff) <= outTime)
+                        {
+                            _output.WriteFrame(frame);
+                        }
+                        // timeDiff < -outTime：丢弃过期帧（什么都不做）
                     }
-                    else if (timeDiff < -outTime)
+                    finally
                     {
-                        _decoder.TryDequeueFrame(out var frame);
                         frame.Dispose();
-                    }
-                    else
-                    {
-                        break;
                     }
                 }
                 return (int)timeDiff;

@@ -1,5 +1,6 @@
 ﻿using System.Runtime.CompilerServices;
 using System.Threading.Channels;
+using System.Windows.Controls;
 using ExtenderApp.Data;
 using FFmpeg.AutoGen;
 
@@ -73,9 +74,9 @@ namespace ExtenderApp.FFmpegEngines.Decoders
         public int StreamIndex => Context.StreamIndex;
 
         /// <summary>
-        /// 获取当前是否有已解码帧缓存。
+        /// 获取当前是否有可用已解码帧。
         /// </summary>
-        public bool HasFrameCached => _frameChannel.Reader.TryPeek(out _);
+        public bool HasFrames => _frameChannel.Reader.TryPeek(out _);
 
         /// <summary>
         /// 获取下一帧的显示时间戳（毫秒）。
@@ -84,7 +85,7 @@ namespace ExtenderApp.FFmpegEngines.Decoders
         /// 若无可用帧则返回 <see cref="long.MinValue"/>。
         /// </para>
         /// </summary>
-        public long NextFramePts => _frameChannel.Reader.TryPeek(out var frame) ? frame.Pts : long.MinValue;
+        public long NextFramePts => _frameChannel.Reader.TryPeek(out var frame) ? frame.Pts : long.MaxValue;
 
         /// <summary>
         /// 当前解码器对应的媒体类型（音频/视频）。
@@ -106,14 +107,19 @@ namespace ExtenderApp.FFmpegEngines.Decoders
             Context = context;
             Info = info;
 
-            _packetChannel = Channel.CreateBounded<FFmpegPacket>(new BoundedChannelOptions(2)
-            {
-                FullMode = BoundedChannelFullMode.Wait,
-                SingleReader = true,
-                SingleWriter = false,
-            });
+            _packetChannel = CreateChannel<FFmpegPacket>(2);
+            _frameChannel = CreateChannel<FFmpegFrame>(maxFrameCacheCount);
+        }
 
-            _frameChannel = Channel.CreateBounded<FFmpegFrame>(new BoundedChannelOptions(maxFrameCacheCount)
+        /// <summary>
+        /// 创建一个指定容量的有界通道。
+        /// </summary>
+        /// <typeparam name="T">指定类型</typeparam>
+        /// <param name="capacity"></param>
+        /// <returns></returns>
+        private Channel<T> CreateChannel<T>(int capacity)
+        {
+            return Channel.CreateBounded<T>(new BoundedChannelOptions(capacity)
             {
                 FullMode = BoundedChannelFullMode.Wait,
                 SingleReader = true,
@@ -135,9 +141,38 @@ namespace ExtenderApp.FFmpegEngines.Decoders
                 return;
             }
 
-            SlowEnqueuePacket(packet, token).GetAwaiter().GetResult();
+            try
+            {
+                SlowEnqueuePacket(packet, token).GetAwaiter().GetResult();
+            }
+            catch (OperationCanceledException) when (token.IsCancellationRequested)
+            {
+                // Stop/Dispose 的正常退出路径：吞掉取消异常（SlowEnqueueFrame 已负责释放 frame）
+            }
+            catch (ChannelClosedException)
+            {
+                // 通道已完成/关闭：吞掉（SlowEnqueueFrame 已负责释放 frame）
+            }
         }
 
+        /// <summary>
+        /// 低速路径：当 <see cref="_packetChannel"/> 暂时不可写（队列已满）时，等待通道变为可写后再写入。
+        /// </summary>
+        /// <param name="packet">待投递的包。若投递失败必须归还以避免泄漏。</param>
+        /// <param name="token">
+        /// 取消令牌：用于在 Stop/Dispose/退出解码时中断等待。
+        /// <para>
+        /// 注意：取消通常是“正常退出路径”（例如停止播放），但本方法不会吞掉异常，
+        /// 而是在归还 <paramref name="packet"/> 后重新抛出，让上层决定是否忽略/转为正常退出。
+        /// </para>
+        /// </param>
+        /// <remarks>
+        /// 资源管理约定：
+        /// <list type="bullet">
+        /// <item><description>写入成功：包的所有权移交给解码线程（由 <see cref="DecodeLoopAsync"/> / <see cref="ProcessOnePacket"/> 归还）。</description></item>
+        /// <item><description>写入失败或等待过程中发生异常（包括 <see cref="OperationCanceledException"/>）：本方法负责归还包并重新抛出异常。</description></item>
+        /// </list>
+        /// </remarks>
         private async ValueTask SlowEnqueuePacket(FFmpegPacket packet, CancellationToken token)
         {
             try
@@ -149,6 +184,7 @@ namespace ExtenderApp.FFmpegEngines.Decoders
                         return;
                     }
                 }
+
                 token.ThrowIfCancellationRequested();
             }
             catch
@@ -298,7 +334,18 @@ namespace ExtenderApp.FFmpegEngines.Decoders
                 return;
             }
 
-            SlowEnqueueFrame(frame, token).GetAwaiter().GetResult();
+            try
+            {
+                SlowEnqueueFrame(frame, token).GetAwaiter().GetResult();
+            }
+            catch (OperationCanceledException) when (token.IsCancellationRequested)
+            {
+                // Stop/Dispose 的正常退出路径：吞掉取消异常（SlowEnqueueFrame 已负责释放 frame）
+            }
+            catch (ChannelClosedException)
+            {
+                // 通道已完成/关闭：吞掉（SlowEnqueueFrame 已负责释放 frame）
+            }
         }
 
         /// <summary>
@@ -354,6 +401,18 @@ namespace ExtenderApp.FFmpegEngines.Decoders
         /// </summary>
         private void FlushPrivate()
         {
+            Clear();
+
+            // 清空 codec 内部缓冲（Seek 后必须做）
+            var codecContext = Context.CodecContext;
+            Engine.Flush(ref codecContext);
+        }
+
+        /// <summary>
+        /// 清空 packet 与 frame 通道中的所有数据，并释放/归还底层资源。
+        /// </summary>
+        private void Clear()
+        {
             // 清空 packet（并归还底层 AVPacket）
             while (_packetChannel.Reader.TryRead(out var packet))
             {
@@ -365,10 +424,6 @@ namespace ExtenderApp.FFmpegEngines.Decoders
             {
                 frame.Dispose();
             }
-
-            // 清空 codec 内部缓冲（Seek 后必须做）
-            var codecContext = Context.CodecContext;
-            Engine.Flush(ref codecContext);
         }
 
         /// <summary>
@@ -391,7 +446,7 @@ namespace ExtenderApp.FFmpegEngines.Decoders
         /// </summary>
         protected override void DisposeManagedResources()
         {
-            FlushInternal();
+            Clear();
             _packetChannel.Writer.TryComplete();
             _frameChannel.Writer.TryComplete();
         }

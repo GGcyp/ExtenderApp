@@ -10,7 +10,7 @@ namespace ExtenderApp.FFmpegEngines
         /// <summary>
         /// 当前帧的世代标识符。 用于跟踪帧的生命周期和版本。
         /// </summary>
-        public long Generation { get; }
+        public int Generation { get; }
 
         /// <summary>
         /// 获取帧的原始数据块。 对于视频，这通常是像素数据（如 RGB 或
@@ -28,7 +28,7 @@ namespace ExtenderApp.FFmpegEngines
         /// </summary>
         public bool IsEmpty => Block.IsEmpty;
 
-        public FFmpegFrame(long generation, ByteBlock block, long pts)
+        public FFmpegFrame(int generation, ByteBlock block, long pts)
         {
             Generation = generation;
             Block = block;

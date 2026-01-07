@@ -1645,12 +1645,8 @@ namespace ExtenderApp.FFmpegEngines
         /// <returns>如果指针有效并已移除则返回 true，否则返回 false。</returns>
         private bool CheckIntPtrAndRemove<T>(NativeIntPtr<T> ptr) where T : unmanaged
         {
-            if (ptr.IsEmpty)
-            {
-                return false;
-            }
-            _intPtrHashSet.Remove(ptr);
-            return true;
+            if (ptr.IsEmpty) return false;
+            return _intPtrHashSet.Remove(ptr);
         }
 
         #endregion Free

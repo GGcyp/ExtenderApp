@@ -6,7 +6,7 @@
     /// </summary>
     public class FFmpegDecoderSettings
     {
-        internal long Generation { get; set; }
+        internal int Generation { get; set; }
 
         /// <summary>
         /// 视频像素格式，默认 BGR24。
@@ -47,7 +47,7 @@
             return FFmpegEngine.GetBytesPerSample(SampleFormat);
         }
 
-        public long GetCurrentGeneration()
+        public int GetCurrentGeneration()
         {
             return Generation;
         }
