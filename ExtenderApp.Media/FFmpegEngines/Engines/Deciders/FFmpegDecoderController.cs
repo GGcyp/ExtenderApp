@@ -11,12 +11,17 @@ namespace ExtenderApp.FFmpegEngines
     /// 管理解码流程的启动、停止、跳转、资源释放及解码状态同步，支持异步解码和取消操作。
     /// 适用于音视频流的多线程解码场景。
     /// </summary>
-    public class FFmpegDecoderController : DisposableObject
+    internal class FFmpegDecoderController : DisposableObject, IFFmpegDecoderController
     {
         /// <summary>
         /// 控制器运行上下文，封装了引擎、媒体上下文、全局取消令牌及代际（generation）管理等状态。
         /// </summary>
-        private FFmpegDecoderControllerContext _controllerContext;
+        private readonly FFmpegDecoderControllerContext _controllerContext;
+
+        /// <summary>
+        /// FFmpeg 解码器集合，包含该控制器管理的所有解码器实例。
+        /// </summary>
+        private readonly FFmpegDecoderCollection _decoders;
 
         /// <summary>
         /// FFmpeg 引擎实例，用于执行底层 FFmpeg 操作（读包、Seek、Flush、对象池等）。
@@ -48,7 +53,7 @@ namespace ExtenderApp.FFmpegEngines
         /// <summary>
         /// 获取解码器集合，包含该控制器管理的所有解码器（例如视频、音频）。
         /// </summary>
-        public FFmpegDecoderCollection DecoderCollection { get; }
+        public IFFmpegDecoderCollection DecoderCollection => _decoders;
 
         /// <summary>
         /// 解码控制器设置。
@@ -60,15 +65,11 @@ namespace ExtenderApp.FFmpegEngines
         /// </summary>
         public CancellationToken Token => _controllerContext.AllSource.Token;
 
-        #region Events
-
         /// <summary>
         /// 当读取到文件末尾（EOF）时触发。
         /// <para>注意：在读包线程触发，若订阅方涉及 UI 更新需要自行切换线程。</para>
         /// </summary>
-        public event Action<FFmpegDecoderController>? OnCompletedDecoded;
-
-        #endregion Events
+        public event Action<IFFmpegDecoderController>? OnCompletedDecoded;
 
         /// <summary>
         /// 获取当前媒体流的基本信息（如时长、格式、URI 等）。
@@ -78,12 +79,12 @@ namespace ExtenderApp.FFmpegEngines
         /// <summary>
         /// 初始化 <see cref="FFmpegDecoderController"/> 的新实例。
         /// </summary>
-        /// <param name="collection">解码器集合。</param>
+        /// <param name="decoders">解码器集合。</param>
         /// <param name="controllerContext">控制器上下文。</param>
         /// <param name="settings">解码设置。</param>
-        public FFmpegDecoderController(FFmpegDecoderCollection collection, FFmpegDecoderControllerContext controllerContext, FFmpegDecoderSettings settings)
+        public FFmpegDecoderController(FFmpegDecoderCollection decoders, FFmpegDecoderControllerContext controllerContext, FFmpegDecoderSettings settings)
         {
-            DecoderCollection = collection;
+            _decoders = decoders;
             Settings = settings;
             _controllerContext = controllerContext;
         }
@@ -337,7 +338,6 @@ namespace ExtenderApp.FFmpegEngines
             }
             finally
             {
-                DecoderCollection.FlushAll();
                 processTasks = null;
             }
         }

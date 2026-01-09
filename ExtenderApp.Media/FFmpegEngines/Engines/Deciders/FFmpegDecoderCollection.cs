@@ -6,7 +6,7 @@ namespace ExtenderApp.FFmpegEngines.Decoders
     /// <summary>
     /// FFmpeg 解码器集合类。 封装视频和音频解码器的统一管理，便于解码流程的调度与资源释放。 支持根据流索引获取对应解码器，并自动管理解码器的生命周期。
     /// </summary>
-    public class FFmpegDecoderCollection : DisposableObject, IEnumerable<FFmpegDecoder>
+    internal class FFmpegDecoderCollection : DisposableObject, IFFmpegDecoderCollection
     {
         /// <summary>
         /// 内部维护的解码器实例数组。
@@ -39,17 +39,6 @@ namespace ExtenderApp.FFmpegEngines.Decoders
         }
 
         /// <summary>
-        /// 释放由集合管理的所有解码器占用的托管资源。
-        /// </summary>
-        protected override void DisposeManagedResources()
-        {
-            for (int i = 0; i < _decoders.Length; i++)
-            {
-                _decoders[i]?.Dispose();
-            }
-        }
-
-        /// <summary>
         /// 根据媒体类型获取对应的解码器实例。
         /// </summary>
         /// <param name="mediaType">
@@ -72,11 +61,14 @@ namespace ExtenderApp.FFmpegEngines.Decoders
         }
 
         /// <summary>
-        /// 将所有解码器的内部缓冲区刷新，确保所有待处理的数据包均被处理。
+        /// 释放由集合管理的所有解码器占用的托管资源。
         /// </summary>
-        public void FlushAll()
+        protected override void DisposeManagedResources()
         {
-            Array.ForEach(_decoders, static decoder => decoder.FlushInternal());
+            for (int i = 0; i < _decoders.Length; i++)
+            {
+                _decoders[i]?.Dispose();
+            }
         }
 
         /// <summary>

@@ -45,6 +45,9 @@ namespace ExtenderApp.FFmpegEngines.Medias
 
         private readonly ManualResetEventSlim _pauseEvent;
 
+
+        private readonly FrameProcessController _frameProcessController;
+
         /// <summary>
         /// 媒体播放任务（后台循环），通过 <see cref="Task.Run(System.Action)"/> 启动。
         /// </summary>
@@ -140,15 +143,11 @@ namespace ExtenderApp.FFmpegEngines.Medias
         /// </summary>
         public PlayerState State { get; private set; }
 
-        #region Events
-
         /// <summary>
         /// 每次播放进度更新时触发（节流至帧率级别）。
         /// 仅在播放循环中调度；暂停或停止不触发。
         /// </summary>
         public event Action? Playback;
-
-        #endregion Events
 
         /// <summary>
         /// 初始化 MediaPlayer 实例。
@@ -162,10 +161,7 @@ namespace ExtenderApp.FFmpegEngines.Medias
             SpeedRatio = 1;
             _pauseEvent = new(true);
             State = PlayerState.Initializing;
-
-            var collection = _controller.DecoderCollection;
-            _videoDecoder = collection.GetDecoder(FFmpegMediaType.VIDEO);
-            _audioDecoder = collection.GetDecoder(FFmpegMediaType.AUDIO);
+            _frameProcessController = new(_controller.DecoderCollection);
         }
 
         /// <summary>
@@ -193,8 +189,6 @@ namespace ExtenderApp.FFmpegEngines.Medias
 
             VideoOutput = output;
         }
-
-        #region Output Methods
 
         /// <summary>
         /// 启动媒体播放流程，开始解码和播放。
@@ -329,24 +323,24 @@ namespace ExtenderApp.FFmpegEngines.Medias
             if (frameInterval <= 0)
                 frameInterval = FrameTimeout;
 
-            ProcessFrameResult audioResult = new(AudioOutput!, _audioDecoder!);
-            ProcessFrameResult videoResult = new(VideoOutput!, _videoDecoder!);
+            //ProcessFrameResult audioResult = new(AudioOutput!, _audioDecoder!);
+            //ProcessFrameResult videoResult = new(VideoOutput!, _videoDecoder!);
 
-            ProcessFrameResult mainResult;
+            //ProcessFrameResult mainResult;
 
-            if (!audioResult.IsEmpty)
-            {
-                mainResult = audioResult;
-            }
-            else if (!videoResult.IsEmpty)
-            {
-                mainResult = videoResult;
-                videoResult = default;
-            }
-            else
-            {
-                throw new ArgumentNullException("没有可用的解码器进行播放。");
-            }
+            //if (!audioResult.IsEmpty)
+            //{
+            //    mainResult = audioResult;
+            //}
+            //else if (!videoResult.IsEmpty)
+            //{
+            //    mainResult = videoResult;
+            //    videoResult = default;
+            //}
+            //else
+            //{
+            //    throw new ArgumentNullException("没有可用的解码器进行播放。");
+            //}
 
             long basePositionMs = Position;
             var sw = Stopwatch.StartNew();
@@ -380,9 +374,10 @@ namespace ExtenderApp.FFmpegEngines.Medias
                     Position = position;
                 }
 
-                int mainDelay = mainResult.Process(frameInterval, position, generation);
-                videoResult.Process(frameInterval, position, generation);
+                //int mainDelay = mainResult.Process(frameInterval, position, generation);
+                //videoResult.Process(frameInterval, position, generation);
 
+                int mainDelay = 0; // TODO: 先注释掉音视频输出相关代码以便测试播放循环逻辑
                 if (mainDelay < 0)
                 {
                     basePositionMs = lastPosition;
@@ -453,82 +448,6 @@ namespace ExtenderApp.FFmpegEngines.Medias
                 count++;
             }
         }
-
-        #endregion Output Methods
-
-        #region Process Frame Methods
-
-        /// <summary>
-        /// 表示帧处理操作的结果和状态。
-        /// </summary>
-        private struct ProcessFrameResult
-        {
-            private readonly IMediaOutput _output;
-            private readonly FFmpegDecoder _decoder;
-
-            /// <summary>
-            /// 获取一个值，该值指示此实例是否为空（即未初始化）。
-            /// </summary>
-            public bool IsEmpty => _output == null || _decoder == null;
-
-            /// <summary>
-            /// 初始化 <see cref="ProcessFrameResult"/> 结构的新实例。
-            /// </summary>
-            /// <param name="output">媒体输出接口。</param>
-            /// <param name="decoder">FFmpeg 解码器。</param>
-            public ProcessFrameResult(IMediaOutput output, FFmpegDecoder decoder)
-            {
-                _output = output;
-                _decoder = decoder;
-            }
-
-            /// <summary>
-            /// 处理解码器队列中的帧。
-            /// </summary>
-            /// <param name="outTime">允许的最大输出时间差（毫秒）。</param>
-            /// <param name="position">当前播放位置（毫秒）。</param>
-            /// <param name="generation">当前解码器世代标识。</param>
-            /// <returns>下一帧与当前播放位置的时间差（毫秒）。正值表示未到输出时间。</returns>
-            /// <remarks>
-            /// - 当误差在阈值内时写出帧；若误差小于 -阈值则丢弃过期帧。
-            /// - 返回的时间差用于指导外层等待策略。
-            /// </remarks>
-            public int Process(int outTime, long position, int generation)
-            {
-                if (IsEmpty)
-                    return 0;
-
-                FFmpegFrame frame = default;
-                long timeDiff = -1;
-                while (_decoder.TryPeekFrame(out frame))
-                {
-                    if (frame.Generation != generation)
-                    {
-                        _decoder.TryDequeueFrame(out frame);
-                        frame.Dispose();
-                        continue;
-                    }
-
-                    timeDiff = frame.Pts - position;
-                    if (timeDiff > 0)
-                        break;
-                    else if (!_decoder.TryDequeueFrame(out frame))
-                        continue;
-
-                    if (Math.Abs(timeDiff) <= outTime)
-                    {
-                        _output.WriteFrame(frame);
-                    }
-                    // timeDiff < -timeout：丢弃过期帧（什么都不做）
-
-                    frame.Dispose();
-                    timeDiff = -1;
-                }
-                return (int)timeDiff;
-            }
-        }
-
-        #endregion Process Frame Methods
 
         /// <summary>
         /// 释放由 <see cref="MediaPlayer"/> 占用的托管资源。
