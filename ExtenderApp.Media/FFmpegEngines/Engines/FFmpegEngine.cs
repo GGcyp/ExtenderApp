@@ -243,11 +243,6 @@ namespace ExtenderApp.FFmpegEngines
         public int MaxCacheFrameCount { get; set; }
 
         /// <summary>
-        /// 获取用于<see cref="FFmpegEngine"/>操作的取消令牌。
-        /// </summary>
-        public CancellationToken FFmpegToken => _allSource.Token;
-
-        /// <summary>
         /// 初始化FFmpegEngine实例。
         /// </summary>
         /// <param name="ffmpegPath">FFmpeg的安装路径。</param>
@@ -530,35 +525,42 @@ namespace ExtenderApp.FFmpegEngines
         }
 
         /// <summary>
+        /// 创建解码控制器（FFmpegDecoderController）。 用于管理解码流程，包括解码启动、停止、跳转、资源释放等操作。 支持多线程解码、取消令牌控制和解码器集合的统一管理。
+        /// </summary>
+        /// <param name="context">FFmpeg上下文，包含媒体信息和解码器集合。</param>
+        /// <param name="settings"></param>
+        /// <returns>FFmpegDecoderController 实例。</returns>
+        public FFmpegDecoderController CreateDecoderController(FFmpegContext context, FFmpegDecoderSettings settings)
+        {
+            FFmpegDecoderControllerContext controllerContext = new(this, context);
+            var collection = CreateDecoderCollection(context, controllerContext, settings);
+            return new FFmpegDecoderController(collection, controllerContext, settings);
+        }
+
+        /// <summary>
         /// 创建解码器集合（FFmpegDecoderCollection）。 用于根据上下文和解码设置，自动初始化视频和音频解码器，并管理解码过程中的资源。 支持自定义取消令牌和解码参数，便于多线程解码和参数调整。
         /// </summary>
         /// <param name="context">FFmpeg上下文，包含解码器集合和媒体信息。</param>
+        /// <param name="controllerContext">解码器控制器上下文。</param>
         /// <param name="settings">可选的解码器设置，若为空则使用默认设置。</param>
-        /// <param name="source">可选的取消令牌源，若为空则自动创建。</param>
         /// <returns>FFmpegDecoderCollection 实例。</returns>
-        public FFmpegDecoderCollection CreateDecoderCollection(FFmpegContext context, FFmpegDecoderSettings? settings, CancellationTokenSource? source = null)
+        public FFmpegDecoderCollection CreateDecoderCollection(FFmpegContext context, FFmpegDecoderControllerContext controllerContext, FFmpegDecoderSettings settings)
         {
             if (context.IsEmpty)
             {
                 throw new ArgumentNullException(nameof(context));
             }
-            source = source ?? new CancellationTokenSource();
-            settings = settings ?? new FFmpegDecoderSettings();
-            return new FFmpegDecoderCollection(this, context.ContextCollection, context.Info, settings);
-        }
 
-        /// <summary>
-        /// 创建解码控制器（FFmpegDecoderController）。 用于管理解码流程，包括解码启动、停止、跳转、资源释放等操作。 支持多线程解码、取消令牌控制和解码器集合的统一管理。
-        /// </summary>
-        /// <param name="context">FFmpeg上下文，包含媒体信息和解码器集合。</param>
-        /// <param name="settings"></param>
-        /// <param name="source">可选的取消令牌源，若为空则自动创建。</param>
-        /// <returns>FFmpegDecoderController 实例。</returns>
-        public FFmpegDecoderController CreateDecoderController(FFmpegContext context, FFmpegDecoderSettings settings, CancellationTokenSource? source = null)
-        {
-            source ??= new CancellationTokenSource();
-            var collection = CreateDecoderCollection(context, settings, source);
-            return new FFmpegDecoderController(this, context, collection, settings);
+            var contextCollection = context.ContextCollection;
+            var decoders = new FFmpegDecoder[contextCollection.Length];
+
+            for (int i = 0; i < contextCollection.Length; i++)
+            {
+                var decoderContext = contextCollection[i];
+                decoders[i] = FFmpegDecoderFactory.CreateDecoder(decoderContext, controllerContext, settings);
+            }
+
+            return new FFmpegDecoderCollection(decoders);
         }
 
         /// <summary>
@@ -859,6 +861,17 @@ namespace ExtenderApp.FFmpegEngines
         /// <summary>
         /// 向解码器发送一个数据包（AVPacket）。 用于将编码后的数据（如音视频流中的一帧）传递给解码器进行解码处理。
         /// </summary>
+        /// <param name="decoderContext">解码器上下文。</param>
+        /// <param name="packet">待发送的数据包指针，若为空则自动分配</param>
+        /// <returns>操作结果码，成功为0，失败抛出异常。</returns>
+        public int SendPacket(FFmpegDecoderContext decoderContext, ref NativeIntPtr<AVPacket> packet)
+        {
+            return SendPacket(decoderContext.CodecContext, ref packet);
+        }
+
+        /// <summary>
+        /// 向解码器发送一个数据包（AVPacket）。 用于将编码后的数据（如音视频流中的一帧）传递给解码器进行解码处理。
+        /// </summary>
         /// <param name="codecContext">解码器上下文指针。</param>
         /// <param name="packet">待发送的数据包指针，若为空则自动分配。</param>
         /// <returns>操作结果码，成功为0，失败抛出异常。</returns>
@@ -936,7 +949,7 @@ namespace ExtenderApp.FFmpegEngines
         /// 回收一个AVPacket实例，将其放回数据包队列以供重用。
         /// </summary>
         /// <param name="packet">需要被回收的地址</param>
-        public void Return(ref NativeIntPtr<AVPacket> packet)
+        public void Return(NativeIntPtr<AVPacket> packet)
         {
             if (packet.IsEmpty)
             {
@@ -965,15 +978,26 @@ namespace ExtenderApp.FFmpegEngines
         /// 将<see cref="FFmpegPacket"/>实例回收到数据包队列中以供重用。
         /// </summary>
         /// <param name="packet">需要被回收的<see cref="FFmpegPacket"/>实例</param>
-        public void Return(ref FFmpegPacket packet)
+        public void Return(FFmpegPacket packet)
         {
             var ptr = packet.PacketPtr;
-            Return(ref ptr);
+            Return(ptr);
         }
 
         #endregion Packet
 
         #region Frame
+
+        /// <summary>
+        /// 向解码器发送一个帧（AVFrame）。 用于将解码后的原始帧数据（如音视频帧）传递给编码器或滤镜处理。
+        /// </summary>
+        /// <param name="codecContext">解码器上下文。</param>
+        /// <param name="frame">待发送的帧指针，若为空则自动分配。</param>
+        /// <returns>操作结果码，成功为0，失败抛出异常。</returns>
+        public int SendFrame(FFmpegDecoderContext decoderContext, ref NativeIntPtr<AVFrame> frame)
+        {
+            return SendFrame(decoderContext.CodecContext, ref frame);
+        }
 
         /// <summary>
         /// 向解码器发送一个帧（AVFrame）。 用于将解码后的原始帧数据（如音视频帧）传递给编码器或滤镜处理。
@@ -997,6 +1021,17 @@ namespace ExtenderApp.FFmpegEngines
                 ShowException("从解码器发送数据包失败", result);
             }
             return result;
+        }
+
+        /// <summary>
+        /// 从解码器接收一个帧（AVFrame）。 用于从解码器获取解码后的原始帧数据（如音视频帧）。
+        /// </summary>
+        /// <param name="decoderContext">解码器上下文。</param>
+        /// <param name="frame">用于接收的帧指针，若为空则自动分配。</param>
+        /// <returns>操作结果码，成功为0，失败抛出异常。</returns>
+        public int ReceiveFrame(FFmpegDecoderContext decoderContext, ref NativeIntPtr<AVFrame> frame)
+        {
+            return ReceiveFrame(decoderContext.CodecContext, ref frame);
         }
 
         /// <summary>
@@ -1139,7 +1174,7 @@ namespace ExtenderApp.FFmpegEngines
         /// 回收一个 AVFrame 实例，将其放回帧队列以供后续复用。 会先清空帧内容（调用 FFmpeg 的 av_frame_unref），再入队，避免内存泄漏和脏数据。 推荐在帧处理完毕后调用，便于资源管理和性能优化。
         /// </summary>
         /// <param name="frame">需要被回收的 AVFrame 指针封装。</param>
-        public void Return(ref NativeIntPtr<AVFrame> frame)
+        public void Return(NativeIntPtr<AVFrame> frame)
         {
             if (frame.IsEmpty)
             {

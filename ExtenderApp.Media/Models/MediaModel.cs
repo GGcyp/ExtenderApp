@@ -160,7 +160,7 @@ namespace ExtenderApp.Media.Models
 
         public void Pause()
         {
-            MPlayer?.PauseAsync();
+            MPlayer?.Pause();
         }
 
         public void Stop()

@@ -32,15 +32,10 @@ namespace ExtenderApp.FFmpegEngines.Decoders
         /// <param name="contexts">解码器上下文集合。</param>
         /// <param name="info">媒体基础信息。</param>
         /// <param name="settings">解码器设置参数。</param>
-        internal FFmpegDecoderCollection(FFmpegEngine engine, FFmpegDecoderContextCollection contexts, FFmpegInfo info, FFmpegDecoderSettings settings)
+        internal FFmpegDecoderCollection(FFmpegDecoder[] decoders)
         {
-            _decoders = new FFmpegDecoder[contexts.Length];
-
-            for (int i = 0; i < contexts.Length; i++)
-            {
-                var context = contexts[i];
-                _decoders[i] = FFmpegDecoderFactory.CreateDecoder(engine, context, info, settings);
-            }
+            ArgumentNullException.ThrowIfNull(decoders);
+            _decoders = decoders;
         }
 
         /// <summary>

@@ -19,9 +19,8 @@
             settings = settings ?? new();
 
             var context = _engine.OpenUri(mediaPath);
-            CancellationTokenSource source = new();
-            var controller = _engine.CreateDecoderController(context, settings, source);
-            return new MediaPlayer(controller, settings);
+            var controller = _engine.CreateDecoderController(context, settings);
+            return new MediaPlayer(controller);
         }
     }
 }

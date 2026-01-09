@@ -1,5 +1,4 @@
-﻿using System.Diagnostics;
-using System.Runtime.CompilerServices;
+﻿using System.Runtime.CompilerServices;
 using ExtenderApp.Common;
 using ExtenderApp.Data;
 using ExtenderApp.FFmpegEngines.Decoders;
@@ -8,174 +7,212 @@ using FFmpeg.AutoGen;
 namespace ExtenderApp.FFmpegEngines
 {
     /// <summary>
-    /// FFmpeg 解码控制器。 管理解码流程的启动、停止、资源释放及解码状态同步，支持异步解码和取消操作。 适用于音视频流的多线程解码场景。
+    /// FFmpeg 解码控制器。
+    /// 管理解码流程的启动、停止、跳转、资源释放及解码状态同步，支持异步解码和取消操作。
+    /// 适用于音视频流的多线程解码场景。
     /// </summary>
     public class FFmpegDecoderController : DisposableObject
     {
         /// <summary>
-        /// FFmpeg 引擎实例，用于执行底层的 FFmpeg 操作。
+        /// 控制器运行上下文，封装了引擎、媒体上下文、全局取消令牌及代际（generation）管理等状态。
         /// </summary>
-        private readonly FFmpegEngine _engine;
+        private FFmpegDecoderControllerContext _controllerContext;
 
         /// <summary>
-        /// 当前媒体文件的 FFmpeg 上下文。
+        /// FFmpeg 引擎实例，用于执行底层 FFmpeg 操作（读包、Seek、Flush、对象池等）。
         /// </summary>
-        private FFmpegContext _context;
+        private FFmpegEngine Engine => _controllerContext.Engine;
 
         /// <summary>
-        /// 存储所有正在运行的解码任务的数组。
+        /// 当前媒体的 FFmpeg 上下文（格式上下文、媒体信息等）。
+        /// </summary>
+        private FFmpegContext Context => _controllerContext.Context;
+
+        /// <summary>
+        /// 当前解码会话创建的后台任务集合。
+        /// <para>索引 0 通常为读包分发循环，其余为各解码器的解码循环。</para>
         /// </summary>
         private Task[]? processTasks;
 
         /// <summary>
-        /// 用于控制当前解码会话（启动到停止/跳转）的取消令牌源。
+        /// 目标跳转位置（毫秒）。
+        /// <para>该值会在解码循环中读取并用于 <see cref="SeekPrivate"/>。</para>
         /// </summary>
-        public CancellationTokenSource? Source { get; private set; }
+        private long seekTagetPosition;
 
         /// <summary>
-        /// 获取解码器集合，其中包含此控制器管理的所有解码器（例如，视频和音频）。
+        /// 当前解码会话（从 Start 到 Stop/Seek）的取消令牌源。
+        /// </summary>
+        private CancellationTokenSource? source;
+
+        /// <summary>
+        /// 获取解码器集合，包含该控制器管理的所有解码器（例如视频、音频）。
         /// </summary>
         public FFmpegDecoderCollection DecoderCollection { get; }
 
-        public FFmpegDecodeModel DecodeMode { get; private set; }
-
+        /// <summary>
+        /// 解码控制器设置。
+        /// </summary>
         public FFmpegDecoderSettings Settings { get; }
+
+        /// <summary>
+        /// 获取控制器的全局取消令牌（来自上下文的 AllSource）。
+        /// </summary>
+        public CancellationToken Token => _controllerContext.AllSource.Token;
 
         #region Events
 
         /// <summary>
-        /// 当读取到文件末尾（EOF）时触发的事件。
+        /// 当读取到文件末尾（EOF）时触发。
+        /// <para>注意：在读包线程触发，若订阅方涉及 UI 更新需要自行切换线程。</para>
         /// </summary>
         public event Action<FFmpegDecoderController>? OnCompletedDecoded;
 
         #endregion Events
 
         /// <summary>
-        /// 获取当前媒体流的基本信息（如时长、格式等）。
+        /// 获取当前媒体流的基本信息（如时长、格式、URI 等）。
         /// </summary>
-        public FFmpegInfo Info => _context.Info;
+        public FFmpegInfo Info => Context.Info;
 
         /// <summary>
-        /// 初始化 <see cref="FFmpegDecoderController"/> 类的新实例。
+        /// 初始化 <see cref="FFmpegDecoderController"/> 的新实例。
         /// </summary>
-        /// <param name="engine">FFmpeg 引擎实例。</param>
-        /// <param name="context">FFmpeg 上下文。</param>
         /// <param name="collection">解码器集合。</param>
-        /// <param name="allSource">用于控制整个控制器生命周期的全局取消令牌源。</param>
-        public FFmpegDecoderController(FFmpegEngine engine, FFmpegContext context, FFmpegDecoderCollection collection, FFmpegDecoderSettings settings)
+        /// <param name="controllerContext">控制器上下文。</param>
+        /// <param name="settings">解码设置。</param>
+        public FFmpegDecoderController(FFmpegDecoderCollection collection, FFmpegDecoderControllerContext controllerContext, FFmpegDecoderSettings settings)
         {
-            _engine = engine;
             DecoderCollection = collection;
-            _context = context;
             Settings = settings;
+            _controllerContext = controllerContext;
         }
 
         #region Operation
 
         /// <summary>
-        /// 启动解码流程。 此方法会为数据包读取和每个解码器创建一个后台任务。如果解码已在运行，则会抛出 <see cref="InvalidOperationException"/>。
+        /// 启动解码流程。
+        /// <para>该方法会创建读包分发任务以及每个解码器的解码任务。</para>
         /// </summary>
-        /// <param name="decodeMode">解码模式，默认为正常模式。</param>
-        /// <param name="threadingModel">解码线程模型，默认为自动选择。</param>
-        /// <exception cref="InvalidOperationException">当解码任务已在运行时调用此方法。</exception>
-        public void StartDecode(FFmpegDecodeModel decodeMode = FFmpegDecodeModel.Normal)
+        /// <exception cref="ObjectDisposedException">对象已释放。</exception>
+        /// <exception cref="InvalidOperationException">重复启动，或控制器已被取消。</exception>
+        public void StartDecode()
         {
             ThrowIfDisposed();
             if (processTasks != null)
             {
-                throw new InvalidOperationException($"不能重复解析:{_context.Info.MediaUri}");
+                throw new InvalidOperationException($"不能重复解析:{Context.Info.MediaUri}");
             }
-            var token = _engine.FFmpegToken;
+
+            var token = _controllerContext.AllSource.Token;
             if (token.IsCancellationRequested)
             {
-                throw new InvalidOperationException($"控制器已被取消，不能解析:{_context.Info.MediaUri}");
+                throw new InvalidOperationException($"控制器已被取消，不能解析:{Context.Info.MediaUri}");
             }
-            Source = CancellationTokenSource.CreateLinkedTokenSource(token);
-            DecodeMode = decodeMode;
 
-            PrivateStartDecoding();
+            source = CancellationTokenSource.CreateLinkedTokenSource(token);
+            StartDecodingPrivate();
         }
 
         /// <summary>
-        /// 异步停止当前解码流程。 此方法会取消所有正在运行的解码任务并等待它们完成。
+        /// 异步停止当前解码流程。
+        /// <para>会取消当前会话并等待所有后台任务退出，然后清理相关资源。</para>
         /// </summary>
-        /// <returns>一个表示异步停止操作的任务。</returns>
+        /// <returns>表示异步停止操作的任务。</returns>
+        /// <exception cref="ObjectDisposedException">对象已释放。</exception>
         public async Task StopDecodeAsync()
         {
             ThrowIfDisposed();
 
-            Source?.Cancel();
-            await WaitForAllTasksComplete();
-            Source?.Dispose();
-            Source = null;
+            source?.Cancel();
+            await WaitForAllTasksComplete().ConfigureAwait(false);
+
+            source?.Dispose();
+            source = null;
         }
 
         /// <summary>
-        /// 异步跳转到媒体流的指定位置。 此方法会先停止当前解码，然后执行跳转操作，并清空所有解码器的内部缓存。
+        /// 请求跳转到媒体流的指定位置（毫秒）。
+        /// <para>通过代际（generation）机制通知解码循环执行 Seek。</para>
+        /// <para>若当前未在解码（<see cref="processTasks"/> 为 null），则立即 Seek。</para>
         /// </summary>
-        /// <param name="position">目标跳转时间（毫秒）。</param>
+        /// <param name="position">目标时间（毫秒）。</param>
+        /// <exception cref="ObjectDisposedException">对象已释放。</exception>
         public void SeekDecoder(long position)
         {
             ThrowIfDisposed();
 
-            _engine.Seek(_context.FormatContext, position, _context);
+            Interlocked.Exchange(ref seekTagetPosition, position);
+            _controllerContext.IncrementGeneration();
+
+            if (processTasks == null)
+            {
+                SeekPrivate();
+            }
         }
 
-        #endregion Operation
-
-        #region ThreadDecodes
-
-        private void PrivateStartDecoding()
+        /// <summary>
+        /// 创建并启动读包循环与各解码器解码循环任务。
+        /// </summary>
+        private void StartDecodingPrivate()
         {
-            int length = 1;
+            int length = DecoderCollection.Count + 1;
+
             int decoderIndex = 0;
             int threadIndex = 1;
-            var token = Source!.Token;
-            FFmpegDecoder decoder = default!;
-            length = DecoderCollection.Count + 1;
-            if (DecodeMode != FFmpegDecodeModel.Normal)
-            {
-                FFmpegMediaType targetType = Convert(DecodeMode);
-                length = DecoderCollection.ContainsDecoder(targetType) ? length - 1 : length;
-            }
+
+            var token = source!.Token;
 
             processTasks = new Task[length];
             processTasks[0] = Task.Run(DecodingLoop, token);
 
             while (threadIndex < length)
             {
-                decoder = DecoderCollection[decoderIndex];
-                if (DecodeMode != FFmpegDecodeModel.Normal &&
-                    decoder.MediaType == Convert(DecodeMode))
-                {
-                    decoderIndex++;
-                    continue;
-                }
+                var decoder = DecoderCollection[decoderIndex];
                 processTasks[threadIndex] = decoder.DecodeLoopAsync(token);
+
                 threadIndex++;
                 decoderIndex++;
             }
         }
 
         /// <summary>
-        /// 解码主循环任务，负责从媒体文件读取数据包并分发到相应的解码器队列。
+        /// 读包/分发主循环。
+        /// <para>负责从媒体源读取 <see cref="AVPacket"/>，并按流索引分发到对应解码器队列。</para>
+        /// <para>当检测到代际变化时执行 <see cref="SeekPrivate"/> 并继续读取。</para>
         /// </summary>
-        /// <param name="token">用于取消操作的取消令牌。</param>
-        /// <returns>一个表示异步解码操作的任务。</returns>
         private void DecodingLoop()
         {
-            var token = Source!.Token;
+            var token = source!.Token;
+
+            var localGeneration = _controllerContext.GetCurrentGeneration();
+            var currentGeneration = localGeneration;
+
             while (!token.IsCancellationRequested)
             {
-                var packetPtr = _engine.GetPacket();
-                int result = ReadPacket(packetPtr);
-                if (result == -1) break;
-                else if (result == -2) continue;
+                currentGeneration = _controllerContext.GetCurrentGeneration();
+                if (localGeneration != currentGeneration)
+                {
+                    SeekPrivate();
+                    localGeneration = currentGeneration;
+                    continue;
+                }
 
-                int index = _engine.GetPacketStreamIndex(packetPtr);
+                var packetPtr = Engine.GetPacket();
+                int result = ReadPacket(packetPtr);
+                if (result == -1)
+                {
+                    break;
+                }
+                else if (result == -2)
+                {
+                    continue;
+                }
+
+                int index = Engine.GetPacketStreamIndex(packetPtr);
                 var decoder = DecoderCollection[index];
 
-                var packet = CreatePacket(packetPtr);
+                FFmpegPacket packet = new(currentGeneration, packetPtr);
 
                 try
                 {
@@ -183,50 +220,61 @@ namespace ExtenderApp.FFmpegEngines
                 }
                 catch
                 {
-                    _engine.Return(ref packetPtr);
+                    Engine.Return(packetPtr);
                     throw;
                 }
             }
         }
 
-        #endregion ThreadDecodes
+        /// <summary>
+        /// 执行 Seek 并刷新 FFmpeg 内部缓冲。
+        /// </summary>
+        private void SeekPrivate()
+        {
+            var context = Context.FormatContext;
+            var seekTagetPosition = Interlocked.Read(ref this.seekTagetPosition);
+
+            Engine.Seek(context, seekTagetPosition, Context);
+            Engine.Flush(ref context);
+        }
+
+        #endregion Operation
 
         #region Packets
 
         /// <summary>
-        /// 读取单个数据包的方法。 如果读取成功，返回 0；如果读取到文件末尾，返回 -1；如果需要重试读取，返回 -2。
+        /// 读取单个数据包。
         /// </summary>
-        /// <param name="packet">需要读取的包</param>
-        /// <returns>返回结果</returns>
+        /// <param name="packet">待填充的包指针（通常来自引擎对象池）。</param>
+        /// <returns>
+        /// 0：读取成功。
+        /// -1：读取失败或 EOF（应退出循环）。
+        /// -2：需要重试（例如 EAGAIN，应继续循环）。
+        /// </returns>
         private int ReadPacket(NativeIntPtr<AVPacket> packet)
         {
-            int result = _engine.ReadPacket(_context.FormatContext, ref packet);
+            int result = Engine.ReadPacket(Context.FormatContext, ref packet);
             if (result < 0)
             {
-                // 读取完毕，退出循环
                 if (result == ffmpeg.AVERROR_EOF)
                 {
                     OnCompletedDecoded?.Invoke(this);
                 }
                 else
                 {
-                    _engine.ShowException("读取帧失败", result);
+                    Engine.ShowException("读取帧失败", result);
                 }
-                _engine.Return(ref packet);
+
+                Engine.Return(packet);
                 return -1;
             }
-            else if (_engine.IsTryAgain(result))
+            else if (Engine.IsTryAgain(result))
             {
-                // 重试读取
-                _engine.Return(ref packet);
+                Engine.Return(packet);
                 return -2;
             }
-            return 0;
-        }
 
-        private FFmpegPacket CreatePacket(NativeIntPtr<AVPacket> ptr)
-        {
-            return new FFmpegPacket(Settings.GetCurrentGeneration(), ptr);
+            return 0;
         }
 
         #endregion Packets
@@ -234,24 +282,24 @@ namespace ExtenderApp.FFmpegEngines
         #region Dispose
 
         /// <summary>
-        /// 释放由 <see cref="FFmpegDecoderController"/> 占用的托管资源。
+        /// 释放托管资源。
+        /// <para>会主动取消会话并等待后台任务退出。</para>
         /// </summary>
         protected override void DisposeManagedResources()
         {
-            Source?.Cancel();
+            source?.Cancel();
+            _controllerContext.DisposeSafe();
             WaitForAllTasksComplete().GetAwaiter().GetResult();
 
-            DecoderCollection.DisposeSafe();
-            Source?.DisposeSafe();
+            source?.DisposeSafe();
         }
 
         /// <summary>
-        /// 释放由 <see cref="FFmpegDecoderController"/> 占用的非托管资源。
+        /// 释放非托管资源。
         /// </summary>
         protected override void DisposeUnmanagedResources()
         {
-            _context.Dispose();
-            DecoderCollection.Dispose();
+            DecoderCollection.DisposeSafe();
         }
 
         #endregion Dispose
@@ -259,42 +307,39 @@ namespace ExtenderApp.FFmpegEngines
         #region Uitls
 
         /// <summary>
-        /// 异步等待所有正在运行的解码任务完成。
+        /// 获取当前代际（generation）。
+        /// <para>用于判断是否发生了 Seek/重置等需要同步的状态变化。</para>
+        /// </summary>
+        /// <returns>当前代际值。</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public int GetCurrentGeneration()
+        {
+            return _controllerContext.GetCurrentGeneration();
+        }
+
+        /// <summary>
+        /// 异步等待所有解码相关任务完成。
+        /// <para>无论任务是否取消，最终都会 Flush 解码器并清空任务引用。</para>
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private async Task WaitForAllTasksComplete()
         {
             if (processTasks == null)
                 return;
+
             try
             {
                 await Task.WhenAll(processTasks).ConfigureAwait(false);
             }
             catch (TaskCanceledException)
             {
-                // 忽略任务取消异常
+                // 忽略任务取消异常。
             }
             finally
             {
                 DecoderCollection.FlushAll();
                 processTasks = null;
             }
-        }
-
-        /// <summary>
-        /// 将解码模式转换为对应的媒体类型。
-        /// </summary>
-        /// <param name="mode">解码模式。</param>
-        /// <returns>对应的媒体类型。</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private FFmpegMediaType Convert(FFmpegDecodeModel mode)
-        {
-            return mode switch
-            {
-                FFmpegDecodeModel.AudioOnly => FFmpegMediaType.AUDIO,
-                FFmpegDecodeModel.VideoOnly => FFmpegMediaType.VIDEO,
-                _ => FFmpegMediaType.UNKNOWN,
-            };
         }
 
         #endregion Uitls

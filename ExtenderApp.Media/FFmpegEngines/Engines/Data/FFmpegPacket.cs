@@ -4,7 +4,7 @@ using FFmpeg.AutoGen;
 namespace ExtenderApp.FFmpegEngines
 {
     /// <summary>
-    /// 带“代际（Generation）”信息的 FFmpeg 数据包封装。
+    /// 带“代际（generation）”信息的 FFmpeg 数据包封装。
     /// <para>
     /// 用于 Seek/跳转后的数据隔离：每次 Seek 会递增全局代际号，解复用线程在写入包时将当前代际附加到包上。
     /// 解码线程在消费包时比较 <see cref="Generation"/>，若代际不匹配则丢弃该包，避免 Seek 前后的旧包被错误解码。
@@ -21,7 +21,7 @@ namespace ExtenderApp.FFmpegEngines
         /// 通常由控制器在每次 Seek 时递增，全链路（读包 / 解码 / 输出）均以该值判断数据是否过期。
         /// </para>
         /// </summary>
-        public long Generation { get; }
+        public int Generation { get; }
 
         /// <summary>
         /// 原生 FFmpeg 数据包指针。
@@ -36,7 +36,7 @@ namespace ExtenderApp.FFmpegEngines
         /// </summary>
         /// <param name="generation">数据包所属代际号。</param>
         /// <param name="packetPtr">原生 <see cref="AVPacket"/> 指针。</param>
-        public FFmpegPacket(long generation, NativeIntPtr<AVPacket> packetPtr)
+        public FFmpegPacket(int generation, NativeIntPtr<AVPacket> packetPtr)
         {
             Generation = generation;
             PacketPtr = packetPtr;
