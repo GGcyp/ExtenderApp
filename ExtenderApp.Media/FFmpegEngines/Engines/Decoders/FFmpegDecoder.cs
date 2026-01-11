@@ -7,57 +7,58 @@ namespace ExtenderApp.FFmpegEngines.Decoders
 {
     /// <summary>
     /// FFmpeg 解码器抽象基类。
-    /// <para>
-    /// 本类负责：
+    /// <para>本类负责：
     /// <list type="bullet">
-    /// <item><description>通过 <see cref="Channel{T}"/> 维护“待解码包(packet)”与“已解码帧(frame)”的生产/消费队列。</description></item>
-    /// <item><description>在 Seek 场景下基于“代际（generation）”丢弃旧数据，保证跳转后不会继续解码/输出跳转前的包与帧。</description></item>
-    /// <item><description>封装 FFmpeg 的 send/receive 解码工作流：<c>SendPacket</c> + <c>ReceiveFrame</c>。</description></item>
+    /// <item>
+    /// <description>通过 <see cref="Channel{T}"/> 维护“待解码包(packet)”与“已解码帧(frame)”的生产/消费队列。</description>
+    /// </item>
+    /// <item>
+    /// <description>在 Seek 场景下基于“代际（generation）”丢弃旧数据，保证跳转后不会继续解码/输出跳转前的包与帧。</description>
+    /// </item>
+    /// <item>
+    /// <description>封装 FFmpeg 的 send/receive 解码工作流： <c>SendPacket</c> + <c>ReceiveFrame</c>。</description>
+    /// </item>
     /// </list>
     /// </para>
-    /// <para>
-    /// 设计说明：
+    /// <para>设计说明：
     /// <list type="bullet">
-    /// <item><description><see cref="_packetChannel"/> 为无界队列，用于容纳“包不连续/突发”的输入；避免 demux 因短期拥塞频繁阻塞。</description></item>
-    /// <item><description><see cref="_frameChannel"/> 为有界队列，用于对输出帧施加背压，防止 UI/音频消费变慢时内存无限增长。</description></item>
+    /// <item>
+    /// <description><see cref="_packetChannel"/> 为无界队列，用于容纳“包不连续/突发”的输入；避免 demux 因短期拥塞频繁阻塞。</description>
+    /// </item>
+    /// <item>
+    /// <description><see cref="_frameChannel"/> 为有界队列，用于对输出帧施加背压，防止 UI/音频消费变慢时内存无限增长。</description>
+    /// </item>
     /// </list>
     /// </para>
-    /// <para>
-    /// 线程模型（约定）：
+    /// <para>线程模型（约定）：
     /// <list type="bullet">
-    /// <item><description>上游（解复用/控制器）可多线程写入 <see cref="_packetChannel"/>（<c>SingleWriter=false</c>）。</description></item>
-    /// <item><description>解码线程为单读者（<c>SingleReader=true</c>），在 <see cref="DecodeLoopAsync"/> 里串行执行 send/receive。</description></item>
-    /// <item><description>输出帧同样为单读者，通常由渲染/播放线程消费。</description></item>
+    /// <item>
+    /// <description>上游（解复用/控制器）可多线程写入 <see cref="_packetChannel"/>（ <c>SingleWriter=false</c>）。</description>
+    /// </item>
+    /// <item>
+    /// <description>解码线程为单读者（ <c>SingleReader=true</c>），在 <see cref="DecodeLoopAsync"/> 里串行执行 send/receive。</description>
+    /// </item>
+    /// <item>
+    /// <description>输出帧同样为单读者，通常由渲染/播放线程消费。</description>
+    /// </item>
     /// </list>
     /// </para>
     /// </summary>
-    public abstract class FFmpegDecoder : DisposableObject
+    public abstract class FFmpegDecoder : DisposableObject, IFFmpegDecoder
     {
         /// <summary>
         /// 待解码包通道。
-        /// <para>
-        /// 上游（解复用/控制器）写入 <see cref="FFmpegPacket"/>；解码线程从该通道读取并送入 FFmpeg 解码器。
-        /// </para>
-        /// <para>
-        /// 该通道允许“突发写入”，用于适应音视频包可能不均匀/不连续到达的情况。
-        /// </para>
-        /// <para>
-        /// 注意：本类约定“包所有权”在写入成功后转移给解码线程；若写入失败，写入方必须负责归还/释放底层资源。
-        /// </para>
+        /// <para>上游（解复用/控制器）写入 <see cref="FFmpegPacket"/>；解码线程从该通道读取并送入 FFmpeg 解码器。</para>
+        /// <para>该通道允许“突发写入”，用于适应音视频包可能不均匀/不连续到达的情况。</para>
+        /// <para>注意：本类约定“包所有权”在写入成功后转移给解码线程；若写入失败，写入方必须负责归还/释放底层资源。</para>
         /// </summary>
         private readonly Channel<FFmpegPacket> _packetChannel;
 
         /// <summary>
         /// 已解码帧通道。
-        /// <para>
-        /// 解码线程写入 <see cref="FFmpegFrame"/>；下游（播放/渲染）读取并消费帧数据。
-        /// </para>
-        /// <para>
-        /// 该通道为有界队列：用于对输出做背压，避免消费端变慢时无限堆积帧导致内存上涨。
-        /// </para>
-        /// <para>
-        /// 注意：<see cref="FFmpegFrame"/> 持有非托管缓冲（<see cref="ByteBlock"/>），一旦写入失败必须及时释放。
-        /// </para>
+        /// <para>解码线程写入 <see cref="FFmpegFrame"/>；下游（播放/渲染）读取并消费帧数据。</para>
+        /// <para>该通道为有界队列：用于对输出做背压，避免消费端变慢时无限堆积帧导致内存上涨。</para>
+        /// <para>注意： <see cref="FFmpegFrame"/> 持有非托管缓冲（ <see cref="ByteBlock"/>），一旦写入失败必须及时释放。</para>
         /// </summary>
         private readonly Channel<FFmpegFrame> _frameChannel;
 
@@ -96,8 +97,8 @@ namespace ExtenderApp.FFmpegEngines.Decoders
         /// </summary>
         /// <param name="decoderContext">解码器上下文（codec/stream 指针等）。</param>
         /// <param name="controllerContext">控制器上下文（Engine + generation 提供者）。</param>
-        /// <param name="packetCacheCount">输入包通道（<see cref="_packetChannel"/>）的最大缓存数量。</param>
-        /// <param name="frameCacheCount">输出帧通道（<see cref="_frameChannel"/>）的最大缓存数量。</param>
+        /// <param name="packetCacheCount">输入包通道（ <see cref="_packetChannel"/>）的最大缓存数量。</param>
+        /// <param name="frameCacheCount">输出帧通道（ <see cref="_frameChannel"/>）的最大缓存数量。</param>
         public FFmpegDecoder(FFmpegDecoderContext decoderContext, FFmpegDecoderControllerContext controllerContext, int packetCacheCount, int frameCacheCount)
         {
             _controllerContext = controllerContext;
@@ -109,12 +110,17 @@ namespace ExtenderApp.FFmpegEngines.Decoders
 
         /// <summary>
         /// 创建一个指定容量的有界通道。
-        /// <para>
-        /// 选项说明：
+        /// <para>选项说明：
         /// <list type="bullet">
-        /// <item><description><see cref="BoundedChannelFullMode.Wait"/>：满时等待，提供背压。</description></item>
-        /// <item><description><c>SingleReader=true</c>：解码线程单读（提高 channel 内部性能）。</description></item>
-        /// <item><description><c>SingleWriter=false</c>：允许上游多线程投递。</description></item>
+        /// <item>
+        /// <description><see cref="BoundedChannelFullMode.Wait"/>：满时等待，提供背压。</description>
+        /// </item>
+        /// <item>
+        /// <description><c>SingleReader=true</c>：解码线程单读（提高 channel 内部性能）。</description>
+        /// </item>
+        /// <item>
+        /// <description><c>SingleWriter=false</c>：允许上游多线程投递。</description>
+        /// </item>
         /// </list>
         /// </para>
         /// </summary>
@@ -130,13 +136,12 @@ namespace ExtenderApp.FFmpegEngines.Decoders
 
         /// <summary>
         /// 将一个带代际信息的 packet 投递到解码器队列。
-        /// <para>
-        /// 优先走快速路径 <see cref="ChannelWriter{T}.TryWrite(T)"/>，失败后进入慢速路径等待可写。
-        /// </para>
-        /// <para>
-        /// 异常/关闭处理说明：
+        /// <para>优先走快速路径 <see cref="ChannelWriter{T}.TryWrite(T)"/>，失败后进入慢速路径等待可写。</para>
+        /// <para>异常/关闭处理说明：
         /// <list type="bullet">
-        /// <item><description>取消或通道关闭时：吞掉异常作为正常退出路径；资源释放由慢速路径负责。</description></item>
+        /// <item>
+        /// <description>取消或通道关闭时：吞掉异常作为正常退出路径；资源释放由慢速路径负责。</description>
+        /// </item>
         /// </list>
         /// </para>
         /// </summary>
@@ -169,8 +174,12 @@ namespace ExtenderApp.FFmpegEngines.Decoders
         /// <remarks>
         /// 资源管理约定：
         /// <list type="bullet">
-        /// <item><description>写入成功：包的所有权移交给解码线程（由 <see cref="ProcessOnePacket"/> 的 finally 归还）。</description></item>
-        /// <item><description>写入失败或等待过程中发生异常：本方法负责归还包并重新抛出异常。</description></item>
+        /// <item>
+        /// <description>写入成功：包的所有权移交给解码线程（由 <see cref="ProcessOnePacket"/> 的 finally 归还）。</description>
+        /// </item>
+        /// <item>
+        /// <description>写入失败或等待过程中发生异常：本方法负责归还包并重新抛出异常。</description>
+        /// </item>
         /// </list>
         /// </remarks>
         private async ValueTask SlowEnqueuePacket(FFmpegPacket packet, CancellationToken token)
@@ -201,9 +210,15 @@ namespace ExtenderApp.FFmpegEngines.Decoders
         /// <remarks>
         /// Seek/跳转处理（代际）：
         /// <list type="bullet">
-        /// <item><description>每次循环读取当前代际号（由控制器维护）。</description></item>
-        /// <item><description>当代际变化：调用 <see cref="FlushPrivate"/> 丢弃堆积队列并 flush codec。</description></item>
-        /// <item><description>当 packet.Generation 与当前代际不一致：视为旧代数据，直接丢弃并归还包。</description></item>
+        /// <item>
+        /// <description>每次循环读取当前代际号（由控制器维护）。</description>
+        /// </item>
+        /// <item>
+        /// <description>当代际变化：调用 <see cref="FlushPrivate"/> 丢弃堆积队列并 flush codec。</description>
+        /// </item>
+        /// <item>
+        /// <description>当 packet.Generation 与当前代际不一致：视为旧代数据，直接丢弃并归还包。</description>
+        /// </item>
         /// </list>
         /// </remarks>
         public async Task DecodeLoopAsync(CancellationToken token)
@@ -247,7 +262,9 @@ namespace ExtenderApp.FFmpegEngines.Decoders
         /// <remarks>
         /// 资源回收：
         /// <list type="bullet">
-        /// <item><description>无论 send 成功与否，最终都会在 finally 中归还 packet。</description></item>
+        /// <item>
+        /// <description>无论 send 成功与否，最终都会在 finally 中归还 packet。</description>
+        /// </item>
         /// </list>
         /// </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -279,10 +296,18 @@ namespace ExtenderApp.FFmpegEngines.Decoders
         /// <remarks>
         /// 退出条件（任一满足则退出）：
         /// <list type="bullet">
-        /// <item><description>取消请求。</description></item>
-        /// <item><description>EAGAIN：需要更多输入包。</description></item>
-        /// <item><description>EOF：解码结束。</description></item>
-        /// <item><description>其他错误：记录并退出。</description></item>
+        /// <item>
+        /// <description>取消请求。</description>
+        /// </item>
+        /// <item>
+        /// <description>EAGAIN：需要更多输入包。</description>
+        /// </item>
+        /// <item>
+        /// <description>EOF：解码结束。</description>
+        /// </item>
+        /// <item>
+        /// <description>其他错误：记录并退出。</description>
+        /// </item>
         /// </list>
         /// </remarks>
         private void ProcessFrames(int packetGeneration, CancellationToken token)
@@ -328,12 +353,8 @@ namespace ExtenderApp.FFmpegEngines.Decoders
 
         /// <summary>
         /// 将已解码帧写入输出通道。
-        /// <para>
-        /// 快速路径 TryWrite，失败则进入慢速路径等待可写。
-        /// </para>
-        /// <para>
-        /// 注意：若最终写入失败必须释放 <see cref="FFmpegFrame"/>（以释放 <see cref="ByteBlock"/>）。
-        /// </para>
+        /// <para>快速路径 TryWrite，失败则进入慢速路径等待可写。</para>
+        /// <para>注意：若最终写入失败必须释放 <see cref="FFmpegFrame"/>（以释放 <see cref="ByteBlock"/>）。</para>
         /// </summary>
         private void EnqueueFrame(FFmpegFrame frame, CancellationToken token)
         {
@@ -362,8 +383,12 @@ namespace ExtenderApp.FFmpegEngines.Decoders
         /// <remarks>
         /// 资源管理：
         /// <list type="bullet">
-        /// <item><description>写入成功：帧所有权移交给消费端（由消费端在取出后 Dispose）。</description></item>
-        /// <item><description>写入失败/取消/异常：释放帧（避免 <see cref="ByteBlock"/> 泄漏）。</description></item>
+        /// <item>
+        /// <description>写入成功：帧所有权移交给消费端（由消费端在取出后 Dispose）。</description>
+        /// </item>
+        /// <item>
+        /// <description>写入失败/取消/异常：释放帧（避免 <see cref="ByteBlock"/> 泄漏）。</description>
+        /// </item>
         /// </list>
         /// </remarks>
         private async ValueTask SlowEnqueueFrame(FFmpegFrame frame, CancellationToken token)
@@ -409,9 +434,7 @@ namespace ExtenderApp.FFmpegEngines.Decoders
 
         /// <summary>
         /// 清空解码器内部缓存（packet/frame）并 flush FFmpeg codec 状态。
-        /// <para>
-        /// 典型用途：Seek/Stop 时快速清理堆积数据，并重置解码器内部缓冲区。
-        /// </para>
+        /// <para>典型用途：Seek/Stop 时快速清理堆积数据，并重置解码器内部缓冲区。</para>
         /// </summary>
         internal void FlushInternal()
         {
@@ -420,23 +443,23 @@ namespace ExtenderApp.FFmpegEngines.Decoders
 
         /// <summary>
         /// <see cref="FlushInternal"/> 的内部实现。
-        /// <para>
-        /// 顺序说明：
+        /// <para>顺序说明：
         /// <list type="number">
-        /// <item><description><see cref="Clear"/>：清空队列并归还/释放底层对象。</description></item>
-        /// <item><description>Flush codec：调用 <see cref="FFmpegEngine.Flush"/> 重置解码器内部缓冲。</description></item>
+        /// <item>
+        /// <description><see cref="Clear"/>：清空队列并归还/释放底层对象。</description>
+        /// </item>
+        /// <item>
+        /// <description>Flush codec：调用 <see cref="FFmpegEngine.Flush"/> 重置解码器内部缓冲。</description>
+        /// </item>
         /// </list>
         /// </para>
-        /// <para>
-        /// 重要：codec flush 必须在“确定不会再并发使用该 <see cref="AVCodecContext"/>”的前提下执行，否则可能触发 native 崩溃。
-        /// </para>
+        /// <para>重要：codec flush 必须在“确定不会再并发使用该 <see cref="AVCodecContext"/>”的前提下执行，否则可能触发 native 崩溃。</para>
         /// </summary>
         private void FlushPrivate()
         {
             Clear();
 
-            // 清空 codec 内部缓冲（Seek 后必须做）
-            // 说明：这里使用局部变量 + ref，依赖 Engine.Flush 的签名（若 Engine.Flush 不是 ref，则不会影响原始句柄）
+            // 清空 codec 内部缓冲（Seek 后必须做） 说明：这里使用局部变量 + ref，依赖 Engine.Flush 的签名（若 Engine.Flush 不是 ref，则不会影响原始句柄）
             var codecContext = DecoderContext.CodecContext;
             Engine.Flush(ref codecContext);
         }
@@ -447,8 +470,12 @@ namespace ExtenderApp.FFmpegEngines.Decoders
         /// <remarks>
         /// 清理策略：
         /// <list type="bullet">
-        /// <item><description>packet：归还到底层池（<see cref="FFmpegEngine.Return(FFmpegPacket)"/>）。</description></item>
-        /// <item><description>frame：调用 <see cref="FFmpegFrame.Dispose"/> 释放托管/非托管帧数据。</description></item>
+        /// <item>
+        /// <description>packet：归还到底层池（ <see cref="FFmpegEngine.Return(FFmpegPacket)"/>）。</description>
+        /// </item>
+        /// <item>
+        /// <description>frame：调用 <see cref="FFmpegFrame.Dispose"/> 释放托管/非托管帧数据。</description>
+        /// </item>
         /// </list>
         /// </remarks>
         private void Clear()
@@ -482,11 +509,14 @@ namespace ExtenderApp.FFmpegEngines.Decoders
 
         /// <summary>
         /// 释放托管资源：清空缓存并完成通道写入端。
-        /// <para>
-        /// 完成通道后：
+        /// <para>完成通道后：
         /// <list type="bullet">
-        /// <item><description>后续写入会失败/抛出，从而触发上游归还资源逻辑。</description></item>
-        /// <item><description>读端在队列耗尽后会收到 <see cref="ChannelClosedException"/>。</description></item>
+        /// <item>
+        /// <description>后续写入会失败/抛出，从而触发上游归还资源逻辑。</description>
+        /// </item>
+        /// <item>
+        /// <description>读端在队列耗尽后会收到 <see cref="ChannelClosedException"/>。</description>
+        /// </item>
         /// </list>
         /// </para>
         /// </summary>

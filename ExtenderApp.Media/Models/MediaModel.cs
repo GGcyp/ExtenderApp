@@ -140,8 +140,7 @@ namespace ExtenderApp.Media.Models
 
             MPlayer = player;
 
-            // 使用 Bgr24 以匹配 FFmpegDecoderSettings 的默认输出格式 (PIX_FMT_BGR24)
-            // 解决颜色通道互换（偏蓝）的问题
+            // 使用 Bgr24 以匹配 FFmpegDecoderSettings 的默认输出格式 (PIX_FMT_BGR24) 解决颜色通道互换（偏蓝）的问题
             Bitmap = MPlayer.SetVideoOutput();
             MPlayer.SetAudioOutput();
 

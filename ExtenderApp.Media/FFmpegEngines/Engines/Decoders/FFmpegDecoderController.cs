@@ -7,9 +7,7 @@ using FFmpeg.AutoGen;
 namespace ExtenderApp.FFmpegEngines
 {
     /// <summary>
-    /// FFmpeg 解码控制器。
-    /// 管理解码流程的启动、停止、跳转、资源释放及解码状态同步，支持异步解码和取消操作。
-    /// 适用于音视频流的多线程解码场景。
+    /// FFmpeg 解码控制器。 管理解码流程的启动、停止、跳转、资源释放及解码状态同步，支持异步解码和取消操作。 适用于音视频流的多线程解码场景。
     /// </summary>
     internal class FFmpegDecoderController : DisposableObject, IFFmpegDecoderController
     {
@@ -135,7 +133,7 @@ namespace ExtenderApp.FFmpegEngines
         /// <summary>
         /// 请求跳转到媒体流的指定位置（毫秒）。
         /// <para>通过代际（generation）机制通知解码循环执行 Seek。</para>
-        /// <para>若当前未在解码（<see cref="processTasks"/> 为 null），则立即 Seek。</para>
+        /// <para>若当前未在解码（ <see cref="processTasks"/> 为 null），则立即 Seek。</para>
         /// </summary>
         /// <param name="position">目标时间（毫秒）。</param>
         /// <exception cref="ObjectDisposedException">对象已释放。</exception>
@@ -300,7 +298,6 @@ namespace ExtenderApp.FFmpegEngines
         /// </summary>
         protected override void DisposeUnmanagedResources()
         {
-            DecoderCollection.DisposeSafe();
         }
 
         #endregion Dispose

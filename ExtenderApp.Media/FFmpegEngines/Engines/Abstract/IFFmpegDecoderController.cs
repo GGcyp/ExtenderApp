@@ -3,10 +3,8 @@
     /// <summary>
     /// 表示 FFmpeg 解码流程的控制器。
     /// </summary>
-    /// <remarks>
-    /// 负责管理解码器集合、解码线程/任务的启动与停止、Seek 行为以及与“世代（Generation）”相关的状态控制。
-    /// </remarks>
-    public interface IFFmpegDecoderController
+    /// <remarks>负责管理解码器集合、解码线程/任务的启动与停止、Seek 行为以及与“世代（Generation）”相关的状态控制。</remarks>
+    public interface IFFmpegDecoderController : IDisposable
     {
         /// <summary>
         /// 获取当前控制器管理的解码器集合。
@@ -31,9 +29,7 @@
         /// <summary>
         /// 当解码流程完成（自然结束或达到控制器定义的完成条件）时触发。
         /// </summary>
-        /// <remarks>
-        /// 事件参数为触发该事件的控制器自身，便于订阅方读取状态或继续调度。
-        /// </remarks>
+        /// <remarks>事件参数为触发该事件的控制器自身，便于订阅方读取状态或继续调度。</remarks>
         event Action<IFFmpegDecoderController>? OnCompletedDecoded;
 
         /// <summary>

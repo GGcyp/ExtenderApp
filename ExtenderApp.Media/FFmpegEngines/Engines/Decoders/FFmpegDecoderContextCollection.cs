@@ -57,8 +57,7 @@ namespace ExtenderApp.FFmpegEngines.Decoders
         public bool IsEmpty => _decoderContexts is null;
 
         /// <summary>
-        /// 使用指定的视频和音频解码器上下文初始化 <see
-        /// cref="FFmpegDecoderContextCollection"/> 结构的新实例
+        /// 使用指定的视频和音频解码器上下文初始化 <see cref="FFmpegDecoderContextCollection"/> 结构的新实例
         /// </summary>
         /// <param name="videoContext">视频解码器上下文</param>
         /// <param name="audioContext">音频解码器上下文</param>

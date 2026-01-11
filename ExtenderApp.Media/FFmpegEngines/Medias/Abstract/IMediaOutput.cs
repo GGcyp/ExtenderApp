@@ -3,7 +3,7 @@
     /// <summary>
     /// 定义媒体输出的通用接口。
     /// </summary>
-    public interface IMediaOutput
+    public interface IMediaOutput : IDisposable
     {
         /// <summary>
         /// 获取当前媒体输出支持的媒体类型。

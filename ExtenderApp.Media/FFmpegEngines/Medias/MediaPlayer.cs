@@ -1,86 +1,71 @@
 ﻿using System.Diagnostics;
 using ExtenderApp.Data;
-using ExtenderApp.FFmpegEngines.Decoders;
 
 namespace ExtenderApp.FFmpegEngines.Medias
 {
     /// <summary>
-    /// FFmpeg 媒体播放器，负责音视频解码、播放、暂停、停止、跳转等控制。
-    /// 支持多线程解码和帧调度，适用于 WPF 播放场景。
+    /// FFmpeg 媒体播放器。
+    /// <para>负责驱动解码（通过 <see cref="IFFmpegDecoderController"/>）、调度音视频帧（通过 <see cref="FrameProcessController"/>），并提供播放控制能力： 播放/暂停/停止/跳转/变速/音量。</para>
+    /// <para>播放时钟：使用 <see cref="Stopwatch"/> 作为单调时钟推进 <see cref="Position"/>，并通过代际（generation）机制处理 Seek 后的旧数据丢弃。</para>
     /// </summary>
-    public class MediaPlayer : DisposableObject
+    public class MediaPlayer : DisposableObject, IMediaPlayer
     {
         /// <summary>
-        /// 跳帧等待阈值（毫秒），用于控制播放节奏。
-        /// 小于该阈值的等待采用 <see cref="Thread.Sleep(int)"/> 的最小粒度或不等待，从而减少抖动。
+        /// 跳帧等待阈值（毫秒）。
+        /// <para>小于该阈值时将采用 <see cref="Thread.Sleep(int)"/> 的最小粒度或不等待，减少抖动。</para>
         /// </summary>
         private const int SkipWaitingTime = 5;
 
         /// <summary>
-        /// 每个视频帧的最大允许输出时间差（毫秒），用于同步音视频。
-        /// 当下一帧时间戳与当前位置误差在此阈值内时输出，否则丢弃过期帧。
+        /// 允许输出的最大时间误差（毫秒）。
+        /// <para>当某帧 PTS 与当前 <see cref="Position"/> 的差值在该阈值内时输出，否则视为过期帧丢弃。</para>
         /// </summary>
         private const int FrameTimeout = 15;
 
         /// <summary>
-        /// 细等待阈值（毫秒）。当剩余等待时间很短时使用自旋来降低 Sleep(1) 带来的抖动。
-        /// 建议在 1-3ms 之间权衡 CPU 与定时精度。
+        /// 细等待阈值（毫秒）。
+        /// <para>等待末尾使用自旋方式减少 <see cref="Thread.Sleep(int)"/> 过头带来的抖动。</para>
         /// </summary>
         private const int SpinThresholdMs = 2;
 
         /// <summary>
-        /// 解码控制器，负责解码流程的启动、停止和跳转。
+        /// 解码控制器：负责启动/停止解码任务、Seek、维护 generation 等运行状态。
         /// </summary>
-        private readonly FFmpegDecoderController _controller;
+        private readonly IFFmpegDecoderController _decoderController;
 
         /// <summary>
-        /// 视频画面解码器实例（可为空，表示无视频流）。
+        /// 暂停同步事件。处于暂停时播放循环阻塞在此事件上，恢复播放时 Set。
         /// </summary>
-        private readonly FFmpegDecoder? _videoDecoder;
-
-        /// <summary>
-        /// 音频解码器实例（可为空，表示无音频流）。
-        /// </summary>
-        private readonly FFmpegDecoder? _audioDecoder;
-
         private readonly ManualResetEventSlim _pauseEvent;
 
-
-        private readonly FrameProcessController _frameProcessController;
+        /// <summary>
+        /// 帧调度控制器：从解码器队列按时间戳挑选可输出帧，并写入对应的输出（音频/视频）。
+        /// </summary>
+        private readonly IFrameProcessController _frameProcessController;
 
         /// <summary>
-        /// 媒体播放任务（后台循环），通过 <see cref="Task.Run(System.Action)"/> 启动。
+        /// 播放循环后台任务。非空表示已经启动过播放循环。
         /// </summary>
         private Task? mediaTask;
 
         /// <summary>
-        /// 声音输出接口实例。
-        /// 通过 <see cref="SetAudioOutput(IAudioOutput)"/> 设置，播放过程中不可替换。
+        /// 当前解码设置（从控制器读取）。
         /// </summary>
-        public IAudioOutput? AudioOutput { get; private set; }
+        public FFmpegDecoderSettings Settings => _decoderController.Settings;
 
-        /// <summary>
-        /// 视频输出接口实例。
-        /// 通过 <see cref="SetVideoOutput(IVideoOutput)"/> 设置，播放过程中不可替换。
-        /// </summary>
-        public IVideoOutput? VideoOutput { get; private set; }
-
-        /// <summary>
-        /// 解码器设置参数。
-        /// </summary>
-        public FFmpegDecoderSettings Settings => _controller.Settings;
+        private float volume;
+        private double speedRatio;
+        private long seekPosition;
 
         /// <summary>
         /// 当前播放时间（毫秒）。
-        /// 注意：该值需与 <see cref="FFmpegDecoder.NextFramePts"/> 的单位保持一致。
+        /// <para>由播放循环根据 <see cref="Stopwatch"/> 推进，并在 Seek 时直接重置。</para>
         /// </summary>
         public long Position { get; private set; }
 
-        private float volume;
-
         /// <summary>
-        /// 音量（0.0-1.0）。越界时将被裁剪为 0 或 1。
-        /// 设置时若已绑定音频输出会同步更新输出音量。
+        /// 音量（0.0-1.0）。
+        /// <para>赋值会被裁剪到 [0,1]，并同步到音频输出（若存在）。</para>
         /// </summary>
         public float Volume
         {
@@ -101,19 +86,18 @@ namespace ExtenderApp.FFmpegEngines.Medias
                 }
 
                 volume = value;
-                if (AudioOutput != null)
+                var output = FrameProcessCollection.GetMediaOutput(FFmpegMediaType.AUDIO);
+                if (output != null && output is IAudioOutput audioOutput)
                 {
-                    AudioOutput.Volume = volume;
+                    audioOutput.Volume = volume;
                 }
             }
         }
 
-        private double speedRatio;
-
         /// <summary>
-        /// 播放速率，1 表示正常速度，2 表示两倍速，0.5 表示半速。
-        /// 最小值为 0.05，防止接近 0 导致时钟推进过慢。
-        /// 设置时若已绑定音频输出会同步更新输出速率。
+        /// 播放速率倍率。
+        /// <para>1 表示正常速度；最小值限制为 0.05，避免过慢导致时钟推进过小。</para>
+        /// <para>设置后会同步到音频输出（若存在）。</para>
         /// </summary>
         public double SpeedRatio
         {
@@ -126,79 +110,54 @@ namespace ExtenderApp.FFmpegEngines.Medias
                     value = 0.05d;
 
                 speedRatio = value;
-                if (AudioOutput != null)
+                var output = FrameProcessCollection.GetMediaOutput(FFmpegMediaType.AUDIO);
+                if (output != null && output is IAudioOutput audioOutput)
                 {
-                    AudioOutput.SpeedRatio = speedRatio;
+                    audioOutput.SpeedRatio = speedRatio;
                 }
             }
         }
 
         /// <summary>
-        /// 媒体流基本信息（如时长、帧率等）。
+        /// 媒体信息（时长、帧率等）。
         /// </summary>
-        public FFmpegInfo Info => _controller.Info;
+        public FFmpegInfo Info => _decoderController.Info;
 
         /// <summary>
-        /// 媒体播放器当前状态。
+        /// 播放器状态。
         /// </summary>
         public PlayerState State { get; private set; }
 
         /// <summary>
-        /// 每次播放进度更新时触发（节流至帧率级别）。
-        /// 仅在播放循环中调度；暂停或停止不触发。
+        /// 帧处理集合（外部用于注册/替换音视频输出，以及根据类型查询输出）。
+        /// </summary>
+        public IFrameProcessCollection FrameProcessCollection => _frameProcessController.FrameProcessCollection;
+
+        /// <summary>
+        /// 播放进度回调事件（按帧间隔节流触发）。
         /// </summary>
         public event Action? Playback;
 
         /// <summary>
-        /// 初始化 MediaPlayer 实例。
+        /// 构造播放器实例。
         /// </summary>
-        /// <param name="contriller">解码控制器。</param>
-        /// <param name="settings">解码器设置。</param>
-        public MediaPlayer(FFmpegDecoderController contriller)
+        /// <param name="controller">解码控制器。</param>
+        /// <param name="frameProcessController">帧处理控制器。</param>
+        public MediaPlayer(IFFmpegDecoderController controller, IFrameProcessController frameProcessController)
         {
             State = PlayerState.Uninitialized;
-            _controller = contriller;
-            SpeedRatio = 1;
+            _frameProcessController = frameProcessController;
+            _decoderController = controller;
             _pauseEvent = new(true);
+            SpeedRatio = 1;
+            seekPosition = -1;
             State = PlayerState.Initializing;
-            _frameProcessController = new(_controller.DecoderCollection);
         }
 
         /// <summary>
-        /// 设置音频输出接口。
+        /// 开始播放。
+        /// <para>首次调用会启动解码并启动播放循环；若此前已启动但处于暂停，则恢复播放。</para>
         /// </summary>
-        /// <param name="output">音频输出实现。</param>
-        /// <exception cref="InvalidOperationException">当播放任务已启动时抛出。</exception>
-        public void SetAudioOutput(IAudioOutput output)
-        {
-            if (mediaTask != null)
-                throw new InvalidOperationException("在播放过程中无法更改音频输出。");
-
-            AudioOutput = output;
-        }
-
-        /// <summary>
-        /// 设置视频输出接口。
-        /// </summary>
-        /// <param name="output">视频输出实现。</param>
-        /// <exception cref="InvalidOperationException">当播放任务已启动时抛出。</exception>
-        public void SetVideoOutput(IVideoOutput output)
-        {
-            if (mediaTask != null)
-                throw new InvalidOperationException("在播放过程中无法更改视频输出。");
-
-            VideoOutput = output;
-        }
-
-        /// <summary>
-        /// 启动媒体播放流程，开始解码和播放。
-        /// 如果当前已在播放则直接返回。
-        /// </summary>
-        /// <remarks>
-        /// - 会调用解码控制器启动解码，并创建与控制器令牌链接的取消源。
-        /// - 在后台线程启动播放循环。
-        /// - 同步通知音视频输出状态变更。
-        /// </remarks>
         public void Play()
         {
             if (State == PlayerState.Playing || State == PlayerState.Uninitialized)
@@ -217,21 +176,15 @@ namespace ExtenderApp.FFmpegEngines.Medias
             }
             State = PlayerState.Playing;
 
-            _controller.StartDecode();
-            mediaTask = Task.Run(PlaybackLoop, _controller.Token);
-            AudioOutput?.PlayerStateChange(State);
-            VideoOutput?.PlayerStateChange(State);
+            _decoderController.StartDecode();
+            mediaTask = Task.Run(PlaybackLoop, _decoderController.Token);
+            FrameProcessCollection.PlayerStateChange(State);
         }
 
         /// <summary>
-        /// 停止媒体播放流程，终止解码和播放任务。
+        /// 停止播放并停止解码。
         /// </summary>
-        /// <returns>用于等待停止完成的异步结果。</returns>
-        /// <remarks>
-        /// - 若状态为已停止或未初始化，直接完成不执行任何操作。
-        /// - 此方法会并行停止解码并刷新播放循环，随后释放播放任务资源。
-        /// - 同步通知音视频输出状态变更。
-        /// </remarks>
+        /// <returns>等待解码停止的异步任务。</returns>
         public ValueTask StopAsync()
         {
             if (State == PlayerState.Stopped || State == PlayerState.Uninitialized)
@@ -240,21 +193,14 @@ namespace ExtenderApp.FFmpegEngines.Medias
             }
 
             State = PlayerState.Stopped;
-            AudioOutput?.PlayerStateChange(State);
-            VideoOutput?.PlayerStateChange(State);
+            FrameProcessCollection.PlayerStateChange(State);
             Position = 0;
-            return new(_controller.StopDecodeAsync());
+            return new(_decoderController.StopDecodeAsync());
         }
 
         /// <summary>
-        /// 暂停媒体播放流程。
+        /// 暂停播放（播放循环阻塞等待恢复）。
         /// </summary>
-        /// <returns>用于等待暂停完成的异步结果。</returns>
-        /// <remarks>
-        /// - 若状态为已暂停或未初始化，直接完成不执行任何操作。
-        /// - 此方法会并行停止解码并刷新播放循环，随后释放播放任务资源。
-        /// - 同步通知音视频输出状态变更。
-        /// </remarks>
         public void Pause()
         {
             if (State == PlayerState.Paused || State == PlayerState.Uninitialized)
@@ -264,29 +210,21 @@ namespace ExtenderApp.FFmpegEngines.Medias
 
             _pauseEvent.Reset();
             State = PlayerState.Paused;
-            AudioOutput?.PlayerStateChange(State);
-            VideoOutput?.PlayerStateChange(State);
+            FrameProcessCollection.PlayerStateChange(State);
         }
 
         /// <summary>
-        /// 跳转到指定时间。
+        /// 跳转到指定时间（TimeSpan）。
         /// </summary>
-        /// <param name="timeSpan">要跳转到的时间。</param>
-        /// <remarks>内部换算为毫秒传递至 <see cref="Seek(long)"/>。</remarks>
         public void Seek(TimeSpan timeSpan)
         {
             Seek((long)timeSpan.TotalMilliseconds);
         }
 
         /// <summary>
-        /// 跳转到指定位置（毫秒）。
+        /// 跳转到指定播放位置（毫秒）。
+        /// <para>会裁剪到 [0, <see cref="FFmpegInfo.Duration"/>] 并调用控制器 Seek 触发 generation 递增。</para>
         /// </summary>
-        /// <param name="position">要跳转到的位置（毫秒）。超出范围将被裁剪至 [0, <see cref="FFmpegInfo.Duration"/>]。</param>
-        /// <remarks>
-        /// - 未初始化或位置未变化时不执行任何操作。
-        /// - 跳转期间置位 <see cref="isPauseLoop"/>，重置主时钟基准，触发一次 <see cref="Playback"/> 更新以便 UI 同步。
-        /// - 跳转完成后状态回到初始化中以等待解码器就绪。
-        /// </remarks>
         public void Seek(long position)
         {
             if (State == PlayerState.Uninitialized || position == Position)
@@ -301,93 +239,89 @@ namespace ExtenderApp.FFmpegEngines.Medias
                 position = 0;
             }
 
-            Position = position;
-            _controller.SeekDecoder(position);
+            Interlocked.Exchange(ref seekPosition, position);
+            _decoderController.SeekDecoder(position);
         }
 
         /// <summary>
-        /// 媒体播放主循环任务（强对齐版）：
-        /// - 以 Stopwatch 为单调主时钟，将 Position 强制对齐到“起点 + 实际经过时间 * SpeedRatio”
-        /// - 等待策略：Sleep(粗) + 最后 2ms 自旋(细)，避免长忙等同时减少 Sleep 过头抖动
-        /// - Playback 回调按帧间隔节流
+        /// 播放循环主逻辑：
+        /// <list type="bullet">
+        /// <item>
+        /// <description>使用 <see cref="Stopwatch"/> 推进 <see cref="Position"/>，并乘以 <see cref="SpeedRatio"/> 实现变速。</description>
+        /// </item>
+        /// <item>
+        /// <description>通过 controller 的 generation 识别 Seek，重置基准时间点。</description>
+        /// </item>
+        /// <item>
+        /// <description>调用 <see cref="FrameProcessController.Processing(int, long, int)"/> 处理音视频帧，并返回距离下一帧的剩余时间以决定等待策略。</description>
+        /// </item>
+        /// <item>
+        /// <description>等待策略：Sleep(粗) + 自旋(细) 以降低抖动。</description>
+        /// </item>
+        /// <item>
+        /// <description>按帧间隔节流触发 <see cref="Playback"/> 回调。</description>
+        /// </item>
+        /// </list>
         /// </summary>
-        /// <remarks>
-        /// 后台线程运行。循环依赖 <see cref="mediaSource"/> 的取消令牌退出。
-        /// 若音频可用则以音频为主时钟，否则降级为视频。
-        /// </remarks>
         private void PlaybackLoop()
         {
-            var token = _controller.Token;
+            var token = _decoderController.Token;
 
+            /// 帧间隔计算：使用 Info.Rate，若无效则使用默认值。
             int frameInterval = (int)(Info.Rate > 0 ? 1000.0 / Info.Rate : 1000.0 / FFmpegEngine.DefaultFrameRate);
             if (frameInterval <= 0)
                 frameInterval = FrameTimeout;
 
-            //ProcessFrameResult audioResult = new(AudioOutput!, _audioDecoder!);
-            //ProcessFrameResult videoResult = new(VideoOutput!, _videoDecoder!);
-
-            //ProcessFrameResult mainResult;
-
-            //if (!audioResult.IsEmpty)
-            //{
-            //    mainResult = audioResult;
-            //}
-            //else if (!videoResult.IsEmpty)
-            //{
-            //    mainResult = videoResult;
-            //    videoResult = default;
-            //}
-            //else
-            //{
-            //    throw new ArgumentNullException("没有可用的解码器进行播放。");
-            //}
-
-            long basePositionMs = Position;
-            var sw = Stopwatch.StartNew();
-            int generation = _controller.GetCurrentGeneration();
-
-            long nextPlaybackNotifyTicks = 0;
+            long lastPosition = Position;
+            long basePositionMs = lastPosition;
+            int generation = _decoderController.GetCurrentGeneration();
+            long lastTicks = 0;
             long notifyIntervalTicks = frameInterval * Stopwatch.Frequency / 1000;
 
+            _frameProcessController.WaitFirstFrameAligned(generation, frameInterval, out long pts);
+            Position = lastPosition = pts;
+            var sw = Stopwatch.StartNew();
             while (!token.IsCancellationRequested)
             {
                 if (WaitPause(token))
                 {
+                    basePositionMs = Position;
+                    lastTicks = 0;
                     sw.Restart();
                     continue;
                 }
 
-                int currentGeneration = _controller.GetCurrentGeneration();
-                long lastPosition = Position;
-                long position = lastPosition;
+                int currentGeneration = _decoderController.GetCurrentGeneration();
+                long position = Position;
                 if (generation != currentGeneration)
                 {
-                    basePositionMs = position;
+                    long pendingSeek = Interlocked.Exchange(ref seekPosition, -1);
+                    if (pendingSeek >= 0)
+                        basePositionMs = position = pendingSeek;
+                    else
+                        basePositionMs = position;
+
+                    lastPosition = position;
                     generation = currentGeneration;
+                    lastTicks = 0;
                     sw.Restart();
                 }
                 else
                 {
-                    // 强对齐：以真实时间推进 Position（倍率影响）
                     long elapsedMs = (long)(sw.Elapsed.TotalMilliseconds * SpeedRatio);
                     position = basePositionMs + elapsedMs;
-                    Position = position;
                 }
 
-                //int mainDelay = mainResult.Process(frameInterval, position, generation);
-                //videoResult.Process(frameInterval, position, generation);
-
-                int mainDelay = 0; // TODO: 先注释掉音视频输出相关代码以便测试播放循环逻辑
-                if (mainDelay < 0)
+                int waitDelay = _frameProcessController.Processing(frameInterval, position, generation);
+                //Debug.Print($"PlaybackLoop: pos={position} waitDelay={waitDelay} gen={generation}");
+                if (waitDelay < 0)
                 {
-                    basePositionMs = lastPosition;
-                    sw.Restart();
-                    Thread.Sleep(frameInterval);
+                    Thread.Sleep(1);
                     continue;
                 }
+                Position = lastPosition = position;
 
-                // mainDelay > 0：下一帧还未到时间；<=0：按照帧率给一个节奏下限
-                int waitMs = (mainDelay > 0) ? (int)(mainDelay / SpeedRatio) : frameInterval;
+                int waitMs = (waitDelay > 0) ? (int)(waitDelay / SpeedRatio) : frameInterval;
                 if (waitMs >= SkipWaitingTime)
                 {
                     SleepWithFineTuning(token, waitMs);
@@ -397,16 +331,19 @@ namespace ExtenderApp.FFmpegEngines.Medias
                     Thread.Sleep(1);
                 }
 
-                // 节流触发进度回调（按帧率级别触发即可）
-                long nowTicks = sw.ElapsedTicks;
-                if (nowTicks >= nextPlaybackNotifyTicks)
+                if (sw.ElapsedTicks - lastTicks >= notifyIntervalTicks)
                 {
-                    nextPlaybackNotifyTicks = nowTicks + notifyIntervalTicks;
+                    lastTicks = sw.ElapsedTicks;
                     Playback?.Invoke();
                 }
             }
+            _decoderController.StopDecodeAsync().ConfigureAwait(false);
         }
 
+        /// <summary>
+        /// 若当前处于暂停状态，则阻塞等待直到恢复或取消。
+        /// </summary>
+        /// <returns>若发生过等待则返回 true，否则返回 false。</returns>
         private bool WaitPause(CancellationToken token)
         {
             if (!_pauseEvent.IsSet)
@@ -418,10 +355,8 @@ namespace ExtenderApp.FFmpegEngines.Medias
         }
 
         /// <summary>
-        /// 混合等待：大部分时间用 Sleep 释放 CPU，最后短窗口用自旋减少 Sleep 过头导致的抖动（零分配）。
+        /// 混合等待：先 Sleep 大部分时间以释放 CPU，末尾再自旋短时间以减少 Sleep 过头导致的抖动。
         /// </summary>
-        /// <param name="token">取消令牌。</param>
-        /// <param name="waitMs">等待的毫秒数。</param>
         private static void SleepWithFineTuning(CancellationToken token, int waitMs)
         {
             if (waitMs <= 0)
@@ -450,12 +385,12 @@ namespace ExtenderApp.FFmpegEngines.Medias
         }
 
         /// <summary>
-        /// 释放由 <see cref="MediaPlayer"/> 占用的托管资源。
+        /// 释放托管资源：暂停事件与解码控制器。
         /// </summary>
         protected override void DisposeManagedResources()
         {
             _pauseEvent.Dispose();
-            _controller.Dispose();
+            _decoderController.Dispose();
         }
     }
 }

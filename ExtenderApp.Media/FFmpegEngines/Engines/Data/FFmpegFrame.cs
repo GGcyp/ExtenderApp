@@ -13,8 +13,7 @@ namespace ExtenderApp.FFmpegEngines
         public int Generation { get; }
 
         /// <summary>
-        /// 获取帧的原始数据块。 对于视频，这通常是像素数据（如 RGB 或
-        /// YUV）；对于音频，这是 PCM 采样数据。
+        /// 获取帧的原始数据块。 对于视频，这通常是像素数据（如 RGB 或 YUV）；对于音频，这是 PCM 采样数据。
         /// </summary>
         public ByteBlock Block { get; }
 

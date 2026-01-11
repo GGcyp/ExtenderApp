@@ -14,12 +14,10 @@ namespace ExtenderApp.FFmpegEngines
         #region SWS_Const
 
         /// <summary>
-        /// FFmpeg 图像处理相关常量定义。 包含音视频重采样、像素格式转换、色彩空间、缩放算法等常用参数，便于调用 FFmpeg swscale/swr 等接口时使用。 常量值与
-        /// FFmpeg C API 保持一致，适用于 sws_getContext、swr_alloc_set_opts 等场景。
+        /// FFmpeg 图像处理相关常量定义。 包含音视频重采样、像素格式转换、色彩空间、缩放算法等常用参数，便于调用 FFmpeg swscale/swr 等接口时使用。 常量值与 FFmpeg C API 保持一致，适用于
+        /// sws_getContext、swr_alloc_set_opts 等场景。
         /// </summary>
-        /// <remarks>
-        /// 例如：SWS_FAST_BILINEAR 表示快速双线性缩放，SWS_BICUBIC 表示双三次缩放，SWS_CS_ITU709 表示 BT.709 色彩空间等。
-        /// </remarks>
+        /// <remarks>例如：SWS_FAST_BILINEAR 表示快速双线性缩放，SWS_BICUBIC 表示双三次缩放，SWS_CS_ITU709 表示 BT.709 色彩空间等。</remarks>
         public const int SWR_FLAG_RESAMPLE = 0x1;
 
         /// <summary>
@@ -175,16 +173,12 @@ namespace ExtenderApp.FFmpegEngines
         #endregion SWS_Const
 
         /// <summary>
-        /// 最大缓存数据包数量（用于限制 _packetQueue 队列长度）。
-        /// 控制解码过程中可缓存的 AVPacket 数量，防止内存占用过高。
-        /// 建议根据实际业务场景和内存压力调整，默认值为 100。
+        /// 最大缓存数据包数量（用于限制 _packetQueue 队列长度）。 控制解码过程中可缓存的 AVPacket 数量，防止内存占用过高。 建议根据实际业务场景和内存压力调整，默认值为 100。
         /// </summary>
         public const int DefaultMaxCachePacketCount = 100;
 
         /// <summary>
-        /// 最大缓存帧数量（用于限制 _frameQueue 队列长度）。
-        /// 控制解码过程中可缓存的 AVFrame 数量，防止内存占用过高。
-        /// 建议根据实际业务场景和解码速率调整，默认值为 30。
+        /// 最大缓存帧数量（用于限制 _frameQueue 队列长度）。 控制解码过程中可缓存的 AVFrame 数量，防止内存占用过高。 建议根据实际业务场景和解码速率调整，默认值为 30。
         /// </summary>
         public const int DefaultMaxCacheFrameCount = 30;
 
@@ -229,16 +223,12 @@ namespace ExtenderApp.FFmpegEngines
         public string FFmpegPath => ffmpeg.RootPath;
 
         /// <summary>
-        /// 获取或设置最大缓存数据包数量（用于限制 _packetQueue 队列长度）。
-        /// 控制解码过程中可缓存的 AVPacket 数量，防止内存占用过高。
-        /// 建议根据实际业务场景和内存压力调整，默认值为 <see cref="DefaultMaxCachePacketCount"/> (100)。
+        /// 获取或设置最大缓存数据包数量（用于限制 _packetQueue 队列长度）。 控制解码过程中可缓存的 AVPacket 数量，防止内存占用过高。 建议根据实际业务场景和内存压力调整，默认值为 <see cref="DefaultMaxCachePacketCount"/> (100)。
         /// </summary>
         public int MaxCachePacketCount { get; set; }
 
         /// <summary>
-        /// 获取或设置最大缓存帧数量（用于限制 _frameQueue 队列长度）。
-        /// 控制解码过程中可缓存的 AVFrame 数量，防止内存占用过高。
-        /// 建议根据实际业务场景和解码速率调整，默认值为 <see cref="DefaultMaxCacheFrameCount"/> (30)。
+        /// 获取或设置最大缓存帧数量（用于限制 _frameQueue 队列长度）。 控制解码过程中可缓存的 AVFrame 数量，防止内存占用过高。 建议根据实际业务场景和解码速率调整，默认值为 <see cref="DefaultMaxCacheFrameCount"/> (30)。
         /// </summary>
         public int MaxCacheFrameCount { get; set; }
 
@@ -443,8 +433,7 @@ namespace ExtenderApp.FFmpegEngines
         }
 
         /// <summary>
-        /// 创建并分配一个 RGB 图像缓冲区，并将其与指定 AVFrame 进行数据指针和行对齐绑定。 用于将托管字节数组与 FFmpeg 的 AVFrame
-        /// 结构关联，便于后续像素数据填充和渲染。 内部会从共享内存池租用字节数组，调用 CreateRGBBuffer 方法完成映射。
+        /// 创建并分配一个 RGB 图像缓冲区，并将其与指定 AVFrame 进行数据指针和行对齐绑定。 用于将托管字节数组与 FFmpeg 的 AVFrame 结构关联，便于后续像素数据填充和渲染。 内部会从共享内存池租用字节数组，调用 CreateRGBBuffer 方法完成映射。
         /// </summary>
         /// <param name="rgbFrame">目标 AVFrame 指针，写入 data 和 linesize 信息。</param>
         /// <param name="rgbBufferLength">RGB 缓冲区长度（字节），需根据像素格式和分辨率预先计算。</param>
@@ -468,8 +457,8 @@ namespace ExtenderApp.FFmpegEngines
         }
 
         /// <summary>
-        /// 创建并填充 RGB 图像缓冲区，并将其数据指针和行对齐信息写入 AVFrame。 用于将托管字节数组 rgbBuffer 映射到 FFmpeg 的 AVFrame
-        /// 结构，便于后续像素数据处理或渲染。 内部调用 FFmpeg 的 av_image_fill_arrays 方法，自动计算 data 和 linesize。
+        /// 创建并填充 RGB 图像缓冲区，并将其数据指针和行对齐信息写入 AVFrame。 用于将托管字节数组 rgbBuffer 映射到 FFmpeg 的 AVFrame 结构，便于后续像素数据处理或渲染。 内部调用 FFmpeg 的 av_image_fill_arrays
+        /// 方法，自动计算 data 和 linesize。
         /// </summary>
         /// <param name="rgbBuffer">托管的 RGB 图像缓冲区（byte[]），需预先分配好大小。</param>
         /// <param name="rgbFrame">目标 AVFrame 指针，写入 data 和 linesize 信息。</param>
@@ -525,48 +514,8 @@ namespace ExtenderApp.FFmpegEngines
         }
 
         /// <summary>
-        /// 创建解码控制器（FFmpegDecoderController）。 用于管理解码流程，包括解码启动、停止、跳转、资源释放等操作。 支持多线程解码、取消令牌控制和解码器集合的统一管理。
-        /// </summary>
-        /// <param name="context">FFmpeg上下文，包含媒体信息和解码器集合。</param>
-        /// <param name="settings"></param>
-        /// <returns>FFmpegDecoderController 实例。</returns>
-        public FFmpegDecoderController CreateDecoderController(FFmpegContext context, FFmpegDecoderSettings settings)
-        {
-            FFmpegDecoderControllerContext controllerContext = new(this, context);
-            var collection = CreateDecoderCollection(context, controllerContext, settings);
-            return new FFmpegDecoderController(collection, controllerContext, settings);
-        }
-
-        /// <summary>
-        /// 创建解码器集合（FFmpegDecoderCollection）。 用于根据上下文和解码设置，自动初始化视频和音频解码器，并管理解码过程中的资源。 支持自定义取消令牌和解码参数，便于多线程解码和参数调整。
-        /// </summary>
-        /// <param name="context">FFmpeg上下文，包含解码器集合和媒体信息。</param>
-        /// <param name="controllerContext">解码器控制器上下文。</param>
-        /// <param name="settings">可选的解码器设置，若为空则使用默认设置。</param>
-        /// <returns>FFmpegDecoderCollection 实例。</returns>
-        public FFmpegDecoderCollection CreateDecoderCollection(FFmpegContext context, FFmpegDecoderControllerContext controllerContext, FFmpegDecoderSettings settings)
-        {
-            if (context.IsEmpty)
-            {
-                throw new ArgumentNullException(nameof(context));
-            }
-
-            var contextCollection = context.ContextCollection;
-            var decoders = new FFmpegDecoder[contextCollection.Length];
-
-            for (int i = 0; i < contextCollection.Length; i++)
-            {
-                var decoderContext = contextCollection[i];
-                decoders[i] = FFmpegDecoderFactory.CreateDecoder(decoderContext, controllerContext, settings);
-            }
-
-            return new FFmpegDecoderCollection(decoders);
-        }
-
-        /// <summary>
-        /// 根据指定的声道布局掩码（如 AV_CH_LAYOUT_STEREO），创建并分配一个 AVChannelLayout 结构体指针。 可用于音频重采样、格式转换等场景，便于配置
-        /// SwrContext 的输入/输出声道布局参数。 内部调用 FFmpeg 的 av_channel_layout_default 方法进行初始化， 返回的
-        /// NativeIntPtr&lt;AVChannelLayout&gt; 可直接用于 FFmpeg 相关接口。
+        /// 根据指定的声道布局掩码（如 AV_CH_LAYOUT_STEREO），创建并分配一个 AVChannelLayout 结构体指针。 可用于音频重采样、格式转换等场景，便于配置 SwrContext 的输入/输出声道布局参数。 内部调用 FFmpeg 的
+        /// av_channel_layout_default 方法进行初始化， 返回的 NativeIntPtr&lt;AVChannelLayout&gt; 可直接用于 FFmpeg 相关接口。
         /// </summary>
         /// <param name="layout">声道布局掩码（如 AV_CH_LAYOUT_STEREO、AV_CH_LAYOUT_MONO 等）。</param>
         /// <returns>分配并初始化好的 AVChannelLayout 指针封装。</returns>
@@ -620,8 +569,7 @@ namespace ExtenderApp.FFmpegEngines
         }
 
         /// <summary>
-        /// 跳转到指定时间戳（毫秒）的位置。 通过指定流索引和时间基准，将媒体流定位到目标时间点（通常为关键帧）。 内部调用 FFmpeg 的 av_seek_frame
-        /// 实现跳转，跳转后建议刷新解码器缓冲区（avcodec_flush_buffers）。 跳转失败时会抛出详细异常。
+        /// 跳转到指定时间戳（毫秒）的位置。 通过指定流索引和时间基准，将媒体流定位到目标时间点（通常为关键帧）。 内部调用 FFmpeg 的 av_seek_frame 实现跳转，跳转后建议刷新解码器缓冲区（avcodec_flush_buffers）。 跳转失败时会抛出详细异常。
         /// </summary>
         /// <param name="context">格式上下文指针（AVFormatContext），包含媒体流信息。</param>
         /// <param name="streamIndex">目标流索引（如视频流或音频流）。</param>
@@ -681,16 +629,12 @@ namespace ExtenderApp.FFmpegEngines
         #region Decoder
 
         /// <summary>
-        /// 尝试为给定格式上下文中的所有流创建解码器上下文。 此方法会遍历所有流，并为每个流调用 <see
-        /// cref="TryGetDecoderContext(AVFormatContext*, int, FFmpegMediaType, AVDictionary**, out
+        /// 尝试为给定格式上下文中的所有流创建解码器上下文。 此方法会遍历所有流，并为每个流调用 <see cref="TryGetDecoderContext(AVFormatContext*, int, FFmpegMediaType, AVDictionary**, out
         /// FFmpegDecoderContext)"/> 来初始化解码器。
         /// </summary>
         /// <param name="formatContext">指向 AVFormatContext 的指针，包含媒体文件的所有流信息。</param>
         /// <param name="options">指向 AVDictionary 的指针，用于传递给解码器的额外选项。</param>
-        /// <param name="decoders">
-        /// 输出参数。当此方法返回时，该数组将包含为每个流成功初始化的 <see
-        /// cref="FFmpegDecoderContext"/>。如果某个流无法创建解码器，则数组中对应的元素将是 <see cref="FFmpegDecoderContext.Empty"/>。
-        /// </param>
+        /// <param name="decoders">输出参数。当此方法返回时，该数组将包含为每个流成功初始化的 <see cref="FFmpegDecoderContext"/>。如果某个流无法创建解码器，则数组中对应的元素将是 <see cref="FFmpegDecoderContext.Empty"/>。</param>
         /// <returns>总是返回 <c>true</c>，表示已完成对所有流的解码器创建尝试。</returns>
         private bool TryGetDecoderContexts(AVFormatContext* formatContext, AVDictionary** options, out FFmpegDecoderContext[] decoders)
         {
@@ -975,9 +919,9 @@ namespace ExtenderApp.FFmpegEngines
         }
 
         /// <summary>
-        /// 将<see cref="FFmpegPacket"/>实例回收到数据包队列中以供重用。
+        /// 将 <see cref="FFmpegPacket"/> 实例回收到数据包队列中以供重用。
         /// </summary>
-        /// <param name="packet">需要被回收的<see cref="FFmpegPacket"/>实例</param>
+        /// <param name="packet">需要被回收的 <see cref="FFmpegPacket"/> 实例</param>
         public void Return(FFmpegPacket packet)
         {
             var ptr = packet.PacketPtr;
@@ -1059,9 +1003,8 @@ namespace ExtenderApp.FFmpegEngines
         }
 
         /// <summary>
-        /// 为指定的 AVFrame 分配音频或视频缓冲区。 此方法会根据帧的 format、width/height（视频）或 nb_samples/ch_layout（音频）等参数，
-        /// 自动分配底层数据缓冲区，并填充 AVFrame 的 data/linesize 指针，确保后续解码、重采样或渲染操作可用。 通常在设置好帧参数后调用本方法，避免 "Output
-        /// changed" 等 FFmpeg 错误。
+        /// 为指定的 AVFrame 分配音频或视频缓冲区。 此方法会根据帧的 format、width/height（视频）或 nb_samples/ch_layout（音频）等参数， 自动分配底层数据缓冲区，并填充 AVFrame 的 data/linesize
+        /// 指针，确保后续解码、重采样或渲染操作可用。 通常在设置好帧参数后调用本方法，避免 "Output changed" 等 FFmpeg 错误。
         /// </summary>
         /// <param name="frame">需要分配缓冲区的 AVFrame 指针。</param>
         /// <param name="align">缓冲区对齐方式（字节），音频建议为 1，视频可为 32。</param>
@@ -1077,8 +1020,7 @@ namespace ExtenderApp.FFmpegEngines
         }
 
         /// <summary>
-        /// 根据解码器设置（FFmpegDecoderSettings）批量设置音频输出帧（AVFrame）的参数。
-        /// 包括采样格式、采样率、声道布局等，确保输出帧与重采样上下文（SwrContext）参数一致， 便于后续音频重采样和格式转换，避免参数不匹配导致的 FFmpeg 错误。 通常在分配缓冲区前调用本方法。
+        /// 根据解码器设置（FFmpegDecoderSettings）批量设置音频输出帧（AVFrame）的参数。 包括采样格式、采样率、声道布局等，确保输出帧与重采样上下文（SwrContext）参数一致， 便于后续音频重采样和格式转换，避免参数不匹配导致的 FFmpeg 错误。 通常在分配缓冲区前调用本方法。
         /// </summary>
         /// <param name="frame">待设置参数的音频帧指针（AVFrame）。</param>
         /// <param name="dContext">音频解码器上下文，提供输入流参数。</param>
@@ -1090,8 +1032,7 @@ namespace ExtenderApp.FFmpegEngines
         }
 
         /// <summary>
-        /// 设置音频输出帧（AVFrame）的参数，使其与指定的解码器上下文和目标采样参数一致。 包括采样格式、采样率、声道布局和采样数，确保后续重采样转换时参数匹配，避免 FFmpeg
-        /// "Output changed" 错误。 通常在调用 GetBuffer 分配缓冲区前设置，适用于音频重采样和格式转换场景。
+        /// 设置音频输出帧（AVFrame）的参数，使其与指定的解码器上下文和目标采样参数一致。 包括采样格式、采样率、声道布局和采样数，确保后续重采样转换时参数匹配，避免 FFmpeg "Output changed" 错误。 通常在调用 GetBuffer 分配缓冲区前设置，适用于音频重采样和格式转换场景。
         /// </summary>
         /// <param name="frame">待设置参数的音频帧指针（AVFrame）。</param>
         /// <param name="dContext">音频解码器上下文，提供输入流参数。</param>
@@ -1204,8 +1145,7 @@ namespace ExtenderApp.FFmpegEngines
         #region SwsContext
 
         /// <summary>
-        /// 使用 FFmpeg sws_scale 对视频帧进行像素格式转换和缩放处理（全帧转换）。 按照 FFmpegInfo 提供的高度，将 srcFrame 的全部像素数据转换到
-        /// dstFrame。 常用于解码后的视频渲染、帧导出或格式变换等场景。
+        /// 使用 FFmpeg sws_scale 对视频帧进行像素格式转换和缩放处理（全帧转换）。 按照 FFmpegInfo 提供的高度，将 srcFrame 的全部像素数据转换到 dstFrame。 常用于解码后的视频渲染、帧导出或格式变换等场景。
         /// </summary>
         /// <param name="swsContext">像素格式转换上下文（SwsContext），由 CreateSwsContext 创建。</param>
         /// <param name="srcFrame">源帧指针，包含原始数据和行对齐信息。</param>
@@ -1218,8 +1158,7 @@ namespace ExtenderApp.FFmpegEngines
         }
 
         /// <summary>
-        /// 使用 FFmpeg sws_scale 对视频帧进行像素格式转换和缩放处理（支持分片转换）。
-        /// 可指定源帧的起始行（srcSliceY）和转换高度（srcSliceH），将部分像素数据转换到目标帧。 适用于分片渲染、并行处理或自定义区域转换等高级场景。
+        /// 使用 FFmpeg sws_scale 对视频帧进行像素格式转换和缩放处理（支持分片转换）。 可指定源帧的起始行（srcSliceY）和转换高度（srcSliceH），将部分像素数据转换到目标帧。 适用于分片渲染、并行处理或自定义区域转换等高级场景。
         /// </summary>
         /// <param name="swsContext">像素格式转换上下文（SwsContext），由 CreateSwsContext 创建。</param>
         /// <param name="srcFrame">源帧指针，包含原始数据和行对齐信息。</param>
@@ -1258,8 +1197,7 @@ namespace ExtenderApp.FFmpegEngines
         #region SwrContext
 
         /// <summary>
-        /// 初始化音频重采样上下文（SwrContext）。 在设置好输入/输出参数后，必须调用本方法以完成 SwrContext 的初始化， 使其可以用于音频格式转换和重采样操作。
-        /// 内部调用 FFmpeg 的 swr_init 方法，若初始化失败则抛出异常。
+        /// 初始化音频重采样上下文（SwrContext）。 在设置好输入/输出参数后，必须调用本方法以完成 SwrContext 的初始化， 使其可以用于音频格式转换和重采样操作。 内部调用 FFmpeg 的 swr_init 方法，若初始化失败则抛出异常。
         /// </summary>
         /// <param name="swrContext">音频重采样上下文指针。</param>
         /// <exception cref="ArgumentNullException">当 swrContext 为空时抛出。</exception>
@@ -1278,8 +1216,7 @@ namespace ExtenderApp.FFmpegEngines
         }
 
         /// <summary>
-        /// 设置并初始化音频重采样上下文（SwrContext）。 根据解码器上下文和解码器设置，配置 SwrContext 的输入输出参数（声道布局、采样格式、采样率）， 并调用
-        /// SwrContextInit 完成初始化，使其可用于音频重采样和格式转换。
+        /// 设置并初始化音频重采样上下文（SwrContext）。 根据解码器上下文和解码器设置，配置 SwrContext 的输入输出参数（声道布局、采样格式、采样率）， 并调用 SwrContextInit 完成初始化，使其可用于音频重采样和格式转换。
         /// </summary>
         /// <param name="swrContext">音频重采样上下文指针。</param>
         /// <param name="dContext">音频解码器上下文，提供输入参数。</param>
@@ -1302,8 +1239,7 @@ namespace ExtenderApp.FFmpegEngines
         }
 
         /// <summary>
-        /// 设置音频重采样上下文（SwrContext）的输入输出参数（支持声道布局掩码）。 根据指定的输出声道布局掩码、采样格式、采样率，以及输入声道布局、采样格式、采样率， 配置
-        /// SwrContext 以支持多声道和多格式音频转换。 内部自动分配输出声道布局指针，异常时自动释放资源。
+        /// 设置音频重采样上下文（SwrContext）的输入输出参数（支持声道布局掩码）。 根据指定的输出声道布局掩码、采样格式、采样率，以及输入声道布局、采样格式、采样率， 配置 SwrContext 以支持多声道和多格式音频转换。 内部自动分配输出声道布局指针，异常时自动释放资源。
         /// </summary>
         /// <param name="swrContext">音频重采样上下文指针。</param>
         /// <param name="outChannelLayout">输出声道布局掩码（如 AV_CH_LAYOUT_STEREO）。</param>
@@ -1333,8 +1269,8 @@ namespace ExtenderApp.FFmpegEngines
         }
 
         /// <summary>
-        /// 设置音频重采样上下文（SwrContext）的输入输出参数（支持声道布局指针）。 直接指定输出和输入的 AVChannelLayout 指针、采样格式和采样率，配置
-        /// SwrContext 以支持多声道和多格式音频转换。 内部调用 FFmpeg 的 swr_alloc_set_opts2 方法完成参数设置。
+        /// 设置音频重采样上下文（SwrContext）的输入输出参数（支持声道布局指针）。 直接指定输出和输入的 AVChannelLayout 指针、采样格式和采样率，配置 SwrContext 以支持多声道和多格式音频转换。 内部调用 FFmpeg 的
+        /// swr_alloc_set_opts2 方法完成参数设置。
         /// </summary>
         /// <param name="swrContext">音频重采样上下文指针。</param>
         /// <param name="outChannelLayout">输出声道布局指针。</param>
@@ -1366,8 +1302,8 @@ namespace ExtenderApp.FFmpegEngines
         }
 
         /// <summary>
-        /// 使用 FFmpeg 的 swr_convert_frame 方法进行音频重采样转换。 将输入 AVFrame 的音频数据转换为目标格式并写入输出 AVFrame。
-        /// 适用于多声道、多采样率和多格式的音频转换场景。 调用前需确保 SwrContext 已正确初始化，且 inFrame/outFrame 参数均为有效音频帧。 转换失败时会抛出异常并显示详细错误信息。
+        /// 使用 FFmpeg 的 swr_convert_frame 方法进行音频重采样转换。 将输入 AVFrame 的音频数据转换为目标格式并写入输出 AVFrame。 适用于多声道、多采样率和多格式的音频转换场景。 调用前需确保 SwrContext 已正确初始化，且
+        /// inFrame/outFrame 参数均为有效音频帧。 转换失败时会抛出异常并显示详细错误信息。
         /// </summary>
         /// <param name="swrContext">音频重采样上下文指针（SwrContext），由 FFmpegEngine 创建和初始化。</param>
         /// <param name="outFrame">输出音频帧指针（AVFrame），用于存放转换后的音频数据。</param>
@@ -1400,8 +1336,7 @@ namespace ExtenderApp.FFmpegEngines
         }
 
         /// <summary>
-        /// 按指定采样率对音频帧样本数进行重采样比例换算。 使用 FFmpeg 的 av_rescale_rnd 方法，将 frame 的 nb_samples
-        /// 按目标采样率（targetSampleRate）与当前解码器采样率进行比例缩放， 并可指定舍入方式（rounding），常用于音频重采样、时间戳换算等场景。
+        /// 按指定采样率对音频帧样本数进行重采样比例换算。 使用 FFmpeg 的 av_rescale_rnd 方法，将 frame 的 nb_samples 按目标采样率（targetSampleRate）与当前解码器采样率进行比例缩放， 并可指定舍入方式（rounding），常用于音频重采样、时间戳换算等场景。
         /// </summary>
         /// <param name="frame">音频帧指针，包含原始样本数（nb_samples）。</param>
         /// <param name="targetSampleRate">目标采样率（Hz），用于换算比例。</param>
@@ -1430,8 +1365,7 @@ namespace ExtenderApp.FFmpegEngines
         #region ChannelLayout
 
         /// <summary>
-        /// 将源 AVChannelLayout 结构体的数据复制到目标 AVChannelLayout 结构体。 用于在音频处理、重采样等场景下，安全地复制声道布局信息，
-        /// 保证目标布局与源布局一致。内部调用 FFmpeg 的 av_channel_layout_copy 方法。
+        /// 将源 AVChannelLayout 结构体的数据复制到目标 AVChannelLayout 结构体。 用于在音频处理、重采样等场景下，安全地复制声道布局信息， 保证目标布局与源布局一致。内部调用 FFmpeg 的 av_channel_layout_copy 方法。
         /// </summary>
         /// <param name="src">源声道布局指针（NativeIntPtr&lt;AVChannelLayout&gt;）。</param>
         /// <param name="dst">目标声道布局指针（NativeIntPtr&lt;AVChannelLayout&gt;）。</param>
@@ -1456,7 +1390,7 @@ namespace ExtenderApp.FFmpegEngines
         /// <summary>
         /// 释放 <see cref="FFmpegPacket"/> 相关资源，包括底层 AVPacket 指针。 用于确保数据包相关的底层资源被正确释放，防止内存泄漏。
         /// </summary>
-        /// <param name="packet">要被释放的<see cref="FFmpegPacket"/></param>
+        /// <param name="packet">要被释放的 <see cref="FFmpegPacket"/></param>
         public void Free(ref FFmpegPacket packet)
         {
             var ptr = packet.PacketPtr;
@@ -1656,8 +1590,7 @@ namespace ExtenderApp.FFmpegEngines
         }
 
         /// <summary>
-        /// 释放任意类型的非托管指针资源。 用于安全释放通过 FFmpeg 分配的结构体或缓冲区（如 AVChannelLayout、AVFrame 等），防止内存泄漏。 内部调用
-        /// FFmpeg 的 av_freep 方法释放底层内存，并移除指针引用。 推荐在不再需要相关资源时调用，确保及时回收内存。
+        /// 释放任意类型的非托管指针资源。 用于安全释放通过 FFmpeg 分配的结构体或缓冲区（如 AVChannelLayout、AVFrame 等），防止内存泄漏。 内部调用 FFmpeg 的 av_freep 方法释放底层内存，并移除指针引用。 推荐在不再需要相关资源时调用，确保及时回收内存。
         /// </summary>
         /// <typeparam name="T">非托管类型（如 AVChannelLayout、AVFrame 等）。</typeparam>
         /// <param name="ptr">待释放的指针封装。</param>
@@ -1741,8 +1674,8 @@ namespace ExtenderApp.FFmpegEngines
         }
 
         /// <summary>
-        /// 清空 AVChannelLayout 声道布局结构体的内容。 用于重置或释放声道布局相关的内部数据，防止脏数据影响后续音频处理。 内部调用 FFmpeg 的
-        /// av_channel_layout_uninit 方法， 仅清空结构体内容，不释放指针本身的内存。 推荐在复用或回收 AVChannelLayout 结构体前调用。
+        /// 清空 AVChannelLayout 声道布局结构体的内容。 用于重置或释放声道布局相关的内部数据，防止脏数据影响后续音频处理。 内部调用 FFmpeg 的 av_channel_layout_uninit 方法， 仅清空结构体内容，不释放指针本身的内存。 推荐在复用或回收
+        /// AVChannelLayout 结构体前调用。
         /// </summary>
         /// <param name="ptr">待清空的 AVChannelLayout 指针封装。</param>
         public void Flush(ref NativeIntPtr<AVChannelLayout> ptr)
@@ -1854,8 +1787,7 @@ namespace ExtenderApp.FFmpegEngines
         }
 
         /// <summary>
-        /// 获取指定 AVFrame 音频帧的 PCM 数据缓冲区所需字节数。 该方法通过 FFmpeg 的 av_samples_get_buffer_size 计算实际音频数据长度，
-        /// 适用于分配托管缓冲区或进行数据拷贝时的长度判断。 参数 align 通常为 1，表示按字节对齐。
+        /// 获取指定 AVFrame 音频帧的 PCM 数据缓冲区所需字节数。 该方法通过 FFmpeg 的 av_samples_get_buffer_size 计算实际音频数据长度， 适用于分配托管缓冲区或进行数据拷贝时的长度判断。 参数 align 通常为 1，表示按字节对齐。
         /// </summary>
         /// <param name="frame">音频帧指针（NativeIntPtr&lt;AVFrame&gt;），包含声道数、采样数和采样格式等信息。</param>
         /// <param name="align">对齐方式（字节），默认值为 1。</param>
@@ -1871,8 +1803,7 @@ namespace ExtenderApp.FFmpegEngines
         }
 
         /// <summary>
-        /// 获取指定帧的时间戳（毫秒）。 此方法会根据解码器上下文中的流信息，优先使用帧的 PTS（显示时间戳），如果无效则使用 DTS（解码时间戳）。 时间戳会根据流的
-        /// time_base 转换为毫秒，便于音视频同步和显示。
+        /// 获取指定帧的时间戳（毫秒）。 此方法会根据解码器上下文中的流信息，优先使用帧的 PTS（显示时间戳），如果无效则使用 DTS（解码时间戳）。 时间戳会根据流的 time_base 转换为毫秒，便于音视频同步和显示。
         /// </summary>
         /// <param name="framePtr">AVFrame 指针封装，包含帧的原始数据。</param>
         /// <param name="context">解码器上下文，提供流的时间基准。</param>
@@ -1897,8 +1828,8 @@ namespace ExtenderApp.FFmpegEngines
         }
 
         /// <summary>
-        /// 获取指定帧的时间戳（毫秒）。 优先使用 PTS（显示时间戳），如果无效则使用 DTS（解码时间戳）。 时间戳会根据传入的
-        /// time_base（流的时间基准）转换为毫秒，便于音视频同步和显示。 注意：视频流和音频流的 time_base 可以不同，需根据各自流的 time_base 进行换算，最终统一为标准时间单位（如毫秒）。
+        /// 获取指定帧的时间戳（毫秒）。 优先使用 PTS（显示时间戳），如果无效则使用 DTS（解码时间戳）。 时间戳会根据传入的 time_base（流的时间基准）转换为毫秒，便于音视频同步和显示。 注意：视频流和音频流的 time_base 可以不同，需根据各自流的
+        /// time_base 进行换算，最终统一为标准时间单位（如毫秒）。
         /// </summary>
         /// <param name="framePtr">AVFrame 指针封装，包含帧的原始数据。</param>
         /// <param name="timeBase">流的时间基准（AVRational），用于时间戳换算。</param>

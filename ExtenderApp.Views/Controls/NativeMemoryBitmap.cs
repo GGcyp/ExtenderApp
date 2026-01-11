@@ -43,8 +43,7 @@ namespace ExtenderApp.Views
         }
 
         /// <summary>
-        /// 将非托管内存中的像素数据更新到 WriteableBitmap。
-        /// 此方法是线程安全的，可以从任何线程调用。如果从非UI线程调用，它会自动将更新操作调度到UI线程。
+        /// 将非托管内存中的像素数据更新到 WriteableBitmap。 此方法是线程安全的，可以从任何线程调用。如果从非UI线程调用，它会自动将更新操作调度到UI线程。
         /// </summary>
         public unsafe void UpdateBitmap()
         {
@@ -69,8 +68,7 @@ namespace ExtenderApp.Views
         }
 
         /// <summary>
-        /// 将提供的 Span 数据写入到位图的非托管内存缓冲区。
-        /// 此方法是线程安全的，可以从多个线程并发调用。
+        /// 将提供的 Span 数据写入到位图的非托管内存缓冲区。 此方法是线程安全的，可以从多个线程并发调用。
         /// </summary>
         /// <param name="source">包含像素数据的源 Span。</param>
         public void Write(ReadOnlySpan<byte> source)

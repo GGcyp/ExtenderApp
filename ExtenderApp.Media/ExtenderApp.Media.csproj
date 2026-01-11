@@ -96,5 +96,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
+	
+  <ItemGroup>
+    <Folder Include="FFmpegEngines\Engines\Settings\" />
+  </ItemGroup>
 
 </Project>

@@ -15,27 +15,26 @@ namespace ExtenderApp.FFmpegEngines.Medias
         /// <param name="mediaPlayer">目标 MediaPlayer 实例。</param>
         /// <returns>绑定到视频输出缓冲区的 BitmapSource，可直接用于 UI 绑定。</returns>
         /// <exception cref="ArgumentNullException">当 mediaPlayer 为 null 时抛出。</exception>
-        public static BitmapSource SetVideoOutput(this MediaPlayer mediaPlayer)
+        public static BitmapSource SetVideoOutput(this IMediaPlayer mediaPlayer)
         {
             if (mediaPlayer is null)
                 throw new ArgumentNullException(nameof(mediaPlayer));
             VideoOutput videoOutput = new(mediaPlayer.Info.Width, mediaPlayer.Info.Height, 96, 96, mediaPlayer.Settings.PixelFormat.ToPixelFormat(), null);
-            mediaPlayer.SetVideoOutput(videoOutput);
+            mediaPlayer.FrameProcessCollection.AddMediaOutput(videoOutput);
             return videoOutput.NativeMemoryBitmap;
         }
 
         /// <summary>
-        /// 为 MediaPlayer 设置默认的音频输出。
-        /// 使用 MediaPlayer 当前的解码设置初始化音频播放器。
+        /// 为 MediaPlayer 设置默认的音频输出。 使用 MediaPlayer 当前的解码设置初始化音频播放器。
         /// </summary>
         /// <param name="mediaPlayer">目标 MediaPlayer 实例。</param>
         /// <exception cref="ArgumentNullException">当 mediaPlayer 为 null 时抛出。</exception>
-        public static void SetAudioOutput(this MediaPlayer mediaPlayer)
+        public static void SetAudioOutput(this IMediaPlayer mediaPlayer)
         {
             if (mediaPlayer is null)
                 throw new ArgumentNullException(nameof(mediaPlayer));
             AudioOutput audioOutput = new(mediaPlayer.Settings);
-            mediaPlayer.SetAudioOutput(audioOutput);
+            mediaPlayer.FrameProcessCollection.AddMediaOutput(audioOutput);
         }
 
         /// <summary>

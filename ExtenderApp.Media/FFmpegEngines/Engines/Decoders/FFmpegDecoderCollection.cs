@@ -18,7 +18,7 @@ namespace ExtenderApp.FFmpegEngines.Decoders
         /// </summary>
         /// <param name="index">要获取的解码器的流索引。</param>
         /// <returns>位于指定索引处的 <see cref="FFmpegDecoder"/>。</returns>
-        public FFmpegDecoder this[int index] => _decoders[index];
+        public IFFmpegDecoder this[int index] => _decoders[index];
 
         /// <summary>
         /// 获取解码器集合中的解码器数量。
@@ -41,13 +41,18 @@ namespace ExtenderApp.FFmpegEngines.Decoders
         /// <summary>
         /// 根据媒体类型获取对应的解码器实例。
         /// </summary>
-        /// <param name="mediaType">
-        /// 要获取的媒体类型（例如 <see cref="FFmpegMediaType.AVMEDIA_TYPE_VIDEO"/> 或 <see cref="FFmpegMediaType.AVMEDIA_TYPE_AUDIO"/>）。
-        /// </param>
+        /// <param name="mediaType">要获取的媒体类型（例如 <see cref="FFmpegMediaType.AVMEDIA_TYPE_VIDEO"/> 或 <see cref="FFmpegMediaType.AVMEDIA_TYPE_AUDIO"/>）。</param>
         /// <returns>对应媒体类型的 <see cref="FFmpegDecoder"/> 实例；如果集合中不存在对应索引则可能抛出 <see cref="IndexOutOfRangeException"/>。</returns>
-        public FFmpegDecoder? GetDecoder(FFmpegMediaType mediaType)
+        public IFFmpegDecoder? GetDecoder(FFmpegMediaType mediaType)
         {
-            return _decoders.FirstOrDefault(d => d.MediaType == mediaType);
+            for (int i = 0; i < _decoders.Length; i++)
+            {
+                if (_decoders[i].MediaType == mediaType)
+                {
+                    return _decoders[i];
+                }
+            }
+            return null;
         }
 
         /// <summary>
@@ -75,7 +80,7 @@ namespace ExtenderApp.FFmpegEngines.Decoders
         /// 返回一个循环访问集合的枚举器。
         /// </summary>
         /// <returns>可用于循环访问集合的 <see cref="IEnumerator{T}"/>。</returns>
-        public IEnumerator<FFmpegDecoder> GetEnumerator()
+        public IEnumerator<IFFmpegDecoder> GetEnumerator()
         {
             for (int i = 0; i < _decoders.Length; i++)
             {

@@ -19,8 +19,9 @@
             settings = settings ?? new();
 
             var context = _engine.OpenUri(mediaPath);
-            var controller = _engine.CreateDecoderController(context, settings);
-            return new MediaPlayer(controller);
+            var ffmpegDecoderController = _engine.CreateDecoderController(context, settings);
+            FrameProcessController frameProcessController = new(ffmpegDecoderController);
+            return new MediaPlayer(ffmpegDecoderController, frameProcessController);
         }
     }
 }
