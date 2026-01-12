@@ -59,15 +59,15 @@ namespace ExtenderApp.FFmpegEngines
         public FFmpegDecoderSettings Settings { get; }
 
         /// <summary>
-        /// 获取控制器的全局取消令牌（来自上下文的 AllSource）。
+        /// 获取控制器的当前取消令牌。
         /// </summary>
-        public CancellationToken Token => _controllerContext.AllSource.Token;
+        public CancellationToken Token => source?.Token ?? throw new ArgumentNullException("当前解码还未启动，无法获取结束令牌");
 
         /// <summary>
         /// 当读取到文件末尾（EOF）时触发。
         /// <para>注意：在读包线程触发，若订阅方涉及 UI 更新需要自行切换线程。</para>
         /// </summary>
-        public event Action<IFFmpegDecoderController>? OnCompletedDecoded;
+        public event Action<IFFmpegDecoderController>? CompletedDecoded;
 
         /// <summary>
         /// 获取当前媒体流的基本信息（如时长、格式、URI 等）。
@@ -198,13 +198,27 @@ namespace ExtenderApp.FFmpegEngines
                 }
 
                 var packetPtr = Engine.GetPacket();
-                int result = ReadPacket(packetPtr);
-                if (result == -1)
+                int result;
+                try
                 {
+                    result = Engine.ReadPacket(Context.FormatContext, ref packetPtr);
+                }
+                catch
+                {
+                    Engine.Return(packetPtr);
+                    throw;
+                }
+
+                if (Engine.IsEndOfFile(result))
+                {
+                    Engine.Return(packetPtr);
+                    CompletedDecoded?.Invoke(this);
                     break;
                 }
-                else if (result == -2)
+
+                if (Engine.IsTryAgain(result))
                 {
+                    Engine.Return(packetPtr);
                     continue;
                 }
 
@@ -238,45 +252,6 @@ namespace ExtenderApp.FFmpegEngines
         }
 
         #endregion Operation
-
-        #region Packets
-
-        /// <summary>
-        /// 读取单个数据包。
-        /// </summary>
-        /// <param name="packet">待填充的包指针（通常来自引擎对象池）。</param>
-        /// <returns>
-        /// 0：读取成功。
-        /// -1：读取失败或 EOF（应退出循环）。
-        /// -2：需要重试（例如 EAGAIN，应继续循环）。
-        /// </returns>
-        private int ReadPacket(NativeIntPtr<AVPacket> packet)
-        {
-            int result = Engine.ReadPacket(Context.FormatContext, ref packet);
-            if (result < 0)
-            {
-                if (result == ffmpeg.AVERROR_EOF)
-                {
-                    OnCompletedDecoded?.Invoke(this);
-                }
-                else
-                {
-                    Engine.ShowException("读取帧失败", result);
-                }
-
-                Engine.Return(packet);
-                return -1;
-            }
-            else if (Engine.IsTryAgain(result))
-            {
-                Engine.Return(packet);
-                return -2;
-            }
-
-            return 0;
-        }
-
-        #endregion Packets
 
         #region Dispose
 

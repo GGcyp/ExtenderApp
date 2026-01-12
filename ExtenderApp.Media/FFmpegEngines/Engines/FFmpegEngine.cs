@@ -193,6 +193,11 @@ namespace ExtenderApp.FFmpegEngines
         public const double DefaultFrameRate = 25.0d;
 
         /// <summary>
+        /// 无效时间戳。
+        /// </summary>
+        public const long InvalidTimestamp = -9223372036854775808L;
+
+        /// <summary>
         /// 存储指针的HashSet。
         /// </summary>
         private readonly HashSet<nint> _intPtrHashSet;
@@ -794,11 +799,18 @@ namespace ExtenderApp.FFmpegEngines
             {
                 packet = GetPacket();
             }
+
             int result = ffmpeg.av_read_frame(context, packet);
+
             if (result < 0)
             {
+                if (IsEndOfFile(result) || IsTryAgain(result))
+                {
+                    return result;
+                }
                 ShowException("从解码器接收数据包失败", result);
             }
+
             return result;
         }
 
@@ -1836,8 +1848,24 @@ namespace ExtenderApp.FFmpegEngines
         /// <returns>当前帧的时间戳（单位：毫秒）。</returns>
         public long GetFrameTimestampMs(NativeIntPtr<AVFrame> framePtr, AVRational timeBase)
         {
+            if (framePtr.IsEmpty)
+            {
+                throw new ArgumentNullException(nameof(framePtr));
+            }
+
             AVFrame* frame = framePtr;
-            long timestamp = frame->pts != ffmpeg.AV_NOPTS_VALUE ? frame->pts : frame->pkt_dts;
+
+            long timestamp = frame->best_effort_timestamp;
+            if (timestamp == ffmpeg.AV_NOPTS_VALUE)
+            {
+                timestamp = frame->pts != ffmpeg.AV_NOPTS_VALUE ? frame->pts : frame->pkt_dts;
+            }
+
+            if (timestamp == ffmpeg.AV_NOPTS_VALUE)
+            {
+                return InvalidTimestamp;
+            }
+
             return ffmpeg.av_rescale_q(timestamp, timeBase, ffmpeg.av_make_q(1, 1000));
         }
 

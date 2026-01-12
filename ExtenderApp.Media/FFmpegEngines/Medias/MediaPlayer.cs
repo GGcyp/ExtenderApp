@@ -141,17 +141,32 @@ namespace ExtenderApp.FFmpegEngines.Medias
         /// <summary>
         /// 构造播放器实例。
         /// </summary>
-        /// <param name="controller">解码控制器。</param>
+        /// <param name="decoderController">解码控制器。</param>
         /// <param name="frameProcessController">帧处理控制器。</param>
-        public MediaPlayer(IFFmpegDecoderController controller, IFrameProcessController frameProcessController)
+        public MediaPlayer(IFFmpegDecoderController decoderController, IFrameProcessController frameProcessController)
         {
             State = PlayerState.Uninitialized;
+            _decoderController = decoderController;
+            _decoderController.CompletedDecoded += HandleCompletedDecoded;
             _frameProcessController = frameProcessController;
-            _decoderController = controller;
             _pauseEvent = new(true);
             SpeedRatio = 1;
             seekPosition = -1;
             State = PlayerState.Initializing;
+        }
+
+        private void HandleCompletedDecoded(IFFmpegDecoderController _)
+        {
+            if (State == PlayerState.Uninitialized || State == PlayerState.Stopped)
+                return;
+
+            // 不阻塞解码线程；让播放器自行收尾
+            Task.Run(async () =>
+            {
+                await StopAsync().ConfigureAwait(false);
+                Position = Info.Duration;
+                Playback?.Invoke();
+            });
         }
 
         /// <summary>
@@ -194,7 +209,6 @@ namespace ExtenderApp.FFmpegEngines.Medias
 
             State = PlayerState.Stopped;
             FrameProcessCollection.PlayerStateChange(State);
-            Position = 0;
             return new(_decoderController.StopDecodeAsync());
         }
 
@@ -250,7 +264,7 @@ namespace ExtenderApp.FFmpegEngines.Medias
         /// <description>使用 <see cref="Stopwatch"/> 推进 <see cref="Position"/>，并乘以 <see cref="SpeedRatio"/> 实现变速。</description>
         /// </item>
         /// <item>
-        /// <description>通过 controller 的 generation 识别 Seek，重置基准时间点。</description>
+        /// <description>通过 decoderController 的 generation 识别 Seek，重置基准时间点。</description>
         /// </item>
         /// <item>
         /// <description>调用 <see cref="FrameProcessController.Processing(int, long, int)"/> 处理音视频帧，并返回距离下一帧的剩余时间以决定等待策略。</description>
@@ -337,7 +351,7 @@ namespace ExtenderApp.FFmpegEngines.Medias
                     Playback?.Invoke();
                 }
             }
-            _decoderController.StopDecodeAsync().ConfigureAwait(false);
+            Debug.Print("PlaybackLoop: exited");
         }
 
         /// <summary>

@@ -335,8 +335,12 @@ namespace ExtenderApp.FFmpegEngines.Decoders
                         break;
                     }
 
+                    long framePts = GetFrameTimestampMs(framePtr);
+                    // 若帧时间戳无效，跳过该帧
+                    if (framePts == FFmpegEngine.InvalidTimestamp)
+                        continue;
+
                     ProcessFrame(framePtr, out var block);
-                    long framePts = Engine.GetFrameTimestampMs(framePtr, DecoderContext);
 
                     FFmpegFrame frame = new(currentGeneration, block, framePts);
                     EnqueueFrame(frame, token);
@@ -498,6 +502,16 @@ namespace ExtenderApp.FFmpegEngines.Decoders
         /// </summary>
         public virtual void UpdateSettings(FFmpegDecoderSettings settings)
         {
+        }
+
+        /// <summary>
+        /// 获取帧的时间戳（毫秒）。
+        /// </summary>
+        /// <param name="frame">需要获取时间戳的帧。</param>
+        /// <returns>获取到的时间戳。</returns>
+        private long GetFrameTimestampMs(NativeIntPtr<AVFrame> frame)
+        {
+            return Engine.GetFrameTimestampMs(frame, DecoderContext);
         }
 
         /// <summary>

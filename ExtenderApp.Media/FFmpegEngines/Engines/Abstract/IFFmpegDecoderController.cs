@@ -30,7 +30,7 @@
         /// 当解码流程完成（自然结束或达到控制器定义的完成条件）时触发。
         /// </summary>
         /// <remarks>事件参数为触发该事件的控制器自身，便于订阅方读取状态或继续调度。</remarks>
-        event Action<IFFmpegDecoderController>? OnCompletedDecoded;
+        event Action<IFFmpegDecoderController>? CompletedDecoded;
 
         /// <summary>
         /// 获取当前解码器“世代”标识。
