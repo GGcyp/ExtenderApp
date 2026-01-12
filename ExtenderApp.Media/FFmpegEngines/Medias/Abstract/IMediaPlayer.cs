@@ -53,6 +53,11 @@
         event Action? Playback;
 
         /// <summary>
+        /// 当播放器状态发生变化时触发的事件。
+        /// </summary>
+        event Action<IMediaPlayer, PlayerState> PlayerStateChanged;
+
+        /// <summary>
         /// 暂停播放。
         /// </summary>
         void Pause();

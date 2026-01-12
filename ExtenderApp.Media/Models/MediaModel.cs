@@ -1,4 +1,5 @@
 ﻿using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Windows.Media.Imaging;
 using ExtenderApp.Abstract;
 using ExtenderApp.FFmpegEngines;
@@ -150,6 +151,10 @@ namespace ExtenderApp.Media.Models
             {
                 dispatcherService.InvokeAsync(_positionAction);
             };
+            MPlayer.PlayerStateChanged += (mp, state) =>
+            {
+               Debug.Print($"当前事件：{mp.Position},当前状态{state}");
+            };
         }
 
         public void Play()
@@ -192,7 +197,6 @@ namespace ExtenderApp.Media.Models
 
         protected override void DisposeManagedResources()
         {
-            Stop();
             MPlayer?.Dispose();
         }
     }

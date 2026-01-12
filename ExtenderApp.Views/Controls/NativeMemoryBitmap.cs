@@ -10,25 +10,15 @@ namespace ExtenderApp.Views
     /// </summary>
     public sealed class NativeMemoryBitmap : DisposableObject
     {
-        /// <summary>
-        /// 用于确保对原生内存块进行线程安全访问的锁对象。
-        /// </summary>
         private readonly object _lock;
-
-        /// <summary>
-        /// 更新位图的委托。
-        /// </summary>
         private readonly Action _updateBitmapAction;
 
-        /// <summary>
-        /// 获取可写的位图对象。
-        /// </summary>
         public WriteableBitmap Bitmap { get; }
 
-        /// <summary>
-        /// 用于存储像素数据的非托管内存块。
-        /// </summary>
         private NativeByteMemory block;
+
+        // 0=没有UI刷新排队，1=已有UI刷新排队（合并多次请求，只保留一次UI回调）
+        private int _uiUpdateQueued;
 
         public NativeMemoryBitmap(int pixelWidth, int pixelHeight, double dpiX, double dpiY, PixelFormat pixelFormat, BitmapPalette? palette = null)
         {
@@ -39,49 +29,53 @@ namespace ExtenderApp.Views
             block = new(stride * pixelHeight);
 
             _lock = new();
-            _updateBitmapAction = UpdateBitmap;
+            _updateBitmapAction = UpdateBitmapOnUiThread;
         }
 
         /// <summary>
-        /// 将非托管内存中的像素数据更新到 WriteableBitmap。 此方法是线程安全的，可以从任何线程调用。如果从非UI线程调用，它会自动将更新操作调度到UI线程。
+        /// 请求刷新：多次调用会被合并，UI线程只会执行一次，并显示执行时刻的“最新一帧”。
         /// </summary>
-        public unsafe void UpdateBitmap()
+        public void UpdateBitmap()
         {
-            // 检查是否在UI线程上
             if (Bitmap.Dispatcher.CheckAccess())
             {
-                // 如果在UI线程，直接更新
-                lock (_lock)
-                {
-                    Bitmap.WritePixels(
-                        new Int32Rect(0, 0, Bitmap.PixelWidth, Bitmap.PixelHeight),
-                        (nint)block.Ptr,
-                        block.Length,
-                        Bitmap.BackBufferStride);
-                }
+                UpdateBitmapOnUiThread();
+                return;
             }
-            else
+
+            // 若已排队则不重复排队；从而丢弃中间帧，只保留最后一次刷新请求
+            if (Interlocked.Exchange(ref _uiUpdateQueued, 1) == 1)
+                return;
+
+            Bitmap.Dispatcher.InvokeAsync(_updateBitmapAction);
+        }
+
+        private unsafe void UpdateBitmapOnUiThread()
+        {
+            // 允许下一次排队（无论是否成功刷新，都要释放“排队锁”）
+            Interlocked.Exchange(ref _uiUpdateQueued, 0);
+
+            lock (_lock)
             {
-                // 如果在后台线程，则异步调度到UI线程执行
-                Bitmap.Dispatcher.InvokeAsync(_updateBitmapAction);
+                if (IsDisposed)
+                    return;
+
+                Bitmap.WritePixels(
+                    new Int32Rect(0, 0, Bitmap.PixelWidth, Bitmap.PixelHeight),
+                    (nint)block.Ptr,
+                    block.Length,
+                    Bitmap.BackBufferStride);
             }
         }
 
-        /// <summary>
-        /// 将提供的 Span 数据写入到位图的非托管内存缓冲区。 此方法是线程安全的，可以从多个线程并发调用。
-        /// </summary>
-        /// <param name="source">包含像素数据的源 Span。</param>
         public void Write(ReadOnlySpan<byte> source)
         {
             lock (_lock)
             {
-                block.Write(source);
+                source.CopyTo(block);
             }
         }
 
-        /// <summary>
-        /// 释放由该实例持有的所有托管资源。
-        /// </summary>
         protected override void DisposeManagedResources()
         {
             lock (_lock)

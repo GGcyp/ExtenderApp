@@ -143,7 +143,13 @@ namespace ExtenderApp.FFmpegEngines.Decoders
                     }
                 }
 
-                token.ThrowIfCancellationRequested();
+                // WaitToWriteAsync 返回 false：writer 已完成（TryComplete）或被关闭
+                return;
+            }
+            catch (ChannelClosedException)
+            {
+                // 通道已关闭：释放/归还资源，按正常结束处理
+                Engine.Return(packet);
             }
             catch
             {
@@ -167,12 +173,16 @@ namespace ExtenderApp.FFmpegEngines.Decoders
                 {
                     packet = await _packetChannel.Reader.ReadAsync(token).ConfigureAwait(false);
                 }
-                catch (ChannelClosedException)
+                catch (OperationCanceledException) when (token.IsCancellationRequested)
                 {
                     return;
                 }
+                catch (ChannelClosedException)
+                {
+                    // 通道完成：正常结束
+                    return;
+                }
 
-                // 代际检查：Seek 后旧代数据直接丢弃
                 int currentGeneration = _controllerContext.GetCurrentGeneration();
                 if (localGeneration != currentGeneration)
                 {
@@ -180,7 +190,6 @@ namespace ExtenderApp.FFmpegEngines.Decoders
                     FlushPrivate();
                 }
 
-                // 若包属于旧代，直接丢弃（并归还底层 AVPacket）
                 if (packet.Generation != localGeneration)
                 {
                     Engine.Return(packet);
@@ -315,7 +324,13 @@ namespace ExtenderApp.FFmpegEngines.Decoders
                     }
                 }
 
-                token.ThrowIfCancellationRequested();
+                // 通道已完成：不能再写，释放 frame
+                frame.Dispose();
+            }
+            catch (ChannelClosedException)
+            {
+                // 通道已关闭：释放 frame，按正常结束处理
+                frame.Dispose();
             }
             catch
             {

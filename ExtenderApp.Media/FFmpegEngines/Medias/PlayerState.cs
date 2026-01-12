@@ -16,6 +16,11 @@
         Initializing,
 
         /// <summary>
+        /// 正在缓存（缓冲）数据，暂未达到可连续播放的条件。
+        /// </summary>
+        Buffering,
+
+        /// <summary>
         /// 正在播放视频。
         /// </summary>
         Playing,

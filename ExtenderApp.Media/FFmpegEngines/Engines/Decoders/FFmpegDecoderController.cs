@@ -260,8 +260,6 @@ namespace ExtenderApp.FFmpegEngines
 
         #endregion Operation
 
-        #region Dispose
-
         /// <summary>
         /// 释放托管资源。
         /// <para>会主动取消会话并等待后台任务退出。</para>
@@ -271,20 +269,8 @@ namespace ExtenderApp.FFmpegEngines
             source?.Cancel();
             _controllerContext.DisposeSafe();
             WaitForAllTasksComplete().GetAwaiter().GetResult();
-
             source?.DisposeSafe();
         }
-
-        /// <summary>
-        /// 释放非托管资源。
-        /// </summary>
-        protected override void DisposeUnmanagedResources()
-        {
-        }
-
-        #endregion Dispose
-
-        #region Uitls
 
         /// <summary>
         /// 获取当前代际（generation）。
@@ -311,16 +297,14 @@ namespace ExtenderApp.FFmpegEngines
             {
                 await Task.WhenAll(processTasks).ConfigureAwait(false);
             }
-            catch (TaskCanceledException)
+            catch
             {
-                // 忽略任务取消异常。
+                // 忽略 Stop/Dispose 常见退出异常（Channel 完成、取消等）
             }
             finally
             {
                 processTasks = null;
             }
         }
-
-        #endregion Uitls
     }
 }

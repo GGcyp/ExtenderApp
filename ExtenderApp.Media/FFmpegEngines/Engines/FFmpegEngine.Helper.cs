@@ -142,5 +142,19 @@ namespace ExtenderApp.FFmpegEngines
         {
             return ffmpeg.av_get_media_type_string(mediaType);
         }
+
+        /// <summary>
+        /// 判断指定采样格式是否为 planar（分平面）格式。
+        /// <para>
+        /// 内部调用 FFmpeg 的 <c>av_sample_fmt_is_planar</c>：
+        /// 通常返回 1 表示 planar，返回 0 表示 packed（或非 planar）。
+        /// </para>
+        /// </summary>
+        /// <param name="sampleFormat">FFmpeg 采样格式枚举。</param>
+        /// <returns>如果是 planar 返回 <see langword="true"/>；否则返回 <see langword="false"/>。</returns>
+        public static bool IsPlanar(AVSampleFormat sampleFormat)
+        {
+            return ffmpeg.av_sample_fmt_is_planar(sampleFormat) == 1;
+        }
     }
 }

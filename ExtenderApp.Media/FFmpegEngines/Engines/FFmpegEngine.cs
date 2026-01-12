@@ -273,12 +273,13 @@ namespace ExtenderApp.FFmpegEngines
         /// <param name="uri">要打开的URI。</param>
         /// <param name="inputFormat">输入格式。</param>
         /// <param name="options">选项。</param>
+        /// <param name="flags">选项标志。</param>
         /// <returns>FFmpegContext实例。</returns>
-        public FFmpegContext OpenUri(string uri, FFmpegInputFormat inputFormat, Dictionary<string, string>? options)
+        public FFmpegContext OpenUri(string uri, FFmpegInputFormat inputFormat, Dictionary<string, string>? options, int flags = 0)
         {
             var formatContext = CreateFormatContext().Value;
             AVFormatContext** formatContextPtr = &formatContext;
-            var nOptions = CreateOptions(options);
+            var nOptions = CreateOptions(options, flags);
             var inputOptions = nOptions.Value;
             AVDictionary** inputOptionsIntPtr = &inputOptions;
             int result = ffmpeg.avformat_open_input(formatContextPtr, uri, inputFormat, inputOptionsIntPtr);
@@ -347,15 +348,17 @@ namespace ExtenderApp.FFmpegEngines
         /// 创建AVDictionary实例。
         /// </summary>
         /// <param name="options">选项。</param>
+        /// <param name="flags">选项标志。</param>
         /// <returns>AVDictionary实例。</returns>
-        public NativeIntPtr<AVDictionary> CreateOptions(Dictionary<string, string>? options)
+        public NativeIntPtr<AVDictionary> CreateOptions(Dictionary<string, string>? options, int flags = 0)
         {
-            AVDictionary** dict = null;
+            AVDictionary* dict = null;
             if (options != null)
             {
+                AVDictionary** dictPtr = &dict;
                 foreach (var option in options)
                 {
-                    ffmpeg.av_dict_set(dict, option.Key, option.Value, 0);
+                    ffmpeg.av_dict_set(dictPtr, option.Key, option.Value, flags);
                 }
             }
             return dict;
@@ -1152,6 +1155,69 @@ namespace ExtenderApp.FFmpegEngines
             }
         }
 
+        /// <summary>
+        /// 获取指定帧的原始数据视图（<see cref="Span{T}"/>），用于快速读取/拷贝帧的某个数据平面（plane）。
+        /// <para>
+        /// 该方法直接基于 <see cref="AVFrame.data"/> 与 <see cref="AVFrame.linesize"/> 构造 <see cref="Span{T}"/>，
+        /// 不做任何越界/空指针校验，也不复制数据；因此：
+        /// <list type="bullet">
+        /// <item><description>仅在 <paramref name="frame"/> 生命周期内有效（帧被 <c>av_frame_unref</c>/<c>av_frame_free</c> 后不可再使用）。</description></item>
+        /// <item><description>调用方需确保 <c>data[index]</c> 非空且 <c>linesize[index]</c> 为正。</description></item>
+        /// </list>
+        /// </para>
+        /// <para>
+        /// 关于 <c>linesize</c> 的语义差异：
+        /// <list type="bullet">
+        /// <item>
+        /// <description>
+        /// 视频帧：<c>linesize</c> 通常表示“每行字节跨度（stride）”，不等于整幅图像大小；
+        /// 若要拷贝整帧需要结合高度（<c>height</c>）按行处理或使用 <c>av_image_get_buffer_size</c> 计算总大小。
+        /// </description>
+        /// </item>
+        /// <item>
+        /// <description>
+        /// 音频帧：对 planar（分平面）格式，<c>data[ch]</c> 为每声道平面指针，
+        /// <c>linesize[ch]</c> 通常可表示该平面的字节数；但在不同对齐/分配策略下不保证等于
+        /// <c>bytesPerSample * nb_samples</c>，调用方如需精确长度应优先使用
+        /// <see cref="GetBufferSizeForSamples(NativeIntPtr{AVFrame}, int)"/> 或按 <c>nb_samples</c>/<c>format</c> 计算。
+        /// </description>
+        /// </item>
+        /// </list>
+        /// </para>
+        /// </summary>
+        /// <param name="frame">目标帧指针封装（<see cref="AVFrame"/>）。</param>
+        /// <param name="index">
+        /// 数据平面索引：
+        /// <list type="bullet">
+        /// <item><description>视频：通常 0=Y/或RGB，1=U，2=V（视像素格式而定）。</description></item>
+        /// <item><description>音频 planar：通常 0..channels-1 分别为每个声道平面。</description></item>
+        /// <item><description>音频 packed：通常只使用 0（全部声道交错数据）。</description></item>
+        /// </list>
+        /// </param>
+        /// <returns>指向 <c>data[index]</c> 的字节视图，长度为 <c>linesize[index]</c>。</returns>
+        public Span<byte> GetFrameData(NativeIntPtr<AVFrame> frame, uint index)
+        {
+            return new Span<byte>(frame.Value->data[index], frame.Value->linesize[index]);
+        }
+
+        /// <summary>
+        /// 获取指定帧在给定数据平面（plane）上的 <c>linesize</c>。
+        /// <para>
+        /// <c>linesize</c> 的含义依赖于帧类型和像素/采样格式：
+        /// <list type="bullet">
+        /// <item><description>视频：通常为每行字节跨度（stride）。</description></item>
+        /// <item><description>音频：通常为该平面（每声道或 packed）的字节数或其对齐后的跨度。</description></item>
+        /// </list>
+        /// </para>
+        /// </summary>
+        /// <param name="frame">目标帧指针封装（<see cref="AVFrame"/>）。</param>
+        /// <param name="index">数据平面索引（含义见 <see cref="GetFrameData(NativeIntPtr{AVFrame}, uint)"/>）。</param>
+        /// <returns>该平面的 <c>linesize</c> 值（字节）。</returns>
+        public int GetFrameLinesize(NativeIntPtr<AVFrame> frame, uint index)
+        {
+            return frame.Value->linesize[index];
+        }
+
         #endregion Frame
 
         #region SwsContext
@@ -1338,8 +1404,7 @@ namespace ExtenderApp.FFmpegEngines
                 throw new ArgumentNullException(nameof(outFrame));
             }
 
-            int result = 0;
-            result = ffmpeg.swr_convert_frame(swrContext, outFrame, inFrame);
+            int result = ffmpeg.swr_convert_frame(swrContext, outFrame, inFrame);
             if (result < 0)
             {
                 ShowException("SwrContext 转换失败", result);
@@ -2062,6 +2127,50 @@ namespace ExtenderApp.FFmpegEngines
                 throw new ArgumentNullException(nameof(codecContextPtr));
             }
             return codecContextPtr.Value->sample_rate;
+        }
+
+        /// <summary>
+        /// 获取指定音频帧（<see cref="AVFrame"/>）对应采样格式的“每个样本字节数”（Bytes Per Sample）。
+        /// <para>
+        /// 该值由 FFmpeg 的 <c>av_get_bytes_per_sample</c> 计算，表示单个采样点（单声道、单个 sample）的字节大小：
+        /// 例如：
+        /// <list type="bullet">
+        /// <item><description><see cref="AVSampleFormat.AV_SAMPLE_FMT_S16"/> => 2 字节</description></item>
+        /// <item><description><see cref="AVSampleFormat.AV_SAMPLE_FMT_S32"/> => 4 字节</description></item>
+        /// <item><description><see cref="AVSampleFormat.AV_SAMPLE_FMT_FLT"/> => 4 字节</description></item>
+        /// <item><description><see cref="AVSampleFormat.AV_SAMPLE_FMT_DBL"/> => 8 字节</description></item>
+        /// </list>
+        /// </para>
+        /// <para>
+        /// 常见用途：
+        /// <list type="bullet">
+        /// <item><description>计算 packed PCM 总长度：<c>bytesPerSample * nb_samples * channels</c></description></item>
+        /// <item><description>计算 planar 每声道平面长度：<c>bytesPerSample * nb_samples</c></description></item>
+        /// </list>
+        /// </para>
+        /// </summary>
+        /// <param name="frame">音频帧指针封装。其 <c>format</c> 字段用于确定采样格式。</param>
+        /// <returns>每个样本的字节数；若为未知或不支持的格式，FFmpeg 可能返回负数。</returns>
+        public int GetBytesPerSample(NativeIntPtr<AVFrame> frame)
+        {
+            return GetBytesPerSample(frame.Value->format);
+        }
+
+        /// <summary>
+        /// 判断指定音频帧的采样格式是否为 planar（分平面）布局。
+        /// <para>
+        /// planar 的含义：
+        /// <list type="bullet">
+        /// <item><description>planar：每个声道的数据分别存放在 <c>data[ch]</c> 中（一个声道一个平面）。</description></item>
+        /// <item><description>packed：多声道数据交错存放，通常只使用 <c>data[0]</c>。</description></item>
+        /// </list>
+        /// </para>
+        /// </summary>
+        /// <param name="frame">音频帧指针封装。其 <c>format</c> 字段用于确定采样格式布局。</param>
+        /// <returns>如果是 planar 返回 <see langword="true"/>；否则返回 <see langword="false"/>。</returns>
+        public bool IsPlanar(NativeIntPtr<AVFrame> frame)
+        {
+            return IsPlanar(frame.Value->format);
         }
 
         #endregion Common

@@ -29,6 +29,11 @@ namespace ExtenderApp.FFmpegEngines.Medias
         private const int SpinThresholdMs = 2;
 
         /// <summary>
+        /// 进入缓冲状态的连续空帧计数阈值。
+        /// </summary>
+        private const int BufferingCount = 200;
+
+        /// <summary>
         /// 解码控制器：负责启动/停止解码任务、Seek、维护 generation 等运行状态。
         /// </summary>
         private readonly IFFmpegDecoderController _decoderController;
@@ -139,6 +144,11 @@ namespace ExtenderApp.FFmpegEngines.Medias
         public event Action? Playback;
 
         /// <summary>
+        /// 当播放器状态变更时触发的事件。
+        /// </summary>
+        public event Action<IMediaPlayer, PlayerState>? PlayerStateChanged;
+
+        /// <summary>
         /// 构造播放器实例。
         /// </summary>
         /// <param name="decoderController">解码控制器。</param>
@@ -167,18 +177,19 @@ namespace ExtenderApp.FFmpegEngines.Medias
             else if (mediaTask != null)
             {
                 _pauseEvent.Set();
-                State = PlayerState.Playing;
                 return;
             }
             else if (Position != 0)
             {
                 Seek(Position);
             }
-            State = PlayerState.Playing;
+            else
+            {
+                _decoderController.StartDecode();
+                mediaTask = Task.Run(PlaybackLoop, _decoderController.Token);
+            }
 
-            _decoderController.StartDecode();
-            mediaTask = Task.Run(PlaybackLoop, _decoderController.Token);
-            FrameProcessCollection.PlayerStateChange(State);
+            OnChangeState(PlayerState.Playing);
         }
 
         /// <summary>
@@ -192,8 +203,7 @@ namespace ExtenderApp.FFmpegEngines.Medias
                 return ValueTask.CompletedTask;
             }
 
-            State = PlayerState.Stopped;
-            FrameProcessCollection.PlayerStateChange(State);
+            OnChangeState(PlayerState.Stopped);
             return new(_decoderController.StopDecodeAsync());
         }
 
@@ -208,8 +218,7 @@ namespace ExtenderApp.FFmpegEngines.Medias
             }
 
             _pauseEvent.Reset();
-            State = PlayerState.Paused;
-            FrameProcessCollection.PlayerStateChange(State);
+            OnChangeState(PlayerState.Paused);
         }
 
         /// <summary>
@@ -240,6 +249,20 @@ namespace ExtenderApp.FFmpegEngines.Medias
 
             Interlocked.Exchange(ref seekPosition, position);
             _decoderController.SeekDecoder(position);
+        }
+
+        /// <summary>
+        /// 改变播放器状态并触发事件。
+        /// </summary>
+        /// <param name="newState">新的播放器状态</param>
+        private void OnChangeState(PlayerState newState)
+        {
+            if (State != newState)
+            {
+                State = newState;
+                FrameProcessCollection.PlayerStateChange(State);
+                PlayerStateChanged?.Invoke(this, State);
+            }
         }
 
         /// <summary>
@@ -277,8 +300,9 @@ namespace ExtenderApp.FFmpegEngines.Medias
             long lastTicks = 0;
             long notifyIntervalTicks = frameInterval * Stopwatch.Frequency / 1000;
 
-            _frameProcessController.WaitFirstFrameAligned(generation, frameInterval, out long pts);
-            Position = lastPosition = pts;
+            int bufferingCount = 0;
+            OnChangeState(PlayerState.Buffering);
+
             var sw = Stopwatch.StartNew();
             while (!token.IsCancellationRequested)
             {
@@ -312,18 +336,24 @@ namespace ExtenderApp.FFmpegEngines.Medias
                 }
 
                 int waitDelay = _frameProcessController.Processing(frameInterval, position, generation);
-                //Debug.Print($"PlaybackLoop: pos={position} waitDelay={waitDelay} gen={generation}");
                 if (waitDelay < 0)
                 {
                     if (_decoderController.Completed)
-                    {
                         break;
+
+                    bufferingCount++;
+                    if (bufferingCount >= BufferingCount)
+                    {
+                        OnChangeState(PlayerState.Buffering);
                     }
+
                     Position = basePositionMs = lastPosition;
                     Thread.Sleep(1);
                     sw.Restart();
                     continue;
                 }
+                bufferingCount = 0;
+                OnChangeState(PlayerState.Playing);
                 Position = lastPosition = position;
 
                 int waitMs = (waitDelay > 0) ? (int)(waitDelay / SpeedRatio) : frameInterval;
@@ -400,8 +430,10 @@ namespace ExtenderApp.FFmpegEngines.Medias
         /// </summary>
         protected override void DisposeManagedResources()
         {
+            StopAsync().ConfigureAwait(false);
             _pauseEvent.Dispose();
             _decoderController.Dispose();
+            _frameProcessController.Dispose();
         }
     }
 }

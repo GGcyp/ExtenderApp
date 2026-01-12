@@ -95,13 +95,48 @@ namespace ExtenderApp.FFmpegEngines.Decoders
             // 使用 SwrContext 进行音频重采样，输出到 pcmFrame
             Engine.SwrConvert(swrContext, pcmFrame, frame);
 
-            // 计算输出 PCM 的字节数并分配输出块
-            var dataLength = Engine.GetBufferSizeForSamples(pcmFrame);
-            block = new(dataLength);
+            int dataLength = Engine.GetBufferSizeForSamples(pcmFrame);
+            int channelCount = Engine.GetChannelCount(pcmFrame);
+            if (dataLength <= 0 || channelCount <= 0)
+            {
+                block = default;
+                return;
+            }
 
-            // 将 ffmpeg 输出缓冲拷贝到托管可控的块中，交由下游帧队列
-            Span<byte> span = new(pcmFrame.Value->data[0], dataLength);
-            block.Write(span);
+            // 计算输出 PCM 的字节数并分配输出块
+            block = new(dataLength);
+            for (uint i = 0; i < channelCount; i++)
+            {
+                // 将 ffmpeg 输出缓冲拷贝到托管可控的块中，交由下游帧队列
+                Span<byte> span = Engine.GetFrameData(frame, i);
+                block.Write(span);
+            }
+        }
+
+        protected override unsafe long GetFrameDurationMsProtected(NativeIntPtr<AVFrame> framePtr)
+        {
+            int sampleCount = Engine.GetSampleCount(framePtr);
+            if (sampleCount <= 0)
+            {
+                return 1;
+            }
+
+            int sampleRate = Engine.GetSampleRate(framePtr);
+            if (sampleRate <= 0 && !DecoderContext.IsEmpty && !DecoderContext.CodecContext.IsEmpty)
+            {
+                sampleRate = DecoderContext.CodecContext.Value->sample_rate;
+            }
+            if (sampleRate <= 0)
+            {
+                sampleRate = Info.SampleRate;
+            }
+            if (sampleRate <= 0)
+            {
+                return 1;
+            }
+
+            long estimated = (long)System.Math.Round(sampleCount * 1000d / sampleRate);
+            return estimated > 0 ? estimated : 1;
         }
 
         /// <summary>
@@ -118,34 +153,7 @@ namespace ExtenderApp.FFmpegEngines.Decoders
         {
             base.DisposeUnmanagedResources();
             Engine.Free(ref swrContext);
-            Engine.Free(ref pcmFrame);
-        }
-
-        protected override unsafe long GetFrameDurationMsProtected(NativeIntPtr<AVFrame> framePtr)
-        {
-            var sampleCount = Engine.GetSampleCount(framePtr);
-            if (sampleCount <= 0)
-            {
-                return 1;
-            }
-
-            int sampleRate = Engine.GetSampleRate(framePtr);
-            if (sampleRate <= 0 && !DecoderContext.IsEmpty && !DecoderContext.CodecContext.IsEmpty)
-            {
-                Engine.GetSampleRate(DecoderContext);
-                sampleRate = DecoderContext.CodecContext.Value->sample_rate;
-            }
-            if (sampleRate <= 0)
-            {
-                sampleRate = Info.SampleRate;
-            }
-            if (sampleRate <= 0)
-            {
-                return 1;
-            }
-
-            long estimated = (long)System.Math.Round(sampleRate * 1000d / sampleRate);
-            return estimated > 0 ? estimated : 1;
+            Engine.Return(pcmFrame);
         }
     }
 }
