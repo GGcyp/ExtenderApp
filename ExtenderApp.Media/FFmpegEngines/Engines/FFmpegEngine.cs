@@ -1875,7 +1875,7 @@ namespace ExtenderApp.FFmpegEngines
         /// <param name="framePtr">帧指针封装。</param>
         /// <param name="context">解码器上下文，提供流的时间基准。</param>
         /// <returns>帧的持续时间（单位：毫秒）。</returns>
-        public long GetFrameDuration(NativeIntPtr<AVFrame> framePtr, FFmpegDecoderContext context)
+        public long GetFrameDurationMs(NativeIntPtr<AVFrame> framePtr, FFmpegDecoderContext context)
         {
             return GetFrameDuration(framePtr, context.CodecStream);
         }
@@ -1903,6 +1903,165 @@ namespace ExtenderApp.FFmpegEngines
             // 转换为毫秒
             long durationMs = ffmpeg.av_rescale_q(duration, timeBase, ffmpeg.av_make_q(1, 1000));
             return durationMs;
+        }
+
+        /// <summary>
+        /// 获取指定音频帧的样本数（<c>nb_samples</c>）。
+        /// <para>
+        /// 该值表示“每声道样本数”（每个声道包含多少个采样点），常用于：
+        /// <list type="bullet">
+        /// <item><description>计算音频帧持续时间：<c>durationMs = nb_samples / sample_rate * 1000</c>。</description></item>
+        /// <item><description>计算 PCM 数据长度（结合声道数与采样格式字节数）。</description></item>
+        /// <item><description>重采样时的比例换算或缓冲区大小预估。</description></item>
+        /// </list>
+        /// </para>
+        /// </summary>
+        /// <param name="framePtr">音频帧指针（<see cref="AVFrame"/>）。</param>
+        /// <returns>音频帧的样本数（每声道）。</returns>
+        public int GetSampleCount(NativeIntPtr<AVFrame> framePtr)
+        {
+            return framePtr.Value->nb_samples;
+        }
+
+        /// <summary>
+        /// 获取当前解码器上下文（<see cref="FFmpegDecoderContext"/>）对应的“期望/默认”每帧样本数。
+        /// <para>
+        /// 实现上返回的是 <see cref="AVCodecContext.frame_size"/>：
+        /// <list type="bullet">
+        /// <item><description>对多数音频编码（例如 AAC 等）该值通常表示每个解码帧的固定样本数（每声道）。</description></item>
+        /// <item><description>对部分编码/容器/解码器，该值可能为 0（可变帧大小）或不可靠，应以 <see cref="AVFrame.nb_samples"/> 为准。</description></item>
+        /// </list>
+        /// </para>
+        /// </summary>
+        /// <param name="context">解码器上下文。</param>
+        /// <returns>每帧样本数（每声道）。若解码器不提供固定帧大小，可能为 0。</returns>
+        public int GetSampleCount(FFmpegDecoderContext context)
+        {
+            return GetSampleCount(context.CodecContext);
+        }
+
+        /// <summary>
+        /// 获取指定解码器上下文（<see cref="AVCodecContext"/>）的“期望/默认”每帧样本数（<see cref="AVCodecContext.frame_size"/>）。
+        /// <para>
+        /// 用途：用于预分配缓冲区、估算帧持续时间等“静态参数”场景。
+        /// 注意：实际输出帧的样本数应优先读取 <see cref="AVFrame.nb_samples"/>，因为在 VBR/某些解码器下可能变化。
+        /// </para>
+        /// </summary>
+        /// <param name="codecContextPtr">解码器上下文指针（<see cref="AVCodecContext"/>）。</param>
+        /// <returns>每帧样本数（每声道）。若为可变帧大小，可能为 0。</returns>
+        /// <exception cref="ArgumentNullException">当 <paramref name="codecContextPtr"/> 为空时抛出。</exception>
+        public int GetSampleCount(NativeIntPtr<AVCodecContext> codecContextPtr)
+        {
+            if (codecContextPtr.IsEmpty)
+            {
+                throw new ArgumentNullException(nameof(codecContextPtr));
+            }
+            return codecContextPtr.Value->frame_size;
+        }
+
+        /// <summary>
+        /// 获取指定解码器上下文的声道数。
+        /// <para>
+        /// 返回 <see cref="AVCodecContext.ch_layout"/> 中的 <c>nb_channels</c>，用于：
+        /// <list type="bullet">
+        /// <item><description>计算 PCM 数据长度（结合样本数和采样格式）。</description></item>
+        /// <item><description>配置/校验重采样参数（SwrContext 输入）。</description></item>
+        /// </list>
+        /// </para>
+        /// </summary>
+        /// <param name="context">解码器上下文。</param>
+        /// <returns>声道数。</returns>
+        public int GetChannelCount(FFmpegDecoderContext context)
+        {
+            return GetChannelCount(context.CodecContext);
+        }
+
+        /// <summary>
+        /// 获取指定解码器上下文（<see cref="AVCodecContext"/>）的声道数。
+        /// <para>
+        /// 该方法读取 <see cref="AVCodecContext.ch_layout"/> 的 <c>nb_channels</c>，表示当前解码器配置下的音频声道数量。
+        /// </para>
+        /// </summary>
+        /// <param name="codecContextPtr">解码器上下文指针（<see cref="AVCodecContext"/>）。</param>
+        /// <returns>声道数。</returns>
+        /// <exception cref="ArgumentNullException">当 <paramref name="codecContextPtr"/> 为空时抛出。</exception>
+        public int GetChannelCount(NativeIntPtr<AVCodecContext> codecContextPtr)
+        {
+            if (codecContextPtr.IsEmpty)
+            {
+                throw new ArgumentNullException(nameof(codecContextPtr));
+            }
+            return codecContextPtr.Value->ch_layout.nb_channels;
+        }
+
+        /// <summary>
+        /// 获取指定音频帧的声道数。
+        /// <para>
+        /// 该值来自 <see cref="AVFrame.ch_layout"/> 的 <c>nb_channels</c> 字段，
+        /// 表示当前帧携带的声道数量（例如：mono=1、stereo=2、5.1 通常为 6）。
+        /// </para>
+        /// </summary>
+        /// <param name="framePtr">音频帧指针（<see cref="AVFrame"/>）。</param>
+        /// <returns>声道数。</returns>
+        public int GetChannelCount(NativeIntPtr<AVFrame> framePtr)
+        {
+            return framePtr.Value->ch_layout.nb_channels;
+        }
+
+        /// <summary>
+        /// 获取指定音频帧的采样率（Hz）。
+        /// <para>
+        /// 该值来自 <see cref="AVFrame.sample_rate"/>，用于音频持续时间计算、重采样换算等。
+        /// 注意：在部分媒体/滤镜链场景中，采样率可能在运行时变化；因此应优先以帧自身的采样率为准。
+        /// </para>
+        /// </summary>
+        /// <param name="framePtr">音频帧指针（<see cref="AVFrame"/>）。</param>
+        /// <returns>采样率（Hz）。</returns>
+        public int GetSampleRate(NativeIntPtr<AVFrame> framePtr)
+        {
+            return framePtr.Value->sample_rate;
+        }
+
+        /// <summary>
+        /// 获取指定解码器上下文（<see cref="FFmpegDecoderContext"/>）的采样率（Hz）。
+        /// <para>
+        /// 该方法属于“流/解码器参数级别”的采样率读取，通常用于：
+        /// <list type="bullet">
+        /// <item><description>初始化/配置音频输出格式（例如目标采样率选择、重采样参数推导）。</description></item>
+        /// <item><description>在没有可用 <see cref="AVFrame.sample_rate"/> 的情况下，作为音频持续时间估算或缓冲区规划的兜底值。</description></item>
+        /// </list>
+        /// </para>
+        /// <para>
+        /// 注意：在滤镜链或重采样等场景下，实际帧的采样率可能与解码器上下文不同；此时应优先使用 <see cref="GetSampleRate(NativeIntPtr{AVFrame})"/> 返回的帧级采样率。
+        /// </para>
+        /// </summary>
+        /// <param name="context">解码器上下文。</param>
+        /// <returns>采样率（Hz）。</returns>
+        public int GetSampleRate(FFmpegDecoderContext context)
+        {
+            return GetSampleRate(context.CodecContext);
+        }
+
+        /// <summary>
+        /// 获取指定解码器上下文（<see cref="AVCodecContext"/>）的采样率（Hz）。
+        /// <para>
+        /// 返回 <see cref="AVCodecContext.sample_rate"/>。该值描述了解码器当前配置下的“流级”采样率，
+        /// 通常用于 SwrContext 的输入参数、音频缓冲区规划等。
+        /// </para>
+        /// <para>
+        /// 注意：该值不一定等于每一个输出帧的 <see cref="AVFrame.sample_rate"/>（尤其在经过滤镜/重采样后），需要按使用场景选择。
+        /// </para>
+        /// </summary>
+        /// <param name="codecContextPtr">解码器上下文指针。</param>
+        /// <returns>采样率（Hz）。</returns>
+        /// <exception cref="ArgumentNullException">当 <paramref name="codecContextPtr"/> 为空时抛出。</exception>
+        public int GetSampleRate(NativeIntPtr<AVCodecContext> codecContextPtr)
+        {
+            if (codecContextPtr.IsEmpty)
+            {
+                throw new ArgumentNullException(nameof(codecContextPtr));
+            }
+            return codecContextPtr.Value->sample_rate;
         }
 
         #endregion Common

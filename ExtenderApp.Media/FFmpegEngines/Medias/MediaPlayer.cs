@@ -147,26 +147,11 @@ namespace ExtenderApp.FFmpegEngines.Medias
         {
             State = PlayerState.Uninitialized;
             _decoderController = decoderController;
-            _decoderController.CompletedDecoded += HandleCompletedDecoded;
             _frameProcessController = frameProcessController;
             _pauseEvent = new(true);
             SpeedRatio = 1;
             seekPosition = -1;
             State = PlayerState.Initializing;
-        }
-
-        private void HandleCompletedDecoded(IFFmpegDecoderController _)
-        {
-            if (State == PlayerState.Uninitialized || State == PlayerState.Stopped)
-                return;
-
-            // 不阻塞解码线程；让播放器自行收尾
-            Task.Run(async () =>
-            {
-                await StopAsync().ConfigureAwait(false);
-                Position = Info.Duration;
-                Playback?.Invoke();
-            });
         }
 
         /// <summary>
@@ -330,7 +315,13 @@ namespace ExtenderApp.FFmpegEngines.Medias
                 //Debug.Print($"PlaybackLoop: pos={position} waitDelay={waitDelay} gen={generation}");
                 if (waitDelay < 0)
                 {
+                    if (_decoderController.Completed)
+                    {
+                        break;
+                    }
+                    Position = basePositionMs = lastPosition;
                     Thread.Sleep(1);
+                    sw.Restart();
                     continue;
                 }
                 Position = lastPosition = position;
@@ -351,7 +342,13 @@ namespace ExtenderApp.FFmpegEngines.Medias
                     Playback?.Invoke();
                 }
             }
+
+            Position = Info.Duration;
+            Playback?.Invoke();
+
+#if DEBUG
             Debug.Print("PlaybackLoop: exited");
+#endif
         }
 
         /// <summary>

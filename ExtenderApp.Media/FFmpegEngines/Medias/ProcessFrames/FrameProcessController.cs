@@ -221,7 +221,9 @@ namespace ExtenderApp.FFmpegEngines.Medias
 
                 long timeDiff = frame.Pts - position;
 
+#if DEBUG
                 Debug.Print($"[FrameProcessController] MediaType={decoder.MediaType}, Pts={frame.Pts}, Position={position}, TimeDiff={timeDiff}");
+#endif
                 if (timeDiff > 0)
                 {
                     return (int)timeDiff;

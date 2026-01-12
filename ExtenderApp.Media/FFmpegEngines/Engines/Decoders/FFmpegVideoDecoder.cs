@@ -63,6 +63,11 @@ namespace ExtenderApp.FFmpegEngines.Decoders
         private int rgbBufferLength;
 
         /// <summary>
+        /// 默认帧持续时间（毫秒）。
+        /// </summary>
+        private long duration;
+
+        /// <summary>
         /// 创建 <see cref="FFmpegVideoDecoder"/>。
         /// <para>
         /// 初始化一次性资源：
@@ -93,6 +98,15 @@ namespace ExtenderApp.FFmpegEngines.Decoders
             // 源：info.PixelFormat / info.Width / info.Height
             // 目标：settings.PixelFormat / info.Width / info.Height
             swsContext = Engine.CreateSwsContext(info.Width, info.Height, info.PixelFormat.Convert(), info.Width, info.Height, settings.PixelFormat.Convert());
+
+            double fps = Info.Rate;
+            if (fps <= 0)
+            {
+                fps = FFmpegEngine.DefaultFrameRate;
+            }
+
+            long estimated = (long)System.Math.Round(1000d / fps);
+            duration = estimated > 0 ? estimated : 1;
         }
 
         /// <summary>
@@ -134,6 +148,11 @@ namespace ExtenderApp.FFmpegEngines.Decoders
             Engine.Free(ref swsContext);
             Engine.Return(rgbFrame);
             rgbBuffer.Dispose();
+        }
+
+        protected override long GetFrameDurationMsProtected(NativeIntPtr<AVFrame> framePtr)
+        {
+            return duration;
         }
     }
 }

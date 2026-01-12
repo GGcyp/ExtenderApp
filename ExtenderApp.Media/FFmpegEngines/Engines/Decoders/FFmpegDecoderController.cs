@@ -64,10 +64,14 @@ namespace ExtenderApp.FFmpegEngines
         public CancellationToken Token => source?.Token ?? throw new ArgumentNullException("当前解码还未启动，无法获取结束令牌");
 
         /// <summary>
-        /// 当读取到文件末尾（EOF）时触发。
-        /// <para>注意：在读包线程触发，若订阅方涉及 UI 更新需要自行切换线程。</para>
+        /// 是否已将媒体流解码完成（读取到 EOF 并分发完所有包）。
         /// </summary>
-        public event Action<IFFmpegDecoderController>? CompletedDecoded;
+        public volatile bool completed;
+
+        /// <summary>
+        /// 是否已将媒体流解码完成（读取到 EOF 并分发完所有包）。
+        /// </summary>
+        public bool Completed => completed;
 
         /// <summary>
         /// 获取当前媒体流的基本信息（如时长、格式、URI 等）。
@@ -85,6 +89,7 @@ namespace ExtenderApp.FFmpegEngines
             _decoders = decoders;
             Settings = settings;
             _controllerContext = controllerContext;
+            completed = false;
         }
 
         #region Operation
@@ -141,6 +146,7 @@ namespace ExtenderApp.FFmpegEngines
         {
             ThrowIfDisposed();
 
+            completed = false;
             Interlocked.Exchange(ref seekTagetPosition, position);
             _controllerContext.IncrementGeneration();
 
@@ -155,6 +161,7 @@ namespace ExtenderApp.FFmpegEngines
         /// </summary>
         private void StartDecodingPrivate()
         {
+            completed = false;
             int length = DecoderCollection.Count + 1;
 
             int decoderIndex = 0;
@@ -212,7 +219,7 @@ namespace ExtenderApp.FFmpegEngines
                 if (Engine.IsEndOfFile(result))
                 {
                     Engine.Return(packetPtr);
-                    CompletedDecoded?.Invoke(this);
+                    completed = true;
                     break;
                 }
 

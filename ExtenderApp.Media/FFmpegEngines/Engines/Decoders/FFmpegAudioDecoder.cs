@@ -120,5 +120,32 @@ namespace ExtenderApp.FFmpegEngines.Decoders
             Engine.Free(ref swrContext);
             Engine.Free(ref pcmFrame);
         }
+
+        protected override unsafe long GetFrameDurationMsProtected(NativeIntPtr<AVFrame> framePtr)
+        {
+            var sampleCount = Engine.GetSampleCount(framePtr);
+            if (sampleCount <= 0)
+            {
+                return 1;
+            }
+
+            int sampleRate = Engine.GetSampleRate(framePtr);
+            if (sampleRate <= 0 && !DecoderContext.IsEmpty && !DecoderContext.CodecContext.IsEmpty)
+            {
+                Engine.GetSampleRate(DecoderContext);
+                sampleRate = DecoderContext.CodecContext.Value->sample_rate;
+            }
+            if (sampleRate <= 0)
+            {
+                sampleRate = Info.SampleRate;
+            }
+            if (sampleRate <= 0)
+            {
+                return 1;
+            }
+
+            long estimated = (long)System.Math.Round(sampleRate * 1000d / sampleRate);
+            return estimated > 0 ? estimated : 1;
+        }
     }
 }

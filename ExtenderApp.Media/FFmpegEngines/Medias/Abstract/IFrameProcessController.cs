@@ -34,8 +34,6 @@
         /// </list>
         /// </returns>
         int Processing(int outTime, long position, int generation);
-
-
-        public void WaitFirstFrameAligned(int generation, int timeoutMs, out long position);
+        void WaitFirstFrameAligned(int generation, int timeoutMs, out long position);
     }
 }

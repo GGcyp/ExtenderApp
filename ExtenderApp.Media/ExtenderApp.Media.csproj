@@ -9,6 +9,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="FFmpegEngines\Engines\Settings\**" />
+    <EmbeddedResource Remove="FFmpegEngines\Engines\Settings\**" />
+    <None Remove="FFmpegEngines\Engines\Settings\**" />
+    <Page Remove="FFmpegEngines\Engines\Settings\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Compile Update="Views\MediaMainView.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
@@ -95,10 +102,6 @@
     <None Update="libvlccore.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-  </ItemGroup>
-	
-  <ItemGroup>
-    <Folder Include="FFmpegEngines\Engines\Settings\" />
   </ItemGroup>
 
 </Project>
