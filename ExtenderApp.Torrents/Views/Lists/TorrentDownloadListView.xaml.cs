@@ -31,7 +31,7 @@ namespace ExtenderApp.Torrents.Views
 
         private void ContextMenu_Opened(object sender, RoutedEventArgs e)
         {
-            ViewModel<TorrentDownloadListViewModel>()?.UpdateSeletedState();
+            GetViewModel<TorrentDownloadListViewModel>()?.UpdateSeletedState();
         }
 
         private void downloadList_MouseDown(object sender, MouseButtonEventArgs e)

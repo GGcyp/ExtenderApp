@@ -53,8 +53,8 @@ namespace ExtenderApp.Media
             if (openFileDialog.ShowDialog() == true)
             {
                 var selectedFilePaths = openFileDialog.FileNames;
-                // 将选中的视频路径添加到 ViewModel
-                ViewModel<VideoListViewModel>()!.AddVideoPaths(selectedFilePaths);
+                // 将选中的视频路径添加到 GetViewModel
+                GetViewModel<VideoListViewModel>()!.AddVideoPaths(selectedFilePaths);
             }
         }
 

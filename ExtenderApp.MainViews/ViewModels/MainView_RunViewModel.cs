@@ -55,7 +55,7 @@ namespace ExtenderApp.MainViews.ViewModels
             var settingWindow = NavigateToWindow<SettingsView>()!;
 
             var view = settingWindow.CurrentView as SettingsView;
-            var settingsViewModel = view!.ViewModel<SettingsViewModel>()!;
+            var settingsViewModel = view!.GetViewModel<SettingsViewModel>()!;
             settingsViewModel.CurrentPluginSettingsView = currentMainViewSettings.SettingsView;
             settingsViewModel.SetMainViewSettings(currentMainViewSettings);
             currentMainViewSettings.SettingNavigationConfig(view.navigationBar.Children);

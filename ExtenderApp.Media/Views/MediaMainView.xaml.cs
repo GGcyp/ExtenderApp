@@ -1,25 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Media.Animation;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
-using ExtenderApp.Abstract;
-using ExtenderApp.Common;
 using ExtenderApp.Media.ViewModels;
 using ExtenderApp.Views;
-using ExtenderApp.Views.Animation;
 
 namespace ExtenderApp.Media
 {
@@ -61,7 +46,7 @@ namespace ExtenderApp.Media
                 string[] filePaths = e.Data.GetData(DataFormats.FileDrop) as string[];
                 //foreach (string filePath in filePaths)
                 //{
-                //    ViewModel<MediaMainViewModel>().AddVideoPath(filePath);
+                //    GetViewModel<MediaMainViewModel>().AddVideoPath(filePath);
 
                 //}
             }
@@ -72,7 +57,7 @@ namespace ExtenderApp.Media
 
         private void mediaSlider_DragStarted(object sender, DragStartedEventArgs e)
         {
-            ViewModel<MediaMainViewModel>()!.Model.IsSeeking = true;
+            GetViewModel<MediaMainViewModel>()!.Model.IsSeeking = true;
             e.Handled = true;
         }
 
@@ -80,7 +65,7 @@ namespace ExtenderApp.Media
         {
             var slider = sender as Slider;
             double value = slider?.Value ?? 0;
-            var viewModel = ViewModel<MediaMainViewModel>()!;
+            var viewModel = GetViewModel<MediaMainViewModel>()!;
             viewModel.Model.Position = TimeSpan.FromSeconds(value);
             e.Handled = true;
         }
@@ -89,7 +74,7 @@ namespace ExtenderApp.Media
         {
             var slider = sender as Slider;
             double value = slider?.Value ?? 0;
-            var viewModel = ViewModel<MediaMainViewModel>()!;
+            var viewModel = GetViewModel<MediaMainViewModel>()!;
             viewModel.Seek(TimeSpan.FromSeconds(value));
             viewModel.Model.IsSeeking = false;
             e.Handled = true;
@@ -107,7 +92,7 @@ namespace ExtenderApp.Media
 
             //slider.Item1 = newValue;
 
-            var viewModel = ViewModel<MediaMainViewModel>()!;
+            var viewModel = GetViewModel<MediaMainViewModel>()!;
             viewModel.Seek(TimeSpan.FromSeconds(newValue));
             e.Handled = true;
         }

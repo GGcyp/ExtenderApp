@@ -174,5 +174,8 @@ namespace ExtenderApp.Media.Models
         {
             return MediaUri.GetHashCode();
         }
+
+        public static implicit operator MediaInfo(FFmpegInfo info)
+            => new MediaInfo(info);
     }
 }

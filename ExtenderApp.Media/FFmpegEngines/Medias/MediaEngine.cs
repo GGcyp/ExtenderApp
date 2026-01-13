@@ -9,16 +9,16 @@
             _engine = engine;
         }
 
-        public MediaPlayer OpenMedia(Uri mediaUri, FFmpegDecoderSettings? settings = null)
+        public IMediaPlayer OpenMedia(Uri mediaUri, FFmpegDecoderSettings? settings = null, Dictionary<string, string>? options = null)
         {
             return OpenMedia(mediaUri.IsFile ? mediaUri.LocalPath : mediaUri.ToString(), settings);
         }
 
-        public MediaPlayer OpenMedia(string mediaPath, FFmpegDecoderSettings? settings = null)
+        public IMediaPlayer OpenMedia(string mediaPath, FFmpegDecoderSettings? settings = null, Dictionary<string, string>? options = null)
         {
             settings = settings ?? new();
 
-            var context = _engine.OpenUri(mediaPath);
+            var context = _engine.OpenUri(mediaPath, options);
             var ffmpegDecoderController = _engine.CreateDecoderController(context, settings);
             FrameProcessController frameProcessController = new(ffmpegDecoderController);
             return new MediaPlayer(ffmpegDecoderController, frameProcessController);

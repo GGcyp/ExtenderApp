@@ -1,7 +1,6 @@
 ﻿using ExtenderApp.Abstract;
 using ExtenderApp.Data;
 using ExtenderApp.FFmpegEngines;
-using ExtenderApp.FFmpegEngines.Medias;
 using ExtenderApp.Media.Models;
 using ExtenderApp.ViewModels;
 using ExtenderApp.Views.Commands;
@@ -11,8 +10,6 @@ namespace ExtenderApp.Media.ViewModels
 {
     public class MediaMainViewModel : ExtenderAppViewModel<MediaMainView, MediaModel>
     {
-        private readonly MediaEngine _engine;
-
         #region 按钮
 
         /// <summary>
@@ -37,10 +34,8 @@ namespace ExtenderApp.Media.ViewModels
 
         #endregion 按钮
 
-        public MediaMainViewModel(IServiceStore serviceStore, MediaEngine engine) : base(serviceStore)
+        public MediaMainViewModel(IServiceStore serviceStore) : base(serviceStore)
         {
-            _engine = engine;
-
             Model.CurrentVideoListView = NavigateTo<VideoListView>();
 
             MediaStateChangeCommand = new(OnMediaStateChange);

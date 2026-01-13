@@ -38,7 +38,7 @@ namespace ExtenderApp.MainViews.Views
 
             //// currentBlock 即为当前可视区块
             //HighlightNavigationButton(currentBlock);
-            //ViewModel<SettingsViewModel>().LogInformation();
+            //GetViewModel<SettingsViewModel>().LogInformation();
             item.Item1.Background = settingsNavigationLightBrushes;
             item.Item1.Foreground = Brushes.Black;
         }

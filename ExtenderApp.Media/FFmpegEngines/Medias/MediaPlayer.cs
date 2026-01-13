@@ -31,7 +31,7 @@ namespace ExtenderApp.FFmpegEngines.Medias
         /// <summary>
         /// 进入缓冲状态的连续空帧计数阈值。
         /// </summary>
-        private const int BufferingCount = 200;
+        private const int BufferingCount = 100;
 
         /// <summary>
         /// 解码控制器：负责启动/停止解码任务、Seek、维护 generation 等运行状态。
@@ -239,13 +239,9 @@ namespace ExtenderApp.FFmpegEngines.Medias
                 return;
 
             if (position > Info.Duration)
-            {
                 position = Info.Duration;
-            }
             else if (position < 0)
-            {
                 position = 0;
-            }
 
             Interlocked.Exchange(ref seekPosition, position);
             _decoderController.SeekDecoder(position);
@@ -301,8 +297,6 @@ namespace ExtenderApp.FFmpegEngines.Medias
             long notifyIntervalTicks = frameInterval * Stopwatch.Frequency / 1000;
 
             int bufferingCount = 0;
-            OnChangeState(PlayerState.Buffering);
-
             var sw = Stopwatch.StartNew();
             while (!token.IsCancellationRequested)
             {

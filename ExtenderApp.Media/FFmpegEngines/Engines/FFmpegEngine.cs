@@ -1,4 +1,5 @@
 ﻿using System.Collections.Concurrent;
+using System.IO;
 using System.Runtime.InteropServices;
 using ExtenderApp.Data;
 using ExtenderApp.FFmpegEngines.Decoders;
@@ -271,6 +272,17 @@ namespace ExtenderApp.FFmpegEngines
         /// 打开指定URI的音视频流，并返回一个FFmpegContext实例。
         /// </summary>
         /// <param name="uri">要打开的URI。</param>
+        /// <param name="options">选项。</param>
+        /// <returns>FFmpegContext实例。</returns>
+        public FFmpegContext OpenUri(string uri, Dictionary<string, string>? options)
+        {
+            return OpenUri(uri, FFmpegInputFormat.Empty, options);
+        }
+
+        /// <summary>
+        /// 打开指定URI的音视频流，并返回一个FFmpegContext实例。
+        /// </summary>
+        /// <param name="uri">要打开的URI。</param>
         /// <param name="inputFormat">输入格式。</param>
         /// <param name="options">选项。</param>
         /// <param name="flags">选项标志。</param>
@@ -300,6 +312,75 @@ namespace ExtenderApp.FFmpegEngines
             var info = CreateFFmpegInfo(uri, collection);
 
             return new FFmpegContext(this, formatContext, nOptions, info, collection);
+        }
+
+        /// <summary>
+        /// 通过 AVIOContext 从托管 <see cref="Stream"/> 打开媒体。
+        /// <para>
+        /// 适用于：自定义协议拉流、解密/缓存后喂给 FFmpeg、或将网络数据写入管道再解复用。
+        /// </para>
+        /// <para>
+        /// 注意：如果 <paramref name="stream"/> 不支持 Seek，则 FFmpeg 将按“不可 seek 的实时流”处理。
+        /// </para>
+        /// </summary>
+        /// <param name="stream">数据源流（建议：只读、持续提供数据）。</param>
+        /// <param name="inputFormat">
+        /// 输入格式（可空）：当你的数据不是文件扩展名可识别的场景，建议显式指定，例如：
+        /// <c>FindInputFormat("mpegts")</c> / <c>FindInputFormat("flv")</c> / <c>FindInputFormat("h264")</c>。
+        /// </param>
+        /// <param name="options">打开选项字典（AVDictionary）。</param>
+        /// <param name="bufferSize">AVIOContext 内部缓冲大小。</param>
+        public FFmpegContext OpenStream(Stream stream, FFmpegInputFormat inputFormat, Dictionary<string, string>? options, int bufferSize = 64 * 1024)
+        {
+            ArgumentNullException.ThrowIfNull(stream);
+
+            var formatContextPtrWrapper = CreateFormatContext();
+            var formatContext = formatContextPtrWrapper.Value;
+
+            // 绑定自定义 AVIOContext
+            //var avio = new FFmpegIOContext(stream, bufferSize);
+            //_intPtrHashSet.Add((nint)avio.Context);
+
+            //formatContext->pb = avio.Context.Value;
+
+            //// 非 seek 流一般当直播流处理（减少内部 seek/缓存假设）
+            //if (!stream.CanSeek)
+            //{
+            //    formatContext->flags |= ffmpeg.AVFMT_FLAG_NOBUFFER;
+            //}
+
+            //// 保存 options
+            //var nOptions = CreateOptions(options);
+            //var inputOptions = nOptions.Value;
+            //AVDictionary** inputOptionsIntPtr = &inputOptions;
+
+            //// url 参数可为空字符串（FFmpeg 会走自定义 IO）
+            //int result = ffmpeg.avformat_open_input(&formatContext, string.Empty, inputFormat, inputOptionsIntPtr);
+            //if (result < 0)
+            //{
+            //    avio.Dispose();
+            //    ShowException("avformat_open_input(AVIOContext) 失败", result);
+            //}
+
+            //result = ffmpeg.avformat_find_stream_info(formatContext, inputOptionsIntPtr);
+            //if (result < 0)
+            //{
+            //    avio.Dispose();
+            //    throw new FFmpegException("无法获取流信息(AVIOContext)。");
+            //}
+
+            //FFmpegDecoderContextCollection collection = CreateDecoderContextCollection(formatContext, nOptions, "avio:");
+
+            //var info = CreateFFmpegInfo("avio:", collection);
+
+            //// 关键：把 avio 跟随 Context 生命周期释放
+            //// 这里用 CloseInput/Free 时释放 pb 最安全，但你当前 Free(AVFormatContext) 使用的是 avformat_free_context，
+            //// 不会自动释放 pb；因此我们把 avio 的释放挂到引擎释放路径里：
+            //// - 将 avio.Context 放入 _intPtrHashSet，Dispose 时清理
+            //// - 并在 Free(AVFormatContext) 之前手动释放 pb（见下一个小改动）
+
+            //return new FFmpegContext(this, formatContextPtrWrapper, nOptions, info, collection);
+            return default;
         }
 
         #endregion Open
@@ -363,6 +444,18 @@ namespace ExtenderApp.FFmpegEngines
             }
             return dict;
         }
+
+        //public NativeIntPtr<AVIOContext> CreateIOContext(NativeIntPtr<byte> buffer,int bufferSize,int writeFlag,IntPtr opaque,)
+        //{
+        //    ffmpeg.avio_alloc_context(
+        //        buffer.Value,
+        //        bufferSize,
+        //        writeFlag,
+        //        opaque,
+        //        &ReadPacket,
+        //        null,
+        //        stream.CanSeek ? &Seek : null);
+        //}
 
         /// <summary>
         /// 创建AVFrame实例。
@@ -1462,6 +1555,24 @@ namespace ExtenderApp.FFmpegEngines
 
         #endregion ChannelLayout
 
+        #region Close
+
+        /// <summary>
+        /// 关闭 <see cref="AVFormatContext"/> 指针，释放相关资源。
+        /// 用于在完成媒体处理后，正确关闭格式上下文，
+        /// 释放底层资源，防止内存泄漏。
+        /// </summary>
+        /// <param name="ptr"><see cref="AVFormatContext"/> 指针</param>
+        public void Close(ref NativeIntPtr<AVFormatContext> ptr)
+        {
+            var ctx = ptr.Value;
+            var ctxPtr = &ctx;
+            ffmpeg.avformat_close_input(ctxPtr);
+            ptr.Dispose();
+        }
+
+        #endregion Close
+
         #region Free
 
         /// <summary>
@@ -1485,7 +1596,8 @@ namespace ExtenderApp.FFmpegEngines
                 return;
             }
 
-            Free(ref context.FormatContext);
+            //Free(ref context.FormatContext);
+            Close(ref context.FormatContext);
             Free(ref context.Options);
             Free(ref context.ContextCollection);
         }
@@ -1576,6 +1688,21 @@ namespace ExtenderApp.FFmpegEngines
             if (CheckIntPtrAndRemove(ptr))
             {
                 ffmpeg.avformat_free_context(ptr);
+                ptr.Dispose();
+            }
+        }
+
+        /// <summary>
+        /// 释放 <see cref="AVIOContext"/> 指针资源。
+        /// </summary>
+        /// <param name="ptr"><see cref="AVIOContext"/> 指针</param>
+        public void Free(ref NativeIntPtr<AVIOContext> ptr)
+        {
+            if (CheckIntPtrAndRemove(ptr))
+            {
+                var valure = ptr.Value;
+                var vptr = &valure;
+                ffmpeg.avio_context_free(vptr);
                 ptr.Dispose();
             }
         }

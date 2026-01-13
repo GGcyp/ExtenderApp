@@ -1,6 +1,4 @@
-﻿
-
-using System.Runtime.CompilerServices;
+﻿using System.Runtime.CompilerServices;
 
 namespace ExtenderApp.Data
 {
@@ -155,26 +153,31 @@ namespace ExtenderApp.Data
         #region Implicit
 
         public static implicit operator T*(NativeIntPtr<T> value) => value.Value;
+
         public static implicit operator NativeIntPtr<T>(T* value) => new NativeIntPtr<T>(value);
 
         public static implicit operator NativeIntPtr<T>(T** value) => new NativeIntPtr<T>(value);
 
         public static implicit operator nint(NativeIntPtr<T> value) => value.Ptr;
+
         public static implicit operator NativeIntPtr<T>(nint value) => new NativeIntPtr<T>(value);
 
-        #endregion
+        #endregion Implicit
 
         #region Explicit
 
         public static explicit operator long(NativeIntPtr<T> value) => value.Ptr;
+
         public static explicit operator NativeIntPtr<T>(long value) => new NativeIntPtr<T>((IntPtr)value);
 
         public static explicit operator int(NativeIntPtr<T> value) => (int)value.Ptr;
+
         public static explicit operator NativeIntPtr<T>(int value) => new NativeIntPtr<T>(value);
 
         public static explicit operator void*(NativeIntPtr<T> value) => (void*)value.Ptr;
+
         public static explicit operator NativeIntPtr<T>(void* value) => new NativeIntPtr<T>((IntPtr)value);
 
-        #endregion
+        #endregion Explicit
     }
 }

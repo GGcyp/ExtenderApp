@@ -23,7 +23,7 @@ namespace ExtenderApp.Media
             services.AddTransient<MediaMainView>();
             services.AddTransient<VideoListView>();
 
-            //ViewModel
+            //GetViewModel
             services.AddTransient<MediaMainViewModel>();
             services.AddTransient<VideoListViewModel>();
 
