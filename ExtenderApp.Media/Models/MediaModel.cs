@@ -85,8 +85,8 @@ namespace ExtenderApp.Media.Models
             {
                 if (MPlayer != null)
                 {
-                    MPlayer.Volume = value;
-                    volume = MPlayer.Volume;
+                    MPlayer.SetVolume(value);
+                    volume = MPlayer.GetVolume();
                 }
                 else
                 {

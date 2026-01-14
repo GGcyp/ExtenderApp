@@ -14,12 +14,6 @@
         long Position { get; }
 
         /// <summary>
-        /// 音量（0.0 ~ 1.0）。
-        /// <para>实现可在设置时进行裁剪，并同步到音频输出。</para>
-        /// </summary>
-        float Volume { get; set; }
-
-        /// <summary>
         /// 播放速度倍率。
         /// <para>1 表示正常速度；实现通常会对过小的值设置下限以避免时钟推进过慢。</para>
         /// </summary>

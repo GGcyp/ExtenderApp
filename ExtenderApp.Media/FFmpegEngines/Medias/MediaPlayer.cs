@@ -14,13 +14,13 @@ namespace ExtenderApp.FFmpegEngines.Medias
         /// 跳帧等待阈值（毫秒）。
         /// <para>小于该阈值时将采用 <see cref="Thread.Sleep(int)"/> 的最小粒度或不等待，减少抖动。</para>
         /// </summary>
-        private const int SkipWaitingTime = 5;
+        private const int SkipWaitingTime = 17;
 
         /// <summary>
         /// 允许输出的最大时间误差（毫秒）。
         /// <para>当某帧 PTS 与当前 <see cref="Position"/> 的差值在该阈值内时输出，否则视为过期帧丢弃。</para>
         /// </summary>
-        private const int FrameTimeout = 15;
+        private const int FrameTimeout = 40;
 
         /// <summary>
         /// 细等待阈值（毫秒）。
@@ -31,7 +31,7 @@ namespace ExtenderApp.FFmpegEngines.Medias
         /// <summary>
         /// 进入缓冲状态的连续空帧计数阈值。
         /// </summary>
-        private const int BufferingCount = 100;
+        private const int BufferingCount = 10;
 
         /// <summary>
         /// 解码控制器：负责启动/停止解码任务、Seek、维护 generation 等运行状态。
@@ -58,7 +58,6 @@ namespace ExtenderApp.FFmpegEngines.Medias
         /// </summary>
         public FFmpegDecoderSettings Settings => _decoderController.Settings;
 
-        private float volume;
         private double speedRatio;
         private long seekPosition;
 
@@ -67,37 +66,6 @@ namespace ExtenderApp.FFmpegEngines.Medias
         /// <para>由播放循环根据 <see cref="Stopwatch"/> 推进，并在 Seek 时直接重置。</para>
         /// </summary>
         public long Position { get; private set; }
-
-        /// <summary>
-        /// 音量（0.0-1.0）。
-        /// <para>赋值会被裁剪到 [0,1]，并同步到音频输出（若存在）。</para>
-        /// </summary>
-        public float Volume
-        {
-            get => volume;
-            set
-            {
-                if (value < 0f)
-                {
-                    if (volume == 0f)
-                        return;
-                    value = 0f;
-                }
-                else if (value > 1f)
-                {
-                    if (volume == 1f)
-                        return;
-                    value = 1f;
-                }
-
-                volume = value;
-                var output = FrameProcessCollection.GetMediaOutput(FFmpegMediaType.AUDIO);
-                if (output != null && output is IAudioOutput audioOutput)
-                {
-                    audioOutput.Volume = volume;
-                }
-            }
-        }
 
         /// <summary>
         /// 播放速率倍率。
@@ -291,7 +259,7 @@ namespace ExtenderApp.FFmpegEngines.Medias
                 frameInterval = FrameTimeout;
 
             long lastPosition = Position;
-            long basePositionMs = lastPosition;
+            long basePositionMs = Position;
             int generation = _decoderController.GetCurrentGeneration();
             long lastTicks = 0;
             long notifyIntervalTicks = frameInterval * Stopwatch.Frequency / 1000;
@@ -318,9 +286,10 @@ namespace ExtenderApp.FFmpegEngines.Medias
                     else
                         basePositionMs = position;
 
-                    lastPosition = position;
+                    Position = lastPosition = position;
                     generation = currentGeneration;
                     lastTicks = 0;
+                    Playback?.Invoke();
                     sw.Restart();
                 }
                 else
@@ -341,7 +310,7 @@ namespace ExtenderApp.FFmpegEngines.Medias
                         OnChangeState(PlayerState.Buffering);
                     }
 
-                    Position = basePositionMs = lastPosition;
+                    basePositionMs = lastPosition;
                     Thread.Sleep(1);
                     sw.Restart();
                     continue;

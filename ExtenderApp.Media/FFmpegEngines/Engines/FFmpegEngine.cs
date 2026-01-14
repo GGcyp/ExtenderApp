@@ -311,7 +311,7 @@ namespace ExtenderApp.FFmpegEngines
 
             var info = CreateFFmpegInfo(uri, collection);
 
-            return new FFmpegContext(this, formatContext, nOptions, info, collection);
+            return new FFmpegContext(this, formatContext, nOptions, info, collection, default!);
         }
 
         /// <summary>
@@ -323,6 +323,7 @@ namespace ExtenderApp.FFmpegEngines
         /// 注意：如果 <paramref name="stream"/> 不支持 Seek，则 FFmpeg 将按“不可 seek 的实时流”处理。
         /// </para>
         /// </summary>
+        /// <param name="uri">URI 标识符（可自定义，用于日志等场景）。</param>
         /// <param name="stream">数据源流（建议：只读、持续提供数据）。</param>
         /// <param name="inputFormat">
         /// 输入格式（可空）：当你的数据不是文件扩展名可识别的场景，建议显式指定，例如：
@@ -330,57 +331,64 @@ namespace ExtenderApp.FFmpegEngines
         /// </param>
         /// <param name="options">打开选项字典（AVDictionary）。</param>
         /// <param name="bufferSize">AVIOContext 内部缓冲大小。</param>
-        public FFmpegContext OpenStream(Stream stream, FFmpegInputFormat inputFormat, Dictionary<string, string>? options, int bufferSize = 64 * 1024)
+        /// <param name="flags">选项标志。</param>
+        /// <returns>FFmpegContext 实例。</returns>
+        public FFmpegContext OpenStream(string uri, Stream stream, FFmpegInputFormat inputFormat, Dictionary<string, string>? options, int bufferSize = 64 * 1024, int flags = 0)
         {
             ArgumentNullException.ThrowIfNull(stream);
 
-            var formatContextPtrWrapper = CreateFormatContext();
-            var formatContext = formatContextPtrWrapper.Value;
+            var formatContext = CreateFormatContext();
+            var nOptions = CreateOptions(options, flags);
 
             // 绑定自定义 AVIOContext
-            //var avio = new FFmpegIOContext(stream, bufferSize);
-            //_intPtrHashSet.Add((nint)avio.Context);
+            var iOContext = CreateIOContext(
+                new NativeByteMemory(bufferSize),
+                0,
+                stream,
+                StreamReadPacket,
+                StreamWritePacket,
+                StreamSeek);
 
-            //formatContext->pb = avio.Context.Value;
+            formatContext.Value->pb = iOContext.Context.Value;
+            formatContext.Value->flags |= ffmpeg.AVFMT_FLAG_CUSTOM_IO;
 
-            //// 非 seek 流一般当直播流处理（减少内部 seek/缓存假设）
-            //if (!stream.CanSeek)
-            //{
-            //    formatContext->flags |= ffmpeg.AVFMT_FLAG_NOBUFFER;
-            //}
+            if (!stream.CanSeek)
+            {
+                formatContext.Value->flags |= ffmpeg.AVFMT_FLAG_NOBUFFER;
+            }
 
-            //// 保存 options
-            //var nOptions = CreateOptions(options);
-            //var inputOptions = nOptions.Value;
-            //AVDictionary** inputOptionsIntPtr = &inputOptions;
+            try
+            {
+                var ctx = formatContext.Value;
+                AVFormatContext** ctxPtr = &ctx;
 
-            //// url 参数可为空字符串（FFmpeg 会走自定义 IO）
-            //int result = ffmpeg.avformat_open_input(&formatContext, string.Empty, inputFormat, inputOptionsIntPtr);
-            //if (result < 0)
-            //{
-            //    avio.Dispose();
-            //    ShowException("avformat_open_input(AVIOContext) 失败", result);
-            //}
+                var inputOptions = nOptions.Value;
+                AVDictionary** inputOptionsPtr = &inputOptions;
 
-            //result = ffmpeg.avformat_find_stream_info(formatContext, inputOptionsIntPtr);
-            //if (result < 0)
-            //{
-            //    avio.Dispose();
-            //    throw new FFmpegException("无法获取流信息(AVIOContext)。");
-            //}
+                int result = ffmpeg.avformat_open_input(ctxPtr, uri, inputFormat, inputOptionsPtr);
+                if (result < 0)
+                {
+                    ShowException($"未找到指定uri：{uri}", result);
+                }
 
-            //FFmpegDecoderContextCollection collection = CreateDecoderContextCollection(formatContext, nOptions, "avio:");
+                result = ffmpeg.avformat_find_stream_info(ctx, inputOptionsPtr);
+                if (result < 0)
+                {
+                    ShowException($"无法获取流信息:{uri}", result);
+                }
 
-            //var info = CreateFFmpegInfo("avio:", collection);
+                FFmpegDecoderContextCollection collection = CreateDecoderContextCollection(ctx, nOptions, uri);
+                var info = CreateFFmpegInfo(uri, collection);
 
-            //// 关键：把 avio 跟随 Context 生命周期释放
-            //// 这里用 CloseInput/Free 时释放 pb 最安全，但你当前 Free(AVFormatContext) 使用的是 avformat_free_context，
-            //// 不会自动释放 pb；因此我们把 avio 的释放挂到引擎释放路径里：
-            //// - 将 avio.Context 放入 _intPtrHashSet，Dispose 时清理
-            //// - 并在 Free(AVFormatContext) 之前手动释放 pb（见下一个小改动）
-
-            //return new FFmpegContext(this, formatContextPtrWrapper, nOptions, info, collection);
-            return default;
+                return new FFmpegContext(this, formatContext, nOptions, info, collection, iOContext);
+            }
+            catch
+            {
+                iOContext.Dispose();
+                Free(ref nOptions);
+                Close(ref formatContext);
+                throw;
+            }
         }
 
         #endregion Open
@@ -445,17 +453,76 @@ namespace ExtenderApp.FFmpegEngines
             return dict;
         }
 
-        //public NativeIntPtr<AVIOContext> CreateIOContext(NativeIntPtr<byte> buffer,int bufferSize,int writeFlag,IntPtr opaque,)
-        //{
-        //    ffmpeg.avio_alloc_context(
-        //        buffer.Value,
-        //        bufferSize,
-        //        writeFlag,
-        //        opaque,
-        //        &ReadPacket,
-        //        null,
-        //        stream.CanSeek ? &Seek : null);
-        //}
+        /// <summary>
+        /// 创建一个可由 FFmpeg 使用的自定义 <see cref="AVIOContext"/>，并用 <see cref="FFmpegIOContext"/> 封装其生命周期。
+        /// <para>
+        /// 该方法的核心用途是让 FFmpeg 通过回调（<paramref name="readPacketDelegate"/> / <paramref name="writePacketDelegate"/> / <paramref name="seekDelegate"/>）
+        /// 从“调用方自定义的数据源/数据汇”（例如 <see cref="Stream"/>、解密流、缓存流、网络管道等）进行读写，而不是让 FFmpeg 自己打开 URL。
+        /// </para>
+        /// <para>
+        /// 实现要点：
+        /// <list type="bullet">
+        /// <item>
+        /// <description>
+        /// 使用 <see cref="GCHandle.Alloc(object, GCHandleType)"/> 将 <paramref name="obj"/> 转换为可传递给非托管代码的句柄（opaque）。
+        /// FFmpeg 在调用回调时，将把该 opaque 原样传回；回调中通常通过 <c>GCHandle.FromIntPtr</c> 取回托管对象。
+        /// </description>
+        /// </item>
+        /// <item>
+        /// <description>
+        /// <paramref name="buffer"/> 为 AVIOContext 使用的 IO 缓冲区，其长度为 <paramref name="buffer"/>.<see cref="NativeByteMemory.Length"/>。
+        /// 缓冲区大小会影响 IO 性能，通常建议 4KB~64KB（视数据源特性调整）。
+        /// </description>
+        /// </item>
+        /// <item>
+        /// <description>
+        /// 回调委托需要匹配 FFmpeg 的函数签名（<see cref="avio_alloc_context_read_packet"/>、<see cref="avio_alloc_context_write_packet"/>、<see cref="avio_alloc_context_seek"/>）。
+        /// 若类型不匹配将转换为 <see langword="null"/>，对应回调将不可用。
+        /// </description>
+        /// </item>
+        /// <item>
+        /// <description>
+        /// 返回的 <see cref="FFmpegIOContext"/> 负责在 <see cref="IDisposable.Dispose"/> 中释放：
+        /// <list type="bullet">
+        /// <item><description>创建出的 <see cref="AVIOContext"/>（内部调用 <c>avio_context_free</c>）。</description></item>
+        /// <item><description><paramref name="buffer"/>（释放 IO buffer）。</description></item>
+        /// <item><description><see cref="GCHandle"/>（必须显式 Free，否则句柄泄漏/对象无法回收）。</description></item>
+        /// </list>
+        /// </description>
+        /// </item>
+        /// </list>
+        /// </para>
+        /// <para>
+        /// 注意：当用于输入（解复用）时，通常会将返回的 <see cref="FFmpegIOContext.Context"/> 赋值给 <c>AVFormatContext->pb</c>，
+        /// 并设置 <c>AVFMT_FLAG_CUSTOM_IO</c>。
+        /// </para>
+        /// </summary>
+        /// <param name="buffer">AVIOContext 的 IO 缓冲区（通常为 FFmpeg 侧要求的可释放内存）。</param>
+        /// <param name="writeFlag">写入标志：0=只读（输入流），1=可写（输出流）。</param>
+        /// <param name="obj">需要通过 opaque 传递给回调的托管对象（例如 <see cref="Stream"/>）。</param>
+        /// <param name="readPacketDelegate">读取回调（FFmpeg 读取更多数据时调用）。可为 <see langword="null"/>。</param>
+        /// <param name="writePacketDelegate">写入回调（FFmpeg 需要输出数据时调用）。可为 <see langword="null"/>。</param>
+        /// <param name="seekDelegate">Seek 回调（支持随机访问时提供）。可为 <see langword="null"/>。</param>
+        /// <returns>封装后的 <see cref="FFmpegIOContext"/>，用于绑定到 <see cref="AVFormatContext"/> 并负责释放资源。</returns>
+        public FFmpegIOContext CreateIOContext(NativeByteMemory buffer, int writeFlag, object obj, Delegate readPacketDelegate, Delegate writePacketDelegate, Delegate seekDelegate)
+        {
+            var handle = GCHandle.Alloc(obj, GCHandleType.Normal);
+
+            var readPacket = readPacketDelegate as avio_alloc_context_read_packet;
+            var writePacket = writePacketDelegate as avio_alloc_context_write_packet;
+            var seek = seekDelegate as avio_alloc_context_seek;
+
+            NativeIntPtr<AVIOContext> context = ffmpeg.avio_alloc_context(
+                                                buffer,
+                                                buffer.Length,
+                                                writeFlag,
+                                                (void*)GCHandle.ToIntPtr(handle),
+                                                readPacket,
+                                                writePacket,
+                                                seek);
+            _intPtrHashSet.Add(context);
+            return new FFmpegIOContext(this, handle, context, buffer);
+        }
 
         /// <summary>
         /// 创建AVFrame实例。

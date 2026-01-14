@@ -26,6 +26,11 @@ namespace ExtenderApp.FFmpegEngines
         public NativeIntPtr<AVDictionary> Options;
 
         /// <summary>
+        /// IO 上下文，封装了与媒体数据读写相关的操作。
+        /// </summary>
+        public FFmpegIOContext IOContext;
+
+        /// <summary>
         /// 从媒体文件中提取的元数据信息，如时长、分辨率、编解码器名称等。
         /// </summary>
         public FFmpegInfo Info;
@@ -49,13 +54,15 @@ namespace ExtenderApp.FFmpegEngines
         /// <param name="options">打开媒体时使用的选项字典指针。</param>
         /// <param name="info">从媒体中提取的元数据。</param>
         /// <param name="collection">媒体流的解码器上下文集合。</param>
-        public FFmpegContext(FFmpegEngine engine, NativeIntPtr<AVFormatContext> formatContext, NativeIntPtr<AVDictionary> options, FFmpegInfo info, FFmpegDecoderContextCollection collection)
+        /// <param name="iOContext">媒体数据的 IO 上下文。</param>
+        public FFmpegContext(FFmpegEngine engine, NativeIntPtr<AVFormatContext> formatContext, NativeIntPtr<AVDictionary> options, FFmpegInfo info, FFmpegDecoderContextCollection collection, FFmpegIOContext iOContext)
         {
             _engine = engine;
             FormatContext = formatContext;
             Options = options;
             Info = info;
             ContextCollection = collection;
+            IOContext = iOContext;
         }
 
         /// <summary>
@@ -65,6 +72,7 @@ namespace ExtenderApp.FFmpegEngines
         public void Dispose()
         {
             _engine.Free(ref this);
+            IOContext.Dispose();
         }
     }
 }

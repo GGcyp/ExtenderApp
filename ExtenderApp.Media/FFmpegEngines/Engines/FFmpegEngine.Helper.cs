@@ -1,4 +1,6 @@
-﻿using FFmpeg.AutoGen;
+﻿using System.IO;
+using System.Runtime.InteropServices;
+using FFmpeg.AutoGen;
 
 namespace ExtenderApp.FFmpegEngines
 {
@@ -156,5 +158,158 @@ namespace ExtenderApp.FFmpegEngines
         {
             return ffmpeg.av_sample_fmt_is_planar(sampleFormat) == 1;
         }
+
+        #region IO
+
+        /// <summary>
+        /// FFmpeg <see cref="AVIOContext"/> 的“读数据”回调（read_packet）。
+        /// <para>
+        /// 当 <c>avio_alloc_context</c> 创建的自定义 IO 被绑定到 <c>AVFormatContext->pb</c> 后，
+        /// FFmpeg 在需要更多输入字节时会调用该函数。
+        /// </para>
+        /// <para>
+        /// 约定（与 FFmpeg C API 保持一致）：
+        /// <list type="bullet">
+        /// <item><description>返回值 &gt; 0：实际读取的字节数。</description></item>
+        /// <item><description>返回值 = <see cref="ffmpeg.AVERROR_EOF"/>：数据源结束（EOF）。</description></item>
+        /// <item><description>返回值 &lt; 0：错误码（AVERROR(...)）。</description></item>
+        /// </list>
+        /// </para>
+        /// </summary>
+        /// <param name="opaque">FFmpeg 侧 opaque 指针（此处为托管对象的 <see cref="GCHandle"/>）。</param>
+        /// <param name="buf">FFmpeg 提供的目标缓冲区指针，需将读到的数据写入其中。</param>
+        /// <param name="bufSize">FFmpeg 请求的最大读取字节数。</param>
+        /// <returns>读取到的字节数，或 FFmpeg 约定的负错误码/EOF。</returns>
+        private static int StreamReadPacket(void* opaque, byte* buf, int bufSize)
+        {
+            try
+            {
+                Stream stream = GetStream(opaque);
+
+                Span<byte> span = new(buf, bufSize);
+                int read = stream.Read(span);
+
+                // 自定义IO的约定：读到0表示EOF
+                if (read == 0)
+                {
+                    return ffmpeg.AVERROR_EOF;
+                }
+
+                return read;
+            }
+            catch (IOException)
+            {
+                // 不依赖平台 errno（例如 EIO）；统一返回 FFmpeg 内置“未知错误”
+                return ffmpeg.AVERROR_UNKNOWN;
+            }
+            catch
+            {
+                return ffmpeg.AVERROR_UNKNOWN;
+            }
+        }
+
+        /// <summary>
+        /// FFmpeg <see cref="AVIOContext"/> 的“写数据”回调（write_packet）。
+        /// <para>
+        /// 当自定义 IO 用于输出（mux/encode，<c>writeFlag=1</c>）时，FFmpeg 会回调该函数要求写入数据。
+        /// </para>
+        /// <para>
+        /// 返回值语义：
+        /// <list type="bullet">
+        /// <item><description>返回值 &gt;= 0：写入的字节数（通常等于 <paramref name="bufSize"/>）。</description></item>
+        /// <item><description>返回值 &lt; 0：负错误码（AVERROR(...)）。</description></item>
+        /// </list>
+        /// </para>
+        /// </summary>
+        /// <param name="opaque">FFmpeg 侧 opaque 指针（此处为托管对象的 <see cref="GCHandle"/>）。</param>
+        /// <param name="buf">FFmpeg 提供的源缓冲区指针，包含待写入的数据。</param>
+        /// <param name="bufSize">待写入的字节数。</param>
+        /// <returns>实际写入的字节数；失败返回负错误码。</returns>
+        private static int StreamWritePacket(void* opaque, byte* buf, int bufSize)
+        {
+            try
+            {
+                Stream stream = GetStream(opaque);
+                Span<byte> span = new(buf, bufSize);
+                stream.Write(span);
+                return bufSize;
+            }
+            catch
+            {
+                return ffmpeg.AVERROR_UNKNOWN;
+            }
+        }
+
+        /// <summary>
+        /// FFmpeg <see cref="AVIOContext"/> 的 Seek 回调（seek）。
+        /// <para>
+        /// 用于支持随机访问：FFmpeg 可能会在探测、读取索引、跳转（seek）等场景调用。
+        /// 若数据源不支持随机访问，应返回 -1（FFmpeg 会按不可 seek 的“实时流”方式处理）。
+        /// </para>
+        /// <para>
+        /// 特殊约定：当 <paramref name="whence"/> 等于 <see cref="ffmpeg.AVSEEK_SIZE"/> 时，表示 FFmpeg 查询数据总长度，
+        /// 此时应返回数据源长度（字节），若未知则返回 -1。
+        /// </para>
+        /// <para>
+        /// 其余 whence 值与标准 C 的 <c>SEEK_*</c> 含义一致：
+        /// <list type="bullet">
+        /// <item><description>0：SEEK_SET（从起始位置）</description></item>
+        /// <item><description>1：SEEK_CUR（从当前位置）</description></item>
+        /// <item><description>2：SEEK_END（从末尾位置）</description></item>
+        /// </list>
+        /// </para>
+        /// </summary>
+        /// <param name="opaque">FFmpeg 侧 opaque 指针（此处为托管对象的 <see cref="GCHandle"/>）。</param>
+        /// <param name="offset">目标偏移（字节）。</param>
+        /// <param name="whence">定位方式（SEEK_SET/SEEK_CUR/SEEK_END 或 AVSEEK_SIZE）。</param>
+        /// <returns>定位后的绝对位置；不支持或失败返回 -1。</returns>
+        private static long StreamSeek(void* opaque, long offset, int whence)
+        {
+            try
+            {
+                Stream stream = GetStream(opaque);
+
+                // FFmpeg 查询长度
+                if (whence == ffmpeg.AVSEEK_SIZE)
+                {
+                    return stream.CanSeek ? stream.Length : -1;
+                }
+
+                if (!stream.CanSeek)
+                {
+                    return -1;
+                }
+
+                SeekOrigin origin = whence switch
+                {
+                    0 => SeekOrigin.Begin,   // SEEK_SET
+                    1 => SeekOrigin.Current, // SEEK_CUR
+                    2 => SeekOrigin.End,     // SEEK_END
+                    _ => SeekOrigin.Begin,
+                };
+
+                return stream.Seek(offset, origin);
+            }
+            catch
+            {
+                return -1;
+            }
+        }
+
+        /// <summary>
+        /// 从 FFmpeg 的 opaque 指针中取回托管侧绑定的 <see cref="Stream"/>。
+        /// <para>
+        /// opaque 来自创建 <see cref="AVIOContext"/> 时传入的 <see cref="GCHandle.ToIntPtr(GCHandle)"/>。
+        /// </para>
+        /// </summary>
+        /// <param name="opaque">FFmpeg 侧透传的 opaque 指针。</param>
+        /// <returns>回调绑定的 <see cref="Stream"/> 实例。</returns>
+        private static Stream GetStream(void* opaque)
+        {
+            var handle = GCHandle.FromIntPtr((nint)opaque);
+            return (Stream)handle.Target!;
+        }
+
+        #endregion IO
     }
 }

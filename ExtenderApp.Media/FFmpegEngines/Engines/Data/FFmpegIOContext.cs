@@ -94,6 +94,11 @@ namespace ExtenderApp.FFmpegEngines
         /// </summary>
         public void Dispose()
         {
+            if (IsEmpty)
+            {
+                return;
+            }
+
             _engine.Free(ref Context);
             _buffer.Dispose();
 

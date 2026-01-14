@@ -85,7 +85,8 @@ namespace ExtenderApp.FFmpegEngines.Medias
             if (videoNext < 0)
                 return audioNext;
 
-            return audioNext < videoNext ? audioNext : videoNext;
+            //return audioNext < videoNext ? audioNext : videoNext;
+            return audioNext;
         }
 
         /// <summary>
