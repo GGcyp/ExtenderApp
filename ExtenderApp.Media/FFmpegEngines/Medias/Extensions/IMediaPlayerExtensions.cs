@@ -6,7 +6,7 @@
     /// 提供与播放器输出端（<see cref="IMediaOutput"/>）交互的便捷封装，例如音频音量读取/设置。
     /// </para>
     /// </summary>
-    public static class IMediaPlayerExpansions
+    public static class IMediaPlayerExtensions
     {
         /// <summary>
         /// 获取播放器当前音频输出的音量值。
