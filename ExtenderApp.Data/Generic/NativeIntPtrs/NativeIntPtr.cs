@@ -3,8 +3,7 @@
 namespace ExtenderApp.Data
 {
     /// <summary>
-    /// 通用的非托管指针封装结构体，支持 <see cref="IntPtr"/> 与原生指针类型之间的转换。
-    /// 适用于与底层库（如 FFmpeg、OpenCV 等）交互时的指针管理和传递。
+    /// 通用的非托管指针封装结构体，支持 <see cref="IntPtr"/> 与原生指针类型之间的转换。 适用于与底层库（如 FFmpeg、OpenCV 等）交互时的指针管理和传递。
     /// </summary>
     /// <typeparam name="T">非托管类型，通常为结构体或指针类型。</typeparam>
     public unsafe struct NativeIntPtr<T> : IEquatable<NativeIntPtr<T>>, IDisposable
@@ -90,8 +89,7 @@ namespace ExtenderApp.Data
             => !left.Equals(right);
 
         /// <summary>
-        /// 将指针解引用为对目标值的可读写引用。
-        /// 这允许您直接修改指针指向的内存。
+        /// 将指针解引用为对目标值的可读写引用。 这允许您直接修改指针指向的内存。
         /// </summary>
         /// <returns>对 <typeparamref name="T"/> 类型值的引用。</returns>
         /// <exception cref="NullReferenceException">当指针为空时抛出。</exception>

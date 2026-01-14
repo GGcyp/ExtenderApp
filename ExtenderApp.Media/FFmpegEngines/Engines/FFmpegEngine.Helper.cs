@@ -7,8 +7,7 @@ namespace ExtenderApp.FFmpegEngines
     public unsafe partial class FFmpegEngine
     {
         /// <summary>
-        /// 根据解码器设置和媒体信息，计算视频帧的行跨度（Stride，单位：字节）。
-        /// 行跨度用于表示一行像素在内存中的实际字节数，常用于图像处理和视频帧数据读取。
+        /// 根据解码器设置和媒体信息，计算视频帧的行跨度（Stride，单位：字节）。 行跨度用于表示一行像素在内存中的实际字节数，常用于图像处理和视频帧数据读取。
         /// </summary>
         /// <param name="settings">解码器设置，包含像素格式等信息。</param>
         /// <param name="info">媒体信息，包含视频宽度等参数。</param>
@@ -23,8 +22,7 @@ namespace ExtenderApp.FFmpegEngines
         }
 
         /// <summary>
-        /// 根据像素格式、图像宽度和分量（平面）计算视频帧的行跨度（Stride，单位：字节）。
-        /// 行跨度用于表示一行像素在内存中的实际字节数，常用于多平面格式（如YUV）下的图像处理。
+        /// 根据像素格式、图像宽度和分量（平面）计算视频帧的行跨度（Stride，单位：字节）。 行跨度用于表示一行像素在内存中的实际字节数，常用于多平面格式（如YUV）下的图像处理。
         /// </summary>
         /// <param name="pixelFormat">FFmpegPixelFormat 枚举值，指定像素格式。</param>
         /// <param name="width">图像宽度（像素）。</param>
@@ -147,10 +145,7 @@ namespace ExtenderApp.FFmpegEngines
 
         /// <summary>
         /// 判断指定采样格式是否为 planar（分平面）格式。
-        /// <para>
-        /// 内部调用 FFmpeg 的 <c>av_sample_fmt_is_planar</c>：
-        /// 通常返回 1 表示 planar，返回 0 表示 packed（或非 planar）。
-        /// </para>
+        /// <para>内部调用 FFmpeg 的 <c>av_sample_fmt_is_planar</c>： 通常返回 1 表示 planar，返回 0 表示 packed（或非 planar）。</para>
         /// </summary>
         /// <param name="sampleFormat">FFmpeg 采样格式枚举。</param>
         /// <returns>如果是 planar 返回 <see langword="true"/>；否则返回 <see langword="false"/>。</returns>
@@ -163,16 +158,18 @@ namespace ExtenderApp.FFmpegEngines
 
         /// <summary>
         /// FFmpeg <see cref="AVIOContext"/> 的“读数据”回调（read_packet）。
-        /// <para>
-        /// 当 <c>avio_alloc_context</c> 创建的自定义 IO 被绑定到 <c>AVFormatContext->pb</c> 后，
-        /// FFmpeg 在需要更多输入字节时会调用该函数。
-        /// </para>
-        /// <para>
-        /// 约定（与 FFmpeg C API 保持一致）：
+        /// <para>当 <c>avio_alloc_context</c> 创建的自定义 IO 被绑定到 <c>AVFormatContext-&gt;pb</c> 后， FFmpeg 在需要更多输入字节时会调用该函数。</para>
+        /// <para>约定（与 FFmpeg C API 保持一致）：
         /// <list type="bullet">
-        /// <item><description>返回值 &gt; 0：实际读取的字节数。</description></item>
-        /// <item><description>返回值 = <see cref="ffmpeg.AVERROR_EOF"/>：数据源结束（EOF）。</description></item>
-        /// <item><description>返回值 &lt; 0：错误码（AVERROR(...)）。</description></item>
+        /// <item>
+        /// <description>返回值 &gt; 0：实际读取的字节数。</description>
+        /// </item>
+        /// <item>
+        /// <description>返回值 = <see cref="ffmpeg.AVERROR_EOF"/>：数据源结束（EOF）。</description>
+        /// </item>
+        /// <item>
+        /// <description>返回值 &lt; 0：错误码（AVERROR(...)）。</description>
+        /// </item>
         /// </list>
         /// </para>
         /// </summary>
@@ -210,14 +207,15 @@ namespace ExtenderApp.FFmpegEngines
 
         /// <summary>
         /// FFmpeg <see cref="AVIOContext"/> 的“写数据”回调（write_packet）。
-        /// <para>
-        /// 当自定义 IO 用于输出（mux/encode，<c>writeFlag=1</c>）时，FFmpeg 会回调该函数要求写入数据。
-        /// </para>
-        /// <para>
-        /// 返回值语义：
+        /// <para>当自定义 IO 用于输出（mux/encode， <c>writeFlag=1</c>）时，FFmpeg 会回调该函数要求写入数据。</para>
+        /// <para>返回值语义：
         /// <list type="bullet">
-        /// <item><description>返回值 &gt;= 0：写入的字节数（通常等于 <paramref name="bufSize"/>）。</description></item>
-        /// <item><description>返回值 &lt; 0：负错误码（AVERROR(...)）。</description></item>
+        /// <item>
+        /// <description>返回值 &gt;= 0：写入的字节数（通常等于 <paramref name="bufSize"/>）。</description>
+        /// </item>
+        /// <item>
+        /// <description>返回值 &lt; 0：负错误码（AVERROR(...)）。</description>
+        /// </item>
         /// </list>
         /// </para>
         /// </summary>
@@ -242,20 +240,19 @@ namespace ExtenderApp.FFmpegEngines
 
         /// <summary>
         /// FFmpeg <see cref="AVIOContext"/> 的 Seek 回调（seek）。
-        /// <para>
-        /// 用于支持随机访问：FFmpeg 可能会在探测、读取索引、跳转（seek）等场景调用。
-        /// 若数据源不支持随机访问，应返回 -1（FFmpeg 会按不可 seek 的“实时流”方式处理）。
-        /// </para>
-        /// <para>
-        /// 特殊约定：当 <paramref name="whence"/> 等于 <see cref="ffmpeg.AVSEEK_SIZE"/> 时，表示 FFmpeg 查询数据总长度，
-        /// 此时应返回数据源长度（字节），若未知则返回 -1。
-        /// </para>
-        /// <para>
-        /// 其余 whence 值与标准 C 的 <c>SEEK_*</c> 含义一致：
+        /// <para>用于支持随机访问：FFmpeg 可能会在探测、读取索引、跳转（seek）等场景调用。 若数据源不支持随机访问，应返回 -1（FFmpeg 会按不可 seek 的“实时流”方式处理）。</para>
+        /// <para>特殊约定：当 <paramref name="whence"/> 等于 <see cref="ffmpeg.AVSEEK_SIZE"/> 时，表示 FFmpeg 查询数据总长度， 此时应返回数据源长度（字节），若未知则返回 -1。</para>
+        /// <para>其余 whence 值与标准 C 的 <c>SEEK_*</c> 含义一致：
         /// <list type="bullet">
-        /// <item><description>0：SEEK_SET（从起始位置）</description></item>
-        /// <item><description>1：SEEK_CUR（从当前位置）</description></item>
-        /// <item><description>2：SEEK_END（从末尾位置）</description></item>
+        /// <item>
+        /// <description>0：SEEK_SET（从起始位置）</description>
+        /// </item>
+        /// <item>
+        /// <description>1：SEEK_CUR（从当前位置）</description>
+        /// </item>
+        /// <item>
+        /// <description>2：SEEK_END（从末尾位置）</description>
+        /// </item>
         /// </list>
         /// </para>
         /// </summary>
@@ -298,9 +295,7 @@ namespace ExtenderApp.FFmpegEngines
 
         /// <summary>
         /// 从 FFmpeg 的 opaque 指针中取回托管侧绑定的 <see cref="Stream"/>。
-        /// <para>
-        /// opaque 来自创建 <see cref="AVIOContext"/> 时传入的 <see cref="GCHandle.ToIntPtr(GCHandle)"/>。
-        /// </para>
+        /// <para>opaque 来自创建 <see cref="AVIOContext"/> 时传入的 <see cref="GCHandle.ToIntPtr(GCHandle)"/>。</para>
         /// </summary>
         /// <param name="opaque">FFmpeg 侧透传的 opaque 指针。</param>
         /// <returns>回调绑定的 <see cref="Stream"/> 实例。</returns>

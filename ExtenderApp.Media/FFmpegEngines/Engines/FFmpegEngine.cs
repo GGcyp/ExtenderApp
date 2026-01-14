@@ -316,19 +316,12 @@ namespace ExtenderApp.FFmpegEngines
 
         /// <summary>
         /// 通过 AVIOContext 从托管 <see cref="Stream"/> 打开媒体。
-        /// <para>
-        /// 适用于：自定义协议拉流、解密/缓存后喂给 FFmpeg、或将网络数据写入管道再解复用。
-        /// </para>
-        /// <para>
-        /// 注意：如果 <paramref name="stream"/> 不支持 Seek，则 FFmpeg 将按“不可 seek 的实时流”处理。
-        /// </para>
+        /// <para>适用于：自定义协议拉流、解密/缓存后喂给 FFmpeg、或将网络数据写入管道再解复用。</para>
+        /// <para>注意：如果 <paramref name="stream"/> 不支持 Seek，则 FFmpeg 将按“不可 seek 的实时流”处理。</para>
         /// </summary>
         /// <param name="uri">URI 标识符（可自定义，用于日志等场景）。</param>
         /// <param name="stream">数据源流（建议：只读、持续提供数据）。</param>
-        /// <param name="inputFormat">
-        /// 输入格式（可空）：当你的数据不是文件扩展名可识别的场景，建议显式指定，例如：
-        /// <c>FindInputFormat("mpegts")</c> / <c>FindInputFormat("flv")</c> / <c>FindInputFormat("h264")</c>。
-        /// </param>
+        /// <param name="inputFormat">输入格式（可空）：当你的数据不是文件扩展名可识别的场景，建议显式指定，例如： <c>FindInputFormat("mpegts")</c> / <c>FindInputFormat("flv")</c> / <c>FindInputFormat("h264")</c>。</param>
         /// <param name="options">打开选项字典（AVDictionary）。</param>
         /// <param name="bufferSize">AVIOContext 内部缓冲大小。</param>
         /// <param name="flags">选项标志。</param>
@@ -456,46 +449,47 @@ namespace ExtenderApp.FFmpegEngines
         /// <summary>
         /// 创建一个可由 FFmpeg 使用的自定义 <see cref="AVIOContext"/>，并用 <see cref="FFmpegIOContext"/> 封装其生命周期。
         /// <para>
-        /// 该方法的核心用途是让 FFmpeg 通过回调（<paramref name="readPacketDelegate"/> / <paramref name="writePacketDelegate"/> / <paramref name="seekDelegate"/>）
+        /// 该方法的核心用途是让 FFmpeg 通过回调（ <paramref name="readPacketDelegate"/> / <paramref name="writePacketDelegate"/> / <paramref name="seekDelegate"/>）
         /// 从“调用方自定义的数据源/数据汇”（例如 <see cref="Stream"/>、解密流、缓存流、网络管道等）进行读写，而不是让 FFmpeg 自己打开 URL。
         /// </para>
-        /// <para>
-        /// 实现要点：
+        /// <para>实现要点：
         /// <list type="bullet">
         /// <item>
         /// <description>
-        /// 使用 <see cref="GCHandle.Alloc(object, GCHandleType)"/> 将 <paramref name="obj"/> 转换为可传递给非托管代码的句柄（opaque）。
-        /// FFmpeg 在调用回调时，将把该 opaque 原样传回；回调中通常通过 <c>GCHandle.FromIntPtr</c> 取回托管对象。
+        /// 使用 <see cref="GCHandle.Alloc(object, GCHandleType)"/> 将 <paramref name="obj"/> 转换为可传递给非托管代码的句柄（opaque）。 FFmpeg 在调用回调时，将把该 opaque
+        /// 原样传回；回调中通常通过 <c>GCHandle.FromIntPtr</c> 取回托管对象。
         /// </description>
         /// </item>
         /// <item>
         /// <description>
-        /// <paramref name="buffer"/> 为 AVIOContext 使用的 IO 缓冲区，其长度为 <paramref name="buffer"/>.<see cref="NativeByteMemory.Length"/>。
-        /// 缓冲区大小会影响 IO 性能，通常建议 4KB~64KB（视数据源特性调整）。
+        /// <paramref name="buffer"/> 为 AVIOContext 使用的 IO 缓冲区，其长度为 <paramref name="buffer"/>. <see cref="NativeByteMemory.Length"/>。 缓冲区大小会影响 IO
+        /// 性能，通常建议 4KB~64KB（视数据源特性调整）。
         /// </description>
         /// </item>
         /// <item>
         /// <description>
-        /// 回调委托需要匹配 FFmpeg 的函数签名（<see cref="avio_alloc_context_read_packet"/>、<see cref="avio_alloc_context_write_packet"/>、<see cref="avio_alloc_context_seek"/>）。
-        /// 若类型不匹配将转换为 <see langword="null"/>，对应回调将不可用。
+        /// 回调委托需要匹配 FFmpeg 的函数签名（ <see cref="avio_alloc_context_read_packet"/>、 <see cref="avio_alloc_context_write_packet"/>、 <see
+        /// cref="avio_alloc_context_seek"/>）。 若类型不匹配将转换为 <see langword="null"/>，对应回调将不可用。
         /// </description>
         /// </item>
         /// <item>
-        /// <description>
-        /// 返回的 <see cref="FFmpegIOContext"/> 负责在 <see cref="IDisposable.Dispose"/> 中释放：
+        /// <description>返回的 <see cref="FFmpegIOContext"/> 负责在 <see cref="IDisposable.Dispose"/> 中释放：
         /// <list type="bullet">
-        /// <item><description>创建出的 <see cref="AVIOContext"/>（内部调用 <c>avio_context_free</c>）。</description></item>
-        /// <item><description><paramref name="buffer"/>（释放 IO buffer）。</description></item>
-        /// <item><description><see cref="GCHandle"/>（必须显式 Free，否则句柄泄漏/对象无法回收）。</description></item>
+        /// <item>
+        /// <description>创建出的 <see cref="AVIOContext"/>（内部调用 <c>avio_context_free</c>）。</description>
+        /// </item>
+        /// <item>
+        /// <description><paramref name="buffer"/>（释放 IO buffer）。</description>
+        /// </item>
+        /// <item>
+        /// <description><see cref="GCHandle"/>（必须显式 Free，否则句柄泄漏/对象无法回收）。</description>
+        /// </item>
         /// </list>
         /// </description>
         /// </item>
         /// </list>
         /// </para>
-        /// <para>
-        /// 注意：当用于输入（解复用）时，通常会将返回的 <see cref="FFmpegIOContext.Context"/> 赋值给 <c>AVFormatContext->pb</c>，
-        /// 并设置 <c>AVFMT_FLAG_CUSTOM_IO</c>。
-        /// </para>
+        /// <para>注意：当用于输入（解复用）时，通常会将返回的 <see cref="FFmpegIOContext.Context"/> 赋值给 <c>AVFormatContext-&gt;pb</c>， 并设置 <c>AVFMT_FLAG_CUSTOM_IO</c>。</para>
         /// </summary>
         /// <param name="buffer">AVIOContext 的 IO 缓冲区（通常为 FFmpeg 侧要求的可释放内存）。</param>
         /// <param name="writeFlag">写入标志：0=只读（输入流），1=可写（输出流）。</param>
@@ -1316,42 +1310,46 @@ namespace ExtenderApp.FFmpegEngines
         }
 
         /// <summary>
-        /// 获取指定帧的原始数据视图（<see cref="Span{T}"/>），用于快速读取/拷贝帧的某个数据平面（plane）。
-        /// <para>
-        /// 该方法直接基于 <see cref="AVFrame.data"/> 与 <see cref="AVFrame.linesize"/> 构造 <see cref="Span{T}"/>，
-        /// 不做任何越界/空指针校验，也不复制数据；因此：
+        /// 获取指定帧的原始数据视图（ <see cref="Span{T}"/>），用于快速读取/拷贝帧的某个数据平面（plane）。
+        /// <para>该方法直接基于 <see cref="AVFrame.data"/> 与 <see cref="AVFrame.linesize"/> 构造 <see cref="Span{T}"/>， 不做任何越界/空指针校验，也不复制数据；因此：
         /// <list type="bullet">
-        /// <item><description>仅在 <paramref name="frame"/> 生命周期内有效（帧被 <c>av_frame_unref</c>/<c>av_frame_free</c> 后不可再使用）。</description></item>
-        /// <item><description>调用方需确保 <c>data[index]</c> 非空且 <c>linesize[index]</c> 为正。</description></item>
+        /// <item>
+        /// <description>仅在 <paramref name="frame"/> 生命周期内有效（帧被 <c>av_frame_unref</c>/ <c>av_frame_free</c> 后不可再使用）。</description>
+        /// </item>
+        /// <item>
+        /// <description>调用方需确保 <c>data[index]</c> 非空且 <c>linesize[index]</c> 为正。</description>
+        /// </item>
         /// </list>
         /// </para>
-        /// <para>
-        /// 关于 <c>linesize</c> 的语义差异：
+        /// <para>关于 <c>linesize</c> 的语义差异：
         /// <list type="bullet">
         /// <item>
         /// <description>
-        /// 视频帧：<c>linesize</c> 通常表示“每行字节跨度（stride）”，不等于整幅图像大小；
-        /// 若要拷贝整帧需要结合高度（<c>height</c>）按行处理或使用 <c>av_image_get_buffer_size</c> 计算总大小。
+        /// 视频帧： <c>linesize</c> 通常表示“每行字节跨度（stride）”，不等于整幅图像大小； 若要拷贝整帧需要结合高度（ <c>height</c>）按行处理或使用 <c>av_image_get_buffer_size</c> 计算总大小。
         /// </description>
         /// </item>
         /// <item>
         /// <description>
-        /// 音频帧：对 planar（分平面）格式，<c>data[ch]</c> 为每声道平面指针，
-        /// <c>linesize[ch]</c> 通常可表示该平面的字节数；但在不同对齐/分配策略下不保证等于
-        /// <c>bytesPerSample * nb_samples</c>，调用方如需精确长度应优先使用
-        /// <see cref="GetBufferSizeForSamples(NativeIntPtr{AVFrame}, int)"/> 或按 <c>nb_samples</c>/<c>format</c> 计算。
+        /// 音频帧：对 planar（分平面）格式， <c>data[ch]</c> 为每声道平面指针， <c>linesize[ch]</c> 通常可表示该平面的字节数；但在不同对齐/分配策略下不保证等于 <c>bytesPerSample *
+        /// nb_samples</c>，调用方如需精确长度应优先使用 <see cref="GetBufferSizeForSamples(NativeIntPtr{AVFrame}, int)"/> 或按 <c>nb_samples</c>/ <c>format</c> 计算。
         /// </description>
         /// </item>
         /// </list>
         /// </para>
         /// </summary>
-        /// <param name="frame">目标帧指针封装（<see cref="AVFrame"/>）。</param>
+        /// <param name="frame">目标帧指针封装（ <see cref="AVFrame"/>）。</param>
         /// <param name="index">
         /// 数据平面索引：
         /// <list type="bullet">
-        /// <item><description>视频：通常 0=Y/或RGB，1=U，2=V（视像素格式而定）。</description></item>
-        /// <item><description>音频 planar：通常 0..channels-1 分别为每个声道平面。</description></item>
-        /// <item><description>音频 packed：通常只使用 0（全部声道交错数据）。</description></item>
+        /// <item>
+        /// <description>视频：通常 0=Y/或RGB，1=U，2=V（视像素格式而定）。</description>
+        /// </item>
+        /// <item>
+        /// <description>音频 planar：通常 0..channels-1 分别为每个声道平面。</description>
+        /// </item>
+        /// <item>
+        /// <description>音频 packed：通常只使用 0（全部声道交错数据）。</description>
+        /// </item>
         /// </list>
         /// </param>
         /// <returns>指向 <c>data[index]</c> 的字节视图，长度为 <c>linesize[index]</c>。</returns>
@@ -1362,15 +1360,18 @@ namespace ExtenderApp.FFmpegEngines
 
         /// <summary>
         /// 获取指定帧在给定数据平面（plane）上的 <c>linesize</c>。
-        /// <para>
-        /// <c>linesize</c> 的含义依赖于帧类型和像素/采样格式：
+        /// <para><c>linesize</c> 的含义依赖于帧类型和像素/采样格式：
         /// <list type="bullet">
-        /// <item><description>视频：通常为每行字节跨度（stride）。</description></item>
-        /// <item><description>音频：通常为该平面（每声道或 packed）的字节数或其对齐后的跨度。</description></item>
+        /// <item>
+        /// <description>视频：通常为每行字节跨度（stride）。</description>
+        /// </item>
+        /// <item>
+        /// <description>音频：通常为该平面（每声道或 packed）的字节数或其对齐后的跨度。</description>
+        /// </item>
         /// </list>
         /// </para>
         /// </summary>
-        /// <param name="frame">目标帧指针封装（<see cref="AVFrame"/>）。</param>
+        /// <param name="frame">目标帧指针封装（ <see cref="AVFrame"/>）。</param>
         /// <param name="index">数据平面索引（含义见 <see cref="GetFrameData(NativeIntPtr{AVFrame}, uint)"/>）。</param>
         /// <returns>该平面的 <c>linesize</c> 值（字节）。</returns>
         public int GetFrameLinesize(NativeIntPtr<AVFrame> frame, uint index)
@@ -1625,9 +1626,7 @@ namespace ExtenderApp.FFmpegEngines
         #region Close
 
         /// <summary>
-        /// 关闭 <see cref="AVFormatContext"/> 指针，释放相关资源。
-        /// 用于在完成媒体处理后，正确关闭格式上下文，
-        /// 释放底层资源，防止内存泄漏。
+        /// 关闭 <see cref="AVFormatContext"/> 指针，释放相关资源。 用于在完成媒体处理后，正确关闭格式上下文， 释放底层资源，防止内存泄漏。
         /// </summary>
         /// <param name="ptr"><see cref="AVFormatContext"/> 指针</param>
         public void Close(ref NativeIntPtr<AVFormatContext> ptr)
@@ -2165,17 +2164,22 @@ namespace ExtenderApp.FFmpegEngines
         }
 
         /// <summary>
-        /// 获取指定音频帧的样本数（<c>nb_samples</c>）。
-        /// <para>
-        /// 该值表示“每声道样本数”（每个声道包含多少个采样点），常用于：
+        /// 获取指定音频帧的样本数（ <c>nb_samples</c>）。
+        /// <para>该值表示“每声道样本数”（每个声道包含多少个采样点），常用于：
         /// <list type="bullet">
-        /// <item><description>计算音频帧持续时间：<c>durationMs = nb_samples / sample_rate * 1000</c>。</description></item>
-        /// <item><description>计算 PCM 数据长度（结合声道数与采样格式字节数）。</description></item>
-        /// <item><description>重采样时的比例换算或缓冲区大小预估。</description></item>
+        /// <item>
+        /// <description>计算音频帧持续时间： <c>durationMs = nb_samples / sample_rate * 1000</c>。</description>
+        /// </item>
+        /// <item>
+        /// <description>计算 PCM 数据长度（结合声道数与采样格式字节数）。</description>
+        /// </item>
+        /// <item>
+        /// <description>重采样时的比例换算或缓冲区大小预估。</description>
+        /// </item>
         /// </list>
         /// </para>
         /// </summary>
-        /// <param name="framePtr">音频帧指针（<see cref="AVFrame"/>）。</param>
+        /// <param name="framePtr">音频帧指针（ <see cref="AVFrame"/>）。</param>
         /// <returns>音频帧的样本数（每声道）。</returns>
         public int GetSampleCount(NativeIntPtr<AVFrame> framePtr)
         {
@@ -2183,12 +2187,15 @@ namespace ExtenderApp.FFmpegEngines
         }
 
         /// <summary>
-        /// 获取当前解码器上下文（<see cref="FFmpegDecoderContext"/>）对应的“期望/默认”每帧样本数。
-        /// <para>
-        /// 实现上返回的是 <see cref="AVCodecContext.frame_size"/>：
+        /// 获取当前解码器上下文（ <see cref="FFmpegDecoderContext"/>）对应的“期望/默认”每帧样本数。
+        /// <para>实现上返回的是 <see cref="AVCodecContext.frame_size"/>：
         /// <list type="bullet">
-        /// <item><description>对多数音频编码（例如 AAC 等）该值通常表示每个解码帧的固定样本数（每声道）。</description></item>
-        /// <item><description>对部分编码/容器/解码器，该值可能为 0（可变帧大小）或不可靠，应以 <see cref="AVFrame.nb_samples"/> 为准。</description></item>
+        /// <item>
+        /// <description>对多数音频编码（例如 AAC 等）该值通常表示每个解码帧的固定样本数（每声道）。</description>
+        /// </item>
+        /// <item>
+        /// <description>对部分编码/容器/解码器，该值可能为 0（可变帧大小）或不可靠，应以 <see cref="AVFrame.nb_samples"/> 为准。</description>
+        /// </item>
         /// </list>
         /// </para>
         /// </summary>
@@ -2200,13 +2207,10 @@ namespace ExtenderApp.FFmpegEngines
         }
 
         /// <summary>
-        /// 获取指定解码器上下文（<see cref="AVCodecContext"/>）的“期望/默认”每帧样本数（<see cref="AVCodecContext.frame_size"/>）。
-        /// <para>
-        /// 用途：用于预分配缓冲区、估算帧持续时间等“静态参数”场景。
-        /// 注意：实际输出帧的样本数应优先读取 <see cref="AVFrame.nb_samples"/>，因为在 VBR/某些解码器下可能变化。
-        /// </para>
+        /// 获取指定解码器上下文（ <see cref="AVCodecContext"/>）的“期望/默认”每帧样本数（ <see cref="AVCodecContext.frame_size"/>）。
+        /// <para>用途：用于预分配缓冲区、估算帧持续时间等“静态参数”场景。 注意：实际输出帧的样本数应优先读取 <see cref="AVFrame.nb_samples"/>，因为在 VBR/某些解码器下可能变化。</para>
         /// </summary>
-        /// <param name="codecContextPtr">解码器上下文指针（<see cref="AVCodecContext"/>）。</param>
+        /// <param name="codecContextPtr">解码器上下文指针（ <see cref="AVCodecContext"/>）。</param>
         /// <returns>每帧样本数（每声道）。若为可变帧大小，可能为 0。</returns>
         /// <exception cref="ArgumentNullException">当 <paramref name="codecContextPtr"/> 为空时抛出。</exception>
         public int GetSampleCount(NativeIntPtr<AVCodecContext> codecContextPtr)
@@ -2220,11 +2224,14 @@ namespace ExtenderApp.FFmpegEngines
 
         /// <summary>
         /// 获取指定解码器上下文的声道数。
-        /// <para>
-        /// 返回 <see cref="AVCodecContext.ch_layout"/> 中的 <c>nb_channels</c>，用于：
+        /// <para>返回 <see cref="AVCodecContext.ch_layout"/> 中的 <c>nb_channels</c>，用于：
         /// <list type="bullet">
-        /// <item><description>计算 PCM 数据长度（结合样本数和采样格式）。</description></item>
-        /// <item><description>配置/校验重采样参数（SwrContext 输入）。</description></item>
+        /// <item>
+        /// <description>计算 PCM 数据长度（结合样本数和采样格式）。</description>
+        /// </item>
+        /// <item>
+        /// <description>配置/校验重采样参数（SwrContext 输入）。</description>
+        /// </item>
         /// </list>
         /// </para>
         /// </summary>
@@ -2236,12 +2243,10 @@ namespace ExtenderApp.FFmpegEngines
         }
 
         /// <summary>
-        /// 获取指定解码器上下文（<see cref="AVCodecContext"/>）的声道数。
-        /// <para>
-        /// 该方法读取 <see cref="AVCodecContext.ch_layout"/> 的 <c>nb_channels</c>，表示当前解码器配置下的音频声道数量。
-        /// </para>
+        /// 获取指定解码器上下文（ <see cref="AVCodecContext"/>）的声道数。
+        /// <para>该方法读取 <see cref="AVCodecContext.ch_layout"/> 的 <c>nb_channels</c>，表示当前解码器配置下的音频声道数量。</para>
         /// </summary>
-        /// <param name="codecContextPtr">解码器上下文指针（<see cref="AVCodecContext"/>）。</param>
+        /// <param name="codecContextPtr">解码器上下文指针（ <see cref="AVCodecContext"/>）。</param>
         /// <returns>声道数。</returns>
         /// <exception cref="ArgumentNullException">当 <paramref name="codecContextPtr"/> 为空时抛出。</exception>
         public int GetChannelCount(NativeIntPtr<AVCodecContext> codecContextPtr)
@@ -2255,12 +2260,9 @@ namespace ExtenderApp.FFmpegEngines
 
         /// <summary>
         /// 获取指定音频帧的声道数。
-        /// <para>
-        /// 该值来自 <see cref="AVFrame.ch_layout"/> 的 <c>nb_channels</c> 字段，
-        /// 表示当前帧携带的声道数量（例如：mono=1、stereo=2、5.1 通常为 6）。
-        /// </para>
+        /// <para>该值来自 <see cref="AVFrame.ch_layout"/> 的 <c>nb_channels</c> 字段， 表示当前帧携带的声道数量（例如：mono=1、stereo=2、5.1 通常为 6）。</para>
         /// </summary>
-        /// <param name="framePtr">音频帧指针（<see cref="AVFrame"/>）。</param>
+        /// <param name="framePtr">音频帧指针（ <see cref="AVFrame"/>）。</param>
         /// <returns>声道数。</returns>
         public int GetChannelCount(NativeIntPtr<AVFrame> framePtr)
         {
@@ -2269,12 +2271,9 @@ namespace ExtenderApp.FFmpegEngines
 
         /// <summary>
         /// 获取指定音频帧的采样率（Hz）。
-        /// <para>
-        /// 该值来自 <see cref="AVFrame.sample_rate"/>，用于音频持续时间计算、重采样换算等。
-        /// 注意：在部分媒体/滤镜链场景中，采样率可能在运行时变化；因此应优先以帧自身的采样率为准。
-        /// </para>
+        /// <para>该值来自 <see cref="AVFrame.sample_rate"/>，用于音频持续时间计算、重采样换算等。 注意：在部分媒体/滤镜链场景中，采样率可能在运行时变化；因此应优先以帧自身的采样率为准。</para>
         /// </summary>
-        /// <param name="framePtr">音频帧指针（<see cref="AVFrame"/>）。</param>
+        /// <param name="framePtr">音频帧指针（ <see cref="AVFrame"/>）。</param>
         /// <returns>采样率（Hz）。</returns>
         public int GetSampleRate(NativeIntPtr<AVFrame> framePtr)
         {
@@ -2282,17 +2281,18 @@ namespace ExtenderApp.FFmpegEngines
         }
 
         /// <summary>
-        /// 获取指定解码器上下文（<see cref="FFmpegDecoderContext"/>）的采样率（Hz）。
-        /// <para>
-        /// 该方法属于“流/解码器参数级别”的采样率读取，通常用于：
+        /// 获取指定解码器上下文（ <see cref="FFmpegDecoderContext"/>）的采样率（Hz）。
+        /// <para>该方法属于“流/解码器参数级别”的采样率读取，通常用于：
         /// <list type="bullet">
-        /// <item><description>初始化/配置音频输出格式（例如目标采样率选择、重采样参数推导）。</description></item>
-        /// <item><description>在没有可用 <see cref="AVFrame.sample_rate"/> 的情况下，作为音频持续时间估算或缓冲区规划的兜底值。</description></item>
+        /// <item>
+        /// <description>初始化/配置音频输出格式（例如目标采样率选择、重采样参数推导）。</description>
+        /// </item>
+        /// <item>
+        /// <description>在没有可用 <see cref="AVFrame.sample_rate"/> 的情况下，作为音频持续时间估算或缓冲区规划的兜底值。</description>
+        /// </item>
         /// </list>
         /// </para>
-        /// <para>
-        /// 注意：在滤镜链或重采样等场景下，实际帧的采样率可能与解码器上下文不同；此时应优先使用 <see cref="GetSampleRate(NativeIntPtr{AVFrame})"/> 返回的帧级采样率。
-        /// </para>
+        /// <para>注意：在滤镜链或重采样等场景下，实际帧的采样率可能与解码器上下文不同；此时应优先使用 <see cref="GetSampleRate(NativeIntPtr{AVFrame})"/> 返回的帧级采样率。</para>
         /// </summary>
         /// <param name="context">解码器上下文。</param>
         /// <returns>采样率（Hz）。</returns>
@@ -2302,14 +2302,9 @@ namespace ExtenderApp.FFmpegEngines
         }
 
         /// <summary>
-        /// 获取指定解码器上下文（<see cref="AVCodecContext"/>）的采样率（Hz）。
-        /// <para>
-        /// 返回 <see cref="AVCodecContext.sample_rate"/>。该值描述了解码器当前配置下的“流级”采样率，
-        /// 通常用于 SwrContext 的输入参数、音频缓冲区规划等。
-        /// </para>
-        /// <para>
-        /// 注意：该值不一定等于每一个输出帧的 <see cref="AVFrame.sample_rate"/>（尤其在经过滤镜/重采样后），需要按使用场景选择。
-        /// </para>
+        /// 获取指定解码器上下文（ <see cref="AVCodecContext"/>）的采样率（Hz）。
+        /// <para>返回 <see cref="AVCodecContext.sample_rate"/>。该值描述了解码器当前配置下的“流级”采样率， 通常用于 SwrContext 的输入参数、音频缓冲区规划等。</para>
+        /// <para>注意：该值不一定等于每一个输出帧的 <see cref="AVFrame.sample_rate"/>（尤其在经过滤镜/重采样后），需要按使用场景选择。</para>
         /// </summary>
         /// <param name="codecContextPtr">解码器上下文指针。</param>
         /// <returns>采样率（Hz）。</returns>
@@ -2324,22 +2319,31 @@ namespace ExtenderApp.FFmpegEngines
         }
 
         /// <summary>
-        /// 获取指定音频帧（<see cref="AVFrame"/>）对应采样格式的“每个样本字节数”（Bytes Per Sample）。
-        /// <para>
-        /// 该值由 FFmpeg 的 <c>av_get_bytes_per_sample</c> 计算，表示单个采样点（单声道、单个 sample）的字节大小：
-        /// 例如：
+        /// 获取指定音频帧（ <see cref="AVFrame"/>）对应采样格式的“每个样本字节数”（Bytes Per Sample）。
+        /// <para>该值由 FFmpeg 的 <c>av_get_bytes_per_sample</c> 计算，表示单个采样点（单声道、单个 sample）的字节大小： 例如：
         /// <list type="bullet">
-        /// <item><description><see cref="AVSampleFormat.AV_SAMPLE_FMT_S16"/> => 2 字节</description></item>
-        /// <item><description><see cref="AVSampleFormat.AV_SAMPLE_FMT_S32"/> => 4 字节</description></item>
-        /// <item><description><see cref="AVSampleFormat.AV_SAMPLE_FMT_FLT"/> => 4 字节</description></item>
-        /// <item><description><see cref="AVSampleFormat.AV_SAMPLE_FMT_DBL"/> => 8 字节</description></item>
+        /// <item>
+        /// <description><see cref="AVSampleFormat.AV_SAMPLE_FMT_S16"/> =&gt; 2 字节</description>
+        /// </item>
+        /// <item>
+        /// <description><see cref="AVSampleFormat.AV_SAMPLE_FMT_S32"/> =&gt; 4 字节</description>
+        /// </item>
+        /// <item>
+        /// <description><see cref="AVSampleFormat.AV_SAMPLE_FMT_FLT"/> =&gt; 4 字节</description>
+        /// </item>
+        /// <item>
+        /// <description><see cref="AVSampleFormat.AV_SAMPLE_FMT_DBL"/> =&gt; 8 字节</description>
+        /// </item>
         /// </list>
         /// </para>
-        /// <para>
-        /// 常见用途：
+        /// <para>常见用途：
         /// <list type="bullet">
-        /// <item><description>计算 packed PCM 总长度：<c>bytesPerSample * nb_samples * channels</c></description></item>
-        /// <item><description>计算 planar 每声道平面长度：<c>bytesPerSample * nb_samples</c></description></item>
+        /// <item>
+        /// <description>计算 packed PCM 总长度： <c>bytesPerSample * nb_samples * channels</c></description>
+        /// </item>
+        /// <item>
+        /// <description>计算 planar 每声道平面长度： <c>bytesPerSample * nb_samples</c></description>
+        /// </item>
         /// </list>
         /// </para>
         /// </summary>
@@ -2352,11 +2356,14 @@ namespace ExtenderApp.FFmpegEngines
 
         /// <summary>
         /// 判断指定音频帧的采样格式是否为 planar（分平面）布局。
-        /// <para>
-        /// planar 的含义：
+        /// <para>planar 的含义：
         /// <list type="bullet">
-        /// <item><description>planar：每个声道的数据分别存放在 <c>data[ch]</c> 中（一个声道一个平面）。</description></item>
-        /// <item><description>packed：多声道数据交错存放，通常只使用 <c>data[0]</c>。</description></item>
+        /// <item>
+        /// <description>planar：每个声道的数据分别存放在 <c>data[ch]</c> 中（一个声道一个平面）。</description>
+        /// </item>
+        /// <item>
+        /// <description>packed：多声道数据交错存放，通常只使用 <c>data[0]</c>。</description>
+        /// </item>
         /// </list>
         /// </para>
         /// </summary>
@@ -2364,7 +2371,12 @@ namespace ExtenderApp.FFmpegEngines
         /// <returns>如果是 planar 返回 <see langword="true"/>；否则返回 <see langword="false"/>。</returns>
         public bool IsPlanar(NativeIntPtr<AVFrame> frame)
         {
-            return IsPlanar(frame.Value->format);
+            if (frame.IsEmpty)
+            {
+                throw new ArgumentNullException(nameof(frame));
+            }
+
+            return IsPlanar((AVSampleFormat)frame.Value->format);
         }
 
         #endregion Common

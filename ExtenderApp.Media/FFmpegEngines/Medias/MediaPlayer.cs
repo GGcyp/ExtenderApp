@@ -260,6 +260,7 @@ namespace ExtenderApp.FFmpegEngines.Medias
 
             long lastPosition = Position;
             long basePositionMs = Position;
+            long elapsedMs = 0;
             int generation = _decoderController.GetCurrentGeneration();
             long lastTicks = 0;
             long notifyIntervalTicks = frameInterval * Stopwatch.Frequency / 1000;
@@ -270,7 +271,7 @@ namespace ExtenderApp.FFmpegEngines.Medias
             {
                 if (WaitPause(token))
                 {
-                    basePositionMs = Position;
+                    basePositionMs = lastPosition = Position;
                     lastTicks = 0;
                     sw.Restart();
                     continue;
@@ -282,11 +283,10 @@ namespace ExtenderApp.FFmpegEngines.Medias
                 {
                     long pendingSeek = Interlocked.Exchange(ref seekPosition, -1);
                     if (pendingSeek >= 0)
-                        basePositionMs = position = pendingSeek;
+                        Position = lastPosition = basePositionMs = position = pendingSeek;
                     else
                         basePositionMs = position;
 
-                    Position = lastPosition = position;
                     generation = currentGeneration;
                     lastTicks = 0;
                     Playback?.Invoke();
@@ -294,7 +294,7 @@ namespace ExtenderApp.FFmpegEngines.Medias
                 }
                 else
                 {
-                    long elapsedMs = (long)(sw.Elapsed.TotalMilliseconds * SpeedRatio);
+                    elapsedMs = (long)(sw.Elapsed.TotalMilliseconds * SpeedRatio);
                     position = basePositionMs + elapsedMs;
                 }
 
@@ -304,11 +304,8 @@ namespace ExtenderApp.FFmpegEngines.Medias
                     if (_decoderController.Completed)
                         break;
 
-                    bufferingCount++;
-                    if (bufferingCount >= BufferingCount)
-                    {
+                    if (bufferingCount++ >= BufferingCount)
                         OnChangeState(PlayerState.Buffering);
-                    }
 
                     basePositionMs = lastPosition;
                     Thread.Sleep(1);
@@ -363,9 +360,6 @@ namespace ExtenderApp.FFmpegEngines.Medias
         /// </summary>
         private static void SleepWithFineTuning(CancellationToken token, int waitMs)
         {
-            if (waitMs <= 0)
-                return;
-
             int sleepMs = waitMs - SpinThresholdMs;
             if (sleepMs > 0)
             {
