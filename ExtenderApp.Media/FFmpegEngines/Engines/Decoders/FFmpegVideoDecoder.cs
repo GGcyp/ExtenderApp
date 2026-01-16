@@ -146,7 +146,7 @@ namespace ExtenderApp.FFmpegEngines.Decoders
         {
             base.DisposeUnmanagedResources();
             Engine.Free(ref swsContext);
-            Engine.Return(rgbFrame);
+            Engine.Return(ref rgbFrame);
             rgbBuffer.Dispose();
         }
 

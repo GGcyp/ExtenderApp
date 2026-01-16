@@ -38,6 +38,11 @@
         /// <summary>
         /// 视频已经播放完成。
         /// </summary>
-        Completed
+        Completed,
+
+        /// <summary>
+        /// 视频正在转跳
+        /// </summary>
+        Seeking,
     }
 }

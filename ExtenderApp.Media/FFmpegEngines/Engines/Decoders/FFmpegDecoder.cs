@@ -149,11 +149,11 @@ namespace ExtenderApp.FFmpegEngines.Decoders
             catch (ChannelClosedException)
             {
                 // 通道已关闭：释放/归还资源，按正常结束处理
-                Engine.Return(packet);
+                Engine.Return(ref packet);
             }
             catch
             {
-                Engine.Return(packet);
+                Engine.Return(ref packet);
                 throw;
             }
         }
@@ -187,12 +187,12 @@ namespace ExtenderApp.FFmpegEngines.Decoders
                 if (localGeneration != currentGeneration)
                 {
                     localGeneration = currentGeneration;
-                    FlushPrivate();
+                    FlushPrivate(currentGeneration);
                 }
 
                 if (packet.Generation != localGeneration)
                 {
-                    Engine.Return(packet);
+                    Engine.Return(ref packet);
                     continue;
                 }
 
@@ -211,7 +211,6 @@ namespace ExtenderApp.FFmpegEngines.Decoders
             {
                 NativeIntPtr<AVPacket> pktPtr = packet.PacketPtr;
 
-                // 注意：SendPacket 可能会消耗/修改 pktPtr（因此使用 ref）
                 int result = Engine.SendPacket(DecoderContext, ref pktPtr);
                 if (result < 0 || token.IsCancellationRequested)
                 {
@@ -223,7 +222,7 @@ namespace ExtenderApp.FFmpegEngines.Decoders
             finally
             {
                 // 归还 packet（无论是否成功 send）
-                Engine.Return(packet);
+                Engine.Return(ref packet);
             }
         }
 
@@ -279,7 +278,7 @@ namespace ExtenderApp.FFmpegEngines.Decoders
             }
             finally
             {
-                Engine.Return(framePtr);
+                Engine.Return(ref framePtr);
             }
         }
 
@@ -352,24 +351,15 @@ namespace ExtenderApp.FFmpegEngines.Decoders
         }
 
         /// <summary>
-        /// 清空解码器内部缓存（packet/frame）并 flush FFmpeg codec 状态。
-        /// <para>典型用途：Seek/Stop 时快速清理堆积数据，并重置解码器内部缓冲区。</para>
-        /// </summary>
-        internal void FlushInternal()
-        {
-            FlushPrivate();
-        }
-
-        /// <summary>
         /// Flush 内部实现：
         /// <list type="number">
         /// <item><description>先 <see cref="Clear"/> 清空通道并归还/释放底层对象。</description></item>
         /// <item><description>再 flush codec（ <see cref="FFmpegEngine.Flush"/> ）以重置 FFmpeg 解码器内部状态。</description></item>
         /// </list>
         /// </summary>
-        private void FlushPrivate()
+        private void FlushPrivate(int generation)
         {
-            Clear();
+            Clear(generation);
 
             // Flush 后重新开始时间戳序列（后续 PTS fixup 从头计算）
             lastFramePtsMs = FFmpegEngine.InvalidTimestamp;
@@ -381,15 +371,26 @@ namespace ExtenderApp.FFmpegEngines.Decoders
         /// <summary>
         /// 清空 packet 与 frame 通道中的所有数据，并释放/归还底层资源。
         /// </summary>
-        private void Clear()
+        /// <param name="generation">目标代际。</param>
+        private void Clear(int generation = -1)
         {
-            while (_packetChannel.Reader.TryRead(out var packet))
+            while (_packetChannel.Reader.TryPeek(out var packet))
             {
-                Engine.Return(packet);
+                if (generation == packet.Generation ||
+                    !_packetChannel.Reader.TryRead(out packet))
+                {
+                    break;
+                }
+                Engine.Return(ref packet);
             }
 
             while (_frameChannel.Reader.TryRead(out var frame))
             {
+                if (generation == frame.Generation ||
+                    !_frameChannel.Reader.TryRead(out frame))
+                {
+                    break;
+                }
                 frame.Dispose();
             }
         }

@@ -175,7 +175,7 @@ namespace ExtenderApp.FFmpegEngines.Decoders
         {
             base.DisposeUnmanagedResources();
             Engine.Free(ref swrContext);
-            Engine.Return(pcmFrame);
+            Engine.Return(ref pcmFrame);
         }
     }
 }

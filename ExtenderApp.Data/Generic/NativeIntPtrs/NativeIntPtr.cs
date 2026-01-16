@@ -143,6 +143,12 @@ namespace ExtenderApp.Data
             Ptr = IntPtr.Zero;
         }
 
+        /// <inheritdoc/>
+        public override string ToString()
+        {
+            return Ptr.ToString();
+        }
+
         private static void ThrowIfNull()
         {
             throw new NullReferenceException("当前指针为空");

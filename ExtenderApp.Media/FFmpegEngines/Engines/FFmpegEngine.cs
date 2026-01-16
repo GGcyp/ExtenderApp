@@ -199,11 +199,6 @@ namespace ExtenderApp.FFmpegEngines
         public const long InvalidTimestamp = -9223372036854775808L;
 
         /// <summary>
-        /// 存储指针的HashSet。
-        /// </summary>
-        private readonly HashSet<nint> _intPtrHashSet;
-
-        /// <summary>
         /// 数据包队列。
         /// </summary>
         public readonly ConcurrentQueue<NativeIntPtr<AVPacket>> _packetQueue;
@@ -244,7 +239,6 @@ namespace ExtenderApp.FFmpegEngines
         /// <param name="ffmpegPath">FFmpeg的安装路径。</param>
         internal FFmpegEngine(string ffmpegPath)
         {
-            _intPtrHashSet = new();
             _packetQueue = new();
             _frameQueue = new();
             _allSource = new();
@@ -422,7 +416,6 @@ namespace ExtenderApp.FFmpegEngines
         public NativeIntPtr<AVFormatContext> CreateFormatContext()
         {
             NativeIntPtr<AVFormatContext> formatContext = ffmpeg.avformat_alloc_context();
-            _intPtrHashSet.Add(formatContext);
             return formatContext;
         }
 
@@ -514,7 +507,6 @@ namespace ExtenderApp.FFmpegEngines
                                                 readPacket,
                                                 writePacket,
                                                 seek);
-            _intPtrHashSet.Add(context);
             return new FFmpegIOContext(this, handle, context, buffer);
         }
 
@@ -525,7 +517,6 @@ namespace ExtenderApp.FFmpegEngines
         public NativeIntPtr<AVFrame> CreateFrame()
         {
             NativeIntPtr<AVFrame> frame = ffmpeg.av_frame_alloc();
-            _intPtrHashSet.Add(frame);
             return frame;
         }
 
@@ -536,7 +527,6 @@ namespace ExtenderApp.FFmpegEngines
         public NativeIntPtr<AVPacket> CreatePacket()
         {
             NativeIntPtr<AVPacket> packet = ffmpeg.av_packet_alloc();
-            _intPtrHashSet.Add(packet);
             return packet;
         }
 
@@ -554,7 +544,6 @@ namespace ExtenderApp.FFmpegEngines
         public NativeIntPtr<SwsContext> CreateSwsContext(int srcW, int srcH, AVPixelFormat srcFormat, int dstW, int dstH, AVPixelFormat dstFormat, int flags = SWS_BILINEAR)
         {
             NativeIntPtr<SwsContext> swsContext = ffmpeg.sws_getContext(srcW, srcH, srcFormat, dstW, dstH, dstFormat, flags, null, null, null);
-            _intPtrHashSet.Add(swsContext);
             return swsContext;
         }
 
@@ -574,7 +563,6 @@ namespace ExtenderApp.FFmpegEngines
         public NativeIntPtr<SwsContext> CreateSwsContext(int srcW, int srcH, AVPixelFormat srcFormat, int dstW, int dstH, AVPixelFormat dstFormat, int flags, NativeIntPtr<SwsFilter> srcFilter, NativeIntPtr<SwsFilter> dstFilter)
         {
             NativeIntPtr<SwsContext> swsContext = ffmpeg.sws_getContext(srcW, srcH, srcFormat, dstW, dstH, dstFormat, flags, srcFilter, dstFilter, null);
-            _intPtrHashSet.Add(swsContext);
             return swsContext;
         }
 
@@ -590,7 +578,6 @@ namespace ExtenderApp.FFmpegEngines
             {
                 throw new FFmpegException("无法创建 SwrContext");
             }
-            _intPtrHashSet.Add(swrContext);
             return swrContext;
         }
 
@@ -683,11 +670,9 @@ namespace ExtenderApp.FFmpegEngines
         /// <returns>分配并初始化好的 AVChannelLayout 指针封装。</returns>
         public NativeIntPtr<AVChannelLayout> CreateChannelLayout(ulong layout)
         {
-            AVChannelLayout* ptr = (AVChannelLayout*)ffmpeg.av_malloc((ulong)sizeof(AVChannelLayout));
+            NativeIntPtr<AVChannelLayout> ptr = (AVChannelLayout*)ffmpeg.av_malloc((ulong)sizeof(AVChannelLayout));
             ffmpeg.av_channel_layout_default(ptr, (int)layout);
-            NativeIntPtr<AVChannelLayout> intPtr = ptr;
-            _intPtrHashSet.Add(intPtr);
-            return intPtr;
+            return ptr;
         }
 
         #endregion Create
@@ -866,9 +851,6 @@ namespace ExtenderApp.FFmpegEngines
                 //throw new FFmpegException("无法打开解码器");
                 return false;
             }
-            _intPtrHashSet.Add(codecContext);
-            _intPtrHashSet.Add(codecParameters);
-            _intPtrHashSet.Add(codecStream);
             //不需要手动释放
             //_intPtrHashSet.Add(codec);
             decoder = new FFmpegDecoderContext(codec, codecParameters, codecContext, codecStream, streamIndex, type);
@@ -998,6 +980,7 @@ namespace ExtenderApp.FFmpegEngines
             {
                 packet = GetPacket();
             }
+
             int result = ffmpeg.avcodec_send_packet(codecContext, packet);
             if (result < 0)
             {
@@ -1062,7 +1045,7 @@ namespace ExtenderApp.FFmpegEngines
         /// 回收一个AVPacket实例，将其放回数据包队列以供重用。
         /// </summary>
         /// <param name="packet">需要被回收的地址</param>
-        public void Return(NativeIntPtr<AVPacket> packet)
+        public void Return(ref NativeIntPtr<AVPacket> packet)
         {
             if (packet.IsEmpty)
             {
@@ -1091,10 +1074,11 @@ namespace ExtenderApp.FFmpegEngines
         /// 将 <see cref="FFmpegPacket"/> 实例回收到数据包队列中以供重用。
         /// </summary>
         /// <param name="packet">需要被回收的 <see cref="FFmpegPacket"/> 实例</param>
-        public void Return(FFmpegPacket packet)
+        public void Return(ref FFmpegPacket packet)
         {
             var ptr = packet.PacketPtr;
-            Return(ptr);
+            Return(ref ptr);
+            packet = default;
         }
 
         #endregion Packet
@@ -1284,7 +1268,7 @@ namespace ExtenderApp.FFmpegEngines
         /// 回收一个 AVFrame 实例，将其放回帧队列以供后续复用。 会先清空帧内容（调用 FFmpeg 的 av_frame_unref），再入队，避免内存泄漏和脏数据。 推荐在帧处理完毕后调用，便于资源管理和性能优化。
         /// </summary>
         /// <param name="frame">需要被回收的 AVFrame 指针封装。</param>
-        public void Return(NativeIntPtr<AVFrame> frame)
+        public void Return(ref NativeIntPtr<AVFrame> frame)
         {
             if (frame.IsEmpty)
             {
@@ -1883,8 +1867,7 @@ namespace ExtenderApp.FFmpegEngines
         /// <returns>如果指针有效并已移除则返回 true，否则返回 false。</returns>
         private bool CheckIntPtrAndRemove<T>(NativeIntPtr<T> ptr) where T : unmanaged
         {
-            if (ptr.IsEmpty) return false;
-            return _intPtrHashSet.Remove(ptr);
+            return ptr.IsEmpty ? false : true;
         }
 
         #endregion Free

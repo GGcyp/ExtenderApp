@@ -213,6 +213,7 @@ namespace ExtenderApp.FFmpegEngines.Medias
 
             Interlocked.Exchange(ref seekPosition, position);
             _decoderController.SeekDecoder(position);
+            OnChangeState(PlayerState.Seeking);
         }
 
         /// <summary>

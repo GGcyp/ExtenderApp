@@ -212,20 +212,20 @@ namespace ExtenderApp.FFmpegEngines
                 }
                 catch
                 {
-                    Engine.Return(packetPtr);
+                    Engine.Return(ref packetPtr);
                     throw;
                 }
 
                 if (Engine.IsEndOfFile(result))
                 {
-                    Engine.Return(packetPtr);
+                    Engine.Return(ref packetPtr);
                     completed = true;
                     break;
                 }
 
                 if (Engine.IsTryAgain(result))
                 {
-                    Engine.Return(packetPtr);
+                    Engine.Return(ref packetPtr);
                     continue;
                 }
 
@@ -240,7 +240,7 @@ namespace ExtenderApp.FFmpegEngines
                 }
                 catch
                 {
-                    Engine.Return(packetPtr);
+                    Engine.Return(ref packetPtr);
                     throw;
                 }
             }

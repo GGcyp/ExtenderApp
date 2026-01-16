@@ -80,6 +80,7 @@ namespace ExtenderApp.FFmpegEngines.Medias.Outputs
                     Play();
                     break;
 
+                case PlayerState.Seeking:
                 case PlayerState.Paused:
                     Pause();
                     break;
