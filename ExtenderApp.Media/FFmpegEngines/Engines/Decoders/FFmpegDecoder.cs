@@ -186,8 +186,8 @@ namespace ExtenderApp.FFmpegEngines.Decoders
                 int currentGeneration = _controllerContext.GetCurrentGeneration();
                 if (localGeneration != currentGeneration)
                 {
-                    localGeneration = currentGeneration;
                     FlushPrivate(currentGeneration);
+                    localGeneration = currentGeneration;
                 }
 
                 if (packet.Generation != localGeneration)

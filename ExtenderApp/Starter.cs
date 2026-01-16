@@ -8,7 +8,7 @@ namespace ExtenderApp
 
         [STAThread]
         public static void Main(string[] args)
-        {
+       {
             app = new ExtenderApplication_WPF();
 
             try

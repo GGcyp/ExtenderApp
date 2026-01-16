@@ -10,7 +10,7 @@ namespace ExtenderApp.FFmpegEngines
     public static class FFmpegEnginesExtensions
     {
         /// <summary>
-        /// 对整个 FFmpegContext 进行跳转操作。 实际会对其包含的所有解码器上下文集合（视频/音频）执行 Seek。
+        /// 对整个 FFmpegContext 进行跳转操作。
         /// </summary>
         /// <param name="engine">FFmpegEngine 实例。</param>
         /// <param name="context">格式上下文指针。</param>
@@ -22,7 +22,7 @@ namespace ExtenderApp.FFmpegEngines
         }
 
         /// <summary>
-        /// 对解码器上下文集合（视频/音频）分别进行跳转操作。 可同时跳转音频流和视频流，适合多流同步定位场景。
+        /// 对解码器上下文集合进行跳转操作。
         /// </summary>
         /// <param name="engine">FFmpegEngine 实例。</param>
         /// <param name="context">格式上下文指针。</param>
@@ -30,14 +30,11 @@ namespace ExtenderApp.FFmpegEngines
         /// <param name="dContext">解码器上下文集合。</param>
         public static void Seek(this FFmpegEngine engine, NativeIntPtr<AVFormatContext> context, long targetTime, FFmpegDecoderContextCollection dContext)
         {
-            foreach (var c in dContext)
-            {
-                engine.Seek(context, targetTime, c);
-            }
+            engine.Seek(context, targetTime, dContext[0]);
         }
 
         /// <summary>
-        /// 对单个解码器上下文进行跳转，并刷新解码器缓冲区。 跳转后自动调用 FlushAsync，确保解码器状态同步，避免脏数据影响后续解码。
+        /// 对单个解码器上下文进行跳转，并刷新解码器缓冲区。
         /// </summary>
         /// <param name="engine">FFmpegEngine 实例。</param>
         /// <param name="context">格式上下文指针。</param>
@@ -46,7 +43,6 @@ namespace ExtenderApp.FFmpegEngines
         public static void Seek(this FFmpegEngine engine, NativeIntPtr<AVFormatContext> context, long targetTime, FFmpegDecoderContext dContext)
         {
             engine.Seek(context, targetTime, dContext.CodecStream);
-            engine.Flush(ref dContext.CodecContext);
         }
 
         /// <summary>
