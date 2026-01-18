@@ -20,15 +20,15 @@ namespace ExtenderApp.Torrents.ViewModels
 
         public RelayCommand<TorrentInfo> StartCommand { get; set; }
 
-        public NoValueCommand StartSelectedsCommand { get; set; }
+        public RelayCommand StartSelectedsCommand { get; set; }
 
-        public NoValueCommand DeleteCommand { get; set; }
+        public RelayCommand DeleteCommand { get; set; }
 
-        public NoValueCommand OpenFolderCommand { get; set; }
+        public RelayCommand OpenFolderCommand { get; set; }
 
-        public NoValueCommand CopyMagnetLinkCommand { get; set; }
+        public RelayCommand CopyMagnetLinkCommand { get; set; }
 
-        public NoValueCommand PermanentlyDeleteCommand { get; set; }
+        public RelayCommand PermanentlyDeleteCommand { get; set; }
 
         #endregion
 

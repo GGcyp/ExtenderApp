@@ -110,7 +110,7 @@ namespace ExtenderApp.Views
         /// <returns>生成的按钮。</returns>
         protected Button CreateButton(string content, Action action)
         {
-            ICommand command = action == null ? null : new NoValueCommand(action);
+            ICommand? command = action == null ? null : new RelayCommand(action);
             return CreateButton(content, command, TopButtonStyle);
         }
 
@@ -151,7 +151,7 @@ namespace ExtenderApp.Views
         /// <param name="command">按钮命令。</param>
         /// <param name="style">按钮样式。</param>
         /// <returns>生成的按钮。</returns>
-        protected Button CreateButton(string content, ICommand command, Style style)
+        protected Button CreateButton(string content, ICommand? command, Style style)
         {
             return new Button
             {

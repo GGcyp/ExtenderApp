@@ -1,17 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 using ExtenderApp.Media.ViewModels;
 using ExtenderApp.Views;
 using Microsoft.Win32;
@@ -19,11 +8,11 @@ using Microsoft.Win32;
 namespace ExtenderApp.Media
 {
     /// <summary>
-    /// VideoListView.xaml 的交互逻辑
+    /// MediaVideoListView.xaml 的交互逻辑
     /// </summary>
-    public partial class VideoListView : ExtenderAppView
+    public partial class MediaVideoListView : ExtenderAppView
     {
-        public VideoListView(VideoListViewModel viewModle) : base(viewModle)
+        public MediaVideoListView(VideoListViewModel viewModle) : base(viewModle)
         {
             InitializeComponent();
         }

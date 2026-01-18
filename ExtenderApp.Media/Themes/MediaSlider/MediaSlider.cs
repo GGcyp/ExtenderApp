@@ -3,10 +3,14 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
+using CommunityToolkit.Mvvm.Input;
 
 namespace ExtenderApp.Media.Themes
 {
-    internal class MediaSlider : Slider
+    /// <summary>
+    /// 可定制的媒体进度条控件，继承自 <see cref="Slider"/>，提供悬停放大、样式化-thumb、以及拖拽/点击命令支持。
+    /// </summary>
+    public class MediaSlider : Slider
     {
         static MediaSlider()
         {
@@ -14,31 +18,35 @@ namespace ExtenderApp.Media.Themes
                 new FrameworkPropertyMetadata(typeof(MediaSlider)));
         }
 
+        /// <summary>
+        /// 当拖拽结束时触发的简单事件（不带参数）。
+        /// </summary>
         public event Action? ThumbDragCompleted;
 
-        protected override void OnThumbDragCompleted(DragCompletedEventArgs e)
-        {
-            base.OnThumbDragCompleted(e);
-            ThumbDragCompleted?.Invoke();
-        }
-
-        ///// <summary>
-        ///// 图标
-        ///// </summary>
-        //public Geometry Icon
-        //{
-        //    get => (Geometry)GetValue(IconProperty);
-        //    set => SetValue(IconProperty, Value);
-        //}
-
-        //public static readonly DependencyProperty IconProperty =
-        //    DependencyProperty.RegisterKeyCapture(nameof(Icon),
-        //        typeof(Geometry),
-        //        typeof(MediaSlider),
-        //        new PropertyMetadata(null));
+        #region Properties
 
         /// <summary>
-        /// 图标尺寸
+        /// 鼠标进入控件时使用的 TrackHeight（值为 0 表示不启用悬停高度）。
+        /// </summary>
+        public double HoverTrackHeight
+        {
+            get => (double)GetValue(HoverTrackHeightProperty);
+            set => SetValue(HoverTrackHeightProperty, value);
+        }
+
+        /// <summary>
+        /// 注册 <see cref="HoverTrackHeight"/> 依赖属性。
+        /// </summary>
+        public static readonly DependencyProperty HoverTrackHeightProperty =
+            DependencyProperty.Register(nameof(HoverTrackHeight),
+                typeof(double),
+                typeof(MediaSlider),
+                new PropertyMetadata(0d));
+
+        private double _normalTrackHeight;
+
+        /// <summary>
+        /// Thumb 的尺寸（像素），用于模板中绑定 thumb 大小。
         /// </summary>
         public double ThumbSize
         {
@@ -46,6 +54,9 @@ namespace ExtenderApp.Media.Themes
             set => SetValue(ThumbSizeProperty, value);
         }
 
+        /// <summary>
+        /// 注册 <see cref="ThumbSize"/> 依赖属性。
+        /// </summary>
         public static readonly DependencyProperty ThumbSizeProperty =
             DependencyProperty.Register(nameof(ThumbSize),
                 typeof(double),
@@ -53,7 +64,7 @@ namespace ExtenderApp.Media.Themes
                 new PropertyMetadata(10d));
 
         /// <summary>
-        /// 滑块背景颜色
+        /// 滑块（整个轨道）背景画刷（可用于模板绑定）。
         /// </summary>
         public Brush TrackBackground
         {
@@ -61,6 +72,9 @@ namespace ExtenderApp.Media.Themes
             set => SetValue(TrackBackgroundProperty, value);
         }
 
+        /// <summary>
+        /// 注册 <see cref="TrackBackground"/> 依赖属性。
+        /// </summary>
         public static readonly DependencyProperty TrackBackgroundProperty =
             DependencyProperty.Register(nameof(TrackBackground),
                 typeof(Brush),
@@ -68,7 +82,7 @@ namespace ExtenderApp.Media.Themes
                 new PropertyMetadata(Brushes.Transparent));
 
         /// <summary>
-        /// 已看完显示颜色
+        /// 已播放区域的背景画刷（左侧）。
         /// </summary>
         public Brush LeftBackground
         {
@@ -76,6 +90,9 @@ namespace ExtenderApp.Media.Themes
             set { SetValue(LeftBackgroundProperty, value); }
         }
 
+        /// <summary>
+        /// 注册 <see cref="LeftBackground"/> 依赖属性。
+        /// </summary>
         public static readonly DependencyProperty LeftBackgroundProperty =
             DependencyProperty.Register(nameof(LeftBackground),
                 typeof(Brush),
@@ -83,7 +100,7 @@ namespace ExtenderApp.Media.Themes
                 new PropertyMetadata(null));
 
         /// <summary>
-        /// 还没看的视频长度背景色
+        /// 未播放区域的背景画刷（右侧）。
         /// </summary>
         public Brush RightBackground
         {
@@ -91,6 +108,9 @@ namespace ExtenderApp.Media.Themes
             set { SetValue(RightBackgroundProperty, value); }
         }
 
+        /// <summary>
+        /// 注册 <see cref="RightBackground"/> 依赖属性。
+        /// </summary>
         public static readonly DependencyProperty RightBackgroundProperty =
             DependencyProperty.Register(nameof(RightBackground),
                 typeof(Brush),
@@ -98,7 +118,7 @@ namespace ExtenderApp.Media.Themes
                 new PropertyMetadata(null));
 
         /// <summary>
-        /// 圆块的颜色
+        /// Thumb 的填充颜色（用于模板中 Thumb 的 Fill）。
         /// </summary>
         public Brush ThumbColor
         {
@@ -106,6 +126,9 @@ namespace ExtenderApp.Media.Themes
             set { SetValue(ThumbColorProperty, value); }
         }
 
+        /// <summary>
+        /// 注册 <see cref="ThumbColor"/> 依赖属性。
+        /// </summary>
         public static readonly DependencyProperty ThumbColorProperty =
             DependencyProperty.Register(nameof(ThumbColor),
                 typeof(Brush),
@@ -113,7 +136,7 @@ namespace ExtenderApp.Media.Themes
                 new PropertyMetadata(null));
 
         /// <summary>
-        /// 滑动条高度
+        /// 轨道高度（像素），用于模板绑定 Track 的高度。
         /// </summary>
         public double TrackHeight
         {
@@ -121,24 +144,202 @@ namespace ExtenderApp.Media.Themes
             set => SetValue(TrackHeightProperty, value);
         }
 
+        /// <summary>
+        /// 注册 <see cref="TrackHeight"/> 依赖属性。
+        /// </summary>
         public static readonly DependencyProperty TrackHeightProperty =
             DependencyProperty.Register(nameof(TrackHeight),
                 typeof(double),
                 typeof(MediaSlider),
                 new PropertyMetadata(5d));
 
+        #endregion Properties
+
+        #region Command
+
+        /// <summary>
+        /// 拖拽开始时要执行的命令（CommandParameter 为当前 Value）。
+        /// </summary>
+        public static readonly DependencyProperty DragStartedCommandProperty =
+            DependencyProperty.Register(nameof(DragStartedCommand),
+                typeof(ICommand),
+                typeof(MediaSlider),
+                new PropertyMetadata(null));
+
+        /// <summary>
+        /// 绑定用于处理拖拽开始的命令。
+        /// </summary>
+        public ICommand? DragStartedCommand
+        {
+            get => (ICommand?)GetValue(DragStartedCommandProperty);
+            set => SetValue(DragStartedCommandProperty, value);
+        }
+
+        /// <summary>
+        /// 拖拽过程中要执行的命令（CommandParameter 为当前 Value）。
+        /// </summary>
+        public static readonly DependencyProperty DragDeltaCommandProperty =
+            DependencyProperty.Register(nameof(DragDeltaCommand),
+                typeof(ICommand),
+                typeof(MediaSlider),
+                new PropertyMetadata(null));
+
+        /// <summary>
+        /// 绑定用于处理拖拽过程的命令。
+        /// </summary>
+        public ICommand? DragDeltaCommand
+        {
+            get => (ICommand?)GetValue(DragDeltaCommandProperty);
+            set => SetValue(DragDeltaCommandProperty, value);
+        }
+
+        /// <summary>
+        /// 拖拽完成时要执行的命令（CommandParameter 为当前 Value）。
+        /// </summary>
+        public static readonly DependencyProperty DragCompletedCommandProperty =
+            DependencyProperty.Register(nameof(DragCompletedCommand),
+                typeof(ICommand),
+                typeof(MediaSlider),
+                new PropertyMetadata(null));
+
+        /// <summary>
+        /// 绑定用于处理拖拽完成的命令。
+        /// </summary>
+        public ICommand? DragCompletedCommand
+        {
+            get => (ICommand?)GetValue(DragCompletedCommandProperty);
+            set => SetValue(DragCompletedCommandProperty, value);
+        }
+
+        /// <summary>
+        /// 点击轨道时要执行的命令（CommandParameter 为当前 Value）。
+        /// </summary>
+        public static readonly DependencyProperty ClickCommandProperty =
+            DependencyProperty.Register(nameof(ClickCommand),
+                typeof(ICommand),
+                typeof(MediaSlider),
+                new PropertyMetadata(null));
+
+        /// <summary>
+        /// 绑定用于处理点击定位（Seek）的命令。
+        /// </summary>
+        public ICommand? ClickCommand
+        {
+            get => (ICommand?)GetValue(ClickCommandProperty);
+            set => SetValue(ClickCommandProperty, value);
+        }
+
+        #endregion Command
+
+        /// <summary>
+        /// 创建一个 <see cref="MediaSlider"/> 实例并启用 MoveToPoint。
+        /// </summary>
         public MediaSlider()
         {
             IsMoveToPointEnabled = true;
-            MouseLeftButtonUp += MediaSlider_MouseLeftButtonDown;
+
+            _normalTrackHeight = TrackHeight;
         }
 
-        private void MediaSlider_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        /// <summary>
+        /// 鼠标进入时将轨道高度切换为 <see cref="HoverTrackHeight"/>（当其大于 0 时）。
+        /// </summary>
+        /// <param name="e">事件参数。</param>
+        protected override void OnMouseEnter(MouseEventArgs e)
         {
+            base.OnMouseEnter(e);
+
+            _normalTrackHeight = TrackHeight;
+
+            if (HoverTrackHeight > 0 && TrackHeight != HoverTrackHeight)
+            {
+                TrackHeight = HoverTrackHeight;
+            }
+        }
+
+        /// <summary>
+        /// 鼠标离开时恢复先前记录的轨道高度。
+        /// </summary>
+        /// <param name="e">事件参数。</param>
+        protected override void OnMouseLeave(MouseEventArgs e)
+        {
+            base.OnMouseLeave(e);
+
+            if (HoverTrackHeight > 0 && TrackHeight != _normalTrackHeight)
+            {
+                TrackHeight = _normalTrackHeight;
+            }
+        }
+
+        /// <summary>
+        /// 点击轨道时将控件定位到点击位置并触发 <see cref="ClickCommand"/>（若绑定）。
+        /// </summary>
+        /// <param name="e">事件参数。</param>
+        protected override void OnMouseLeftButtonDown(MouseButtonEventArgs e)
+        {
+            base.OnMouseLeftButtonDown(e);
             var point = e.GetPosition(this);
             var newValue = Minimum + (Maximum - Minimum) * (point.X / ActualWidth);
             Value = newValue;
             ThumbDragCompleted?.Invoke();
+
+            // 点击也可以绑定命令（例如 SeekCommand），传递当前 Value
+            var cmd = ClickCommand;
+            if (cmd == null)
+                return;
+
+            if (cmd is RelayCommand<double> dCommand && dCommand.CanExecute(Value))
+            {
+                dCommand.Execute(Value);
+            }
+            else if (cmd.CanExecute(null))
+            {
+                cmd.Execute(Value);
+            }
+        }
+
+        /// <summary>
+        /// 重写：thumb 拖拽完成时触发事件并执行 <see cref="DragCompletedCommand"/>（若绑定）。
+        /// </summary>
+        /// <param name="e">事件参数。</param>
+        protected override void OnThumbDragCompleted(DragCompletedEventArgs e)
+        {
+            base.OnThumbDragCompleted(e);
+            ThumbDragCompleted?.Invoke();
+
+            var cmd = DragCompletedCommand;
+            if (cmd != null && cmd.CanExecute(Value))
+            {
+                cmd.Execute(Value);
+            }
+        }
+
+        /// <summary>
+        /// 重写：thumb 开始拖拽时执行 <see cref="DragStartedCommand"/>（若绑定）。
+        /// </summary>
+        /// <param name="e">事件参数。</param>
+        protected override void OnThumbDragStarted(DragStartedEventArgs e)
+        {
+            base.OnThumbDragStarted(e);
+            var cmd = DragStartedCommand;
+            if (cmd != null && cmd.CanExecute(Value))
+            {
+                cmd.Execute(Value);
+            }
+        }
+
+        /// <summary>
+        /// 重写：thumb 拖拽过程中执行 <see cref="DragDeltaCommand"/>（若绑定）。
+        /// </summary>
+        /// <param name="e">事件参数。</param>
+        protected override void OnThumbDragDelta(DragDeltaEventArgs e)
+        {
+            base.OnThumbDragDelta(e);
+            var cmd = DragDeltaCommand;
+            if (cmd != null && cmd.CanExecute(Value))
+            {
+                cmd.Execute(Value);
+            }
         }
     }
 }

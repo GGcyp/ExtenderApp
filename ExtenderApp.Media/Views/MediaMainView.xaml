@@ -3,13 +3,12 @@
                    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-                   xmlns:mt="clr-namespace:ExtenderApp.Media.Themes"
                    xmlns:vm="clr-namespace:ExtenderApp.Media.ViewModels"
-                   xmlns:vt="clr-namespace:ExtenderApp.Views.Themes;assembly=ExtenderApp.Views"
                    xmlns:v="clr-namespace:ExtenderApp.Views;assembly=ExtenderApp.Views"
                    mc:Ignorable="d"
                    d:DataContext="{d:DesignInstance Type=vm:MediaMainViewModel}"
-                   d:DesignHeight="450" d:DesignWidth="800">
+                   d:DesignHeight="450"
+                   d:DesignWidth="800">
     <v:ExtenderAppView.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
@@ -23,8 +22,7 @@
           Focusable="False">
         <Grid.RowDefinitions>
             <RowDefinition />
-            <RowDefinition Height="5" />
-            <RowDefinition Height="80" />
+            <RowDefinition Height="100" />
         </Grid.RowDefinitions>
         <Grid>
             <Grid.ColumnDefinitions>
@@ -32,103 +30,17 @@
                 <ColumnDefinition Width="200" />
             </Grid.ColumnDefinitions>
             <!--视频播放区-->
-            <Grid Grid.Column="0"
-                  Background="Black">
-                <Image Stretch="Uniform"
-                       Source="{Binding Model.Bitmap}"/>
+            <Grid Grid.Column="0">
+                <ContentControl Content="{Binding Model.VideoView}" />
             </Grid>
             <!-- 视频列表区域 -->
             <Grid Grid.Column="1">
-                <ContentControl Content="{Binding Model.CurrentVideoListView}" />
+                <ContentControl Content="{Binding Model.VideoListView}" />
             </Grid>
         </Grid>
-        <mt:MediaSlider x:Name="mediaSlider"
-                        Grid.Row="1"
-                        Minimum="0"
-                        Maximum="{Binding Model.TotalTime.TotalSeconds,Mode=OneWay}"
-                        Value="{Binding Model.Position.TotalSeconds,Mode=OneWay}"
-                        TrackHeight="5"
-                        ThumbSize="0"
-                        ThumbColor="White"
-                        TrackBackground="Transparent"
-                        LeftBackground="LightBlue"
-                        RightBackground="Gray"
-                        Mouse.PreviewMouseUp="mediaSlider_PreviewMouseUp"
-                        Thumb.DragStarted="mediaSlider_DragStarted"
-                        Thumb.DragDelta="mediaSlider_DragDelta"
-                        Thumb.DragCompleted="mediaSlider_DragCompleted" />
-        <Grid Grid.Row="2" VerticalAlignment="Center">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="200" />
-                <ColumnDefinition Width="300" />
-                <ColumnDefinition />
-            </Grid.ColumnDefinitions>
-            <!--视频控制区-->
-            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                <TextBlock Text="{Binding Model.Position,StringFormat={}{0:hh\\:mm\\:ss}}"
-                           Foreground="{DynamicResource GlobalForegroundBrush}"
-                           FontSize="20" />
-                <TextBlock Text="/"
-                           Foreground="{DynamicResource GlobalForegroundBrush}"
-                           FontSize="20" />
-                <TextBlock Text="{Binding Model.TotalTime,StringFormat={}{0:hh\\:mm\\:ss}}"
-                           Foreground="{DynamicResource GlobalForegroundBrush}"
-                           FontSize="20" />
-            </StackPanel>
-            <StackPanel Grid.Column="1"
-                        HorizontalAlignment="Center"
-                        VerticalAlignment="Center"
-                        Orientation="Horizontal">
-                <Button Margin="5 0 0 0"
-                        Command="{Binding StopCommand}"
-                        Width="35"
-                        Height="35"
-                        Padding="0"
-                        Background="Transparent"
-                        HorizontalContentAlignment="Stretch"
-                        VerticalContentAlignment="Stretch">
-                    <Border Background="White"
-                            BorderBrush="White"
-                            BorderThickness="10"
-                            HorizontalAlignment="Stretch"
-                            VerticalAlignment="Stretch"
-                            Height="30"
-                            Width="30"
-                            Margin="0"
-                            CornerRadius="2" />
-                </Button>
-                <vt:SwitchButton Command="{Binding MediaStateChangeCommand}"
-                                 DefaultGeometry="{DynamicResource PlayGemetry}"
-                                 TargetGeometry="{DynamicResource PauseGemetry}"
-                                 Fill="White"
-                                 Stroke="White"
-                                 Width="60"
-                                 Margin="5 0 0 0"
-                                 Height="50" />
-                <vt:SwitchButton Margin="10 0 0 0"
-                                 Command="{Binding FastForwardCommand}"
-                                 Fill="White"
-                                 Stroke="White"
-                                 DefaultGeometry="{DynamicResource ForwardGemetry}"
-                                 TargetGeometry="{DynamicResource ForwardGemetry}"
-                                 Width="30"
-                                 Height="30" />
-            </StackPanel>
-            <mt:MediaSlider x:Name="volumeSlider"
-                            Grid.Column="2"
-                            Minimum="0"
-                            Maximum="1"
-                            Value="{Binding Model.Volume}"
-                            TrackHeight="5"
-                            ThumbSize="18"
-                            ThumbColor="White"
-                            TrackBackground="Transparent"
-                            LeftBackground="LightBlue"
-                            RightBackground="Gray"
-                            Orientation="Horizontal"
-                            TickFrequency="0.01"
-                            HorizontalAlignment="Stretch"
-                            VerticalAlignment="Stretch" />
+        <!--视频控制区-->
+        <Grid Grid.Row="1">
+            <ContentControl Content="{Binding Model.VideoControlView}" />
         </Grid>
     </Grid>
 </v:ExtenderAppView>

@@ -102,7 +102,7 @@ namespace ExtenderApp.ViewModels
         /// <param name="oldViewInfo">上一个视图的信息。</param>
         public void Enter(ViewInfo oldViewInfo)
         {
-            ProtectedEnter(oldViewInfo);
+            EnterProtected(oldViewInfo);
         }
 
         /// <summary>
@@ -111,7 +111,7 @@ namespace ExtenderApp.ViewModels
         /// <param name="newViewInfo">将要导航到的新视图的信息。</param>
         public void Exit(ViewInfo newViewInfo)
         {
-            ProtectedExit(newViewInfo);
+            ExitProtected(newViewInfo);
 
             if (hasSubscribeMessage)
                 ServiceStore.MessageService.UnsubscribeAll(this);
@@ -121,7 +121,7 @@ namespace ExtenderApp.ViewModels
         /// 为派生类提供一个可重写的入口点，用于处理视图进入逻辑。
         /// </summary>
         /// <param name="oldViewInfo">上一个视图的信息。</param>
-        protected virtual void ProtectedEnter(ViewInfo oldViewInfo)
+        protected virtual void EnterProtected(ViewInfo oldViewInfo)
         {
         }
 
@@ -129,7 +129,7 @@ namespace ExtenderApp.ViewModels
         /// 为派生类提供一个可重写的入口点，用于处理视图退出逻辑。
         /// </summary>
         /// <param name="newViewInfo">将要导航到的新视图的信息。</param>
-        protected virtual void ProtectedExit(ViewInfo newViewInfo)
+        protected virtual void ExitProtected(ViewInfo newViewInfo)
         {
         }
 
@@ -915,7 +915,7 @@ namespace ExtenderApp.ViewModels
         /// 重写以在视图进入时执行特定于模型的逻辑。
         /// </summary>
         /// <param name="newViewInfo">上一个视图的信息。</param>
-        protected override void ProtectedEnter(ViewInfo newViewInfo)
+        protected override void EnterProtected(ViewInfo newViewInfo)
         {
         }
 
@@ -923,7 +923,7 @@ namespace ExtenderApp.ViewModels
         /// 重写以在视图退出时保存模型并根据配置清理资源。
         /// </summary>
         /// <param name="newViewInfo">将要导航到的新视图的信息。</param>
-        protected override void ProtectedExit(ViewInfo newViewInfo)
+        protected override void ExitProtected(ViewInfo newViewInfo)
         {
             SaveModel();
             if (Details != null && !Details.IsStandingModel)

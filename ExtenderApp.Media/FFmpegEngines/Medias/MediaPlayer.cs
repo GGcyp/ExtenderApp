@@ -388,7 +388,7 @@ namespace ExtenderApp.FFmpegEngines.Medias
         /// </summary>
         protected override void DisposeManagedResources()
         {
-            StopAsync().ConfigureAwait(false);
+            StopAsync().GetAwaiter().GetResult();
             _pauseEvent.Dispose();
             _decoderController.Dispose();
             _frameProcessController.Dispose();

@@ -11,7 +11,7 @@ namespace ExtenderApp.Media.ViewModels
     /// </summary>
     /// <typeparam name="VideoListView">视频列表视图类型</typeparam>
     /// <typeparam name="MediaModel">媒体模型类型</typeparam>
-    public class VideoListViewModel : ExtenderAppViewModel<VideoListView, MediaModel>
+    public class VideoListViewModel : ExtenderAppViewModel<MediaVideoListView, MediaModel>
     {
         private readonly HashSet<Uri> _medaiPathHash;
 

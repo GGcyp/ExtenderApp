@@ -18,12 +18,12 @@ namespace ExtenderApp.MainViews.ViewModels
         /// <summary>
         /// 命令属性，用于绑定到视图中的按钮，当按钮被点击时，将执行 ToMainView 方法。
         /// </summary>
-        public NoValueCommand ToMainViewCommand { get; set; }
+        public RelayCommand ToMainViewCommand { get; set; }
 
         /// <summary>
         /// 打开设置视图的命令属性。
         /// </summary>
-        public NoValueCommand OpenSettingsWindowCommand { get; set; }
+        public RelayCommand OpenSettingsWindowCommand { get; set; }
 
         private int lastButtonHeight;
         public int ButtonHeight { get; set; }
@@ -36,8 +36,8 @@ namespace ExtenderApp.MainViews.ViewModels
         /// <param name="serviceStore">IServiceStore 实例，提供应用程序所需的服务。</param>
         public MainView_RunViewModel(MainModel model, IServiceStore serviceStore) : base(model, serviceStore)
         {
-            ToMainViewCommand = new NoValueCommand(ToMainView);
-            OpenSettingsWindowCommand = new NoValueCommand(OpenSettingsWindow);
+            ToMainViewCommand = new(ToMainView);
+            OpenSettingsWindowCommand = new(OpenSettingsWindow);
 
             ButtonHeight = 40;
 

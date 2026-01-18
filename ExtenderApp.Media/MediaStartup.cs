@@ -6,6 +6,8 @@ using ExtenderApp.FFmpegEngines;
 using ExtenderApp.FFmpegEngines.Medias;
 using ExtenderApp.Media.Models;
 using ExtenderApp.Media.ViewModels;
+using ExtenderApp.Media.ViewModles;
+using ExtenderApp.Media.Views;
 using ExtenderApp.Services;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -21,11 +23,15 @@ namespace ExtenderApp.Media
         {
             //View
             services.AddTransient<MediaMainView>();
-            services.AddTransient<VideoListView>();
+            services.AddTransient<MediaVideoListView>();
+            services.AddTransient<MediaControlBarView>();
+            services.AddTransient<MediaVideoView>();
 
             //GetViewModel
             services.AddTransient<MediaMainViewModel>();
             services.AddTransient<VideoListViewModel>();
+            services.AddTransient<MediaControlBarViewModle>();
+            services.AddTransient<MediaVideoViewModle>();
 
             //FFmpegEngine
             AddFFmpegEngines(services);

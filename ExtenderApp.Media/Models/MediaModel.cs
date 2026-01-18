@@ -1,5 +1,4 @@
 ﻿using System.Collections.ObjectModel;
-using System.Numerics;
 using System.Windows.Media.Imaging;
 using ExtenderApp.Abstract;
 using ExtenderApp.Common;
@@ -12,13 +11,20 @@ namespace ExtenderApp.Media.Models
 {
     /// <summary>
     /// 媒体数据模型（可作为 GetViewModel 使用）。
-    /// <para>
-    /// 负责：
+    /// <para>负责：
     /// <list type="bullet">
-    /// <item><description>通过 <see cref="MediaEngine"/> 打开媒体并维护当前 <see cref="IMediaPlayer"/> 实例。</description></item>
-    /// <item><description>持有视频输出 <see cref="Bitmap"/>（<see cref="BitmapSource"/>），供 WPF 绑定显示。</description></item>
-    /// <item><description>订阅 <see cref="IMediaPlayer.Playback"/> 事件，在 UI 线程更新 <see cref="Position"/>。</description></item>
-    /// <item><description>对外暴露播放控制：播放/暂停/停止/跳转/音量/倍速。</description></item>
+    /// <item>
+    /// <description>通过 <see cref="MediaEngine"/> 打开媒体并维护当前 <see cref="IMediaPlayer"/> 实例。</description>
+    /// </item>
+    /// <item>
+    /// <description>持有视频输出 <see cref="Bitmap"/>（ <see cref="BitmapSource"/>），供 WPF 绑定显示。</description>
+    /// </item>
+    /// <item>
+    /// <description>订阅 <see cref="IMediaPlayer.Playback"/> 事件，在 UI 线程更新 <see cref="Position"/>。</description>
+    /// </item>
+    /// <item>
+    /// <description>对外暴露播放控制：播放/暂停/停止/跳转/音量/倍速。</description>
+    /// </item>
     /// </list>
     /// </para>
     /// </summary>
@@ -65,7 +71,10 @@ namespace ExtenderApp.Media.Models
         /// <summary>
         /// 当前视频列表视图（用于导航/显示视频列表）。
         /// </summary>
-        public IView? CurrentVideoListView { get; set; }
+        public IView? VideoListView { get; set; }
+
+        public IView? VideoView { get; set; }
+        public IView? VideoControlView { get; set; }
 
         /// <summary>
         /// 当前选中的视频信息。
@@ -161,11 +170,6 @@ namespace ExtenderApp.Media.Models
                 return TimeSpan.Zero;
             }
         }
-
-        /// <summary>
-        /// 是否正在 Seek（业务/UI 状态标记）。
-        /// </summary>
-        public bool IsSeeking { get; set; }
 
         /// <summary>
         /// 快进/快退跳转秒数（业务/UI 设定）。

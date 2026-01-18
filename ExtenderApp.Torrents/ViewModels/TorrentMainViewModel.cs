@@ -18,21 +18,21 @@ namespace ExtenderApp.Torrents.ViewModels
 
         #region List
 
-        public NoValueCommand ToDownloadListCommand { get; set; }
+        public RelayCommand ToDownloadListCommand { get; set; }
 
-        public NoValueCommand ToDownloadCompletedListdCommand { get; set; }
+        public RelayCommand ToDownloadCompletedListdCommand { get; set; }
 
-        public NoValueCommand ToSeedListCommand { get; set; }
+        public RelayCommand ToSeedListCommand { get; set; }
 
-        public NoValueCommand ToRecyclebinListCommand { get; set; }
+        public RelayCommand ToRecyclebinListCommand { get; set; }
 
         #endregion
 
-        public NoValueCommand ShowAddTorrentViewCommand { get; set; }
+        public RelayCommand ShowAddTorrentViewCommand { get; set; }
 
-        public NoValueCommand ToFileInfoCommand { get; set; }
+        public RelayCommand ToFileInfoCommand { get; set; }
 
-        public NoValueCommand ToTorrentDetailsCommand { get; set; }
+        public RelayCommand ToTorrentDetailsCommand { get; set; }
 
         #endregion
 
@@ -68,10 +68,10 @@ namespace ExtenderApp.Torrents.ViewModels
             }), outTime, outTime);
         }
 
-        private NoValueCommand CreateTorrentListCommand<T>()
+        private RelayCommand CreateTorrentListCommand<T>()
             where T : class, IView
         {
-            return new NoValueCommand(() =>
+            return new RelayCommand(() =>
             {
                 var type = typeof(T);
                 if (_dict.TryGetValue(type, out var view))
@@ -86,10 +86,10 @@ namespace ExtenderApp.Torrents.ViewModels
             });
         }
 
-        private NoValueCommand CreateTorrentDetailsCommand<T>()
+        private RelayCommand CreateTorrentDetailsCommand<T>()
             where T : class, IView
         {
-            return new NoValueCommand(() =>
+            return new RelayCommand(() =>
             {
                 var type = typeof(T);
                 if (_dict.TryGetValue(type, out var view))

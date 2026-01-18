@@ -15,8 +15,8 @@ namespace ExtenderApp.Torrents.ViewModels
     {
         #region Command
 
-        public NoValueCommand LoadTorrentCommand { get; set; }
-        public NoValueCommand StartTorrentCommand { get; set; }
+        public RelayCommand LoadTorrentCommand { get; set; }
+        public RelayCommand StartTorrentCommand { get; set; }
 
         #endregion
 
@@ -33,7 +33,7 @@ namespace ExtenderApp.Torrents.ViewModels
             StartTorrentCommand = new(StartTorrent);
         }
 
-        protected override void ProtectedEnter(ViewInfo newViewInfo)
+        protected override void EnterProtected(ViewInfo newViewInfo)
         {
             View.Window.Closed += (s, e) => MainWindowTopmost();
         }

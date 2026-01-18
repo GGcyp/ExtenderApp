@@ -12,11 +12,11 @@ namespace ExtenderApp.Torrents.ViewModels
     {
         #region Command
 
-        public NoValueCommand OpenSaveFolderCommand { get; set; }
+        public RelayCommand OpenSaveFolderCommand { get; set; }
 
-        public NoValueCommand CopyMagnetLinkCommand { get; set; }
+        public RelayCommand CopyMagnetLinkCommand { get; set; }
 
-        public NoValueCommand AddPeerCommand { get; set; }
+        public RelayCommand AddPeerCommand { get; set; }
 
         #endregion
 

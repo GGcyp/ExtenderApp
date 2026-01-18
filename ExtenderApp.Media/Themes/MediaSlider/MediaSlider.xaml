@@ -71,12 +71,12 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type local:MediaSlider}">
-                    <Grid>
+                    <Grid Height="{TemplateBinding TrackHeight}">
                         <!--<Border Background="{TemplateBinding TrackBackground}"/>-->
                         <!-- 一定取这个 Name -->
                         <Track Name="PART_Track">
                             <Track.DecreaseRepeatButton>
-                                <RepeatButton Style="{StaticResource LeftSliderRepeatButtonStyle}" 
+                                <RepeatButton Style="{StaticResource LeftSliderRepeatButtonStyle}"
                                               Command="Slider.DecreaseLarge"
                                               Height="{TemplateBinding TrackHeight}"/>
                             </Track.DecreaseRepeatButton>
@@ -84,7 +84,7 @@
                                 <Thumb Style="{StaticResource MediaThumbStyle}"/>
                             </Track.Thumb>
                             <Track.IncreaseRepeatButton>
-                                <RepeatButton Style="{StaticResource RightSliderRepeatButtonStyle}" 
+                                <RepeatButton Style="{StaticResource RightSliderRepeatButtonStyle}"
                                               Command="Slider.IncreaseLarge"
                                               Height="{TemplateBinding TrackHeight}"/>
                             </Track.IncreaseRepeatButton>

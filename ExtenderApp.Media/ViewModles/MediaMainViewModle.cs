@@ -2,6 +2,7 @@
 using ExtenderApp.Data;
 using ExtenderApp.FFmpegEngines;
 using ExtenderApp.Media.Models;
+using ExtenderApp.Media.Views;
 using ExtenderApp.ViewModels;
 using ExtenderApp.Views.Commands;
 using Microsoft.Win32;
@@ -15,28 +16,30 @@ namespace ExtenderApp.Media.ViewModels
         /// <summary>
         /// 播放命令。
         /// </summary>
-        public NoValueCommand MediaStateChangeCommand { get; private set; }
+        public RelayCommand MediaStateChangeCommand { get; private set; }
 
         /// <summary>
         /// 停止命令。
         /// </summary>
-        public NoValueCommand StopCommand { get; private set; }
+        public RelayCommand StopCommand { get; private set; }
 
         /// <summary>
         /// 快进命令。
         /// </summary>
-        public NoValueCommand FastForwardCommand { get; private set; }
+        public RelayCommand FastForwardCommand { get; private set; }
 
         /// <summary>
         /// 快退命令。
         /// </summary>
-        public NoValueCommand RewindCommand { get; private set; }
+        public RelayCommand RewindCommand { get; private set; }
 
         #endregion 按钮
 
         public MediaMainViewModel(IServiceStore serviceStore) : base(serviceStore)
         {
-            Model.CurrentVideoListView = NavigateTo<VideoListView>();
+            Model.VideoListView = NavigateTo<MediaVideoListView>();
+            Model.VideoControlView = NavigateTo<MediaControlBarView>();
+            Model.VideoView = NavigateTo<MediaVideoView>();
 
             MediaStateChangeCommand = new(OnMediaStateChange);
             FastForwardCommand = new(() => OnReverseOrForward(true));

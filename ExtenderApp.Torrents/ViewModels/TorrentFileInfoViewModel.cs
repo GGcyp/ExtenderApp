@@ -11,8 +11,8 @@ namespace ExtenderApp.Torrents.ViewModels
     {
         #region 命令
 
-        public NoValueCommand StartCommand { get; set; }
-        public NoValueCommand SelectAllCommand { get; set; }
+        public RelayCommand StartCommand { get; set; }
+        public RelayCommand SelectAllCommand { get; set; }
 
         #endregion
 

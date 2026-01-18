@@ -55,12 +55,6 @@ namespace ExtenderApp.Media
 
         #region MediaSlider滑块位置
 
-        private void mediaSlider_DragStarted(object sender, DragStartedEventArgs e)
-        {
-            GetViewModel<MediaMainViewModel>()!.Model.IsSeeking = true;
-            e.Handled = true;
-        }
-
         private void mediaSlider_DragDelta(object sender, DragDeltaEventArgs e)
         {
             var slider = sender as Slider;
@@ -76,7 +70,6 @@ namespace ExtenderApp.Media
             double value = slider?.Value ?? 0;
             var viewModel = GetViewModel<MediaMainViewModel>()!;
             viewModel.Seek(TimeSpan.FromSeconds(value));
-            viewModel.Model.IsSeeking = false;
             e.Handled = true;
         }
 

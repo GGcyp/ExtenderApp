@@ -15,8 +15,8 @@ namespace ExtenderApp.Torrents.ViewModels
 
         #region Command
 
-        public NoValueCommand StartDownloadCommand { get; set; }
-        public NoValueCommand SelectedAllCommand { get; set; }
+        public RelayCommand StartDownloadCommand { get; set; }
+        public RelayCommand SelectedAllCommand { get; set; }
 
         #endregion Command
 
@@ -29,7 +29,7 @@ namespace ExtenderApp.Torrents.ViewModels
             });
         }
 
-        protected override void ProtectedEnter(ViewInfo oldViewInfo)
+        protected override void EnterProtected(ViewInfo oldViewInfo)
         {
             var torrentAddViewModel = oldViewInfo.ViewModel as TorrentAddViewModel;
             CurrentTorrentInfo = torrentAddViewModel?.CurrentTorrentInfo;
