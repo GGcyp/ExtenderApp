@@ -10,13 +10,18 @@ namespace ExtenderApp.Media.ViewModles
     {
         #region Commands
 
-        public RelayCommand<double> ClickCommand { get; set; }
+        public RelayCommand<double> PositionClickCommand { get; set; }
 
-        #endregion
+        #endregion Commands
 
         public MediaControlBarViewModle(IServiceStore serviceStore) : base(serviceStore)
         {
+            PositionClickCommand = new(OnPositionClick);
         }
 
+        private void OnPositionClick(double obj)
+        {
+            Model.Seek(TimeSpan.FromSeconds(obj));
+        }
     }
 }

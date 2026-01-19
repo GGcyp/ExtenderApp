@@ -7,7 +7,7 @@ using ExtenderApp.ViewModels;
 using ExtenderApp.Views.Commands;
 using Microsoft.Win32;
 
-namespace ExtenderApp.Media.ViewModels
+namespace ExtenderApp.Media.ViewModles
 {
     public class MediaMainViewModel : ExtenderAppViewModel<MediaMainView, MediaModel>
     {

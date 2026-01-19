@@ -1,7 +1,7 @@
 ﻿using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using ExtenderApp.Media.ViewModels;
+using ExtenderApp.Media.ViewModles;
 using ExtenderApp.Views;
 using Microsoft.Win32;
 

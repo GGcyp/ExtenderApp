@@ -18,11 +18,6 @@ namespace ExtenderApp.Media.Themes
                 new FrameworkPropertyMetadata(typeof(MediaSlider)));
         }
 
-        /// <summary>
-        /// 当拖拽结束时触发的简单事件（不带参数）。
-        /// </summary>
-        public event Action? ThumbDragCompleted;
-
         #region Properties
 
         /// <summary>
@@ -237,7 +232,6 @@ namespace ExtenderApp.Media.Themes
         public MediaSlider()
         {
             IsMoveToPointEnabled = true;
-
             _normalTrackHeight = TrackHeight;
         }
 
@@ -271,31 +265,14 @@ namespace ExtenderApp.Media.Themes
             }
         }
 
-        /// <summary>
-        /// 点击轨道时将控件定位到点击位置并触发 <see cref="ClickCommand"/>（若绑定）。
-        /// </summary>
-        /// <param name="e">事件参数。</param>
-        protected override void OnMouseLeftButtonDown(MouseButtonEventArgs e)
+        protected override void OnPreviewMouseDown(MouseButtonEventArgs e)
         {
-            base.OnMouseLeftButtonDown(e);
+            base.OnPreviewMouseUp(e);
             var point = e.GetPosition(this);
             var newValue = Minimum + (Maximum - Minimum) * (point.X / ActualWidth);
             Value = newValue;
-            ThumbDragCompleted?.Invoke();
 
-            // 点击也可以绑定命令（例如 SeekCommand），传递当前 Value
-            var cmd = ClickCommand;
-            if (cmd == null)
-                return;
-
-            if (cmd is RelayCommand<double> dCommand && dCommand.CanExecute(Value))
-            {
-                dCommand.Execute(Value);
-            }
-            else if (cmd.CanExecute(null))
-            {
-                cmd.Execute(Value);
-            }
+            CallCommand(ClickCommand);
         }
 
         /// <summary>
@@ -305,13 +282,7 @@ namespace ExtenderApp.Media.Themes
         protected override void OnThumbDragCompleted(DragCompletedEventArgs e)
         {
             base.OnThumbDragCompleted(e);
-            ThumbDragCompleted?.Invoke();
-
-            var cmd = DragCompletedCommand;
-            if (cmd != null && cmd.CanExecute(Value))
-            {
-                cmd.Execute(Value);
-            }
+            CallCommand(DragCompletedCommand);
         }
 
         /// <summary>
@@ -321,11 +292,7 @@ namespace ExtenderApp.Media.Themes
         protected override void OnThumbDragStarted(DragStartedEventArgs e)
         {
             base.OnThumbDragStarted(e);
-            var cmd = DragStartedCommand;
-            if (cmd != null && cmd.CanExecute(Value))
-            {
-                cmd.Execute(Value);
-            }
+            CallCommand(DragStartedCommand);
         }
 
         /// <summary>
@@ -335,8 +302,22 @@ namespace ExtenderApp.Media.Themes
         protected override void OnThumbDragDelta(DragDeltaEventArgs e)
         {
             base.OnThumbDragDelta(e);
-            var cmd = DragDeltaCommand;
-            if (cmd != null && cmd.CanExecute(Value))
+            CallCommand(DragDeltaCommand);
+        }
+
+        /// <summary>
+        /// 将指定命令与当前 Value 一起调用。
+        /// </summary>
+        /// <param name="cmd">指定命令</param>
+        private void CallCommand(ICommand? cmd)
+        {
+            if (cmd == null)
+                return;
+            if (cmd is RelayCommand<double> dCommand && dCommand.CanExecute(Value))
+            {
+                dCommand.Execute(Value);
+            }
+            else if (cmd.CanExecute(null))
             {
                 cmd.Execute(Value);
             }

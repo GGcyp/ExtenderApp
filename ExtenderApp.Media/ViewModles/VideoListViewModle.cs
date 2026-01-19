@@ -4,7 +4,7 @@ using ExtenderApp.Abstract;
 using ExtenderApp.Media.Models;
 using ExtenderApp.ViewModels;
 
-namespace ExtenderApp.Media.ViewModels
+namespace ExtenderApp.Media.ViewModles
 {
     /// <summary>
     /// 视频列表视图模型类，继承自 ExtenderAppViewModel 类，用于处理视频列表的显示和交互。

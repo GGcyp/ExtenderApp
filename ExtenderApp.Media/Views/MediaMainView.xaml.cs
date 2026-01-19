@@ -3,7 +3,7 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
-using ExtenderApp.Media.ViewModels;
+using ExtenderApp.Media.ViewModles;
 using ExtenderApp.Views;
 
 namespace ExtenderApp.Media
