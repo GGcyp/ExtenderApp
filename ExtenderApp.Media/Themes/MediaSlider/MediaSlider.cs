@@ -269,10 +269,10 @@ namespace ExtenderApp.Media.Themes
         {
             base.OnPreviewMouseUp(e);
             var point = e.GetPosition(this);
-            var newValue = Minimum + (Maximum - Minimum) * (point.X / ActualWidth);
-            Value = newValue;
+            double percent = Math.Max(0, Math.Min(1, point.X / ActualWidth));
+            double newValue = Minimum + percent * (Maximum - Minimum);
 
-            CallCommand(ClickCommand);
+            CallCommand(ClickCommand, newValue);
         }
 
         /// <summary>
@@ -282,7 +282,7 @@ namespace ExtenderApp.Media.Themes
         protected override void OnThumbDragCompleted(DragCompletedEventArgs e)
         {
             base.OnThumbDragCompleted(e);
-            CallCommand(DragCompletedCommand);
+            CallCommand(DragCompletedCommand, Value);
         }
 
         /// <summary>
@@ -292,7 +292,7 @@ namespace ExtenderApp.Media.Themes
         protected override void OnThumbDragStarted(DragStartedEventArgs e)
         {
             base.OnThumbDragStarted(e);
-            CallCommand(DragStartedCommand);
+            CallCommand(DragStartedCommand, Value);
         }
 
         /// <summary>
@@ -302,18 +302,18 @@ namespace ExtenderApp.Media.Themes
         protected override void OnThumbDragDelta(DragDeltaEventArgs e)
         {
             base.OnThumbDragDelta(e);
-            CallCommand(DragDeltaCommand);
+            CallCommand(DragDeltaCommand, Value);
         }
 
         /// <summary>
         /// 将指定命令与当前 Value 一起调用。
         /// </summary>
         /// <param name="cmd">指定命令</param>
-        private void CallCommand(ICommand? cmd)
+        private void CallCommand(ICommand? cmd, double value)
         {
             if (cmd == null)
                 return;
-            if (cmd is RelayCommand<double> dCommand && dCommand.CanExecute(Value))
+            if (cmd is RelayCommand<double> dCommand && dCommand.CanExecute(value))
             {
                 dCommand.Execute(Value);
             }

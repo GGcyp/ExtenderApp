@@ -7,7 +7,7 @@ namespace ExtenderApp.Views.Commands
     /// 简单的命令实现，适用于无需命令参数或使用 object 参数的场景。 实现 <see cref="ICommand"/>，自动将 <see cref="CanExecuteChanged"/> 与 <see
     /// cref="CommandManager.RequerySuggested"/> 关联。
     /// </summary>
-    public class RelayCommand : ICommand
+    internal class RelayCommand : ICommand
     {
         /// <summary>
         /// 要执行的操作（接受可空 object 参数）。
@@ -100,7 +100,7 @@ namespace ExtenderApp.Views.Commands
     /// 泛型版本的 <see cref="RelayCommand"/>, 可接受强类型参数 <typeparamref name="T"/>。 在 WPF XAML 中传入 FrameworkElement 时，会尝试使用其 DataContext 作为参数源。
     /// </summary>
     /// <typeparam name="T">命令参数的类型。</typeparam>
-    public class RelayCommand<T> : ICommand
+    internal class RelayCommand<T> : ICommand
     {
         /// <summary>
         /// 执行动作，接受 <typeparamref name="T"/> 类型参数。
@@ -214,8 +214,7 @@ namespace ExtenderApp.Views.Commands
         /// <returns>如果命令可以执行则返回 true，否则 false。</returns>
         public bool CanExecute(T parameter)
         {
-            if (_canExecute == null) return true;
-            return _canExecute(parameter);
+            return _canExecute?.Invoke(parameter) ?? true;
         }
     }
 }

@@ -1,8 +1,7 @@
-﻿using ExtenderApp.Abstract;
-using ExtenderApp.Torrents.Models;
+﻿using CommunityToolkit.Mvvm.Input;
+using ExtenderApp.Abstract;
 using ExtenderApp.Torrents.Views;
 using ExtenderApp.ViewModels;
-using ExtenderApp.Views.Commands;
 using MonoTorrent;
 
 namespace ExtenderApp.Torrents.ViewModels
@@ -14,7 +13,7 @@ namespace ExtenderApp.Torrents.ViewModels
         public RelayCommand StartCommand { get; set; }
         public RelayCommand SelectAllCommand { get; set; }
 
-        #endregion
+        #endregion 命令
 
         public TorrentFileInfoViewModel(IServiceStore serviceStore) : base(serviceStore)
         {

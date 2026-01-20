@@ -1,12 +1,10 @@
 ﻿using System.Collections;
-using System.Configuration;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Media;
+using CommunityToolkit.Mvvm.Input;
 using ExtenderApp.Abstract;
 using ExtenderApp.MainViews.Views;
 using ExtenderApp.ViewModels;
-using ExtenderApp.Views.Commands;
 
 namespace ExtenderApp.MainViews.ViewModels
 {
@@ -14,7 +12,7 @@ namespace ExtenderApp.MainViews.ViewModels
     {
         public IView? CurrentPluginSettingsView { get; set; }
 
-        public RelayCommand<TextBlock> ScrollToTopCommand { get; set; } 
+        public RelayCommand<TextBlock> ScrollToTopCommand { get; set; }
 
         public SettingsViewModel(IServiceStore serviceStore) : base(serviceStore)
         {

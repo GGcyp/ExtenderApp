@@ -1,8 +1,8 @@
-﻿using ExtenderApp.Abstract;
+﻿using CommunityToolkit.Mvvm.Input;
+using ExtenderApp.Abstract;
 using ExtenderApp.Media.Models;
 using ExtenderApp.Media.Views;
 using ExtenderApp.ViewModels;
-using ExtenderApp.Views.Commands;
 
 namespace ExtenderApp.Media.ViewModles
 {
@@ -10,16 +10,16 @@ namespace ExtenderApp.Media.ViewModles
     {
         #region Commands
 
-        public RelayCommand<double> PositionClickCommand { get; set; }
+        public RelayCommand<double> PositionChangeCommand { get; set; }
 
         #endregion Commands
 
         public MediaControlBarViewModle(IServiceStore serviceStore) : base(serviceStore)
         {
-            PositionClickCommand = new(OnPositionClick);
+            PositionChangeCommand = new(OnPositionChange);
         }
 
-        private void OnPositionClick(double obj)
+        private void OnPositionChange(double obj)
         {
             Model.Seek(TimeSpan.FromSeconds(obj));
         }

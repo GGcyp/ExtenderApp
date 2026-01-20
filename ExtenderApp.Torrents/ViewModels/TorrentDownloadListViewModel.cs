@@ -1,4 +1,5 @@
 ﻿using System.IO;
+using CommunityToolkit.Mvvm.Input;
 using ExtenderApp.Abstract;
 using ExtenderApp.Torrents.Models;
 using ExtenderApp.Torrents.Views;
@@ -30,7 +31,7 @@ namespace ExtenderApp.Torrents.ViewModels
 
         public RelayCommand PermanentlyDeleteCommand { get; set; }
 
-        #endregion
+        #endregion Command
 
         public TorrentDownloadListViewModel(IServiceStore serviceStore) : base(serviceStore)
         {

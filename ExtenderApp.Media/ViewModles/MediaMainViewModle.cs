@@ -1,10 +1,10 @@
-﻿using ExtenderApp.Abstract;
+﻿using CommunityToolkit.Mvvm.Input;
+using ExtenderApp.Abstract;
 using ExtenderApp.Data;
 using ExtenderApp.FFmpegEngines;
 using ExtenderApp.Media.Models;
 using ExtenderApp.Media.Views;
 using ExtenderApp.ViewModels;
-using ExtenderApp.Views.Commands;
 using Microsoft.Win32;
 
 namespace ExtenderApp.Media.ViewModles

@@ -290,6 +290,7 @@ namespace ExtenderApp.FFmpegEngines.Medias
 
                     generation = currentGeneration;
                     lastTicks = 0;
+                    OnChangeState(PlayerState.Playing);
                     Playback?.Invoke();
                     sw.Restart();
                 }

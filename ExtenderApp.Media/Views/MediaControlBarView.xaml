@@ -21,9 +21,13 @@
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </v:ExtenderAppView.Resources>
-    <StackPanel Orientation="Vertical">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition MaxHeight="15" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
         <mt:MediaSlider x:Name="positionSlider"
-                        Grid.Row="1"
+                        Grid.Row="0"
                         Minimum="0"
                         Maximum="{Binding Model.TotalTime.TotalSeconds,Mode=OneWay}"
                         Value="{Binding Model.Position.TotalSeconds,Mode=OneWay}"
@@ -34,8 +38,9 @@
                         TrackBackground="Transparent"
                         LeftBackground="LightBlue"
                         RightBackground="Gray"
-                        ClickCommand="{Binding PositionClickCommand}" />
-        <Grid Grid.Row="2" VerticalAlignment="Center">
+                        ClickCommand="{Binding PositionChangeCommand}"
+                        DragCompletedCommand="{Binding PositionChangeCommand}" />
+        <Grid Grid.Row="1" VerticalAlignment="Center">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="200" />
                 <ColumnDefinition Width="300" />
@@ -108,5 +113,5 @@
                             HorizontalAlignment="Stretch"
                             VerticalAlignment="Stretch" />
         </Grid>
-    </StackPanel>
+    </Grid>
 </v:ExtenderAppView>

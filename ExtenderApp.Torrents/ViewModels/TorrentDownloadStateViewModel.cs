@@ -1,10 +1,7 @@
-﻿using System.Collections.ObjectModel;
-using System.Windows;
+﻿using CommunityToolkit.Mvvm.Input;
 using ExtenderApp.Abstract;
-using ExtenderApp.Torrents.Models;
 using ExtenderApp.Torrents.Views;
 using ExtenderApp.ViewModels;
-using ExtenderApp.Views.Commands;
 
 namespace ExtenderApp.Torrents.ViewModels
 {
@@ -18,7 +15,7 @@ namespace ExtenderApp.Torrents.ViewModels
 
         public RelayCommand AddPeerCommand { get; set; }
 
-        #endregion
+        #endregion Command
 
         public TorrentDownloadStateViewModel(IServiceStore serviceStore) : base(serviceStore)
         {
@@ -51,7 +48,6 @@ namespace ExtenderApp.Torrents.ViewModels
 
         private void AddPeer()
         {
-
         }
     }
 }

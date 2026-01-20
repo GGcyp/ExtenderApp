@@ -1,11 +1,11 @@
 ﻿using System.IO;
 using System.Windows;
+using CommunityToolkit.Mvvm.Input;
 using ExtenderApp.Abstract;
 using ExtenderApp.Data;
 using ExtenderApp.Torrents.Models;
 using ExtenderApp.Torrents.Views;
 using ExtenderApp.ViewModels;
-using ExtenderApp.Views.Commands;
 using Microsoft.Win32;
 using MonoTorrent;
 
@@ -18,7 +18,7 @@ namespace ExtenderApp.Torrents.ViewModels
         public RelayCommand LoadTorrentCommand { get; set; }
         public RelayCommand StartTorrentCommand { get; set; }
 
-        #endregion
+        #endregion Command
 
         private Lazy<ValueOrList<MagnetLink>> torrentsLazy;
 

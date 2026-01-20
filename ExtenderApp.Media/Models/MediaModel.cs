@@ -301,7 +301,7 @@ namespace ExtenderApp.Media.Models
         /// </summary>
         private void UpdatePosition()
         {
-            if (MPlayer != null)
+            if (MPlayer != null && MPlayer.State == PlayerState.Playing)
             {
                 Position = TimeSpan.FromMilliseconds(MPlayer.Position);
             }

@@ -1,10 +1,9 @@
+using CommunityToolkit.Mvvm.Input;
 using ExtenderApp.Abstract;
 using ExtenderApp.Common;
-using ExtenderApp.Data;
 using ExtenderApp.Torrents.Models;
 using ExtenderApp.Torrents.Views;
 using ExtenderApp.ViewModels;
-using ExtenderApp.Views.Commands;
 using MonoTorrent.Logging;
 
 namespace ExtenderApp.Torrents.ViewModels
@@ -26,7 +25,7 @@ namespace ExtenderApp.Torrents.ViewModels
 
         public RelayCommand ToRecyclebinListCommand { get; set; }
 
-        #endregion
+        #endregion List
 
         public RelayCommand ShowAddTorrentViewCommand { get; set; }
 
@@ -34,7 +33,7 @@ namespace ExtenderApp.Torrents.ViewModels
 
         public RelayCommand ToTorrentDetailsCommand { get; set; }
 
-        #endregion
+        #endregion Command
 
         public TorrentMainViewModel(TorrentLongingFactory factory, IServiceStore serviceStore) : base(serviceStore)
         {

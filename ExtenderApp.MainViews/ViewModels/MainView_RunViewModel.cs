@@ -1,9 +1,9 @@
 ﻿using System.Windows.Controls;
+using CommunityToolkit.Mvvm.Input;
 using ExtenderApp.Abstract;
 using ExtenderApp.MainViews.Models;
 using ExtenderApp.MainViews.Views;
 using ExtenderApp.ViewModels;
-using ExtenderApp.Views.Commands;
 using ExtenderApp.Views.CutsceneViews;
 
 namespace ExtenderApp.MainViews.ViewModels
