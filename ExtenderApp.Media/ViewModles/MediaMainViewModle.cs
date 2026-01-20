@@ -1,7 +1,5 @@
-﻿using CommunityToolkit.Mvvm.Input;
-using ExtenderApp.Abstract;
+﻿using ExtenderApp.Abstract;
 using ExtenderApp.Data;
-using ExtenderApp.FFmpegEngines;
 using ExtenderApp.Media.Models;
 using ExtenderApp.Media.Views;
 using ExtenderApp.ViewModels;
@@ -11,40 +9,11 @@ namespace ExtenderApp.Media.ViewModles
 {
     public class MediaMainViewModel : ExtenderAppViewModel<MediaMainView, MediaModel>
     {
-        #region 按钮
-
-        /// <summary>
-        /// 播放命令。
-        /// </summary>
-        public RelayCommand MediaStateChangeCommand { get; private set; }
-
-        /// <summary>
-        /// 停止命令。
-        /// </summary>
-        public RelayCommand StopCommand { get; private set; }
-
-        /// <summary>
-        /// 快进命令。
-        /// </summary>
-        public RelayCommand FastForwardCommand { get; private set; }
-
-        /// <summary>
-        /// 快退命令。
-        /// </summary>
-        public RelayCommand RewindCommand { get; private set; }
-
-        #endregion 按钮
-
         public MediaMainViewModel(IServiceStore serviceStore) : base(serviceStore)
         {
             Model.VideoListView = NavigateTo<MediaVideoListView>();
             Model.VideoControlView = NavigateTo<MediaControlBarView>();
             Model.VideoView = NavigateTo<MediaVideoView>();
-
-            MediaStateChangeCommand = new(OnMediaStateChange);
-            FastForwardCommand = new(() => OnReverseOrForward(true));
-            RewindCommand = new(() => OnReverseOrForward(false));
-            StopCommand = new(Model.Stop);
 
             OpenFileDialog openFileDialog = new OpenFileDialog
             {
@@ -74,7 +43,7 @@ namespace ExtenderApp.Media.ViewModles
             switch (key)
             {
                 case Key.Left:
-                    OnReverseOrForward(false);
+                    Model.ReverseOrForward(false);
                     break;
 
                 case Key.Right:
@@ -84,7 +53,7 @@ namespace ExtenderApp.Media.ViewModles
                     }
                     else
                     {
-                        OnReverseOrForward(true);
+                        Model.ReverseOrForward(true);
                     }
                     break;
             }
@@ -106,7 +75,7 @@ namespace ExtenderApp.Media.ViewModles
 
                 case Key.Space:
                     if (!isRepeat)
-                        OnMediaStateChange();
+                        Model.ChangeMediaState();
                     break;
 
                 case Key.Up:
@@ -117,34 +86,6 @@ namespace ExtenderApp.Media.ViewModles
                     Model.UpdateVolume(false);
                     break;
             }
-        }
-
-        public void OnReverseOrForward(bool isForward)
-        {
-            TimeSpan jumpTime = TimeSpan.FromSeconds(Model.JumpTime);
-            TimeSpan targetTime = isForward ? Model.Position + jumpTime : Model.Position - jumpTime;
-            Model.Seek(targetTime);
-        }
-
-        private void OnMediaStateChange()
-        {
-            switch (Model.State)
-            {
-                case PlayerState.Playing:
-                    Model.Pause();
-                    break;
-
-                case PlayerState.Paused:
-                case PlayerState.Stopped:
-                case PlayerState.Initializing:
-                    Model.Play();
-                    break;
-            }
-        }
-
-        internal void Seek(TimeSpan timeSpan)
-        {
-            Model.Seek(timeSpan);
         }
     }
 }

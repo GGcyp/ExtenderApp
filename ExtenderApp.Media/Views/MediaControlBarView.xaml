@@ -47,7 +47,9 @@
                 <ColumnDefinition />
             </Grid.ColumnDefinitions>
             <!--视频控制区-->
-            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+            <StackPanel Grid.Column="0"
+                        Orientation="Horizontal"
+                        VerticalAlignment="Center">
                 <TextBlock Text="{Binding Model.Position,StringFormat={}{0:hh\\:mm\\:ss}}"
                            Foreground="{DynamicResource GlobalForegroundBrush}"
                            FontSize="20" />
@@ -102,16 +104,13 @@
                             Minimum="0"
                             Maximum="1"
                             Value="{Binding Model.Volume}"
-                            TrackHeight="5"
+                            TrackHeight="10"
                             ThumbSize="18"
                             ThumbColor="White"
                             TrackBackground="Transparent"
                             LeftBackground="LightBlue"
                             RightBackground="Gray"
-                            Orientation="Horizontal"
-                            TickFrequency="0.01"
-                            HorizontalAlignment="Stretch"
-                            VerticalAlignment="Stretch" />
+                            TickFrequency="0.01"/>
         </Grid>
     </Grid>
 </v:ExtenderAppView>

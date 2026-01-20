@@ -315,11 +315,11 @@ namespace ExtenderApp.Media.Themes
                 return;
             if (cmd is RelayCommand<double> dCommand && dCommand.CanExecute(value))
             {
-                dCommand.Execute(Value);
+                dCommand.Execute(value);
             }
             else if (cmd.CanExecute(null))
             {
-                cmd.Execute(Value);
+                cmd.Execute(value);
             }
         }
     }

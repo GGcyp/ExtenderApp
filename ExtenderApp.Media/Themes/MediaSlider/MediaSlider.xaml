@@ -2,33 +2,13 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:local="clr-namespace:ExtenderApp.Media.Themes">
 
-    <!--<Style x:Key="MediaThumbStyle" TargetType="Thumb">
-    <Setter Property="SnapsToDevicePixels" Value="True"/>
-    <Setter Property="Template">
-    <Setter.Value>
-    <ControlTemplate TargetType="Thumb">
-    <Path Stretch="Uniform" StrokeThickness="2"
-    Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType={x:Type local:MediaSlider}}}"
-    Fill="{Binding Background, RelativeSource={RelativeSource AncestorType={x:Type local:MediaSlider}}}"
-    Data="{Binding Icon, RelativeSource={RelativeSource AncestorType={x:Type local:MediaSlider}}}"
-    Height="{Binding IconSize, RelativeSource={RelativeSource AncestorType={x:Type local:MediaSlider}}}"
-    Width="{Binding IconSize, RelativeSource={RelativeSource AncestorType={x:Type local:MediaSlider}}}"/>
-    <ControlTemplate.Triggers>
-    <Trigger Property="IsMouseOver" Value="True">
-    <Setter Property="Cursor" Value="Hand"/>
-    </Trigger>
-    </ControlTemplate.Triggers>
-    </ControlTemplate>
-    </Setter.Value>
-    </Setter>
-    </Style>-->
-
     <Style x:Key="MediaThumbStyle" TargetType="Thumb">
         <Setter Property="SnapsToDevicePixels" Value="True"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Thumb">
-                    <Ellipse Stretch="Uniform" StrokeThickness="2"
+                    <Ellipse Stretch="Uniform"
+                             StrokeThickness="2"
                              Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType={x:Type local:MediaSlider}}}"
                              Fill="{Binding ThumbColor, RelativeSource={RelativeSource AncestorType={x:Type local:MediaSlider}}}"
                              Height="{Binding ThumbSize, RelativeSource={RelativeSource AncestorType={x:Type local:MediaSlider}}}"
@@ -43,7 +23,6 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="RepeatButton">
-                    <!--Height="{Binding Height, RelativeSource={RelativeSource AncestorType={x:Type local:MediaSlider}}}"-->
                     <Border Height="{TemplateBinding Height}"
                             Background="{Binding LeftBackground, RelativeSource={RelativeSource AncestorType={x:Type local:MediaSlider}}}"/>
                 </ControlTemplate>
@@ -71,23 +50,27 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type local:MediaSlider}">
-                    <Grid Height="{TemplateBinding TrackHeight}">
+                    <Grid ClipToBounds="False">
                         <!--<Border Background="{TemplateBinding TrackBackground}"/>-->
                         <!-- 一定取这个 Name -->
                         <Track Name="PART_Track">
                             <Track.DecreaseRepeatButton>
                                 <RepeatButton Style="{StaticResource LeftSliderRepeatButtonStyle}"
                                               Command="Slider.DecreaseLarge"
-                                              Height="{TemplateBinding TrackHeight}"/>
+                                              Height="{TemplateBinding TrackHeight}"
+                                              Margin="0 0 -4 0"/>
                             </Track.DecreaseRepeatButton>
-                            <Track.Thumb>
-                                <Thumb Style="{StaticResource MediaThumbStyle}"/>
-                            </Track.Thumb>
                             <Track.IncreaseRepeatButton>
                                 <RepeatButton Style="{StaticResource RightSliderRepeatButtonStyle}"
                                               Command="Slider.IncreaseLarge"
-                                              Height="{TemplateBinding TrackHeight}"/>
+                                              Height="{TemplateBinding TrackHeight}"
+                                              Margin="-4 0 0 0"/>
                             </Track.IncreaseRepeatButton>
+                            <Track.Thumb>
+                                <Thumb Style="{StaticResource MediaThumbStyle}"
+                                       Panel.ZIndex="2"
+                                       VerticalAlignment="Center"/>
+                            </Track.Thumb>
                         </Track>
                     </Grid>
                 </ControlTemplate>

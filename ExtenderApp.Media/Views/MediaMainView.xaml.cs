@@ -1,7 +1,4 @@
 ﻿using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Controls.Primitives;
-using System.Windows.Input;
 using System.Windows.Media;
 using ExtenderApp.Media.ViewModles;
 using ExtenderApp.Views;
@@ -52,44 +49,5 @@ namespace ExtenderApp.Media
             }
             e.Handled = true;
         }
-
-        #region MediaSlider滑块位置
-
-        private void mediaSlider_DragDelta(object sender, DragDeltaEventArgs e)
-        {
-            var slider = sender as Slider;
-            double value = slider?.Value ?? 0;
-            var viewModel = GetViewModel<MediaMainViewModel>()!;
-            viewModel.Model.Position = TimeSpan.FromSeconds(value);
-            e.Handled = true;
-        }
-
-        private void mediaSlider_DragCompleted(object sender, DragCompletedEventArgs e)
-        {
-            var slider = sender as Slider;
-            double value = slider?.Value ?? 0;
-            var viewModel = GetViewModel<MediaMainViewModel>()!;
-            viewModel.Seek(TimeSpan.FromSeconds(value));
-            e.Handled = true;
-        }
-
-        private void mediaSlider_PreviewMouseUp(object sender, MouseButtonEventArgs e)
-        {
-            var slider = sender as Slider;
-            //Float64 Value = slider?.Item1 ?? 0;
-
-            // 获取鼠标在Slider上的位置
-            var pos = e.GetPosition(slider);
-            double percent = Math.Max(0, Math.Min(1, pos.X / slider.ActualWidth));
-            double newValue = slider.Minimum + percent * (slider.Maximum - slider.Minimum);
-
-            //slider.Item1 = newValue;
-
-            var viewModel = GetViewModel<MediaMainViewModel>()!;
-            viewModel.Seek(TimeSpan.FromSeconds(newValue));
-            e.Handled = true;
-        }
-
-        #endregion MediaSlider滑块位置
     }
 }

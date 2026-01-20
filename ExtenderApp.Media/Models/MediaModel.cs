@@ -232,6 +232,22 @@ namespace ExtenderApp.Media.Models
             Position = TimeSpan.FromMilliseconds(MPlayer.Position);
         }
 
+        public void ChangeMediaState()
+        {
+            switch (State)
+            {
+                case PlayerState.Playing:
+                    Pause();
+                    break;
+
+                case PlayerState.Paused:
+                case PlayerState.Stopped:
+                case PlayerState.Initializing:
+                    Play();
+                    break;
+            }
+        }
+
         /// <summary>
         /// 开始或恢复播放。
         /// </summary>
@@ -280,6 +296,13 @@ namespace ExtenderApp.Media.Models
             MPlayer?.Seek(position);
         }
 
+        public void ReverseOrForward(bool isForward = true)
+        {
+            TimeSpan jumpTime = TimeSpan.FromSeconds(JumpTime);
+            TimeSpan targetTime = isForward ? Position + jumpTime : Position - jumpTime;
+            Seek(targetTime);
+        }
+
         /// <summary>
         /// 调整音量（按步长加/减）。
         /// </summary>
@@ -301,7 +324,7 @@ namespace ExtenderApp.Media.Models
         /// </summary>
         private void UpdatePosition()
         {
-            if (MPlayer != null && MPlayer.State == PlayerState.Playing)
+            if (MPlayer != null)
             {
                 Position = TimeSpan.FromMilliseconds(MPlayer.Position);
             }
