@@ -3,7 +3,7 @@ using System.Windows.Media;
 using ExtenderApp.Media.ViewModles;
 using ExtenderApp.Views;
 
-namespace ExtenderApp.Media
+namespace ExtenderApp.Media.Views
 {
     /// <summary>
     /// MedaiMainView.xaml 的交互逻辑

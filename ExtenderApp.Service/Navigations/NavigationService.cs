@@ -58,8 +58,8 @@ namespace ExtenderApp.Services
                 return null!;
             }
 
-            oldView?.Exit(newView!.ViewInfo);
-            newView!.Enter(oldView is null ? default : oldView.ViewInfo);
+            //oldView?.Exit(newView!.ViewInfo);
+            //newView!.Enter(oldView is null ? default : oldView.ViewInfo);
 
             return newView;
         }
@@ -73,11 +73,11 @@ namespace ExtenderApp.Services
             ArgumentNullException.ThrowIfNull(window, "没有找到要转换的窗口");
             ArgumentNullException.ThrowIfNull(newView, string.Format("没有找到要转换的视图：{0}", targetViewType.Name));
 
-            window.ShowView(newView);
-            newView.InjectWindow(window);
+            //window.ShowView(newView);
+            //newView.InjectWindow(window);
 
-            oldView?.Exit(newView.ViewInfo);
-            newView.Enter(oldView is null ? default : oldView.ViewInfo);
+            //oldView?.Exit(newView.ViewInfo);
+            //newView.Enter(oldView is null ? default : oldView.ViewInfo);
 
             return window;
         }

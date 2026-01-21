@@ -1,5 +1,4 @@
-﻿using ExtenderApp.Media.ViewModles;
-using ExtenderApp.Views;
+﻿using ExtenderApp.Views;
 
 namespace ExtenderApp.Media.Views
 {
@@ -8,7 +7,7 @@ namespace ExtenderApp.Media.Views
     /// </summary>
     public partial class MediaControlBarView : ExtenderAppView
     {
-        public MediaControlBarView(MediaControlBarViewModle viewModle) : base(viewModle)
+        public MediaControlBarView()
         {
             InitializeComponent();
         }

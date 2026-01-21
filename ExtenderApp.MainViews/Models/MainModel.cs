@@ -22,10 +22,6 @@ namespace ExtenderApp.MainViews.Models
         /// </summary>
         public IView? CurrentCutsceneView { get; set; }
 
-        /// <summary>
-        /// 当前视图接口
-        /// </summary>
-        public IView? CurrentView { get; set; }
 
         /// <summary>
         /// 选中的插件详情信息

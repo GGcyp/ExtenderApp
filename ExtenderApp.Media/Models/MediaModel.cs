@@ -69,14 +69,6 @@ namespace ExtenderApp.Media.Models
         public BitmapSource? Bitmap { get; set; }
 
         /// <summary>
-        /// 当前视频列表视图（用于导航/显示视频列表）。
-        /// </summary>
-        public IView? VideoListView { get; set; }
-
-        public IView? VideoView { get; set; }
-        public IView? VideoControlView { get; set; }
-
-        /// <summary>
         /// 当前选中的视频信息。
         /// </summary>
         public MediaInfo? SelectedVideoInfo { get; set; }
@@ -92,6 +84,9 @@ namespace ExtenderApp.Media.Models
             get => volume;
             set
             {
+                if (value == volume)
+                    return;
+
                 if (MPlayer != null)
                 {
                     MPlayer.SetVolume(value);

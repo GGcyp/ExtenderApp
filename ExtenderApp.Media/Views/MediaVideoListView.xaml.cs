@@ -5,14 +5,14 @@ using ExtenderApp.Media.ViewModles;
 using ExtenderApp.Views;
 using Microsoft.Win32;
 
-namespace ExtenderApp.Media
+namespace ExtenderApp.Media.Views
 {
     /// <summary>
     /// MediaVideoListView.xaml 的交互逻辑
     /// </summary>
     public partial class MediaVideoListView : ExtenderAppView
     {
-        public MediaVideoListView(VideoListViewModel viewModle) : base(viewModle)
+        public MediaVideoListView()
         {
             InitializeComponent();
         }

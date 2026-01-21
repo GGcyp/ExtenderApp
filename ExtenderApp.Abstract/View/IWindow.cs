@@ -59,10 +59,9 @@ namespace ExtenderApp.Abstract
         IWindow? Owner { get; set; }
 
         /// <summary>
-        /// 获取当前视图接口。
+        /// 获取当前显示视图的视图模型
         /// </summary>
-        /// <value>返回当前视图接口。</value>
-        IView? CurrentView { get; }
+        IViewModel? CurrentShowViewModel { get; }
 
         /// <summary>
         /// 获取窗口是否处于活动状态。 如果窗口是前台窗口并且正在接收用户输入，则为 true；否则为 false。

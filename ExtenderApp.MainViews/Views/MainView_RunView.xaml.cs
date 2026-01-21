@@ -1,19 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
-using ExtenderApp.Abstract;
-using ExtenderApp.MainViews.ViewModels;
+﻿using ExtenderApp.Abstract;
 using ExtenderApp.Views;
 
 namespace ExtenderApp.MainViews.Views
@@ -23,7 +8,7 @@ namespace ExtenderApp.MainViews.Views
     /// </summary>
     public partial class MainView_RunView : ExtenderAppView, IMainView
     {
-        public MainView_RunView(MainView_RunViewModel viewModel) : base(viewModel)
+        public MainView_RunView()
         {
             InitializeComponent();
         }

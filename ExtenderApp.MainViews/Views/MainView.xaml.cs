@@ -27,7 +27,7 @@ namespace ExtenderApp.MainViews.Views
     {
         private IThemeManager themeManager;
 
-        public MainView(IThemeManager themeManager, MainViewModel viewModel) : base(viewModel)
+        public MainView(IThemeManager themeManager)
         {
             InitializeComponent();
             this.themeManager = themeManager;

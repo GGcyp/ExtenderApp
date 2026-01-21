@@ -4,7 +4,7 @@ using ExtenderApp.ViewModels;
 
 namespace ExtenderApp.MainViews.ViewModels
 {
-    public class MainWindowViewModel : ExtenderAppViewModel<MainViewWindow, MainModel>, IWindowViewModel
+    public class MainWindowViewModel : ExtenderAppViewModel<MainModel>, IWindowViewModel
     {
         public IView? CurrentView => Model.CurrentMainView;
 

@@ -1,14 +1,11 @@
-﻿using System.Windows.Media;
-using CommunityToolkit.Mvvm.Input;
+﻿using CommunityToolkit.Mvvm.Input;
 using ExtenderApp.Abstract;
-using ExtenderApp.FFmpegEngines;
 using ExtenderApp.Media.Models;
-using ExtenderApp.Media.Views;
 using ExtenderApp.ViewModels;
 
 namespace ExtenderApp.Media.ViewModles
 {
-    public class MediaControlBarViewModle : ExtenderAppViewModel<MediaControlBarView, MediaModel>
+    public class MediaControlBarViewModle : ExtenderAppViewModel<MediaModel>
     {
         #region Commands
 

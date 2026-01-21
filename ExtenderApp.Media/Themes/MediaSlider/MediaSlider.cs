@@ -20,6 +20,9 @@ namespace ExtenderApp.Media.Themes
 
         #region Properties
 
+        private double normalTrackHeight;
+        private Thickness normalMargin;
+
         /// <summary>
         /// 鼠标进入控件时使用的 TrackHeight（值为 0 表示不启用悬停高度）。
         /// </summary>
@@ -37,8 +40,6 @@ namespace ExtenderApp.Media.Themes
                 typeof(double),
                 typeof(MediaSlider),
                 new PropertyMetadata(0d));
-
-        private double _normalTrackHeight;
 
         /// <summary>
         /// Thumb 的尺寸（像素），用于模板中绑定 thumb 大小。
@@ -232,7 +233,8 @@ namespace ExtenderApp.Media.Themes
         public MediaSlider()
         {
             IsMoveToPointEnabled = true;
-            _normalTrackHeight = TrackHeight;
+            normalTrackHeight = TrackHeight;
+            normalMargin = Margin;
         }
 
         /// <summary>
@@ -243,11 +245,13 @@ namespace ExtenderApp.Media.Themes
         {
             base.OnMouseEnter(e);
 
-            _normalTrackHeight = TrackHeight;
+            normalTrackHeight = TrackHeight;
+            normalMargin = Margin;
 
             if (HoverTrackHeight > 0 && TrackHeight != HoverTrackHeight)
             {
                 TrackHeight = HoverTrackHeight;
+                Margin = new(0);
             }
         }
 
@@ -259,9 +263,10 @@ namespace ExtenderApp.Media.Themes
         {
             base.OnMouseLeave(e);
 
-            if (HoverTrackHeight > 0 && TrackHeight != _normalTrackHeight)
+            if (HoverTrackHeight > 0 && TrackHeight != normalTrackHeight)
             {
-                TrackHeight = _normalTrackHeight;
+                TrackHeight = normalTrackHeight;
+                Margin = normalMargin;
             }
         }
 

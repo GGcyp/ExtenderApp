@@ -10,17 +10,6 @@ namespace ExtenderApp.Views
     {
         private readonly Lazy<FullScreenManager> _fullManagerLazy;
         private readonly IMessageService _messageService;
-        public ViewInfo ViewInfo { get; }
-
-        public virtual IView? CurrentView
-        {
-            get
-            {
-                if (DataContext is not IWindowViewModel viewModel)
-                    return null;
-                return viewModel.CurrentView;
-            }
-        }
 
         IWindow? IWindow.Owner
         {
@@ -44,28 +33,18 @@ namespace ExtenderApp.Views
 
         public bool IsFullScreen => _fullManagerLazy.Value.IsFullScreen;
 
-        protected T? ViewModel<T>() where T : class, IViewModel
+        public IViewModel? CurrentShowViewModel => DataContext as IViewModel;
+
+        public object? GetViewModel()
+            => DataContext;
+
+        public T? GetViewModel<T>() where T : class, IViewModel
             => DataContext as T;
 
-        public ExtenderAppWindow(IMessageService messageService, IViewModel? dataContext = null)
+        public ExtenderAppWindow(IMessageService messageService)
         {
-            ViewInfo = new ViewInfo(GetType().Name);
-            DataContext = dataContext;
             _fullManagerLazy = new(() => new FullScreenManager(this));
             _messageService = messageService;
-        }
-
-        public virtual void Enter(ViewInfo oldViewInfo)
-        {
-            var viewModel = DataContext as IViewModel;
-            viewModel?.InjectView(this);
-            viewModel?.Enter(oldViewInfo);
-        }
-
-        public virtual void Exit(ViewInfo newViewInfo)
-        {
-            var viewModel = DataContext as IViewModel;
-            viewModel?.Exit(newViewInfo);
         }
 
         public virtual void ShowView(IView view)
@@ -76,8 +55,9 @@ namespace ExtenderApp.Views
             viewModel.ShowView(view);
         }
 
-        public void InjectWindow(IWindow window)
+        public virtual void InjectViewModel(IViewModel viewModel)
         {
+            DataContext = viewModel;
         }
 
         public void EnterFullScreen(bool coverTaskbar = false)

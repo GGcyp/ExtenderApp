@@ -8,32 +8,18 @@ namespace ExtenderApp.Abstract
     public interface IView
     {
         /// <summary>
-        /// 获取当前视图信息。
+        /// 获取关联的 ViewModel 实例（弱类型）。
         /// </summary>
-        ViewInfo ViewInfo { get; }
+        /// <returns>如果视图包含 ViewModel 则返回该实例，否则返回 <c>null</c>。</returns>
+        object? GetViewModel();
 
         /// <summary>
-        /// 获取当前视图的窗口对象。 获取的窗口不包含主窗口，只能是新建的窗口
+        /// 获取关联的强类型 ViewModel 实例。
         /// </summary>
-        /// <returns>返回窗口对象，如果窗口不存在则返回null。</returns>
-        IWindow? Window { get; }
+        /// <typeparam name="T">期望的 ViewModel 类型，必须实现 <see cref="IViewModel"/>。</typeparam>
+        /// <returns>如果视图的 ViewModel 可以转换为指定类型则返回该实例，否则返回 <c>null</c>。</returns>
+        T? GetViewModel<T>() where T : class, IViewModel;
 
-        /// <summary>
-        /// 注入窗口
-        /// </summary>
-        /// <param name="window">需要注入的窗口对象</param>
-        void InjectWindow(IWindow window);
-
-        /// <summary>
-        /// 进入新视图时执行的操作。
-        /// </summary>
-        /// <param name="oldViewInfo">旧的视图信息。</param>
-        void Enter(ViewInfo oldViewInfo);
-
-        /// <summary>
-        /// 退出当前视图时执行的操作。
-        /// </summary>
-        /// <param name="newViewInfo">新的视图信息。</param>
-        void Exit(ViewInfo newViewInfo);
+        void InjectViewModel(IViewModel viewModel);
     }
 }

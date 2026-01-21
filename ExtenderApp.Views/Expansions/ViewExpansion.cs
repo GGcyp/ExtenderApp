@@ -1,7 +1,7 @@
 ﻿using System.Windows;
-using ExtenderApp.Data;
 using ExtenderApp.Abstract;
-using System.Windows.Input;
+using ExtenderApp.Data;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace ExtenderApp.Views
 {

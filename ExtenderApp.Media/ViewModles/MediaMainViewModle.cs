@@ -1,20 +1,19 @@
 ﻿using ExtenderApp.Abstract;
 using ExtenderApp.Data;
 using ExtenderApp.Media.Models;
-using ExtenderApp.Media.Views;
 using ExtenderApp.ViewModels;
 using Microsoft.Win32;
 
 namespace ExtenderApp.Media.ViewModles
 {
-    public class MediaMainViewModel : ExtenderAppViewModel<MediaMainView, MediaModel>
+    public class MediaMainViewModel : ExtenderAppViewModel<MediaModel>
     {
+        public IViewModel? VideoListViewModel { get; set; }
+
+        public IViewModel? VideoViewModel { get; set; }
+        public IViewModel? VideoControlViewModel { get; set; }
         public MediaMainViewModel(IServiceStore serviceStore) : base(serviceStore)
         {
-            Model.VideoListView = NavigateTo<MediaVideoListView>();
-            Model.VideoControlView = NavigateTo<MediaControlBarView>();
-            Model.VideoView = NavigateTo<MediaVideoView>();
-
             OpenFileDialog openFileDialog = new OpenFileDialog
             {
                 Title = "选择视频文件",

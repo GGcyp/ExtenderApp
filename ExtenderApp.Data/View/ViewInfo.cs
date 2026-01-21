@@ -1,5 +1,4 @@
-﻿
-namespace ExtenderApp.Data
+﻿namespace ExtenderApp.Data
 {
     /// <summary>
     /// 包含视图名称和视图模型的结构体。

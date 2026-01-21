@@ -2,14 +2,11 @@
 using ExtenderApp.Abstract;
 using ExtenderApp.Data;
 using ExtenderApp.MainViews.Models;
-using ExtenderApp.MainViews.Views;
 using ExtenderApp.ViewModels;
-using ExtenderApp.Views.Commands;
-using ExtenderApp.Views.CutsceneViews;
 
 namespace ExtenderApp.MainViews.ViewModels
 {
-    public class PluginViewModle : ExtenderAppViewModel<PluginView, MainModel>
+    public class PluginViewModle : ExtenderAppViewModel<MainModel>
     {
         public RelayCommand<PluginDetails> OpenPluginCommand { get; set; }
 
@@ -20,21 +17,6 @@ namespace ExtenderApp.MainViews.ViewModels
 
         public void OpenPlugin(PluginDetails details)
         {
-            Model.CurrentPluginDetails = details;
-            var cutscene = NavigateTo<CutsceneView>();
-            Model.CurrentCutsceneView = cutscene;
-            cutscene.Start();
-            Task.Run(async () =>
-            {
-                await LoadPluginAsync(details);
-                await ToMainThreadAsync();
-                Model.CurrentMainView = NavigateTo<MainView_RunView>();
-                Model.CurrentView = NavigateTo(details);
-                cutscene.End(() =>
-                {
-                    Model.CurrentCutsceneView = null;
-                });
-            });
         }
     }
 }

@@ -8,7 +8,7 @@ namespace ExtenderApp.Media.Views
     /// </summary>
     public partial class MediaVideoView : ExtenderAppView
     {
-        public MediaVideoView(MediaVideoViewModle viewModle) : base(viewModle)
+        public MediaVideoView()
         {
             InitializeComponent();
         }

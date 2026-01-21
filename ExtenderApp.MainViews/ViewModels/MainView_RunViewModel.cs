@@ -2,16 +2,14 @@
 using CommunityToolkit.Mvvm.Input;
 using ExtenderApp.Abstract;
 using ExtenderApp.MainViews.Models;
-using ExtenderApp.MainViews.Views;
 using ExtenderApp.ViewModels;
-using ExtenderApp.Views.CutsceneViews;
 
 namespace ExtenderApp.MainViews.ViewModels
 {
     /// <summary>
     /// 主运行视图的视图模型，负责处理与主运行视图相关的逻辑和数据绑定。
     /// </summary>
-    public class MainView_RunViewModel : ExtenderAppViewModel<MainView_RunView, MainModel>
+    public class MainView_RunViewModel : ExtenderAppViewModel<MainModel>
     {
         private IMainViewSettings? currentMainViewSettings;
 
@@ -52,28 +50,23 @@ namespace ExtenderApp.MainViews.ViewModels
             if (currentMainViewSettings == null)
                 return;
 
-            var settingWindow = NavigateToWindow<SettingsView>()!;
+            //var settingWindow = NavigateToWindow<SettingsView>()!;
 
-            var view = settingWindow.CurrentView as SettingsView;
-            var settingsViewModel = view!.GetViewModel<SettingsViewModel>()!;
-            settingsViewModel.CurrentPluginSettingsView = currentMainViewSettings.SettingsView;
-            settingsViewModel.SetMainViewSettings(currentMainViewSettings);
-            currentMainViewSettings.SettingNavigationConfig(view.navigationBar.Children);
-            settingsViewModel.InitMainViewSettings();
+            //var view = settingWindow.CurrentShowViewModel as SettingsView;
+            //var settingsViewModel = view!.GetViewModel<SettingsViewModel>()!;
+            //settingsViewModel.CurrentPluginSettingsView = currentMainViewSettings.SettingsView;
+            //settingsViewModel.SetMainViewSettings(currentMainViewSettings);
+            //currentMainViewSettings.SettingNavigationConfig(view.navigationBar.Children);
+            //settingsViewModel.InitMainViewSettings();
 
-            settingWindow.Title = "全局设置";
-            settingWindow.Height = 400;
-            settingWindow.Width = 600;
-            settingWindow.WindowStartupLocation = 2;
-            settingWindow.Owner = MainWindow;
-            settingWindow.Topmost = true;
+            //settingWindow.Title = "全局设置";
+            //settingWindow.Height = 400;
+            //settingWindow.Width = 600;
+            //settingWindow.WindowStartupLocation = 2;
+            //settingWindow.Owner = MainWindow;
+            //settingWindow.Topmost = true;
 
-            settingWindow.ShowDialog();
-        }
-
-        protected override void ProtectedInjectView(MainView_RunView view)
-        {
-            SetCollection(view.buttonStackPanel.Children);
+            //settingWindow.ShowDialog();
         }
 
         /// <summary>
@@ -93,30 +86,30 @@ namespace ExtenderApp.MainViews.ViewModels
         /// </summary>
         private void ToMainView()
         {
-            // 导航到 CutsceneView 并设置为当前过场动画视图
-            var cutscene = NavigateTo<CutsceneView>();
-            Model.CurrentCutsceneView = cutscene;
-            cutscene.Start();
+            //// 导航到 CutsceneView 并设置为当前过场动画视图
+            //var cutscene = NavigateTo<CutsceneView>();
+            //Model.CurrentCutsceneView = cutscene;
+            //cutscene.Start();
 
-            // 在后台线程中处理视图更新，以确保 UI 线程不会被阻塞
-            Task.Run(async () =>
-            {
-                UnLoadPlugin(Model.CurrentPluginDetails);
-                // 清除当前插件详细信息
-                Model.CurrentPluginDetails = null;
-                // 使用 DispatcherService 在 UI 线程上执行操作
+            //// 在后台线程中处理视图更新，以确保 UI 线程不会被阻塞
+            //Task.Run(async () =>
+            //{
+            //    UnLoadPlugin(Model.CurrentPluginDetails);
+            //    // 清除当前插件详细信息
+            //    Model.CurrentPluginDetails = null;
+            //    // 使用 DispatcherService 在 UI 线程上执行操作
 
-                await ToMainThreadAsync();
+            //    await ToMainThreadAsync();
 
-                // 导航到 MainView 并设置为当前主视图
-                Model.CurrentMainView = NavigateTo<MainView>(Model.CurrentView);
+            //    // 导航到 MainView 并设置为当前主视图
+            //    Model.CurrentMainView = NavigateTo<MainView>(Model.CurrentShowViewModel);
 
-                // 当过场动画结束时，将当前过场动画视图设置为 null
-                cutscene.End(() =>
-                {
-                    Model.CurrentCutsceneView = null;
-                });
-            });
+            //    // 当过场动画结束时，将当前过场动画视图设置为 null
+            //    cutscene.End(() =>
+            //    {
+            //        Model.CurrentCutsceneView = null;
+            //    });
+            //});
         }
     }
 }

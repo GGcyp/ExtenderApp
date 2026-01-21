@@ -34,7 +34,7 @@ namespace ExtenderApp.FFmpegEngines.Medias.Outputs
             {
                 if (_waveOut.Volume != value)
                 {
-                    float volume = value > 1.0f ? value / 100.0f : value;
+                    float volume = value > 1.0f ? 1.0f : value;
                     _waveOut.Volume = volume;
                 }
             }

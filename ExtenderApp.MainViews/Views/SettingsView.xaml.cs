@@ -24,7 +24,7 @@ namespace ExtenderApp.MainViews.Views
     {
         private SolidColorBrush settingsNavigationLightBrushes;
 
-        public SettingsView(SettingsViewModel viewModel) : base(viewModel)
+        public SettingsView()
         {
             InitializeComponent();
             settingsNavigationLightBrushes = new SolidColorBrush(Color.FromRgb(220, 225, 230));

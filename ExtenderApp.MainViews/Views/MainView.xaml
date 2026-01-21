@@ -16,18 +16,18 @@
             t:ThemeProps.Background="{DynamicResource GlobalBackgroundBrush}">
         <Grid>
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="200"/>
-                <ColumnDefinition Width="905"/>
+                <ColumnDefinition Width="200" />
+                <ColumnDefinition Width="905" />
             </Grid.ColumnDefinitions>
             <Grid.RowDefinitions>
-                <RowDefinition Height="40"/>
-                <RowDefinition/>
+                <RowDefinition Height="40" />
+                <RowDefinition />
             </Grid.RowDefinitions>
             <!--标题-->
             <Border Grid.Row="0"
                     Grid.Column="0"
                     BorderBrush="#2B2833"
-                    BorderThickness="0,0,1,0" >
+                    BorderThickness="0,0,1,0">
                 <TextBlock Text="MainApp"
                            FontWeight="Bold"
                            Foreground="#fff"
@@ -37,20 +37,26 @@
             </Border>
             <Border Grid.Column="0"
                     Grid.Row="1"
-                    BorderThickness="0,0,1,0" >
+                    BorderThickness="0,0,1,0">
                 <ScrollViewer
                     Margin="0,20"
                     Style="{DynamicResource AppScrollViewer}">
                     <StackPanel>
                         <Button Content="首页"
-                                Click="Button_Click"/>
+                                Click="Button_Click" />
                         <Button Content="测试"
-                                Click="Button_Click_1"/>
+                                Click="Button_Click_1" />
                     </StackPanel>
                 </ScrollViewer>
             </Border>
             <Border Grid.Row="1" Grid.Column="1">
-                <ContentControl Content="{Binding Model.CurrentView}"/>
+                <ContentControl Content="{Binding CurrentViewModel}">
+                    <ContentControl.Resources>
+                        <DataTemplate DataType="{x:Type vm:PluginViewModle}">
+                            <local:PluginView />
+                        </DataTemplate>
+                    </ContentControl.Resources>
+                </ContentControl>
             </Border>
         </Grid>
     </Border>

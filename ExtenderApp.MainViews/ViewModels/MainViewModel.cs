@@ -1,15 +1,18 @@
 ﻿using ExtenderApp.Abstract;
-using ExtenderApp.ViewModels;
 using ExtenderApp.MainViews.Models;
-using ExtenderApp.MainViews.Views;
+using ExtenderApp.ViewModels;
 
 namespace ExtenderApp.MainViews.ViewModels
 {
-    public class MainViewModel : ExtenderAppViewModel<MainView, MainModel>
+    public class MainViewModel : ExtenderAppViewModel<MainModel>
     {
+        /// <summary>
+        /// 当前视图接口
+        /// </summary>
+        public IViewModel? CurrentViewModel { get; set; }
+
         public MainViewModel(MainModel model, IServiceStore serviceStore) : base(model, serviceStore)
         {
-            Model.CurrentView = NavigateTo<PluginView>();
         }
     }
 }
