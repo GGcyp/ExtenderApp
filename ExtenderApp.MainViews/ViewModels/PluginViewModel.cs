@@ -1,7 +1,7 @@
-﻿using CommunityToolkit.Mvvm.Input;
+﻿using System.Collections.ObjectModel;
+using CommunityToolkit.Mvvm.Input;
 using ExtenderApp.Abstract;
 using ExtenderApp.Data;
-using ExtenderApp.Services;
 using ExtenderApp.ViewModels;
 
 namespace ExtenderApp.MainViews.ViewModels
@@ -18,15 +18,20 @@ namespace ExtenderApp.MainViews.ViewModels
         /// <summary>
         /// 插件仓库实例
         /// </summary>
-        public PluginStore? PluginStore { get; set; }
+        public ObservableCollection<PluginDetails>? PluginStore { get; set; }
 
         public RelayCommand<PluginDetails> OpenPluginCommand { get; set; }
 
-        public PluginViewModle(IServiceStore serviceStore, PluginStore store, MainViewNavigation mainViewNavigation) : base(serviceStore)
+        public PluginViewModle(MainViewNavigation mainViewNavigation)
         {
             OpenPluginCommand = new(OpenPlugin);
-            PluginStore = store;
             _mainViewNavigation = mainViewNavigation;
+        }
+
+        public override void Inject(IServiceProvider serviceProvider)
+        {
+            base.Inject(serviceProvider);
+            PluginStore = new(GetRequiredService<IPluginService>().GetAllPlugins());
         }
 
         public void OpenPlugin(PluginDetails? details)

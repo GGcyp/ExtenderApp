@@ -34,7 +34,7 @@ namespace ExtenderApp.MainViews.ViewModels
         /// <param name="model">MainModel 实例，提供视图模型所需的数据。</param>
         /// <param name="scope">IScopeExecutor 实例，用于执行与插件作用域相关的操作。</param>
         /// <param name="serviceStore">IServiceStore 实例，提供应用程序所需的服务。</param>
-        public MainViewRunViewModel(IServiceStore serviceStore, MainViewNavigation navigation) : base(serviceStore)
+        public MainViewRunViewModel(MainViewNavigation navigation)
         {
             ToMainViewCommand = new(ToMainView);
             OpenSettingsWindowCommand = new(OpenSettingsWindow);
@@ -42,13 +42,15 @@ namespace ExtenderApp.MainViews.ViewModels
             ButtonHeight = 40;
             _navigation = navigation;
 
-            CurrentView = serviceStore.NavigationService.CurrentView;
-            serviceStore.NavigationService.CurrentViewChanged += NavigationService_CurrentViewChanged;
+            var navigationService = GetService<INavigationService>();
+            CurrentView = navigationService.CurrentView;
+            navigationService.CurrentViewChanged += NavigationService_CurrentViewChanged;
         }
 
         private void NavigationService_CurrentViewChanged(object? sender, EventArgs e)
         {
-            CurrentView = ServiceStore.NavigationService.CurrentView;
+            var navigation = sender as INavigationService;
+            CurrentView = navigation?.CurrentView;
         }
 
         /// <summary>

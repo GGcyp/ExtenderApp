@@ -26,7 +26,6 @@
 	<ItemGroup>
 		<ProjectReference Include="..\ExtenderApp.Common\ExtenderApp.Common.csproj" />
 		<ProjectReference Include="..\ExtenderApp.MainViews\ExtenderApp.MainViews.csproj" />
-		<ProjectReference Include="..\ExtenderApp.Models\ExtenderApp.Models.csproj" />
 		<ProjectReference Include="..\ExtenderApp.Service\ExtenderApp.Services.csproj" />
 		<ProjectReference Include="..\ExtenderApp.ViewModels\ExtenderApp.ViewModels.csproj" />
 		<ProjectReference Include="..\ExtenderApp.Views\ExtenderApp.Views.csproj" />

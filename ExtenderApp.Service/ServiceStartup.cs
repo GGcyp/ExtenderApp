@@ -15,7 +15,6 @@ namespace ExtenderApp.Services
         /// <param name="services">服务集合，用于添加服务。</param>
         public override void AddService(IServiceCollection services)
         {
-            services.AddSingleton<IServiceStore, ServiceStore>();
             services.AddSingleton<INavigationService, NavigationService>();
             services.AddSingleton<IDispatcherService, DispatcherService>();
             services.AddSingleton<ICacheService, CacheService>();
@@ -23,7 +22,6 @@ namespace ExtenderApp.Services
             services.AddSingleton<ISystemService, SystemService>();
             services.AddSingleton<IMessageService, MessageService>();
             services.AddSingleton<IPluginService, PluginService>();
-            services.AddSingleton<PluginStore>();
             services.AddSingleton<ILocalDataService, LocalDataService>();
         }
     }

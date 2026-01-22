@@ -18,7 +18,7 @@ namespace ExtenderApp.Services
         /// <summary>
         /// 插件存储
         /// </summary>
-        private readonly PluginStore _pluginStore;
+        private readonly List<PluginDetails> _plugins;
 
         /// <summary>
         /// 插件服务作用域字典
@@ -40,15 +40,13 @@ namespace ExtenderApp.Services
         /// </summary>
         private IBinaryFormatterStore _binaryFormatterStore;
 
-        public PluginService(PluginStore pluginStore, IJsonParser parser, IBinaryFormatterStore binaryFormatterStore, IServiceScopeStore serviceScopeStore, ILifetimeScope lifetimeScope)
+        public PluginService(IJsonParser parser, IBinaryFormatterStore binaryFormatterStore, IServiceScopeStore serviceScopeStore, ILifetimeScope lifetimeScope)
         {
-            _pluginStore = pluginStore;
+            _plugins = new();
             _jsonParser = parser;
             _binaryFormatterStore = binaryFormatterStore;
             _serviceScopeStore = serviceScopeStore;
             _mainLifetimeScope = lifetimeScope;
-
-            LoadPluginInfo(ProgramDirectory.PluginPath);
         }
 
         /// <summary>
@@ -75,11 +73,17 @@ namespace ExtenderApp.Services
         /// <returns>
         /// 如果找到匹配的 ModDetails 对象，则返回该对象；否则返回 null。
         /// </returns>
-        public PluginDetails? GetPluginDetails(string modStartDLLName)
+        public PluginDetails? GetPluginDetails(string? modStartDLLName)
         {
             if (string.IsNullOrEmpty(modStartDLLName)) return null;
 
-            return _pluginStore.FirstOrDefault(m => m.StartupDll == modStartDLLName);
+            return _plugins.FirstOrDefault(m => m.StartupDll == modStartDLLName);
+        }
+
+        public IEnumerable<PluginDetails> GetAllPlugins()
+        {
+            LoadPluginInfo(ProgramDirectory.PluginPath);
+            return _plugins;
         }
 
         /// <summary>
@@ -108,7 +112,7 @@ namespace ExtenderApp.Services
                 PluginDetails details = new PluginDetails(info);
                 details.PluginFolderPath = dir;
 
-                _pluginStore.Add(details);
+                _plugins.Add(details);
             }
         }
 
@@ -217,7 +221,6 @@ namespace ExtenderApp.Services
                 return null;
 
             IServiceCollection services = new ServiceCollection();
-            services.AddSingleton<IServiceStore, PluginServiceStore>();
             services.AddSingleton(details);
             startup.AddService(services);
             details.PluginScopeName = startup.ScopeName;

@@ -1,6 +1,4 @@
-﻿
-
-namespace ExtenderApp.Abstract
+﻿namespace ExtenderApp.Abstract
 {
     /// <summary>
     /// 定义一个服务，用于管理与主应用程序窗口的交互。

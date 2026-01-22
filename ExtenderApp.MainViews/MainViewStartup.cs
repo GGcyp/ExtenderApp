@@ -11,13 +11,13 @@ namespace ExtenderApp.MainViews
         public override void AddService(IServiceCollection services)
         {
             services.AddView<IMainWindow, MainWindow, MainWindowViewModel>();
-            services.AddTransient<MainWindowViewModel>();
+            services.AddViewModel<MainWindowViewModel>();
 
-            services.AddTransient<PluginViewModle>();
+            services.AddViewModel<PluginViewModle>();
 
             services.AddView<IMainView, MainView, MainViewModel>();
 
-            services.AddSingleton<MainViewModel>();
+            services.AddViewModel<MainViewModel>(ServiceLifetime.Singleton);
             services.AddTransient<MainViewRunViewModel>();
 
             services.AddTransient<SettingsView>();

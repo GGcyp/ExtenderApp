@@ -12,7 +12,7 @@ namespace ExtenderApp.Abstract
         /// </summary>
         /// <param name="modStartDLLName">MOD启动DLL的名称。</param>
         /// <returns>返回包含MOD详细信息的ModDetails对象，如果未找到则返回null。</returns>
-        PluginDetails? GetPluginDetails(string modStartDLLName);
+        PluginDetails? GetPluginDetails(string? modStartDLLName);
 
         /// <summary>
         /// 加载模组信息
@@ -36,5 +36,11 @@ namespace ExtenderApp.Abstract
         /// <exception cref="ArgumentNullException">当插件详情为null或关键路径为空时抛出</exception>
         /// <exception cref="InvalidOperationException">当未找到插件启动项时抛出</exception>
         Task LoadPluginAsync(PluginDetails details);
+
+        /// <summary>
+        /// 获取所有模组信息
+        /// </summary>
+        /// <returns>返回获取到的所有模组信息</returns>
+        IEnumerable<PluginDetails> GetAllPlugins();
     }
 }

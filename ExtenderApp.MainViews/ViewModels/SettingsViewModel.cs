@@ -11,7 +11,7 @@ namespace ExtenderApp.MainViews.ViewModels
 
         public RelayCommand<TextBlock> ScrollToTopCommand { get; set; }
 
-        public SettingsViewModel(IServiceStore serviceStore) : base(serviceStore)
+        public SettingsViewModel()
         {
             ScrollToTopCommand = new(ScrollToTop);
         }

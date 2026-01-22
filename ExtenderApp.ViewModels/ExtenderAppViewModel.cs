@@ -1,33 +1,31 @@
 ﻿using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using ExtenderApp.Abstract;
-using ExtenderApp.Common;
 using ExtenderApp.Data;
-using ExtenderApp.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace ExtenderApp.ViewModels
 {
     /// <summary>
-    /// 提供视图模型核心功能的抽象基类。 包含服务访问、生命周期管理、导航、日志、数据持久化等通用功能。
+    /// 提供视图模型核心功能的抽象基类。
+    /// 包含服务访问、生命周期管理、导航、日志、数据持久化、调度等通用功能，供具体 ViewModel 继承使用。
     /// </summary>
     public abstract class ExtenderAppViewModel : DisposableObject, IViewModel, INotifyPropertyChanged, ILogger
     {
         /// <summary>
-        /// 提供对应用程序核心服务的访问，如导航、日志、本地数据等。
+        /// 注入的服务提供者（可为插件作用域的 IServiceProvider）。
+        /// 通过 <see cref="Inject"/> 设置。
         /// </summary>
-        protected readonly IServiceStore ServiceStore;
-
-        private bool hasSubscribeMessage;
+        private IServiceProvider? serviceProvider;
 
         /// <summary>
-        /// 内部持有的日志记录器实例。
+        /// 内部持有的日志记录器实例，按 ViewModel 类型延迟解析。
         /// </summary>
         private ILogger? logger;
 
         /// <summary>
-        /// 获取当前视图模型专用的日志记录器。 如果尚未初始化，则会通过服务提供程序动态创建一个与当前视图模型类型关联的记录器。
+        /// 获取当前视图模型专用的日志记录器。如果尚未创建，会通过服务提供者按当前类型解析 <see cref="ILogger{T}"/>。
         /// </summary>
         protected ILogger Logger
         {
@@ -36,25 +34,24 @@ namespace ExtenderApp.ViewModels
                 if (logger is null)
                 {
                     var loggerType = typeof(ILogger<>).MakeGenericType(GetType());
-                    logger = ServiceStore.ServiceProvider.GetService(loggerType) as ILogger;
+                    logger = GetService(loggerType) as ILogger;
                 }
                 return logger!;
             }
         }
 
         /// <summary>
-        /// 获取或设置与当前视图模型关联的插件的详细信息。 如果视图模型不属于插件，则此属性可能为 null。
+        /// 与当前视图模型关联的插件详细信息（若此视图模型在插件作用域内解析则非空）。
         /// </summary>
         protected PluginDetails? Details { get; set; }
 
         /// <summary>
-        /// 获取对应用程序主窗口的引用。
+        /// 获取当前应用主窗口的引用（如果存在）。
+        /// 从 <see cref="IMainWindowService"/> 的 <see cref="IMainWindowService.CurrentMainWindow"/> 获取。
         /// </summary>
-        protected IMainWindow? MainWindow => ServiceStore.MainWindowService.CurrentMainWindow;
+        protected IMainWindow? MainWindow => GetRequiredService<IMainWindowService>().CurrentMainWindow;
 
-        /// <summary>
-        /// 当视图模型的属性值更改时发生。
-        /// </summary>
+        /// <inheritdoc />
         public event PropertyChangedEventHandler? PropertyChanged;
 
         /// <summary>
@@ -67,93 +64,14 @@ namespace ExtenderApp.ViewModels
         }
 
         /// <summary>
-        /// 初始化 <see cref="ExtenderAppViewModel"/> 的新实例，并注入指定的日志记录器。
+        /// 将运行时的 <see cref="IServiceProvider"/> 注入到当前视图模型。
+        /// 此方法通常由视图/视图工厂在创建视图模型实例后调用以设置上下文服务提供者。
         /// </summary>
-        /// <param name="serviceStore">服务存储实例。</param>
-        /// <param name="logger">日志记录器实例。</param>
-        public ExtenderAppViewModel(IServiceStore serviceStore, ILogger logger) : this(serviceStore)
+        /// <param name="serviceProvider">要注入的服务提供者，不能为空。</param>
+        public virtual void Inject(IServiceProvider serviceProvider)
         {
-            this.logger = logger;
-        }
-
-        /// <summary>
-        /// 初始化 <see cref="ExtenderAppViewModel"/> 的新实例。
-        /// </summary>
-        /// <param name="serviceStore">服务存储实例。</param>
-        public ExtenderAppViewModel(IServiceStore serviceStore)
-        {
-            ServiceStore = serviceStore;
-            Details = GetCurrentPluginDetails();
-        }
-
-        /// <summary>
-        /// 当视图被注入时调用。派生类必须实现此方法以接收其关联的视图。
-        /// </summary>
-        /// <param name="view">被注入的视图实例。</param>
-        public virtual void InjectView(IView view)
-        {
-        }
-
-        /// <summary>
-        /// 当导航进入此视图模型关联的视图时由框架调用。
-        /// </summary>
-        /// <param name="oldViewInfo">上一个视图的信息。</param>
-        public void Enter(ViewInfo oldViewInfo)
-        {
-            EnterProtected(oldViewInfo);
-        }
-
-        /// <summary>
-        /// 当导航离开此视图模型关联的视图时由框架调用。
-        /// </summary>
-        /// <param name="newViewInfo">将要导航到的新视图的信息。</param>
-        public void Exit(ViewInfo newViewInfo)
-        {
-            ExitProtected(newViewInfo);
-
-            if (hasSubscribeMessage)
-                ServiceStore.MessageService.UnsubscribeAll(this);
-        }
-
-        /// <summary>
-        /// 为派生类提供一个可重写的入口点，用于处理视图进入逻辑。
-        /// </summary>
-        /// <param name="oldViewInfo">上一个视图的信息。</param>
-        protected virtual void EnterProtected(ViewInfo oldViewInfo)
-        {
-        }
-
-        /// <summary>
-        /// 为派生类提供一个可重写的入口点，用于处理视图退出逻辑。
-        /// </summary>
-        /// <param name="newViewInfo">将要导航到的新视图的信息。</param>
-        protected virtual void ExitProtected(ViewInfo newViewInfo)
-        {
-        }
-
-        /// <summary>
-        /// 从服务存储中获取当前插件的详细信息。
-        /// </summary>
-        /// <returns>如果服务存储是插件服务存储，则返回插件详情；否则返回 null。</returns>
-        private PluginDetails? GetCurrentPluginDetails()
-        {
-            if (ServiceStore is IPuginServiceStore store)
-                return store.PuginDetails;
-            return null;
-        }
-
-        /// <summary>
-        /// 当关联的视图加载完成时调用。
-        /// </summary>
-        public virtual void OnViewloaded()
-        {
-        }
-
-        /// <summary>
-        /// 当关联的视图被卸载时调用。
-        /// </summary>
-        public virtual void OnViewUnloaded()
-        {
+            this.serviceProvider = serviceProvider;
+            Details = GetService<PluginDetails>();
         }
 
         #region Log
@@ -164,66 +82,60 @@ namespace ExtenderApp.ViewModels
         private const string ErrorEmptyMessage = "输出空错误日志";
 
         /// <summary>
-        /// 记录一条信息级别的日志。
+        /// 记录信息级别日志。
         /// </summary>
-        /// <param name="message">要记录的日志消息。</param>
+        /// <param name="message">日志内容对象，可为 null。</param>
         public void LogInformation(object message)
         {
             Logger.LogInformation(message?.ToString() ?? InfoEmptyMessage);
         }
 
         /// <summary>
-        /// 记录一条调试级别的日志。
+        /// 记录调试级别日志。
         /// </summary>
-        /// <param name="message">要记录的调试消息。</param>
+        /// <param name="message">日志内容对象，可为 null。</param>
         public void LogDebug(object message)
         {
             Logger.LogDebug(message?.ToString() ?? DebugEmptyMessage);
         }
 
         /// <summary>
-        /// 记录一条错误级别的日志，并包含异常信息。
+        /// 记录错误级别日志，并附带异常。
         /// </summary>
-        /// <param name="exception">要记录的异常。</param>
-        /// <param name="message">要记录的错误消息。</param>
+        /// <param name="exception">相关异常。</param>
+        /// <param name="message">错误消息对象，可为 null。</param>
         public void LogError(Exception exception, object message)
         {
             Logger.LogError(exception, message?.ToString() ?? ErrorEmptyMessage);
         }
 
         /// <summary>
-        /// 记录一条警告级别的日志。
+        /// 记录警告级别日志。
         /// </summary>
-        /// <param name="message">要记录的警告消息。</param>
+        /// <param name="message">日志内容对象，可为 null。</param>
         public void LogWarning(object message)
         {
             Logger.LogWarning(message?.ToString() ?? WarningEmptyMessage);
         }
 
-        /// <summary>
-        /// 使用指定的日志级别写入日志条目。
-        /// </summary>
+        /// <inheritdoc />
         public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
         {
             Logger.Log(logLevel, eventId, state, exception, formatter);
         }
 
-        /// <summary>
-        /// 检查是否启用了给定的 <paramref name="logLevel"/>。
-        /// </summary>
-        /// <param name="logLevel">要检查的日志级别。</param>
-        /// <returns>如果启用了 <paramref name="logLevel"/>，则为 <c>true</c>；否则为 <c>false</c>。</returns>
+        /// <inheritdoc />
         public bool IsEnabled(LogLevel logLevel)
         {
             return Logger.IsEnabled(logLevel);
         }
 
         /// <summary>
-        /// 开始一个逻辑操作作用域。
+        /// 开始一个日志作用域。
         /// </summary>
-        /// <typeparam name="TState">状态的类型。</typeparam>
-        /// <param name="state">要开始的作用域的状态。</param>
-        /// <returns>一个 <see cref="IDisposable"/> 对象，在释放时会结束逻辑操作作用域。</returns>
+        /// <typeparam name="TState">作用域状态类型。</typeparam>
+        /// <param name="state">作用域状态。</param>
+        /// <returns>返回 IDisposable，在 Dispose 时结束作用域。</returns>
         public IDisposable? BeginScope<TState>(TState state) where TState : notnull
         {
             return Logger.BeginScope(state);
@@ -231,191 +143,59 @@ namespace ExtenderApp.ViewModels
 
         #endregion Log
 
-        #region LocalData
-
-        /// <summary>
-        /// 从本地存储加载指定类型的数据。
-        /// </summary>
-        /// <typeparam name="T">要加载的数据的类型。</typeparam>
-        /// <param name="data">加载成功时，此参数将包含加载的数据。</param>
-        /// <param name="checkAction">加载后对 <see cref="LocalData{T}"/> 执行的额外检查或操作。</param>
-        /// <returns>如果数据加载成功，则返回 true；否则返回 false。</returns>
-        protected bool LoadLocalData<T>(out T? data, Action<LocalData<T>> checkAction = null)
-            where T : class, new()
-        {
-            data = default;
-            if (!ServiceStore.LocalDataService.LoadData(Details, out LocalData<T> localData))
-                return false;
-
-            data = localData.Data;
-            checkAction?.Invoke(localData);
-            return true;
-        }
-
-        /// <summary>
-        /// 将指定类型的数据保存到本地存储。
-        /// </summary>
-        /// <typeparam name="T">要保存的数据的类型。</typeparam>
-        /// <param name="data">要保存的数据实例。</param>
-        /// <returns>如果数据保存成功，则返回 true；否则返回 false。</returns>
-        protected bool SaveLocalData<T>(T? data)
-            where T : class
-        {
-            if (data is null || Details is null)
-                return false;
-
-            return ServiceStore.LocalDataService.SaveData(Details, data);
-        }
-
-        /// <summary>
-        /// 将指定版本的数据保存到本地存储。
-        /// </summary>
-        /// <typeparam name="T">要保存的数据的类型。</typeparam>
-        /// <param name="data">要保存的数据实例。</param>
-        /// <param name="version">要保存的数据的版本。</param>
-        /// <returns>如果数据保存成功，则返回 true；否则返回 false。</returns>
-        protected bool SaveLocalData<T>(T? data, Version version)
-            where T : class
-        {
-            if (data is null || Details is null)
-                return false;
-
-            return ServiceStore.LocalDataService.SaveData(Details.Title, data, version);
-        }
-
-        /// <summary>
-        /// 删除当前插件的本地数据。
-        /// </summary>
-        /// <returns>如果删除成功或无需删除，则返回 true；否则返回 false。</returns>
-        protected bool DeleteLocalData()
-        {
-            if (Details is null)
-                return false;
-            return ServiceStore.LocalDataService.DeleteData(Details);
-        }
-
-        #endregion LocalData
-
-        #region ScheduledTask
-
-        /// <summary>
-        /// 启动一个定时任务，在指定的延迟后开始，并按指定的周期重复。
-        /// </summary>
-        /// <param name="callback">要执行的回调操作。</param>
-        /// <param name="state">传递给回调的状态对象。</param>
-        /// <param name="dueTime">任务首次执行前的延迟时间。</param>
-        /// <param name="period">任务执行之间的间隔时间。</param>
-        /// <returns>一个 <see cref="ScheduledTask"/> 实例，可用于控制任务。</returns>
-        protected ScheduledTask Start(Action<object> callback, object state, TimeSpan dueTime, TimeSpan period)
-        {
-            ScheduledTask task = new ScheduledTask();
-            task.Start(callback, state, dueTime, period);
-            return task;
-        }
-
-        /// <summary>
-        /// 启动一个按指定周期重复的循环任务。
-        /// </summary>
-        /// <param name="callback">每次周期要执行的回调操作。</param>
-        /// <param name="period">任务执行之间的间隔时间。</param>
-        /// <returns>一个 <see cref="ScheduledTask"/> 实例，可用于控制任务。</returns>
-        protected ScheduledTask StartCycle(Action<object> callback, TimeSpan period)
-        {
-            return StartCycle(callback, null, period);
-        }
-
-        /// <summary>
-        /// 启动一个按指定周期重复的循环任务，并传递状态对象。
-        /// </summary>
-        /// <param name="callback">每次周期要执行的回调操作。</param>
-        /// <param name="state">传递给回调的状态对象。</param>
-        /// <param name="period">任务执行之间的间隔时间。</param>
-        /// <returns>一个 <see cref="ScheduledTask"/> 实例，可用于控制任务。</returns>
-        protected ScheduledTask StartCycle(Action<object> callback, object state, TimeSpan period)
-        {
-            ScheduledTask task = new ScheduledTask();
-            task.StartCycle(callback, state, period);
-            return task;
-        }
-
-        /// <summary>
-        /// 启动一个在指定延迟后执行一次的延迟任务。
-        /// </summary>
-        /// <param name="callback">要执行的回调操作。</param>
-        /// <param name="dueTime">任务执行前的延迟时间。</param>
-        /// <returns>一个 <see cref="ScheduledTask"/> 实例，可用于控制任务。</returns>
-        protected ScheduledTask StartDelay(Action<object> callback, TimeSpan dueTime)
-        {
-            return StartDelay(callback, null, dueTime);
-        }
-
-        /// <summary>
-        /// 启动一个在指定延迟后执行一次的延迟任务，并传递状态对象。
-        /// </summary>
-        /// <param name="callback">要执行的回调操作。</param>
-        /// <param name="state">传递给回调的状态对象。</param>
-        /// <param name="dueTime">任务执行前的延迟时间。</param>
-        /// <returns>一个 <see cref="ScheduledTask"/> 实例，可用于控制任务。</returns>
-        protected ScheduledTask StartDelay(Action<object> callback, object state, TimeSpan dueTime)
-        {
-            ScheduledTask task = new ScheduledTask();
-            task.StartDelay(callback, state, dueTime);
-            return task;
-        }
-
-        #endregion ScheduledTask
-
         #region Dispatcher
 
         /// <summary>
-        /// 在UI线程上同步执行指定的操作。
+        /// 在 UI 线程上同步执行指定回调。
         /// </summary>
-        /// <param name="callback">要在UI线程上执行的操作。</param>
+        /// <param name="callback">要执行的回调。</param>
         protected void DispatcherInvoke(Action callback)
         {
             if (callback is null)
                 return;
 
-            ServiceStore.DispatcherService.Invoke(callback);
+            GetRequiredService<IDispatcherService>().Invoke(callback);
         }
 
         /// <summary>
-        /// 在UI线程上异步执行指定的操作。
+        /// 在 UI 线程上异步执行指定回调。
         /// </summary>
-        /// <param name="callback">要在UI线程上执行的操作。</param>
+        /// <param name="callback">要执行的回调。</param>
         protected void DispatcherInvokeAsync(Action callback)
         {
-            if (callback is null) return;
-            ServiceStore.DispatcherService.InvokeAsync(callback);
+            if (callback is null)
+                return;
+
+            GetRequiredService<IDispatcherService>().InvokeAsync(callback);
         }
 
         /// <summary>
-        /// 确定调用线程是否可以访问此 <see cref="Dispatcher"/> 对象。
+        /// 检查当前线程是否可访问 UI Dispatcher。
         /// </summary>
-        /// <returns>如果调用线程可以访问此对象，则为 true；否则为 false。</returns>
+        /// <returns>如果可访问主线程 Dispatcher 则返回 true。</returns>
         protected bool CheckAccess()
         {
-            return ServiceStore.DispatcherService.CheckAccess();
+            return GetRequiredService<IDispatcherService>().CheckAccess();
         }
 
         /// <summary>
-        /// 创建一个可等待对象，将执行切换到主UI线程。
+        /// 创建一个 awaitable，用于将执行切换到主 UI 线程。
         /// </summary>
-        /// <param name="token">用于取消操作的取消标记。</param>
-        /// <returns>一个可等待的上下文切换对象。</returns>
+        /// <param name="token">取消令牌。</param>
+        /// <returns>返回一个 <see cref="ThreadSwitchAwaitable"/>。</returns>
         protected ThreadSwitchAwaitable ToMainThreadAsync(CancellationToken token = default)
         {
-            return ServiceStore.DispatcherService.ToMainThreadAsync(token);
+            return GetRequiredService<IDispatcherService>().ToMainThreadAsync(token);
         }
 
         /// <summary>
-        /// 创建一个可等待对象，将执行切换到后台线程池线程。
+        /// 创建一个 awaitable，用于将执行切换到后台线程。
         /// </summary>
-        /// <param name="token">用于取消操作的取消标记。</param>
-        /// <returns>一个可等待的上下文切换对象。</returns>
+        /// <param name="token">取消令牌。</param>
+        /// <returns>返回一个 <see cref="ThreadSwitchAwaitable"/>。</returns>
         protected ThreadSwitchAwaitable AwayMainThreadAsync(CancellationToken token = default)
         {
-            return ServiceStore.DispatcherService.AwayMainThreadAsync(token);
+            return GetRequiredService<IDispatcherService>().AwayMainThreadAsync(token);
         }
 
         #endregion Dispatcher
@@ -423,16 +203,8 @@ namespace ExtenderApp.ViewModels
         #region MainWindow
 
         /// <summary>
-        /// 创建并返回一个新的主窗口实例。
-        /// </summary>
-        /// <returns>一个新的 <see cref="IMainWindow"/> 实例。</returns>
-        protected IMainWindow CreateMainWindow()
-        {
-            return ServiceStore.MainWindowService.CreateMainWindow();
-        }
-
-        /// <summary>
-        /// 临时将主窗口置于顶层，以吸引用户注意。
+        /// 将主窗口临时置顶以吸引用户注意。
+        /// 实现为异步短暂置顶（300ms）。
         /// </summary>
         protected void MainWindowTopmost()
         {
@@ -450,99 +222,24 @@ namespace ExtenderApp.ViewModels
 
         #endregion MainWindow
 
-        //#region Path
-
-        ///// <summary>
-        ///// 在文件资源管理器中打开指定的文件夹路径。
-        ///// </summary>
-        ///// <param name="path">要打开的文件夹的完整路径。</param>
-        //protected void OpenFolder(string? path)
-        //{
-        //    try
-        //    {
-        //        if (Directory.Exists(path))
-        //        {
-        //            try
-        //            {
-        //                // 启动资源管理器并打开指定目录
-        //                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo()
-        //                {
-        //                    FileName = path,
-        //                    UseShellExecute = true,
-        //                    Verb = "open" // 确保以打开方式启动
-        //                });
-        //            }
-        //            catch (Exception ex)
-        //            {
-        //                throw new InvalidOperationException("无法打开指定的文件夹路径。", ex);
-        //            }
-        //        }
-        //        else
-        //        {
-        //            throw new DirectoryNotFoundException("指定的文件夹路径不存在。");
-        //        }
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        Logger.LogError(ex, "打开路径失败：{path}", path);
-        //    }
-        //}
-
-        ///// <summary>
-        ///// 在应用程序根目录下检查并创建指定的文件夹。
-        ///// </summary>
-        ///// <param name="folderPath">相对于应用程序根目录的文件夹路径。</param>
-        ///// <returns>创建的文件夹的完整路径，如果创建失败则返回空字符串。</returns>
-        //protected string CreateFolderPathForAppRootFolder(string folderPath)
-        //{
-        //    try
-        //    {
-        //        return ProgramDirectory.ChekAndCreateFolder(folderPath);
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        Logger.LogError(ex, "创建路径失败：{folderPath}", folderPath);
-        //        return string.Empty;
-        //    }
-        //}
-
-        ///// <summary>
-        ///// 获取当前插件目录下指定子文件夹的完整路径。
-        ///// </summary>
-        ///// <param name="folderPath">插件目录下的子文件夹名称或相对路径。</param>
-        ///// <returns>完整的文件夹路径，如果插件信息不可用则返回空字符串。</returns>
-        //protected string? GetPluginFolder(string folderPath)
-        //{
-        //    if (Details == null)
-        //        return string.Empty;
-
-        //    string path = Details.PluginFolderPath;
-        //    if (string.IsNullOrEmpty(path))
-        //        return string.Empty;
-
-        //    return Path.Combine(path, folderPath);
-        //}
-
-        //#endregion Path
-
         #region Plugin
 
         /// <summary>
-        /// 异步加载指定的插件。
+        /// 异步加载插件（委托给 IPluginService）。
         /// </summary>
-        /// <param name="plugin">要加载的插件的详细信息。</param>
+        /// <param name="plugin">要加载的插件信息。</param>
         protected async Task LoadPluginAsync(PluginDetails plugin)
         {
-            await ServiceStore.PluginService.LoadPluginAsync(plugin);
+            await GetRequiredService<IPluginService>().LoadPluginAsync(plugin);
         }
 
         /// <summary>
-        /// 卸载指定的插件。
+        /// 卸载插件（委托给 IPluginService）。
         /// </summary>
-        /// <param name="plugin">要卸载的插件的详细信息。</param>
+        /// <param name="plugin">要卸载的插件信息。</param>
         protected void UnLoadPlugin(PluginDetails plugin)
         {
-            ServiceStore.PluginService.UnloadPlugin(plugin);
+            GetRequiredService<IPluginService>().UnloadPlugin(plugin);
         }
 
         #endregion Plugin
@@ -550,12 +247,12 @@ namespace ExtenderApp.ViewModels
         #region System
 
         /// <summary>
-        /// 将指定的文本设置到系统剪贴板。
+        /// 将指定文本写入系统剪贴板（通过 ISystemService）。
         /// </summary>
-        /// <param name="text">要设置到剪贴板的文本。</param>
+        /// <param name="text">要复制的文本。</param>
         protected void ClipboardSetText(string text)
         {
-            ServiceStore.SystemService.Clipboard.SetText(text);
+            GetRequiredService<ISystemService>().Clipboard.SetText(text);
         }
 
         #endregion System
@@ -563,74 +260,89 @@ namespace ExtenderApp.ViewModels
         #region Message
 
         /// <summary>
-        /// 订阅指定类型的消息。
+        /// 订阅指定类型的消息，消息分发由 IMessageService 负责。
         /// </summary>
-        /// <typeparam name="TMessage">要订阅的消息的类型。</typeparam>
-        /// <param name="handleMessage">处理消息的回调委托。</param>
+        /// <typeparam name="TMessage">消息类型。</typeparam>
+        /// <param name="handleMessage">处理回调。</param>
         protected void SubscribeMessage<TMessage>(EventHandler<TMessage> handleMessage)
         {
-            ServiceStore.MessageService.Subscribe(this, handleMessage);
-            hasSubscribeMessage = true;
+            GetRequiredService<IMessageService>().Subscribe(this, handleMessage);
         }
 
         /// <summary>
-        /// 订阅指定类型名称的消息。
+        /// 使用消息名称订阅消息，支持弱命名或自定义消息通道。
         /// </summary>
         /// <param name="messageName">消息名称。</param>
-        /// <param name="handleMessage">处理消息的回调委托。</param>
+        /// <param name="handleMessage">处理回调。</param>
         protected void SubscribeMessage(string messageName, EventHandler<object> handleMessage)
         {
-            ServiceStore.MessageService.Subscribe(messageName, this, handleMessage);
-            hasSubscribeMessage = true;
+            GetRequiredService<IMessageService>().Subscribe(messageName, this, handleMessage);
         }
 
         /// <summary>
-        /// 发布一条消息，所有订阅者都将收到通知。
+        /// 发布一条消息到消息系统。
         /// </summary>
-        /// <typeparam name="TMessage">要发布的消息的类型。</typeparam>
-        /// <param name="message">要发布的消息实例。</param>
+        /// <typeparam name="TMessage">消息类型。</typeparam>
+        /// <param name="message">消息实例。</param>
         protected void PublishMessage<TMessage>(TMessage message)
         {
-            ServiceStore.MessageService.Publish(this, message);
+            GetRequiredService<IMessageService>().Publish(this, message);
         }
 
         /// <summary>
         /// 取消订阅指定类型的消息。
         /// </summary>
-        /// <typeparam name="TMessage">要取消订阅的消息的类型。</typeparam>
-        /// <param name="handleMessage">之前用于订阅的委托。</param>
+        /// <typeparam name="TMessage">消息类型。</typeparam>
+        /// <param name="handleMessage">之前注册的处理回调。</param>
         protected void UnsubscribeMessage<TMessage>(EventHandler<TMessage> handleMessage)
         {
-            ServiceStore.MessageService.Unsubscribe(this, handleMessage);
+            GetRequiredService<IMessageService>().Unsubscribe(this, handleMessage);
         }
 
         #endregion Message
 
         #region Service
 
-        protected object GetService(Type serviceType)
-        {
-            return ServiceStore.ServiceProvider.GetRequiredService(serviceType);
-        }
-
         /// <summary>
-        /// 通过运行时解析从容器获取一个视图模型实例。注意：此方法使用 ServiceProvider，即服务定位器模式，应慎用；推荐直接通过构造函数注入所需视图模型。
+        /// 通过类型从注入的 <see cref="IServiceProvider"/> 获取服务（可返回 null）。
         /// </summary>
-        /// <typeparam name="T">要解析的视图模型类型，必须实现 <see cref="IViewModel"/>。</typeparam>
-        /// <returns>解析得到的视图模型实例。</returns>
-        protected T GetViewModel<T>() where T : IViewModel
+        /// <param name="serviceType">要获取的服务类型。</param>
+        /// <returns>服务实例或 null（若未注册或未注入 serviceProvider）。</returns>
+        protected object? GetService(Type serviceType)
         {
-            return ServiceStore.ServiceProvider.GetRequiredService<T>();
+            return serviceProvider?.GetService(serviceType);
         }
 
         /// <summary>
-        /// 通过运行时解析从容器获取一个服务实例。注意：此方法使用 ServiceProvider，即服务定位器模式，应慎用；推荐直接通过构造函数注入所需服务。
+        /// 通过泛型类型解析并返回一个 ViewModel 实例（使用容器解析，推荐尽量使用构造注入代替）。
+        /// </summary>
+        /// <typeparam name="T">要解析的视图模型类型。</typeparam>
+        /// <returns>解析得到的视图模型实例。</returns>
+        protected T GetViewModel<T>() where T : class, IViewModel
+        {
+            return GetRequiredService<T>();
+        }
+
+        /// <summary>
+        /// 通过泛型类型解析并返回服务实例（可为 null）。
+        /// </summary>
+        /// <typeparam name="T">要解析的服务类型。</typeparam>
+        /// <returns>解析得到的服务实例或 null。</returns>
+        protected T? GetService<T>() where T : class
+        {
+            return serviceProvider?.GetService<T>();
+        }
+
+        /// <summary>
+        /// 获取必需服务实例（若未注册或未注入服务提供者则抛出 <see cref="ArgumentNullException"/>）。
         /// </summary>
         /// <typeparam name="T">要解析的服务类型。</typeparam>
         /// <returns>解析得到的服务实例。</returns>
-        protected T GetService<T>() where T : class
+        /// <exception cref="ArgumentNullException">当未注入 <see cref="IServiceProvider"/> 时抛出。</exception>
+        protected T GetRequiredService<T>() where T : class
         {
-            return ServiceStore.ServiceProvider.GetRequiredService<T>();
+            return serviceProvider?.GetRequiredService<T>() ??
+                throw new ArgumentNullException("当前未设置服务提供者，如果需要获取服务请使用AddViewModel来添加视图模型");
         }
 
         #endregion Service
@@ -638,13 +350,13 @@ namespace ExtenderApp.ViewModels
         #region Navigation
 
         /// <summary>
-        /// 导航到指定类型的视图。
+        /// 导航到指定视图类型，scope 用于标识目标解析作用域。
         /// </summary>
-        /// <param name="viewType">指定类型视图</param>
-        /// <param name="scope">作用域名</param>
+        /// <param name="viewType">目标视图类型。</param>
+        /// <param name="scope">解析作用域名称（可为空）。</param>
         protected void NavigateTo(Type viewType, string scope)
         {
-            ServiceStore.NavigationService.NavigateTo(viewType, scope);
+            GetRequiredService<INavigationService>().NavigateTo(viewType, scope);
         }
 
         #endregion Navigation

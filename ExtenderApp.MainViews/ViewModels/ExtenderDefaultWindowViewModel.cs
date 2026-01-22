@@ -17,7 +17,7 @@ namespace ExtenderApp.MainViews.ViewModels
         /// 初始化 <see cref="ExtenderDefaultWindowViewModel"/> 类的新实例。
         /// </summary>
         /// <param name="serviceStore">服务存储。</param>
-        public ExtenderDefaultWindowViewModel(IServiceStore serviceStore) : base(serviceStore)
+        public ExtenderDefaultWindowViewModel()
         {
         }
 

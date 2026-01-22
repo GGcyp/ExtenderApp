@@ -1,6 +1,6 @@
-﻿using ExtenderApp.Abstract;
+﻿using System.Text.Json;
+using ExtenderApp.Abstract;
 using ExtenderApp.Common.IO.FileParsers;
-using System.Text.Json;
 
 namespace ExtenderApp.Common.IO
 {

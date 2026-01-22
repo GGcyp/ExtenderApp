@@ -15,7 +15,7 @@ namespace ExtenderApp.MainViews.ViewModels
         /// </summary>
         public IView? CurrentCutsceneView { get; set; }
 
-        public MainWindowViewModel(IServiceStore serviceStore, MainViewNavigation navigation) : base(serviceStore)
+        public MainWindowViewModel(MainViewNavigation navigation)
         {
             navigation.NavigationEvent += (viewModel) =>
             {

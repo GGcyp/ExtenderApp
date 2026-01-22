@@ -176,7 +176,7 @@ namespace ExtenderApp.Media.ViewModels
 
         #endregion Commands
 
-        public MediaMainViewModel(IServiceStore serviceStore, MediaEngine mediaEngine) : base(serviceStore)
+        public MediaMainViewModel(MediaEngine mediaEngine)
         {
             _mediaEngine = mediaEngine;
             _positionAction = UpdatePosition;
@@ -189,7 +189,6 @@ namespace ExtenderApp.Media.ViewModels
             MediaStateChangeCommand = new(ChangeMediaState);
             FastForwardCommand = new(Forward);
 
-            
             SubscribeMessage<KeyDownEvent>(OnKeyDown);
             SubscribeMessage<KeyUpEvent>(OnKeyUp);
         }

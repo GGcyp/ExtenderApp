@@ -10,8 +10,13 @@ namespace ExtenderApp.MainViews.ViewModels
         /// </summary>
         public IViewModel? CurrentViewModel { get; set; }
 
-        public MainViewModel(IServiceStore serviceStore) : base(serviceStore)
+        public MainViewModel()
         {
+        }
+
+        public override void Inject(IServiceProvider serviceProvider)
+        {
+            base.Inject(serviceProvider);
             CurrentViewModel = GetViewModel<PluginViewModle>();
         }
     }

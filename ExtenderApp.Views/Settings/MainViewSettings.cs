@@ -13,10 +13,10 @@ namespace ExtenderApp.Views
     /// </summary>
     public abstract class MainViewSettings : IMainViewSettings
     {
-        /// <summary>
-        /// 服务仓库，提供各种应用服务。
-        /// </summary>
-        protected IServiceStore ServiceStore { get; }
+        ///// <summary>
+        ///// 服务仓库，提供各种应用服务。
+        ///// </summary>
+        //protected IServiceStore ServiceStore { get; }
 
         /// <summary>
         /// 顶部按钮样式。
@@ -31,11 +31,8 @@ namespace ExtenderApp.Views
         /// <summary>
         /// 构造函数，初始化服务仓库和顶部按钮样式。
         /// </summary>
-        /// <param name="serviceStore">服务仓库实例。</param>
-        protected MainViewSettings(IServiceStore serviceStore)
+        protected MainViewSettings()
         {
-            ServiceStore = serviceStore;
-
             var dict = new ResourceDictionary
             {
                 Source = new Uri("pack://application:,,,/ExtenderApp.Views;component/Styles/Button.xaml", UriKind.Absolute)
@@ -94,9 +91,6 @@ namespace ExtenderApp.Views
         /// <returns>插件详细信息</returns>
         public PluginDetails? GetPluginDetails()
         {
-            if (ServiceStore is IPuginServiceStore store)
-                return store.PuginDetails;
-
             return null;
         }
 
@@ -188,7 +182,7 @@ namespace ExtenderApp.Views
         /// 构造函数，初始化服务仓库并创建设置视图。
         /// </summary>
         /// <param name="serviceStore">服务仓库实例。</param>
-        public MainViewSettings(IServiceStore serviceStore) : base(serviceStore)
+        public MainViewSettings() : base()
         {
             View = CreateSettingsView();
         }

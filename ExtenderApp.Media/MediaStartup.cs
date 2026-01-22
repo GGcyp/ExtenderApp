@@ -31,7 +31,6 @@ namespace ExtenderApp.Media
         public override void ConfigureBinaryFormatterStore(IBinaryFormatterStore store)
         {
             store.Add<MediaInfo, MediaInfoFormatter>();
-            store.AddLocalDataFormatter<MediaModel, MediaModelFormatter>();
         }
 
         private static IServiceCollection AddFFmpegEngines(IServiceCollection services)
