@@ -4,11 +4,11 @@ using ExtenderApp.Views;
 namespace ExtenderApp.MainViews.Views
 {
     /// <summary>
-    /// MainView_RunView.xaml 的交互逻辑
+    /// MainViewRun.xaml 的交互逻辑
     /// </summary>
-    public partial class MainView_RunView : ExtenderAppView, IMainView
+    public partial class MainViewRun : ExtenderAppView, IMainView
     {
-        public MainView_RunView()
+        public MainViewRun()
         {
             InitializeComponent();
         }

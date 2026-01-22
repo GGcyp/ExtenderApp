@@ -1,6 +1,5 @@
 ﻿using System.Windows;
 using System.Windows.Media;
-using ExtenderApp.Media.ViewModles;
 using ExtenderApp.Views;
 
 namespace ExtenderApp.Media.Views
@@ -10,7 +9,7 @@ namespace ExtenderApp.Media.Views
     /// </summary>
     public partial class MediaMainView : ExtenderAppView
     {
-        public MediaMainView(MediaMainViewModel viewModel) : base(viewModel)
+        public MediaMainView() : base()
         {
             InitializeComponent();
 

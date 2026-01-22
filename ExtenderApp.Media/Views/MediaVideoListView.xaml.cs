@@ -1,7 +1,7 @@
 ﻿using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using ExtenderApp.Media.ViewModles;
+using ExtenderApp.Media.ViewModels;
 using ExtenderApp.Views;
 using Microsoft.Win32;
 
@@ -43,7 +43,7 @@ namespace ExtenderApp.Media.Views
             {
                 var selectedFilePaths = openFileDialog.FileNames;
                 // 将选中的视频路径添加到 GetViewModel
-                GetViewModel<VideoListViewModel>()!.AddVideoPaths(selectedFilePaths);
+                //GetViewModel<VideoListViewModel>()!.AddVideoPaths(selectedFilePaths);
             }
         }
 
@@ -60,16 +60,6 @@ namespace ExtenderApp.Media.Views
                 button.ContextMenu.PlacementTarget = button;
                 button.ContextMenu.IsOpen = true;
             }
-        }
-
-        private void DeleteSelectedVideo_Click(object sender, RoutedEventArgs e)
-        {
-            // 删除选中视频的逻辑
-        }
-
-        private void DeleteAllVideos_Click(object sender, RoutedEventArgs e)
-        {
-            // 删除所有视频的逻辑
         }
     }
 }

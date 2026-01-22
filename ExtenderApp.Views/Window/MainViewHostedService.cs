@@ -15,15 +15,7 @@ namespace ExtenderApp.Views
     /// </remarks>
     internal class MainViewHostedService : StartupExecute
     {
-        /// <summary>
-        /// 主窗口服务，用于创建和管理主窗口。
-        /// </summary>
         private readonly IMainWindowService _mainWindowService;
-
-        /// <summary>
-        /// 导航服务，用于解析并导航到主视图。
-        /// </summary>
-        private readonly INavigationService _navigationService;
 
         /// <summary>
         /// 使用所需服务初始化 <see
@@ -31,17 +23,14 @@ namespace ExtenderApp.Views
         /// </summary>
         /// <param name="mainWindowService">主窗口服务实例。</param>
         /// <param name="navigationService">导航服务实例。</param>
-        public MainViewHostedService(IMainWindowService mainWindowService, INavigationService navigationService)
+        public MainViewHostedService(IMainWindowService mainWindowService)
         {
             _mainWindowService = mainWindowService;
-            _navigationService = navigationService;
         }
 
         public override ValueTask ExecuteAsync()
         {
             var mainWindow = _mainWindowService.CreateMainWindow();
-            var mainView = _navigationService.NavigateTo(typeof(IMainView), string.Empty, null) as IMainView;
-            mainWindow.ShowView(mainView);
             mainWindow.Show();
             return ValueTask.CompletedTask;
         }

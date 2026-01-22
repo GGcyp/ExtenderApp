@@ -88,11 +88,11 @@ namespace ExtenderApp.Abstract
         /// <returns>如果用户接受对话框中的操作，则返回 true；如果用户取消操作，则返回 false；如果用户关闭对话框，则返回 null。</returns>
         bool? ShowDialog();
 
-        /// <summary>
-        /// 显示视图。
-        /// </summary>
-        /// <param name="view">要显示的视图。</param>
-        void ShowView(IView view);
+        ///// <summary>
+        ///// 显示视图。
+        ///// </summary>
+        ///// <param name="view">要显示的视图。</param>
+        //void ShowView(IView? view);
 
         #endregion Show
 

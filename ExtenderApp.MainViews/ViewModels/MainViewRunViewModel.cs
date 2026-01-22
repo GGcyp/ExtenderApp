@@ -1,7 +1,6 @@
 ﻿using System.Windows.Controls;
 using CommunityToolkit.Mvvm.Input;
 using ExtenderApp.Abstract;
-using ExtenderApp.MainViews.Models;
 using ExtenderApp.ViewModels;
 
 namespace ExtenderApp.MainViews.ViewModels
@@ -9,8 +8,10 @@ namespace ExtenderApp.MainViews.ViewModels
     /// <summary>
     /// 主运行视图的视图模型，负责处理与主运行视图相关的逻辑和数据绑定。
     /// </summary>
-    public class MainView_RunViewModel : ExtenderAppViewModel<MainModel>
+    public class MainViewRunViewModel : ExtenderAppViewModel
     {
+        private readonly MainViewNavigation _navigation;
+
         private IMainViewSettings? currentMainViewSettings;
 
         /// <summary>
@@ -23,8 +24,9 @@ namespace ExtenderApp.MainViews.ViewModels
         /// </summary>
         public RelayCommand OpenSettingsWindowCommand { get; set; }
 
-        private int lastButtonHeight;
         public int ButtonHeight { get; set; }
+
+        public IView? CurrentView { get; set; }
 
         /// <summary>
         /// 构造函数，初始化视图模型并设置依赖注入的实例。
@@ -32,14 +34,21 @@ namespace ExtenderApp.MainViews.ViewModels
         /// <param name="model">MainModel 实例，提供视图模型所需的数据。</param>
         /// <param name="scope">IScopeExecutor 实例，用于执行与插件作用域相关的操作。</param>
         /// <param name="serviceStore">IServiceStore 实例，提供应用程序所需的服务。</param>
-        public MainView_RunViewModel(MainModel model, IServiceStore serviceStore) : base(model, serviceStore)
+        public MainViewRunViewModel(IServiceStore serviceStore, MainViewNavigation navigation) : base(serviceStore)
         {
             ToMainViewCommand = new(ToMainView);
             OpenSettingsWindowCommand = new(OpenSettingsWindow);
 
             ButtonHeight = 40;
+            _navigation = navigation;
 
-            var details = Model.CurrentPluginDetails;
+            CurrentView = serviceStore.NavigationService.CurrentView;
+            serviceStore.NavigationService.CurrentViewChanged += NavigationService_CurrentViewChanged;
+        }
+
+        private void NavigationService_CurrentViewChanged(object? sender, EventArgs e)
+        {
+            CurrentView = ServiceStore.NavigationService.CurrentView;
         }
 
         /// <summary>
@@ -86,6 +95,7 @@ namespace ExtenderApp.MainViews.ViewModels
         /// </summary>
         private void ToMainView()
         {
+            _navigation.NavigateToHome();
             //// 导航到 CutsceneView 并设置为当前过场动画视图
             //var cutscene = NavigateTo<CutsceneView>();
             //Model.CurrentCutsceneView = cutscene;
@@ -102,7 +112,7 @@ namespace ExtenderApp.MainViews.ViewModels
             //    await ToMainThreadAsync();
 
             //    // 导航到 MainView 并设置为当前主视图
-            //    Model.CurrentMainView = NavigateTo<MainView>(Model.CurrentShowViewModel);
+            //    Model.CurrentViewModel = NavigateTo<MainView>(Model.CurrentShowViewModel);
 
             //    // 当过场动画结束时，将当前过场动画视图设置为 null
             //    cutscene.End(() =>

@@ -38,10 +38,6 @@ namespace ExtenderApp.Views
         public object? GetViewModel()
             => DataContext;
 
-        /// <summary>
-        /// 初始化视图实例，并绑定 WPF 生命周期事件（Loaded/Unloaded）。
-        /// </summary>
-        /// <param name="dataContext">可选 ViewModel；若传入则会设置为 <see cref="FrameworkElement.DataContext"/>。</param>
         public ExtenderAppView()
         {
         }

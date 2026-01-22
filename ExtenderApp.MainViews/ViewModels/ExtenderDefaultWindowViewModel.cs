@@ -6,7 +6,7 @@ namespace ExtenderApp.MainViews.ViewModels
     /// <summary>
     /// 表示默认窗口视图模型的类，继承自 <see cref="ExtenderAppViewModel{T}"/> 并实现了 <see cref="IWindowViewModel"/> 接口。
     /// </summary>
-    public class ExtenderDefaultWindowViewModel : ExtenderAppViewModel, IWindowViewModel
+    public class ExtenderDefaultWindowViewModel : ExtenderAppViewModel
     {
         /// <summary>
         /// 获取或设置当前视图。

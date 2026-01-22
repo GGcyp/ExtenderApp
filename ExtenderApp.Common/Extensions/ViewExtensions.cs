@@ -25,7 +25,7 @@ namespace ExtenderApp.Common
 
             services.AddTransient(p =>
             {
-                var view = p.GetRequiredService<TView>();
+                var view = ActivatorUtilities.CreateInstance<TView>(p);
                 var viewModel = p.GetRequiredService<TViewModel>();
                 view.InjectViewModel(viewModel);
                 return view;

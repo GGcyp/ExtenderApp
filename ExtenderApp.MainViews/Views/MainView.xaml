@@ -49,15 +49,7 @@
                     </StackPanel>
                 </ScrollViewer>
             </Border>
-            <Border Grid.Row="1" Grid.Column="1">
-                <ContentControl Content="{Binding CurrentViewModel}">
-                    <ContentControl.Resources>
-                        <DataTemplate DataType="{x:Type vm:PluginViewModle}">
-                            <local:PluginView />
-                        </DataTemplate>
-                    </ContentControl.Resources>
-                </ContentControl>
-            </Border>
+            <ContentControl Grid.Row="1" Grid.Column="1" Content="{Binding CurrentViewModel}" />
         </Grid>
     </Border>
 </views:ExtenderAppView>

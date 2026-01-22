@@ -1,4 +1,4 @@
-﻿using ExtenderApp.Media.ViewModles;
+﻿using ExtenderApp.Media.ViewModels;
 using ExtenderApp.Views;
 
 namespace ExtenderApp.Media.Views

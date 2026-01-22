@@ -3,10 +3,10 @@
                        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
                        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-                       xmlns:vm="clr-namespace:ExtenderApp.Media.ViewModles"
+                       xmlns:vm="clr-namespace:ExtenderApp.Media.ViewModels"
                        xmlns:views="clr-namespace:ExtenderApp.Views;assembly=ExtenderApp.Views"
                        mc:Ignorable="d"
-                       d:DataContext="{d:DesignInstance Type=vm:VideoListViewModel}"
+                       d:DataContext="{d:DesignInstance Type=vm:MediaMainViewModel}"
                        d:DesignHeight="450" d:DesignWidth="300">
     <UserControl.Resources>
         <ResourceDictionary>
@@ -21,43 +21,21 @@
             <RowDefinition />
         </Grid.RowDefinitions>
         <Grid Grid.Row="0"  HorizontalAlignment="Left">
-            <Button Content="+"
-                    Height="35"
-                    Width="35"
-                    FontSize="20"
-                    Margin="0,0,100,0">
-                <Button.ContextMenu>
-                    <ContextMenu x:Name="AddVideoContextMenu">
-                        <MenuItem Header="添加本地视频"
-                                  Click="AddLocalVideo_Click" />
-                        <MenuItem Header="添加网络视频"
-                                  Click="AddOnlineVideo_Click" />
-                    </ContextMenu>
-                </Button.ContextMenu>
-            </Button>
-            <Button Content="-"
-                    Height="35"
-                    Width="35"
-                    FontSize="15"
-                    Click="DeleteVideo_Click"
-                    Margin="35,0,65,0">
-                <Button.ContextMenu>
-                    <ContextMenu x:Name="DeleteVideoContextMenu">
-                        <MenuItem Header="删除选中视频"
-                                  Click="DeleteSelectedVideo_Click" />
-                        <MenuItem Header="删除所有视频"
-                                  Click="DeleteAllVideos_Click" />
-                    </ContextMenu>
-                </Button.ContextMenu>
+            <Button Content="添加"
+                    FontSize="16"
+                    Style="{StaticResource EllipticalButton}">
             </Button>
         </Grid>
-        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Hidden"
+        <ScrollViewer Grid.Row="1"
+                      VerticalScrollBarVisibility="Hidden"
                       HorizontalScrollBarVisibility="Hidden">
-            <ListBox Grid.Row="1" ItemsSource="{Binding Videos,Mode=OneWay}"
+            <ListBox Grid.Row="1"
+                     BorderBrush="Transparent"
+                     ItemsSource="{Binding MediaInfos}"
                      Background="{DynamicResource GlobalBackgroundBrush}">
                 <ListBox.ItemTemplate>
                     <DataTemplate>
-                        <StackPanel Orientation="Horizontal">
+                        <StackPanel>
                             <TextBlock Text="{Binding VideoTitle}"
                                        Foreground="White"
                                        Mouse.MouseUp="OpenVideoForList" />

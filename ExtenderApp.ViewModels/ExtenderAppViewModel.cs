@@ -2,9 +2,7 @@
 using System.Runtime.CompilerServices;
 using ExtenderApp.Abstract;
 using ExtenderApp.Common;
-using ExtenderApp.Common.Error;
 using ExtenderApp.Data;
-using ExtenderApp.Models;
 using ExtenderApp.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -385,7 +383,7 @@ namespace ExtenderApp.ViewModels
         /// 在UI线程上异步执行指定的操作。
         /// </summary>
         /// <param name="callback">要在UI线程上执行的操作。</param>
-        protected void DispatcherBeginInvoke(Action callback)
+        protected void DispatcherInvokeAsync(Action callback)
         {
             if (callback is null) return;
             ServiceStore.DispatcherService.InvokeAsync(callback);
@@ -452,80 +450,80 @@ namespace ExtenderApp.ViewModels
 
         #endregion MainWindow
 
-        #region Path
+        //#region Path
 
-        /// <summary>
-        /// 在文件资源管理器中打开指定的文件夹路径。
-        /// </summary>
-        /// <param name="path">要打开的文件夹的完整路径。</param>
-        protected void OpenFolder(string? path)
-        {
-            try
-            {
-                if (Directory.Exists(path))
-                {
-                    try
-                    {
-                        // 启动资源管理器并打开指定目录
-                        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo()
-                        {
-                            FileName = path,
-                            UseShellExecute = true,
-                            Verb = "open" // 确保以打开方式启动
-                        });
-                    }
-                    catch (Exception ex)
-                    {
-                        throw new InvalidOperationException("无法打开指定的文件夹路径。", ex);
-                    }
-                }
-                else
-                {
-                    throw new DirectoryNotFoundException("指定的文件夹路径不存在。");
-                }
-            }
-            catch (Exception ex)
-            {
-                Logger.LogError(ex, "打开路径失败：{path}", path);
-            }
-        }
+        ///// <summary>
+        ///// 在文件资源管理器中打开指定的文件夹路径。
+        ///// </summary>
+        ///// <param name="path">要打开的文件夹的完整路径。</param>
+        //protected void OpenFolder(string? path)
+        //{
+        //    try
+        //    {
+        //        if (Directory.Exists(path))
+        //        {
+        //            try
+        //            {
+        //                // 启动资源管理器并打开指定目录
+        //                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo()
+        //                {
+        //                    FileName = path,
+        //                    UseShellExecute = true,
+        //                    Verb = "open" // 确保以打开方式启动
+        //                });
+        //            }
+        //            catch (Exception ex)
+        //            {
+        //                throw new InvalidOperationException("无法打开指定的文件夹路径。", ex);
+        //            }
+        //        }
+        //        else
+        //        {
+        //            throw new DirectoryNotFoundException("指定的文件夹路径不存在。");
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        Logger.LogError(ex, "打开路径失败：{path}", path);
+        //    }
+        //}
 
-        /// <summary>
-        /// 在应用程序根目录下检查并创建指定的文件夹。
-        /// </summary>
-        /// <param name="folderPath">相对于应用程序根目录的文件夹路径。</param>
-        /// <returns>创建的文件夹的完整路径，如果创建失败则返回空字符串。</returns>
-        protected string CreateFolderPathForAppRootFolder(string folderPath)
-        {
-            try
-            {
-                return ProgramDirectory.ChekAndCreateFolder(folderPath);
-            }
-            catch (Exception ex)
-            {
-                Logger.LogError(ex, "创建路径失败：{folderPath}", folderPath);
-                return string.Empty;
-            }
-        }
+        ///// <summary>
+        ///// 在应用程序根目录下检查并创建指定的文件夹。
+        ///// </summary>
+        ///// <param name="folderPath">相对于应用程序根目录的文件夹路径。</param>
+        ///// <returns>创建的文件夹的完整路径，如果创建失败则返回空字符串。</returns>
+        //protected string CreateFolderPathForAppRootFolder(string folderPath)
+        //{
+        //    try
+        //    {
+        //        return ProgramDirectory.ChekAndCreateFolder(folderPath);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        Logger.LogError(ex, "创建路径失败：{folderPath}", folderPath);
+        //        return string.Empty;
+        //    }
+        //}
 
-        /// <summary>
-        /// 获取当前插件目录下指定子文件夹的完整路径。
-        /// </summary>
-        /// <param name="folderPath">插件目录下的子文件夹名称或相对路径。</param>
-        /// <returns>完整的文件夹路径，如果插件信息不可用则返回空字符串。</returns>
-        protected string? GetPluginFolder(string folderPath)
-        {
-            if (Details == null)
-                return string.Empty;
+        ///// <summary>
+        ///// 获取当前插件目录下指定子文件夹的完整路径。
+        ///// </summary>
+        ///// <param name="folderPath">插件目录下的子文件夹名称或相对路径。</param>
+        ///// <returns>完整的文件夹路径，如果插件信息不可用则返回空字符串。</returns>
+        //protected string? GetPluginFolder(string folderPath)
+        //{
+        //    if (Details == null)
+        //        return string.Empty;
 
-            string path = Details.PluginFolderPath;
-            if (string.IsNullOrEmpty(path))
-                return string.Empty;
+        //    string path = Details.PluginFolderPath;
+        //    if (string.IsNullOrEmpty(path))
+        //        return string.Empty;
 
-            return Path.Combine(path, folderPath);
-        }
+        //    return Path.Combine(path, folderPath);
+        //}
 
-        #endregion Path
+        //#endregion Path
 
         #region Plugin
 
@@ -607,160 +605,48 @@ namespace ExtenderApp.ViewModels
         }
 
         #endregion Message
-    }
 
-    /// <summary>
-    /// 一个泛型视图模型基类，强类型关联一个视图接口和一个模型类。
-    /// </summary>
-    /// <typeparam name="TView">视图的类型。</typeparam>
-    /// <typeparam name="TModle">模型的类型。</typeparam>
-    public abstract class ExtenderAppViewModel<TModle> : ExtenderAppViewModel
-        where TModle : ExtenderAppModel, new()
-    {
-        /// <summary>
-        /// 内部持有的模型实例。
-        /// </summary>
-        private TModle? model;
+        #region Service
 
-        /// <summary>
-        /// 获取与此视图模型关联的模型实例。 如果模型尚未加载，它将尝试从本地数据加载，如果失败则从服务容器创建一个新实例。
-        /// </summary>
-        public TModle Model
+        protected object GetService(Type serviceType)
         {
-            get
-            {
-                if (model is null)
-                {
-                    if (!LoadModel() || model is null)
-                        model = ServiceStore.ServiceProvider.GetRequiredService<TModle>();
-                }
-                return model;
-            }
+            return ServiceStore.ServiceProvider.GetRequiredService(serviceType);
         }
 
         /// <summary>
-        /// 初始化 <see cref="ExtenderAppViewModel{TView, TModle}"/> 的新实例。
+        /// 通过运行时解析从容器获取一个视图模型实例。注意：此方法使用 ServiceProvider，即服务定位器模式，应慎用；推荐直接通过构造函数注入所需视图模型。
         /// </summary>
-        /// <param name="serviceStore">服务存储实例。</param>
-        protected ExtenderAppViewModel(IServiceStore serviceStore) : base(serviceStore)
+        /// <typeparam name="T">要解析的视图模型类型，必须实现 <see cref="IViewModel"/>。</typeparam>
+        /// <returns>解析得到的视图模型实例。</returns>
+        protected T GetViewModel<T>() where T : IViewModel
         {
+            return ServiceStore.ServiceProvider.GetRequiredService<T>();
         }
 
         /// <summary>
-        /// 初始化 <see cref="ExtenderAppViewModel{TView, TModle}"/> 的新实例，并注入日志记录器。
+        /// 通过运行时解析从容器获取一个服务实例。注意：此方法使用 ServiceProvider，即服务定位器模式，应慎用；推荐直接通过构造函数注入所需服务。
         /// </summary>
-        /// <param name="serviceStore">服务存储实例。</param>
-        /// <param name="logger">日志记录器实例。</param>
-        protected ExtenderAppViewModel(IServiceStore serviceStore, ILogger logger) : base(serviceStore, logger)
+        /// <typeparam name="T">要解析的服务类型。</typeparam>
+        /// <returns>解析得到的服务实例。</returns>
+        protected T GetService<T>() where T : class
         {
+            return ServiceStore.ServiceProvider.GetRequiredService<T>();
         }
 
-        /// <summary>
-        /// 初始化 <see cref="ExtenderAppViewModel{TView, TModle}"/> 的新实例，并使用提供的模型。
-        /// </summary>
-        /// <param name="model">要使用的模型实例。</param>
-        /// <param name="serviceStore">服务存储实例。</param>
-        protected ExtenderAppViewModel(TModle model, IServiceStore serviceStore) : base(serviceStore)
-        {
-            this.model = model;
-        }
+        #endregion Service
+
+        #region Navigation
 
         /// <summary>
-        /// 初始化 <see cref="ExtenderAppViewModel{TView, TModle}"/> 的新实例，并使用提供的模型和日志记录器。
+        /// 导航到指定类型的视图。
         /// </summary>
-        /// <param name="model">要使用的模型实例。</param>
-        /// <param name="serviceStore">服务存储实例。</param>
-        /// <param name="logger">日志记录器实例。</param>
-        protected ExtenderAppViewModel(TModle model, IServiceStore serviceStore, ILogger logger) : base(serviceStore, logger)
+        /// <param name="viewType">指定类型视图</param>
+        /// <param name="scope">作用域名</param>
+        protected void NavigateTo(Type viewType, string scope)
         {
-            this.model = model;
+            ServiceStore.NavigationService.NavigateTo(viewType, scope);
         }
 
-        /// <summary>
-        /// 重写以在视图进入时执行特定于模型的逻辑。
-        /// </summary>
-        /// <param name="newViewInfo">上一个视图的信息。</param>
-        protected override void EnterProtected(ViewInfo newViewInfo)
-        {
-        }
-
-        /// <summary>
-        /// 重写以在视图退出时保存模型并根据配置清理资源。
-        /// </summary>
-        /// <param name="newViewInfo">将要导航到的新视图的信息。</param>
-        protected override void ExitProtected(ViewInfo newViewInfo)
-        {
-            SaveModel();
-            if (Details != null && !Details.IsStandingModel)
-            {
-                DeleteLocalData();
-                if (model is IDisposable disposable)
-                    disposable.Dispose();
-            }
-        }
-
-        /// <summary>
-        /// 向视图模型注入一个新的模型实例，并保存它。
-        /// </summary>
-        /// <param name="model">要注入的模型实例。</param>
-        public virtual void InjectModle(TModle model)
-        {
-            this.model = model;
-            SaveModel();
-        }
-
-        /// <summary>
-        /// 从本地存储加载模型数据。
-        /// </summary>
-        /// <returns>如果加载成功，则返回 true；否则返回 false。</returns>
-        protected bool LoadModel()
-        {
-            var loadState = LoadLocalData(out model);
-            model?.Initialize(ServiceStore as IPuginServiceStore);
-            return loadState;
-        }
-
-        /// <summary>
-        /// 将当前模型数据保存到本地存储。
-        /// </summary>
-        /// <returns>如果保存成功，则返回 true；否则返回 false。</returns>
-        protected bool SaveModel()
-        {
-            return SaveLocalData(model);
-        }
-
-        /// <summary>
-        /// 将当前模型数据以指定的名称保存到本地存储。
-        /// </summary>
-        /// <param name="saveName">用于保存数据的文件或键名。</param>
-        /// <returns>如果保存成功，则返回 true；否则返回 false。</returns>
-        protected bool SaveModel(string saveName)
-        {
-            // 调用本地数据服务保存数据，版本参数传null表示使用默认版本
-            return ServiceStore.LocalDataService.SaveData(saveName, model, null);
-        }
-
-        /// <summary>
-        /// 将当前模型数据以指定的版本保存到本地存储。
-        /// </summary>
-        /// <param name="version">要保存的数据的版本。</param>
-        /// <returns>如果保存成功，则返回 true；否则返回 false。</returns>
-        protected bool SaveModel(Version version)
-        {
-            // 调用内部方法保存数据，使用默认名称和指定版本
-            return SaveLocalData(model, version);
-        }
-
-        /// <summary>
-        /// 将当前模型数据以指定的名称和版本保存到本地存储。
-        /// </summary>
-        /// <param name="saveName">用于保存数据的文件或键名。</param>
-        /// <param name="version">要保存的数据的版本。</param>
-        /// <returns>如果保存成功，则返回 true；否则返回 false。</returns>
-        protected bool SaveModel(string saveName, Version version)
-        {
-            // 调用本地数据服务保存数据，同时指定名称和版本
-            return ServiceStore.LocalDataService.SaveData(saveName, model, version);
-        }
+        #endregion Navigation
     }
 }

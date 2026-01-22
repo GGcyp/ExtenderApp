@@ -1,9 +1,7 @@
 ﻿using ExtenderApp.Abstract;
 using ExtenderApp.Common;
-using ExtenderApp.MainViews.Models;
 using ExtenderApp.MainViews.ViewModels;
 using ExtenderApp.MainViews.Views;
-using ExtenderApp.MainViews.Windows;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace ExtenderApp.MainViews
@@ -12,24 +10,20 @@ namespace ExtenderApp.MainViews
     {
         public override void AddService(IServiceCollection services)
         {
-            //services.AddSingleton<IMainWindow, MainViewWindow>();
-            services.AddTransient<IWindow, ExtenderDefaultWindow>();
-            services.AddTransient<ExtenderDefaultWindowViewModel>();
-            services.AddSingleton<IMainWindowFactory, MainWindowFactory>();
-
-            services.AddTransient<PluginView>();
-            services.AddTransient<PluginViewModle>();
+            services.AddView<IMainWindow, MainWindow, MainWindowViewModel>();
             services.AddTransient<MainWindowViewModel>();
+
+            services.AddTransient<PluginViewModle>();
 
             services.AddView<IMainView, MainView, MainViewModel>();
 
-            services.AddTransient<MainViewModel>();
-            services.AddTransient<MainView_RunView>();
-            services.AddTransient<MainView_RunViewModel>();
-            services.AddSingleton<MainModel>();
+            services.AddSingleton<MainViewModel>();
+            services.AddTransient<MainViewRunViewModel>();
 
             services.AddTransient<SettingsView>();
             services.AddTransient<SettingsViewModel>();
+
+            services.AddSingleton<MainViewNavigation>();
         }
     }
 }

@@ -3,13 +3,13 @@
                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
                    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-                   xmlns:vm="clr-namespace:ExtenderApp.Media.ViewModles"
+                   xmlns:vm="clr-namespace:ExtenderApp.Media.ViewModels"
                    xmlns:vt="clr-namespace:ExtenderApp.Views.Themes;assembly=ExtenderApp.Views"
                    xmlns:mt="clr-namespace:ExtenderApp.Media.Themes"
                    xmlns:v="clr-namespace:ExtenderApp.Views;assembly=ExtenderApp.Views"
                    xmlns:local="clr-namespace:ExtenderApp.Media.Views"
                    mc:Ignorable="d"
-                   d:DataContext="{d:DesignInstance Type=vm:MediaControlBarViewModle}"
+                   d:DataContext="{d:DesignInstance Type=vm:MediaMainViewModel}"
                    d:DesignHeight="100"
                    d:DesignWidth="800">
     <v:ExtenderAppView.Resources>
@@ -29,8 +29,8 @@
         <mt:MediaSlider x:Name="positionSlider"
                         Grid.Row="0"
                         Minimum="0"
-                        Maximum="{Binding Model.TotalTime.TotalSeconds,Mode=OneWay}"
-                        Value="{Binding Model.Position.TotalSeconds,Mode=OneWay}"
+                        Maximum="{Binding TotalTime.TotalSeconds,Mode=OneWay}"
+                        Value="{Binding Position.TotalSeconds,Mode=OneWay}"
                         TrackHeight="5"
                         HoverTrackHeight="15"
                         ThumbSize="0"
@@ -51,13 +51,13 @@
             <StackPanel Grid.Column="0"
                         Orientation="Horizontal"
                         VerticalAlignment="Center">
-                <TextBlock Text="{Binding Model.Position,StringFormat={}{0:hh\\:mm\\:ss}}"
+                <TextBlock Text="{Binding Position,StringFormat={}{0:hh\\:mm\\:ss}}"
                            Foreground="{DynamicResource GlobalForegroundBrush}"
                            FontSize="20" />
                 <TextBlock Text="/"
                            Foreground="{DynamicResource GlobalForegroundBrush}"
                            FontSize="20" />
-                <TextBlock Text="{Binding Model.TotalTime,StringFormat={}{0:hh\\:mm\\:ss}}"
+                <TextBlock Text="{Binding TotalTime,StringFormat={}{0:hh\\:mm\\:ss}}"
                            Foreground="{DynamicResource GlobalForegroundBrush}"
                            FontSize="20" />
             </StackPanel>
@@ -124,14 +124,14 @@
                         CornerRadius="4"
                         Padding="1">
                     <StackPanel>
-                        <TextBlock Text="{Binding Model.Volume}"
+                        <TextBlock Text="{Binding VolumePercent}"
                                    Foreground="{DynamicResource GlobalForegroundBrush}"
                                    HorizontalAlignment="Center"
-                                   Margin="0 0 0 5"/>
+                                   Margin="0 0 0 5" />
                         <mt:MediaSlider x:Name="volumeSlider"
                                         Minimum="0"
                                         Maximum="1"
-                                        Value="{Binding Model.Volume, Mode=TwoWay}"
+                                        Value="{Binding Volume, Mode=TwoWay}"
                                         TrackHeight="10"
                                         ThumbSize="18"
                                         ThumbColor="White"
@@ -140,7 +140,7 @@
                                         LeftBackground="LightBlue"
                                         RightBackground="Gray"
                                         TickFrequency="0.01"
-                                        Height="100"/>
+                                        Height="100" />
                     </StackPanel>
                 </Border>
             </Popup>

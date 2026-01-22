@@ -1,15 +1,16 @@
 ﻿using ExtenderApp.Abstract;
 using ExtenderApp.Data;
+using ExtenderApp.MainViews.ViewModels;
 using ExtenderApp.Views;
 
-namespace ExtenderApp.MainViews
+namespace ExtenderApp.MainViews.Views
 {
     /// <summary>
-    /// MainViewWindow.xaml 的交互逻辑
+    /// MainWindow.xaml 的交互逻辑
     /// </summary>
-    public partial class MainViewWindow : ExtenderAppWindow, IMainWindow
+    public partial class MainWindow : ExtenderAppWindow, IMainWindow
     {
-        public MainViewWindow(IMessageService messageService) : base(messageService)
+        public MainWindow(IMessageService messageService) : base(messageService)
         {
             InitializeComponent();
         }

@@ -1,6 +1,5 @@
-﻿
-
-using ExtenderApp.Abstract;
+﻿using ExtenderApp.Abstract;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace ExtenderApp.Services
 {
@@ -9,16 +8,13 @@ namespace ExtenderApp.Services
     /// </summary>
     internal class MainWindowService : IMainWindowService
     {
-        /// <summary>
-        /// 主窗口工厂实例，用于创建主窗口。
-        /// </summary>
-        private readonly IMainWindowFactory _mainWindowFactory;
+        private readonly IServiceProvider _serviceProvider;
 
         public IMainWindow? CurrentMainWindow { get; private set; }
 
-        public MainWindowService(IMainWindowFactory mainWindowFactory)
+        public MainWindowService(IServiceProvider serviceProvider)
         {
-            _mainWindowFactory = mainWindowFactory;
+            _serviceProvider = serviceProvider;
         }
 
         public IMainWindow CreateMainWindow()
@@ -26,7 +22,7 @@ namespace ExtenderApp.Services
             if (CurrentMainWindow != null)
                 return CurrentMainWindow;
 
-            CurrentMainWindow = _mainWindowFactory.CreateMainWindow();
+            CurrentMainWindow = _serviceProvider.GetRequiredService<IMainWindow>();
             CurrentMainWindow.Closed += CurrentMainWindow_Closed;
             return CurrentMainWindow;
         }

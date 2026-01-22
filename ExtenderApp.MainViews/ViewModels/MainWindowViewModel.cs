@@ -1,20 +1,27 @@
 ﻿using ExtenderApp.Abstract;
-using ExtenderApp.MainViews.Models;
 using ExtenderApp.ViewModels;
 
 namespace ExtenderApp.MainViews.ViewModels
 {
-    public class MainWindowViewModel : ExtenderAppViewModel<MainModel>, IWindowViewModel
+    public class MainWindowViewModel : ExtenderAppViewModel
     {
-        public IView? CurrentView => Model.CurrentMainView;
+        /// <summary>
+        /// 当前主视图接口
+        /// </summary>
+        public IViewModel? CurrentViewModel { get; set; }
 
-        public MainWindowViewModel(MainModel model, IServiceStore serviceStore) : base(model, serviceStore)
-        {
-        }
+        /// <summary>
+        /// 当前过场动画视图接口
+        /// </summary>
+        public IView? CurrentCutsceneView { get; set; }
 
-        public void ShowView(IView view)
+        public MainWindowViewModel(IServiceStore serviceStore, MainViewNavigation navigation) : base(serviceStore)
         {
-            Model.CurrentMainView = view;
+            navigation.NavigationEvent += (viewModel) =>
+            {
+                CurrentViewModel = viewModel;
+            };
+            navigation.NavigateToHome();
         }
     }
 }

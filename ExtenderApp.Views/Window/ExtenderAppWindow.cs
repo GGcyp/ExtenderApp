@@ -17,8 +17,6 @@ namespace ExtenderApp.Views
             set => Owner = value as Window;
         }
 
-        public IWindow? Window => throw new NotImplementedException($"无法重复获取Window的Window:{Title}");
-
         int IWindow.WindowStartupLocation
         {
             get
@@ -45,14 +43,6 @@ namespace ExtenderApp.Views
         {
             _fullManagerLazy = new(() => new FullScreenManager(this));
             _messageService = messageService;
-        }
-
-        public virtual void ShowView(IView view)
-        {
-            if (DataContext is not IWindowViewModel viewModel)
-                return;
-
-            viewModel.ShowView(view);
         }
 
         public virtual void InjectViewModel(IViewModel viewModel)
