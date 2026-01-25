@@ -383,6 +383,19 @@ namespace ExtenderApp.FFmpegEngines
         #region Info
 
         /// <summary>
+        /// 通过uri创建FFmpegInfo实例。
+        /// </summary>
+        /// <param name="uri">指定Uri</param>
+        /// <returns>FFmpegInfo实例</returns>
+        public FFmpegInfo CreateFFmpegInfo(string uri)
+        {
+            var context = OpenUri(uri);
+            var info = context.Info;
+            Free(ref context);
+            return info;
+        }
+
+        /// <summary>
         /// 创建FFmpegInfo实例。
         /// </summary>
         /// <param name="uri">URI。</param>

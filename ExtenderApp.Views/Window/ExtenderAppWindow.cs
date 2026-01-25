@@ -45,9 +45,17 @@ namespace ExtenderApp.Views
             _messageService = messageService;
         }
 
-        public virtual void InjectViewModel(IViewModel viewModel)
+        public virtual void Inject(IViewModel viewModel)
         {
             DataContext = viewModel;
+        }
+
+        public void Inject(object viewModel)
+        {
+            if (viewModel is IViewModel vm)
+                Inject(vm);
+            else if (viewModel != null)
+                DataContext = viewModel;
         }
 
         public void EnterFullScreen(bool coverTaskbar = false)
@@ -120,10 +128,7 @@ namespace ExtenderApp.Views
         /// 检查当前拥有键盘焦点的元素是否为文本输入控件。
         /// </summary>
         /// <returns>如果焦点在文本输入控件上，则返回 true；否则返回 false。</returns>
-        /// <remarks>
-        /// 此方法用于区分用户是在与全局快捷键交互还是在输入文本。 它会检查焦点元素是否为常见的文本输入控件（如 TextBox, PasswordBox, RichTextBox），
-        /// 或者是否为继承自 TextBoxBase 的任何控件的子元素。
-        /// </remarks>
+        /// <remarks>此方法用于区分用户是在与全局快捷键交互还是在输入文本。 它会检查焦点元素是否为常见的文本输入控件（如 TextBox, PasswordBox, RichTextBox）， 或者是否为继承自 TextBoxBase 的任何控件的子元素。</remarks>
         private static bool IsTextInputFocused()
         {
             var focused = Keyboard.FocusedElement as DependencyObject;

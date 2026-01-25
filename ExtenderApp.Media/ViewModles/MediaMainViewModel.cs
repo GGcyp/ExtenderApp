@@ -1,14 +1,12 @@
 ﻿using System.Collections.ObjectModel;
 using System.Windows.Media.Imaging;
 using CommunityToolkit.Mvvm.Input;
-using ExtenderApp.Abstract;
 using ExtenderApp.Common;
 using ExtenderApp.Data;
 using ExtenderApp.FFmpegEngines;
 using ExtenderApp.FFmpegEngines.Medias;
 using ExtenderApp.Media.Models;
 using ExtenderApp.ViewModels;
-using Microsoft.Win32;
 
 namespace ExtenderApp.Media.ViewModels
 {
@@ -130,6 +128,15 @@ namespace ExtenderApp.Media.ViewModels
             }
         }
 
+        public bool IsPlaying
+        {
+            get
+            {
+                var state = State;
+                return state == PlayerState.Playing || state == PlayerState.Buffering;
+            }
+        }
+
         /// <summary>
         /// 是否记录观看时间（业务开关）。
         /// </summary>
@@ -149,15 +156,7 @@ namespace ExtenderApp.Media.ViewModels
         /// <summary>
         /// 媒体总时长（用于 UI 绑定显示）。
         /// </summary>
-        public TimeSpan TotalTime
-        {
-            get
-            {
-                if (MPlayer != null)
-                    return TimeSpan.FromMilliseconds(MPlayer.Info.Duration);
-                return TimeSpan.Zero;
-            }
-        }
+        public TimeSpan TotalTime { get; set; }
 
         /// <summary>
         /// 快进/快退跳转秒数（业务/UI 设定）。
@@ -174,6 +173,8 @@ namespace ExtenderApp.Media.ViewModels
 
         public RelayCommand FastForwardCommand { get; set; }
 
+        public RelayCommand<MediaInfo> OpenMediaInfoCommand { get; set; }
+
         #endregion Commands
 
         public MediaMainViewModel(MediaEngine mediaEngine)
@@ -183,12 +184,22 @@ namespace ExtenderApp.Media.ViewModels
             JumpTime = 10;
             speedRatio = 1.0d;
             mediaEngine = default!;
+            MediaInfos = new();
 
             PositionChangeCommand = new(Seek);
             StopCommand = new(Stop);
             MediaStateChangeCommand = new(ChangeMediaState);
             FastForwardCommand = new(Forward);
+            OpenMediaInfoCommand = new(m =>
+            {
+                OpenMedia(m);
+                Play();
+            });
+        }
 
+        public override void Inject(IServiceProvider serviceProvider)
+        {
+            base.Inject(serviceProvider);
             SubscribeMessage<KeyDownEvent>(OnKeyDown);
             SubscribeMessage<KeyUpEvent>(OnKeyUp);
         }
@@ -257,8 +268,10 @@ namespace ExtenderApp.Media.ViewModels
             OpenMedia(player);
         }
 
-        public void OpenMedia(MediaInfo mediaInfo)
+        public void OpenMedia(MediaInfo? mediaInfo)
         {
+            if (mediaInfo == null)
+                return;
             var player = _mediaEngine.OpenMedia(mediaInfo.MediaUri);
             SelectedVideoInfo = mediaInfo;
             OpenMedia(player);
@@ -268,7 +281,12 @@ namespace ExtenderApp.Media.ViewModels
         {
             if (MPlayer != null)
             {
-                MPlayer.DisposeSafe();
+                if (mediaPlayer.Info.MediaUri == MPlayer.Info.MediaUri)
+                {
+                    // 相同媒体，无需重新打开
+                    return;
+                }
+                MPlayer.DisposeSafeAsync();
             }
 
             MPlayer = mediaPlayer;
@@ -277,8 +295,16 @@ namespace ExtenderApp.Media.ViewModels
 
             Volume = volume;
             MPlayer.Playback += UpdatePlayback;
-            OnPropertyChanged(nameof(TotalTime));
+            TotalTime = TimeSpan.FromMilliseconds(MPlayer.Info.Duration);
             Position = TimeSpan.FromMilliseconds(MPlayer.Position);
+        }
+
+        public void AddMediaInfo(string[] mediaArray)
+        {
+            foreach (var mediaPath in mediaArray)
+            {
+                MediaInfos!.Add(_mediaEngine.CreateFFmpegInfo(mediaPath));
+            }
         }
 
         public void ChangeMediaState()
@@ -303,6 +329,7 @@ namespace ExtenderApp.Media.ViewModels
         public void Play()
         {
             MPlayer?.Play();
+            OnPropertyChanged(nameof(IsPlaying));
         }
 
         /// <summary>
@@ -311,6 +338,7 @@ namespace ExtenderApp.Media.ViewModels
         public void Pause()
         {
             MPlayer?.Pause();
+            OnPropertyChanged(nameof(IsPlaying));
         }
 
         /// <summary>
@@ -326,6 +354,7 @@ namespace ExtenderApp.Media.ViewModels
 
                 // 解除订阅，避免停止过程中仍回调到 UI
                 MPlayer.Playback -= UpdatePlayback;
+                OnPropertyChanged(nameof(IsPlaying));
             }
         }
 
@@ -391,7 +420,7 @@ namespace ExtenderApp.Media.ViewModels
 
         protected override void DisposeManagedResources()
         {
-            MPlayer?.DisposeSafe();
+            MPlayer?.DisposeSafeAsync();
         }
     }
 }

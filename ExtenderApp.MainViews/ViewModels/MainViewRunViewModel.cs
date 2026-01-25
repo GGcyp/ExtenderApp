@@ -41,9 +41,13 @@ namespace ExtenderApp.MainViews.ViewModels
 
             ButtonHeight = 40;
             _navigation = navigation;
+        }
 
+        public override void Inject(IServiceProvider serviceProvider)
+        {
+            base.Inject(serviceProvider);
             var navigationService = GetService<INavigationService>();
-            CurrentView = navigationService.CurrentView;
+            CurrentView = navigationService!.CurrentView;
             navigationService.CurrentViewChanged += NavigationService_CurrentViewChanged;
         }
 
@@ -111,10 +115,9 @@ namespace ExtenderApp.MainViews.ViewModels
             //    Model.CurrentPluginDetails = null;
             //    // 使用 DispatcherService 在 UI 线程上执行操作
 
-            //    await ToMainThreadAsync();
+            // await ToMainThreadAsync();
 
-            //    // 导航到 MainView 并设置为当前主视图
-            //    Model.CurrentViewModel = NavigateTo<MainView>(Model.CurrentShowViewModel);
+            // // 导航到 MainView 并设置为当前主视图 Model.CurrentViewModel = NavigateTo<MainView>(Model.CurrentShowViewModel);
 
             //    // 当过场动画结束时，将当前过场动画视图设置为 null
             //    cutscene.End(() =>

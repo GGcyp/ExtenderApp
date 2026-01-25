@@ -1,11 +1,9 @@
-﻿using ExtenderApp.Data;
-
-namespace ExtenderApp.Abstract
+﻿namespace ExtenderApp.Abstract
 {
     /// <summary>
     /// 视图接口
     /// </summary>
-    public interface IView
+    public interface IView : IInject<IViewModel>
     {
         /// <summary>
         /// 获取关联的 ViewModel 实例（弱类型）。
@@ -19,7 +17,5 @@ namespace ExtenderApp.Abstract
         /// <typeparam name="T">期望的 ViewModel 类型，必须实现 <see cref="IViewModel"/>。</typeparam>
         /// <returns>如果视图的 ViewModel 可以转换为指定类型则返回该实例，否则返回 <c>null</c>。</returns>
         T? GetViewModel<T>() where T : class, IViewModel;
-
-        void InjectViewModel(IViewModel viewModel);
     }
 }

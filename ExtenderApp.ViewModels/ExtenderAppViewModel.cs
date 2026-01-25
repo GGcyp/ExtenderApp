@@ -8,14 +8,12 @@ using Microsoft.Extensions.Logging;
 namespace ExtenderApp.ViewModels
 {
     /// <summary>
-    /// 提供视图模型核心功能的抽象基类。
-    /// 包含服务访问、生命周期管理、导航、日志、数据持久化、调度等通用功能，供具体 ViewModel 继承使用。
+    /// 提供视图模型核心功能的抽象基类。 包含服务访问、生命周期管理、导航、日志、数据持久化、调度等通用功能，供具体 ViewModel 继承使用。
     /// </summary>
     public abstract class ExtenderAppViewModel : DisposableObject, IViewModel, INotifyPropertyChanged, ILogger
     {
         /// <summary>
-        /// 注入的服务提供者（可为插件作用域的 IServiceProvider）。
-        /// 通过 <see cref="Inject"/> 设置。
+        /// 注入的服务提供者（可为插件作用域的 IServiceProvider）。 通过 <see cref="Inject"/> 设置。
         /// </summary>
         private IServiceProvider? serviceProvider;
 
@@ -46,12 +44,11 @@ namespace ExtenderApp.ViewModels
         protected PluginDetails? Details { get; set; }
 
         /// <summary>
-        /// 获取当前应用主窗口的引用（如果存在）。
-        /// 从 <see cref="IMainWindowService"/> 的 <see cref="IMainWindowService.CurrentMainWindow"/> 获取。
+        /// 获取当前应用主窗口的引用（如果存在）。 从 <see cref="IMainWindowService"/> 的 <see cref="IMainWindowService.CurrentMainWindow"/> 获取。
         /// </summary>
         protected IMainWindow? MainWindow => GetRequiredService<IMainWindowService>().CurrentMainWindow;
 
-        /// <inheritdoc />
+        /// <inheritdoc/>
         public event PropertyChangedEventHandler? PropertyChanged;
 
         /// <summary>
@@ -64,14 +61,21 @@ namespace ExtenderApp.ViewModels
         }
 
         /// <summary>
-        /// 将运行时的 <see cref="IServiceProvider"/> 注入到当前视图模型。
-        /// 此方法通常由视图/视图工厂在创建视图模型实例后调用以设置上下文服务提供者。
+        /// 将运行时的 <see cref="IServiceProvider"/> 注入到当前视图模型。 此方法通常由视图/视图工厂在创建视图模型实例后调用以设置上下文服务提供者。
         /// </summary>
         /// <param name="serviceProvider">要注入的服务提供者，不能为空。</param>
         public virtual void Inject(IServiceProvider serviceProvider)
         {
             this.serviceProvider = serviceProvider;
             Details = GetService<PluginDetails>();
+        }
+
+        public void Inject(object serviceProvider)
+        {
+            if (serviceProvider is IServiceProvider sp)
+            {
+                Inject(sp);
+            }
         }
 
         #region Log
@@ -118,13 +122,13 @@ namespace ExtenderApp.ViewModels
             Logger.LogWarning(message?.ToString() ?? WarningEmptyMessage);
         }
 
-        /// <inheritdoc />
+        /// <inheritdoc/>
         public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
         {
             Logger.Log(logLevel, eventId, state, exception, formatter);
         }
 
-        /// <inheritdoc />
+        /// <inheritdoc/>
         public bool IsEnabled(LogLevel logLevel)
         {
             return Logger.IsEnabled(logLevel);
@@ -203,8 +207,7 @@ namespace ExtenderApp.ViewModels
         #region MainWindow
 
         /// <summary>
-        /// 将主窗口临时置顶以吸引用户注意。
-        /// 实现为异步短暂置顶（300ms）。
+        /// 将主窗口临时置顶以吸引用户注意。 实现为异步短暂置顶（300ms）。
         /// </summary>
         protected void MainWindowTopmost()
         {

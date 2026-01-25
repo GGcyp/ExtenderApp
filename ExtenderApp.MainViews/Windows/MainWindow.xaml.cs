@@ -1,6 +1,5 @@
 ﻿using ExtenderApp.Abstract;
 using ExtenderApp.Data;
-using ExtenderApp.MainViews.ViewModels;
 using ExtenderApp.Views;
 
 namespace ExtenderApp.MainViews.Views

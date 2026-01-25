@@ -21,7 +21,7 @@ namespace ExtenderApp.Media
         public override void AddService(IServiceCollection services)
         {
             services.AddView<MediaMainView, MediaMainViewModel>();
-            services.AddTransient<MediaMainViewModel>();
+            services.AddViewModel<MediaMainViewModel>();
 
             //FFmpegEngine
             AddFFmpegEngines(services);
@@ -35,7 +35,7 @@ namespace ExtenderApp.Media
 
         private static IServiceCollection AddFFmpegEngines(IServiceCollection services)
         {
-            services.AddSingleton<FFmpegEngine>((p) =>
+            services.AddSingleton((p) =>
             {
                 var details = p.GetRequiredService<PluginDetails>();
                 var ffmpegPath = Path.Combine(details.PluginFolderPath!, ffmpegFolderName);

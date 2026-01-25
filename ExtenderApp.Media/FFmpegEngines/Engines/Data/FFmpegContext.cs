@@ -5,8 +5,7 @@ using FFmpeg.AutoGen;
 namespace ExtenderApp.FFmpegEngines
 {
     /// <summary>
-    /// 封装了与单个媒体文件或流相关的所有核心 FFmpeg 资源。
-    /// 它包含格式上下文、解码器信息、媒体元数据和用于资源管理的引擎实例，是进行解码、跳转等操作的中心对象。
+    /// 封装了与单个媒体文件或流相关的所有核心 FFmpeg 资源。 它包含格式上下文、解码器信息、媒体元数据和用于资源管理的引擎实例，是进行解码、跳转等操作的中心对象。
     /// </summary>
     public struct FFmpegContext : IDisposable
     {
@@ -41,8 +40,7 @@ namespace ExtenderApp.FFmpegEngines
         public FFmpegDecoderContextCollection ContextCollection;
 
         /// <summary>
-        /// 获取一个值，该值指示此上下文是否有效。
-        /// 如果格式上下文指针为空，则认为此上下文无效。
+        /// 获取一个值，该值指示此上下文是否有效。 如果格式上下文指针为空，则认为此上下文无效。
         /// </summary>
         public bool IsEmpty => FormatContext.IsEmpty;
 
@@ -66,8 +64,7 @@ namespace ExtenderApp.FFmpegEngines
         }
 
         /// <summary>
-        /// 释放此上下文持有的所有非托管 FFmpeg 资源。
-        /// 此方法会委托给 <see cref="FFmpegEngine"/> 来执行实际的清理工作。
+        /// 释放此上下文持有的所有非托管 FFmpeg 资源。 此方法会委托给 <see cref="FFmpegEngine"/> 来执行实际的清理工作。
         /// </summary>
         public void Dispose()
         {

@@ -1,11 +1,10 @@
-﻿
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Controls.Primitives;
 using System.Windows.Media;
 
 namespace ExtenderApp.Views.Themes
 {
-    public class SwitchButton : ToggleButton
+    public class SwitchButton : ButtonBase
     {
         static SwitchButton()
         {
@@ -22,7 +21,7 @@ namespace ExtenderApp.Views.Themes
         }
 
         public static readonly DependencyProperty StrokeProperty =
-            DependencyProperty.Register("Fill",
+            DependencyProperty.Register(nameof(Fill),
                 typeof(Brush),
                 typeof(SwitchButton));
 
@@ -33,10 +32,9 @@ namespace ExtenderApp.Views.Themes
         }
 
         public static readonly DependencyProperty FillProperty =
-            DependencyProperty.Register("Stroke",
+            DependencyProperty.Register(nameof(Stroke),
                 typeof(Brush),
                 typeof(SwitchButton));
-
 
         public bool IsSwitch
         {
@@ -49,7 +47,6 @@ namespace ExtenderApp.Views.Themes
                 typeof(bool),
                 typeof(SwitchButton),
                 new PropertyMetadata(false));
-
 
         public Geometry DefaultGeometry
         {
@@ -69,7 +66,6 @@ namespace ExtenderApp.Views.Themes
             get { return (Geometry)GetValue(TargetGeometryProperty); }
             set { SetValue(TargetGeometryProperty, value); }
         }
-
 
         public static readonly DependencyProperty TargetGeometryProperty =
             DependencyProperty.Register(

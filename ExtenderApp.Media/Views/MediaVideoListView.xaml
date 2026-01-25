@@ -5,6 +5,7 @@
                        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
                        xmlns:vm="clr-namespace:ExtenderApp.Media.ViewModels"
                        xmlns:views="clr-namespace:ExtenderApp.Views;assembly=ExtenderApp.Views"
+                       xmlns:vc="clr-namespace:ExtenderApp.Views.Converters;assembly=ExtenderApp.Views"
                        mc:Ignorable="d"
                        d:DataContext="{d:DesignInstance Type=vm:MediaMainViewModel}"
                        d:DesignHeight="450" d:DesignWidth="300">
@@ -23,6 +24,7 @@
         <Grid Grid.Row="0"  HorizontalAlignment="Left">
             <Button Content="添加"
                     FontSize="16"
+                    Click="AddLocalVideo_Click"
                     Style="{StaticResource EllipticalButton}">
             </Button>
         </Grid>
@@ -35,11 +37,26 @@
                      Background="{DynamicResource GlobalBackgroundBrush}">
                 <ListBox.ItemTemplate>
                     <DataTemplate>
-                        <StackPanel>
-                            <TextBlock Text="{Binding VideoTitle}"
-                                       Foreground="White"
-                                       Mouse.MouseUp="OpenVideoForList" />
-                        </StackPanel>
+                        <Button Command="{Binding DataContext,
+                                RelativeSource={RelativeSource AncestorType=ScrollViewer},
+                                Converter={vc:GetPropertyConverter},
+                                ConverterParameter=OpenMediaInfoCommand}"
+                                CommandParameter="{Binding}"
+                                OverridesDefaultStyle="True"
+                                Focusable="False"
+                                Margin="0 5 0 0">
+                            <Button.Template>
+                                <ControlTemplate TargetType="Button">
+                                    <ContentPresenter />
+                                </ControlTemplate>
+                            </Button.Template>
+                            <StackPanel>
+                                <TextBlock Text="{Binding Title}"
+                                           Foreground="{DynamicResource GlobalForegroundBrush}"
+                                           TextWrapping="Wrap"
+                                           ToolTip="{Binding Title}"/>
+                            </StackPanel>
+                        </Button>
                     </DataTemplate>
                 </ListBox.ItemTemplate>
             </ListBox>

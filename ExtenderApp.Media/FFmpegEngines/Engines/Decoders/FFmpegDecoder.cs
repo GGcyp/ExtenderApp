@@ -230,10 +230,18 @@ namespace ExtenderApp.FFmpegEngines.Decoders
         /// receive 循环：从 codec 中持续取出解码帧并推送到输出队列。
         /// <para>循环退出条件：</para>
         /// <list type="bullet">
-        /// <item><description>取消请求（token cancel）。</description></item>
-        /// <item><description>EAGAIN：codec 需要更多输入包。</description></item>
-        /// <item><description>EOF：codec 内部已结束（通常在 drain/flush 场景出现）。</description></item>
-        /// <item><description>代际变化：当 <paramref name="packetGeneration"/> 与当前 generation 不一致时主动停止旧代输出。</description></item>
+        /// <item>
+        /// <description>取消请求（token cancel）。</description>
+        /// </item>
+        /// <item>
+        /// <description>EAGAIN：codec 需要更多输入包。</description>
+        /// </item>
+        /// <item>
+        /// <description>EOF：codec 内部已结束（通常在 drain/flush 场景出现）。</description>
+        /// </item>
+        /// <item>
+        /// <description>代际变化：当 <paramref name="packetGeneration"/> 与当前 generation 不一致时主动停止旧代输出。</description>
+        /// </item>
         /// </list>
         /// </summary>
         private void ProcessFrames(int packetGeneration, CancellationToken token)
@@ -353,8 +361,12 @@ namespace ExtenderApp.FFmpegEngines.Decoders
         /// <summary>
         /// Flush 内部实现：
         /// <list type="number">
-        /// <item><description>先 <see cref="Clear"/> 清空通道并归还/释放底层对象。</description></item>
-        /// <item><description>再 flush codec（ <see cref="FFmpegEngine.Flush"/> ）以重置 FFmpeg 解码器内部状态。</description></item>
+        /// <item>
+        /// <description>先 <see cref="Clear"/> 清空通道并归还/释放底层对象。</description>
+        /// </item>
+        /// <item>
+        /// <description>再 flush codec（ <see cref="FFmpegEngine.Flush"/> ）以重置 FFmpeg 解码器内部状态。</description>
+        /// </item>
         /// </list>
         /// </summary>
         private void FlushPrivate(int generation)
@@ -404,26 +416,22 @@ namespace ExtenderApp.FFmpegEngines.Decoders
 
         /// <summary>
         /// 获取当前帧的持续时间（毫秒）。
-        /// <para>
-        /// 获取策略：
+        /// <para>获取策略：
         /// <list type="number">
         /// <item>
         /// <description>
-        /// 优先使用 FFmpeg 在帧上提供的持续时间（通常来自 <see cref="AVFrame.duration"/>），
-        /// 并通过 <see cref="FFmpegEngine.GetFrameDuration(NativeIntPtr{AVFrame}, NativeIntPtr{AVStream})"/> 按流的 <c>time_base</c> 换算为毫秒。
+        /// 优先使用 FFmpeg 在帧上提供的持续时间（通常来自 <see cref="AVFrame.duration"/>）， 并通过 <see cref="FFmpegEngine.GetFrameDuration(NativeIntPtr{AVFrame},
+        /// NativeIntPtr{AVStream})"/> 按流的 <c>time_base</c> 换算为毫秒。
         /// </description>
         /// </item>
         /// <item>
         /// <description>
-        /// 当 FFmpeg 未提供（或换算后结果 ≤ 0）时，回退到 <see cref="GetFrameDurationMsProtected(NativeIntPtr{AVFrame})"/>，
-        /// 由派生解码器按媒体类型进行估算（例如：视频按帧率，音频按 nb_samples/sample_rate）。
+        /// 当 FFmpeg 未提供（或换算后结果 ≤ 0）时，回退到 <see cref="GetFrameDurationMsProtected(NativeIntPtr{AVFrame})"/>， 由派生解码器按媒体类型进行估算（例如：视频按帧率，音频按 nb_samples/sample_rate）。
         /// </description>
         /// </item>
         /// </list>
         /// </para>
-        /// <para>
-        /// 该值主要用于为 PTS 修复逻辑（<see cref="FixupFrameTimestampMs(long, long)"/>）提供步进（step），以保证输出时间戳单调递增。
-        /// </para>
+        /// <para>该值主要用于为 PTS 修复逻辑（ <see cref="FixupFrameTimestampMs(long, long)"/>）提供步进（step），以保证输出时间戳单调递增。</para>
         /// </summary>
         /// <param name="framePtr">当前解码得到的帧指针。</param>
         /// <returns>帧持续时间（毫秒）。若无法从 FFmpeg 获取，则使用派生类估算结果。</returns>
@@ -440,16 +448,17 @@ namespace ExtenderApp.FFmpegEngines.Decoders
 
         /// <summary>
         /// 回退路径：当 FFmpeg 未能提供有效的帧持续时间时，由派生类估算持续时间（毫秒）。
-        /// <para>
-        /// 常见实现建议：
+        /// <para>常见实现建议：
         /// <list type="bullet">
-        /// <item><description>视频：根据帧率估算，例如 <c>1000 / fps</c>（fps 可来自流信息或 <see cref="FFmpegInfo.Rate"/>）。</description></item>
-        /// <item><description>音频：根据样本数和采样率估算，例如 <c>nb_samples * 1000 / sample_rate</c>。</description></item>
+        /// <item>
+        /// <description>视频：根据帧率估算，例如 <c>1000 / fps</c>（fps 可来自流信息或 <see cref="FFmpegInfo.Rate"/>）。</description>
+        /// </item>
+        /// <item>
+        /// <description>音频：根据样本数和采样率估算，例如 <c>nb_samples * 1000 / sample_rate</c>。</description>
+        /// </item>
         /// </list>
         /// </para>
-        /// <para>
-        /// 返回值应尽量保证为正数；若返回 ≤ 0，上层 PTS 修复逻辑会退化为以 1ms 作为最小步进。
-        /// </para>
+        /// <para>返回值应尽量保证为正数；若返回 ≤ 0，上层 PTS 修复逻辑会退化为以 1ms 作为最小步进。</para>
         /// </summary>
         /// <param name="framePtr">当前解码得到的帧指针。</param>
         /// <returns>估算得到的帧持续时间（毫秒）。</returns>
@@ -467,8 +476,12 @@ namespace ExtenderApp.FFmpegEngines.Decoders
         /// <summary>
         /// PTS 自修复逻辑（基类默认实现）：
         /// <list type="bullet">
-        /// <item><description>若 PTS 无效：使用 <c>last + duration</c> 推导；若尚无 last，则从 0 开始。</description></item>
-        /// <item><description>若 PTS 回退/重复（pts ≤ last）：强制修正为 <c>last + duration</c>，保证单调递增。</description></item>
+        /// <item>
+        /// <description>若 PTS 无效：使用 <c>last + duration</c> 推导；若尚无 last，则从 0 开始。</description>
+        /// </item>
+        /// <item>
+        /// <description>若 PTS 回退/重复（pts ≤ last）：强制修正为 <c>last + duration</c>，保证单调递增。</description>
+        /// </item>
         /// </list>
         /// </summary>
         /// <param name="ptsMs">原始 PTS（毫秒）。</param>

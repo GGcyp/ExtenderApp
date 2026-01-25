@@ -1,6 +1,7 @@
 ﻿using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using ExtenderApp.Media.ViewModels;
 using ExtenderApp.Views;
 using Microsoft.Win32;
 
@@ -16,18 +17,6 @@ namespace ExtenderApp.Media.Views
             InitializeComponent();
         }
 
-        /// <summary>
-        /// 打开视频列表的方法
-        /// </summary>
-        /// <param name="sender">事件触发源</param>
-        /// <param name="e">事件参数</param>
-        private void OpenVideoForList(object sender, MouseButtonEventArgs e)
-        {
-            //if (sender is TextBlock textBlock && textBlock.DataContext is VideoInfo videoInfo)
-            //{
-            //}
-        }
-
         private void AddLocalVideo_Click(object sender, RoutedEventArgs e)
         {
             // 添加本地视频的逻辑
@@ -35,14 +24,14 @@ namespace ExtenderApp.Media.Views
             {
                 Title = "打开视频文件",
                 Filter = "视频文件|*.mp4;*.avi;*.mkv;*.mov;*.wmv|所有文件|*.*",
-                Multiselect = false
+                Multiselect = true
             };
 
             if (openFileDialog.ShowDialog() == true)
             {
                 var selectedFilePaths = openFileDialog.FileNames;
                 // 将选中的视频路径添加到 GetViewModel
-                //GetViewModel<VideoListViewModel>()!.AddVideoPaths(selectedFilePaths);
+                GetViewModel<MediaMainViewModel>()!.AddMediaInfo(selectedFilePaths);
             }
         }
 

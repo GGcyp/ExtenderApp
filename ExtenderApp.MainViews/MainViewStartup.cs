@@ -18,7 +18,7 @@ namespace ExtenderApp.MainViews
             services.AddView<IMainView, MainView, MainViewModel>();
 
             services.AddViewModel<MainViewModel>(ServiceLifetime.Singleton);
-            services.AddTransient<MainViewRunViewModel>();
+            services.AddViewModel<MainViewRunViewModel>();
 
             services.AddTransient<SettingsView>();
             services.AddTransient<SettingsViewModel>();

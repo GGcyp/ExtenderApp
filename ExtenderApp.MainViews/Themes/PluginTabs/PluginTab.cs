@@ -1,7 +1,6 @@
 ﻿using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
-using ExtenderApp.Data;
 
 namespace ExtenderApp.MainViews.Themes
 {
@@ -16,7 +15,6 @@ namespace ExtenderApp.MainViews.Themes
 
         public PluginTab()
         {
-
         }
 
         #region 名称
@@ -32,7 +30,7 @@ namespace ExtenderApp.MainViews.Themes
                 typeof(string),
                 typeof(PluginTab));
 
-        #endregion
+        #endregion 名称
 
         #region 简介
 
@@ -47,7 +45,7 @@ namespace ExtenderApp.MainViews.Themes
                 typeof(string),
                 typeof(PluginTab));
 
-        #endregion
+        #endregion 简介
 
         #region 版本号
 
@@ -62,7 +60,7 @@ namespace ExtenderApp.MainViews.Themes
                 typeof(string),
                 typeof(PluginTab));
 
-        #endregion
+        #endregion 版本号
 
         #region 图标
 
@@ -78,6 +76,6 @@ namespace ExtenderApp.MainViews.Themes
                 typeof(PluginTab),
                 new PropertyMetadata());
 
-        #endregion
+        #endregion 图标
     }
 }

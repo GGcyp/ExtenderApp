@@ -27,7 +27,7 @@ namespace ExtenderApp.Common
             {
                 var view = ActivatorUtilities.CreateInstance<TView>(p);
                 var viewModel = p.GetRequiredService<TViewModel>();
-                view.InjectViewModel(viewModel);
+                view.Inject(viewModel);
                 return view;
             });
             return services;
@@ -60,7 +60,7 @@ namespace ExtenderApp.Common
             {
                 var view = p.GetRequiredService<TView>();
                 var viewModel = p.GetRequiredService<TViewModel>();
-                view.InjectViewModel(viewModel);
+                view.Inject(viewModel);
                 return view;
             });
             return services;
