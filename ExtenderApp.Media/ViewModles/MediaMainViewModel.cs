@@ -287,7 +287,7 @@ namespace ExtenderApp.Media.ViewModels
                     // 相同媒体，无需重新打开
                     return;
                 }
-                MPlayer.DisposeSafeAsync();
+                MPlayer.DisposeSafe();
                 Bitmap = null;
             }
 
@@ -353,7 +353,7 @@ namespace ExtenderApp.Media.ViewModels
             {
                 // 解除订阅，避免停止过程中仍回调到 UI
                 MPlayer.Playback -= UpdatePlayback;
-                MPlayer.DisposeSafeAsync();
+                MPlayer.DisposeSafe();
                 MPlayer = null;
                 Bitmap = null;
                 OnPropertyChanged(nameof(IsPlaying));
@@ -425,7 +425,7 @@ namespace ExtenderApp.Media.ViewModels
 
         protected override void DisposeManagedResources()
         {
-            MPlayer?.DisposeSafeAsync();
+            MPlayer?.DisposeSafe();
         }
     }
 }

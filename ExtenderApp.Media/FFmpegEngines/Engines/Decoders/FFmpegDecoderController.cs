@@ -19,7 +19,7 @@ namespace ExtenderApp.FFmpegEngines
         /// <summary>
         /// FFmpeg 解码器集合，包含该控制器管理的所有解码器实例。
         /// </summary>
-        private readonly FFmpegDecoderCollection _decoders;
+        private readonly FFmpegDecoderCollection _decoderCollection;
 
         /// <summary>
         /// FFmpeg 引擎实例，用于执行底层 FFmpeg 操作（读包、Seek、Flush、对象池等）。
@@ -51,7 +51,7 @@ namespace ExtenderApp.FFmpegEngines
         /// <summary>
         /// 获取解码器集合，包含该控制器管理的所有解码器（例如视频、音频）。
         /// </summary>
-        public IFFmpegDecoderCollection DecoderCollection => _decoders;
+        public IFFmpegDecoderCollection DecoderCollection => _decoderCollection;
 
         /// <summary>
         /// 解码控制器设置。
@@ -86,7 +86,7 @@ namespace ExtenderApp.FFmpegEngines
         /// <param name="settings">解码设置。</param>
         public FFmpegDecoderController(FFmpegDecoderCollection decoders, FFmpegDecoderControllerContext controllerContext, FFmpegDecoderSettings settings)
         {
-            _decoders = decoders;
+            _decoderCollection = decoders;
             Settings = settings;
             _controllerContext = controllerContext;
             completed = false;
@@ -105,13 +105,13 @@ namespace ExtenderApp.FFmpegEngines
             ThrowIfDisposed();
             if (processTasks != null)
             {
-                throw new InvalidOperationException($"不能重复解析:{Context.Info.MediaUri}");
+                return;
             }
 
             var token = _controllerContext.AllSource.Token;
             if (token.IsCancellationRequested)
             {
-                throw new InvalidOperationException($"控制器已被取消，不能解析:{Context.Info.MediaUri}");
+                return;
             }
 
             source = CancellationTokenSource.CreateLinkedTokenSource(token);
@@ -162,24 +162,16 @@ namespace ExtenderApp.FFmpegEngines
         private void StartDecodingPrivate()
         {
             completed = false;
-            int length = DecoderCollection.Count + 1;
-
-            int decoderIndex = 0;
-            int threadIndex = 1;
-
+            int length = DecoderCollection.Count;
             var token = source!.Token;
+            processTasks = new Task[length + 1];
 
-            processTasks = new Task[length];
-            processTasks[0] = Task.Run(DecodingLoop, token);
-
-            while (threadIndex < length)
+            for (int i = 0; i < length; i++)
             {
-                var decoder = DecoderCollection[decoderIndex];
-                processTasks[threadIndex] = decoder.DecodeLoopAsync(token);
-
-                threadIndex++;
-                decoderIndex++;
+                var decoder = DecoderCollection[i];
+                processTasks[i] = decoder.DecodeLoopAsync(token);
             }
+            processTasks[length] = Task.Run(DecodingLoop, token);
         }
 
         /// <summary>
@@ -261,18 +253,6 @@ namespace ExtenderApp.FFmpegEngines
         #endregion Operation
 
         /// <summary>
-        /// 释放托管资源。
-        /// <para>会主动取消会话并等待后台任务退出。</para>
-        /// </summary>
-        protected override void DisposeManagedResources()
-        {
-            source?.Cancel();
-            _controllerContext.DisposeSafe();
-            WaitForAllTasksComplete().GetAwaiter().GetResult();
-            source?.DisposeSafe();
-        }
-
-        /// <summary>
         /// 获取当前代际（generation）。
         /// <para>用于判断是否发生了 Seek/重置等需要同步的状态变化。</para>
         /// </summary>
@@ -288,23 +268,33 @@ namespace ExtenderApp.FFmpegEngines
         /// <para>无论任务是否取消，最终都会 Flush 解码器并清空任务引用。</para>
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private async Task WaitForAllTasksComplete()
+        private ValueTask WaitForAllTasksComplete()
         {
             if (processTasks == null)
-                return;
+                return ValueTask.CompletedTask;
 
-            try
+            var result = new ValueTask(Task.WhenAll(processTasks));
+            processTasks = null;
+            return result;
+        }
+
+        protected override void DisposeManagedResources()
+        {
+            source?.Cancel();
+            var valueTask = WaitForAllTasksComplete();
+            if (!valueTask.IsCompleted)
             {
-                await Task.WhenAll(processTasks).ConfigureAwait(false);
+                try
+                {
+                    valueTask.AsTask().GetAwaiter().GetResult();
+                }
+                catch
+                {
+                }
             }
-            catch
-            {
-                // 忽略 Stop/Dispose 常见退出异常（Channel 完成、取消等）
-            }
-            finally
-            {
-                processTasks = null;
-            }
+            _decoderCollection.DisposeSafe();
+            _controllerContext.DisposeSafe();
+            source?.DisposeSafe();
         }
     }
 }

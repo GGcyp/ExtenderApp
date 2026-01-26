@@ -49,6 +49,8 @@ namespace ExtenderApp.FFmpegEngines.Medias
         /// </summary>
         private readonly IFrameProcessController _frameProcessController;
 
+        private readonly object _mediaLock;
+
         /// <summary>
         /// 播放循环后台任务。非空表示已经启动过播放循环。
         /// </summary>
@@ -125,6 +127,7 @@ namespace ExtenderApp.FFmpegEngines.Medias
         public MediaPlayer(IFFmpegDecoderController decoderController, IFrameProcessController frameProcessController)
         {
             State = PlayerState.Uninitialized;
+            _mediaLock = new();
             _decoderController = decoderController;
             _frameProcessController = frameProcessController;
             _pauseEvent = new(true);
@@ -139,21 +142,34 @@ namespace ExtenderApp.FFmpegEngines.Medias
         /// </summary>
         public void Play()
         {
-            if (State == PlayerState.Playing || State == PlayerState.Uninitialized)
+            ThrowIfDisposed();
+            if (State == PlayerState.Playing ||
+                State == PlayerState.Uninitialized ||
+                State == PlayerState.Buffering)
             {
                 return;
             }
-            else if (mediaTask != null)
+
+            // 先检查并处理已有播放任务（在锁内）
+            lock (_mediaLock)
             {
-                _pauseEvent.Set();
-                return;
-            }
-            else if (Position != 0)
-            {
-                Seek(Position);
-            }
-            else
-            {
+                if (mediaTask != null && !mediaTask.IsCompleted)
+                {
+                    OnChangeState(PlayerState.Playing);
+                    _pauseEvent.Set();
+                    return;
+                }
+
+                // 清理旧引用并准备启动
+                mediaTask = null;
+
+                if (Position != 0)
+                {
+                    // Seek 可以在锁内或外，锁内避免并发 Seek/Start 的竞态
+                    Seek(Position);
+                }
+
+                // 在锁内启动解码与播放任务，避免两个线程同时 StartDecode
                 _decoderController.StartDecode();
                 mediaTask = Task.Run(PlaybackLoop, _decoderController.Token);
             }
@@ -165,15 +181,30 @@ namespace ExtenderApp.FFmpegEngines.Medias
         /// 停止播放并停止解码。
         /// </summary>
         /// <returns>等待解码停止的异步任务。</returns>
-        public async ValueTask StopAsync()
+        public ValueTask StopAsync()
         {
-            if (State == PlayerState.Stopped || State == PlayerState.Uninitialized)
+            ThrowIfDisposed();
+            if (State == PlayerState.Stopped ||
+                State == PlayerState.Uninitialized ||
+                State == PlayerState.Initializing)
             {
-                return;
+                return ValueTask.CompletedTask;
             }
 
+            Task? localMedia;
+            lock (_mediaLock)
+            {
+                localMedia = mediaTask;
+                mediaTask = null;
+            }
+
+            Task stopDecodeTask = _decoderController.StopDecodeAsync();
+            Task combined = localMedia != null ? Task.WhenAll(localMedia, stopDecodeTask) : stopDecodeTask;
+
             OnChangeState(PlayerState.Stopped);
-            await _decoderController.StopDecodeAsync();
+
+            // 等待解码与播放任务结束
+            return new(combined);
         }
 
         /// <summary>
@@ -181,7 +212,10 @@ namespace ExtenderApp.FFmpegEngines.Medias
         /// </summary>
         public void Pause()
         {
-            if (State == PlayerState.Paused || State == PlayerState.Uninitialized)
+            ThrowIfDisposed();
+            if (State == PlayerState.Paused ||
+                State == PlayerState.Uninitialized ||
+                State == PlayerState.Initializing)
             {
                 return;
             }
@@ -204,6 +238,7 @@ namespace ExtenderApp.FFmpegEngines.Medias
         /// </summary>
         public void Seek(long position)
         {
+            ThrowIfDisposed();
             if (State == PlayerState.Uninitialized || position == Position)
                 return;
 
@@ -336,8 +371,10 @@ namespace ExtenderApp.FFmpegEngines.Medias
                 }
             }
 
+            mediaTask = null;
             Position = Info.Duration;
             Playback?.Invoke();
+            OnChangeState(PlayerState.Stopped);
 
 #if DEBUG
             Debug.Print("PlaybackLoop: exited");
@@ -390,6 +427,7 @@ namespace ExtenderApp.FFmpegEngines.Medias
         /// </summary>
         protected override void DisposeManagedResources()
         {
+            State = PlayerState.Uninitialized;
             _decoderController.DisposeSafe();
             _frameProcessController.DisposeSafe();
             _pauseEvent.DisposeSafe();

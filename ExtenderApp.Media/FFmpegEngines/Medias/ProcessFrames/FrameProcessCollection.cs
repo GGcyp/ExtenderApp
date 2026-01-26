@@ -117,12 +117,10 @@ namespace ExtenderApp.FFmpegEngines.Medias
         /// </summary>
         protected override void DisposeManagedResources()
         {
-            for (int i = 0; i < _mediaOutputs.Count; i++)
+            foreach (var output in _mediaOutputs)
             {
-                _mediaOutputs[i].Dispose();
+                output.Dispose();
             }
-
-            _mediaOutputs.Clear();
         }
     }
 }

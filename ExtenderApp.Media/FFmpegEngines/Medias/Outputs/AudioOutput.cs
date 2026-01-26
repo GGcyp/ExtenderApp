@@ -251,7 +251,8 @@ namespace ExtenderApp.FFmpegEngines.Medias.Outputs
 
         protected override void DisposeManagedResources()
         {
-            Stop();
+            _waveOut.Stop();
+            _bufferedWave.ClearBuffer();
             _waveOut.Dispose();
         }
     }

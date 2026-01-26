@@ -106,52 +106,61 @@ namespace ExtenderApp.FFmpegEngines.Decoders
         /// 将一个带代际信息的 packet 投递到解码器队列。
         /// <para>优先走快速路径 <see cref="ChannelWriter{T}.TryWrite(T)"/>，失败则走慢路径等待可写。</para>
         /// </summary>
+        /// <param name="packet">要投递的 <see cref="FFmpegPacket"/>。写入成功后该对象的所有权转移给解码线程；写入失败时应归还底层资源。</param>
+        /// <param name="token">取消令牌，用于在等待写入时取消操作。</param>
         public void EnqueuePacket(FFmpegPacket packet, CancellationToken token)
         {
-            try
+            if (!_packetChannel.Writer.TryWrite(packet))
             {
-                if (_packetChannel.Writer.TryWrite(packet))
+                var valueTask = SlowEnqueuePacket(packet, token);
+                if (!valueTask.IsCompleted)
                 {
-                    return;
+                    valueTask.ConfigureAwait(false)
+                             .GetAwaiter()
+                             .GetResult();
                 }
             }
-            catch
-            {
-                Engine.Return(ref packet);
-            }
-            SlowEnqueuePacket(packet, token).GetAwaiter().GetResult();
         }
 
         /// <summary>
         /// 慢路径：当通道暂时不可写时等待恢复可写，再写入。
         /// <para>若等待/写入过程中出现异常，本方法负责归还 packet 以避免泄漏。</para>
         /// </summary>
+        /// <param name="packet">要写入的 <see cref="FFmpegPacket"/>。</param>
+        /// <param name="token">取消令牌。</param>
         private async ValueTask SlowEnqueuePacket(FFmpegPacket packet, CancellationToken token)
         {
             try
             {
-                while (await _packetChannel.Writer.WaitToWriteAsync(token).ConfigureAwait(false))
-                {
-                    if (_packetChannel.Writer.TryWrite(packet))
-                    {
-                        return;
-                    }
-                }
+                await _packetChannel.Writer.WriteAsync(packet, token).ConfigureAwait(false);
+            }
+            catch (ChannelClosedException)
+            {
+                Engine.Return(ref packet);
+                return;
+            }
+            catch (OperationCanceledException)
+            {
+                Engine.Return(ref packet);
+                return;
             }
             catch
             {
                 Engine.Return(ref packet);
+                throw;
             }
             return;
         }
 
         /// <summary>
-        /// 解码线程主循环：持续从 <see cref="_packetChannel"/> 读取 packet，并解码输出到 <see cref="_frameChannel"/>。
-        /// <para>代际（generation）变化时会 flush：清空队列 + flush codec。</para>
+        /// 解码线程主循环：持续从包通道读取 packet 并驱动解码流程直到取消或通道完成。
+        /// <para>在代际（generation）变化时会 flush：清空队列 + flush codec。</para>
         /// </summary>
+        /// <param name="token">用于取消解码循环的 <see cref="CancellationToken"/>。</param>
+        /// <returns>当解码循环结束时完成的任务。</returns>
         public async Task DecodeLoopAsync(CancellationToken token)
         {
-            int localGeneration = 0;
+            int localGeneration = _controllerContext.GetCurrentGeneration();
 
             while (!token.IsCancellationRequested)
             {
@@ -160,10 +169,20 @@ namespace ExtenderApp.FFmpegEngines.Decoders
                 {
                     packet = await _packetChannel.Reader.ReadAsync(token).ConfigureAwait(false);
                 }
+                catch (ChannelClosedException)
+                {
+                    // 通道完成或已关闭：正常结束
+                    return;
+                }
+                catch (OperationCanceledException)
+                {
+                    // 由外部取消：正常结束
+                    return;
+                }
                 catch
                 {
-                    // 通道完成：正常结束
-                    return;
+                    // 非 Channel/取消相关异常：向上抛出以便定位
+                    throw;
                 }
 
                 int currentGeneration = _controllerContext.GetCurrentGeneration();
@@ -211,22 +230,10 @@ namespace ExtenderApp.FFmpegEngines.Decoders
 
         /// <summary>
         /// receive 循环：从 codec 中持续取出解码帧并推送到输出队列。
-        /// <para>循环退出条件：</para>
-        /// <list type="bullet">
-        /// <item>
-        /// <description>取消请求（token cancel）。</description>
-        /// </item>
-        /// <item>
-        /// <description>EAGAIN：codec 需要更多输入包。</description>
-        /// </item>
-        /// <item>
-        /// <description>EOF：codec 内部已结束（通常在 drain/flush 场景出现）。</description>
-        /// </item>
-        /// <item>
-        /// <description>代际变化：当 <paramref name="packetGeneration"/> 与当前 generation 不一致时主动停止旧代输出。</description>
-        /// </item>
-        /// </list>
+        /// <para>循环退出条件包括取消、EAGAIN、EOF、代际变化等。</para>
         /// </summary>
+        /// <param name="packetGeneration">调用时所属的代际（generation）。</param>
+        /// <param name="token">取消令牌。</param>
         private void ProcessFrames(int packetGeneration, CancellationToken token)
         {
             var framePtr = Engine.GetFrame();
@@ -267,9 +274,6 @@ namespace ExtenderApp.FFmpegEngines.Decoders
                     currentGeneration = _controllerContext.GetCurrentGeneration();
                 }
             }
-            catch
-            {
-            }
             finally
             {
                 Engine.Return(ref framePtr);
@@ -277,73 +281,62 @@ namespace ExtenderApp.FFmpegEngines.Decoders
         }
 
         /// <summary>
-        /// 将已解码帧写入输出通道（快速路径 TryWrite，失败则等待可写）。
-        /// <para>注意：若最终写入失败必须释放 <see cref="FFmpegFrame"/>（以释放持有的 <see cref="ByteBlock"/>）。</para>
+        /// 将已解码帧写入输出通道（快速路径 TryWrite，失败则走慢路径）。
         /// </summary>
+        /// <param name="frame">要写入的 <see cref="FFmpegFrame"/>。</param>
+        /// <param name="token">取消令牌。</param>
         private void EnqueueFrame(FFmpegFrame frame, CancellationToken token)
         {
-            try
+            if (!_frameChannel.Writer.TryWrite(frame))
             {
-                if (_frameChannel.Writer.TryWrite(frame))
+                var valueTask = SlowEnqueueFrame(frame, token);
+                if (!valueTask.IsCompleted)
                 {
-                    return;
+                    valueTask.ConfigureAwait(false)
+                             .GetAwaiter()
+                             .GetResult();
                 }
             }
-            catch
-            {
-                frame.Dispose();
-            }
-            SlowEnqueueFrame(frame, token).GetAwaiter().GetResult();
         }
 
         /// <summary>
-        /// 慢路径写帧：等待通道可写后写入。
-        /// <para>失败时释放帧以避免 <see cref="ByteBlock"/> 泄漏。</para>
+        /// 慢路径写帧：等待通道可写后写入；失败时释放帧避免内存泄漏。
         /// </summary>
+        /// <param name="frame">要写入的帧。</param>
+        /// <param name="token">取消令牌。</param>
         private async ValueTask SlowEnqueueFrame(FFmpegFrame frame, CancellationToken token)
         {
             try
             {
-                while (await _frameChannel.Writer.WaitToWriteAsync(token).ConfigureAwait(false))
-                {
-                    if (_frameChannel.Writer.TryWrite(frame))
-                    {
-                        return;
-                    }
-                }
+                await _frameChannel.Writer.WriteAsync(frame, token).ConfigureAwait(false);
+            }
+            catch (ChannelClosedException)
+            {
+                frame.Dispose();
+                return;
+            }
+            catch (OperationCanceledException)
+            {
+                frame.Dispose();
+                return;
             }
             catch
             {
                 frame.Dispose();
+                throw;
             }
         }
 
         /// <inheritdoc/>
         public bool TryDequeueFrame(out FFmpegFrame frame)
         {
-            frame = default;
-            try
-            {
-                return _frameChannel.Reader.TryRead(out frame);
-            }
-            catch
-            {
-                return false;
-            }
+            return _frameChannel.Reader.TryRead(out frame);
         }
 
         /// <inheritdoc/>
         public bool TryPeekFrame(out FFmpegFrame frame)
         {
-            frame = default;
-            try
-            {
-                return _frameChannel.Reader.TryPeek(out frame);
-            }
-            catch
-            {
-                return false;
-            }
+            return _frameChannel.Reader.TryPeek(out frame);
         }
 
         /// <summary>
@@ -371,64 +364,44 @@ namespace ExtenderApp.FFmpegEngines.Decoders
         /// <summary>
         /// 清空 packet 与 frame 通道中的所有数据，并释放/归还底层资源。
         /// </summary>
-        /// <param name="generation">目标代际。</param>
-        private void Clear(int generation = -1)
+        /// <param name="generation">目标代际。默认 -1 表示清空所有代际数据。</param>
+        private void Clear(int generation)
         {
-            try
+            while (_packetChannel.Reader.TryPeek(out var packet))
             {
-                while (_packetChannel.Reader.TryPeek(out var packet))
+                if (generation == packet.Generation ||
+                    !_packetChannel.Reader.TryRead(out packet))
                 {
-                    if (generation == packet.Generation ||
-                        !_packetChannel.Reader.TryRead(out packet))
-                    {
-                        break;
-                    }
-                    Engine.Return(ref packet);
+                    break;
                 }
-
-                while (_frameChannel.Reader.TryRead(out var frame))
-                {
-                    if (generation == frame.Generation ||
-                        !_frameChannel.Reader.TryRead(out frame))
-                    {
-                        break;
-                    }
-                    frame.Dispose();
-                }
+                Engine.Return(ref packet);
             }
-            catch
+
+            while (_frameChannel.Reader.TryRead(out var frame))
             {
+                if (generation == frame.Generation ||
+                    !_frameChannel.Reader.TryRead(out frame))
+                {
+                    break;
+                }
+                frame.Dispose();
             }
         }
 
         /// <summary>
         /// 更新解码器设置（由具体解码器实现，可能涉及重采样/缩放/滤镜等）。
         /// </summary>
+        /// <param name="settings">新的解码器设置。</param>
         public virtual void UpdateSettings(FFmpegDecoderSettings settings)
         {
         }
 
         /// <summary>
         /// 获取当前帧的持续时间（毫秒）。
-        /// <para>获取策略：
-        /// <list type="number">
-        /// <item>
-        /// <description>
-        /// 优先使用 FFmpeg 在帧上提供的持续时间（通常来自 <see cref="AVFrame.duration"/>）， 并通过 <see cref="FFmpegEngine.GetFrameDuration(NativeIntPtr{AVFrame},
-        /// NativeIntPtr{AVStream})"/> 按流的 <c>time_base</c> 换算为毫秒。
-        /// </description>
-        /// </item>
-        /// <item>
-        /// <description>
-        /// 当 FFmpeg 未提供（或换算后结果 ≤ 0）时，回退到 <see cref="GetFrameDurationMsProtected(NativeIntPtr{AVFrame})"/>， 由派生解码器按媒体类型进行估算（例如：视频按帧率，音频按 nb_samples/sample_rate）。
-        /// </description>
-        /// </item>
-        /// </list>
-        /// </para>
-        /// <para>该值主要用于为 PTS 修复逻辑（ <see cref="FixupFrameTimestampMs(long, long)"/>）提供步进（step），以保证输出时间戳单调递增。</para>
+        /// <para>获取策略：优先使用 FFmpeg 在帧上提供的持续时间；若无则回退到派生类估算。</para>
         /// </summary>
         /// <param name="framePtr">当前解码得到的帧指针。</param>
-        /// <returns>帧持续时间（毫秒）。若无法从 FFmpeg 获取，则使用派生类估算结果。</returns>
+        /// <returns>帧持续时间（毫秒）。</returns>
         private long GetFrameDurationMs(NativeIntPtr<AVFrame> framePtr)
         {
             long durationMs = Engine.GetFrameDuration(framePtr, DecoderContext.CodecStream);
@@ -442,17 +415,6 @@ namespace ExtenderApp.FFmpegEngines.Decoders
 
         /// <summary>
         /// 回退路径：当 FFmpeg 未能提供有效的帧持续时间时，由派生类估算持续时间（毫秒）。
-        /// <para>常见实现建议：
-        /// <list type="bullet">
-        /// <item>
-        /// <description>视频：根据帧率估算，例如 <c>1000 / fps</c>（fps 可来自流信息或 <see cref="FFmpegInfo.Rate"/>）。</description>
-        /// </item>
-        /// <item>
-        /// <description>音频：根据样本数和采样率估算，例如 <c>nb_samples * 1000 / sample_rate</c>。</description>
-        /// </item>
-        /// </list>
-        /// </para>
-        /// <para>返回值应尽量保证为正数；若返回 ≤ 0，上层 PTS 修复逻辑会退化为以 1ms 作为最小步进。</para>
         /// </summary>
         /// <param name="framePtr">当前解码得到的帧指针。</param>
         /// <returns>估算得到的帧持续时间（毫秒）。</returns>
@@ -462,21 +424,16 @@ namespace ExtenderApp.FFmpegEngines.Decoders
         /// 获取帧的时间戳（毫秒）。
         /// <para>优先使用 best-effort timestamp，最终统一换算为毫秒。</para>
         /// </summary>
+        /// <param name="frame">AVFrame 指针。</param>
+        /// <returns>时间戳（毫秒），若不可用则返回 <see cref="FFmpegEngine.InvalidTimestamp"/>。</returns>
         private long GetFrameTimestampMs(NativeIntPtr<AVFrame> frame)
         {
             return Engine.GetFrameTimestampMs(frame, DecoderContext);
         }
 
         /// <summary>
-        /// PTS 自修复逻辑（基类默认实现）：
-        /// <list type="bullet">
-        /// <item>
-        /// <description>若 PTS 无效：使用 <c>last + duration</c> 推导；若尚无 last，则从 0 开始。</description>
-        /// </item>
-        /// <item>
-        /// <description>若 PTS 回退/重复（pts ≤ last）：强制修正为 <c>last + duration</c>，保证单调递增。</description>
-        /// </item>
-        /// </list>
+        /// PTS 自修复逻辑（基类默认实现）。
+        /// <para>若 PTS 无效或回退，使用上一个时间戳 + step（duration 或 1ms）修正，保证单调递增。</para>
         /// </summary>
         /// <param name="ptsMs">原始 PTS（毫秒）。</param>
         /// <param name="durationMs">估算的帧时长（毫秒）。</param>
@@ -518,21 +475,9 @@ namespace ExtenderApp.FFmpegEngines.Decoders
         /// </summary>
         protected override void DisposeManagedResources()
         {
-            Clear();
-            try
-            {
-                _packetChannel.Writer.TryComplete();
-            }
-            catch
-            {
-            }
-            try
-            {
-                _frameChannel.Writer.TryComplete();
-            }
-            catch
-            {
-            }
+            _packetChannel.Writer.TryComplete();
+            _frameChannel.Writer.TryComplete();
+            Clear(_controllerContext.GetCurrentGeneration() + 1);
         }
     }
 }
