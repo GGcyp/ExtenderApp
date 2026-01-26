@@ -274,6 +274,7 @@ namespace ExtenderApp.Media.ViewModels
                 return;
             var player = _mediaEngine.OpenMedia(mediaInfo.MediaUri);
             SelectedVideoInfo = mediaInfo;
+            player.Seek(mediaInfo.MediaWatchedPosition);
             OpenMedia(player);
         }
 
@@ -287,6 +288,7 @@ namespace ExtenderApp.Media.ViewModels
                     return;
                 }
                 MPlayer.DisposeSafeAsync();
+                Bitmap = null;
             }
 
             MPlayer = mediaPlayer;
@@ -349,13 +351,16 @@ namespace ExtenderApp.Media.ViewModels
         {
             if (MPlayer != null)
             {
-                // 触发停止（不等待完成）
-                MPlayer.StopAsync();
-
                 // 解除订阅，避免停止过程中仍回调到 UI
                 MPlayer.Playback -= UpdatePlayback;
+                MPlayer.DisposeSafeAsync();
+                MPlayer = null;
+                Bitmap = null;
                 OnPropertyChanged(nameof(IsPlaying));
             }
+
+            Position = TimeSpan.Zero;
+            TotalTime = TimeSpan.Zero;
         }
 
         public void Seek(double position)

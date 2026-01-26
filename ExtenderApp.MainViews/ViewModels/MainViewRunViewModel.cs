@@ -102,6 +102,7 @@ namespace ExtenderApp.MainViews.ViewModels
         private void ToMainView()
         {
             _navigation.NavigateToHome();
+
             //// 导航到 CutsceneView 并设置为当前过场动画视图
             //var cutscene = NavigateTo<CutsceneView>();
             //Model.CurrentCutsceneView = cutscene;

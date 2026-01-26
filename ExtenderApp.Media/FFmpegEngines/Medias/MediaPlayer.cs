@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using ExtenderApp.Common;
 using ExtenderApp.Data;
 
 namespace ExtenderApp.FFmpegEngines.Medias
@@ -164,15 +165,15 @@ namespace ExtenderApp.FFmpegEngines.Medias
         /// 停止播放并停止解码。
         /// </summary>
         /// <returns>等待解码停止的异步任务。</returns>
-        public ValueTask StopAsync()
+        public async ValueTask StopAsync()
         {
             if (State == PlayerState.Stopped || State == PlayerState.Uninitialized)
             {
-                return ValueTask.CompletedTask;
+                return;
             }
 
             OnChangeState(PlayerState.Stopped);
-            return new(_decoderController.StopDecodeAsync());
+            await _decoderController.StopDecodeAsync();
         }
 
         /// <summary>
@@ -389,10 +390,9 @@ namespace ExtenderApp.FFmpegEngines.Medias
         /// </summary>
         protected override void DisposeManagedResources()
         {
-            StopAsync().GetAwaiter().GetResult();
-            _pauseEvent.Dispose();
-            _decoderController.Dispose();
-            _frameProcessController.Dispose();
+            _decoderController.DisposeSafe();
+            _frameProcessController.DisposeSafe();
+            _pauseEvent.DisposeSafe();
         }
     }
 }

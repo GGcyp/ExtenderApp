@@ -108,23 +108,18 @@ namespace ExtenderApp.FFmpegEngines.Decoders
         /// </summary>
         public void EnqueuePacket(FFmpegPacket packet, CancellationToken token)
         {
-            if (_packetChannel.Writer.TryWrite(packet))
-            {
-                return;
-            }
-
             try
             {
-                SlowEnqueuePacket(packet, token).GetAwaiter().GetResult();
+                if (_packetChannel.Writer.TryWrite(packet))
+                {
+                    return;
+                }
             }
-            catch (OperationCanceledException) when (token.IsCancellationRequested)
+            catch
             {
-                // Stop/Dispose 的正常退出路径：吞掉取消异常（SlowEnqueuePacket 已负责归还 packet）
+                Engine.Return(ref packet);
             }
-            catch (ChannelClosedException)
-            {
-                // 通道已完成/关闭：吞掉（SlowEnqueuePacket 已负责归还 packet）
-            }
+            SlowEnqueuePacket(packet, token).GetAwaiter().GetResult();
         }
 
         /// <summary>
@@ -142,20 +137,12 @@ namespace ExtenderApp.FFmpegEngines.Decoders
                         return;
                     }
                 }
-
-                // WaitToWriteAsync 返回 false：writer 已完成（TryComplete）或被关闭
-                return;
-            }
-            catch (ChannelClosedException)
-            {
-                // 通道已关闭：释放/归还资源，按正常结束处理
-                Engine.Return(ref packet);
             }
             catch
             {
                 Engine.Return(ref packet);
-                throw;
             }
+            return;
         }
 
         /// <summary>
@@ -173,11 +160,7 @@ namespace ExtenderApp.FFmpegEngines.Decoders
                 {
                     packet = await _packetChannel.Reader.ReadAsync(token).ConfigureAwait(false);
                 }
-                catch (OperationCanceledException) when (token.IsCancellationRequested)
-                {
-                    return;
-                }
-                catch (ChannelClosedException)
+                catch
                 {
                     // 通道完成：正常结束
                     return;
@@ -284,6 +267,9 @@ namespace ExtenderApp.FFmpegEngines.Decoders
                     currentGeneration = _controllerContext.GetCurrentGeneration();
                 }
             }
+            catch
+            {
+            }
             finally
             {
                 Engine.Return(ref framePtr);
@@ -296,23 +282,18 @@ namespace ExtenderApp.FFmpegEngines.Decoders
         /// </summary>
         private void EnqueueFrame(FFmpegFrame frame, CancellationToken token)
         {
-            if (_frameChannel.Writer.TryWrite(frame))
-            {
-                return;
-            }
-
             try
             {
-                SlowEnqueueFrame(frame, token).GetAwaiter().GetResult();
+                if (_frameChannel.Writer.TryWrite(frame))
+                {
+                    return;
+                }
             }
-            catch (OperationCanceledException) when (token.IsCancellationRequested)
+            catch
             {
-                // Stop/Dispose 的正常退出路径：吞掉取消异常（SlowEnqueueFrame 已负责释放 frame）
+                frame.Dispose();
             }
-            catch (ChannelClosedException)
-            {
-                // 通道已完成/关闭：吞掉（SlowEnqueueFrame 已负责释放 frame）
-            }
+            SlowEnqueueFrame(frame, token).GetAwaiter().GetResult();
         }
 
         /// <summary>
@@ -330,32 +311,39 @@ namespace ExtenderApp.FFmpegEngines.Decoders
                         return;
                     }
                 }
-
-                // 通道已完成：不能再写，释放 frame
-                frame.Dispose();
-            }
-            catch (ChannelClosedException)
-            {
-                // 通道已关闭：释放 frame，按正常结束处理
-                frame.Dispose();
             }
             catch
             {
                 frame.Dispose();
-                throw;
             }
         }
 
         /// <inheritdoc/>
         public bool TryDequeueFrame(out FFmpegFrame frame)
         {
-            return _frameChannel.Reader.TryRead(out frame);
+            frame = default;
+            try
+            {
+                return _frameChannel.Reader.TryRead(out frame);
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         /// <inheritdoc/>
         public bool TryPeekFrame(out FFmpegFrame frame)
         {
-            return _frameChannel.Reader.TryPeek(out frame);
+            frame = default;
+            try
+            {
+                return _frameChannel.Reader.TryPeek(out frame);
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         /// <summary>
@@ -386,24 +374,30 @@ namespace ExtenderApp.FFmpegEngines.Decoders
         /// <param name="generation">目标代际。</param>
         private void Clear(int generation = -1)
         {
-            while (_packetChannel.Reader.TryPeek(out var packet))
+            try
             {
-                if (generation == packet.Generation ||
-                    !_packetChannel.Reader.TryRead(out packet))
+                while (_packetChannel.Reader.TryPeek(out var packet))
                 {
-                    break;
+                    if (generation == packet.Generation ||
+                        !_packetChannel.Reader.TryRead(out packet))
+                    {
+                        break;
+                    }
+                    Engine.Return(ref packet);
                 }
-                Engine.Return(ref packet);
-            }
 
-            while (_frameChannel.Reader.TryRead(out var frame))
-            {
-                if (generation == frame.Generation ||
-                    !_frameChannel.Reader.TryRead(out frame))
+                while (_frameChannel.Reader.TryRead(out var frame))
                 {
-                    break;
+                    if (generation == frame.Generation ||
+                        !_frameChannel.Reader.TryRead(out frame))
+                    {
+                        break;
+                    }
+                    frame.Dispose();
                 }
-                frame.Dispose();
+            }
+            catch
+            {
             }
         }
 
@@ -525,8 +519,20 @@ namespace ExtenderApp.FFmpegEngines.Decoders
         protected override void DisposeManagedResources()
         {
             Clear();
-            _packetChannel.Writer.TryComplete();
-            _frameChannel.Writer.TryComplete();
+            try
+            {
+                _packetChannel.Writer.TryComplete();
+            }
+            catch
+            {
+            }
+            try
+            {
+                _frameChannel.Writer.TryComplete();
+            }
+            catch
+            {
+            }
         }
     }
 }
