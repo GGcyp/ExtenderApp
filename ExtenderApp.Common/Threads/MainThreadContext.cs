@@ -11,14 +11,8 @@ namespace ExtenderApp.Common.Threads
 
         public SynchronizationContext? Context { get; private set; }
 
-        private bool Initialized => MainThread != null && Context != null;
-
-        public void InitMainThreadContext()
+        public MainThreadContext()
         {
-            if (Initialized)
-            {
-                return;
-            }
             MainThread = Thread.CurrentThread;
             Context = SynchronizationContext.Current;
         }

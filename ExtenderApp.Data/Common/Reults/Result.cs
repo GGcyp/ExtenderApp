@@ -117,17 +117,12 @@ namespace ExtenderApp.Data
         /// <param name="exception">捕获到的异常。</param>
         public static Result FromException(Exception exception) => new(false, exception.Message, exception);
 
-        public static Result FromException<T>() where T : Exception, new()
-        {
-            try
-            {
-                throw new T();
-            }
-            catch (Exception)
-            {
-                return FromException(new T());
-            }
-        }
+        /// <summary>
+        /// 创建一个表示异常的 <see cref="Result"/>。
+        /// </summary>
+        /// <param name="exception">捕获到的异常。</param>
+        /// <param name="message">与异常相关的自定义消息。</param>
+        public static Result FromException(Exception exception,string message) => new(false, message, exception);
 
         /// <summary>
         /// 创建一个表示成功的 <see cref="Result{T}"/>。
@@ -146,6 +141,11 @@ namespace ExtenderApp.Data
         /// 创建一个表示异常的 <see cref="Result{T}"/>。
         /// </summary>
         public static Result<T> FromException<T>(Exception exception) => new(false, default, exception.Message, exception);
+
+        /// <summary>
+        /// 创建一个表示异常的 <see cref="Result{T}"/>。
+        /// </summary>
+        public static Result<T> FromException<T>(Exception exception, string message) => new(false, default, message, exception);
 
         public static Result FromException<TValue, TException>() where TException : Exception, new()
         {

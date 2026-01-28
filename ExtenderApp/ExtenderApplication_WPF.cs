@@ -43,6 +43,18 @@ namespace ExtenderApp
         /// </summary>
         public ExtenderApplication_WPF()
         {
+            serviceProvider = default!;
+            context = default!;
+            _logger = default!;
+        }
+
+        /// <summary>
+        /// WPF 启动时调用。初始化主线程上下文并触发启动执行器。 注意：IStartupExecuter.ExecuteAsync() 未在此处等待（fire-and-forget / 自行处理异步行为）。
+        /// </summary>
+        protected override void OnStartup(StartupEventArgs e)
+        {
+            base.OnStartup(e);
+
             // 记录启动耗时
             Stopwatch sw = new Stopwatch();
             sw.Start();
@@ -83,17 +95,6 @@ namespace ExtenderApp
             // 从容器中获取 logger 并记录启动完成及耗时
             _logger = serviceProvider.GetRequiredService<ILogger<ExtenderApplication_WPF>>();
             _logger.LogInformation("{Now}启动成功，本次启动耗时{timeSpan}秒", DateTime.Now, TimeSpan.FromMilliseconds(sw.ElapsedMilliseconds).TotalSeconds);
-        }
-
-        /// <summary>
-        /// WPF 启动时调用。初始化主线程上下文并触发启动执行器。 注意：IStartupExecuter.ExecuteAsync() 未在此处等待（fire-and-forget / 自行处理异步行为）。
-        /// </summary>
-        protected override void OnStartup(StartupEventArgs e)
-        {
-            base.OnStartup(e);
-
-            // 初始化主线程上下文（例如同步上下文或消息循环相关的初始化）
-            serviceProvider.GetRequiredService<IMainThreadContext>().InitMainThreadContext();
 
             // 执行应用启动逻辑（异步）
             serviceProvider.GetRequiredService<IStartupExecuter>().ExecuteAsync();

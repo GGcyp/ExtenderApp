@@ -21,7 +21,7 @@ namespace ExtenderApp.LAN
     /// </summary>
     public partial class LANMainView : ExtenderAppView
     {
-        public LANMainView(LANMainViewModel viewModel) : base(viewModel)
+        public LANMainView()
         {
             InitializeComponent();
         }

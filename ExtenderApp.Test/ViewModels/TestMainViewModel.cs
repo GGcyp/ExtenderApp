@@ -6,7 +6,7 @@ namespace ExtenderApp.Test
 {
     public class TestMainViewModel : ExtenderAppViewModel
     {
-        public TestMainViewModel(IServiceStore serviceStore, IHttpLinkClient http) : base(serviceStore)
+        public TestMainViewModel( IHttpLinkClient http)
         {
             var info = CreatTestExpectLocalFileInfo("text");
             LogInformation("开始测试");

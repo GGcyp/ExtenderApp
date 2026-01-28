@@ -255,34 +255,37 @@ namespace ExtenderApp.FFmpegEngines
         /// <summary>
         /// 打开指定URI的音视频流，并返回一个FFmpegContext实例。
         /// </summary>
-        /// <param name="uri">要打开的URI。</param>
+        /// <param name="mediaUri">要打开的URI。</param>
         /// <returns>FFmpegContext实例。</returns>
-        public FFmpegContext OpenUri(string uri)
+        public FFmpegContext Open(Uri mediaUri)
         {
-            return OpenUri(uri, FFmpegInputFormat.Empty, null);
+            return Open(mediaUri, FFmpegInputFormat.Empty, null);
         }
 
         /// <summary>
         /// 打开指定URI的音视频流，并返回一个FFmpegContext实例。
         /// </summary>
-        /// <param name="uri">要打开的URI。</param>
+        /// <param name="mediaUri">要打开的URI。</param>
         /// <param name="options">选项。</param>
         /// <returns>FFmpegContext实例。</returns>
-        public FFmpegContext OpenUri(string uri, Dictionary<string, string>? options)
+        public FFmpegContext Open(Uri mediaUri, Dictionary<string, string>? options)
         {
-            return OpenUri(uri, FFmpegInputFormat.Empty, options);
+            return Open(mediaUri, FFmpegInputFormat.Empty, options);
         }
 
         /// <summary>
         /// 打开指定URI的音视频流，并返回一个FFmpegContext实例。
         /// </summary>
-        /// <param name="uri">要打开的URI。</param>
+        /// <param name="mediaUri">要打开的URI。</param>
         /// <param name="inputFormat">输入格式。</param>
         /// <param name="options">选项。</param>
         /// <param name="flags">选项标志。</param>
         /// <returns>FFmpegContext实例。</returns>
-        public FFmpegContext OpenUri(string uri, FFmpegInputFormat inputFormat, Dictionary<string, string>? options, int flags = 0)
+        public FFmpegContext Open(Uri mediaUri, FFmpegInputFormat inputFormat, Dictionary<string, string>? options, int flags = 0)
         {
+            ArgumentNullException.ThrowIfNull(mediaUri);
+            string uri = mediaUri.IsFile ? mediaUri.LocalPath : mediaUri.IsAbsoluteUri ? mediaUri.AbsoluteUri : throw new UriFormatException("媒体地址格式不正确");
+
             var formatContext = CreateFormatContext().Value;
             AVFormatContext** formatContextPtr = &formatContext;
             var nOptions = CreateOptions(options, flags);
@@ -303,7 +306,73 @@ namespace ExtenderApp.FFmpegEngines
 
             FFmpegDecoderContextCollection collection = CreateDecoderContextCollection(formatContext, nOptions, uri);
 
-            var info = CreateFFmpegInfo(uri, collection);
+            var info = CreateFFmpegInfo(mediaUri, collection);
+
+            return new FFmpegContext(this, formatContext, nOptions, info, collection, default!);
+        }
+
+        /// <summary>
+        /// 打开给定的 <see cref="FFmpegInfo"/> 并返回对应的 <see cref="FFmpegContext"/>。
+        /// <para>此重载使用默认的输入格式与选项（等同于调用 <see cref="Open(FFmpegInfo, FFmpegInputFormat, Dictionary{string, string}?, int)"/>）。</para>
+        /// </summary>
+        /// <param name="info">包含媒体源 URI 与基础媒体元数据的 <see cref="FFmpegInfo"/> 实例。</param>
+        /// <returns>用于后续解码/播放的 <see cref="FFmpegContext"/> 实例。</returns>
+        public FFmpegContext Open(FFmpegInfo info)
+        {
+            return Open(info, FFmpegInputFormat.Empty, null);
+        }
+
+        /// <summary>
+        /// 打开给定的 <see cref="FFmpegInfo"/> 并返回对应的 <see cref="FFmpegContext"/>，可传入自定义打开选项。
+        /// <para>此重载使用默认的输入格式（等同于调用 <see cref="Open(FFmpegInfo, FFmpegInputFormat, Dictionary{string, string}?, int)"/> 并传入 <paramref name="options"/>）。</para>
+        /// </summary>
+        /// <param name="info">包含媒体源 URI 与基础媒体元数据的 <see cref="FFmpegInfo"/> 实例。</param>
+        /// <param name="options">FFmpeg 打开选项（AVDictionary 的键值对表示），可为 <c>null</c> 使用默认行为。</param>
+        /// <returns>用于后续解码/播放的 <see cref="FFmpegContext"/> 实例。</returns>
+        public FFmpegContext Open(FFmpegInfo info, Dictionary<string, string>? options)
+        {
+            return Open(info, FFmpegInputFormat.Empty, options);
+        }
+
+        /// <summary>
+        /// 打开给定的 <see cref="FFmpegInfo"/> 并返回对应的 <see cref="FFmpegContext"/>，可指定输入格式、打开选项与额外标志。
+        /// <para>根据 <see cref="FFmpegInfo.MediaUri"/> 决定传递给 FFmpeg 的打开字符串：若为本地文件则使用 <see cref="Uri.LocalPath"/>，否则使用 <see cref="Uri.AbsoluteUri"/>。</para>
+        /// </summary>
+        /// <param name="info">包含媒体源 URI 与基础媒体元数据的 <see cref="FFmpegInfo"/> 实例。</param>
+        /// <param name="inputFormat">显式指定的输入格式（可为空表示自动探测）。</param>
+        /// <param name="options">FFmpeg 打开选项（AVDictionary 的键值对表示），可为 <c>null</c> 表示无额外选项。</param>
+        /// <param name="flags">传递给选项创建器的标志（目前向下传递到 <see cref="CreateOptions(Dictionary{string,string}?, int)"/>）。</param>
+        /// <returns>已打开且解析完成流信息的 <see cref="FFmpegContext"/> 实例，用于创建解码器控制器与播放链路。</returns>
+        /// <exception cref="ArgumentNullException">当 <paramref name="info"/> 为 <c>null</c> 或其 <see cref="FFmpegInfo.MediaUri"/> 为 <c>null</c> 时抛出。</exception>
+        /// <exception cref="UriFormatException">当 <see cref="FFmpegInfo.MediaUri"/> 既不是文件 URI 也不是绝对 URI 时抛出。</exception>
+        /// <exception cref="FFmpegException">当 FFmpeg 打开或探测流信息失败时抛出，包含底层错误码信息。</exception>
+        public FFmpegContext Open(FFmpegInfo info, FFmpegInputFormat inputFormat, Dictionary<string, string>? options, int flags = 0)
+        {
+            if (info.MediaUri == null)
+                throw new ArgumentNullException(nameof(info.MediaUri), "媒体地址不能为空");
+
+            Uri mediaUri = info.MediaUri;
+            string uri = mediaUri.IsFile ? mediaUri.LocalPath : mediaUri.IsAbsoluteUri ? mediaUri.AbsoluteUri : throw new UriFormatException("媒体地址格式不正确");
+
+            var formatContext = CreateFormatContext().Value;
+            AVFormatContext** formatContextPtr = &formatContext;
+            var nOptions = CreateOptions(options, flags);
+            var inputOptions = nOptions.Value;
+            AVDictionary** inputOptionsIntPtr = &inputOptions;
+            int result = ffmpeg.avformat_open_input(formatContextPtr, uri, inputFormat, inputOptionsIntPtr);
+
+            if (result < 0)
+            {
+                ShowException($"未找到指定uri：{uri}", result);
+            }
+
+            result = ffmpeg.avformat_find_stream_info(formatContext, inputOptionsIntPtr);
+            if (result < 0)
+            {
+                throw new FFmpegException($"无法获取流信息:{uri}");
+            }
+
+            FFmpegDecoderContextCollection collection = CreateDecoderContextCollection(formatContext, nOptions, uri);
 
             return new FFmpegContext(this, formatContext, nOptions, info, collection, default!);
         }
@@ -320,9 +389,12 @@ namespace ExtenderApp.FFmpegEngines
         /// <param name="bufferSize">AVIOContext 内部缓冲大小。</param>
         /// <param name="flags">选项标志。</param>
         /// <returns>FFmpegContext 实例。</returns>
-        public FFmpegContext OpenStream(string uri, Stream stream, FFmpegInputFormat inputFormat, Dictionary<string, string>? options, int bufferSize = 64 * 1024, int flags = 0)
+        public FFmpegContext Open(Uri mediaUri, Stream stream, FFmpegInputFormat inputFormat, Dictionary<string, string>? options, int bufferSize = 64 * 1024, int flags = 0)
         {
             ArgumentNullException.ThrowIfNull(stream);
+            ArgumentNullException.ThrowIfNull(mediaUri);
+
+            string uri = mediaUri.IsFile ? mediaUri.LocalPath : mediaUri.IsAbsoluteUri ? mediaUri.AbsoluteUri : throw new UriFormatException("媒体地址格式不正确");
 
             var formatContext = CreateFormatContext();
             var nOptions = CreateOptions(options, flags);
@@ -365,7 +437,7 @@ namespace ExtenderApp.FFmpegEngines
                 }
 
                 FFmpegDecoderContextCollection collection = CreateDecoderContextCollection(ctx, nOptions, uri);
-                var info = CreateFFmpegInfo(uri, collection);
+                var info = CreateFFmpegInfo(mediaUri, collection);
 
                 return new FFmpegContext(this, formatContext, nOptions, info, collection, iOContext);
             }
@@ -387,9 +459,9 @@ namespace ExtenderApp.FFmpegEngines
         /// </summary>
         /// <param name="uri">指定Uri</param>
         /// <returns>FFmpegInfo实例</returns>
-        public FFmpegInfo CreateFFmpegInfo(string uri)
+        public FFmpegInfo CreateFFmpegInfo(Uri mediaUri)
         {
-            var context = OpenUri(uri);
+            var context = Open(mediaUri);
             var info = context.Info;
             Free(ref context);
             return info;
@@ -401,12 +473,12 @@ namespace ExtenderApp.FFmpegEngines
         /// <param name="uri">URI。</param>
         /// <param name="collection">解码器上下文集合。</param>
         /// <returns>FFmpegInfo实例。</returns>
-        private FFmpegInfo CreateFFmpegInfo(string uri, FFmpegDecoderContextCollection collection)
+        private FFmpegInfo CreateFFmpegInfo(Uri mediaUri, FFmpegDecoderContextCollection collection)
         {
             var videoContext = collection[FFmpegMediaType.VIDEO];
             var audioContext = collection[FFmpegMediaType.AUDIO];
 
-            FFmpegInfo info = new(uri, videoContext.CodecContext.Value->pix_fmt.Convert(), audioContext.CodecContext.Value->sample_fmt.Convert(), GetCodecNameOrDefault(videoContext), GetCodecNameOrDefault(audioContext));
+            FFmpegInfo info = new(mediaUri, videoContext.CodecContext.Value->pix_fmt.Convert(), audioContext.CodecContext.Value->sample_fmt.Convert(), GetCodecNameOrDefault(videoContext), GetCodecNameOrDefault(audioContext));
             info.Width = videoContext.CodecParameters.Value->width;
             info.Height = videoContext.CodecParameters.Value->height;
             info.Duration = ffmpeg.av_rescale_q(videoContext.CodecStream.Value->duration, videoContext.CodecStream.Value->time_base, ffmpeg.av_make_q(1, 1000));

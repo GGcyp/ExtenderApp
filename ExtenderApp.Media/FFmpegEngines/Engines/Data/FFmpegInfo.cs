@@ -3,7 +3,7 @@
     /// <summary>
     /// 媒体基础信息封装类，包含视频或音频流的关键参数。 用于描述媒体文件的格式、时长、编解码器等元数据，便于界面展示和业务逻辑处理。
     /// </summary>
-    public struct FFmpegInfo
+    public struct FFmpegInfo : IEquatable<FFmpegInfo>
     {
         /// <summary>
         /// 默认值，表示未设置或未知的参数值。
@@ -13,7 +13,7 @@
         /// <summary>
         /// 空的媒体信息实例，所有字段均为默认值。
         /// </summary>
-        public static readonly FFmpegInfo Empty = new FFmpegInfo(string.Empty, FFmpegPixelFormat.PIX_FMT_NONE, FFmpegSampleFormat.SAMPLE_FMT_NONE, string.Empty, string.Empty);
+        public static readonly FFmpegInfo Empty = new FFmpegInfo(null!, FFmpegPixelFormat.PIX_FMT_NONE, FFmpegSampleFormat.SAMPLE_FMT_NONE, string.Empty, string.Empty);
 
         /// <summary>
         /// 视频宽度（像素）。
@@ -86,16 +86,21 @@
         public bool IsStreamMedia => Duration <= 0;
 
         /// <summary>
+        /// 检查当前实例是否为空媒体信息。
+        /// </summary>
+        public bool IsEmpty => this.Equals(Empty);
+
+        /// <summary>
         /// 构造函数，初始化媒体信息各字段。
         /// </summary>
-        /// <param name="uri">媒体源 URI 或文件路径。</param>
+        /// <param name="mediaUri">媒体源 URI 或文件路径。</param>
         /// <param name="pixelFormat">视频像素格式。</param>
         /// <param name="sampleFormat">声音采样格式。</param>
         /// <param name="videoCodecName">视频编解码器名称。</param>
         /// <param name="audioCodecName">音频编解码器名称。</param>
-        public FFmpegInfo(string uri, FFmpegPixelFormat pixelFormat, FFmpegSampleFormat sampleFormat, string videoCodecName, string audioCodecName)
+        public FFmpegInfo(Uri mediaUri, FFmpegPixelFormat pixelFormat, FFmpegSampleFormat sampleFormat, string videoCodecName, string audioCodecName)
         {
-            MediaUri = new Uri(uri);
+            MediaUri = mediaUri;
             PixelFormat = pixelFormat;
             SampleFormat = sampleFormat;
             VideoCodecName = videoCodecName;
@@ -107,6 +112,41 @@
             Duration = DefaultValue;
             Rate = DefaultValue;
             BitRate = DefaultValue;
+        }
+
+        public bool Equals(FFmpegInfo other)
+        {
+            return MediaUri == other.MediaUri &&
+                PixelFormat == other.PixelFormat &&
+                SampleFormat == other.SampleFormat &&
+                VideoCodecName == other.VideoCodecName &&
+                AudioCodecName == other.AudioCodecName &&
+                Width == other.Width &&
+                Height == other.Height &&
+                SampleRate == other.SampleRate &&
+                Duration == other.Duration &&
+                BitRate == other.BitRate &&
+                BitRate == other.BitRate;
+        }
+
+        public static bool operator ==(FFmpegInfo left, FFmpegInfo right)
+        {
+            return left.Equals(right);
+        }
+
+        public static bool operator !=(FFmpegInfo left, FFmpegInfo right)
+        {
+            return !(left == right);
+        }
+
+        public override bool Equals(object? obj)
+        {
+            return obj is FFmpegInfo && Equals((FFmpegInfo)obj);
+        }
+
+        public override int GetHashCode()
+        {
+            return MediaUri.GetHashCode();
         }
     }
 }

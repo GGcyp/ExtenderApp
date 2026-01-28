@@ -95,36 +95,6 @@ namespace ExtenderApp.Common.IO
             }
         }
 
-        protected override int ExecuteRead(long filePosition, int length, ref ByteBuffer buffer)
-        {
-            _slim.Wait();
-            try
-            {
-                int result = RandomAccess.Read(Stream.SafeFileHandle, buffer.GetSpan(length), filePosition);
-                buffer.WriteAdvance(result);
-                return result;
-            }
-            finally
-            {
-                _slim.Release();
-            }
-        }
-
-        protected override int ExecuteRead(long filePosition, int length, ref ByteBlock block)
-        {
-            _slim.Wait();
-            try
-            {
-                int result = RandomAccess.Read(Stream.SafeFileHandle, block.GetSpan(length), filePosition);
-                block.WriteAdvance(result);
-                return result;
-            }
-            finally
-            {
-                _slim.Release();
-            }
-        }
-
         protected override ValueTask<byte[]> ExecuteReadAsync(long filePosition, int length, CancellationToken token)
         {
             _slim.Wait();
@@ -166,19 +136,6 @@ namespace ExtenderApp.Common.IO
             }
         }
 
-        protected override void ExecuteWrite(long filePosition, byte[] bytes, int bytesPosition, int bytesLength)
-        {
-            _slim.Wait();
-            try
-            {
-                ExecuteWrite(filePosition, bytes.AsSpan(bytesPosition, bytesLength));
-            }
-            finally
-            {
-                _slim.Release();
-            }
-        }
-
         protected override void ExecuteWrite(long filePosition, ReadOnlySpan<byte> span)
         {
             _slim.Wait();
@@ -198,47 +155,6 @@ namespace ExtenderApp.Common.IO
             try
             {
                 RandomAccess.Write(Stream.SafeFileHandle, memory.Span, filePosition);
-            }
-            finally
-            {
-                _slim.Release();
-            }
-        }
-
-        protected override void ExecuteWrite(long filePosition, ref ByteBuffer buffer)
-        {
-            _slim.Wait();
-            try
-            {
-                RandomAccess.Write(Stream.SafeFileHandle, buffer.UnreadSpan, filePosition);
-                buffer.ReadAdvance(buffer.UnreadSpan.Length);
-            }
-            finally
-            {
-                _slim.Release();
-            }
-        }
-
-        protected override void ExecuteWrite(long filePosition, ref ByteBlock block)
-        {
-            _slim.Wait();
-            try
-            {
-                RandomAccess.Write(Stream.SafeFileHandle, block, filePosition);
-                block.ReadAdvance(block.UnreadSpan.Length);
-            }
-            finally
-            {
-                _slim.Release();
-            }
-        }
-
-        protected override ValueTask ExecuteWriteAsync(long filePosition, byte[] bytes, int bytesPosition, int bytesLength, CancellationToken token)
-        {
-            _slim.Wait();
-            try
-            {
-                return RandomAccess.WriteAsync(Stream.SafeFileHandle, bytes.AsMemory(bytesPosition, bytesLength), filePosition, token);
             }
             finally
             {

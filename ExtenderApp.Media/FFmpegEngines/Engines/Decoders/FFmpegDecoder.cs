@@ -164,10 +164,22 @@ namespace ExtenderApp.FFmpegEngines.Decoders
 
             while (!token.IsCancellationRequested)
             {
-                FFmpegPacket packet;
+                FFmpegPacket packet = default;
                 try
                 {
-                    packet = await _packetChannel.Reader.ReadAsync(token).ConfigureAwait(false);
+                    while (await _packetChannel.Reader.WaitToReadAsync(token).ConfigureAwait(false))
+                    {
+                        if (token.IsCancellationRequested &&
+                            _controllerContext.GetIsCompleted())
+                        {
+                            return;
+                        }
+
+                        if (_packetChannel.Reader.TryRead(out packet))
+                        {
+                            break;
+                        }
+                    }
                 }
                 catch (ChannelClosedException)
                 {
@@ -377,7 +389,7 @@ namespace ExtenderApp.FFmpegEngines.Decoders
                 Engine.Return(ref packet);
             }
 
-            while (_frameChannel.Reader.TryRead(out var frame))
+            while (_frameChannel.Reader.TryPeek(out var frame))
             {
                 if (generation == frame.Generation ||
                     !_frameChannel.Reader.TryRead(out frame))

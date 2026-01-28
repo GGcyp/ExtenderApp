@@ -19,17 +19,5 @@
         /// cref="SynchronizationContext.Send(SendOrPostCallback, object)"/> 进行异步/同步调度。 在 UI 初始化前可能为 null。
         /// </summary>
         SynchronizationContext? Context { get; }
-
-        /// <summary>
-        /// 初始化并捕获主线程与其 <see cref="SynchronizationContext"/>。
-        /// </summary>
-        /// <remarks>
-        /// - 典型调用时机：在 WPF 的 <c>App.OnStartup</c> 或 UI 线程已建立 Dispatcher 之后调用。 <br/>
-        /// - 期望行为：实现方应将 <see cref="Thread.CurrentThread"/> 作为 <see cref="MainThread"/>， 并读取 <see cref="SynchronizationContext.Current"/> 作为 <see
-        /// cref="Context"/>。 <br/>
-        /// - 幂等性：应设计为可重复调用且安全，重复调用不会破坏已捕获的上下文。 <br/>
-        /// - 线程安全：应仅在目标主线程上调用；必要时实现方可忽略非主线程调用或抛出异常（由实现决定）。
-        /// </remarks>
-        void InitMainThreadContext();
     }
 }

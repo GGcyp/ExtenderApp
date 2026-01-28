@@ -1,17 +1,14 @@
 ﻿using System.Net;
 using System.Net.Sockets;
-using ExtenderApp.Abstract;
 using ExtenderApp.ViewModels;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using SharpPcap;
 using SharpPcap.LibPcap;
 
 namespace ExtenderApp.LAN
 {
-    public class LANMainViewModel : ExtenderAppViewModel<LANMainView, LANModel>
+    public class LANMainViewModel : ExtenderAppViewModel
     {
-        public LANMainViewModel(IServiceStore serviceStore) : base(serviceStore)
+        public LANMainViewModel()
         {
             // 将扫描操作放入后台任务，避免阻塞UI线程
             //Task.Run(ScanLanForDevices);
@@ -50,7 +47,7 @@ namespace ExtenderApp.LAN
                 var ipAddress = ipv4AddressInfo.Addr.ipAddress;
                 var netmask = ipv4AddressInfo.Netmask.ipAddress;
 
-                ArpCommunicator arpCommunicator = new ArpCommunicator(dev, ServiceStore.ServiceProvider.GetRequiredService<ILogger<ArpCommunicator>>(), ipAddress);
+                ArpCommunicator arpCommunicator = new ArpCommunicator(dev, GetRequiredService<ILogger<ArpCommunicator>>(), ipAddress);
                 for (int i = 2; i < 255; i++)
                 {
                     var targetIp = IPAddress.Parse($"{ipAddress.GetAddressBytes()[0]}.{ipAddress.GetAddressBytes()[1]}.{ipAddress.GetAddressBytes()[2]}.{i}");

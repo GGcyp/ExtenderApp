@@ -50,6 +50,8 @@ namespace ExtenderApp.FFmpegEngines.Decoders
         /// </summary>
         private volatile int generation;
 
+        private volatile int completed;
+
         /// <summary>
         /// 当前播放会话的 FFmpeg 上下文。
         /// <para>
@@ -96,6 +98,7 @@ namespace ExtenderApp.FFmpegEngines.Decoders
         /// 解码循环/渲染循环中调用以判定当前读取/写入的数据是否仍属于“有效播放会话”。
         /// </para>
         /// </summary>
+        /// <returns>当前的代际编号（int）。</returns>
         public int GetCurrentGeneration()
         {
             return generation;
@@ -116,6 +119,29 @@ namespace ExtenderApp.FFmpegEngines.Decoders
             Interlocked.Increment(ref generation);
         }
 
+        /// <summary>
+        /// 判断当前播放会话是否已被标记为完成。
+        /// <para>返回基于内部原子标志的状态：非零表示已完成。</para>
+        /// </summary>
+        /// <returns>若会话已完成返回 <c>true</c>；否则返回 <c>false</c>。</returns>
+        public bool GetIsCompleted()
+        {
+            return completed != 0;
+        }
+
+        /// <summary>
+        /// 设置或清除“已完成”标志。
+        /// <para>写入操作为简单的整型赋值（0/1），用于在多线程场景下通知会话完成状态。</para>
+        /// </summary>
+        /// <param name="value">若为 <c>true</c> 则标记为已完成；若为 <c>false</c> 则清除完成标志。</param>
+        public void SetIsCompleted(bool value)
+        {
+            completed = value ? 1 : 0;
+        }
+
+        /// <summary>
+        /// 释放托管资源：取消并释放与会话生命周期相关的取消令牌源。
+        /// </summary>
         protected override void DisposeManagedResources()
         {
             AllSource.Cancel();

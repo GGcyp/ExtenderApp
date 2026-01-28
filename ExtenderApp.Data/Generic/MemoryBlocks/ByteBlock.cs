@@ -62,6 +62,9 @@ namespace ExtenderApp.Data
         /// </summary>
         public ReadOnlyMemory<byte> UnreadMemory => _block.UnreadMemory;
 
+        /// <summary>
+        /// 默认构造函数，创建空缓冲块。
+        /// </summary>
         public ByteBlock()
         {
             _block = new MemoryBlock<byte>();
@@ -71,9 +74,8 @@ namespace ExtenderApp.Data
         /// 按指定容量创建缓冲。
         /// </summary>
         /// <param name="capacity">初始容量。</param>
-        public ByteBlock(int capacity)
+        public ByteBlock(int capacity) : this(capacity, ArrayPool<byte>.Shared)
         {
-            _block = new MemoryBlock<byte>(capacity);
         }
 
         /// <summary>
@@ -86,10 +88,19 @@ namespace ExtenderApp.Data
             _block = new MemoryBlock<byte>(capacity, pool);
         }
 
+        /// <summary>
+        /// 从字节数组初始化。
+        /// </summary>
+        /// <param name="bytes">指定字节数组</param>
         public ByteBlock(byte[] bytes) : this(bytes.AsMemory())
         {
         }
 
+        /// <summary>
+        /// 从字节数组初始化，并使用指定数组池。
+        /// </summary>
+        /// <param name="bytes">指定字节数组</param>
+        /// <param name="pool">数组池</param>
         public ByteBlock(byte[] bytes, ArrayPool<byte> pool) : this(bytes.AsMemory(), pool)
         {
         }
@@ -142,11 +153,19 @@ namespace ExtenderApp.Data
         {
         }
 
+        /// <summary>
+        /// 以 MemoryBlock 内容初始化。
+        /// </summary>
+        /// <param name="block">源 MemoryBlock。</param>
         public ByteBlock(in MemoryBlock<byte> block)
         {
             _block = new(block);
         }
 
+        /// <summary>
+        /// 从 ByteBuffer 初始化。
+        /// </summary>
+        /// <param name="buffer">源 ByteBuffer。</param>
         public ByteBlock(ByteBuffer buffer)
         {
             if (buffer.IsEmpty)
@@ -329,7 +348,10 @@ namespace ExtenderApp.Data
         /// <summary>
         /// 归还底层缓冲到数组池。调用后不应再使用此实例。
         /// </summary>
-        public void Dispose() => _block.Dispose();
+        public void Dispose()
+        {
+            _block.Dispose();
+        }
 
         public override string ToString()
         {

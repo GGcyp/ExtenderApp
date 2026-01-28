@@ -7,11 +7,11 @@ namespace ExtenderApp.Abstract
     /// </summary>
     /// <remarks>
     /// 约定：
-    /// - 偏移与长度均以字节为单位。<br/>
-    /// - 读取方法：从文件读取原始字节并反序列化为 TLinkClient；失败或内容为空可返回 null。<br/>
-    /// - 写入方法：将值序列化为字节并写入到实现定义的位置/区间（覆盖或追加策略由实现决定）。<br/>
-    /// - 并发与线程安全由具体实现决定；结合 <see cref="IFileOperate"/> 可实现更细粒度控制。<br/>
-    /// - 常见异常（如 IOException、UnauthorizedAccessException）由具体实现决定是否抛出。
+    /// - 偏移与长度均以字节为单位。
+    /// - 读取方法：从文件读取原始字节并反序列化为目标类型；失败或内容为空可返回 null。
+    /// - 写入方法：将值序列化为字节并写入到实现定义的位置/区间（覆盖或追加策略由实现决定）。
+    /// - 并发与线程安全由具体实现决定；结合 <see cref="IFileOperate"/> 可实现更细粒度控制。
+    /// - 常见异常（如 <see cref="System.IO.IOException"/>, <see cref="System.UnauthorizedAccessException"/>）由具体实现决定是否抛出。
     /// </remarks>
     public interface IFileParser
     {
@@ -22,24 +22,30 @@ namespace ExtenderApp.Abstract
         /// </summary>
         /// <typeparam name="T">返回对象的类型。</typeparam>
         /// <param name="info">期望的本地文件信息。</param>
-        /// <returns>反序列化后的对象；失败、文件为空或格式不匹配时返回 null。</returns>
-        T? Read<T>(ExpectLocalFileInfo info);
+        /// <returns>
+        /// 一个 <see cref="Result{T}"/>：成功时包含反序列化后的对象；失败、文件为空或格式不匹配时其值为 <c>null</c>。
+        /// </returns>
+        Result<T?> Read<T>(ExpectLocalFileInfo info);
 
         /// <summary>
         /// 读取文件全部（或实现定义的默认范围）并反序列化为指定类型。
         /// </summary>
         /// <typeparam name="T">返回对象的类型。</typeparam>
         /// <param name="info">文件操作信息（包含路径/模式/访问权限）。</param>
-        /// <returns>反序列化后的对象；失败、文件为空或格式不匹配时返回 null。</returns>
-        T? Read<T>(FileOperateInfo info);
+        /// <returns>
+        /// 一个 <see cref="Result{T}"/>：成功时包含反序列化后的对象；失败、文件为空或格式不匹配时其值为 <c>null</c>。
+        /// </returns>
+        Result<T?> Read<T>(FileOperateInfo info);
 
         /// <summary>
-        /// 读取文件全部（或实现定义的默认范围）并反序列化为指定类型。
+        /// 使用已有的并发文件操作接口读取文件全部（或实现定义的默认范围）并反序列化为指定类型。
         /// </summary>
         /// <typeparam name="T">返回对象的类型。</typeparam>
-        /// <param name="fileOperate">并发文件操作接口。</param>
-        /// <returns>反序列化后的对象；失败、文件为空或格式不匹配时返回 null。</returns>
-        T? Read<T>(IFileOperate fileOperate);
+        /// <param name="fileOperate">并发文件操作接口，调用方负责生命周期（如释放）约定。</param>
+        /// <returns>
+        /// 一个 <see cref="Result{T}"/>：成功时包含反序列化后的对象；失败、文件为空或格式不匹配时其值为 <c>null</c>。
+        /// </returns>
+        Result<T?> Read<T>(IFileOperate fileOperate);
 
         /// <summary>
         /// 从指定字节偏移读取指定长度的数据，并反序列化为指定类型。
@@ -48,8 +54,10 @@ namespace ExtenderApp.Abstract
         /// <param name="info">期望的本地文件信息。</param>
         /// <param name="position">读取起始字节偏移（≥ 0）。</param>
         /// <param name="length">读取字节长度（≥ 0）。</param>
-        /// <returns>反序列化后的对象；失败或数据不足时返回 null。</returns>
-        T? Read<T>(ExpectLocalFileInfo info, long position, int length);
+        /// <returns>
+        /// 一个 <see cref="Result{T}"/>：成功时包含反序列化后的对象；失败或数据不足时其值为 <c>null</c>。
+        /// </returns>
+        Result<T?> Read<T>(ExpectLocalFileInfo info, long position, int length);
 
         /// <summary>
         /// 从指定字节偏移读取指定长度的数据，并反序列化为指定类型。
@@ -58,18 +66,22 @@ namespace ExtenderApp.Abstract
         /// <param name="info">文件操作信息（包含路径/模式/访问权限）。</param>
         /// <param name="position">读取起始字节偏移（≥ 0）。</param>
         /// <param name="length">读取字节长度（≥ 0）。</param>
-        /// <returns>反序列化后的对象；失败或数据不足时返回 null。</returns>
-        T? Read<T>(FileOperateInfo info, long position, int length);
+        /// <returns>
+        /// 一个 <see cref="Result{T}"/>：成功时包含反序列化后的对象；失败或数据不足时其值为 <c>null</c>。
+        /// </returns>
+        Result<T?> Read<T>(FileOperateInfo info, long position, int length);
 
         /// <summary>
-        /// 从指定字节偏移读取指定长度的数据，并反序列化为指定类型。
+        /// 从指定字节偏移读取指定长度的数据，并反序列化为指定类型（使用现有的并发文件操作接口）。
         /// </summary>
         /// <typeparam name="T">返回对象的类型。</typeparam>
         /// <param name="fileOperate">并发文件操作接口。</param>
         /// <param name="position">读取起始字节偏移（≥ 0）。</param>
         /// <param name="length">读取字节长度（≥ 0）。</param>
-        /// <returns>反序列化后的对象；失败或数据不足时返回 null。</returns>
-        T? Read<T>(IFileOperate fileOperate, long position, int length);
+        /// <returns>
+        /// 一个 <see cref="Result{T}"/>：成功时包含反序列化后的对象；失败或数据不足时其值为 <c>null</c>。
+        /// </returns>
+        Result<T?> Read<T>(IFileOperate fileOperate, long position, int length);
 
         #endregion Read
 
@@ -81,27 +93,33 @@ namespace ExtenderApp.Abstract
         /// <typeparam name="T">返回对象的类型。</typeparam>
         /// <param name="info">期望的本地文件信息。</param>
         /// <param name="token">取消令牌。</param>
-        /// <returns>反序列化后的对象；失败、文件为空或格式不匹配时返回 null。</returns>
+        /// <returns>
+        /// 一个异步的 <see cref="Result{T}"/>：成功时包含反序列化后的对象；失败、文件为空或格式不匹配时其值为 <c>null</c>。
+        /// </returns>
         /// <remarks>提供多种重载以支持不同上下文与读取范围。</remarks>
-        Task<T?> ReadAsync<T>(ExpectLocalFileInfo info, CancellationToken token = default);
+        ValueTask<Result<T?>> ReadAsync<T>(ExpectLocalFileInfo info, CancellationToken token = default);
 
         /// <summary>
-        /// 异步读取文件全部（或实现定义的默认范围）并反序列化为指定类型。
+        /// 异步读取文件全部（或实现定义的默认范围）并反序列化为指定类型（使用文件操作配置信息）。
         /// </summary>
         /// <typeparam name="T">返回对象的类型。</typeparam>
         /// <param name="info">文件操作信息（包含路径/模式/访问权限）。</param>
         /// <param name="token">取消令牌。</param>
-        /// <returns>反序列化后的对象；失败、文件为空或格式不匹配时返回 null。</returns>
-        Task<T?> ReadAsync<T>(FileOperateInfo info, CancellationToken token = default);
+        /// <returns>
+        /// 一个异步的 <see cref="Result{T}"/>：成功时包含反序列化后的对象；失败、文件为空或格式不匹配时其值为 <c>null</c>。
+        /// </returns>
+        ValueTask<Result<T?>> ReadAsync<T>(FileOperateInfo info, CancellationToken token = default);
 
         /// <summary>
-        /// 异步读取文件全部（或实现定义的默认范围）并反序列化为指定类型。
+        /// 异步使用现有的并发文件操作接口读取文件全部并反序列化为指定类型。
         /// </summary>
         /// <typeparam name="T">返回对象的类型。</typeparam>
         /// <param name="fileOperate">并发文件操作接口。</param>
         /// <param name="token">取消令牌。</param>
-        /// <returns>反序列化后的对象；失败、文件为空或格式不匹配时返回 null。</returns>
-        Task<T?> ReadAsync<T>(IFileOperate fileOperate, CancellationToken token = default);
+        /// <returns>
+        /// 一个异步的 <see cref="Result{T}"/>：成功时包含反序列化后的对象；失败、文件为空或格式不匹配时其值为 <c>null</c>。
+        /// </returns>
+        ValueTask<Result<T?>> ReadAsync<T>(IFileOperate fileOperate, CancellationToken token = default);
 
         /// <summary>
         /// 异步从指定字节偏移读取指定长度的数据，并反序列化为指定类型。
@@ -111,30 +129,36 @@ namespace ExtenderApp.Abstract
         /// <param name="position">读取起始字节偏移（≥ 0）。</param>
         /// <param name="length">读取字节长度（≥ 0）。</param>
         /// <param name="token">取消令牌。</param>
-        /// <returns>反序列化后的对象；失败或数据不足时返回 null。</returns>
-        Task<T?> ReadAsync<T>(ExpectLocalFileInfo info, long position, int length, CancellationToken token = default);
+        /// <returns>
+        /// 一个异步的 <see cref="Result{T}"/>：成功时包含反序列化后的对象；失败或数据不足时其值为 <c>null</c>。
+        /// </returns>
+        ValueTask<Result<T?>> ReadAsync<T>(ExpectLocalFileInfo info, long position, int length, CancellationToken token = default);
 
         /// <summary>
-        /// 异步从指定字节偏移读取指定长度的数据，并反序列化为指定类型。
+        /// 异步从指定字节偏移读取指定长度的数据，并反序列化为指定类型（使用文件操作配置信息）。
         /// </summary>
         /// <typeparam name="T">返回对象的类型。</typeparam>
         /// <param name="info">文件操作信息（包含路径/模式/访问权限）。</param>
         /// <param name="position">读取起始字节偏移（≥ 0）。</param>
         /// <param name="length">读取字节长度（≥ 0）。</param>
         /// <param name="token">取消令牌。</param>
-        /// <returns>反序列化后的对象；失败或数据不足时返回 null。</returns>
-        Task<T?> ReadAsync<T>(FileOperateInfo info, long position, int length, CancellationToken token = default);
+        /// <returns>
+        /// 一个异步的 <see cref="Result{T}"/>：成功时包含反序列化后的对象；失败或数据不足时其值为 <c>null</c>。
+        /// </returns>
+        ValueTask<Result<T?>> ReadAsync<T>(FileOperateInfo info, long position, int length, CancellationToken token = default);
 
         /// <summary>
-        /// 异步从指定字节偏移读取指定长度的数据，并反序列化为指定类型。
+        /// 异步从指定字节偏移读取指定长度的数据，并反序列化为指定类型（使用现有的并发文件操作接口）。
         /// </summary>
         /// <typeparam name="T">返回对象的类型。</typeparam>
         /// <param name="fileOperate">并发文件操作接口。</param>
         /// <param name="position">读取起始字节偏移（≥ 0）。</param>
         /// <param name="length">读取字节长度（≥ 0）。</param>
         /// <param name="token">取消令牌。</param>
-        /// <returns>反序列化后的对象；失败或数据不足时返回 null。</returns>
-        Task<T?> ReadAsync<T>(IFileOperate fileOperate, long position, int length, CancellationToken token = default);
+        /// <returns>
+        /// 一个异步的 <see cref="Result{T}"/>：成功时包含反序列化后的对象；失败或数据不足时其值为 <c>null</c>。
+        /// </returns>
+        ValueTask<Result<T?>> ReadAsync<T>(IFileOperate fileOperate, long position, int length, CancellationToken token = default);
 
         #endregion ReadAsync
 
@@ -146,7 +170,8 @@ namespace ExtenderApp.Abstract
         /// <typeparam name="T">值的类型。</typeparam>
         /// <param name="info">期望的本地文件信息。</param>
         /// <param name="value">要写入的值。</param>
-        void Write<T>(ExpectLocalFileInfo info, T value);
+        /// <returns>表示操作结果的 <see cref="Result"/>。</returns>
+        Result Write<T>(ExpectLocalFileInfo info, T value);
 
         /// <summary>
         /// 将指定的值序列化后写入文件（位置策略由实现定义）。
@@ -154,15 +179,17 @@ namespace ExtenderApp.Abstract
         /// <typeparam name="T">值的类型。</typeparam>
         /// <param name="info">文件操作信息（包含路径/模式/访问权限）。</param>
         /// <param name="value">要写入的值。</param>
-        void Write<T>(FileOperateInfo info, T value);
+        /// <returns>表示操作结果的 <see cref="Result"/>。</returns>
+        Result Write<T>(FileOperateInfo info, T value);
 
         /// <summary>
-        /// 将指定的值序列化后写入文件（位置策略由实现定义）。
+        /// 将指定的值序列化后写入文件（位置策略由实现定义，使用现有的并发文件操作接口）。
         /// </summary>
         /// <typeparam name="T">值的类型。</typeparam>
         /// <param name="fileOperate">并发文件操作接口。</param>
         /// <param name="value">要写入的值。</param>
-        void Write<T>(IFileOperate fileOperate, T value);
+        /// <returns>表示操作结果的 <see cref="Result"/>。</returns>
+        Result Write<T>(IFileOperate fileOperate, T value);
 
         /// <summary>
         /// 将指定的值序列化后写入到指定字节偏移位置。
@@ -171,25 +198,28 @@ namespace ExtenderApp.Abstract
         /// <param name="info">期望的本地文件信息。</param>
         /// <param name="value">要写入的值。</param>
         /// <param name="position">写入起始字节偏移（≥ 0）。</param>
-        void Write<T>(ExpectLocalFileInfo info, T value, long position);
+        /// <returns>表示操作结果的 <see cref="Result"/>。</returns>
+        Result Write<T>(ExpectLocalFileInfo info, T value, long position);
 
         /// <summary>
-        /// 将指定的值序列化后写入到指定字节偏移位置。
+        /// 将指定的值序列化后写入到指定字节偏移位置（使用文件操作配置信息）。
         /// </summary>
         /// <typeparam name="T">值的类型。</typeparam>
         /// <param name="info">文件操作信息（包含路径/模式/访问权限）。</param>
         /// <param name="value">要写入的值。</param>
         /// <param name="position">写入起始字节偏移（≥ 0）。</param>
-        void Write<T>(FileOperateInfo info, T value, long position);
+        /// <returns>表示操作结果的 <see cref="Result"/>。</returns>
+        Result Write<T>(FileOperateInfo info, T value, long position);
 
         /// <summary>
-        /// 将指定的值序列化后写入到指定字节偏移位置。
+        /// 将指定的值序列化后写入到指定字节偏移位置（使用现有的并发文件操作接口）。
         /// </summary>
         /// <typeparam name="T">值的类型。</typeparam>
         /// <param name="fileOperate">并发文件操作接口。</param>
         /// <param name="value">要写入的值。</param>
         /// <param name="position">写入起始字节偏移（≥ 0）。</param>
-        void Write<T>(IFileOperate fileOperate, T value, long position);
+        /// <returns>表示操作结果的 <see cref="Result"/>。</returns>
+        Result Write<T>(IFileOperate fileOperate, T value, long position);
 
         #endregion Write
 
@@ -202,7 +232,8 @@ namespace ExtenderApp.Abstract
         /// <param name="info">期望的本地文件信息。</param>
         /// <param name="value">要写入的值。</param>
         /// <param name="token">取消令牌。</param>
-        Task WriteAsync<T>(ExpectLocalFileInfo info, T value, CancellationToken token = default);
+        /// <returns>表示异步操作的 <see cref="ValueTask{Result}"/>。</returns>
+        ValueTask<Result> WriteAsync<T>(ExpectLocalFileInfo info, T value, CancellationToken token = default);
 
         /// <summary>
         /// 异步将指定的值序列化后写入文件（位置策略由实现定义）。
@@ -211,16 +242,18 @@ namespace ExtenderApp.Abstract
         /// <param name="info">文件操作信息（包含路径/模式/访问权限）。</param>
         /// <param name="value">要写入的值。</param>
         /// <param name="token">取消令牌。</param>
-        Task WriteAsync<T>(FileOperateInfo info, T value, CancellationToken token = default);
+        /// <returns>表示异步操作的 <see cref="ValueTask{Result}"/>。</returns>
+        ValueTask<Result> WriteAsync<T>(FileOperateInfo info, T value, CancellationToken token = default);
 
         /// <summary>
-        /// 异步将指定的值序列化后写入文件（位置策略由实现定义）。
+        /// 异步将指定的值序列化后写入文件（位置策略由实现定义，使用现有的并发文件操作接口）。
         /// </summary>
         /// <typeparam name="T">值的类型。</typeparam>
         /// <param name="fileOperate">并发文件操作接口。</param>
         /// <param name="value">要写入的值。</param>
         /// <param name="token">取消令牌。</param>
-        Task WriteAsync<T>(IFileOperate fileOperate, T value, CancellationToken token = default);
+        /// <returns>表示异步操作的 <see cref="ValueTask{Result}"/>。</returns>
+        ValueTask<Result> WriteAsync<T>(IFileOperate fileOperate, T value, CancellationToken token = default);
 
         /// <summary>
         /// 异步将指定的值序列化后写入到指定字节偏移位置。
@@ -230,27 +263,30 @@ namespace ExtenderApp.Abstract
         /// <param name="value">要写入的值。</param>
         /// <param name="position">写入起始字节偏移（≥ 0）。</param>
         /// <param name="token">取消令牌。</param>
-        Task WriteAsync<T>(ExpectLocalFileInfo info, T value, long position, CancellationToken token = default);
+        /// <returns>表示异步操作的 <see cref="ValueTask{Result}"/>。</returns>
+        ValueTask<Result> WriteAsync<T>(ExpectLocalFileInfo info, T value, long position, CancellationToken token = default);
 
         /// <summary>
-        /// 异步将指定的值序列化后写入到指定字节偏移位置。
+        /// 异步将指定的值序列化后写入到指定字节偏移位置（使用文件操作配置信息）。
         /// </summary>
         /// <typeparam name="T">值的类型。</typeparam>
         /// <param name="info">文件操作信息（包含路径/模式/访问权限）。</param>
         /// <param name="value">要写入的值。</param>
         /// <param name="position">写入起始字节偏移（≥ 0）。</param>
         /// <param name="token">取消令牌。</param>
-        Task WriteAsync<T>(FileOperateInfo info, T value, long position, CancellationToken token = default);
+        /// <returns>表示异步操作的 <see cref="ValueTask{Result}"/>。</returns>
+        ValueTask<Result> WriteAsync<T>(FileOperateInfo info, T value, long position, CancellationToken token = default);
 
         /// <summary>
-        /// 异步将指定的值序列化后写入到指定字节偏移位置。
+        /// 异步将指定的值序列化后写入到指定字节偏移位置（使用现有的并发文件操作接口）。
         /// </summary>
         /// <typeparam name="T">值的类型。</typeparam>
         /// <param name="fileOperate">并发文件操作接口。</param>
         /// <param name="value">要写入的值。</param>
         /// <param name="position">写入起始字节偏移（≥ 0）。</param>
         /// <param name="token">取消令牌。</param>
-        Task WriteAsync<T>(IFileOperate fileOperate, T value, long position, CancellationToken token = default);
+        /// <returns>表示异步操作的 <see cref="ValueTask{Result}"/>。</returns>
+        ValueTask<Result> WriteAsync<T>(IFileOperate fileOperate, T value, long position, CancellationToken token = default);
 
         #endregion WriteAsync
 
@@ -261,13 +297,14 @@ namespace ExtenderApp.Abstract
         /// </summary>
         /// <param name="info">期望的本地文件信息。</param>
         /// <remarks>实现应尽量幂等：文件不存在时不应视为错误。</remarks>
-        void Delete(ExpectLocalFileInfo info);
+        /// <returns>表示操作结果的 <see cref="Result"/>。</returns>
+        Result Delete(ExpectLocalFileInfo info);
 
         /// <summary>
         /// 获取与期望文件信息对应的文件操作对象。
         /// </summary>
         /// <param name="info">期望的本地文件信息。</param>
-        /// <returns>返回期望的本地文件</returns>
+        /// <returns>返回与期望信息对应的 <see cref="IFileOperate"/> 实例。</returns>
         IFileOperate GetFileOperate(ExpectLocalFileInfo info);
 
         #endregion Operate

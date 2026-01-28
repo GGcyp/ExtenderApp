@@ -15,7 +15,7 @@ namespace ExtenderApp.Common.Threads
         /// <returns>服务集合</returns>
         public static IServiceCollection AddMainThreadContext(this IServiceCollection services)
         {
-            services.AddSingleton<IMainThreadContext, MainThreadContext>();
+            services.AddSingleton<IMainThreadContext>(new MainThreadContext());
             return services;
         }
     }

@@ -1,4 +1,5 @@
-﻿using System.ComponentModel;
+﻿using System.Collections.Concurrent;
+using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using ExtenderApp.Abstract;
 using ExtenderApp.Data;
@@ -12,6 +13,11 @@ namespace ExtenderApp.ViewModels
     /// </summary>
     public abstract class ExtenderAppViewModel : DisposableObject, IViewModel, INotifyPropertyChanged, ILogger
     {
+        private static readonly ConcurrentDictionary<string, PropertyChangedEventArgs> s_argsCache = new();
+
+        private static PropertyChangedEventArgs GetCachedArgs(string name) =>
+            s_argsCache.GetOrAdd(name, n => new PropertyChangedEventArgs(n));
+
         /// <summary>
         /// 注入的服务提供者（可为插件作用域的 IServiceProvider）。 通过 <see cref="Inject"/> 设置。
         /// </summary>
@@ -55,9 +61,10 @@ namespace ExtenderApp.ViewModels
         /// 触发 <see cref="PropertyChanged"/> 事件，通知UI属性已更新。
         /// </summary>
         /// <param name="propertyName">已更改的属性的名称。该参数是可选的，可由调用方自动提供。</param>
-        protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
+        protected void OnPropertyChanged([CallerMemberName] string? propertyName = null)
         {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+            if (string.IsNullOrEmpty(propertyName)) return;
+            PropertyChanged?.Invoke(this, GetCachedArgs(propertyName));
         }
 
         /// <summary>

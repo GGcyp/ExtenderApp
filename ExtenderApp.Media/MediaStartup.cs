@@ -1,10 +1,8 @@
 ﻿using System.IO;
-using ExtenderApp.Abstract;
 using ExtenderApp.Common;
 using ExtenderApp.Data;
 using ExtenderApp.FFmpegEngines;
 using ExtenderApp.FFmpegEngines.Medias;
-using ExtenderApp.Media.Models;
 using ExtenderApp.Media.ViewModels;
 using ExtenderApp.Media.Views;
 using ExtenderApp.Services;
@@ -26,11 +24,6 @@ namespace ExtenderApp.Media
             //FFmpegEngine
             AddFFmpegEngines(services);
             services.AddSingleton<MediaEngine>();
-        }
-
-        public override void ConfigureBinaryFormatterStore(IBinaryFormatterStore store)
-        {
-            store.Add<MediaInfo, MediaInfoFormatter>();
         }
 
         private static IServiceCollection AddFFmpegEngines(IServiceCollection services)

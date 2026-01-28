@@ -101,27 +101,12 @@ namespace ExtenderApp.Common.IO
             }
         }
 
-        protected override void ExecuteWrite(long filePosition, byte[] bytes, int bytesPosition, int bytesLength)
-        {
-            throw new NotImplementedException();
-        }
-
-        protected override void ExecuteWrite(long filePosition, ref ByteBuffer buffer)
-        {
-            throw new NotImplementedException();
-        }
-
         protected override void ExecuteWrite(long filePosition, ReadOnlySpan<byte> span)
         {
             throw new NotImplementedException();
         }
 
         protected override void ExecuteWrite(long filePosition, ReadOnlyMemory<byte> memory)
-        {
-            throw new NotImplementedException();
-        }
-
-        protected override ValueTask ExecuteWriteAsync(long filePosition, byte[] bytes, int bytesPosition, int bytesLength, CancellationToken token)
         {
             throw new NotImplementedException();
         }
@@ -167,21 +152,6 @@ namespace ExtenderApp.Common.IO
         }
 
         protected override void ChangeCapacity(long length)
-        {
-            throw new NotImplementedException();
-        }
-
-        protected override void ExecuteWrite(long filePosition, ref ByteBlock block)
-        {
-            throw new NotImplementedException();
-        }
-
-        protected override int ExecuteRead(long filePosition, int length, ref ByteBuffer buffer)
-        {
-            throw new NotImplementedException();
-        }
-
-        protected override int ExecuteRead(long filePosition, int length, ref ByteBlock block)
         {
             throw new NotImplementedException();
         }

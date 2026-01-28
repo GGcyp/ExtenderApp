@@ -1,7 +1,5 @@
 ﻿using ExtenderApp.Abstract;
-using ExtenderApp.Common;
 using ExtenderApp.Data;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace ExtenderApp.Services
@@ -14,149 +12,105 @@ namespace ExtenderApp.Services
         /// <summary>
         /// 二进制解析器接口，用于解析二进制数据。
         /// </summary>
-        private readonly IBinaryParser _parser;
-
-        /// <summary>
-        /// 存储本地数据信息的字典。
-        /// </summary>
-        private readonly Dictionary<string, LocalDataInfo> _localDataDict;
+        private readonly IBinaryParser _binaryParser;
 
         /// <summary>
         /// 日志服务接口，用于记录日志信息。
         /// </summary>
         private readonly ILogger<ILocalDataService> _logger;
 
-        /// <summary>
-        /// 默认数据版本号。 用于初始化本地数据的版本信息，未指定时采用此版本。
-        /// </summary>
-        private readonly Version _version;
-
-        /// <summary>
-        /// 自动保存任务的取消令牌。
-        /// </summary>
-        private ScheduledTask autosaveTokn;
-
         public LocalDataService(IBinaryParser parser, IBinaryFormatterStore store, ILogger<ILocalDataService> logger)
         {
-            _parser = parser;
-
-            _localDataDict = new();
+            _binaryParser = parser;
             _logger = logger;
-            _version = new(0, 0, 0, 1);
-
-            autosaveTokn = new ScheduledTask();
-            autosaveTokn.StartCycle(o => SaveAllData(), TimeSpan.FromMinutes(5));
         }
 
-        public bool LoadData<T>(string? dataName, out LocalData<T>? data)
-            where T : class, new()
+        private ExpectLocalFileInfo GetFileFullPath(string fileName)
         {
-            data = default;
-
-            if (string.IsNullOrEmpty(dataName))
-            {
-                _logger.LogError("获取本地数据名字不能为空");
-                return false;
-            }
-
-            try
-            {
-                LocalData<T>? localData = null;
-                if (!_localDataDict.TryGetValue(dataName, out var info))
-                {
-                    ExpectLocalFileInfo fileInfo = new(ProgramDirectory.DataPath, dataName);
-                    var tempdata = _parser.Read<VersionData<T>>(fileInfo);
-
-                    localData = new LocalData<T>(tempdata.Data ?? new T(), SaveLocalData, tempdata.DataVersion ?? _version);
-
-                    info = new LocalDataInfo(ProgramDirectory.DataPath, dataName, localData);
-                    _localDataDict.Add(dataName, info);
-                }
-                else
-                {
-                    localData = info.LocalData as LocalData<T>;
-                }
-
-                data = localData;
-                return localData is not null;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "读取本地数据出现错误:{dataName}", dataName);
-
-                if (typeof(T).GetConstructor(Type.EmptyTypes) == null)
-                    return false;
-
-                data = new LocalData<T>(new T(), SaveLocalData, _version);
-                var info = new LocalDataInfo(ProgramDirectory.DataPath, dataName, data);
-                _localDataDict.Add(dataName, info);
-                return true;
-            }
+            return new(ProgramDirectory.DataPath, fileName);
         }
 
-        public bool SaveData<T>(string? dataName, LocalData<T>? data)
-            where T : class
-        {
-            try
-            {
-                if (string.IsNullOrEmpty(dataName))
-                {
-                    throw new ArgumentNullException("保存本地数据名字不能为空");
-                }
-                if (data is null || data.Data is null || data.Version == null)
-                {
-                    throw new ArgumentNullException("保存本地数据不能为空");
-                }
+        //#region Load
 
-                if (!_localDataDict.TryGetValue(dataName, out var info))
-                {
-                    //info = new LocalDataInfo(_pathService.DataPath, dataName, data);
-                    //_localDataDict.Add(dataName, info);
-                    return false;
-                }
-                else
-                {
-                    if (info.LocalData != data)
-                        info.LocalData = data;
+        //public Result<T?> LoadData<T>(string fileName)
+        //{
+        //    try
+        //    {
+        //        var fileOperate = _fileOperateProvider.GetFileOperate(GetFileFullPath(fileName));
+        //        fileOperate.Read(out ByteBuffer buffer);
+        //        _fileOperateProvider.ReleaseOperate(fileOperate);
+        //        T? result = _binaryParser.Deserialize<T>(ref buffer);
+        //        buffer.Dispose();
+        //        return Result.Success(result);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        _logger.LogError(ex, "加载本地数据时发生错误，文件名：{FileName}", fileName);
+        //        return Result.FromException<T?>(ex);
+        //    }
+        //}
 
-                    if (data.SaveAcion is null)
-                        data.SaveAcion = SaveLocalData;
-                }
+        //public async ValueTask<Result<T?>> LoadDataAsync<T>(string fileName)
+        //{
+        //    try
+        //    {
+        //        var fileOperate = _fileOperateProvider.GetFileOperate(GetFileFullPath(fileName));
+        //        int length= (int)fileOperate.Info.Length;
+        //        ByteBlock block = new(length);
+        //        await fileOperate.ReadByteBlockAsync(block.GetMemory(length));
+        //        _fileOperateProvider.ReleaseOperate(fileOperate);
+        //        T? result = _binaryParser.Deserialize<T>(block.UnreadMemory);
+        //        block.Dispose();
+        //        return Result.Success(result);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        _logger.LogError(ex, "加载本地数据时发生错误，文件名：{FileName}", fileName);
+        //        return Result.FromException<T?>(ex);
+        //    }
+        //}
 
-                _parser.WriteAsync(info.FileInfo, data.ToVersionData(), CompressionType.Lz4Block);
-                return true;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "写入本地数据出现错误:{dataName}", dataName);
-                return false;
-            }
-        }
+        //#endregion Load
 
-        public bool DeleteData(string? dataName)
-        {
-            if (string.IsNullOrEmpty(dataName))
-            {
-                return false;
-            }
+        //#region Save
 
-            return _localDataDict.Remove(dataName);
-        }
+        //public void SaveData<T>(string fileName, T data, CompressionType compressionType = CompressionType.Lz4Block)
+        //{
+        //    ByteBuffer buffer = new();
+        //    try
+        //    {
+        //        _binaryParser.Serialize(data, out buffer, compressionType);
+        //        var fileOperate = _fileOperateProvider.GetFileOperate(GetFileFullPath(fileName));
+        //        fileOperate.Write(ref buffer);
+        //        _fileOperateProvider.ReleaseOperate(fileOperate);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        buffer.Dispose();
+        //        _logger.LogError(ex, "保存本地数据时发生错误，文件名：{FileName}", fileName);
+        //    }
+        //    finally
+        //    {
+        //        buffer.Dispose();
+        //    }
+        //}
 
-        private void SaveLocalData<T>(ExpectLocalFileInfo info, Version version, T data)
-        {
-            _parser.Write(info, new VersionData<T>(version, data), CompressionType.Lz4Block);
-        }
+        //public ValueTask<Result> SaveDataAsync<T>(string fileName, T data, CancellationToken token, CompressionType compressionType = CompressionType.Lz4Block)
+        //{
+        //    if (string.IsNullOrEmpty(fileName))
+        //        return ValueTask.FromResult(Result.Failure("文件名不能为空"));
 
-        /// <summary>
-        /// 保存所有数据。
-        /// </summary>
-        private void SaveAllData()
-        {
-            foreach (var data in _localDataDict.Values)
-            {
-                data.Save();
-            }
-        }
+        //    try
+        //    {
+        //        return _binaryParser.WriteAsync(GetFileFullPath(fileName), data, compressionType);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        _logger.LogError(ex, "保存本地数据时发生错误，文件名：{FileName}", fileName);
+        //        return ValueTask.FromException<Result>(ex);
+        //    }
+        //}
+
+        //#endregion Save
     }
 }

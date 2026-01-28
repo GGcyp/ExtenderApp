@@ -20,65 +20,34 @@
             _engine = engine ?? throw new ArgumentNullException(nameof(engine));
         }
 
-        /// <summary>
-        /// 打开媒体并返回播放器实例。
-        /// <para>
-        /// 当 <paramref name="mediaUri"/> 为本地文件时使用 <see cref="Uri.LocalPath"/>； 否则使用 <see cref="Uri.ToString()"/> 作为 FFmpeg 打开地址（例如 http/https/rtsp 等）。
-        /// </para>
-        /// </summary>
-        /// <param name="mediaUri">媒体 URI（本地文件或网络地址）。</param>
-        /// <param name="settings">解码器设置；为 null 时使用默认值。</param>
-        /// <param name="options">FFmpeg 打开选项（AVDictionary），例如超时、探测大小、rtsp_transport 等。</param>
-        /// <returns>可用于播放控制的 <see cref="IMediaPlayer"/> 实例。</returns>
-        /// <exception cref="ArgumentNullException"><paramref name="mediaUri"/> 为 null 时抛出。</exception>
-        /// <exception cref="FFmpegException">FFmpeg 打开失败/解析失败时抛出。</exception>
         public IMediaPlayer OpenMedia(Uri mediaUri, FFmpegDecoderSettings? settings = null, Dictionary<string, string>? options = null)
         {
-            ArgumentNullException.ThrowIfNull(mediaUri);
-
-            return OpenMedia(mediaUri.IsFile ? mediaUri.LocalPath : mediaUri.ToString(), settings, options);
+            var context = _engine.Open(mediaUri, options);
+            return CreateMediaPlayer(context, settings);
         }
 
-        /// <summary>
-        /// 打开媒体并返回播放器实例。
-        /// <para>典型流程：
-        /// <list type="number">
-        /// <item>
-        /// <description>调用 <see cref="FFmpegEngine.OpenUri(string, Dictionary{string, string}?)"/> 打开媒体，构建 <see cref="FFmpegContext"/>。</description>
-        /// </item>
-        /// <item>
-        /// <description>调用引擎扩展创建解码控制器（ <c>CreateDecoderController</c>）。</description>
-        /// </item>
-        /// <item>
-        /// <description>创建 <see cref="FrameProcessController"/> 负责帧投递/节拍控制。</description>
-        /// </item>
-        /// <item>
-        /// <description>返回 <see cref="MediaPlayer"/>。</description>
-        /// </item>
-        /// </list>
-        /// </para>
-        /// </summary>
-        /// <param name="mediaPath">媒体路径或 URL。</param>
-        /// <param name="settings">解码器设置；为 null 时使用默认值。</param>
-        /// <param name="options">FFmpeg 打开选项（AVDictionary）。</param>
-        /// <returns>可用于播放控制的 <see cref="IMediaPlayer"/> 实例。</returns>
-        /// <exception cref="ArgumentNullException"><paramref name="mediaPath"/> 为 null 时抛出。</exception>
-        /// <exception cref="FFmpegException">FFmpeg 打开失败/解析失败时抛出。</exception>
-        public IMediaPlayer OpenMedia(string mediaPath, FFmpegDecoderSettings? settings = null, Dictionary<string, string>? options = null)
+        public IMediaPlayer OpenMedia(FFmpegInfo info, FFmpegDecoderSettings? settings = null, Dictionary<string, string>? options = null)
         {
-            ArgumentNullException.ThrowIfNull(mediaPath);
+            var context = _engine.Open(info, options);
+            return CreateMediaPlayer(context, settings);
+        }
 
+        private IMediaPlayer CreateMediaPlayer(FFmpegContext context, FFmpegDecoderSettings? settings)
+        {
             settings ??= new FFmpegDecoderSettings();
-
-            var context = _engine.OpenUri(mediaPath, options);
             var ffmpegDecoderController = _engine.CreateDecoderController(context, settings);
-            FrameProcessController frameProcessController = new(ffmpegDecoderController);
+            var frameProcessController = CreateFrameProcessController(ffmpegDecoderController);
             return new MediaPlayer(ffmpegDecoderController, frameProcessController);
         }
 
-        public FFmpegInfo CreateFFmpegInfo(string uri)
+        private IFrameProcessController CreateFrameProcessController(IFFmpegDecoderController decoderController)
         {
-            return _engine.CreateFFmpegInfo(uri);
+            return new FrameProcessController(decoderController);
+        }
+
+        public FFmpegInfo CreateFFmpegInfo(Uri mediaUri)
+        {
+            return _engine.CreateFFmpegInfo(mediaUri);
         }
     }
 }

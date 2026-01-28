@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
 using System.IO;
 using System.Security.Principal;
+using ExtenderApp.Common;
 using ExtenderApp.Data;
 using ExtenderApp.Services;
 using Microsoft.Extensions.DependencyInjection;
@@ -14,8 +15,8 @@ namespace ExtenderApp.LAN
 
         public override void AddService(IServiceCollection services)
         {
-            services.AddSingleton<LANMainView>();
-            services.AddSingleton<LANMainViewModel>();
+            services.AddView<LANMainView, LANMainViewModel>();
+            services.AddViewModel<LANMainViewModel>();
         }
 
         public override void ConfigureDetails(PluginDetails details)
@@ -72,11 +73,9 @@ namespace ExtenderApp.LAN
                 {
                     process?.WaitForExit(); // 等待安装完成（约10-30秒，取决于系统）
                 }
-
             }
             catch (Exception ex)
             {
-
                 throw;
             }
         }

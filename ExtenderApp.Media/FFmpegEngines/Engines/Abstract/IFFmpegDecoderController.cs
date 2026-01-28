@@ -27,15 +27,16 @@
         FFmpegDecoderSettings Settings { get; }
 
         /// <summary>
-        /// 表示解码流程是否已完成。
-        /// </summary>
-        bool Completed { get; }
-
-        /// <summary>
         /// 获取当前解码器“世代”标识。
         /// </summary>
         /// <returns>用于区分不同解码阶段（例如 Seek 后重建/重置）的整数标识。</returns>
         int GetCurrentGeneration();
+
+        /// <summary>
+        /// 获取解码流程是否已完成。
+        /// </summary>
+        /// <returns>表示解码流程是否已完成。</returns>
+        bool GetIsCompleted();
 
         /// <summary>
         /// 将解码位置跳转到指定时间点。

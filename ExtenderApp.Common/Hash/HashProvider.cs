@@ -154,7 +154,7 @@ namespace ExtenderApp.Common.Hash
         //{
         //    var _pool = GetPool<TLinkClient>();
         //    var hashAlgorithm = _pool.Get();
-        //    var fileConcurrent = _fileOperateProvider.GetOperate(fileOperate);
+        //    var fileConcurrent = _fileOperateProvider.GetFileOperate(fileOperate);
 
         //    byte[] bytes = await fileConcurrent.ReadForArrayPoolAsync(out var length);
         //    byte[] reslut = await hashAlgorithm.ComputeHashAsync(new MemoryStream(bytes));

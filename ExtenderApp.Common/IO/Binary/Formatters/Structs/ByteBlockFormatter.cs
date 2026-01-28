@@ -22,7 +22,7 @@ namespace ExtenderApp.Common.IO.Binary.Formatters
             }
             var length = _bufferConvert.ReadArrayHeader(ref buffer);
             ByteBlock block = new(length);
-            buffer.TryCopyTo(ref block);
+            block.Write(buffer);
             buffer.ReadAdvance(length);
             return block;
         }

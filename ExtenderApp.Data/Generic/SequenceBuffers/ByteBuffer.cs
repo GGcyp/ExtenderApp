@@ -110,6 +110,15 @@ namespace ExtenderApp.Data
         public bool IsEmpty => _buffer.IsEmpty;
 
         /// <summary>
+        /// 创建一个空的字节缓冲实例。
+        /// 需要创建可用的字节缓存，请使用其他构造函数。
+        /// 例如<see cref="CreateBuffer"/>
+        /// </summary>
+        public ByteBuffer()
+        {
+        }
+
+        /// <summary>
         /// 复制构造函数，创建一个包含另一个 <see cref="ByteBuffer"/> 实例内容副本的新实例。
         /// </summary>
         /// <param name="buffer">要复制其内容的源字节缓冲。</param>
@@ -898,23 +907,6 @@ namespace ExtenderApp.Data
         public bool TryCopyTo(scoped Span<byte> buffer)
         {
             return _buffer.TryCopyTo(buffer);
-        }
-
-        /// <summary>
-        /// 尝试将剩余数据复制到<see cref="ByteBlock"/>（不改变读取位置）。
-        /// </summary>
-        /// <param name="block">目标字节块</param>
-        /// <returns>复制成功返回 true。</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool TryCopyTo(ref ByteBlock block)
-        {
-            int length = (int)Length;
-            if (TryCopyTo(block.GetSpan(length).Slice(0, length)))
-            {
-                block.WriteAdvance(length);
-                return true;
-            }
-            return false;
         }
 
         /// <summary>

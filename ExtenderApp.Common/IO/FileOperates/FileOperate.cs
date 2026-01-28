@@ -201,37 +201,6 @@ namespace ExtenderApp.Common.IO
             }
         }
 
-        /// <inheritdoc/>
-        public Result<int> Read(ref ByteBuffer buffer)
-        {
-            return Read(0, ref buffer);
-        }
-
-        /// <inheritdoc/>
-        public Result<int> Read(long filePosition, ref ByteBuffer buffer)
-        {
-            return Read(filePosition, (int)(Info.Length - filePosition), ref buffer);
-        }
-
-        /// <inheritdoc/>
-        public Result<int> Read(long filePosition, int length, ref ByteBuffer buffer)
-        {
-            try
-            {
-                if (length == 0)
-                    return Result.Success(0);
-                if (length < 0)
-                    throw new ArgumentOutOfRangeException(nameof(length), "读取长度必须大于零。");
-
-                var read = ExecuteRead(filePosition, length, ref buffer);
-                return Result.Success(read);
-            }
-            catch (Exception ex)
-            {
-                return Result.FromException<int>(ex);
-            }
-        }
-
         #endregion Read
 
         #region ReadAsync
@@ -326,150 +295,92 @@ namespace ExtenderApp.Common.IO
         #region Write
 
         /// <inheritdoc/>
-        public Result Write(byte[] bytes)
-        {
-            return Write(0, bytes);
-        }
-
-        /// <inheritdoc/>
-        public Result Write(long filePosition, byte[] bytes)
-        {
-            return Write(filePosition, bytes, 0, bytes.Length);
-        }
-
-        /// <inheritdoc/>
-        public Result Write(long filePosition, byte[] bytes, int bytesPosition, int bytesLength)
-        {
-            try
-            {
-                ThrowIfDisposed();
-                if (bytesLength == 0) return Result.Success();
-                if (bytes is null) throw new ArgumentNullException(nameof(bytes));
-                if (bytesPosition < 0 || bytesLength < 0 || bytesPosition > bytes.Length - bytesLength)
-                    throw new ArgumentOutOfRangeException("源数组区间无效。");
-                if (filePosition < 0) throw new ArgumentOutOfRangeException(nameof(filePosition));
-                if (!CanWrite) return Result.Failure("文件不支持写入操作。");
-
-                EnsureCapacityForWrite(filePosition, bytesLength);
-                ExecuteWrite(filePosition, bytes, bytesPosition, bytesLength);
-                LastOperateTime = DateTime.Now;
-                return Result.Success();
-            }
-            catch (Exception ex)
-            {
-                return Result.FromException(ex);
-            }
-        }
-
-        /// <inheritdoc/>
-        public Result Write(ReadOnlySpan<byte> span)
+        public Result<int> Write(ReadOnlySpan<byte> span)
         {
             return Write(0, span);
         }
 
         /// <inheritdoc/>
-        public Result Write(long filePosition, ReadOnlySpan<byte> span)
+        public Result<int> Write(long filePosition, ReadOnlySpan<byte> span)
         {
             try
             {
                 if (span.Length == 0)
-                    return Result.Success();
+                    return Result.Success(0);
 
                 CheckSpan(span);
                 if (!CanWrite)
-                    return Result.Failure("文件不支持写入操作。");
+                    return Result.Failure<int>("文件不支持写入操作。");
 
                 EnsureCapacityForWrite(filePosition, span.Length);
                 ExecuteWrite(filePosition, span);
                 LastOperateTime = DateTime.Now;
-                return Result.Success();
+                return Result.Success(span.Length);
             }
             catch (Exception ex)
             {
-                return Result.FromException(ex);
+                return Result.FromException<int>(ex);
             }
         }
 
         /// <inheritdoc/>
-        public Result Write(ReadOnlyMemory<byte> memory)
+        public Result<int> Write(ReadOnlyMemory<byte> memory)
         {
             return Write(0, memory);
         }
 
         /// <inheritdoc/>
-        public Result Write(long filePosition, ReadOnlyMemory<byte> memory)
+        public Result<int> Write(long filePosition, ReadOnlyMemory<byte> memory)
         {
             try
             {
                 if (memory.Length == 0)
-                    return Result.Success();
+                    return Result.Success(0);
 
                 CheckMemory(memory);
                 if (!CanWrite)
-                    return Result.Failure("文件不支持写入操作。");
+                    return Result.Failure<int>("文件不支持写入操作。");
 
                 EnsureCapacityForWrite(filePosition, memory.Length);
                 ExecuteWrite(filePosition, memory);
                 LastOperateTime = DateTime.Now;
-                return Result.Success();
+                return Result.Success(memory.Length);
             }
             catch (Exception ex)
             {
-                return Result.FromException(ex);
+                return Result.FromException<int>(ex);
             }
         }
 
         /// <inheritdoc/>
-        public Result Write(ref ByteBuffer buffer)
+        public Result<int> Write(ReadOnlySequence<byte> sequence)
         {
-            return Write(0, ref buffer);
+            return Write(0, sequence);
         }
 
         /// <inheritdoc/>
-        public Result Write(long filePosition, ref ByteBuffer buffer)
+        public Result<int> Write(long filePosition, ReadOnlySequence<byte> sequence)
         {
             try
             {
-                if (buffer.Length == 0)
-                    return Result.Success();
-
-                if (buffer.IsEmpty)
-                    throw new ArgumentNullException(nameof(buffer));
+                if (sequence.Length == 0)
+                    return Result.Success(0);
+                CheckSequence(sequence);
                 if (!CanWrite)
-                    return Result.Failure("文件不支持写入操作。");
-                ExecuteWrite(filePosition, ref buffer);
-                return Result.Success();
+                    return Result.Failure<int>("文件不支持写入操作。");
+
+                EnsureCapacityForWrite(filePosition, sequence.Length);
+
+                foreach (var memory in sequence)
+                {
+                    ExecuteWrite(filePosition, memory);
+                    filePosition += memory.Length;
+                }
+                return Result.Success((int)sequence.Length);
             }
             catch (Exception ex)
             {
-                return Result.FromException(ex);
-            }
-        }
-
-        /// <inheritdoc/>
-        public Result Write(ref ByteBlock block)
-        {
-            return Write(0, ref block);
-        }
-
-        /// <inheritdoc/>
-        public Result Write(long filePosition, ref ByteBlock block)
-        {
-            try
-            {
-                if (block.Length == 0)
-                    return Result.Success();
-
-                if (block.IsEmpty)
-                    throw new ArgumentNullException(nameof(block));
-                if (!CanWrite)
-                    return Result.Failure("文件不支持写入操作。");
-                ExecuteWrite(filePosition, ref block);
-                return Result.Success();
-            }
-            catch (Exception ex)
-            {
-                return Result.FromException(ex);
+                return Result.FromException<int>(ex);
             }
         }
 
@@ -478,66 +389,62 @@ namespace ExtenderApp.Common.IO
         #region WriteAsync
 
         /// <inheritdoc/>
-        public ValueTask<Result> WriteAsync(byte[] bytes, CancellationToken token = default)
-        {
-            return WriteAsync(0, bytes, token);
-        }
-
-        /// <inheritdoc/>
-        public ValueTask<Result> WriteAsync(long filePosition, byte[] bytes, CancellationToken token = default)
-        {
-            return WriteAsync(filePosition, bytes, 0, bytes.Length, token);
-        }
-
-        /// <inheritdoc/>
-        public async ValueTask<Result> WriteAsync(long filePosition, byte[] bytes, int bytesPosition, int bytesLength, CancellationToken token = default)
-        {
-            try
-            {
-                if (bytesLength == 0)
-                    return Result.Success();
-
-                CheckBytes(bytes);
-                if (!CanWrite)
-                    return Result.Failure("文件不支持写入操作。");
-
-                EnsureCapacityForWrite(filePosition, bytesLength);
-                await ExecuteWriteAsync(filePosition, bytes, bytesPosition, bytesLength, token);
-                LastOperateTime = DateTime.Now;
-                return Result.Success();
-            }
-            catch (Exception ex)
-            {
-                return Result.FromException(ex);
-            }
-        }
-
-        /// <inheritdoc/>
-        public ValueTask<Result> WriteAsync(ReadOnlyMemory<byte> memory, CancellationToken token = default)
+        public ValueTask<Result<int>> WriteAsync(ReadOnlyMemory<byte> memory, CancellationToken token = default)
         {
             return WriteAsync(0, memory, token);
         }
 
         /// <inheritdoc/>
-        public async ValueTask<Result> WriteAsync(long filePosition, ReadOnlyMemory<byte> memory, CancellationToken token = default)
+        public async ValueTask<Result<int>> WriteAsync(long filePosition, ReadOnlyMemory<byte> memory, CancellationToken token = default)
         {
             try
             {
                 if (memory.Length == 0)
-                    return Result.Success();
+                    return Result.Success(0);
 
                 CheckMemory(memory);
                 if (!CanWrite)
-                    return Result.Failure("文件不支持写入操作。");
+                    return Result.Failure<int>("文件不支持写入操作。");
 
                 EnsureCapacityForWrite(filePosition, memory.Length);
                 await ExecuteWriteAsync(filePosition, memory, token);
                 LastOperateTime = DateTime.Now;
-                return Result.Success();
+                return Result.Success(memory.Length);
             }
             catch (Exception ex)
             {
-                return Result.FromException(ex);
+                return Result.FromException<int>(ex);
+            }
+        }
+
+        public ValueTask<Result<int>> WriteAsync(ReadOnlySequence<byte> sequence, CancellationToken token = default)
+        {
+            return WriteAsync(0, sequence, token);
+        }
+
+        public async ValueTask<Result<int>> WriteAsync(long filePosition, ReadOnlySequence<byte> sequence, CancellationToken token = default)
+        {
+            try
+            {
+                if (sequence.Length == 0)
+                    return Result.Success(0);
+                if (!CanWrite)
+                    return Result.Failure<int>("文件不支持写入操作。");
+
+                CheckSequence(sequence);
+                EnsureCapacityForWrite(filePosition, sequence.Length);
+
+                foreach (var memory in sequence)
+                {
+                    await ExecuteWriteAsync(filePosition, memory, token);
+                    filePosition += memory.Length;
+                }
+                LastOperateTime = DateTime.Now;
+                return Result.Success((int)sequence.Length);
+            }
+            catch (Exception ex)
+            {
+                return Result.FromException<int>(ex);
             }
         }
 
@@ -589,20 +496,19 @@ namespace ExtenderApp.Common.IO
             }
         }
 
+        private void CheckSequence(ReadOnlySequence<byte> sequence)
+        {
+            if (sequence.IsEmpty)
+            {
+                throw new ArgumentNullException(nameof(sequence));
+            }
+        }
+
         #endregion Check
 
         #region Execute
 
         #region ExecuteWrite
-
-        /// <summary>
-        /// 派生类同步写入实现：将 bytes[bytesPosition..bytesPosition+bytesLength) 写入到 filePosition。
-        /// </summary>
-        protected abstract void ExecuteWrite(long filePosition, byte[] bytes, int bytesPosition, int bytesLength);
-
-        protected abstract void ExecuteWrite(long filePosition, ref ByteBuffer buffer);
-
-        protected abstract void ExecuteWrite(long filePosition, ref ByteBlock block);
 
         /// <summary>
         /// 派生类同步写入实现：将 span 写入到 filePosition。
@@ -613,11 +519,6 @@ namespace ExtenderApp.Common.IO
         /// 派生类同步写入实现：将 memory 写入到 filePosition。
         /// </summary>
         protected abstract void ExecuteWrite(long filePosition, ReadOnlyMemory<byte> memory);
-
-        /// <summary>
-        /// 派生类异步写入实现：将 bytes 指定区间写入到 filePosition。
-        /// </summary>
-        protected abstract ValueTask ExecuteWriteAsync(long filePosition, byte[] bytes, int bytesPosition, int bytesLength, CancellationToken token);
 
         /// <summary>
         /// 派生类异步写入实现：将 memory 写入到 filePosition。
@@ -647,10 +548,6 @@ namespace ExtenderApp.Common.IO
         /// 派生类同步读取实现：从 filePosition 读取并填充 memory，返回实际读取。
         /// </summary>
         protected abstract int ExecuteRead(long filePosition, Memory<byte> memory);
-
-        protected abstract int ExecuteRead(long filePosition, int length, ref ByteBuffer buffer);
-
-        protected abstract int ExecuteRead(long filePosition, int length, ref ByteBlock block);
 
         /// <summary>
         /// 派生类异步读取实现：从 filePosition 读取 length 字节并返回。

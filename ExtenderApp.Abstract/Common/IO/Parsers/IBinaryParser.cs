@@ -1,4 +1,5 @@
-﻿using ExtenderApp.Data;
+﻿using System.Buffers;
+using ExtenderApp.Data;
 
 namespace ExtenderApp.Abstract
 {
@@ -26,7 +27,7 @@ namespace ExtenderApp.Abstract
         /// </summary>
         /// <typeparam name="T">目标类型。</typeparam>
         /// <param name="span">包含序列化数据的只读切片。</param>
-        /// <returns>反序列化后的对象；失败或内容为空可返回 null（或实现可能抛出异常）。</returns>
+        /// <returns>反序列化后的对象；失败或内容为空可返回 null（或实现可能抛出异常）。returns>
         T? Deserialize<T>(ReadOnlySpan<byte> span);
 
         /// <summary>
@@ -53,24 +54,6 @@ namespace ExtenderApp.Abstract
         /// <returns>反序列化后的对象；失败时返回 null。</returns>
         T? Deserialize<T>(ref ByteBlock block);
 
-        /// <summary>
-        /// 异步地从流中反序列化为指定类型。
-        /// </summary>
-        /// <typeparam name="T">目标类型。</typeparam>
-        /// <param name="stream">包含序列化数据的流。</param>
-        /// <param name="token">取消令牌。</param>
-        /// <returns>反序列化后的对象；失败时返回 null。</returns>
-        Task<T?> DeserializeAsync<T>(Stream stream, CancellationToken token = default);
-
-        /// <summary>
-        /// 异步地从只读内存反序列化为指定类型。
-        /// </summary>
-        /// <typeparam name="T">目标类型。</typeparam>
-        /// <param name="span">包含序列化数据的只读内存。</param>
-        /// <param name="token">取消令牌。</param>
-        /// <returns>反序列化后的对象；失败时返回 null。</returns>
-        Task<T?> DeserializeAsync<T>(ReadOnlyMemory<byte> span, CancellationToken token = default);
-
         #endregion Deserialize
 
         #region Serialize
@@ -95,7 +78,7 @@ namespace ExtenderApp.Abstract
         /// 将对象序列化到顺序缓冲中（追加到其写入端）。
         /// </summary>
         /// <typeparam name="T">对象类型。</typeparam>
-        /// <param name="buffer">目标顺序缓冲。</param>
+        /// <param name="buffer">输出：目标顺序缓冲。</param>
         /// <param name="value">要序列化的对象。</param>
         void Serialize<T>(T value, out ByteBuffer buffer);
 
@@ -103,7 +86,7 @@ namespace ExtenderApp.Abstract
         /// 将对象序列化到缓冲块中（追加到其写入端）。
         /// </summary>
         /// <typeparam name="T">对象类型。</typeparam>
-        /// <param name="block">目标缓冲块。</param>
+        /// <param name="block">输出：目标缓冲块。</param>
         /// <param name="value">要序列化的对象。</param>
         void Serialize<T>(T value, out ByteBlock block);
 
@@ -115,99 +98,93 @@ namespace ExtenderApp.Abstract
         /// <param name="value">要序列化的对象。</param>
         void Serialize<T>(T value, Stream stream);
 
-        /// <summary>
-        /// 异步地将对象序列化为字节数组。
-        /// </summary>
-        /// <typeparam name="T">对象类型。</typeparam>
-        /// <param name="value">要序列化的对象。</param>
-        /// <param name="token">取消令牌。</param>
-        /// <returns>包含序列化结果的字节数组。</returns>
-        Task<byte[]> SerializeAsync<T>(T value, CancellationToken token = default);
-
-        /// <summary>
-        /// 异步地将对象序列化为字节并写入到流。
-        /// </summary>
-        /// <typeparam name="T">对象类型。</typeparam>
-        /// <param name="value">要序列化的对象。</param>
-        /// <param name="stream">目标流。</param>
-        /// <param name="token">取消令牌。</param>
-        Task SerializeAsync<T>(T value, Stream stream, CancellationToken token = default);
-
         #endregion Serialize
 
         #region Compression
 
         /// <summary>
-        /// 将对象序列化后按指定 LZ4 压缩格式写入到文件（通过 FileOperateInfo 打开）。
+        /// 将对象序列化后按指定 LZ4 压缩格式写入到期望本地文件信息指定的位置。
         /// </summary>
+        /// <typeparam name="T">对象类型。</typeparam>
+        /// <param name="info">期望的本地文件信息（用于创建或打开目标文件）。</param>
+        /// <param name="value">要写入的对象。</param>
+        /// <param name="compression">压缩类型（None 表示直写，不压缩）。</param>
+        /// <returns>写入结果，包含成功或失败信息。</returns>
+        Result Write<T>(ExpectLocalFileInfo info, T value, CompressionType compression);
+
+        /// <summary>
+        /// 将对象序列化后按指定 LZ4 压缩格式写入通过 <see cref="FileOperateInfo"/> 打开的文件。
+        /// </summary>
+        /// <typeparam name="T">对象类型。</typeparam>
         /// <param name="info">文件操作信息。</param>
         /// <param name="value">要写入的对象。</param>
         /// <param name="compression">压缩类型（None 表示直写，不压缩）。</param>
-        void Write<T>(ExpectLocalFileInfo info, T value, CompressionType compression);
-
-        /// <summary>
-        /// 将对象序列化后按指定 LZ4 压缩格式写入到文件（通过 FileOperateInfo 打开）。
-        /// </summary>
-        /// <param name="info">期望的本地文件信息。</param>
-        /// <param name="value">要写入的对象。</param>
-        /// <param name="compression">压缩类型（None 表示直写，不压缩）。</param>
-        void Write<T>(FileOperateInfo info, T value, CompressionType compression);
+        /// <returns>写入结果，包含成功或失败信息。</returns>
+        Result Write<T>(FileOperateInfo info, T value, CompressionType compression);
 
         /// <summary>
         /// 将对象序列化后按指定 LZ4 压缩格式写入到文件操作接口。
         /// </summary>
-        /// <param name="fileOperate">文件操作接口。</param>
+        /// <typeparam name="T">对象类型。</typeparam>
+        /// <param name="fileOperate">用于执行文件读写的接口。</param>
         /// <param name="value">要写入的对象。</param>
         /// <param name="compression">压缩类型（None 表示直写，不压缩）。</param>
-        void Write<T>(IFileOperate fileOperate, T value, CompressionType compression);
+        /// <returns>写入结果，包含成功或失败信息。</returns>
+        Result Write<T>(IFileOperate fileOperate, T value, CompressionType compression);
 
         /// <summary>
-        /// 将顺序缓冲中的字节作为载荷，按指定 LZ4 压缩格式写入到文件（通过 ExpectLocalFileInfo 打开）。
+        /// 将顺序缓冲中的字节作为载荷，按指定 LZ4 压缩格式写入到期望本地文件信息指定的位置。
         /// </summary>
         /// <param name="info">期望的本地文件信息。</param>
-        /// <param name="buffer">输入顺序缓冲（从其可读区读取并压缩）。</param>
+        /// <param name="buffer">输入只读内存（从其可读区读取并压缩）。</param>
         /// <param name="compression">压缩类型。</param>
-        void Write(ExpectLocalFileInfo info, ref ByteBuffer buffer, CompressionType compression);
+        /// <returns>写入结果，包含成功或失败信息。</returns>
+        Result Write(ExpectLocalFileInfo info, ReadOnlyMemory<byte> buffer, CompressionType compression);
 
         /// <summary>
-        /// 将顺序缓冲中的字节作为载荷，按指定 LZ4 压缩格式写入到文件（通过 FileOperateInfo 打开）。
+        /// 将内存中的字节按指定压缩写入通过 <see cref="FileOperateInfo"/> 打开的目标文件。
         /// </summary>
         /// <param name="info">文件操作信息。</param>
-        /// <param name="buffer">输入顺序缓冲（从其可读区读取并压缩）。</param>
+        /// <param name="memory">要写入的内存区域。</param>
         /// <param name="compression">压缩类型。</param>
-        void Write(FileOperateInfo info, ref ByteBuffer buffer, CompressionType compression);
+        /// <returns>写入结果，包含成功或失败信息。</returns>
+        Result Write(FileOperateInfo info, ReadOnlyMemory<byte> memory, CompressionType compression);
 
         /// <summary>
-        /// 将顺序缓冲中的字节作为载荷，按指定 LZ4 压缩格式写入到文件操作接口。
+        /// 将内存中的字节按指定压缩写入文件操作接口。
         /// </summary>
         /// <param name="fileOperate">文件操作接口。</param>
-        /// <param name="buffer">输入顺序缓冲（从其可读区读取并压缩）。</param>
+        /// <param name="memory">要写入的内存区域。</param>
         /// <param name="compression">压缩类型。</param>
-        void Write(IFileOperate fileOperate, ref ByteBuffer buffer, CompressionType compression);
+        /// <returns>写入结果，包含成功或失败信息。</returns>
+        Result Write(IFileOperate fileOperate, ReadOnlyMemory<byte> memory, CompressionType compression);
 
         /// <summary>
-        /// 将缓冲块中的字节作为载荷，按指定 LZ4 压缩格式写入（ExpectLocalFileInfo）。
+        /// 将只读序列中的字节按指定压缩写入到期望本地文件信息指定的位置。
         /// </summary>
         /// <param name="info">期望的本地文件信息。</param>
-        /// <param name="block">输入缓冲块（从其未读区读取并压缩）。</param>
+        /// <param name="sequence">输入只读序列（从其可读区读取并压缩）。</param>
         /// <param name="compression">压缩类型。</param>
-        void Write(ExpectLocalFileInfo info, ref ByteBlock block, CompressionType compression);
+        /// <returns>写入结果，包含成功或失败信息。</returns>
+        Result Write(ExpectLocalFileInfo info, ReadOnlySequence<byte> sequence, CompressionType compression);
 
         /// <summary>
-        /// 将缓冲块中的字节作为载荷，按指定 LZ4 压缩格式写入（FileOperateInfo）。
+        /// 将只读序列中的字节按指定压缩写入通过 <see cref="FileOperateInfo"/> 打开的目标文件。
         /// </summary>
         /// <param name="info">文件操作信息。</param>
-        /// <param name="block">输入缓冲块（从其未读区读取并压缩）。</param>
+        /// <param name="sequence">输入只读序列（从其可读区读取并压缩）。</param>
         /// <param name="compression">压缩类型。</param>
-        void Write(FileOperateInfo info, ref ByteBlock block, CompressionType compression);
+        /// <returns>写入结果，包含成功或失败信息。</returns>
+        Result Write(FileOperateInfo info, ReadOnlySequence<byte> sequence, CompressionType compression);
 
         /// <summary>
-        /// 将缓冲块中的字节作为载荷，按指定 LZ4 压缩格式写入（IFileOperate）。
+        /// 将只读序列中的字节按指定压缩写入文件操作接口。
         /// </summary>
         /// <param name="fileOperate">文件操作接口。</param>
-        /// <param name="block">输入缓冲块（从其未读区读取并压缩）。</param>
+        /// <param name="sequence">输入只读序列（从其可读区读取并压缩）。</param>
         /// <param name="compression">压缩类型。</param>
-        void Write(IFileOperate fileOperate, ref ByteBlock block, CompressionType compression);
+        /// <returns>写入结果，包含成功或失败信息。</returns>
+        Result Write(IFileOperate fileOperate, ReadOnlySequence<byte> sequence, CompressionType compression);
 
         /// <summary>
         /// 异步：将对象序列化后按指定 LZ4 压缩格式写入（ExpectLocalFileInfo）。
@@ -217,7 +194,8 @@ namespace ExtenderApp.Abstract
         /// <param name="value">要写入的对象。</param>
         /// <param name="compression">压缩类型。</param>
         /// <param name="token">取消令牌。</param>
-        Task WriteAsync<T>(ExpectLocalFileInfo info, T value, CompressionType compression, CancellationToken token = default);
+        /// <returns>异步写入结果。</returns>
+        ValueTask<Result> WriteAsync<T>(ExpectLocalFileInfo info, T value, CompressionType compression, CancellationToken token = default);
 
         /// <summary>
         /// 异步：将对象序列化后按指定 LZ4 压缩格式写入（FileOperateInfo）。
@@ -227,7 +205,8 @@ namespace ExtenderApp.Abstract
         /// <param name="value">要写入的对象。</param>
         /// <param name="compression">压缩类型。</param>
         /// <param name="token">取消令牌。</param>
-        Task WriteAsync<T>(FileOperateInfo info, T value, CompressionType compression, CancellationToken token = default);
+        /// <returns>异步写入结果。</returns>
+        ValueTask<Result> WriteAsync<T>(FileOperateInfo info, T value, CompressionType compression, CancellationToken token = default);
 
         /// <summary>
         /// 异步：将对象序列化后按指定 LZ4 压缩格式写入（IFileOperate）。
@@ -237,7 +216,68 @@ namespace ExtenderApp.Abstract
         /// <param name="value">要写入的对象。</param>
         /// <param name="compression">压缩类型。</param>
         /// <param name="token">取消令牌。</param>
-        Task WriteAsync<T>(IFileOperate fileOperate, T value, CompressionType compression, CancellationToken token = default);
+        /// <returns>异步写入结果。</returns>
+        ValueTask<Result> WriteAsync<T>(IFileOperate fileOperate, T value, CompressionType compression, CancellationToken token = default);
+
+        /// <summary>
+        /// 异步：将内存字节按指定压缩写入（ExpectLocalFileInfo）。
+        /// </summary>
+        /// <param name="info">期望的本地文件信息。</param>
+        /// <param name="memory">输入只读内存。</param>
+        /// <param name="compression">压缩类型。</param>
+        /// <param name="token">取消令牌。</param>
+        /// <returns>异步写入结果。</returns>
+        ValueTask<Result> WriteAsync(ExpectLocalFileInfo info, ReadOnlyMemory<byte> memory, CompressionType compression, CancellationToken token = default);
+
+        /// <summary>
+        /// 异步：将内存字节按指定压缩写入（FileOperateInfo）。
+        /// </summary>
+        /// <param name="info">文件操作信息。</param>
+        /// <param name="memory">输入只读内存。</param>
+        /// <param name="compression">压缩类型。</param>
+        /// <param name="token">取消令牌。</param>
+        /// <returns>异步写入结果。</returns>
+        ValueTask<Result> WriteAsync(FileOperateInfo info, ReadOnlyMemory<byte> memory, CompressionType compression, CancellationToken token = default);
+
+        /// <summary>
+        /// 异步：将内存字节按指定压缩写入（IFileOperate）。
+        /// </summary>
+        /// <param name="fileOperate">文件操作接口。</param>
+        /// <param name="memory">输入只读内存。</param>
+        /// <param name="compression">压缩类型。</param>
+        /// <param name="token">取消令牌。</param>
+        /// <returns>异步写入结果。</returns>
+        ValueTask<Result> WriteAsync(IFileOperate fileOperate, ReadOnlyMemory<byte> memory, CompressionType compression, CancellationToken token = default);
+
+        /// <summary>
+        /// 异步：将只读序列按指定压缩写入（ExpectLocalFileInfo）。
+        /// </summary>
+        /// <param name="info">期望的本地文件信息。</param>
+        /// <param name="sequence">输入只读序列。</param>
+        /// <param name="compression">压缩类型。</param>
+        /// <param name="token">取消令牌。</param>
+        /// <returns>异步写入结果。</returns>
+        ValueTask<Result> WriteAsync(ExpectLocalFileInfo info, ReadOnlySequence<byte> sequence, CompressionType compression, CancellationToken token = default);
+
+        /// <summary>
+        /// 异步：将只读序列按指定压缩写入（FileOperateInfo）。
+        /// </summary>
+        /// <param name="info">文件操作信息。</param>
+        /// <param name="sequence">输入只读序列。</param>
+        /// <param name="compression">压缩类型。</param>
+        /// <param name="token">取消令牌。</param>
+        /// <returns>异步写入结果。</returns>
+        ValueTask<Result> WriteAsync(FileOperateInfo info, ReadOnlySequence<byte> sequence, CompressionType compression, CancellationToken token = default);
+
+        /// <summary>
+        /// 异步：将只读序列按指定压缩写入（IFileOperate）。
+        /// </summary>
+        /// <param name="fileOperate">文件操作接口。</param>
+        /// <param name="sequence">输入只读序列。</param>
+        /// <param name="compression">压缩类型。</param>
+        /// <param name="token">取消令牌。</param>
+        /// <returns>异步写入结果。</returns>
+        ValueTask<Result> WriteAsync(IFileOperate fileOperate, ReadOnlySequence<byte> sequence, CompressionType compression, CancellationToken token = default);
 
         /// <summary>
         /// 将对象序列化并按指定压缩类型压缩为字节数组。
@@ -269,43 +309,41 @@ namespace ExtenderApp.Abstract
         /// <summary>
         /// 将输入顺序缓冲的可读区按指定压缩类型压缩到新的顺序缓冲。
         /// </summary>
-        /// <param name="inputBuffer">输入顺序缓冲（读取其可读区）。</param>
+        /// <param name="sequence">输入顺序缓冲（读取其可读区）。</param>
         /// <param name="outBuffer">输出：压缩结果缓冲。</param>
         /// <param name="compression">压缩类型。</param>
-        void Serialize(ref ByteBuffer inputBuffer, out ByteBuffer outBuffer, CompressionType compression);
+        void Serialize(ReadOnlySequence<byte> sequence, out ByteBuffer outBuffer, CompressionType compression);
 
         /// <summary>
         /// 将输入缓冲块的未读区按指定压缩类型压缩到新的缓冲块。
         /// </summary>
-        /// <param name="inputBlock">输入缓冲块（读取其未读区）。</param>
+        /// <param name="memory">输入缓冲块的未读区。</param>
         /// <param name="outBlock">输出：压缩结果缓冲块。</param>
         /// <param name="compression">压缩类型。</param>
-        void Serialize(ref ByteBlock inputBlock, out ByteBlock outBlock, CompressionType compression);
-
-        /// <summary>
-        /// 异步：将对象序列化并压缩为字节数组。
-        /// </summary>
-        /// <typeparam name="T">对象类型。</typeparam>
-        /// <param name="value">要压缩的对象（先序列化后压缩）。</param>
-        /// <param name="compression">压缩类型。</param>
-        /// <returns>压缩后的字节数组。</returns>
-        Task<byte[]> SerializeAsync<T>(T value, CompressionType compression);
+        void Serialize(ReadOnlyMemory<byte> memory, out ByteBlock outBlock, CompressionType compression);
 
         #endregion Compression
 
         /// <summary>
         /// 获取指定对象在默认二进制格式下的序列化长度（可能为估算值）。
         /// </summary>
+        /// <typeparam name="T">对象类型。</typeparam>
+        /// <param name="value">对象实例。</param>
+        /// <returns>估算或精确的序列化字节长度。</returns>
         long GetLength<T>(T value);
 
         /// <summary>
         /// 获取指定类型的默认序列化长度（若适用）。
         /// </summary>
+        /// <typeparam name="T">对象类型。</typeparam>
+        /// <returns>默认长度（如果格式化器提供），否则实现定义的值。</returns>
         long GetDefaulLength<T>();
 
         /// <summary>
         /// 获取指定类型的二进制格式化器。
         /// </summary>
+        /// <typeparam name="T">目标类型。</typeparam>
+        /// <returns>对应类型的 <see cref="IBinaryFormatter{T}"/> 实例。</returns>
         IBinaryFormatter<T> GetFormatter<T>();
     }
 }

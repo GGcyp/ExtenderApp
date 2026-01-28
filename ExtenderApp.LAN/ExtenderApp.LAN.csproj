@@ -30,6 +30,10 @@
 		</None>
 	</ItemGroup>
 
+	<ItemGroup>
+	  <Folder Include="Models\" />
+	</ItemGroup>
+
 	<Target Name="CopyFilesAfterBuild" AfterTargets="Build">
 		<!-- 收集要复制的动态库文件（.dll） -->
 		<ItemGroup>

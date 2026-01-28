@@ -1,15 +1,14 @@
-﻿namespace ExtenderApp.Data
+﻿using System.Buffers;
+
+namespace ExtenderApp.Data
 {
     /// <summary>
     /// 表示一个泛型先进先出 (FIFO) 的循环队列（也称为环形缓冲区）。
     /// </summary>
     /// <typeparam name="T">指定队列中元素的类型。</typeparam>
-    public class CircularQueue<T>
+    public class CircularQueue<T> : DisposableObject
     {
-        /// <summary>
-        /// 获取一个表示容量为零的空 <see cref="CircularQueue{T}"/> 的实例。
-        /// </summary>
-        public static CircularQueue<T> Empty = new CircularQueue<T>(0);
+        private readonly ArrayPool<T> _pool;
 
         private readonly T[] _buffer;
 
@@ -34,15 +33,37 @@
         public int Capacity => _buffer.Length;
 
         /// <summary>
+        /// 使用空缓冲区初始化一个 <see cref="CircularQueue{T}"/> 的新实例。
+        /// /// 此构造函数主要用于序列化或占位场景，实际使用应调用带容量的构造函数。
+        /// </summary>
+        public CircularQueue()
+        {
+            _pool = default!;
+            _buffer = Array.Empty<T>();
+            _head = 0;
+            _tail = 0;
+            Count = 0;
+        }
+
+        /// <summary>
+        /// 使用指定容量初始化一个 <see cref="CircularQueue{T}"/> 的新实例，使用共享的 <see cref="ArrayPool{T}"/>.
+        /// </summary>
+        /// <param name="capacity">队列可以存储的初始元素数。</param>
+        public CircularQueue(int capacity)
+            : this(capacity, ArrayPool<T>.Shared)
+        {
+        }
+
+        /// <summary>
         /// 初始化 <see cref="CircularQueue{T}"/> 类的新实例，该实例为空且具有指定的初始容量。
         /// </summary>
         /// <param name="capacity">队列可以存储的初始元素数。</param>
+        /// <param name="pool">用于租用和归还底层数组的 <see cref="ArrayPool{T}"/> 实例。</param>
         /// <exception cref="ArgumentOutOfRangeException">当 <paramref name="capacity"/> 为负数时引发。</exception>
-        public CircularQueue(int capacity)
+        public CircularQueue(int capacity, ArrayPool<T> pool)
         {
-            if (capacity < 0)
-                throw new ArgumentOutOfRangeException(nameof(capacity), "Capacity must be non-negative.");
-            _buffer = new T[capacity];
+            _pool = pool;
+            _buffer = _pool.Rent(capacity);
             _head = 0;
             _tail = 0;
             Count = 0;
@@ -55,6 +76,7 @@
         /// <returns>成功添加到队列中的元素数量。</returns>
         public int Enqueue(ReadOnlySpan<T> values)
         {
+            ThrowIfDisposed();
             if (values.IsEmpty)
                 return 0;
 
@@ -90,6 +112,7 @@
         /// <returns>成功从队列中移除并复制到 <paramref name="destination"/> 的元素数量。</returns>
         public int Dequeue(Span<T> destination)
         {
+            ThrowIfDisposed();
             if (destination.IsEmpty)
                 return 0;
 
@@ -118,13 +141,22 @@
         }
 
         /// <summary>
-        /// 从队列中移除所有对象。
+        /// 从队列中移除所有对象并清空底层缓冲区。
         /// </summary>
         public void Clear()
         {
             _head = 0;
             _tail = 0;
             Count = 0;
+            Array.Clear(_buffer, 0, _buffer.Length);
+        }
+
+        /// <summary>
+        /// 释放托管资源：将租用的数组归还给 <see cref="ArrayPool{T}"/>。
+        /// </summary>
+        protected override void DisposeManagedResources()
+        {
+            _pool.Return(_buffer, clearArray: true);
         }
     }
 }

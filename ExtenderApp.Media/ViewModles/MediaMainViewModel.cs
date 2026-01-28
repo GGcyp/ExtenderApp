@@ -31,7 +31,7 @@ namespace ExtenderApp.Media.ViewModels
         /// <summary>
         /// 视频信息集合（例如本地库/列表）。
         /// </summary>
-        public ObservableCollection<MediaInfo>? MediaInfos { get; set; }
+        public ObservableCollection<MediaInfo> MediaInfos { get; set; }
 
         /// <summary>
         /// 当前播放器实例。
@@ -48,7 +48,7 @@ namespace ExtenderApp.Media.ViewModels
         /// <summary>
         /// 当前选中的视频信息。
         /// </summary>
-        public MediaInfo? SelectedVideoInfo { get; set; }
+        public MediaInfo SelectedVideoInfo { get; set; }
 
         private float volume;
 
@@ -181,6 +181,7 @@ namespace ExtenderApp.Media.ViewModels
         {
             _mediaEngine = mediaEngine;
             _positionAction = UpdatePosition;
+            SelectedVideoInfo = default!;
             JumpTime = 10;
             speedRatio = 1.0d;
             mediaEngine = default!;
@@ -263,35 +264,52 @@ namespace ExtenderApp.Media.ViewModels
         /// </summary>
         public void OpenMedia(string mediaUri)
         {
-            var player = _mediaEngine.OpenMedia(mediaUri);
-            SelectedVideoInfo = player.Info;
-            OpenMedia(player);
+            if (string.IsNullOrEmpty(mediaUri))
+                return;
+
+            Uri uri = new(mediaUri);
+            MediaInfo? info = MediaInfos.FirstOrDefault(m => m.MediaUri == uri);
+            if (info == null)
+            {
+                info = _mediaEngine.CreateFFmpegInfo(uri);
+                MediaInfos.Add(info);
+            }
+
+            OpenMediaPrivate(info);
         }
 
         public void OpenMedia(MediaInfo? mediaInfo)
         {
             if (mediaInfo == null)
                 return;
-            var player = _mediaEngine.OpenMedia(mediaInfo.MediaUri);
-            SelectedVideoInfo = mediaInfo;
-            player.Seek(mediaInfo.MediaWatchedPosition);
-            OpenMedia(player);
+
+            if (!Contains(mediaInfo))
+            {
+                MediaInfos.Add(mediaInfo);
+            }
+
+            OpenMediaPrivate(mediaInfo);
         }
 
-        public void OpenMedia(IMediaPlayer mediaPlayer)
+        private void OpenMediaPrivate(MediaInfo mediaInfo)
         {
             if (MPlayer != null)
             {
-                if (mediaPlayer.Info.MediaUri == MPlayer.Info.MediaUri)
+                if (mediaInfo.MediaUri == MPlayer.Info.MediaUri)
                 {
-                    // 相同媒体，无需重新打开
+                    //相同媒体，无需重新打开
                     return;
                 }
+                MPlayer.Playback -= UpdatePlayback;
+                SelectedVideoInfo.MediaWatchedPosition = MPlayer.Position;
                 MPlayer.DisposeSafe();
                 Bitmap = null;
             }
 
-            MPlayer = mediaPlayer;
+            SelectedVideoInfo = mediaInfo;
+            MPlayer = _mediaEngine.OpenMedia(mediaInfo.MediaUri);
+
+            MPlayer.Seek(SelectedVideoInfo.MediaWatchedPosition);
             Bitmap = MPlayer.GetBitmapSource() ?? MPlayer.SetVideoOutput();
             MPlayer.SetAudioOutput();
 
@@ -305,7 +323,10 @@ namespace ExtenderApp.Media.ViewModels
         {
             foreach (var mediaPath in mediaArray)
             {
-                MediaInfos!.Add(_mediaEngine.CreateFFmpegInfo(mediaPath));
+                Uri mediaUri = new Uri(mediaPath);
+                if (Contains(mediaUri))
+                    continue;
+                MediaInfos!.Add(_mediaEngine.CreateFFmpegInfo(mediaUri));
             }
         }
 
@@ -349,15 +370,15 @@ namespace ExtenderApp.Media.ViewModels
         /// </summary>
         public void Stop()
         {
-            if (MPlayer != null)
-            {
-                // 解除订阅，避免停止过程中仍回调到 UI
-                MPlayer.Playback -= UpdatePlayback;
-                MPlayer.DisposeSafe();
-                MPlayer = null;
-                Bitmap = null;
-                OnPropertyChanged(nameof(IsPlaying));
-            }
+            if (MPlayer == null)
+                return;
+
+            // 解除订阅，避免停止过程中仍回调到 UI
+            MPlayer.Playback -= UpdatePlayback;
+            MPlayer.DisposeSafe();
+            MPlayer = null;
+            Bitmap = null;
+            OnPropertyChanged(nameof(IsPlaying));
 
             Position = TimeSpan.Zero;
             TotalTime = TimeSpan.Zero;
@@ -420,7 +441,18 @@ namespace ExtenderApp.Media.ViewModels
             if (MPlayer != null)
             {
                 Position = TimeSpan.FromMilliseconds(MPlayer.Position);
+                SelectedVideoInfo.MediaWatchedPosition = MPlayer.Position;
             }
+        }
+
+        public bool Contains(MediaInfo mediaInfo)
+        {
+            return Contains(mediaInfo.MediaUri);
+        }
+
+        public bool Contains(Uri mediaUri)
+        {
+            return MediaInfos.Any(m => m.MediaUri == mediaUri);
         }
 
         protected override void DisposeManagedResources()

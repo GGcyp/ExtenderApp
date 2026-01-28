@@ -64,16 +64,6 @@ namespace ExtenderApp.FFmpegEngines
         public CancellationToken Token => source?.Token ?? throw new ArgumentNullException("当前解码还未启动，无法获取结束令牌");
 
         /// <summary>
-        /// 是否已将媒体流解码完成（读取到 EOF 并分发完所有包）。
-        /// </summary>
-        public volatile bool completed;
-
-        /// <summary>
-        /// 是否已将媒体流解码完成（读取到 EOF 并分发完所有包）。
-        /// </summary>
-        public bool Completed => completed;
-
-        /// <summary>
         /// 获取当前媒体流的基本信息（如时长、格式、URI 等）。
         /// </summary>
         public FFmpegInfo Info => Context.Info;
@@ -89,7 +79,6 @@ namespace ExtenderApp.FFmpegEngines
             _decoderCollection = decoders;
             Settings = settings;
             _controllerContext = controllerContext;
-            completed = false;
         }
 
         #region Operation
@@ -146,8 +135,8 @@ namespace ExtenderApp.FFmpegEngines
         {
             ThrowIfDisposed();
 
-            completed = false;
             Interlocked.Exchange(ref seekTagetPosition, position);
+            _controllerContext.SetIsCompleted(false);
             _controllerContext.IncrementGeneration();
 
             if (processTasks == null)
@@ -161,7 +150,7 @@ namespace ExtenderApp.FFmpegEngines
         /// </summary>
         private void StartDecodingPrivate()
         {
-            completed = false;
+            _controllerContext.SetIsCompleted(false);
             int length = DecoderCollection.Count;
             var token = source!.Token;
             processTasks = new Task[length + 1];
@@ -211,7 +200,7 @@ namespace ExtenderApp.FFmpegEngines
                 if (Engine.IsEndOfFile(result))
                 {
                     Engine.Return(ref packetPtr);
-                    completed = true;
+                    _controllerContext.SetIsCompleted(true);
                     break;
                 }
 
@@ -252,15 +241,16 @@ namespace ExtenderApp.FFmpegEngines
 
         #endregion Operation
 
-        /// <summary>
-        /// 获取当前代际（generation）。
-        /// <para>用于判断是否发生了 Seek/重置等需要同步的状态变化。</para>
-        /// </summary>
-        /// <returns>当前代际值。</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int GetCurrentGeneration()
         {
             return _controllerContext.GetCurrentGeneration();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool GetIsCompleted()
+        {
+            return _controllerContext.GetIsCompleted();
         }
 
         /// <summary>
@@ -282,6 +272,7 @@ namespace ExtenderApp.FFmpegEngines
         {
             source?.Cancel();
             var valueTask = WaitForAllTasksComplete();
+            _controllerContext.IncrementGeneration();
             if (!valueTask.IsCompleted)
             {
                 try

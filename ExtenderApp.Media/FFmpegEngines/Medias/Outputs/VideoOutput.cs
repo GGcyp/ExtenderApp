@@ -26,7 +26,6 @@ namespace ExtenderApp.FFmpegEngines.Medias.Outputs
         public void WriteFrame(FFmpegFrame frame)
         {
             NativeMemoryBitmap.Write(frame.Block.UnreadSpan);
-            NativeMemoryBitmap.UpdateBitmap();
         }
 
         protected override void DisposeManagedResources()

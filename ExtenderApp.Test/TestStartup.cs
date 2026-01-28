@@ -1,4 +1,5 @@
-﻿using ExtenderApp.Services;
+﻿using ExtenderApp.Common;
+using ExtenderApp.Services;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace ExtenderApp.Test
@@ -9,9 +10,9 @@ namespace ExtenderApp.Test
 
         public override void AddService(IServiceCollection services)
         {
-            services.AddTransient<TestMainView>();
+            services.AddView<TestMainView, TestMainViewModel>();
 
-            services.AddTransient<TestMainViewModel>();
+            services.AddViewModel<TestMainViewModel>();
         }
     }
 }

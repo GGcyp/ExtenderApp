@@ -22,7 +22,7 @@ namespace ExtenderApp.Test
     /// </summary>
     public partial class TestMainView : ExtenderAppView
     {
-        public TestMainView(TestMainViewModel viewModel) : base(viewModel)
+        public TestMainView()
         {
             InitializeComponent();
         }

@@ -1,6 +1,7 @@
 ﻿using System.Text.Json;
 using ExtenderApp.Abstract;
 using ExtenderApp.Common.IO.FileParsers;
+using ExtenderApp.Data;
 
 namespace ExtenderApp.Common.IO
 {
@@ -39,48 +40,70 @@ namespace ExtenderApp.Common.IO
             JsonSerializer.Serialize(stream, value, _jsonSerializerOptions);
         }
 
-        protected override T? ExecuteRead<T>(IFileOperate fileOperate) where T : default
+        public T? Deserialize<T>(ReadOnlySpan<byte> span)
         {
-            return JsonSerializer.Deserialize<T>(fileOperate.Read().Value, _jsonSerializerOptions);
+            return JsonSerializer.Deserialize<T>(span, _jsonSerializerOptions);
         }
 
-        protected override T? ExecuteRead<T>(IFileOperate fileOperate, long position, int length) where T : default
+        public byte[] SerializeToBytes<T>(T value)
         {
-            return JsonSerializer.Deserialize<T>(fileOperate.Read(position, length).Value, _jsonSerializerOptions);
+            return JsonSerializer.SerializeToUtf8Bytes(value, _jsonSerializerOptions);
         }
 
-        protected override Task<T?> ExecuteReadAsync<T>(IFileOperate fileOperate, CancellationToken token) where T : default
+        protected override Result<T?> ExecuteRead<T>(IFileOperate fileOperate, long position, int length) where T : default
         {
-            return Task.FromResult(JsonSerializer.Deserialize<T>(fileOperate.Read().Value, _jsonSerializerOptions));
+            try
+            {
+                fileOperate.Read(out ByteBlock block);
+                var result = Deserialize<T>(block);
+                block.Dispose();
+                return Result.Success(result);
+            }
+            catch (Exception ex)
+            {
+                return Result.FromException<T?>(ex);
+            }
         }
 
-        protected override Task<T?> ExecuteReadAsync<T>(IFileOperate fileOperate, long position, int length, CancellationToken token) where T : default
+        protected override async ValueTask<Result<T?>> ExecuteReadAsync<T>(IFileOperate fileOperate, long position, int length, CancellationToken token) where T : default
         {
-            return Task.FromResult(JsonSerializer.Deserialize<T>(fileOperate.Read(position, length).Value, _jsonSerializerOptions));
+            try
+            {
+                ByteBlock block = await fileOperate.ReadByteBlockAsync(position, length);
+                var result = Deserialize<T>(block);
+                block.Dispose();
+                return Result.Success(result);
+            }
+            catch (Exception ex)
+            {
+                return Result.FromException<T?>(ex);
+            }
         }
 
-        protected override void ExecuteWrite<T>(IFileOperate fileOperate, T value)
+        protected override Result ExecuteWrite<T>(IFileOperate fileOperate, T value, long position)
         {
-            byte[] bytes = JsonSerializer.SerializeToUtf8Bytes(value, _jsonSerializerOptions);
-            fileOperate.Write(bytes);
+            try
+            {
+                byte[] bytes = SerializeToBytes(value);
+                return fileOperate.Write(position, bytes.AsMemory());
+            }
+            catch (Exception ex)
+            {
+                return Result.FromException(ex);
+            }
         }
 
-        protected override void ExecuteWrite<T>(IFileOperate fileOperate, T value, long position)
+        protected override async ValueTask<Result> ExecuteWriteAsync<T>(IFileOperate fileOperate, T value, long position, CancellationToken token = default)
         {
-            byte[] bytes = JsonSerializer.SerializeToUtf8Bytes(value, _jsonSerializerOptions);
-            fileOperate.Write(position, bytes);
-        }
-
-        protected override async Task ExecuteWriteAsync<T>(IFileOperate fileOperate, T value, CancellationToken token = default)
-        {
-            byte[] bytes = JsonSerializer.SerializeToUtf8Bytes(value, _jsonSerializerOptions);
-            await fileOperate.WriteAsync(bytes);
-        }
-
-        protected override async Task ExecuteWriteAsync<T>(IFileOperate fileOperate, T value, long position, CancellationToken token = default)
-        {
-            byte[] bytes = JsonSerializer.SerializeToUtf8Bytes(value, _jsonSerializerOptions);
-            await fileOperate.WriteAsync(position, bytes);
+            try
+            {
+                byte[] bytes = SerializeToBytes(value);
+                return await fileOperate.WriteAsync(position, bytes.AsMemory(), token);
+            }
+            catch (Exception ex)
+            {
+                return Result.FromException(ex);
+            }
         }
     }
 }

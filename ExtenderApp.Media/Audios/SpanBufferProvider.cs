@@ -12,7 +12,7 @@ namespace ExtenderApp.Media.Audios
     /// - 线程安全：读写操作通过独占锁保证并发安全
     /// - 帧对齐：自动确保缓冲长度为音频帧大小的整数倍，避免播放失真
     /// </summary>
-    internal class SpanBufferProvider : IWaveProvider
+    internal class SpanBufferProvider : DisposableObject, IWaveProvider
     {
         #region 私有字段
 
@@ -21,6 +21,9 @@ namespace ExtenderApp.Media.Audios
         /// </summary>
         private readonly object _lockObject = new object();
 
+        /// <summary>
+        /// 环形缓冲区核心实现
+        /// </summary>
         private CircularQueue<byte> _buffer;
 
         /// <summary>
@@ -215,5 +218,11 @@ namespace ExtenderApp.Media.Audios
         }
 
         #endregion 私有辅助方法
+
+        protected override void DisposeManagedResources()
+        {
+            ClearBuffer();
+            _buffer.Dispose();
+        }
     }
 }

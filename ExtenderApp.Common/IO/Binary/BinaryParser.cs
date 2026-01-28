@@ -1,5 +1,4 @@
 ﻿using System.Buffers;
-using System.Reflection.PortableExecutable;
 using ExtenderApp.Abstract;
 using ExtenderApp.Common.Error;
 using ExtenderApp.Common.IO.Binary.LZ4;
@@ -128,31 +127,8 @@ namespace ExtenderApp.Common.IO.Binary
             ByteBuffer buffer = ByteBuffer.CreateBuffer();
             _resolver.GetFormatterWithVerify<T>().Serialize(ref buffer, value);
             block = new((int)buffer.Length);
-            buffer.TryCopyTo(ref block);
+            block.Write(buffer);
             buffer.Dispose();
-        }
-
-        public Task SerializeAsync<T>(T value, Stream stream, CancellationToken token = default)
-        {
-            return Task.Run(() =>
-            {
-                Serialize(value, out ByteBuffer buffer);
-                buffer.TryCopyTo(stream);
-                buffer.Dispose();
-            }, token);
-        }
-
-        public Task<byte[]> SerializeAsync<T>(T value, CancellationToken token)
-        {
-            return Task.Run(() =>
-            {
-                var formatter = _resolver.GetFormatterWithVerify<T>();
-                var buffer = ByteBuffer.CreateBuffer();
-                formatter.Serialize(ref buffer, value);
-                var result = buffer.ToArray();
-                buffer.Dispose();
-                return result;
-            }, token);
         }
 
         #endregion Serialize
@@ -239,51 +215,6 @@ namespace ExtenderApp.Common.IO.Binary
             return result;
         }
 
-        public Task<T?> DeserializeAsync<T>(ReadOnlyMemory<byte> memory, CancellationToken token)
-        {
-            if (memory.IsEmpty)
-                throw new ArgumentNullException(nameof(memory));
-
-            return Task.Run(() =>
-            {
-                ByteBuffer buffer = new ByteBuffer(memory);
-                var result = Deserialize<T>(ref buffer);
-                buffer.Dispose();
-                return result;
-            }, token);
-        }
-
-        /// <summary>
-        /// 异步从流中反序列化对象。
-        /// </summary>
-        /// <typeparam name="T">要反序列化的对象的类型。</typeparam>
-        /// <param name="stream">包含要反序列化的数据的流。</param>
-        /// <returns>反序列化后的对象，如果反序列化失败则返回null。</returns>
-        public Task<T?> DeserializeAsync<T>(Stream stream, CancellationToken token)
-        {
-            return Task.Run<T?>(() =>
-            {
-                if (TryDeserializeFromMemoryStream<T>(stream, out var result))
-                {
-                    return result;
-                }
-
-                ByteBuffer buffer = ByteBuffer.CreateBuffer();
-                int bytesRead = 0;
-                do
-                {
-                    Span<byte> span = buffer.GetSpan(stream.CanSeek ? (int)System.Math.Min(SuggestedContiguousMemorySize, stream.Length - stream.Position) : 0);
-                    bytesRead = stream.Read(span);
-                    buffer.WriteAdvance(bytesRead);
-                } while (bytesRead > 0);
-
-                result = DeserializeFromSequenceAndRewindStreamIfPossible<T>(stream, buffer);
-
-                buffer.Dispose();
-                return result;
-            });
-        }
-
         /// <summary>
         /// 从只读序列中反序列化对象，并在可能的情况下将流重置到未读取的第一个字节。
         /// </summary>
@@ -340,80 +271,77 @@ namespace ExtenderApp.Common.IO.Binary
 
         #region Execute
 
-        protected override T? ExecuteRead<T>(IFileOperate fileOperate) where T : default
+        protected override Result<T?> ExecuteRead<T>(IFileOperate fileOperate, long position, int length) where T : default
         {
-            ByteBuffer buffer = ByteBuffer.CreateBuffer();
-            fileOperate.Read(ref buffer);
-            T? result = Deserialize<T>(ref buffer);
-            buffer.Dispose();
-            return result;
-        }
-
-        protected override T? ExecuteRead<T>(IFileOperate fileOperate, long position, int length) where T : default
-        {
-            ByteBuffer buffer = ByteBuffer.CreateBuffer();
-            fileOperate.Read(position, length, ref buffer);
-            T? result = Deserialize<T>(ref buffer);
-            buffer.Dispose();
-            return result;
-        }
-
-        protected override Task<T?> ExecuteReadAsync<T>(IFileOperate fileOperate, CancellationToken token) where T : default
-        {
-            return Task.Run(() =>
+            try
             {
-                ByteBuffer buffer = ByteBuffer.CreateBuffer();
-                fileOperate.Read(ref buffer);
+                fileOperate.Read(position, length, out ByteBuffer buffer);
                 T? result = Deserialize<T>(ref buffer);
                 buffer.Dispose();
-                return result;
-            }, token);
-        }
-
-        protected override Task<T?> ExecuteReadAsync<T>(IFileOperate fileOperate, long position, int length, CancellationToken token) where T : default
-        {
-            return Task.Run(() =>
+                return Result.Success(result);
+            }
+            catch (Exception ex)
             {
-                ByteBuffer buffer = ByteBuffer.CreateBuffer();
-                fileOperate.Read(ref buffer);
-                T? result = Deserialize<T>(ref buffer);
-                buffer.Dispose();
-                return result;
-            }, token);
+                return Result.FromException<T?>(ex);
+            }
         }
 
-        protected override void ExecuteWrite<T>(IFileOperate fileOperate, T value)
+        protected override async ValueTask<Result<T?>> ExecuteReadAsync<T>(IFileOperate fileOperate, long position, int length, CancellationToken token) where T : default
         {
-            Serialize(value, out ByteBuffer buffer);
-            fileOperate.Write(ref buffer);
-            buffer.Dispose();
+            try
+            {
+                ByteBlock block = new(length);
+                await fileOperate.ReadAsync(block.GetMemory(length), token);
+                T? result = Deserialize<T>(block.UnreadMemory);
+                block.Dispose();
+                return Result.Success(result);
+            }
+            catch (Exception ex)
+            {
+                return Result.FromException<T?>(ex);
+            }
         }
 
-        protected override void ExecuteWrite<T>(IFileOperate fileOperate, T value, long position)
+        protected override Result ExecuteWrite<T>(IFileOperate fileOperate, T value, long position)
         {
-            Serialize(value, out ByteBuffer buffer);
-            fileOperate.Write(position, ref buffer);
-            buffer.Dispose();
-        }
-
-        protected override Task ExecuteWriteAsync<T>(IFileOperate fileOperate, T value, CancellationToken token = default)
-        {
-            return Task.Run(() =>
+            try
             {
                 Serialize(value, out ByteBuffer buffer);
                 fileOperate.Write(ref buffer);
                 buffer.Dispose();
-            }, token);
+                return Result.Success();
+            }
+            catch (Exception ex)
+            {
+                return Result.FromException<T?>(ex);
+            }
         }
 
-        protected override Task ExecuteWriteAsync<T>(IFileOperate fileOperate, T value, long position, CancellationToken token = default)
+        protected override ValueTask<Result> ExecuteWriteAsync<T>(IFileOperate fileOperate, T value, long position, CancellationToken token = default)
         {
-            return Task.Run(() =>
+            try
             {
-                Serialize(value, out ByteBuffer buffer);
-                fileOperate.Write(position, ref buffer);
-                buffer.Dispose();
-            }, token);
+                Serialize(value, out ByteBlock block);
+                return ExecuteWriteAsyncprivate(fileOperate, position, block, token);
+            }
+            catch (Exception ex)
+            {
+                return ValueTask.FromResult(Result.FromException(ex));
+            }
+        }
+
+        private async ValueTask<Result> ExecuteWriteAsyncprivate(IFileOperate fileOperate, long position, ByteBlock block, CancellationToken token)
+        {
+            try
+            {
+                await fileOperate.WriteAsync(position, block.UnreadMemory, CancellationToken.None);
+                block.Dispose();
+                return Result.Success();
+            }
+            catch (Exception ex)
+            {
+                return Result.FromException(ex);
+            }
         }
 
         #endregion Execute
@@ -603,10 +531,13 @@ namespace ExtenderApp.Common.IO.Binary
                 case 0:
                     outbuffer.Dispose();
                     return false;
+
                 case Lz4Block:
                     return FormLz4Block(ref inputbuffer, out outbuffer);
+
                 case Lz4bufferArray:
                     return FormLz4bufferArray(ref inputbuffer, out outbuffer);
+
                 default:
                     outbuffer.Dispose();
                     return false;
@@ -727,191 +658,212 @@ namespace ExtenderApp.Common.IO.Binary
 
         public byte[] Serialize<T>(T value, CompressionType compression)
         {
-            Serialize(value, out ByteBuffer buffer);
-
-            ByteBuffer outBuffer = ByteBuffer.CreateBuffer();
-            ToLz4(buffer.Sequence, ref outBuffer, compression);
-
-            byte[] result = outBuffer.ToArray();
-
+            Serialize(value, out ByteBuffer buffer, compression);
+            byte[] result = buffer.ToArray();
             buffer.Dispose();
-            outBuffer.Dispose();
             return result;
-        }
-
-        public void Write<T>(ExpectLocalFileInfo info, T value, CompressionType compression)
-        {
-            if (info.IsEmpty)
-            {
-                ErrorUtil.ArgumentNull(nameof(info));
-            }
-            Write(info.CreateReadWriteOperate(FileExtension), value, compression);
-        }
-
-        public void Write<T>(FileOperateInfo info, T value, CompressionType compression)
-        {
-            if (info.IsEmpty || !info.IsWrite())
-            {
-                ErrorUtil.ArgumentNull(nameof(info));
-            }
-            Write(GetOperate(info), value, compression);
-        }
-
-        public void Write<T>(IFileOperate fileOperate, T value, CompressionType compression)
-        {
-            if (fileOperate == null)
-            {
-                ErrorUtil.ArgumentNull(nameof(fileOperate));
-                return;
-            }
-            Serialize(value, out ByteBuffer buffer);
-
-            ByteBuffer outBuffer = ByteBuffer.CreateBuffer();
-            ToLz4(buffer.Sequence, ref outBuffer, compression);
-            fileOperate.Write(ref outBuffer);
-
-            buffer.Dispose();
-            outBuffer.Dispose();
-        }
-
-        public void Write(ExpectLocalFileInfo info, ref ByteBuffer buffer, CompressionType compression)
-        {
-            Write(info.CreateReadWriteOperate(FileExtension), ref buffer, compression);
-        }
-
-        public void Write(FileOperateInfo info, ref ByteBuffer buffer, CompressionType compression)
-        {
-            Write(GetOperate(info), ref buffer, compression);
-        }
-
-        public void Write(IFileOperate fileOperate, ref ByteBuffer buffer, CompressionType compression)
-        {
-            if (fileOperate == null)
-            {
-                ErrorUtil.ArgumentNull(nameof(fileOperate));
-                return;
-            }
-
-            ByteBuffer outBuffer = ByteBuffer.CreateBuffer();
-            ToLz4(buffer.Sequence, ref outBuffer, compression);
-            fileOperate.Write(ref outBuffer);
-
-            outBuffer.Dispose();
-        }
-
-        public void Write(ExpectLocalFileInfo info, ref ByteBlock block, CompressionType compression)
-        {
-            Write(info.CreateReadWriteOperate(FileExtension), ref block, compression);
-        }
-
-        public void Write(FileOperateInfo info, ref ByteBlock block, CompressionType compression)
-        {
-            Write(GetOperate(info), ref block, compression);
-        }
-
-        public void Write(IFileOperate fileOperate, ref ByteBlock block, CompressionType compression)
-        {
-            if (fileOperate == null)
-            {
-                ErrorUtil.ArgumentNull(nameof(fileOperate));
-                return;
-            }
-
-            var buffer = new ByteBuffer(block);
-            ByteBuffer outBuffer = ByteBuffer.CreateBuffer();
-            ToLz4(buffer.Sequence, ref outBuffer, compression);
-            fileOperate.Write(ref outBuffer);
-
-            outBuffer.Dispose();
-            buffer.Dispose();
-        }
-
-        public Task WriteAsync<T>(ExpectLocalFileInfo info, T value, CompressionType compression, CancellationToken token = default)
-        {
-            if (info.IsEmpty)
-            {
-                throw new ArgumentNullException(nameof(info));
-            }
-            return WriteAsync(info.CreateReadWriteOperate(FileExtension), value, compression, token);
-        }
-
-        public Task WriteAsync<T>(FileOperateInfo info, T value, CompressionType compression, CancellationToken token = default)
-        {
-            if (info.IsEmpty || !info.IsWrite())
-            {
-                throw new ArgumentNullException(nameof(info));
-            }
-            return WriteAsync(GetOperate(info), value, compression, token);
-        }
-
-        public Task WriteAsync<T>(IFileOperate fileOperate, T value, CompressionType compression, CancellationToken token = default)
-        {
-            if (fileOperate == null)
-            {
-                throw new ArgumentNullException(nameof(fileOperate));
-            }
-            return Task.Run(() =>
-            {
-                Serialize(value, out ByteBuffer buffer);
-
-                ByteBuffer outBuffer = ByteBuffer.CreateBuffer();
-                ToLz4(buffer.Sequence, ref outBuffer, compression);
-
-                fileOperate.Write(ref outBuffer);
-                buffer.Dispose();
-                outBuffer.Dispose();
-            }, token);
         }
 
         public void Serialize<T>(T value, out ByteBuffer buffer, CompressionType compression)
         {
-            Serialize(value, out buffer);
-
-            ByteBuffer outBuffer = ByteBuffer.CreateBuffer();
-            ToLz4(buffer.Sequence, ref outBuffer, compression);
-
-            outBuffer.Dispose();
+            Serialize(value, out ByteBuffer inputBuffer);
+            buffer = ByteBuffer.CreateBuffer();
+            ToLz4(inputBuffer.Sequence, ref buffer, compression);
+            inputBuffer.Dispose();
         }
 
         public void Serialize<T>(T value, out ByteBlock block, CompressionType compression)
         {
-            Serialize(value, out ByteBuffer buffer);
-
-            ByteBuffer outBuffer = ByteBuffer.CreateBuffer();
-            ToLz4(buffer.Sequence, ref outBuffer, compression);
-
-            block = (ByteBlock)outBuffer;
-            outBuffer.Dispose();
+            Serialize(value, out ByteBuffer inputBuffer, compression);
+            block = new((int)inputBuffer.Length);
+            block.Write(inputBuffer);
+            inputBuffer.Dispose();
         }
 
-        public void Serialize(ref ByteBuffer inputBuffer, out ByteBuffer outBuffer, CompressionType compression)
+        public void Serialize(ReadOnlySequence<byte> sequence, out ByteBuffer outBuffer, CompressionType compression)
         {
-            if (inputBuffer.IsEmpty)
-                throw new ArgumentNullException(nameof(inputBuffer));
-            inputBuffer.ThrowIfCannotWrite();
-
-            outBuffer = new(_pool);
-            ToLz4(inputBuffer.Sequence, ref outBuffer, compression);
+            outBuffer = ByteBuffer.CreateBuffer();
+            ToLz4(sequence, ref outBuffer, compression);
         }
 
-        public void Serialize(ref ByteBlock inputBlock, out ByteBlock outBlock, CompressionType compression)
+        public void Serialize(ReadOnlyMemory<byte> memory, out ByteBlock outBlock, CompressionType compression)
         {
-            if (inputBlock.IsEmpty)
-                throw new ArgumentNullException(nameof(inputBlock));
-
-            ByteBuffer inputBuffer = (ByteBuffer)inputBlock;
-            ByteBuffer outBuffer = new(_pool);
-            ToLz4(inputBuffer.Sequence, ref outBuffer, compression);
-            outBlock = (ByteBlock)outBuffer;
+            Serialize(new ReadOnlySequence<byte>(memory), out ByteBuffer buffer, compression);
+            outBlock = new((int)buffer.Length);
+            outBlock.Write(buffer);
+            buffer.Dispose();
         }
 
-        public Task<byte[]> SerializeAsync<T>(T value, CompressionType compression)
+        #region Write
+
+        public Result Write<T>(ExpectLocalFileInfo info, T value, CompressionType compression)
         {
-            return Task.Run(() =>
+            return Write(GetFileOperate(info), value, compression);
+        }
+
+        public Result Write<T>(FileOperateInfo info, T value, CompressionType compression)
+        {
+            return Write(GetFileOperate(info), value, compression);
+        }
+
+        public Result Write<T>(IFileOperate fileOperate, T value, CompressionType compression)
+        {
+            try
             {
-                return Serialize(value, compression);
-            });
+                Serialize(value, out ByteBuffer buffer, compression);
+                var result = fileOperate.Write(ref buffer);
+                buffer.Dispose();
+                return result;
+            }
+            catch (Exception ex)
+            {
+                return Result.FromException(ex);
+            }
         }
+
+        public Result Write(ExpectLocalFileInfo info, ReadOnlyMemory<byte> buffer, CompressionType compression)
+        {
+            return Write(GetFileOperate(info), buffer, compression);
+        }
+
+        public Result Write(FileOperateInfo info, ReadOnlyMemory<byte> memory, CompressionType compression)
+        {
+            return Write(GetFileOperate(info), memory, compression);
+        }
+
+        public Result Write(IFileOperate fileOperate, ReadOnlyMemory<byte> memory, CompressionType compression)
+        {
+            try
+            {
+                Serialize(memory, out ByteBlock block, compression);
+                var result = fileOperate.Write(ref block);
+                block.Dispose();
+                return result;
+            }
+            catch (Exception ex)
+            {
+                return Result.FromException(ex);
+            }
+        }
+
+        public Result Write(ExpectLocalFileInfo info, ReadOnlySequence<byte> sequence, CompressionType compression)
+        {
+            return Write(GetFileOperate(info), sequence, compression);
+        }
+
+        public Result Write(FileOperateInfo info, ReadOnlySequence<byte> sequence, CompressionType compression)
+        {
+            return Write(GetFileOperate(info), sequence, compression);
+        }
+
+        public Result Write(IFileOperate fileOperate, ReadOnlySequence<byte> sequence, CompressionType compression)
+        {
+            try
+            {
+                Serialize(sequence, out ByteBuffer buffer, compression);
+                var result = fileOperate.Write(ref buffer);
+                buffer.Dispose();
+                return result;
+            }
+            catch (Exception ex)
+            {
+                return Result.FromException(ex);
+            }
+        }
+
+        public ValueTask<Result> WriteAsync<T>(ExpectLocalFileInfo info, T value, CompressionType compression, CancellationToken token = default)
+        {
+            return WriteAsync(GetFileOperate(info), value, compression, token);
+        }
+
+        public ValueTask<Result> WriteAsync<T>(FileOperateInfo info, T value, CompressionType compression, CancellationToken token = default)
+        {
+            return WriteAsync(GetFileOperate(info), value, compression, token);
+        }
+
+        public ValueTask<Result> WriteAsync<T>(IFileOperate fileOperate, T value, CompressionType compression, CancellationToken token = default)
+        {
+            try
+            {
+                Serialize(value, out ByteBuffer buffer, compression);
+                var writeTask = fileOperate.WriteAsync(buffer.UnreadSequence, token);
+                if (writeTask.IsCompleted)
+                {
+                    return ValueTask.FromResult(Result.Success());
+                }
+                return WaitTask(writeTask);
+            }
+            catch (Exception ex)
+            {
+                return ValueTask.FromResult(Result.FromException(ex, "写入文件时发生异常"));
+            }
+
+            async ValueTask<Result> WaitTask(ValueTask<Result<int>> task)
+            {
+                try
+                {
+                    await task;
+                    return Result.Success();
+                }
+                catch (Exception ex)
+                {
+                    return Result.FromException(ex);
+                }
+            }
+        }
+
+        public ValueTask<Result> WriteAsync(ExpectLocalFileInfo info, ReadOnlyMemory<byte> memory, CompressionType compression, CancellationToken token = default)
+        {
+            return WriteAsync(GetFileOperate(info), memory, compression, token);
+        }
+
+        public ValueTask<Result> WriteAsync(FileOperateInfo info, ReadOnlyMemory<byte> memory, CompressionType compression, CancellationToken token = default)
+        {
+            return WriteAsync(GetFileOperate(info), memory, compression, token);
+        }
+
+        public async ValueTask<Result> WriteAsync(IFileOperate fileOperate, ReadOnlyMemory<byte> memory, CompressionType compression, CancellationToken token = default)
+        {
+            try
+            {
+                Serialize(memory, out ByteBlock block, compression);
+                await fileOperate.WriteAsync(block.UnreadMemory, token);
+                block.Dispose();
+                return Result.Success();
+            }
+            catch (Exception ex)
+            {
+                return Result.FromException(ex);
+            }
+        }
+
+        public ValueTask<Result> WriteAsync(ExpectLocalFileInfo info, ReadOnlySequence<byte> sequence, CompressionType compression, CancellationToken token = default)
+        {
+            return WriteAsync(GetFileOperate(info), sequence, compression, token);
+        }
+
+        public ValueTask<Result> WriteAsync(FileOperateInfo info, ReadOnlySequence<byte> sequence, CompressionType compression, CancellationToken token = default)
+        {
+            return WriteAsync(GetFileOperate(info), sequence, compression, token);
+        }
+
+        public async ValueTask<Result> WriteAsync(IFileOperate fileOperate, ReadOnlySequence<byte> sequence, CompressionType compression, CancellationToken token = default)
+        {
+            try
+            {
+                foreach (var memory in sequence)
+                {
+                    await WriteAsync(fileOperate, memory, token);
+                }
+                return Result.Success();
+            }
+            catch (Exception ex)
+            {
+                return Result.FromException(ex);
+            }
+        }
+
+        #endregion Write
 
         #endregion LZ4
     }

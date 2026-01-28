@@ -339,7 +339,7 @@ namespace ExtenderApp.FFmpegEngines.Medias
                 int waitDelay = _frameProcessController.Processing(frameInterval, position, generation);
                 if (waitDelay < 0)
                 {
-                    if (_decoderController.Completed)
+                    if (_decoderController.GetIsCompleted())
                         break;
 
                     if (bufferingCount++ >= BufferingCount)
