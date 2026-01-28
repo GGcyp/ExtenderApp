@@ -69,18 +69,18 @@ namespace ExtenderApp.Abstract
 
         /// <summary>
         /// 生成一个可等待对象，用于将后续代码切换到主线程（例如 UI 线程）执行。
-        /// 用法：await ToMainThreadAsync(); // 之后的代码在主线程运行
+        /// 用法：await SwitchToMainThreadAsync(); // 之后的代码在主线程运行
         /// </summary>
         /// <param name="token">取消令牌。</param>
         /// <returns>可与 await 配合使用的可等待对象。</returns>
-        ThreadSwitchAwaitable ToMainThreadAsync(CancellationToken token = default);
+        ThreadSwitchAwaitable SwitchToMainThreadAsync(CancellationToken token = default);
 
         /// <summary>
         /// 生成一个可等待对象，用于将后续代码切换到非主线程（后台线程/线程池）执行。
-        /// 用法：await AwayMainThreadAsync(); // 之后的代码在后台线程运行
+        /// 用法：await SwitchToBackgroundThreadAsync(); // 之后的代码在后台线程运行
         /// </summary>
         /// <param name="token">取消令牌。</param>
         /// <returns>可与 await 配合使用的可等待对象。</returns>
-        ThreadSwitchAwaitable AwayMainThreadAsync(CancellationToken token = default);
+        ThreadSwitchAwaitable SwitchToBackgroundThreadAsync(CancellationToken token = default);
     }
 }

@@ -436,6 +436,10 @@ namespace ExtenderApp.Common.IO
 
                 foreach (var memory in sequence)
                 {
+                    if (token.IsCancellationRequested)
+                    {
+                        return Result.Failure<int>("写入操作已取消。");
+                    }
                     await ExecuteWriteAsync(filePosition, memory, token);
                     filePosition += memory.Length;
                 }

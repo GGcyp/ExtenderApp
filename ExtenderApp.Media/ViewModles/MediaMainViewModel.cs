@@ -185,7 +185,7 @@ namespace ExtenderApp.Media.ViewModels
             JumpTime = 10;
             speedRatio = 1.0d;
             mediaEngine = default!;
-            MediaInfos = new();
+            MediaInfos = default!;
 
             PositionChangeCommand = new(Seek);
             StopCommand = new(Stop);
@@ -203,6 +203,15 @@ namespace ExtenderApp.Media.ViewModels
             base.Inject(serviceProvider);
             SubscribeMessage<KeyDownEvent>(OnKeyDown);
             SubscribeMessage<KeyUpEvent>(OnKeyUp);
+        }
+
+        protected override async Task InitLoadData()
+        {
+            var mediaInfos = LoadData<ObservableCollection<MediaInfo>>().Value ?? new();
+            
+            await SwitchToMainThreadAsync();
+
+            MediaInfos = mediaInfos;
         }
 
         private void OnKeyUp(object? sender, KeyUpEvent e)
@@ -328,6 +337,7 @@ namespace ExtenderApp.Media.ViewModels
                     continue;
                 MediaInfos!.Add(_mediaEngine.CreateFFmpegInfo(mediaUri));
             }
+            SaveDataAsync(MediaInfos);
         }
 
         public void ChangeMediaState()

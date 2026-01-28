@@ -116,7 +116,7 @@ namespace ExtenderApp.MainViews.ViewModels
             //    Model.CurrentPluginDetails = null;
             //    // 使用 DispatcherService 在 UI 线程上执行操作
 
-            // await ToMainThreadAsync();
+            // await SwitchToMainThreadAsync();
 
             // // 导航到 MainView 并设置为当前主视图 Model.CurrentViewModel = NavigateTo<MainView>(Model.CurrentShowViewModel);
 

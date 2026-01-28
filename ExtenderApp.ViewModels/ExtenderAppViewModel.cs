@@ -75,6 +75,7 @@ namespace ExtenderApp.ViewModels
         {
             this.serviceProvider = serviceProvider;
             Details = GetService<PluginDetails>();
+            InitLoadData();
         }
 
         public void Inject(object serviceProvider)
@@ -83,6 +84,11 @@ namespace ExtenderApp.ViewModels
             {
                 Inject(sp);
             }
+        }
+
+        protected virtual Task InitLoadData()
+        {
+            return Task.CompletedTask;
         }
 
         #region Log
@@ -194,9 +200,9 @@ namespace ExtenderApp.ViewModels
         /// </summary>
         /// <param name="token">取消令牌。</param>
         /// <returns>返回一个 <see cref="ThreadSwitchAwaitable"/>。</returns>
-        protected ThreadSwitchAwaitable ToMainThreadAsync(CancellationToken token = default)
+        protected ThreadSwitchAwaitable SwitchToMainThreadAsync(CancellationToken token = default)
         {
-            return GetRequiredService<IDispatcherService>().ToMainThreadAsync(token);
+            return GetRequiredService<IDispatcherService>().SwitchToMainThreadAsync(token);
         }
 
         /// <summary>
@@ -204,9 +210,9 @@ namespace ExtenderApp.ViewModels
         /// </summary>
         /// <param name="token">取消令牌。</param>
         /// <returns>返回一个 <see cref="ThreadSwitchAwaitable"/>。</returns>
-        protected ThreadSwitchAwaitable AwayMainThreadAsync(CancellationToken token = default)
+        protected ThreadSwitchAwaitable SwitchToBackgroundThreadAsync(CancellationToken token = default)
         {
-            return GetRequiredService<IDispatcherService>().AwayMainThreadAsync(token);
+            return GetRequiredService<IDispatcherService>().SwitchToBackgroundThreadAsync(token);
         }
 
         #endregion Dispatcher
@@ -222,7 +228,7 @@ namespace ExtenderApp.ViewModels
             {
                 if (MainWindow == null) return;
 
-                await ToMainThreadAsync();
+                await SwitchToMainThreadAsync();
 
                 MainWindow.Topmost = true;
                 await Task.Delay(300).ConfigureAwait(true);
@@ -370,5 +376,83 @@ namespace ExtenderApp.ViewModels
         }
 
         #endregion Navigation
+
+        #region Local Data
+
+        protected Result<T?> LoadData<T>()
+        {
+            return LoadData<T>(typeof(T).Name);
+        }
+
+        protected ValueTask<Result<T?>> LoadDataAsync<T>(CancellationToken token = default)
+        {
+            return LoadDataAsync<T>(typeof(T).Name, token);
+        }
+
+        /// <summary>
+        /// 同步从本地存储加载并反序列化指定文件的数据。
+        /// </summary>
+        /// <typeparam name="T">期望加载的数据类型。</typeparam>
+        /// <param name="fileName">目标文件名或相对路径（相对于数据根目录）。</param>
+        /// <returns>
+        /// 操作结果：成功时 <see cref="Result{T}.Value"/> 包含反序列化后的数据（可能为 <c>null</c>）；失败时包含错误信息或异常。
+        /// 本方法将调用注入的 <see cref="ILocalDataService"/> 实现完成具体 IO 与序列化逻辑。
+        /// </returns>
+        protected Result<T?> LoadData<T>(string fileName)
+        {
+            return GetRequiredService<ILocalDataService>().LoadData<T>(fileName);
+        }
+
+        /// <summary>
+        /// 异步从本地存储加载并反序列化指定文件的数据。
+        /// </summary>
+        /// <typeparam name="T">期望加载的数据类型。</typeparam>
+        /// <param name="fileName">目标文件名或相对路径（相对于数据根目录）。</param>
+        /// <param name="token">取消令牌；调用方可通过该令牌请求取消异步读取操作。</param>
+        /// <returns>
+        /// 异步操作结果：成功时返回包含反序列化数据的 <see cref="Result{T}"/>；失败时包含错误信息或异常。
+        /// 方法内部委托给注入的 <see cref="ILocalDataService"/> 的异步实现。
+        /// </returns>
+        protected ValueTask<Result<T?>> LoadDataAsync<T>(string fileName, CancellationToken token = default)
+        {
+            return GetRequiredService<ILocalDataService>().LoadDataAsync<T>(fileName, token);
+        }
+
+        protected Result SaveData<T>(T data)
+        {
+            return SaveData(typeof(T).Name, data);
+        }
+
+        protected ValueTask<Result> SaveDataAsync<T>(T data, CancellationToken token = default)
+        {
+            return SaveDataAsync(typeof(T).Name, data, token);
+        }
+
+        /// <summary>
+        /// 同步将指定数据序列化并保存到本地存储。
+        /// </summary>
+        /// <typeparam name="T">要保存的数据类型。</typeparam>
+        /// <param name="fileName">目标文件名或相对路径（相对于数据根目录）。</param>
+        /// <param name="data">待保存的数据实例。</param>
+        /// <returns>操作结果：成功或失败（失败时包含错误信息或异常）。调用将委托给注入的 <see cref="ILocalDataService"/>。</returns>
+        protected Result SaveData<T>(string fileName, T data)
+        {
+            return GetRequiredService<ILocalDataService>().SaveData(fileName, data);
+        }
+
+        /// <summary>
+        /// 异步将指定数据序列化并保存到本地存储。
+        /// </summary>
+        /// <typeparam name="T">要保存的数据类型。</typeparam>
+        /// <param name="fileName">目标文件名或相对路径（相对于数据根目录）。</param>
+        /// <param name="data">待保存的数据实例。</param>
+        /// <param name="token">取消令牌；调用方可通过该令牌请求取消异步保存操作。</param>
+        /// <returns>异步操作结果：成功或失败（失败时包含错误信息或异常）。方法内部委托给注入的 <see cref="ILocalDataService"/> 的异步实现。</returns>
+        protected ValueTask<Result> SaveDataAsync<T>(string fileName, T data, CancellationToken token = default)
+        {
+            return GetRequiredService<ILocalDataService>().SaveDataAsync(fileName, data, token);
+        }
+
+        #endregion Local Data
     }
 }

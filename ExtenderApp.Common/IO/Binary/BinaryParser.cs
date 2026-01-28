@@ -1,6 +1,5 @@
 ﻿using System.Buffers;
 using ExtenderApp.Abstract;
-using ExtenderApp.Common.Error;
 using ExtenderApp.Common.IO.Binary.LZ4;
 using ExtenderApp.Common.IO.FileParsers;
 using ExtenderApp.Data;
@@ -853,6 +852,10 @@ namespace ExtenderApp.Common.IO.Binary
             {
                 foreach (var memory in sequence)
                 {
+                    if (token.IsCancellationRequested)
+                    {
+                        return Result.Failure("操作已取消");
+                    }
                     await WriteAsync(fileOperate, memory, token);
                 }
                 return Result.Success();

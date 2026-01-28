@@ -31,7 +31,7 @@ namespace ExtenderApp.Services
             _mainThreadContext = mainThreadContext;
 
             _toMainThread = InvokeAsync;
-            _awayMainThread = AwayMainThread;
+            _awayMainThread = ToBackgroundThread;
         }
 
         #region Invoke
@@ -40,7 +40,7 @@ namespace ExtenderApp.Services
         {
             if (action == null)
                 return;
-            Invoke(new SendOrPostCallback(_ => action()), null);
+            Invoke(CreateCallback(action), null);
         }
 
         public void Invoke<T>(Action<T> action, T send)
@@ -74,7 +74,7 @@ namespace ExtenderApp.Services
         {
             if (action == null)
                 return;
-            InvokeAsync(new SendOrPostCallback(_ => action()), null);
+            InvokeAsync(CreateCallback(action), null);
         }
 
         public void InvokeAsync<T>(Action<T> action, T send)
@@ -109,9 +109,9 @@ namespace ExtenderApp.Services
             if (callback == null)
                 return default;
 
-            await ToMainThreadAsync();
+            await SwitchToMainThreadAsync();
             TResult result = callback.Invoke();
-            await AwayMainThreadAsync();
+            await SwitchToBackgroundThreadAsync();
             return result;
         }
 
@@ -119,12 +119,12 @@ namespace ExtenderApp.Services
 
         #region SwitchThreads
 
-        public ThreadSwitchAwaitable ToMainThreadAsync(CancellationToken token = default)
+        public ThreadSwitchAwaitable SwitchToMainThreadAsync(CancellationToken token = default)
         {
             return new ThreadSwitchAwaitable(_toMainThread, null, CheckAccess(), token);
         }
 
-        public ThreadSwitchAwaitable AwayMainThreadAsync(CancellationToken token = default)
+        public ThreadSwitchAwaitable SwitchToBackgroundThreadAsync(CancellationToken token = default)
         {
             return new ThreadSwitchAwaitable(_awayMainThread, null, !CheckAccess(), token);
         }
@@ -134,6 +134,26 @@ namespace ExtenderApp.Services
         private SendOrPostCallback CreateCallback<T>(Action<T> action)
         {
             return new SendOrPostCallback(CallbackMethod(action)!);
+        }
+
+        private SendOrPostCallback CreateCallback(Action action)
+        {
+            return new SendOrPostCallback(CallbackMethod(action)!);
+        }
+
+        private Action<object> CallbackMethod(Action action)
+        {
+            return (obj) =>
+            {
+                try
+                {
+                    action.Invoke();
+                }
+                catch (Exception ex)
+                {
+                    _logeer.LogError(ex, "调度器错误");
+                }
+            };
         }
 
         private Action<object> CallbackMethod<T>(Action<T> action)
@@ -151,7 +171,7 @@ namespace ExtenderApp.Services
             };
         }
 
-        private void AwayMainThread(Action action)
+        private void ToBackgroundThread(Action action)
         {
             ThreadPool.UnsafeQueueUserWorkItem(_ => action(), null);
         }

@@ -36,13 +36,18 @@ namespace ExtenderApp.MainViews.ViewModels
 
         public void OpenPlugin(PluginDetails? details)
         {
-            Task.Run(async () =>
-            {
-                await LoadPluginAsync(details!);
-                await ToMainThreadAsync();
-                NavigateTo(details!.StartupType!, details.PluginScopeName);
-                _mainViewNavigation.NavigateToRun();
-            });
+            if (details == null)
+                return;
+
+            OpenPluginAsync(details).ConfigureAwait(false);
+        }
+
+        private async Task OpenPluginAsync(PluginDetails details)
+        {
+            await LoadPluginAsync(details!);
+            await SwitchToMainThreadAsync();
+            NavigateTo(details!.StartupType!, details.PluginScopeName);
+            _mainViewNavigation.NavigateToRun();
         }
     }
 }
