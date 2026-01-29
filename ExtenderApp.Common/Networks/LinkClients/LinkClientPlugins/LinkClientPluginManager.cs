@@ -1,161 +1,225 @@
-﻿using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net;
+﻿using System.Net;
 using ExtenderApp.Abstract;
 using ExtenderApp.Data;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace ExtenderApp.Common.Networks
 {
-    internal class LinkClientPluginManager<TLinkClient> : ILinkClientPluginManager<TLinkClient> 
-        where TLinkClient : ILinkClientAwareSender<TLinkClient>
+    internal class LinkClientPluginManager : DisposableObject, ILinkClientPluginManager
     {
-        private readonly ConcurrentDictionary<Type, ILinkClientPlugin<TLinkClient>> _plugins;
+        private readonly IServiceProvider _serviceProvider;
+        private readonly SortedList<int, ILinkClientPlugin> _plugins;
+
         // 写时更新的快照，读时无锁遍历
-        private volatile ILinkClientPlugin<TLinkClient>[] _snapshot;
+        private readonly object _sync = new();
 
-        public LinkClientPluginManager()
+        public ILinkClientPlugin? this[int index] => _plugins.TryGetValue(index, out var plugin) ? plugin : null;
+
+        public LinkClientPluginManager(IServiceProvider serviceProvider)
         {
+            _serviceProvider = serviceProvider;
             _plugins = new();
-            _snapshot = Array.Empty<ILinkClientPlugin<TLinkClient>>();
         }
 
-        public LinkClientPluginManager(ConcurrentDictionary<Type, ILinkClientPlugin<TLinkClient>> plugins)
+        public void AddPlugin<T>(int priority) where T : class, ILinkClientPlugin
         {
-            _plugins = plugins;
-            _snapshot = plugins.Values.ToArray();
+            T plugin = _serviceProvider.GetService<T>() ??
+                ActivatorUtilities.CreateInstance<T>(_serviceProvider);
+            AddPlugin(priority, plugin);
         }
 
-        public void AddPlugin<T>(T plugin) where T : ILinkClientPlugin<TLinkClient>
+        public void AddPlugin(int priority, ILinkClientPlugin plugin)
         {
-            ArgumentNullException.ThrowIfNull(plugin, nameof(plugin));
+            ArgumentNullException.ThrowIfNull(plugin);
 
-            Type type = typeof(T);
-            if (_plugins.ContainsKey(type))
+            if (!_plugins.TryGetValue(priority, out var existingPlugin) ||
+                existingPlugin == null)
             {
-                throw new InvalidOperationException($"插件管理器中已存在类型为 {type.FullName} 的插件，不能重复添加");
+                lock (_sync)
+                {
+                    _plugins.Add(priority, plugin);
+                }
+                return;
             }
-            if (!_plugins.TryAdd(type, plugin))
+
+            if (existingPlugin.GetType() == plugin.GetType())
             {
-                throw new InvalidOperationException($"向插件管理器添加类型为 {type.FullName} 的插件失败");
+                throw new InvalidCastException($"不可以重复添加相同的插件");
             }
 
-            // 写时重建快照
-            _snapshot = _plugins.Values.ToArray();
+            // 如果优先级冲突，则寻找下一个可用的优先级
+            lock (_sync)
+            {
+                priority++;
+                while (_plugins.ContainsKey(priority))
+                {
+                    priority++;
+                }
+                _plugins.Add(priority, plugin);
+            }
         }
 
-        public bool RemovePlugin<T>() where T : ILinkClientPlugin<TLinkClient>
+        public bool RemovePlugin(int priority)
         {
-            Type type = typeof(T);
-            if (_plugins.TryRemove(type, out _))
+            lock (_sync)
             {
-                _snapshot = _plugins.Values.ToArray();
+                if (!_plugins.TryGetValue(priority, out var plugin) ||
+                    plugin == null)
+                {
+                    return false;
+                }
+                _plugins.Remove(priority);
+
+                // 在移除时调用插件的 OnDetach 并释放资源
+                try
+                {
+                    plugin.OnDetach();
+                }
+                catch
+                {
+                    // 忽略单个插件的 OnDetach 异常，防止影响其它清理
+                }
+                plugin.DisposeSafe();
                 return true;
             }
+        }
+
+        public bool RemovePlugin<T>() where T : class, ILinkClientPlugin
+        {
+            for (int i = 0; i < _plugins.Count; i++)
+            {
+                if (_plugins.Values[i] is T)
+                {
+                    return RemovePlugin(_plugins.Keys[i]);
+                }
+            }
+            return true;
+        }
+
+        public bool TryGetPlugin<T>(out T plugin) where T : class, ILinkClientPlugin
+        {
+            // 使用无锁快照以保持读性能与线程安全
+            foreach (var p in _plugins)
+            {
+                if (p is T cast)
+                {
+                    plugin = cast;
+                    return true;
+                }
+            }
+            plugin = null!;
             return false;
         }
 
-        public bool TryGetPlugin<T>(out T? plugin) where T : class, ILinkClientPlugin<TLinkClient>
+        public IEnumerable<ILinkClientPlugin> GetPlugins()
         {
-            Type type = typeof(T);
-            if (_plugins.TryGetValue(type, out var found))
-            {
-                plugin = found as T;
-                return plugin is not null;
-            }
-            plugin = null;
-            return false;
+            // 返回当前快照（只读枚举）
+            return _plugins.Values;
         }
 
-        public void ReplacePlugin<T>(T plugin) where T : ILinkClientPlugin<TLinkClient>
+        private void ForeachPlugin(Action<ILinkClientPlugin> action)
         {
-            ArgumentNullException.ThrowIfNull(plugin, nameof(plugin));
-            Type type = typeof(T);
-
-            while (true)
+            lock (_sync)
             {
-                if (!_plugins.TryGetValue(type, out var existing))
+                foreach (var plugin in GetPlugins())
                 {
-                    throw new InvalidOperationException($"要替换的插件类型 {type.FullName} 不存在");
+                    try
+                    {
+                        action(plugin);
+                    }
+                    catch
+                    {
+                        // 忽略单个插件异常，保证其它插件仍能被调用
+                    }
                 }
-
-                if (_plugins.TryUpdate(type, plugin, existing))
-                {
-                    _snapshot = _plugins.Values.ToArray();
-                    return;
-                }
-
-                // 竞争重试
             }
         }
 
-        public IReadOnlyList<ILinkClientPlugin<TLinkClient>> GetPlugins()
+        private void ForeachPlugin<T>(Action<ILinkClientPlugin, T> action, T value)
         {
-            // 返回当前快照的只读包装（避免外部修改）
-            return Array.AsReadOnly(_snapshot.ToArray());
+            lock (_sync)
+            {
+                foreach (var plugin in GetPlugins())
+                {
+                    try
+                    {
+                        action(plugin, value);
+                    }
+                    catch
+                    {
+                        // 忽略单个插件异常，保证其它插件仍能被调用
+                    }
+                }
+            }
         }
 
-        public void OnAttach(TLinkClient client)
+        public void OnAttach(ILinkClientAwareSender client)
         {
-            foreach (var plugin in _snapshot)
+            ForeachPlugin(static (plugin, client) =>
             {
                 plugin.OnAttach(client);
-            }
+            }, client);
         }
 
-        public void OnSend(TLinkClient client, ref LinkClientPluginSendMessage sendData)
+        public void OnDetach()
         {
-            foreach (var plugin in _snapshot)
+            ForeachPlugin(static plugin =>
             {
-                plugin.OnSend(client, ref sendData);
-            }
+                plugin.OnDetach();
+                plugin.DisposeSafe();
+            });
         }
 
-        public void OnConnecting(TLinkClient client, EndPoint remoteEndPoint)
+        public void OnConnecting(EndPoint remoteEndPoint)
         {
-            foreach (var plugin in _snapshot)
+            ForeachPlugin(static (plugin, remoteEndPoint) =>
             {
-                plugin.OnConnecting(client, remoteEndPoint);
-            }
+                plugin.OnConnecting(remoteEndPoint);
+            }, remoteEndPoint);
         }
 
-        public void OnDetach(TLinkClient client)
+        public void OnConnected(EndPoint remoteEndPoint, Exception? exception)
         {
-            foreach (var plugin in _snapshot)
+            ForeachPlugin(static (plugin, tuple) =>
             {
-                plugin.OnDetach(client);
-            }
+                plugin.OnConnected(tuple.remoteEndPoint, tuple.exception);
+            }, (remoteEndPoint, exception));
         }
 
-        public void OnDisconnected(TLinkClient client, Exception? error)
+        public void OnDisconnecting()
         {
-            foreach (var plugin in _snapshot)
+            ForeachPlugin(static plugin =>
             {
-                plugin.OnDisconnected(client, error);
-            }
+                plugin.OnDisconnecting();
+            });
         }
 
-        public void OnDisconnecting(TLinkClient client)
+        public void OnDisconnected(Exception? error)
         {
-            foreach (var plugin in _snapshot)
+            ForeachPlugin(static (plugin, error) =>
             {
-                plugin.OnDisconnecting(client);
-            }
+                plugin.OnDisconnected(error);
+            }, error);
         }
 
-        public void OnConnected(TLinkClient client, EndPoint remoteEndPoint, Exception exception)
+        public void OnSend(ref FrameContext frame)
         {
-            foreach (var plugin in _snapshot)
+            ForeachPlugin(static (plugin, frame) =>
             {
-                plugin.OnConnected(client, remoteEndPoint, exception);
-            }
+                plugin.OnSend(ref frame);
+            }, frame);
         }
 
-        public void OnReceive(TLinkClient client, ref LinkClientPluginReceiveMessage message)
+        public void OnReceive(SocketOperationValue operationValue, ref FrameContext frame)
         {
-            foreach (var plugin in _snapshot)
+            lock (_sync)
             {
-                plugin.OnReceive(client, ref message);
+                foreach (var plugin in GetPlugins())
+                {
+                    plugin.OnReceive(operationValue, ref frame);
+                    if (frame.HasException)
+                        return;
+                }
             }
         }
     }

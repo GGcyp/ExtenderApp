@@ -1,6 +1,7 @@
 ﻿
 
 using ExtenderApp.Abstract;
+using ExtenderApp.Data;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace ExtenderApp.Common.Networks.LinkClients
@@ -14,16 +15,9 @@ namespace ExtenderApp.Common.Networks.LinkClients
             return services;
         }
 
-        public static ILinkClientFormatterManager AddBinaryLinkClientFormatters<T>(this ILinkClientFormatterManager manager, IServiceProvider provider, Action<T>? action = null)
+        public static ILinkClientFormatterManager AddBinaryFormatter<T>(this ILinkClientFormatterManager manager, Action<LinkClientReceivedValue<T>> callback)
         {
-            var formatter = provider.GetRequiredService<BinaryLinkClientFormatter<T>>();
 
-            if (action != null)
-            {
-                formatter.Receive += action;
-            }
-
-            manager.AddFormatter(formatter);
             return manager;
         }
     }

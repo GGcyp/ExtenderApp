@@ -9,7 +9,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
     /// - 解析采取增量方式，支持半包与多包粘连；
     /// - 自动心跳定时器（KeepAlive）;
     /// </summary>
-    internal class MqttLinkClient : LinkClientAwareSender<IMqttLinkClient, ITcpLinker>, IMqttLinkClient
+    internal class MqttLinkClient : LinkClientAwareSender<ITcpLinker>, IMqttLinkClient
     {
         //#region 常量(报文类型 / 固定头高四位)
 
@@ -509,7 +509,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
 
         //    public void OnReceive(MqttLinkClient client, ref LinkClientPluginReceiveMessage message)
         //    {
-        //        // 若没有 Framer，OutMessageFrames 为空，直接使用底层 result 原始字节
+        //        // 若没有 Framer，FrameContext 为空，直接使用底层 result 原始字节
         //        // 假定 LinkClientPluginReceiveMessage 能提供原始数据（这里演示式调用）。
         //        // 如果结构不同，请根据你项目内实际字段调整。
         //        if (message.SocketResult.BytesTransferred > 0 && message.OriginalBytes.Length > 0)

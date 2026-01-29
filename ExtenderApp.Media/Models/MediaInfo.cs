@@ -104,27 +104,6 @@ namespace ExtenderApp.Media.Models
             Title = default!;
         }
 
-        public MediaInfo(Uri mediaUri)
-        {
-            Rate = 0;
-            Width = 0;
-            Height = 0;
-            BitRate = 0;
-            Channels = 0;
-            Duration = 0;
-            PlayCount = 0;
-            SampleRate = 0;
-            IsFavorite = false;
-            MediaWatchedPosition = 0;
-            TotalVideoDuration = 0;
-            PixelFormat = FFmpegPixelFormat.PIX_FMT_NONE;
-            SampleFormat = FFmpegSampleFormat.SAMPLE_FMT_NONE;
-            IsFavorite = false;
-
-            MediaUri = mediaUri;
-            Title = mediaUri.IsFile ? Path.GetFileName(mediaUri.LocalPath) : mediaUri.AbsoluteUri;
-        }
-
         public MediaInfo(FFmpegInfo info)
         {
             TotalVideoDuration = info.Duration;

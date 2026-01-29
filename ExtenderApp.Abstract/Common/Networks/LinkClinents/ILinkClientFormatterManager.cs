@@ -1,52 +1,69 @@
-﻿namespace ExtenderApp.Abstract
+﻿using ExtenderApp.Data;
+
+namespace ExtenderApp.Abstract
 {
     /// <summary>
-    /// 客户端格式化器管理器。
+    /// 客户端格式化器管理器接口。
+    /// 负责维护消息类型（MessageType）到对应 <see cref="ILinkClientFormatter"/> 实例的映射，
+    /// 并在接收路径中将原始帧路由到合适的格式化器进行反序列化与分发。
     /// </summary>
     /// <remarks>
     /// 职责：
-    /// - 维护“数据类型哈希（MessageType）→ IClientFormatter 实例”的映射；<br/>
-    /// - 支持以类型哈希或泛型类型两种方式获取已注册的格式化器；<br/>
-    /// - 供网络管道在反序列化前进行快速路由与分发。<br/>
+    /// - 维护“数据类型哈希（MessageType）→ <see cref="ILinkClientFormatter"/> 实例”的映射；
+    /// - 支持以类型哈希或泛型类型两种方式获取已注册的格式化器；
+    /// - 供网络管道在反序列化前进行快速路由与分发。
     /// 约定：
-    /// - MessageType 应与 <see cref="IClientFormatter{T}"/> 内部约定保持一致（例如基于类型名的稳定哈希）；<br/>
+    /// - <c>MessageType</c> 应与 <see cref="ILinkClientFormatter{T}"/> 的内部约定保持一致（例如基于类型名的稳定哈希）；
     /// - 建议实现为线程安全（读多写少）以适配运行期收发并发。
     /// </remarks>
     /// <seealso cref="ILinkClientFormatter"/>
-    /// <seealso cref="IClientFormatter{T}"/>
-    public interface ILinkClientFormatterManager
+    /// <seealso cref="ILinkClientFormatter{T}"/>
+    public interface ILinkClientFormatterManager : IDisposable
     {
         /// <summary>
-        /// 注册一个类型 <typeparamref name="T"/> 的客户端格式化器。
+        /// 注册一个客户端格式化器实例。
         /// </summary>
-        /// <typeparam name="T">消息/数据的强类型。</typeparam>
-        /// <param name="formatter">要注册的格式化器实例，其 <see cref="ILinkClientFormatter.MessageType"/> 用作键。</param>
-        /// <remarks>
-        /// 冲突策略（同一 MessageType 已存在时的行为）由具体实现决定：可选择抛出、覆盖或忽略。
-        /// </remarks>
-        void AddFormatter<T>(IClientFormatter<T> formatter);
+        /// <param name="formatter">要注册的格式化器实例；其 <see cref="ILinkClientFormatter.MessageType"/> 将作为映射键。</param>
+        void AddFormatter(ILinkClientFormatter formatter);
 
         /// <summary>
-        /// 按数据类型哈希获取已注册的格式化器。
+        /// 为指定消息类型注册一个回调，当该类型的消息被解析并分发时将调用此回调。
         /// </summary>
-        /// <param name="dataTypeHash">数据类型的稳定哈希（与发送端/解码端保持一致）。</param>
-        /// <returns>匹配的格式化器；若未找到返回 null。</returns>
-        ILinkClientFormatter? GetFormatter(int dataTypeHash);
+        /// <typeparam name="T">要注册的消息/数据类型。</typeparam>
+        /// <param name="callback">当接收到类型为 <typeparamref name="T"/> 的消息时要调用的回调，参数为封装的接收值。</param>
+        void Register<T>(Action<LinkClientReceivedValue<T>> callback);
 
         /// <summary>
-        /// 获取类型 <typeparamref name="T"/> 对应的已注册格式化器。
+        /// 注销先前为指定消息类型注册的回调。
         /// </summary>
-        /// <typeparam name="T">消息/数据的强类型。</typeparam>
-        /// <returns>匹配的强类型格式化器；若未找到返回 null。</returns>
-        /// <remarks>
-        /// 具体实现通常会基于与 <see cref="IClientFormatter{T}"/> 相同的规则计算 <c>MessageType</c> 后再查找。
-        /// </remarks>
-        IClientFormatter<T>? GetFormatter<T>();
+        /// <typeparam name="T">要注销回调的消息/数据类型。</typeparam>
+        /// <param name="callback">要注销的回调委托实例。</param>
+        void UnRegister<T>(Action<LinkClientReceivedValue<T>> callback);
 
         /// <summary>
-        /// 删除指定类型 <typeparamref name="T"/> 的已注册格式化器。
+        /// 删除已注册的某一业务类型 <typeparamref name="T"/> 的格式化器。
         /// </summary>
-        /// <typeparam name="T">指定类型</typeparam>
+        /// <typeparam name="T">要删除的消息/数据类型。</typeparam>
         void RemoveFormatter<T>();
+
+        /// <summary>
+        /// 将要发送的消息对象序列化为一个帧上下文，以便发送管道消费。
+        /// </summary>
+        /// <typeparam name="T">要序列化的消息/数据类型。</typeparam>
+        /// <param name="value">要序列化的消息实例。</param>
+        /// <returns>表示已准备好发送的帧的 <see cref="FrameContext"/> 实例。</returns>
+        FrameContext ProcessSendVlaue<T>(T value);
+
+        /// <summary>
+        /// 在接收路径中处理/路由一个已解析出的帧上下文。
+        /// 管理器应根据帧中的 MessageType（或其它协议约定）选择合适的 <see cref="ILinkClientFormatter"/>，
+        /// 调用其反序列化/分发逻辑（例如触发事件或返回对象）。
+        /// </summary>
+        /// <param name="operationValue">与本次套接字接收操作相关的元数据（例如接收字节数、远端地址或错误码）。</param>
+        /// <param name="frameContext">
+        /// 要处理的帧上下文（按引用传递以便实现可以在必要时替换或释放其内部缓冲）。
+        /// 实现应在文档中明确 <see cref="FrameContext"/> 的所有权与释放约定（谁负责调用 <see cref="FrameContext.Dispose"/>）。
+        /// </param>
+        void ProcessReceivedFrame(SocketOperationValue operationValue, ref FrameContext frameContext);
     }
 }

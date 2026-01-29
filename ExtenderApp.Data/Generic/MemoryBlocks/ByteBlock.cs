@@ -171,14 +171,8 @@ namespace ExtenderApp.Data
             if (buffer.IsEmpty)
                 throw new ArgumentException(nameof(buffer));
 
-            _block = new MemoryBlock<byte>((int)buffer.Length);
-
-            while (!buffer.End)
-            {
-                var span = buffer.UnreadSpan;
-                Write(span);
-                buffer.ReadAdvance(span.Length);
-            }
+            _block = new MemoryBlock<byte>((int)buffer.Remaining);
+            Write(buffer);
         }
 
         /// <summary>

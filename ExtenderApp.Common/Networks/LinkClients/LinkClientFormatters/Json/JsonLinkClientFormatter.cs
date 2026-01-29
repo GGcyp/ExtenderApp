@@ -1,6 +1,4 @@
-﻿
-
-using System.Text;
+﻿using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using ExtenderApp.Abstract;
@@ -12,11 +10,8 @@ namespace ExtenderApp.Common.Networks.LinkClients
     {
         public JsonSerializerOptions Options { get; set; }
 
-        private readonly IBinaryFormatter<string> _stringFormatter;
-
-        public JsonLinkClientFormatter(IBinaryFormatter<string> stringFormatter)
+        public JsonLinkClientFormatter()
         {
-            _stringFormatter = stringFormatter;
             Options = new JsonSerializerOptions
             {
                 DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
@@ -26,14 +21,19 @@ namespace ExtenderApp.Common.Networks.LinkClients
 
         protected override T Deserialize(ref ByteBuffer buffer)
         {
-            string temp = _stringFormatter.Deserialize(ref buffer);
+            Encoding encoding = Encoding.UTF8;
+            string temp = encoding.GetString(buffer.UnreadSequence);
+            buffer.ReadAdvance(buffer.Remaining);
             return JsonSerializer.Deserialize<T>(temp, Options)!;
         }
 
         protected override void Serialize(T value, ref ByteBuffer buffer)
         {
             var temp = JsonSerializer.Serialize(value, Options);
-            _stringFormatter.Serialize(ref buffer, temp);
+            Encoding encoding = Encoding.UTF8;
+            int length = encoding.GetMaxByteCount(temp.Length);
+            length = encoding.GetBytes(temp, buffer.GetSpan(length));
+            buffer.WriteAdvance(length);
         }
     }
 }

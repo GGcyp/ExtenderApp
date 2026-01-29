@@ -96,7 +96,6 @@ namespace ExtenderApp.Data
 
             sequence.MinimumSpanLength = MinimumSpanLength;
 
-
             return new SequenceRental(this, sequence);
         }
 

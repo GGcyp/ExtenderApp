@@ -1,6 +1,7 @@
 ﻿using System.Collections.Concurrent;
 using ExtenderApp.Abstract;
 using ExtenderApp.Common.Hash;
+using ExtenderApp.Data;
 
 namespace ExtenderApp.Common.Networks.LinkClients
 {
@@ -12,52 +13,98 @@ namespace ExtenderApp.Common.Networks.LinkClients
     /// - 当同一 <c>TLinkClient</c> 注册多个实现时，会自动以 <see cref="ClientFormatterTypeSwitch{T}"/> 聚合，
     ///   以支持基于 FormatterTypeHash 的后续分发。
     /// </remarks>
-    internal class LinkClientFormatterManager : ILinkClientFormatterManager
+    internal class LinkClientFormatterManager : DisposableObject, ILinkClientFormatterManager
     {
         /// <summary>
         /// 按数据类型哈希索引到格式化器（或聚合开关）的字典。
         /// </summary>
-        private readonly ConcurrentDictionary<int, ILinkClientFormatter> _hashToFormatterDict;
+        private readonly ConcurrentDictionary<int, ILinkClientFormatter> _formatters;
 
         /// <summary>
         /// 初始化管理器实例。
         /// </summary>
         public LinkClientFormatterManager()
         {
-            _hashToFormatterDict = new ConcurrentDictionary<int, ILinkClientFormatter>();
-        }
-
-        public void AddFormatter<T>(IClientFormatter<T> formatter)
-        {
-            if (formatter == null)
-                throw new ArgumentNullException(nameof(formatter));
-
-            Type type = typeof(T);
-            if (_hashToFormatterDict.TryGetValue(formatter.MessageType, out var lastFormatter))
-            {
-                throw new InvalidOperationException(string.Format("当前转换器已经被注册：{0}", type.FullName));
-            }
-            _hashToFormatterDict.TryAdd(formatter.MessageType, formatter);
+            _formatters = new();
         }
 
         public void RemoveFormatter<T>()
         {
-            _hashToFormatterDict.TryRemove(typeof(T).ComputeHash_FNV_1a(), out var _);
+            _formatters.TryRemove(GetTypeCode<T>(), out var _);
         }
 
-        public ILinkClientFormatter? GetFormatter(int dataTypeHash)
+        public void AddFormatter(ILinkClientFormatter formatter)
         {
-            _hashToFormatterDict.TryGetValue(dataTypeHash, out var formatter);
-            return formatter;
-        }
+            if (formatter == null)
+                throw new ArgumentNullException(nameof(formatter));
 
-        public IClientFormatter<T>? GetFormatter<T>()
-        {
-            if (_hashToFormatterDict.TryGetValue(typeof(T).ComputeHash_FNV_1a(), out var formatter))
+            if (_formatters.TryGetValue(formatter.MessageType, out var lastFormatter))
             {
-                return formatter as IClientFormatter<T>;
+                throw new InvalidOperationException(string.Format("当前转换器已经被注册：{0} ,请先确定使用那种方式序列化。", formatter.GetType().FullName));
             }
-            return null;
+            _formatters.TryAdd(formatter.MessageType, formatter);
+        }
+
+
+        public FrameContext ProcessSendVlaue<T>(T value)
+        {
+            var typeCode = GetTypeCode<T>();
+            if (!_formatters.TryGetValue(typeCode, out var f) ||
+                f is not ILinkClientFormatter<T> formatter)
+            {
+                return new(new KeyNotFoundException($"未发现指定类型的转换器 {typeof(T).Name}"));
+            }
+            var buffer = formatter.Serialize(value);
+            ByteBlock block = new ByteBlock(sizeof(int) + (int)buffer.Remaining);
+            block.Write(typeCode);
+            block.Write(buffer);
+            return block;
+        }
+
+        public void ProcessReceivedFrame(SocketOperationValue operationValue, ref FrameContext frameContext)
+        {
+            ByteBlock block = frameContext;
+            var typeCode = block.ReadInt32();
+            if (!_formatters.TryGetValue(typeCode, out var formatter))
+            {
+                frameContext.SetException(new KeyNotFoundException($"未发现指定类型的转换器 {typeCode}"));
+                return;
+            }
+
+            frameContext.WriteNextPayload(block);
+            formatter.DeserializeAndInvoke(operationValue, ref frameContext);
+        }
+
+        public void Register<T>(Action<LinkClientReceivedValue<T>> callback)
+        {
+            if (TryGetFormatter<T>(out var formatter))
+            {
+                formatter.Received += callback;
+            }
+        }
+
+        public void UnRegister<T>(Action<LinkClientReceivedValue<T>> callback)
+        {
+            if (TryGetFormatter<T>(out var formatter))
+            {
+                formatter.Received -= callback;
+            }
+        }
+
+        private bool TryGetFormatter<T>(out ILinkClientFormatter<T> formatter)
+        {
+            formatter = default!;
+            if (_formatters.TryGetValue(GetTypeCode<T>(), out var f))
+            {
+                formatter = (f as ILinkClientFormatter<T>)!;
+                return formatter == null;
+            }
+            return false;
+        }
+
+        private int GetTypeCode<T>()
+        {
+            return typeof(T).ComputeHash_FNV_1a();
         }
     }
 }

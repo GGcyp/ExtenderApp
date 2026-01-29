@@ -6,7 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace ExtenderApp.Common.Networks.LinkClients
 {
-    internal class FileLinkClient : LinkClientAwareSender<IFileLinkClient, ITcpLinker>, IFileLinkClient, IValueTaskSource<Result>
+    internal class FileLinkClient : LinkClientAwareSender<ITcpLinker>, IFileLinkClient, IValueTaskSource<Result>
     {
         private const int DefaultChunkSize = 65536;
         private const int FileProt = 88883;
@@ -28,27 +28,26 @@ namespace ExtenderApp.Common.Networks.LinkClients
             _fileOperateProvider = provider.GetRequiredService<IFileOperateProvider>();
             _provider = provider;
 
-            FormatterManager ??= new LinkClientFormatterManager();
-            FormatterManager.AddBinaryLinkClientFormatters<FileDataPacket>(provider, OnFilePacket);
-            FormatterManager.AddBinaryLinkClientFormatters<FileDtoRequest>(provider, OnRequest);
-            FormatterManager.AddBinaryLinkClientFormatters<FileResponse>(provider, OnResponse);
+            FormatterManager!.AddBinaryFormatter<FileDataPacket>(OnFilePacket);
+            FormatterManager!.AddBinaryFormatter<FileDtoRequest>(OnRequest);
+            FormatterManager!.AddBinaryFormatter<FileResponse>(OnResponse);
         }
 
-        private void OnResponse(FileResponse response)
+        private void OnResponse(LinkClientReceivedValue<FileResponse> response)
         {
-            if (!response.IsAccepted)
+            if (!response.Value.IsAccepted)
             {
                 vts.SetResult(Result.Failure("文件推送请求被拒绝。"));
                 return;
             }
         }
 
-        private void OnFilePacket(FileDataPacket packet)
+        private void OnFilePacket(LinkClientReceivedValue<FileDataPacket> packet)
         {
             throw new NotImplementedException();
         }
 
-        private void OnRequest(FileDtoRequest request)
+        private void OnRequest(LinkClientReceivedValue<FileDtoRequest> request)
         {
             OnRequestAsync(request).ConfigureAwait(false);
         }
@@ -117,7 +116,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
             return PrivateSendRequestAsync(request, token);
         }
 
-        #endregion
+        #endregion Push
 
         private ValueTask<Result> PrivateSendRequestAsync(FileDtoRequest request, CancellationToken token)
         {

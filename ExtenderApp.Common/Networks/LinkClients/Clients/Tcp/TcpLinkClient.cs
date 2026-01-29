@@ -6,7 +6,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
     /// <summary>
     /// Tcp 链路客户端实现。
     /// </summary>
-    internal class TcpLinkClient : LinkClientAwareSender<ITcpLinkClient, ITcpLinker>, ITcpLinkClient
+    internal class TcpLinkClient : LinkClientAwareSender<ITcpLinker>, ITcpLinkClient
     {
         public bool NoDelay
         {
@@ -31,11 +31,11 @@ namespace ExtenderApp.Common.Networks.LinkClients
 
                 // 连接成功后启动接收循环
                 StartReceive();
-                PluginManager?.OnConnected(_thisClient, endPoint, null);
+                PluginManager?.OnConnected(endPoint, null);
             }
             catch (Exception ex)
             {
-                PluginManager?.OnConnected(_thisClient, null, ex);
+                PluginManager?.OnConnected(Linker.RemoteEndPoint!, ex);
                 throw;
             }
         }
@@ -54,11 +54,11 @@ namespace ExtenderApp.Common.Networks.LinkClients
 
                 // 连接成功后启动接收循环
                 StartReceive();
-                PluginManager?.OnConnected(_thisClient, endPoint, null);
+                PluginManager?.OnConnected(endPoint, null);
             }
             catch (Exception ex)
             {
-                PluginManager?.OnConnected(_thisClient, null, ex);
+                PluginManager?.OnConnected(null!, ex);
                 throw;
             }
         }

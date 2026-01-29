@@ -5,7 +5,7 @@ namespace ExtenderApp.Abstract
     /// <summary>
     /// Tcp 链接客户端接口：表示一个可进行 TCP 连接的客户端抽象。
     /// </summary>
-    public interface ITcpLinkClient : ILinkClientAwareSender<ITcpLinkClient>
+    public interface ITcpLinkClient : ILinkClientAwareSender
     {
         /// <summary>
         /// 是否禁用 Nagle 算法（仅对 TCP 有效）。

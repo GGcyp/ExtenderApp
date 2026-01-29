@@ -3,7 +3,7 @@
     /// <summary>
     /// MQTT 链接客户端接口
     /// </summary>
-    public interface IMqttLinkClient : ILinkClientAwareSender<IMqttLinkClient>
+    public interface IMqttLinkClient : ILinkClientAwareSender
     {
 
     }

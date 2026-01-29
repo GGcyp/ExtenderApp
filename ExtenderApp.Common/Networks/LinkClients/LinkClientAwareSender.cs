@@ -9,8 +9,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
     /// 支持插件与格式化器的链接客户端发送器基类。
     /// </summary>
     /// <typeparam name="TLinker">指定类型连接器</typeparam>
-    public abstract class LinkClientAwareSender<TLinkClient, TLinker> : LinkClient<TLinker>, ILinkClientAwareSender<TLinkClient>
-        where TLinkClient : ILinkClientAwareSender<TLinkClient>
+    public abstract class LinkClientAwareSender<TLinker> : LinkClient<TLinker>, ILinkClientAwareSender
         where TLinker : ILinker
     {
         /// <summary>
@@ -20,11 +19,6 @@ namespace ExtenderApp.Common.Networks.LinkClients
         /// cref="_receiveTask"/>。 注意：StopReceive 中可能在锁外等待任务完成或在持有锁的情况下启动取消，但应尽量保持锁粒度短以避免阻塞接收路径。
         /// </summary>
         private readonly object _receiveLock = new();
-
-        /// <summary>
-        /// 当前客户端自身的引用，便于在基类中传递给插件管理器等使用。
-        /// </summary>
-        public readonly TLinkClient _thisClient;
 
         /// <summary>
         /// 用于控制接收循环的取消令牌源。 在 StartReceive 创建，在
@@ -40,32 +34,24 @@ namespace ExtenderApp.Common.Networks.LinkClients
         private Task? _receiveTask;
 
         public ILinkClientFramer? Framer { get; protected set; }
+        public ILinkClientPluginManager? PluginManager { get; protected set; }
+
         public ILinkClientFormatterManager? FormatterManager { get; protected set; }
-        public ILinkClientPluginManager<TLinkClient>? PluginManager { get; protected set; }
 
         public LinkClientAwareSender(TLinker linker) : base(linker)
         {
-            _thisClient = (TLinkClient)(ILinkClientAwareSender<TLinkClient>)this;
             if (Connected)
             {
                 StartReceive();
             }
         }
 
-        public void SetClientPluginManager(ILinkClientPluginManager<TLinkClient> pluginManager)
+        public void SetClientPluginManager(ILinkClientPluginManager pluginManager)
         {
             ThrowIfDisposed();
             ArgumentNullException.ThrowIfNull(pluginManager, nameof(pluginManager));
 
             PluginManager = pluginManager;
-        }
-
-        public void SetClientFormatterManager(ILinkClientFormatterManager formatterManager)
-        {
-            ThrowIfDisposed();
-            ArgumentNullException.ThrowIfNull(formatterManager, nameof(formatterManager));
-
-            FormatterManager = formatterManager;
         }
 
         public void SetClientFramer(ILinkClientFramer framer)
@@ -92,7 +78,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
         /// <typeparam name="T">指定类型<see cref="{T}"/></typeparam>
         /// <param name="data">指定类型数据</param>
         /// <returns>返回装完数据的<see cref="ByteBuffer"/></returns>
-        /// <exception cref="InvalidOperationException">当<see cref="FormatterManager"/>为空或找不到指定<see cref="IClientFormatter{T}"/>时候弹出</exception>
+        /// <exception cref="InvalidOperationException">当<see cref="FormatterManager"/>为空或找不到指定<see cref="ILinkClientFormatter{T}"/>时候弹出</exception>
         protected ByteBuffer ValueToByteBuffer<T>(T data)
         {
             if (FormatterManager is null)
@@ -103,36 +89,37 @@ namespace ExtenderApp.Common.Networks.LinkClients
                 throw new InvalidOperationException($"未找到类型 {typeof(T).FullName} 的格式化器，无法发送数据");
 
             var buffer = formatter.Serialize(data);
-            LinkClientPluginSendMessage pluginSendData = new(buffer, formatter.MessageType);
-            PluginManager?.OnSend(_thisClient, ref pluginSendData);
+            //LinkClientPluginSendMessage pluginSendData = new(buffer, formatter.MessageType);
+            //PluginManager?.OnSend(ref pluginSendData);
 
-            ByteBuffer sendBuffer = default;
-            if (Framer != null)
-            {
-                Framer.Encode(pluginSendData.MessageType, (int)pluginSendData.ResultOutMessageBuffer.Length, out var framedMessage);
+            //ByteBuffer sendBuffer = default;
+            //if (Framer != null)
+            //{
+            //    Framer.Encode(pluginSendData.MessageType, (int)pluginSendData.ResultOutMessageBuffer.Length, out var framedMessage);
 
-                sendBuffer = ByteBuffer.CreateBuffer();
-                sendBuffer.Write(framedMessage);
-                sendBuffer.Write(pluginSendData.ResultOutMessageBuffer);
+            //    sendBuffer = ByteBuffer.CreateBuffer();
+            //    sendBuffer.Write(framedMessage);
+            //    sendBuffer.Write(pluginSendData.ResultOutMessageBuffer);
 
-                framedMessage.Dispose();
-                pluginSendData.Dispose();
-            }
-            else
-            {
-                if (pluginSendData.OutMessageBuffer.Remaining > 0)
-                {
-                    sendBuffer = pluginSendData.OutMessageBuffer;
-                    pluginSendData.OriginalMessageBuffer.Dispose();
-                }
-                else
-                {
-                    sendBuffer = pluginSendData.OriginalMessageBuffer;
-                    pluginSendData.OutMessageBuffer.Dispose();
-                }
-            }
+            //    framedMessage.Dispose();
+            //    pluginSendData.Dispose();
+            //}
+            //else
+            //{
+            //    if (pluginSendData.OutMessageBuffer.Remaining > 0)
+            //    {
+            //        sendBuffer = pluginSendData.OutMessageBuffer;
+            //        pluginSendData.OriginalMessageBuffer.Dispose();
+            //    }
+            //    else
+            //    {
+            //        sendBuffer = pluginSendData.OriginalMessageBuffer;
+            //        pluginSendData.OutMessageBuffer.Dispose();
+            //    }
+            //}
 
-            return sendBuffer;
+            //return sendBuffer;
+            return default;
         }
 
         /// <summary>
@@ -171,7 +158,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
                     catch (Exception ex)
                     {
                         // 非取消异常：通知插件并退出循环（认为链路已异常断开）
-                        PluginManager?.OnDisconnected(_thisClient, ex);
+                        PluginManager?.OnDisconnected(ex);
                         break;
                     }
 
@@ -202,39 +189,38 @@ namespace ExtenderApp.Common.Networks.LinkClients
 
         private ValueTask PrivatePluginReceiveMessage(Result<SocketOperationValue> result, ReadOnlyMemory<byte> resultMessage)
         {
-            ByteBuffer buffer = new(resultMessage);
-            LinkClientPluginReceiveMessage message = default;
-            if (Framer != null)
-            {
-                Framer.Decode(ref buffer, out var framedList);
-                // 未能解析出任何帧，直接返回
-                if (framedList.IsEmpty)
-                    return ValueTask.CompletedTask;
+            //ByteBuffer buffer = new(resultMessage);
+            //if (Framer != null)
+            //{
+            //    Framer.Decode(ref buffer, out var framedList);
+            //    // 未能解析出任何帧，直接返回
+            //    if (framedList.IsEmpty)
+            //        return ValueTask.CompletedTask;
 
-                message = new(result, framedList);
-            }
-            else
-            {
-                message = new(result, default);
-            }
+            //    message = new(result, framedList);
+            //}
+            //else
+            //{
+            //    message = new(result, default);
+            //}
 
-            PluginManager?.OnReceive(_thisClient, ref message);
-            if (FormatterManager != null && !message.OutMessageFrames.IsEmpty)
-            {
-                for (int i = 0; i < message.OutMessageFrames.Count; i++)
-                {
-                    var frame = message.OutMessageFrames[i];
-                    var formatter = FormatterManager.GetFormatter(frame.MessageType);
-                    if (formatter is null)
-                    {
-                        // 未找到对应格式化器，跳过
-                        continue;
-                    }
-                    ByteBuffer dataBuffer = new(frame.Payload);
-                    formatter.DeserializeAndInvoke(ref dataBuffer);
-                }
-            }
-            message.Dispose();
+            //PluginManager?.OnReceive( ref message);
+            //if (FormatterManager != null && !message.FrameContext.IsEmpty)
+            //{
+            //    for (int i = 0; i < message.FrameContext.Count; i++)
+            //    {
+            //        var frame = message.FrameContext[i];
+            //        var formatter = FormatterManager.GetFormatter(frame.MessageType);
+            //        if (formatter is null)
+            //        {
+            //            // 未找到对应格式化器，跳过
+            //            continue;
+            //        }
+            //        ByteBuffer dataBuffer = new(frame.UnreadSpan);
+            //        formatter.DeserializeAndInvoke(ref dataBuffer);
+            //    }
+            //}
+            //message.Dispose();
             return ValueTask.CompletedTask;
         }
 
@@ -287,36 +273,36 @@ namespace ExtenderApp.Common.Networks.LinkClients
         public virtual new void Connect(EndPoint remoteEndPoint)
         {
             ThrowIfDisposed();
-            PluginManager?.OnConnecting(_thisClient, remoteEndPoint);
+            PluginManager?.OnConnecting(remoteEndPoint);
             try
             {
                 Linker.Connect(remoteEndPoint);
                 // 连接成功后启动接收循环
                 StartReceive();
-                PluginManager?.OnConnected(_thisClient, remoteEndPoint, null);
+                PluginManager?.OnConnected(remoteEndPoint, null);
             }
             catch (Exception ex)
             {
-                PluginManager?.OnConnected(_thisClient, remoteEndPoint, ex);
+                PluginManager?.OnConnected(remoteEndPoint, ex);
                 throw;
             }
         }
 
-        public virtual async new ValueTask ConnectAsync(EndPoint remoteEndPoint, CancellationToken token = default)
+        public virtual new async ValueTask ConnectAsync(EndPoint remoteEndPoint, CancellationToken token = default)
         {
             ThrowIfDisposed();
-            PluginManager?.OnConnecting(_thisClient, remoteEndPoint);
+            PluginManager?.OnConnecting(remoteEndPoint);
 
             try
             {
                 await Linker.ConnectAsync(remoteEndPoint, token);
                 // 连接成功后启动接收循环
                 StartReceive();
-                PluginManager?.OnConnected(_thisClient, remoteEndPoint, null);
+                PluginManager?.OnConnected(remoteEndPoint, null);
             }
             catch (Exception ex)
             {
-                PluginManager?.OnConnected(_thisClient, remoteEndPoint, ex);
+                PluginManager?.OnConnected(remoteEndPoint, ex);
                 throw;
             }
         }
@@ -324,35 +310,35 @@ namespace ExtenderApp.Common.Networks.LinkClients
         public virtual new void Disconnect()
         {
             ThrowIfDisposed();
-            PluginManager?.OnDisconnecting(_thisClient);
+            PluginManager?.OnDisconnecting();
             // 先暂停接收，再关闭底层（避免在关闭过程中继续处理数据）
             StopReceive();
             try
             {
                 Linker.Disconnect();
-                PluginManager?.OnDisconnected(_thisClient, null);
+                PluginManager?.OnDisconnected(null);
             }
             catch (Exception ex)
             {
-                PluginManager?.OnDisconnected(_thisClient, ex);
+                PluginManager?.OnDisconnected(ex);
                 throw;
             }
         }
 
-        public virtual async new ValueTask DisconnectAsync(CancellationToken token = default)
+        public virtual new async ValueTask DisconnectAsync(CancellationToken token = default)
         {
             ThrowIfDisposed();
-            PluginManager?.OnDisconnecting(_thisClient);
+            PluginManager?.OnDisconnecting();
             // 先暂停接收，再异步断开底层
             StopReceive();
             try
             {
                 await Linker.DisconnectAsync(token);
-                PluginManager?.OnDisconnected(_thisClient, null);
+                PluginManager?.OnDisconnected(null);
             }
             catch (Exception ex)
             {
-                PluginManager?.OnDisconnected(_thisClient, ex);
+                PluginManager?.OnDisconnected(ex);
                 throw;
             }
         }
@@ -365,6 +351,16 @@ namespace ExtenderApp.Common.Networks.LinkClients
         public virtual new ValueTask<Result<SocketOperationValue>> SendAsync(Memory<byte> memory, CancellationToken token = default)
         {
             return Linker.SendAsync(memory, token);
+        }
+
+        public void SetClientFormatterManager(ILinkClientFormatterManager formatterManager)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void Send<T>(T data)
+        {
+            throw new NotImplementedException();
         }
 
         #endregion ILinker 直通方法

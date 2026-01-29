@@ -1,6 +1,4 @@
-﻿
-
-namespace ExtenderApp.Abstract
+﻿namespace ExtenderApp.Abstract
 {
     /// <summary>
     /// 网络链接器接口。

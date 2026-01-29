@@ -7,7 +7,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
     /// <summary>
     /// Udp 链接客户端实现。
     /// </summary>
-    internal class UdpLinkClient : LinkClientAwareSender<IUdpLinkClient, IUdpLinker>, IUdpLinkClient
+    internal class UdpLinkClient : LinkClientAwareSender<IUdpLinker>, IUdpLinkClient
     {
         public UdpLinkClient(IUdpLinker linker) : base(linker)
         {

@@ -2,7 +2,7 @@
 
 namespace ExtenderApp.Abstract
 {
-    public interface IFileLinkClient : ILinkClientAwareSender<IFileLinkClient>
+    public interface IFileLinkClient : ILinkClientAwareSender
     {
     }
 }

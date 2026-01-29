@@ -7,7 +7,7 @@ namespace ExtenderApp.Abstract
     /// UDP 客户端侧的链路抽象，扩展自 <see cref="ILinkClientAwareSender{TUdpLinker}"/> 与 <see cref="IUdpLinker"/>。
     /// 提供基于“泛型对象→字节”格式化后按指定远端发送的能力（单次数据报发送），支持同步与异步两种形式。
     /// </summary>
-    public interface IUdpLinkClient : ILinkClientAwareSender<IUdpLinkClient>, IUdpLinker
+    public interface IUdpLinkClient : ILinkClientAwareSender, IUdpLinker
     {
         /// <summary>
         /// 将业务对象序列化并同步发送到指定的 UDP 远端终结点。

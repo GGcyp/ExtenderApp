@@ -3,7 +3,6 @@ using System.Collections.Concurrent;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 
-
 namespace ExtenderApp.Data
 {
     /// <summary>
@@ -180,33 +179,6 @@ namespace ExtenderApp.Data
         /// <returns>具有指定大小可用内存的段。</returns>
         private SequenceSegment GetSegment(int sizeHint)
         {
-            //if (sizeHint < 0)
-            //    throw new ArgumentOutOfRangeException(nameof(sizeHint));
-
-            //if (sizeHint == 0)
-            //    return last!;
-
-            //int minBufferSize = -1;
-            //if (last == null || last.WritableBytes < sizeHint)
-            //{
-            //    minBufferSize = System.Math.Max(MinimumSpanLength, sizeHint);
-            //}
-
-            //minBufferSize = minBufferSize == -1 ? DefaultLengthFromArrayPool : minBufferSize;
-            //var segment = SegmentPool.Count > 0 ? SegmentPool.Pop() : new SequenceSegment();
-            //if (_pool != null)
-            //{
-            //    segment.Assign(_pool.Rent(minBufferSize));
-            //}
-            //else
-            //{
-            //    segment.Assign(_memoryPool!.Rent(minBufferSize));
-            //}
-
-            //Append(segment);
-
-            //return segment;
-
             //原先设计
             int? minBufferSize = null;
             if (sizeHint == 0)
@@ -226,9 +198,9 @@ namespace ExtenderApp.Data
 
             if (minBufferSize.HasValue)
             {
-                SequenceSegment? segment;
+                SequenceSegment segment;
                 if (SegmentPool.Count > 0)
-                    SegmentPool.TryPop(out segment);
+                    SegmentPool.TryPop(out segment!);
                 else
                     segment = new SequenceSegment();
 
@@ -266,7 +238,6 @@ namespace ExtenderApp.Data
                 last = segment;
                 return;
             }
-
 
             var current = first;
             if (first != last)
@@ -326,7 +297,6 @@ namespace ExtenderApp.Data
                 ? new ReadOnlySequence<T>(first, first.Start, last, last.End)
                 : Empty;
         }
-
 
         /// <summary>
         /// 表示一个序列段，用于处理序列中的一段数据。
