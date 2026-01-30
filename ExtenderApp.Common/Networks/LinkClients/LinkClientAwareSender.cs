@@ -9,7 +9,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
     /// 支持插件与格式化器的链接客户端发送器基类。
     /// </summary>
     /// <typeparam name="TLinker">指定类型连接器</typeparam>
-    public abstract class LinkClientAwareSender<TLinker> : LinkClient<TLinker>, ILinkClientAwareSender
+    public class LinkClientAwareSender<TLinker> : LinkClient<TLinker>, ILinkClientAwareSender
         where TLinker : ILinker
     {
         /// <summary>
@@ -33,13 +33,16 @@ namespace ExtenderApp.Common.Networks.LinkClients
         /// </summary>
         private Task? _receiveTask;
 
+        private readonly ManualResetEventSlim _waitEvent;
+
         public ILinkClientFramer? Framer { get; protected set; }
         public ILinkClientPluginManager? PluginManager { get; protected set; }
-
         public ILinkClientFormatterManager? FormatterManager { get; protected set; }
 
         public LinkClientAwareSender(TLinker linker) : base(linker)
         {
+            _receiveLock = new();
+            _waitEvent = new(true);
             if (Connected)
             {
                 StartReceive();
@@ -54,6 +57,14 @@ namespace ExtenderApp.Common.Networks.LinkClients
             PluginManager = pluginManager;
         }
 
+        public void SetClientFormatterManager(ILinkClientFormatterManager formatterManager)
+        {
+            ThrowIfDisposed();
+            ArgumentNullException.ThrowIfNull(formatterManager, nameof(formatterManager));
+
+            FormatterManager = formatterManager;
+        }
+
         public void SetClientFramer(ILinkClientFramer framer)
         {
             ThrowIfDisposed();
@@ -63,6 +74,11 @@ namespace ExtenderApp.Common.Networks.LinkClients
 
         #region Send And Receive
 
+
+        public void Send<T>(T data)
+        {
+            throw new NotImplementedException();
+        }
         public virtual ValueTask<Result<SocketOperationValue>> SendAsync<T>(T data, CancellationToken token = default)
         {
             ThrowIfDisposed();
@@ -84,11 +100,11 @@ namespace ExtenderApp.Common.Networks.LinkClients
             if (FormatterManager is null)
                 throw new InvalidOperationException("转换器管理为空，不能使用泛型方法");
 
-            var formatter = FormatterManager.GetFormatter<T>();
-            if (formatter is null)
-                throw new InvalidOperationException($"未找到类型 {typeof(T).FullName} 的格式化器，无法发送数据");
+            //var formatter = FormatterManager.GetFormatter<T>();
+            //if (formatter is null)
+            //    throw new InvalidOperationException($"未找到类型 {typeof(T).FullName} 的格式化器，无法发送数据");
 
-            var buffer = formatter.Serialize(data);
+            //var buffer = formatter.Serialize(data);
             //LinkClientPluginSendMessage pluginSendData = new(buffer, formatter.MessageType);
             //PluginManager?.OnSend(ref pluginSendData);
 
@@ -270,7 +286,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
 
         #region ILinker 直通方法
 
-        public virtual new void Connect(EndPoint remoteEndPoint)
+        public override void Connect(EndPoint remoteEndPoint)
         {
             ThrowIfDisposed();
             PluginManager?.OnConnecting(remoteEndPoint);
@@ -288,7 +304,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
             }
         }
 
-        public virtual new async ValueTask ConnectAsync(EndPoint remoteEndPoint, CancellationToken token = default)
+        public override async ValueTask ConnectAsync(EndPoint remoteEndPoint, CancellationToken token = default)
         {
             ThrowIfDisposed();
             PluginManager?.OnConnecting(remoteEndPoint);
@@ -307,7 +323,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
             }
         }
 
-        public virtual new void Disconnect()
+        public override void Disconnect()
         {
             ThrowIfDisposed();
             PluginManager?.OnDisconnecting();
@@ -325,7 +341,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
             }
         }
 
-        public virtual new async ValueTask DisconnectAsync(CancellationToken token = default)
+        public override async ValueTask DisconnectAsync(CancellationToken token = default)
         {
             ThrowIfDisposed();
             PluginManager?.OnDisconnecting();
@@ -343,24 +359,26 @@ namespace ExtenderApp.Common.Networks.LinkClients
             }
         }
 
-        public virtual new Result<SocketOperationValue> Send(Memory<byte> memory)
+        public override Result<SocketOperationValue> Send(Memory<byte> memory)
         {
             return Linker.Send(memory);
         }
 
-        public virtual new ValueTask<Result<SocketOperationValue>> SendAsync(Memory<byte> memory, CancellationToken token = default)
+        public override ValueTask<Result<SocketOperationValue>> SendAsync(Memory<byte> memory, CancellationToken token = default)
         {
+            ThrowIfDisposed();
+
             return Linker.SendAsync(memory, token);
         }
 
-        public void SetClientFormatterManager(ILinkClientFormatterManager formatterManager)
+        public override Result<SocketOperationValue> Receive(Memory<byte> memory)
         {
-            throw new NotImplementedException();
+            return Linker.Receive(memory);
         }
 
-        public void Send<T>(T data)
+        public override ValueTask<Result<SocketOperationValue>> ReceiveAsync(Memory<byte> memory, CancellationToken token = default)
         {
-            throw new NotImplementedException();
+            return Linker.ReceiveAsync(memory, token);
         }
 
         #endregion ILinker 直通方法

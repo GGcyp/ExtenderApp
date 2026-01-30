@@ -12,14 +12,14 @@ namespace ExtenderApp.Common.Networks.LinkClients
             _formatter = formatter;
         }
 
-        //protected override T Deserialize(ref ByteBuffer buffer)
-        //{
-        //    return _formatter.Deserialize(ref buffer);
-        //}
+        protected override T Deserialize(ref ByteBuffer buffer)
+        {
+            return _formatter.Deserialize(ref buffer);
+        }
 
-        //protected override void Serialize(T value, ref ByteBuffer buffer)
-        //{
-        //    _formatter.Serialize(ref buffer, value);
-        //}
+        protected override void Serialize(T value, ref ByteBuffer buffer)
+        {
+            _formatter.Serialize(ref buffer, value);
+        }
     }
 }

@@ -27,13 +27,11 @@ namespace ExtenderApp.Common.Networks.LinkClients
             MessageType = typeof(T).ComputeHash_FNV_1a();
         }
 
-        public FrameContext Serialize(T value)
+        public ByteBuffer Serialize(T value)
         {
             ByteBuffer buffer = ByteBuffer.CreateBuffer();
             Serialize(value, ref buffer);
-            ByteBlock block = new(buffer);
-            buffer.Dispose();
-            return new(block);
+            return buffer;
         }
 
         public void DeserializeAndInvoke(SocketOperationValue operationValue, ref FrameContext frameContext)

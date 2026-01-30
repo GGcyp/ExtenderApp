@@ -45,7 +45,7 @@
         /// 使用只读字节序列构造一个新的 <see cref="FrameContext"/>，内部将分配并复制数据到新的 <see cref="ByteBlock"/>。
         /// </summary>
         /// <param name="payload">要复制的负载字节。</param>
-        public FrameContext(ReadOnlySpan<byte> payload) : this(new(payload))
+        public FrameContext(ReadOnlySpan<byte> payload) : this(new ByteBlock(payload))
         {
         }
 

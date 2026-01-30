@@ -7,11 +7,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
     {
         public static IServiceCollection AddUdpLinkClient(this IServiceCollection services)
         {
-            services.AddSingleton<ILinkClientFactory<IUdpLinkClient>, UdpLinkClientFactory>();
-            services.AddTransient(p =>
-            {
-                return p.GetRequiredService<ILinkClientFactory<IUdpLinkClient>>().CreateLinkClient();
-            });
+            services.AddLinkerClient<IUdpLinkClient, UdpLinkClientFactory>();
             return services;
         }
     }

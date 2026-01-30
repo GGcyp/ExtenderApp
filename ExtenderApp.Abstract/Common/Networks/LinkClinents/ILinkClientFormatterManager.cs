@@ -43,10 +43,8 @@ namespace ExtenderApp.Abstract
         /// <summary>
         /// 尝试获取指定消息类型的格式化器实例，当实例不存在时尝试通过依赖注入创建一个新实例。
         /// </summary>
-        /// <typeparam name="T">要获取的格式化器类型，必须实现 <see cref="ILinkClientFormatter"/>。</typeparam>
-        /// <param name="formatter">当方法返回时，包含对应的格式化器实例（如果找到或创建成功）；否则为 <c>null</c>。</param>
-        /// <returns>如果找到或成功创建对应的格式化器实例则返回 <c>true</c>；否则返回 <c>false</c>。</returns>
-        bool TryGetFormatter<T>(out T formatter) where T : class, ILinkClientFormatter;
+        /// <typeparam name="T">要删除的消息/数据类型。</typeparam>
+        void RemoveFormatter<T>();
 
         /// <summary>
         /// 将要发送的消息对象序列化为一个帧上下文，以便发送管道消费。

@@ -5,7 +5,7 @@ using ExtenderApp.Data;
 
 namespace ExtenderApp.Common.Networks.LinkClients
 {
-    public abstract class LinkClient<TLinker> : DisposableObject, ILinkClient, ILinker
+    public abstract class LinkClient<TLinker> : DisposableObject, ILinkClient
         where TLinker : ILinker
     {
         protected TLinker Linker;
@@ -18,11 +18,11 @@ namespace ExtenderApp.Common.Networks.LinkClients
 
         public virtual EndPoint? RemoteEndPoint => Linker.RemoteEndPoint;
 
-        public virtual CapacityLimiter CapacityLimiter => Linker.CapacityLimiter;
+        public CapacityLimiter CapacityLimiter => Linker.CapacityLimiter;
 
-        public virtual ValueCounter SendCounter => Linker.SendCounter;
+        public ValueCounter SendCounter => Linker.SendCounter;
 
-        public virtual ValueCounter ReceiveCounter => Linker.ReceiveCounter;
+        public ValueCounter ReceiveCounter => Linker.ReceiveCounter;
 
         public ProtocolType ProtocolType => Linker.ProtocolType;
 
@@ -37,52 +37,34 @@ namespace ExtenderApp.Common.Networks.LinkClients
             Linker = linker ?? throw new ArgumentNullException(nameof(linker));
         }
 
-        public Result<SocketOperationValue> Receive(Memory<byte> memory)
-        {
-            return Linker.Receive(memory);
-        }
+        #region ILinker 直通方法
 
-        public ValueTask<Result<SocketOperationValue>> ReceiveAsync(Memory<byte> memory, CancellationToken token = default)
-        {
-            return Linker.ReceiveAsync(memory, token);
-        }
+        public abstract Result<SocketOperationValue> Receive(Memory<byte> memory);
 
-        public Result<SocketOperationValue> Send(Memory<byte> memory)
-        {
-            return Linker.Send(memory);
-        }
+        public abstract ValueTask<Result<SocketOperationValue>> ReceiveAsync(Memory<byte> memory, CancellationToken token = default);
 
-        public ValueTask<Result<SocketOperationValue>> SendAsync(Memory<byte> memory, CancellationToken token = default)
-        {
-            return Linker.SendAsync(memory, token);
-        }
+        public abstract Result<SocketOperationValue> Send(Memory<byte> memory);
 
-        public void Connect(EndPoint remoteEndPoint)
-        {
-            Linker.Connect(remoteEndPoint);
-        }
+        public abstract ValueTask<Result<SocketOperationValue>> SendAsync(Memory<byte> memory, CancellationToken token = default);
 
-        public ValueTask ConnectAsync(EndPoint remoteEndPoint, CancellationToken token = default)
-        {
-            return Linker.ConnectAsync(remoteEndPoint, token);
-        }
+        public abstract void Connect(EndPoint remoteEndPoint);
 
-        public void Disconnect()
-        {
-            Linker.Disconnect();
-        }
+        public abstract ValueTask ConnectAsync(EndPoint remoteEndPoint, CancellationToken token = default);
 
-        public ValueTask DisconnectAsync(CancellationToken token = default)
+        public abstract void Disconnect();
+
+        public abstract ValueTask DisconnectAsync(CancellationToken token = default);
+
+        #endregion ILinker 直通方法
+
+        protected override void DisposeManagedResources()
         {
-            return Linker.DisconnectAsync(token);
+            Linker.DisposeSafe();
         }
 
         protected override ValueTask DisposeAsyncManagedResources()
         {
-            if (!Linker.Connected)
-                return ValueTask.CompletedTask;
-
-            return Linker.DisconnectAsync();
+            return Linker.DisposeSafeAsync();
         }
 
         public ILinker Clone()

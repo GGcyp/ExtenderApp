@@ -1,5 +1,4 @@
-﻿
-using ExtenderApp.Abstract;
+﻿using ExtenderApp.Abstract;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace ExtenderApp.Common.Networks.LinkClients
@@ -8,11 +7,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
     {
         public static IServiceCollection AddTcpLinkClient(this IServiceCollection services)
         {
-            services.AddSingleton<ILinkClientFactory<ITcpLinkClient>, TcpLinkClientFactory>();
-            services.AddTransient(p =>
-            {
-                return p.GetRequiredService<ILinkClientFactory<ITcpLinkClient>>().CreateLinkClient();
-            });
+            services.AddLinkerClient<ITcpLinkClient, TcpLinkClientFactory>();
             return services;
         }
     }

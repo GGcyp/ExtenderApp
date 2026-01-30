@@ -85,23 +85,12 @@ namespace ExtenderApp.Common.Networks.LinkClients
             formatter.DeserializeAndInvoke(operationValue, ref frameContext);
         }
 
-        public bool TryGetFormatter<T>(out T formatter) where T : class, ILinkClientFormatter
+        public bool TryGetFormatter<T>(out ILinkClientFormatter<T> formatter)
         {
-            formatter = default!;
+            formatter = null!;
             if (_formatters.TryGetValue(GetTypeCode<T>(), out var f))
             {
-                formatter = (f as T)!;
-            }
-            else
-            {
-                try
-                {
-                    formatter = AddFormatter<T>()!;
-                }
-                catch
-                {
-                    formatter = default!;
-                }
+                formatter = (f as ILinkClientFormatter<T>)!;
             }
             return formatter == null;
         }
