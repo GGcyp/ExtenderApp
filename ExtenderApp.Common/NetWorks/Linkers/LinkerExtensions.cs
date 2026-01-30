@@ -30,6 +30,17 @@ namespace ExtenderApp.Common.Networks
             return services;
         }
 
+        /// <summary>
+        /// 创建并返回当前链接器实例的一个强类型副本。
+        /// </summary>
+        /// <typeparam name="T">链接器的具体类型，必须实现 ILinker。</typeparam>
+        /// <param name="linker">要克隆的链接器实例。</param>
+        /// <returns>返回类型为 <typeparamref name="T"/> 的新链接器实例。</returns>
+        public static T Clone<T>(this T linker) where T : ILinker
+        {
+            return (T)linker.Clone();
+        }
+
         #region Send
 
         /// <summary>

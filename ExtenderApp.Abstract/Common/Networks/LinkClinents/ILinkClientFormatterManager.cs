@@ -27,24 +27,26 @@ namespace ExtenderApp.Abstract
         void AddFormatter(ILinkClientFormatter formatter);
 
         /// <summary>
-        /// 为指定消息类型注册一个回调，当该类型的消息被解析并分发时将调用此回调。
+        /// 确保并返回指定类型的格式化器实例。
+        /// 如果已存在则返回已注册的实例；如果不存在则尝试创建并注册一个新实例（例如通过依赖注入）。
         /// </summary>
-        /// <typeparam name="T">要注册的消息/数据类型。</typeparam>
-        /// <param name="callback">当接收到类型为 <typeparamref name="T"/> 的消息时要调用的回调，参数为封装的接收值。</param>
-        void Register<T>(Action<LinkClientReceivedValue<T>> callback);
-
-        /// <summary>
-        /// 注销先前为指定消息类型注册的回调。
-        /// </summary>
-        /// <typeparam name="T">要注销回调的消息/数据类型。</typeparam>
-        /// <param name="callback">要注销的回调委托实例。</param>
-        void UnRegister<T>(Action<LinkClientReceivedValue<T>> callback);
+        /// <typeparam name="T">要获取或创建的格式化器类型，必须实现 <see cref="ILinkClientFormatter"/>。</typeparam>
+        /// <returns>已注册或新创建的格式化器实例；如果无法创建则返回 <c>null</c>。</returns>
+        T? AddFormatter<T>() where T : class, ILinkClientFormatter;
 
         /// <summary>
         /// 删除已注册的某一业务类型 <typeparamref name="T"/> 的格式化器。
         /// </summary>
-        /// <typeparam name="T">要删除的消息/数据类型。</typeparam>
+        /// <typeparam name="T">要删除的格式化器类型。</typeparam>
         void RemoveFormatter<T>();
+
+        /// <summary>
+        /// 尝试获取指定消息类型的格式化器实例，当实例不存在时尝试通过依赖注入创建一个新实例。
+        /// </summary>
+        /// <typeparam name="T">要获取的格式化器类型，必须实现 <see cref="ILinkClientFormatter"/>。</typeparam>
+        /// <param name="formatter">当方法返回时，包含对应的格式化器实例（如果找到或创建成功）；否则为 <c>null</c>。</param>
+        /// <returns>如果找到或成功创建对应的格式化器实例则返回 <c>true</c>；否则返回 <c>false</c>。</returns>
+        bool TryGetFormatter<T>(out T formatter) where T : class, ILinkClientFormatter;
 
         /// <summary>
         /// 将要发送的消息对象序列化为一个帧上下文，以便发送管道消费。
@@ -57,7 +59,7 @@ namespace ExtenderApp.Abstract
         /// <summary>
         /// 在接收路径中处理/路由一个已解析出的帧上下文。
         /// 管理器应根据帧中的 MessageType（或其它协议约定）选择合适的 <see cref="ILinkClientFormatter"/>，
-        /// 调用其反序列化/分发逻辑（例如触发事件或返回对象）。
+        /// 并调用其反序列化/分发逻辑（例如触发回调或返回对象）。
         /// </summary>
         /// <param name="operationValue">与本次套接字接收操作相关的元数据（例如接收字节数、远端地址或错误码）。</param>
         /// <param name="frameContext">

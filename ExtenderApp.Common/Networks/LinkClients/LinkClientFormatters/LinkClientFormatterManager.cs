@@ -2,6 +2,7 @@
 using ExtenderApp.Abstract;
 using ExtenderApp.Common.Hash;
 using ExtenderApp.Data;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace ExtenderApp.Common.Networks.LinkClients
 {
@@ -15,6 +16,8 @@ namespace ExtenderApp.Common.Networks.LinkClients
     /// </remarks>
     internal class LinkClientFormatterManager : DisposableObject, ILinkClientFormatterManager
     {
+        private readonly IServiceProvider _serviceProvider;
+
         /// <summary>
         /// 按数据类型哈希索引到格式化器（或聚合开关）的字典。
         /// </summary>
@@ -23,14 +26,10 @@ namespace ExtenderApp.Common.Networks.LinkClients
         /// <summary>
         /// 初始化管理器实例。
         /// </summary>
-        public LinkClientFormatterManager()
+        public LinkClientFormatterManager(IServiceProvider serviceProvider)
         {
+            _serviceProvider = serviceProvider;
             _formatters = new();
-        }
-
-        public void RemoveFormatter<T>()
-        {
-            _formatters.TryRemove(GetTypeCode<T>(), out var _);
         }
 
         public void AddFormatter(ILinkClientFormatter formatter)
@@ -45,6 +44,17 @@ namespace ExtenderApp.Common.Networks.LinkClients
             _formatters.TryAdd(formatter.MessageType, formatter);
         }
 
+        public T? AddFormatter<T>() where T : class, ILinkClientFormatter
+        {
+            var formatter = ActivatorUtilities.CreateInstance<T>(_serviceProvider);
+            _formatters.TryAdd(formatter.MessageType, formatter);
+            return formatter;
+        }
+
+        public void RemoveFormatter<T>()
+        {
+            _formatters.TryRemove(GetTypeCode<T>(), out var _);
+        }
 
         public FrameContext ProcessSendVlaue<T>(T value)
         {
@@ -75,31 +85,25 @@ namespace ExtenderApp.Common.Networks.LinkClients
             formatter.DeserializeAndInvoke(operationValue, ref frameContext);
         }
 
-        public void Register<T>(Action<LinkClientReceivedValue<T>> callback)
-        {
-            if (TryGetFormatter<T>(out var formatter))
-            {
-                formatter.Received += callback;
-            }
-        }
-
-        public void UnRegister<T>(Action<LinkClientReceivedValue<T>> callback)
-        {
-            if (TryGetFormatter<T>(out var formatter))
-            {
-                formatter.Received -= callback;
-            }
-        }
-
-        private bool TryGetFormatter<T>(out ILinkClientFormatter<T> formatter)
+        public bool TryGetFormatter<T>(out T formatter) where T : class, ILinkClientFormatter
         {
             formatter = default!;
             if (_formatters.TryGetValue(GetTypeCode<T>(), out var f))
             {
-                formatter = (f as ILinkClientFormatter<T>)!;
-                return formatter == null;
+                formatter = (f as T)!;
             }
-            return false;
+            else
+            {
+                try
+                {
+                    formatter = AddFormatter<T>()!;
+                }
+                catch
+                {
+                    formatter = default!;
+                }
+            }
+            return formatter == null;
         }
 
         private int GetTypeCode<T>()
