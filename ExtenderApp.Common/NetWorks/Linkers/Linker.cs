@@ -284,6 +284,9 @@ namespace ExtenderApp.Common.Networks
         #endregion Execute
 
         /// <inheritdoc/>
+        public abstract void SetOption(LinkOptionLevel optionLevel, LinkOptionName optionName, DataBuffer optionValue);
+
+        /// <inheritdoc/>
         public abstract ILinker Clone();
 
         protected override async ValueTask DisposeAsyncManagedResources()

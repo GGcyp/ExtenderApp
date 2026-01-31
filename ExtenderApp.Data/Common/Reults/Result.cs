@@ -65,8 +65,7 @@ namespace ExtenderApp.Data
         }
 
         /// <summary>
-        /// 如果操作失败且包含异常，则重新抛出该异常。
-        /// 注意：此方法会重置堆栈跟踪，使其始于当前调用点。
+        /// 如果操作失败且包含异常，则重新抛出该异常。 注意：此方法会重置堆栈跟踪，使其始于当前调用点。
         /// </summary>
         public void ThrowExceptionIfError()
         {
@@ -122,7 +121,7 @@ namespace ExtenderApp.Data
         /// </summary>
         /// <param name="exception">捕获到的异常。</param>
         /// <param name="message">与异常相关的自定义消息。</param>
-        public static Result FromException(Exception exception,string message) => new(false, message, exception);
+        public static Result FromException(Exception exception, string message) => new(false, message, exception);
 
         /// <summary>
         /// 创建一个表示成功的 <see cref="Result{T}"/>。
@@ -172,6 +171,9 @@ namespace ExtenderApp.Data
         /// </summary>
         public static implicit operator string?(Result result)
             => result.Message;
+
+        public static implicit operator ValueTask<Result>(Result result)
+            => ValueTask.FromResult(result);
     }
 
     /// <summary>
@@ -225,8 +227,7 @@ namespace ExtenderApp.Data
         }
 
         /// <summary>
-        /// 如果操作失败且包含异常，则重新抛出该异常。
-        /// 注意：此方法会重置堆栈跟踪，使其始于当前调用点。
+        /// 如果操作失败且包含异常，则重新抛出该异常。 注意：此方法会重置堆栈跟踪，使其始于当前调用点。
         /// </summary>
         public void ThrowExceptionIfError()
         {
@@ -313,5 +314,8 @@ namespace ExtenderApp.Data
 
         public static explicit operator Result<T>(T data)
             => Result.Success(data);
+
+        public static implicit operator ValueTask<Result<T>>(Result<T> result)
+            => ValueTask.FromResult(result);
     }
 }

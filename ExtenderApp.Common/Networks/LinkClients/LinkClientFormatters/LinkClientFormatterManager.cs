@@ -11,8 +11,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
     /// </summary>
     /// <remarks>
     /// - 提供两种索引：按数据类型哈希（MessageType）与按泛型类型 <c>TLinkClient</c>；
-    /// - 当同一 <c>TLinkClient</c> 注册多个实现时，会自动以 <see cref="ClientFormatterTypeSwitch{T}"/> 聚合，
-    ///   以支持基于 FormatterTypeHash 的后续分发。
+    /// - 当同一 <c>TLinkClient</c> 注册多个实现时，会自动以 <see cref="ClientFormatterTypeSwitch{T}"/> 聚合， 以支持基于 FormatterTypeHash 的后续分发。
     /// </remarks>
     internal class LinkClientFormatterManager : DisposableObject, ILinkClientFormatterManager
     {
@@ -56,33 +55,33 @@ namespace ExtenderApp.Common.Networks.LinkClients
             _formatters.TryRemove(GetTypeCode<T>(), out var _);
         }
 
-        public FrameContext ProcessSendVlaue<T>(T value)
+        public Result<FrameContext> ProcessSendVlaue<T>(T value)
         {
             var typeCode = GetTypeCode<T>();
             if (!_formatters.TryGetValue(typeCode, out var f) ||
                 f is not ILinkClientFormatter<T> formatter)
             {
-                return new(new KeyNotFoundException($"未发现指定类型的转换器 {typeof(T).Name}"));
+                return Result.FromException<FrameContext>(new KeyNotFoundException($"未发现指定类型的转换器 {typeof(T).Name}"));
             }
             var buffer = formatter.Serialize(value);
             ByteBlock block = new ByteBlock(sizeof(int) + (int)buffer.Remaining);
             block.Write(typeCode);
             block.Write(buffer);
-            return block;
+            return Result.Success(new FrameContext(block));
         }
 
-        public void ProcessReceivedFrame(SocketOperationValue operationValue, ref FrameContext frameContext)
+        public Result ProcessReceivedFrame(SocketOperationValue operationValue, ref FrameContext frameContext)
         {
             ByteBlock block = frameContext;
             var typeCode = block.ReadInt32();
             if (!_formatters.TryGetValue(typeCode, out var formatter))
             {
-                frameContext.SetException(new KeyNotFoundException($"未发现指定类型的转换器 {typeCode}"));
-                return;
+                return Result.FromException(new KeyNotFoundException($"未发现指定类型的转换器 {typeCode}"));
             }
 
             frameContext.WriteNextPayload(block);
             formatter.DeserializeAndInvoke(operationValue, ref frameContext);
+            return Result.Success();
         }
 
         public bool TryGetFormatter<T>(out ILinkClientFormatter<T> formatter)

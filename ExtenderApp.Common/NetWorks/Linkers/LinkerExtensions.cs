@@ -18,15 +18,29 @@ namespace ExtenderApp.Common.Networks
         /// </summary>
         /// <param name="services">服务集合。</param>
         /// <returns>原服务集合（便于链式调用）。</returns>
-        /// <remarks>
-        /// - 当前实现注册 TCP 相关组件（调用
-        ///   <c>services.AddTcpLinker()</c>）； <br/>
-        /// - 可根据需要扩展为注册更多协议的链接器。
-        /// </remarks>
         public static IServiceCollection AddLinker(this IServiceCollection services)
         {
             services.AddTcpLinker();
             services.AddUdpLinker();
+            return services;
+        }
+
+        /// <summary>
+        /// 添加指定类型的链接器及其工厂到服务集合中。
+        /// </summary>
+        /// <typeparam name="TLinker">指定类型连接器</typeparam>
+        /// <typeparam name="TLinkerFactory">指定类型连接器工厂</typeparam>
+        /// <param name="services">服务集合。</param>
+        /// <returns>原服务集合（便于链式调用）。</returns>
+        public static IServiceCollection AddLinker<TLinker, TLinkerFactory>(this IServiceCollection services)
+            where TLinker : class, ILinker
+            where TLinkerFactory : class, ILinkerFactory<TLinker>
+        {
+            services.AddSingleton<ILinkerFactory<TLinker>, TLinkerFactory>();
+            services.AddTransient(provider =>
+            {
+                return provider.GetRequiredService<ILinkerFactory<TLinker>>().CreateLinker();
+            });
             return services;
         }
 
@@ -49,10 +63,7 @@ namespace ExtenderApp.Common.Networks
         /// <param name="linker">目标链接。</param>
         /// <param name="memory">要发送的数据窗口。</param>
         /// <returns>发送结果（包含已发送字节数和可能的底层错误）。</returns>
-        /// <remarks>
-        /// 这是对 <see
-        /// cref="ILinker.Send(Memory{byte})"/> 的便捷包装。
-        /// </remarks>
+        /// <remarks>这是对 <see cref="ILinker.Send(Memory{byte})"/> 的便捷包装。</remarks>
         public static Result<SocketOperationValue> Send(this ILinker linker, in ReadOnlyMemory<byte> memory)
         {
             return linker.Send(MemoryMarshal.AsMemory(memory));
@@ -62,9 +73,7 @@ namespace ExtenderApp.Common.Networks
         /// 同步发送 <see cref="ByteBlock"/> 中尚未读取的数据，并按发送量推进其读取位置。
         /// </summary>
         /// <param name="linker">目标链接。</param>
-        /// <param name="block">
-        /// 字节块；方法内部会根据发送量调用 <see cref="ByteBlock.ReadAdvance(int)"/>。
-        /// </param>
+        /// <param name="block">字节块；方法内部会根据发送量调用 <see cref="ByteBlock.ReadAdvance(int)"/>。</param>
         /// <returns>发送结果。</returns>
         public static Result<SocketOperationValue> Send(this ILinker linker, ref ByteBlock block)
         {
@@ -77,10 +86,7 @@ namespace ExtenderApp.Common.Networks
         /// 同步发送 <see cref="ByteBuffer"/> 中尚未读取的数据。
         /// </summary>
         /// <param name="linker">目标链接。</param>
-        /// <param name="buffer">
-        /// 只读缓冲视图；其 <see
-        /// cref="ByteBuffer.UnreadSequence"/> 将被发送。
-        /// </param>
+        /// <param name="buffer">只读缓冲视图；其 <see cref="ByteBuffer.UnreadSequence"/> 将被发送。</param>
         /// <returns>发送结果（累加所有分段的已发送字节数与最后一次结果的端点/标志）。</returns>
         /// <remarks>
         /// - TCP：内部处理“部分发送”，会在每段上循环直至耗尽。 <br/>
@@ -138,11 +144,7 @@ namespace ExtenderApp.Common.Networks
         /// <param name="memory">要发送的数据窗口。</param>
         /// <param name="token">取消令牌。</param>
         /// <returns>发送结果任务（包含已发送字节数和可能的底层错误）。</returns>
-        /// <remarks>
-        /// 这是对 <see
-        /// cref="ILinker.SendAsync(Memory{byte},
-        /// CancellationToken)"/> 的便捷包装。
-        /// </remarks>
+        /// <remarks>这是对 <see cref="ILinker.SendAsync(Memory{byte}, CancellationToken)"/> 的便捷包装。</remarks>
         public static ValueTask<Result<SocketOperationValue>> SendAsync(this ILinker linker, in ReadOnlyMemory<byte> memory, CancellationToken token = default)
         {
             return linker.SendAsync(MemoryMarshal.AsMemory(memory), token);
@@ -155,9 +157,7 @@ namespace ExtenderApp.Common.Networks
         /// <param name="span">要发送的数据跨度。</param>
         /// <param name="token">取消令牌。</param>
         /// <returns>发送结果任务。</returns>
-        /// <remarks>
-        /// 内部会创建临时 <see cref="ByteBlock"/> 承载数据，并在发送完成后释放。
-        /// </remarks>
+        /// <remarks>内部会创建临时 <see cref="ByteBlock"/> 承载数据，并在发送完成后释放。</remarks>
         public static ValueTask<Result<SocketOperationValue>> SendAsync(this ILinker linker, in ReadOnlySpan<byte> span, CancellationToken token = default)
         {
             ByteBlock block = new(span);
@@ -186,10 +186,7 @@ namespace ExtenderApp.Common.Networks
         /// 异步发送 <see cref="ByteBuffer"/> 中尚未读取的数据。
         /// </summary>
         /// <param name="linker">目标链接。</param>
-        /// <param name="buffer">
-        /// 只读缓冲视图；其 <see
-        /// cref="ByteBuffer.UnreadSequence"/> 将被发送。
-        /// </param>
+        /// <param name="buffer">只读缓冲视图；其 <see cref="ByteBuffer.UnreadSequence"/> 将被发送。</param>
         /// <param name="token">取消令牌。</param>
         /// <returns>发送结果任务（累加所有分段的已发送字节数与最后一次结果的端点/标志）。</returns>
         /// <remarks>
@@ -254,9 +251,8 @@ namespace ExtenderApp.Common.Networks
         /// <returns>一次发送操作的结果。</returns>
         /// <exception cref="ArgumentNullException">Buffer 为空（IsEmpty）。</exception>
         /// <remarks>
-        /// - 内部将把 <paramref name="buffer"/> 克隆为 <see cref="ByteBlock"/>，避免直接处理 ref struct；
-        ///   发送结束后自动释放克隆。<br/>
-        /// - 若需要避免额外复制，可先手动合并为 <see cref="ByteBlock"/> 调用另一个重载。<br/>
+        /// - 内部将把 <paramref name="buffer"/> 克隆为 <see cref="ByteBlock"/>，避免直接处理 ref struct； 发送结束后自动释放克隆。 <br/>
+        /// - 若需要避免额外复制，可先手动合并为 <see cref="ByteBlock"/> 调用另一个重载。 <br/>
         /// - 仅发送未读部分（UnreadSequence）；不推进原缓冲读指针。
         /// </remarks>
         public static ValueTask<Result<SocketOperationValue>> SendToAsync<TLinker>(this TLinker linker, ByteBuffer buffer, EndPoint endPoint, CancellationToken token = default)
@@ -279,7 +275,7 @@ namespace ExtenderApp.Common.Networks
         /// <param name="token">取消令牌。</param>
         /// <returns>发送结果。</returns>
         /// <remarks>
-        /// - 若取消或失败，仍确保 <paramref name="block"/> 被释放。<br/>
+        /// - 若取消或失败，仍确保 <paramref name="block"/> 被释放。 <br/>
         /// - 此方法不做参数校验，由外层调用保证。
         /// </remarks>
         private static async ValueTask<Result<SocketOperationValue>> PrivateSendToAsync<TLinker>(this TLinker linker, ByteBlock block, EndPoint endPoint, CancellationToken token = default)
@@ -323,7 +319,7 @@ namespace ExtenderApp.Common.Networks
         /// <param name="token">取消令牌。</param>
         /// <returns>发送结果。</returns>
         /// <remarks>
-        /// - 内部使用 <see cref="MemoryMarshal.AsMemory{T}(ReadOnlyMemory{T})"/> 转换为可写视图后调用底层。<br/>
+        /// - 内部使用 <see cref="MemoryMarshal.AsMemory{T}(ReadOnlyMemory{T})"/> 转换为可写视图后调用底层。 <br/>
         /// - 对大数据或频繁调用场景，可考虑预分配缓冲以减少复制。
         /// </remarks>
         public static ValueTask<Result<SocketOperationValue>> SendToAsync<TLinker>(this TLinker linker, in ReadOnlyMemory<byte> memory, EndPoint endPoint, CancellationToken token = default)
@@ -340,21 +336,10 @@ namespace ExtenderApp.Common.Networks
         /// 同步接收数据到 ByteBuffer。
         /// </summary>
         /// <param name="linker">目标链接。</param>
-        /// <param name="buffer">
-        /// 写入目标（ref struct，不能用于 async 方法）。
-        /// </param>
-        /// <param name="sizeHint">
-        /// 期望接收的最小容量提示；内部将调用 <see
-        /// cref="ByteBuffer.GetMemory(int)"/> 申请写缓冲。
-        /// </param>
-        /// <returns>
-        /// 接收结果；TCP 下 BytesTransferred 为 0
-        /// 通常表示对端优雅关闭；UDP 下可能存在截断标志（取决于实现）。
-        /// </returns>
-        /// <remarks>
-        /// 由于 <see cref="ByteBuffer"/> 为 ref
-        /// struct，无法在真正的异步方法中使用；因此提供同步 API。
-        /// </remarks>
+        /// <param name="buffer">写入目标（ref struct，不能用于 async 方法）。</param>
+        /// <param name="sizeHint">期望接收的最小容量提示；内部将调用 <see cref="ByteBuffer.GetMemory(int)"/> 申请写缓冲。</param>
+        /// <returns>接收结果；TCP 下 BytesTransferred 为 0 通常表示对端优雅关闭；UDP 下可能存在截断标志（取决于实现）。</returns>
+        /// <remarks>由于 <see cref="ByteBuffer"/> 为 ref struct，无法在真正的异步方法中使用；因此提供同步 API。</remarks>
         public static Result<SocketOperationValue> Receive(this ILinker linker, ref ByteBuffer buffer, int sizeHint = 1024)
         {
             var memory = buffer.GetMemory(sizeHint);

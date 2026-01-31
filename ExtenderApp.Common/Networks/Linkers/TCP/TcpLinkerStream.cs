@@ -9,7 +9,7 @@ namespace ExtenderApp.Common.Networks
     /// - 本实现以可用性为主，适合将异步的 Linker 收发封装为 <see cref="Stream"/>；
     /// - 读操作从底层 Linker 接收数据并复制到调用方缓冲；写操作将调用方缓冲数据一次性复制后通过 Linker.SendAsync 发送；
     /// - 为简洁实现，每次 Write 会分配一个临时数组，必要时可优化为零拷贝或分段发送；
-    /// - 注意：不要在同一底层连接上同时混用此 Stream 的读写与 Linker 的裸 ReceiveAsync/SendAsync，否则可能破坏数据边界或 TLS 协议。
+    /// - 注意：不要在同一底层连接上同时混用此 Stream 的读写与 Linker 的裸 ReceivePrivate/SendAsync，否则可能破坏数据边界或 TLS 协议。
     /// </summary>
     public sealed class TcpLinkerStream : Stream
     {

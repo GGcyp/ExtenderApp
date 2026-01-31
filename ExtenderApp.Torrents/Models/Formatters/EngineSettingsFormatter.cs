@@ -1,6 +1,6 @@
 ﻿using System.Net;
 using ExtenderApp.Abstract;
-using ExtenderApp.Common.IO.Binary.Formatters;
+using ExtenderApp.Common.Serializations.Binary.Formatters;
 using ExtenderApp.Data;
 using MonoTorrent.Client;
 using MonoTorrent.Connections;

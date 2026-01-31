@@ -1,5 +1,4 @@
 ﻿using System.Buffers;
-using System.Net;
 using ExtenderApp.Abstract;
 using ExtenderApp.Data;
 
@@ -13,30 +12,22 @@ namespace ExtenderApp.Common.Networks.LinkClients
         where TLinker : ILinker
     {
         /// <summary>
-        /// 保护对接收相关状态的并发访问锁：用于在
-        /// StartReceive/StopReceive 中同步检查与切换 <see
-        /// cref="_receiveCts"/> 与 <see
-        /// cref="_receiveTask"/>。 注意：StopReceive 中可能在锁外等待任务完成或在持有锁的情况下启动取消，但应尽量保持锁粒度短以避免阻塞接收路径。
+        /// 保护对接收相关状态的并发访问锁：用于在 StartReceive/StopReceive 中同步检查与切换 <see cref="_receiveCts"/> 与 <see cref="_receiveTask"/>。 注意：StopReceive 中可能在锁外等待任务完成或在持有锁的情况下启动取消，但应尽量保持锁粒度短以避免阻塞接收路径。
         /// </summary>
         private readonly object _receiveLock = new();
 
         /// <summary>
-        /// 用于控制接收循环的取消令牌源。 在 StartReceive 创建，在
-        /// StopReceive 取消并释放；为 null 表示接收循环未在运行或已被释放。
+        /// 用于控制接收循环的取消令牌源。 在 StartReceive 创建，在 StopReceive 取消并释放；为 null 表示接收循环未在运行或已被释放。
         /// </summary>
         private CancellationTokenSource? _receiveCts;
 
         /// <summary>
-        /// 表示当前正在运行的接收循环任务（由 StartReceive 启动）。
-        /// 可能为 null（未启动或已完成/已释放）。对其检查/赋值需在 <see
-        /// cref="_receiveLock"/> 保护下进行以避免竞态。
+        /// 表示当前正在运行的接收循环任务（由 StartReceive 启动）。 可能为 null（未启动或已完成/已释放）。对其检查/赋值需在 <see cref="_receiveLock"/> 保护下进行以避免竞态。
         /// </summary>
         private Task? _receiveTask;
 
         private readonly ManualResetEventSlim _waitEvent;
 
-        public ILinkClientFramer? Framer { get; protected set; }
-        public ILinkClientPluginManager? PluginManager { get; protected set; }
         public ILinkClientFormatterManager? FormatterManager { get; protected set; }
 
         public LinkClientAwareSender(TLinker linker) : base(linker)
@@ -49,14 +40,6 @@ namespace ExtenderApp.Common.Networks.LinkClients
             }
         }
 
-        public void SetClientPluginManager(ILinkClientPluginManager pluginManager)
-        {
-            ThrowIfDisposed();
-            ArgumentNullException.ThrowIfNull(pluginManager, nameof(pluginManager));
-
-            PluginManager = pluginManager;
-        }
-
         public void SetClientFormatterManager(ILinkClientFormatterManager formatterManager)
         {
             ThrowIfDisposed();
@@ -65,20 +48,13 @@ namespace ExtenderApp.Common.Networks.LinkClients
             FormatterManager = formatterManager;
         }
 
-        public void SetClientFramer(ILinkClientFramer framer)
-        {
-            ThrowIfDisposed();
-            ArgumentNullException.ThrowIfNull(framer, nameof(framer));
-            Framer = framer;
-        }
-
         #region Send And Receive
 
-
-        public void Send<T>(T data)
+        public Result<SocketOperationValue> Send<T>(T data)
         {
             throw new NotImplementedException();
         }
+
         public virtual ValueTask<Result<SocketOperationValue>> SendAsync<T>(T data, CancellationToken token = default)
         {
             ThrowIfDisposed();
@@ -89,12 +65,12 @@ namespace ExtenderApp.Common.Networks.LinkClients
         }
 
         /// <summary>
-        /// 将指定类型转换为可发送的<see cref="ByteBuffer"/>。
+        /// 将指定类型转换为可发送的 <see cref="ByteBuffer"/>。
         /// </summary>
-        /// <typeparam name="T">指定类型<see cref="{T}"/></typeparam>
+        /// <typeparam name="T">指定类型 <see cref="{T}"/></typeparam>
         /// <param name="data">指定类型数据</param>
-        /// <returns>返回装完数据的<see cref="ByteBuffer"/></returns>
-        /// <exception cref="InvalidOperationException">当<see cref="FormatterManager"/>为空或找不到指定<see cref="ILinkClientFormatter{T}"/>时候弹出</exception>
+        /// <returns>返回装完数据的 <see cref="ByteBuffer"/></returns>
+        /// <exception cref="InvalidOperationException">当 <see cref="FormatterManager"/> 为空或找不到指定 <see cref="ILinkClientFormatter{T}"/> 时候弹出</exception>
         protected ByteBuffer ValueToByteBuffer<T>(T data)
         {
             if (FormatterManager is null)
@@ -113,9 +89,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
             //{
             //    Framer.Encode(pluginSendData.MessageType, (int)pluginSendData.ResultOutMessageBuffer.Length, out var framedMessage);
 
-            //    sendBuffer = ByteBuffer.CreateBuffer();
-            //    sendBuffer.Write(framedMessage);
-            //    sendBuffer.Write(pluginSendData.ResultOutMessageBuffer);
+            // sendBuffer = ByteBuffer.CreateBuffer(); sendBuffer.Write(framedMessage); sendBuffer.Write(pluginSendData.ResultOutMessageBuffer);
 
             //    framedMessage.Dispose();
             //    pluginSendData.Dispose();
@@ -162,8 +136,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
                     Result<SocketOperationValue> result;
                     try
                     {
-                        // ReceiveAsync 接受
-                        // ResultMessage<byte> 并支持传入取消令牌
+                        // ReceivePrivate 接受 ResultMessage<byte> 并支持传入取消令牌
                         result = await Linker.ReceiveAsync(bytes.AsMemory(), token);
                     }
                     catch (OperationCanceledException)
@@ -185,8 +158,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
                         break;
                     }
 
-                    // 调用插件处理收到的数据（即使
-                    // BytesTransferred 为 0，也通知一次）
+                    // 调用插件处理收到的数据（即使 BytesTransferred 为 0，也通知一次）
                     try
                     {
                         await PrivatePluginReceiveMessage(result, bytes.AsMemory(0, value.BytesTransferred));
@@ -283,104 +255,5 @@ namespace ExtenderApp.Common.Networks.LinkClients
         }
 
         #endregion Send And Receive
-
-        #region ILinker 直通方法
-
-        public override void Connect(EndPoint remoteEndPoint)
-        {
-            ThrowIfDisposed();
-            PluginManager?.OnConnecting(remoteEndPoint);
-            try
-            {
-                Linker.Connect(remoteEndPoint);
-                // 连接成功后启动接收循环
-                StartReceive();
-                PluginManager?.OnConnected(remoteEndPoint, null);
-            }
-            catch (Exception ex)
-            {
-                PluginManager?.OnConnected(remoteEndPoint, ex);
-                throw;
-            }
-        }
-
-        public override async ValueTask ConnectAsync(EndPoint remoteEndPoint, CancellationToken token = default)
-        {
-            ThrowIfDisposed();
-            PluginManager?.OnConnecting(remoteEndPoint);
-
-            try
-            {
-                await Linker.ConnectAsync(remoteEndPoint, token);
-                // 连接成功后启动接收循环
-                StartReceive();
-                PluginManager?.OnConnected(remoteEndPoint, null);
-            }
-            catch (Exception ex)
-            {
-                PluginManager?.OnConnected(remoteEndPoint, ex);
-                throw;
-            }
-        }
-
-        public override void Disconnect()
-        {
-            ThrowIfDisposed();
-            PluginManager?.OnDisconnecting();
-            // 先暂停接收，再关闭底层（避免在关闭过程中继续处理数据）
-            StopReceive();
-            try
-            {
-                Linker.Disconnect();
-                PluginManager?.OnDisconnected(null);
-            }
-            catch (Exception ex)
-            {
-                PluginManager?.OnDisconnected(ex);
-                throw;
-            }
-        }
-
-        public override async ValueTask DisconnectAsync(CancellationToken token = default)
-        {
-            ThrowIfDisposed();
-            PluginManager?.OnDisconnecting();
-            // 先暂停接收，再异步断开底层
-            StopReceive();
-            try
-            {
-                await Linker.DisconnectAsync(token);
-                PluginManager?.OnDisconnected(null);
-            }
-            catch (Exception ex)
-            {
-                PluginManager?.OnDisconnected(ex);
-                throw;
-            }
-        }
-
-        public override Result<SocketOperationValue> Send(Memory<byte> memory)
-        {
-            return Linker.Send(memory);
-        }
-
-        public override ValueTask<Result<SocketOperationValue>> SendAsync(Memory<byte> memory, CancellationToken token = default)
-        {
-            ThrowIfDisposed();
-
-            return Linker.SendAsync(memory, token);
-        }
-
-        public override Result<SocketOperationValue> Receive(Memory<byte> memory)
-        {
-            return Linker.Receive(memory);
-        }
-
-        public override ValueTask<Result<SocketOperationValue>> ReceiveAsync(Memory<byte> memory, CancellationToken token = default)
-        {
-            return Linker.ReceiveAsync(memory, token);
-        }
-
-        #endregion ILinker 直通方法
     }
 }

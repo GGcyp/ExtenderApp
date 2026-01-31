@@ -15,8 +15,8 @@ namespace ExtenderApp.Abstract
         /// <param name="endPoint">目标远端地址与端口。其地址族需与底层套接字一致。</param>
         /// <returns>
         /// 一个 <see cref="Result{T}"/> 实例，其中：
-        /// - 成功时，<see cref="Result{T}.Data"/> 包含一个 <see cref="SocketOperationValue"/>，其 <see cref="SocketOperationValue.BytesTransferred"/> 表示实际发送的字节数。
-        /// - 失败时，<see cref="Result.Exception"/> 包含相应的异常信息。
+        /// - 成功时， <see cref="Result{T}.Data"/> 包含一个 <see cref="SocketOperationValue"/>，其 <see cref="SocketOperationValue.BytesTransferred"/> 表示实际发送的字节数。
+        /// - 失败时， <see cref="Result.Exception"/> 包含相应的异常信息。
         /// </returns>
         Result<SocketOperationValue> SendTo(Memory<byte> memory, EndPoint endPoint);
 

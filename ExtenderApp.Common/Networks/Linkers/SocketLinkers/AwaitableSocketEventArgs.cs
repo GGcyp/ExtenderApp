@@ -1,40 +1,19 @@
 ﻿using System.Net;
 using System.Net.Sockets;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Threading.Tasks.Sources;
-using ExtenderApp.Common.ObjectPools;
 using ExtenderApp.Data;
 
 namespace ExtenderApp.Common.Networks
 {
     /// <summary>
-    /// 将基于事件的 <see cref="SocketAsyncEventArgs"/>
-    /// I/O 封装为可 <c>await</c> 的 <see
-    /// cref="ValueTask{TResult}"/> 模式。
+    /// 将基于事件的 <see cref="SocketAsyncEventArgs"/> I/O 封装为可 <c>await</c> 的 <see cref="ValueTask{TResult}"/> 模式。
     /// </summary>
-    /// <remarks>
-    /// 设计要点：
-    /// - 单实例不可并发使用：一次仅能有一个未完成的操作；开始下一次操作前会调用 <see cref="ManualResetValueTaskSourceCore{TResult}.Reset"/>。
-    /// - 通过 <see cref="ManualResetValueTaskSourceCore{TResult}"/>
-    /// 实现零分配等待，并将延续异步投递（ <see cref="ManualResetValueTaskSourceCore{TResult}.RunContinuationsAsynchronously"/>）。
-    /// - 成功完成时，任务结果为包含 <see
-    ///   cref="SocketOperationValue"/> 的 <see cref="Result{T}"/>；失败时以 <see
-    ///   cref="SocketException"/> 或 <see cref="OperationCanceledException"/>
-    /// 结束任务（await 时抛出）。
-    /// - 接收需由调用方提供可写缓冲（ <see
-    ///   cref="ReceiveAsync(Socket, Memory{byte},
-    ///   CancellationToken)"/>）；发送从 <see
-    ///   cref="Memory{T}"/> 发起（ <see
-    ///   cref="SendAsync(Socket, Memory{byte},
-    ///   SocketFlags, CancellationToken)"/>）。
-    /// - 取消策略：取消时默认关闭 Socket 以中断 I/O；SAEA 不支持细粒度取消单个操作。
-    /// </remarks>
     public class AwaitableSocketEventArgs : SocketAsyncEventArgs, IValueTaskSource<Result<SocketOperationValue>>, IValueTaskSource<Result<Socket>>
     {
         // 对象池
         private static readonly ObjectPool<AwaitableSocketEventArgs> _pool
-            = ObjectPool.CreateDefaultPool<AwaitableSocketEventArgs>();
+            = ObjectPool.Create<AwaitableSocketEventArgs>();
 
         /// <summary>
         /// 从对象池获取一个实例。
@@ -95,8 +74,7 @@ namespace ExtenderApp.Common.Networks
         private PendingOperation pendingOperation;
 
         /// <summary>
-        /// 当前轮次的令牌版本号。构造 <see
-        /// cref="ValueTask{TResult}"/> 时需携带该版本以确保一次性消费。
+        /// 当前轮次的令牌版本号。构造 <see cref="ValueTask{TResult}"/> 时需携带该版本以确保一次性消费。
         /// </summary>
         public short Version => vts.Version;
 
@@ -149,29 +127,17 @@ namespace ExtenderApp.Common.Networks
         /// <summary>
         /// 发送指定缓冲区的数据（awaitable，支持取消）。
         /// </summary>
-        /// <param name="socket">
-        /// 目标套接字（TCP 或已 Connect 的 UDP）。
-        /// </param>
+        /// <param name="socket">目标套接字（TCP 或已 Connect 的 UDP）。</param>
         /// <param name="memory">要发送的有效数据窗口。调用方需保证在本次异步发送完成前，该缓冲区保持有效且内容不被修改。</param>
-        /// <param name="token">
-        /// 取消令牌；取消时将关闭 <paramref name="socket"/>
-        /// 以中断 I/O（SAEA 不支持细粒度取消单个操作）。
-        /// </param>
-        /// <param name="flags">
-        /// 发送标志，通常为 <see cref="SocketFlags.None"/>。
-        /// </param>
+        /// <param name="token">取消令牌；取消时将关闭 <paramref name="socket"/> 以中断 I/O（SAEA 不支持细粒度取消单个操作）。</param>
+        /// <param name="flags">发送标志，通常为 <see cref="SocketFlags.None"/>。</param>
         /// <returns>
-        /// 一个表示操作结果的 <see cref="ValueTask"/>。成功时，其结果为包含 <see cref="SocketOperationValue"/> 的 <see cref="Result{T}"/>；
-        /// 失败时 await 会抛出 <see cref="SocketException"/>；取消时则抛出 <see cref="OperationCanceledException"/>。
+        /// 一个表示操作结果的 <see cref="ValueTask"/>。成功时，其结果为包含 <see cref="SocketOperationValue"/> 的 <see cref="Result{T}"/>； 失败时 await 会抛出 <see
+        /// cref="SocketException"/>；取消时则抛出 <see cref="OperationCanceledException"/>。
         /// </returns>
         /// <remarks>
-        /// - TCP
-        ///   为字节流协议，可能发生“部分发送”；若需保证全部数据发出，请在调用方根据返回长度循环直至发送完毕。 <br/>
-        /// - 对于 UDP，若套接字已 Connect 则可使用本方法；未
-        ///   Connect 的 UDP 请使用 <see
-        ///   cref="SendToAsync(Socket,
-        ///   Memory{byte}, EndPoint,
-        ///   CancellationToken, SocketFlags)"/>。
+        /// - TCP 为字节流协议，可能发生“部分发送”；若需保证全部数据发出，请在调用方根据返回长度循环直至发送完毕。 <br/>
+        /// - 对于 UDP，若套接字已 Connect 则可使用本方法；未 Connect 的 UDP 请使用 <see cref="SendToAsync(Socket, Memory{byte}, EndPoint, CancellationToken, SocketFlags)"/>。
         /// </remarks>
         public ValueTask<Result<SocketOperationValue>> SendAsync(Socket socket, Memory<byte> memory, CancellationToken token, SocketFlags flags = SocketFlags.None)
         {
@@ -202,30 +168,16 @@ namespace ExtenderApp.Common.Networks
         /// </summary>
         /// <param name="socket">UDP 套接字（未 Connect）。</param>
         /// <param name="buffer">要发送的数据缓冲。需在操作完成前保持有效且内容不被修改。</param>
-        /// <param name="remoteEndPoint">
-        /// 目标远端地址；其 <see
-        /// cref="EndPoint.AddressFamily"/> 必须与
-        /// <paramref name="socket"/> 一致。
-        /// </param>
-        /// <param name="token">
-        /// 取消令牌；取消时将关闭 <paramref name="socket"/>
-        /// 以中断 I/O。
-        /// </param>
-        /// <param name="flags">
-        /// 发送标志，通常为 <see cref="SocketFlags.None"/>。
-        /// </param>
+        /// <param name="remoteEndPoint">目标远端地址；其 <see cref="EndPoint.AddressFamily"/> 必须与 <paramref name="socket"/> 一致。</param>
+        /// <param name="token">取消令牌；取消时将关闭 <paramref name="socket"/> 以中断 I/O。</param>
+        /// <param name="flags">发送标志，通常为 <see cref="SocketFlags.None"/>。</param>
         /// <returns>
-        /// 一个表示操作结果的 <see cref="ValueTask"/>。成功时，其结果为包含 <see cref="SocketOperationValue"/> 的 <see cref="Result{T}"/>；
-        /// 失败时 await 会抛出 <see cref="SocketException"/>；取消时则抛出 <see cref="OperationCanceledException"/>。
+        /// 一个表示操作结果的 <see cref="ValueTask"/>。成功时，其结果为包含 <see cref="SocketOperationValue"/> 的 <see cref="Result{T}"/>； 失败时 await 会抛出 <see
+        /// cref="SocketException"/>；取消时则抛出 <see cref="OperationCanceledException"/>。
         /// </returns>
         /// <remarks>
-        /// - 若要发送广播，请先设置
-        ///   <c>socket.SetSocketOption(SocketOptionLevel.Socket,
-        ///   SocketOptionName.Broadcast,
-        ///   true)</c>。 <br/>
-        /// - 若套接字已 Connect，建议使用 <see
-        ///   cref="SendAsync(Socket,
-        ///   Memory{byte}, CancellationToken, SocketFlags)"/>。
+        /// - 若要发送广播，请先设置 <c>socket.SetOption(SocketOptionLevel.Socket, SocketOptionName.Broadcast, true)</c>。 <br/>
+        /// - 若套接字已 Connect，建议使用 <see cref="SendAsync(Socket, Memory{byte}, CancellationToken, SocketFlags)"/>。
         /// </remarks>
         public ValueTask<Result<SocketOperationValue>> SendToAsync(Socket socket, Memory<byte> buffer, EndPoint remoteEndPoint, CancellationToken token = default, SocketFlags flags = SocketFlags.None)
         {
@@ -258,23 +210,16 @@ namespace ExtenderApp.Common.Networks
         /// <summary>
         /// 接收（awaitable，支持取消）。
         /// </summary>
-        /// <param name="socket">
-        /// 源套接字（TCP 或已 Connect 的 UDP）。
-        /// </param>
+        /// <param name="socket">源套接字（TCP 或已 Connect 的 UDP）。</param>
         /// <param name="buffer">可写缓冲区；内核将在其中写入接收的数据。调用方需保证缓冲在本次操作完成前保持有效。</param>
-        /// <param name="token">
-        /// 取消令牌；取消时将关闭 <paramref name="socket"/>
-        /// 以中断 I/O。
-        /// </param>
+        /// <param name="token">取消令牌；取消时将关闭 <paramref name="socket"/> 以中断 I/O。</param>
         /// <returns>
-        /// 一个表示操作结果的 <see cref="ValueTask"/>。成功时，其结果为包含 <see cref="SocketOperationValue"/> 的 <see cref="Result{T}"/>；
-        /// 失败时 await 会抛出 <see cref="SocketException"/>；取消时则抛出 <see cref="OperationCanceledException"/>。
+        /// 一个表示操作结果的 <see cref="ValueTask"/>。成功时，其结果为包含 <see cref="SocketOperationValue"/> 的 <see cref="Result{T}"/>； 失败时 await 会抛出 <see
+        /// cref="SocketException"/>；取消时则抛出 <see cref="OperationCanceledException"/>。
         /// </returns>
         /// <remarks>
         /// - TCP：返回字节数为 0 通常表示对端优雅关闭。 <br/>
-        /// - UDP：若缓冲不足可能发生截断，可通过 <see
-        ///   cref="SocketAsyncEventArgs.SocketFlags"/>
-        ///   检查 <see cref="SocketFlags.Truncated"/>。
+        /// - UDP：若缓冲不足可能发生截断，可通过 <see cref="SocketAsyncEventArgs.SocketFlags"/> 检查 <see cref="SocketFlags.Truncated"/>。
         /// </remarks>
         public ValueTask<Result<SocketOperationValue>> ReceiveAsync(Socket socket, Memory<byte> buffer, CancellationToken token)
         {
@@ -304,26 +249,15 @@ namespace ExtenderApp.Common.Networks
         /// <param name="socket">UDP 套接字（未 Connect）。</param>
         /// <param name="buffer">可写缓冲区；用于接收的数据存放。</param>
         /// <param name="anyEndPoint">
-        /// 用于占位的 EndPoint，其 AddressFamily 必须与
-        /// <paramref name="socket"/> 一致（例如 new
-        /// IPEndPoint(IPAddress.Any, 0)）。 完成后
-        /// <see
+        /// 用于占位的 EndPoint，其 AddressFamily 必须与 <paramref name="socket"/> 一致（例如 new IPEndPoint(IPAddress.Any, 0)）。 完成后 <see
         /// cref="SocketAsyncEventArgs.RemoteEndPoint"/> 将被设置为实际来源地址。
         /// </param>
-        /// <param name="token">
-        /// 取消令牌；取消时将关闭 <paramref name="socket"/>
-        /// 以中断 I/O。
-        /// </param>
+        /// <param name="token">取消令牌；取消时将关闭 <paramref name="socket"/> 以中断 I/O。</param>
         /// <returns>
-        /// 一个表示操作结果的 <see cref="ValueTask"/>。成功时，其结果为包含 <see cref="SocketOperationValue"/> 的 <see cref="Result{T}"/>；
-        /// 失败时 await 会抛出 <see cref="SocketException"/>；取消时则抛出 <see cref="OperationCanceledException"/>。
+        /// 一个表示操作结果的 <see cref="ValueTask"/>。成功时，其结果为包含 <see cref="SocketOperationValue"/> 的 <see cref="Result{T}"/>； 失败时 await 会抛出 <see
+        /// cref="SocketException"/>；取消时则抛出 <see cref="OperationCanceledException"/>。
         /// </returns>
-        /// <remarks>
-        /// 广播/组播可通过 <see
-        /// cref="SocketAsyncEventArgs.SocketFlags"/>
-        /// 检查 <see cref="SocketFlags.Broadcast"/>
-        /// 与 <see cref="SocketFlags.Multicast"/>。
-        /// </remarks>
+        /// <remarks>广播/组播可通过 <see cref="SocketAsyncEventArgs.SocketFlags"/> 检查 <see cref="SocketFlags.Broadcast"/> 与 <see cref="SocketFlags.Multicast"/>。</remarks>
         public ValueTask<Result<SocketOperationValue>> ReceiveFromAsync(Socket socket, Memory<byte> buffer, EndPoint anyEndPoint, CancellationToken token = default)
         {
             ResetState();
@@ -348,35 +282,21 @@ namespace ExtenderApp.Common.Networks
         }
 
         /// <summary>
-        /// UDP 接收（带 IP 层报文信息与标志），用于识别
-        /// Truncated/Broadcast/Multicast 等。
+        /// UDP 接收（带 IP 层报文信息与标志），用于识别 Truncated/Broadcast/Multicast 等。
         /// </summary>
-        /// <param name="socket">
-        /// UDP 套接字（未 Connect 或 Connect 均可）。
-        /// </param>
+        /// <param name="socket">UDP 套接字（未 Connect 或 Connect 均可）。</param>
         /// <param name="buffer">可写缓冲区；用于接收的数据存放。</param>
         /// <param name="anyEndPoint">
-        /// 用于占位的 EndPoint，其 AddressFamily 必须与
-        /// <paramref name="socket"/> 一致。 完成后 <see
-        /// cref="SocketAsyncEventArgs.RemoteEndPoint"/> 将被设置为实际来源地址。
+        /// 用于占位的 EndPoint，其 AddressFamily 必须与 <paramref name="socket"/> 一致。 完成后 <see cref="SocketAsyncEventArgs.RemoteEndPoint"/> 将被设置为实际来源地址。
         /// </param>
-        /// <param name="token">
-        /// 取消令牌；取消时将关闭 <paramref name="socket"/>
-        /// 以中断 I/O。
-        /// </param>
+        /// <param name="token">取消令牌；取消时将关闭 <paramref name="socket"/> 以中断 I/O。</param>
         /// <returns>
-        /// 一个表示操作结果的 <see cref="ValueTask"/>。成功时，其结果为包含 <see cref="SocketOperationValue"/> 的 <see cref="Result{T}"/>；
-        /// 失败时 await 会抛出 <see cref="SocketException"/>；取消时则抛出 <see cref="OperationCanceledException"/>。
+        /// 一个表示操作结果的 <see cref="ValueTask"/>。成功时，其结果为包含 <see cref="SocketOperationValue"/> 的 <see cref="Result{T}"/>； 失败时 await 会抛出 <see
+        /// cref="SocketException"/>；取消时则抛出 <see cref="OperationCanceledException"/>。
         /// </returns>
         /// <remarks>
-        /// 要获取 <see
-        /// cref="SocketAsyncEventArgs.ReceiveMessageFromPacketInfo"/>，需在套接字上启用数据报包信息：
-        /// IPv4：
-        /// <c>socket.SetSocketOption(SocketOptionLevel.IP,
-        /// SocketOptionName.PacketInformation,
-        /// true)</c>； IPv6：
-        /// <c>socket.SetSocketOption(SocketOptionLevel.IPv6,
-        /// SocketOptionName.PacketInformation, true)</c>。
+        /// 要获取 <see cref="SocketAsyncEventArgs.ReceiveMessageFromPacketInfo"/>，需在套接字上启用数据报包信息： IPv4： <c>socket.SetOption(SocketOptionLevel.IP,
+        /// SocketOptionName.PacketInformation, true)</c>； IPv6： <c>socket.SetOption(SocketOptionLevel.IPv6, SocketOptionName.PacketInformation, true)</c>。
         /// </remarks>
         public ValueTask<Result<SocketOperationValue>> ReceiveMessageFromAsync(Socket socket, Memory<byte> buffer, EndPoint anyEndPoint, CancellationToken token = default)
         {
@@ -409,13 +329,8 @@ namespace ExtenderApp.Common.Networks
         /// 等待 TCP 连接接入（awaitable，支持取消）。
         /// </summary>
         /// <param name="socket">处于监听状态的套接字。</param>
-        /// <param name="token">
-        /// 取消令牌；取消时将关闭 <paramref name="socket"/>
-        /// 以中断 Accept。
-        /// </param>
-        /// <returns>
-        /// 一个表示操作结果的 <see cref="Result{Socket}"/>。成功时包含已连接的 Socket，失败时包含异常信息。
-        /// </returns>
+        /// <param name="token">取消令牌；取消时将关闭 <paramref name="socket"/> 以中断 Accept。</param>
+        /// <returns>一个表示操作结果的 <see cref="Result{Socket}"/>。成功时包含已连接的 Socket，失败时包含异常信息。</returns>
         public ValueTask<Result<Socket>> AcceptAsync(Socket socket, CancellationToken token = default)
         {
             ResetState();
@@ -479,7 +394,7 @@ namespace ExtenderApp.Common.Networks
             Action<object?> continuation, object? state, short token, ValueTaskSourceOnCompletedFlags flags)
             => vts.OnCompleted(continuation, state, token, flags);
 
-        #endregion SocketOperationResult
+        #endregion SocketOperationValue
 
         #region SocketAccept
 
@@ -522,9 +437,7 @@ namespace ExtenderApp.Common.Networks
         #endregion Awaitable
 
         /// <summary>
-        /// 取消当前挂起的 I/O：确保仅完成一次，并关闭套接字以打断内核
-        /// I/O，然后以 <see
-        /// cref="OperationCanceledException"/> 完成。
+        /// 取消当前挂起的 I/O：确保仅完成一次，并关闭套接字以打断内核 I/O，然后以 <see cref="OperationCanceledException"/> 完成。
         /// </summary>
         private void Cancel()
         {
@@ -544,8 +457,7 @@ namespace ExtenderApp.Common.Networks
         }
 
         /// <summary>
-        /// 根据 <see cref="SocketError"/> 构建对应的
-        /// <see cref="SocketException"/>。
+        /// 根据 <see cref="SocketError"/> 构建对应的 <see cref="SocketException"/>。
         /// </summary>
         protected static SocketException CreateSocketException(SocketError e)
         {

@@ -3,6 +3,7 @@ using System.Runtime.Loader;
 using Autofac;
 using Autofac.Extensions.DependencyInjection;
 using ExtenderApp.Abstract;
+using ExtenderApp.Common;
 using ExtenderApp.Common.Error;
 using ExtenderApp.Common.Scopes;
 using ExtenderApp.Data;
@@ -33,18 +34,15 @@ namespace ExtenderApp.Services
         /// <summary>
         /// Json文件接口
         /// </summary>
-        private readonly IJsonParser _jsonParser;
+        private readonly IJsonSerialization _jsonSerialize;
 
-        /// <summary>
-        /// 用于存储二进制格式化的私有变量
-        /// </summary>
-        private IBinaryFormatterStore _binaryFormatterStore;
+        private readonly IFileOperateProvider _fileOperateProvider;
 
-        public PluginService(IJsonParser parser, IBinaryFormatterStore binaryFormatterStore, IServiceScopeStore serviceScopeStore, ILifetimeScope lifetimeScope)
+        public PluginService(IJsonSerialization jsonSerialize,IFileOperateProvider fileOperateProvider,  IServiceScopeStore serviceScopeStore, ILifetimeScope lifetimeScope)
         {
             _plugins = new();
-            _jsonParser = parser;
-            _binaryFormatterStore = binaryFormatterStore;
+            _jsonSerialize = jsonSerialize;
+            _fileOperateProvider = fileOperateProvider;
             _serviceScopeStore = serviceScopeStore;
             _mainLifetimeScope = lifetimeScope;
         }
@@ -104,7 +102,7 @@ namespace ExtenderApp.Services
                 if (!fileInfo.Exists) continue;
 
                 //解析模组的信息
-                PluginInfo info = _jsonParser.Read<PluginInfo>(new FileOperateInfo(fileInfo));
+                PluginInfo info = _jsonSerialize.Deserialize<PluginInfo>(_fileOperateProvider.GetOperate(new FileOperateInfo(fileInfo)));
 
                 if (Contains(info)) continue;
 
@@ -160,11 +158,6 @@ namespace ExtenderApp.Services
             modStartup.ConfigureDetails(details);
             details.StartupType = modStartup.StartType;
             details.CutsceneViewType = modStartup.CutsceneViewType;
-
-            if (isStart)
-            {
-                modStartup.ConfigureBinaryFormatterStore(_binaryFormatterStore);
-            }
         }
 
         private async Task LoadAssemblyAsync(PluginDetails details)

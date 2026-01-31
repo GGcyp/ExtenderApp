@@ -117,47 +117,43 @@ namespace ExtenderApp.Common.Networks
             return _plugins.Values;
         }
 
-        private void ForeachPlugin(Action<ILinkClientPlugin> action)
+        private Result ForeachPlugin(Func<ILinkClientPlugin, Result> action)
         {
             lock (_sync)
             {
                 foreach (var plugin in GetPlugins())
                 {
-                    try
+                    Result result = action(plugin);
+                    if (!result.IsSuccess)
                     {
-                        action(plugin);
-                    }
-                    catch
-                    {
-                        // 忽略单个插件异常，保证其它插件仍能被调用
+                        return Result.FromException(new InvalidOperationException($"插件执行失败: {result.Message}", result.Exception));
                     }
                 }
             }
+            return Result.Success();
         }
 
-        private void ForeachPlugin<T>(Action<ILinkClientPlugin, T> action, T value)
+        private Result ForeachPlugin<T>(Func<ILinkClientPlugin, T, Result> action, T value)
         {
             lock (_sync)
             {
                 foreach (var plugin in GetPlugins())
                 {
-                    try
+                    Result result = action(plugin, value);
+                    if (!result.IsSuccess)
                     {
-                        action(plugin, value);
-                    }
-                    catch
-                    {
-                        // 忽略单个插件异常，保证其它插件仍能被调用
+                        return Result.FromException(new InvalidOperationException($"插件执行失败: {result.Message}", result.Exception));
                     }
                 }
             }
+            return Result.Success();
         }
 
-        public void OnAttach(ILinkClientAwareSender client)
+        public Result OnAttach(ILinkClientAwareSender client)
         {
-            ForeachPlugin(static (plugin, client) =>
+            return ForeachPlugin(static (plugin, client) =>
             {
-                plugin.OnAttach(client);
+                return plugin.OnAttach(client);
             }, client);
         }
 
@@ -167,60 +163,68 @@ namespace ExtenderApp.Common.Networks
             {
                 plugin.OnDetach();
                 plugin.DisposeSafe();
+                return Result.Success();
             });
         }
 
-        public void OnConnecting(EndPoint remoteEndPoint)
+        public Result OnConnecting(EndPoint remoteEndPoint)
         {
-            ForeachPlugin(static (plugin, remoteEndPoint) =>
+            return ForeachPlugin(static (plugin, remoteEndPoint) =>
             {
-                plugin.OnConnecting(remoteEndPoint);
+                return plugin.OnConnecting(remoteEndPoint);
             }, remoteEndPoint);
         }
 
-        public void OnConnected(EndPoint remoteEndPoint, Exception? exception)
+        public Result OnConnected(EndPoint remoteEndPoint, Exception? exception)
         {
-            ForeachPlugin(static (plugin, tuple) =>
+            return ForeachPlugin(static (plugin, tuple) =>
             {
-                plugin.OnConnected(tuple.remoteEndPoint, tuple.exception);
+                return plugin.OnConnected(tuple.remoteEndPoint, tuple.exception);
             }, (remoteEndPoint, exception));
         }
 
-        public void OnDisconnecting()
+        public Result OnDisconnecting()
         {
-            ForeachPlugin(static plugin =>
+            return ForeachPlugin(static plugin =>
             {
-                plugin.OnDisconnecting();
+                return plugin.OnDisconnecting();
             });
         }
 
-        public void OnDisconnected(Exception? error)
+        public Result OnDisconnected(Exception? error)
         {
-            ForeachPlugin(static (plugin, error) =>
+            return ForeachPlugin(static (plugin, error) =>
             {
-                plugin.OnDisconnected(error);
+                return plugin.OnDisconnected(error);
             }, error);
         }
 
-        public void OnSend(ref FrameContext frame)
-        {
-            ForeachPlugin(static (plugin, frame) =>
-            {
-                plugin.OnSend(ref frame);
-            }, frame);
-        }
-
-        public void OnReceive(SocketOperationValue operationValue, ref FrameContext frame)
+        public Result OnSend(ref FrameContext frame)
         {
             lock (_sync)
             {
                 foreach (var plugin in GetPlugins())
                 {
-                    plugin.OnReceive(operationValue, ref frame);
-                    if (frame.HasException)
-                        return;
+                    var result = plugin.OnSend(ref frame);
+                    if (!result)
+                        return result;
                 }
             }
+            return Result.Success();
+        }
+
+        public Result OnReceive(SocketOperationValue operationValue, ref FrameContext frame)
+        {
+            lock (_sync)
+            {
+                foreach (var plugin in GetPlugins())
+                {
+                    var result = plugin.OnReceive(operationValue, ref frame);
+                    if (!result)
+                        return result;
+                }
+            }
+            return Result.Success();
         }
     }
 }

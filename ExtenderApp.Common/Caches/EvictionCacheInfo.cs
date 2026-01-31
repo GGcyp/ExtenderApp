@@ -1,5 +1,5 @@
 ﻿using ExtenderApp.Abstract;
-using ExtenderApp.Common.ObjectPools;
+using ExtenderApp.Data;
 
 namespace ExtenderApp.Common.Caches
 {
@@ -12,7 +12,7 @@ namespace ExtenderApp.Common.Caches
         /// 静态对象池，用于复用EvictionCacheInfo对象
         /// </summary>
         private static readonly ObjectPool<EvictionCacheInfo<T>> _pool
-            = ObjectPool.CreateDefaultPool<EvictionCacheInfo<T>>();
+            = ObjectPool.Create<EvictionCacheInfo<T>>();
 
         /// <summary>
         /// 从对象池中获取EvictionCacheInfo对象

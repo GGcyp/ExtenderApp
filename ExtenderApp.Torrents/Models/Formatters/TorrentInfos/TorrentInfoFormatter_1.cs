@@ -1,6 +1,6 @@
 ﻿using ExtenderApp.Abstract;
 using ExtenderApp.Common.DataBuffers;
-using ExtenderApp.Common.IO.Binary.Formatters;
+using ExtenderApp.Common.Serializations.Binary.Formatters;
 using ExtenderApp.Data;
 
 namespace ExtenderApp.Torrents.Models.Formatters

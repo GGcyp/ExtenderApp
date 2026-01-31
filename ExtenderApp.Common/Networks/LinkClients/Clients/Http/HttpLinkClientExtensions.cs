@@ -7,7 +7,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
     {
         public static IServiceCollection AddHttpLinkClient(this IServiceCollection services)
         {
-            services.AddLinkerClient<IHttpLinkClient, HttpLinkClientFactory>();
+            services.AddLinkClient<IHttpLinkClient, HttpLinkClientFactory>();
             return services;
         }
     }

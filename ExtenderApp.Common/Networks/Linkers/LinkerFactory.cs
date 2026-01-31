@@ -1,13 +1,13 @@
 ﻿using System.Net.Sockets;
 using ExtenderApp.Abstract;
-using ExtenderApp.Common.ObjectPools;
+
 
 namespace ExtenderApp.Common.Networks
 {
     /// <summary>
     /// <see cref="ILinker"/> 工厂抽象类
     /// </summary>
-    /// <typeparam name="T">链接接口继承自<see cref="ILinker"/></typeparam>
+    /// <typeparam name="T">链接接口继承自 <see cref="ILinker"/></typeparam>
     public abstract class LinkerFactory<T> : ILinkerFactory<T>
         where T : ILinker
     {

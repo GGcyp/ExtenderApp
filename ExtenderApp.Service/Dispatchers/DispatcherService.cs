@@ -1,14 +1,12 @@
 ﻿using System.Collections.Concurrent;
 using ExtenderApp.Abstract;
-using ExtenderApp.Common.DataBuffers;
 using ExtenderApp.Data;
 using Microsoft.Extensions.Logging;
 
 namespace ExtenderApp.Services
 {
     /// <summary>
-    /// WPF 调度器服务实现类。用于在主（UI）线程与后台线程之间切换并在主线程上同步/异步执行操作。
-    /// 实现 <see cref="IDispatcherService"/>，提供多种 Invoke/InvokeAsync 和线程切换方法。
+    /// WPF 调度器服务实现类。用于在主（UI）线程与后台线程之间切换并在主线程上同步/异步执行操作。 实现 <see cref="IDispatcherService"/>，提供多种 Invoke/InvokeAsync 和线程切换方法。
     /// </summary>
     internal class DispatcherService : IDispatcherService
     {

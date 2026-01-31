@@ -15,19 +15,13 @@ namespace ExtenderApp.Common.Networks
         /// <returns>返回同一 <see cref="IServiceCollection"/>，以便链式调用。</returns>
         internal static IServiceCollection AddTcpLinker(this IServiceCollection services)
         {
-            services.AddSingleton<ILinkerFactory<ITcpLinker>, TcpLinkerFactory>();
-            services.AddSingleton<ITcpListenerLinkerFactory, TcpListenerLinkerFactory>();
-
-            services.AddTransient(provider =>
-            {
-                return provider.GetRequiredService<ILinkerFactory<ITcpLinker>>().CreateLinker();
-            });
-
-            // 每次解析 IListenerLinker<TLinkClient> 时通过工厂创建
-            services.AddTransient(provider =>
-            {
-                return provider.GetRequiredService<ITcpListenerLinkerFactory>().CreateListenerLinker();
-            });
+            services.AddLinker<ITcpLinker, TcpLinkerFactory>();
+            //services.AddSingleton<ITcpListenerLinkerFactory, TcpListenerLinkerFactory>();
+            //// 每次解析 IListenerLinker<TLinkClient> 时通过工厂创建
+            //services.AddTransient(provider =>
+            //{
+            //    return provider.GetRequiredService<ITcpListenerLinkerFactory>().CreateListenerLinker();
+            //});
             return services;
         }
 

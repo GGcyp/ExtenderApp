@@ -41,18 +41,12 @@ namespace ExtenderApp.Abstract
         void RemoveFormatter<T>();
 
         /// <summary>
-        /// 尝试获取指定消息类型的格式化器实例，当实例不存在时尝试通过依赖注入创建一个新实例。
-        /// </summary>
-        /// <typeparam name="T">要删除的消息/数据类型。</typeparam>
-        void RemoveFormatter<T>();
-
-        /// <summary>
         /// 将要发送的消息对象序列化为一个帧上下文，以便发送管道消费。
         /// </summary>
         /// <typeparam name="T">要序列化的消息/数据类型。</typeparam>
         /// <param name="value">要序列化的消息实例。</param>
         /// <returns>表示已准备好发送的帧的 <see cref="FrameContext"/> 实例。</returns>
-        FrameContext ProcessSendVlaue<T>(T value);
+        Result<FrameContext> ProcessSendVlaue<T>(T value);
 
         /// <summary>
         /// 在接收路径中处理/路由一个已解析出的帧上下文。
@@ -64,6 +58,6 @@ namespace ExtenderApp.Abstract
         /// 要处理的帧上下文（按引用传递以便实现可以在必要时替换或释放其内部缓冲）。
         /// 实现应在文档中明确 <see cref="FrameContext"/> 的所有权与释放约定（谁负责调用 <see cref="FrameContext.Dispose"/>）。
         /// </param>
-        void ProcessReceivedFrame(SocketOperationValue operationValue, ref FrameContext frameContext);
+        Result ProcessReceivedFrame(SocketOperationValue operationValue, ref FrameContext frameContext);
     }
 }

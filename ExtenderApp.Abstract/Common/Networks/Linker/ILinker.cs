@@ -1,14 +1,26 @@
-﻿namespace ExtenderApp.Abstract
+﻿using ExtenderApp.Data;
+
+namespace ExtenderApp.Abstract
 {
     /// <summary>
-    /// 网络链接器接口。
+    /// 网络链接器接口，表示可发起并管理网络连接的低层抽象。
+    /// <para>组合了链接信息、接收、发送与连接控制等能力，并提供套接字选项配置方法。</para>
     /// </summary>
     public interface ILinker : IDisposable, ILinkInfo, ILinkReceiver, ILinkSender, ILinkConnect
     {
         /// <summary>
-        /// 克隆当前链接器实例,仅复置数据不进行操作。
+        /// 克隆当前链接器实例（浅拷贝/仅复位数据，不执行网络操作）。
+        /// <para>返回的实例应与原实例相互独立，且不应自动开启连接或共享运行时状态。</para>
         /// </summary>
-        /// <returns>返回克隆后的实例</returns>
+        /// <returns>克隆后的 <see cref="ILinker"/> 实例。</returns>
         ILinker Clone();
+
+        /// <summary>
+        /// 为链接器设置指定的选项。
+        /// </summary>
+        /// <param name="optionLevel">选项所属的协议层级（例如 IP/Tcp/Socket）。</param>
+        /// <param name="optionName">要设置的选项名称。</param>
+        /// <param name="optionValue">选项值。</param>
+        void SetOption(LinkOptionLevel optionLevel, LinkOptionName optionName, DataBuffer optionValue);
     }
 }

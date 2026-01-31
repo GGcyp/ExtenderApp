@@ -1,7 +1,6 @@
 ﻿using System.Net;
 using System.Net.Sockets;
 using ExtenderApp.Abstract;
-using ExtenderApp.Common.ObjectPools;
 using ExtenderApp.Data;
 
 namespace ExtenderApp.Common.Networks
@@ -74,14 +73,8 @@ namespace ExtenderApp.Common.Networks
         /// 2. 不自行释放/归还到对象池（由封装层负责释放）；
         /// 3. 不并发复用同一个实例（单次操作完成前不得再次使用）。
         /// </param>
-        /// <param name="memory">
-        /// 要发送的内存窗口。实现不得在操作未完成时修改或捕获其引用用于越界访问。对于 TCP 可能发生“部分发送”——返回
-        /// BytesTransferred &lt; memory.Length 需由调用方循环补发。
-        /// </param>
-        /// <param name="token">
-        /// 取消令牌。取消触发时实现应尽快终止 I/O（通常通过关闭套接字或调用 args 内部取消逻辑），使等待方得到
-        /// <see cref="OperationCanceledException"/>。若已完成则忽略取消。
-        /// </param>
+        /// <param name="memory">要发送的内存窗口。实现不得在操作未完成时修改或捕获其引用用于越界访问。对于 TCP 可能发生“部分发送”——返回 BytesTransferred &lt; memory.Length 需由调用方循环补发。</param>
+        /// <param name="token">取消令牌。取消触发时实现应尽快终止 I/O（通常通过关闭套接字或调用 args 内部取消逻辑），使等待方得到 <see cref="OperationCanceledException"/>。若已完成则忽略取消。</param>
         /// <returns>
         /// 表示发送结果的 <see cref="SocketOperationValue"/>：
         /// - 成功：BytesTransferred 为实际发送字节数，SocketError 为 null；
@@ -94,16 +87,10 @@ namespace ExtenderApp.Common.Networks
         /// 使用提供的 <paramref name="args"/> 执行一次底层接收逻辑（单次 I/O）。
         /// </summary>
         /// <param name="args">
-        /// 已从对象池获取的 <see cref="AwaitableSocketEventArgs"/>：实现应调用其 ReceiveAsync/ReceiveFromAsync/ReceiveMessageFromAsync 等。
-        /// 不得自行归还或在未完成时复用；完成后由基类封装释放。
+        /// 已从对象池获取的 <see cref="AwaitableSocketEventArgs"/>：实现应调用其 ReceivePrivate/ReceiveFromAsync/ReceiveMessageFromAsync 等。 不得自行归还或在未完成时复用；完成后由基类封装释放。
         /// </param>
-        /// <param name="memory">
-        /// 可写缓冲区，用于接收数据；实现应确保内核写入后通过结果返回实际长度。对于 TCP 返回 0 通常表示对端优雅关闭。
-        /// 对于 UDP 若发生截断，可在 SocketFlags 中带有 Truncated（由 args 内部状态体现，派生类应在结果中映射）。
-        /// </param>
-        /// <param name="token">
-        /// 取消令牌；取消时应关闭套接字或触发 args 的取消流程，使 await 抛出 <see cref="OperationCanceledException"/>。
-        /// </param>
+        /// <param name="memory">可写缓冲区，用于接收数据；实现应确保内核写入后通过结果返回实际长度。对于 TCP 返回 0 通常表示对端优雅关闭。 对于 UDP 若发生截断，可在 SocketFlags 中带有 Truncated（由 args 内部状态体现，派生类应在结果中映射）。</param>
+        /// <param name="token">取消令牌；取消时应关闭套接字或触发 args 的取消流程，使 await 抛出 <see cref="OperationCanceledException"/>。</param>
         /// <returns>
         /// 表示接收结果的 <see cref="SocketOperationValue"/>：
         /// - 成功：BytesTransferred 为收到字节数，可能包含 RemoteEndPoint（UDP/ReceiveFrom）及 PacketInfo；
@@ -116,6 +103,31 @@ namespace ExtenderApp.Common.Networks
         protected override ValueTask ExecuteConnectAsync(EndPoint remoteEndPoint, CancellationToken token)
         {
             return Socket.ConnectAsync(remoteEndPoint, token);
+        }
+
+        public override void SetOption(LinkOptionLevel optionLevel, LinkOptionName optionName, DataBuffer optionValue)
+        {
+            switch (optionValue)
+            {
+                case DataBuffer<byte> byteBuffer:
+                    Socket.SetSocketOption((SocketOptionLevel)optionLevel, (SocketOptionName)optionName, byteBuffer);
+                    break;
+
+                case DataBuffer<int> intBuffer:
+                    Socket.SetSocketOption((SocketOptionLevel)optionLevel, (SocketOptionName)optionName, intBuffer);
+                    break;
+
+                case DataBuffer<bool> boolBuffer:
+                    Socket.SetSocketOption((SocketOptionLevel)optionLevel, (SocketOptionName)optionName, boolBuffer);
+                    break;
+
+                case DataBuffer<object> objectBuffer:
+                    Socket.SetSocketOption((SocketOptionLevel)optionLevel, (SocketOptionName)optionName, objectBuffer);
+                    break;
+
+                default:
+                    throw new ArgumentException("Unsupported option value type.", nameof(optionValue));
+            }
         }
 
         public override ILinker Clone()

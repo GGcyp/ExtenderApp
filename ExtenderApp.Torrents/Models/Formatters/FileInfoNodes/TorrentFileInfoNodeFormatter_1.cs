@@ -1,7 +1,7 @@
 ﻿using ExtenderApp.Abstract;
 using ExtenderApp.Common.DataBuffers;
 using ExtenderApp.Common.IO;
-using ExtenderApp.Common.IO.Binary;
+using ExtenderApp.Common.Serializations.Binary;
 using ExtenderApp.Data;
 using MonoTorrent;
 

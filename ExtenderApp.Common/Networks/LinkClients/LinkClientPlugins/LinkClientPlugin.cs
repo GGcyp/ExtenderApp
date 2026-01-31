@@ -16,37 +16,44 @@ namespace ExtenderApp.Common.Networks
             Linker = null!;
         }
 
-        public virtual void OnAttach(ILinkClientAwareSender client)
+        public virtual Result OnAttach(ILinkClientAwareSender client)
         {
             Linker = client;
+            return Result.Success();
         }
 
         public virtual void OnDetach()
         {
         }
 
-        public virtual void OnConnected(EndPoint remoteEndPoint, Exception? exception)
+        public virtual Result OnConnected(EndPoint remoteEndPoint, Exception? exception)
         {
+            return Result.Success();
         }
 
-        public virtual void OnConnecting(EndPoint remoteEndPoint)
+        public virtual Result OnConnecting(EndPoint remoteEndPoint)
         {
+            return Result.Success();
         }
 
-        public virtual void OnDisconnected(Exception? error)
+        public virtual Result OnDisconnected(Exception? error)
         {
+            return Result.Success();
         }
 
-        public virtual void OnDisconnecting()
+        public virtual Result OnDisconnecting()
         {
+            return Result.Success();
         }
 
-        public virtual void OnReceive(SocketOperationValue operationValue, ref FrameContext frame)
+        public virtual Result OnReceive(SocketOperationValue operationValue, ref FrameContext frame)
         {
+            return Result.Success();
         }
 
-        public virtual void OnSend(ref FrameContext frame)
+        public virtual Result OnSend(ref FrameContext frame)
         {
+            return Result.Success();
         }
     }
 }

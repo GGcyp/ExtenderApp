@@ -17,7 +17,7 @@ namespace ExtenderApp.Common
         {
             services.AddIO();
             services.AddNetwork();
-            services.AddHash();
+            services.AddSerializations();
             services.AddCache();
             services.AddMainThreadContext();
             services.AddStartupExecuter();

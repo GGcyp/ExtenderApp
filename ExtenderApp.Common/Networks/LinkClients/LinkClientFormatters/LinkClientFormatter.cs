@@ -14,7 +14,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
         /// 与业务数据类型 <typeparamref name="T"/> 关联的稳定哈希。
         /// </summary>
         /// <remarks>
-        /// - 计算规则：<c>FNV-1a(nameof(TLinkClient))</c>；
+        /// - 计算规则： <c>FNV-1a(nameof(TLinkClient))</c>；
         /// - 注意：若存在跨命名空间同名类型，建议统一迁移到使用 FullName 的策略（需通讯两端同时调整）；
         /// - 用途：在消息头中用于快速定位对应的格式化器或处理管道。
         /// </remarks>

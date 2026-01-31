@@ -1,19 +1,18 @@
 ﻿using System.Net;
 using System.Net.Sockets;
 using ExtenderApp.Abstract;
-using ExtenderApp.Common.ObjectPools;
+using ExtenderApp.Data;
 
 namespace ExtenderApp.Common.Networks
 {
     /// <summary>
-    /// 基于 <see cref="Socket"/> 的 TCP 监听器实现。
-    /// 通过 <see cref="ITcpListenerLinker.Accept"/> 事件将新连接以 <see cref="ITcpLinker"/> 的形式发布。
-    /// 支持配置并行 Accept 数量（<see cref="AcceptConcurrency"/>）与运行时暂停/恢复（<see cref="Pause"/> / <see cref="Resume"/>）。
+    /// 基于 <see cref="Socket"/> 的 TCP 监听器实现。 通过 <see cref="ITcpListenerLinker.Accept"/> 事件将新连接以 <see cref="ITcpLinker"/> 的形式发布。 支持配置并行 Accept 数量（ <see
+    /// cref="AcceptConcurrency"/>）与运行时暂停/恢复（ <see cref="Pause"/> / <see cref="Resume"/>）。
     /// </summary>
     internal class SocketTcpListenerLinker : TcpListenerLinker
     {
         private static readonly ObjectPool<AwaitableSocketEventArgs> _pool
-            = ObjectPool.CreateDefaultPool<AwaitableSocketEventArgs>();
+            = ObjectPool.Create<AwaitableSocketEventArgs>();
 
         private readonly Socket _listenerSocket;
 
@@ -23,8 +22,7 @@ namespace ExtenderApp.Common.Networks
         private Task[]? _acceptTasks;
 
         /// <summary>
-        /// 可配置的并行 Accept 数量（“监听核心数”）。
-        /// 默认值为 1。必须在调用 <see cref="Listen(int)"/> 之前设置，启动后不可更改。
+        /// 可配置的并行 Accept 数量（“监听核心数”）。 默认值为 1。必须在调用 <see cref="Listen(int)"/> 之前设置，启动后不可更改。
         /// </summary>
         /// <exception cref="ArgumentOutOfRangeException">设置的值小于 1。</exception>
         /// <exception cref="InvalidOperationException">监听已开始仍尝试修改。</exception>
@@ -45,14 +43,12 @@ namespace ExtenderApp.Common.Networks
         private readonly AsyncManualResetEvent _pauseGate = new(initialState: true);
 
         /// <summary>
-        /// 当前是否处于“暂停接受新连接”状态。
-        /// 暂停状态下不会发起新的 Accept；已挂起的 Accept 最多还会完成 <see cref="AcceptConcurrency"/> 个。
+        /// 当前是否处于“暂停接受新连接”状态。 暂停状态下不会发起新的 Accept；已挂起的 Accept 最多还会完成 <see cref="AcceptConcurrency"/> 个。
         /// </summary>
         public bool IsPaused { get; private set; }
 
         /// <summary>
-        /// 获取监听器的本地终结点（本地地址与端口）。
-        /// 在 <see cref="Bind(EndPoint)"/> 成功调用并开始监听后有效。
+        /// 获取监听器的本地终结点（本地地址与端口）。 在 <see cref="Bind(EndPoint)"/> 成功调用并开始监听后有效。
         /// </summary>
         public override EndPoint? ListenerPoint => _listenerSocket.LocalEndPoint;
 
@@ -100,9 +96,9 @@ namespace ExtenderApp.Common.Networks
         /// </summary>
         /// <param name="backlog">监听队列长度（传递给 <see cref="Socket.Listen(int)"/>）。</param>
         /// <remarks>
-        /// - 幂等：多次调用仅首次生效。<br/>
-        /// - 接入通知：每当有新连接接入，将通过 <see cref="ITcpListenerLinker.Accept"/> 发布一个 <see cref="ITcpLinker"/> 实例。<br/>
-        /// - 并行度：Accept 并行数量由 <see cref="AcceptConcurrency"/> 决定，需在启动前设置。<br/>
+        /// - 幂等：多次调用仅首次生效。 <br/>
+        /// - 接入通知：每当有新连接接入，将通过 <see cref="ITcpListenerLinker.Accept"/> 发布一个 <see cref="ITcpLinker"/> 实例。 <br/>
+        /// - 并行度：Accept 并行数量由 <see cref="AcceptConcurrency"/> 决定，需在启动前设置。 <br/>
         /// - 暂停/恢复：可通过 <see cref="Pause"/> 与 <see cref="Resume"/> 控制是否发起新的 Accept。
         /// </remarks>
         /// <exception cref="InvalidOperationException">未调用 <see cref="Bind(EndPoint)"/> 即开始监听，或监听已开始。</exception>
@@ -135,8 +131,7 @@ namespace ExtenderApp.Common.Networks
         }
 
         /// <summary>
-        /// 暂停接受新连接（不关闭监听 <see cref="Socket"/>）。
-        /// 已挂起的 Accept 最多仍会完成 <see cref="AcceptConcurrency"/> 个，之后不再发起新的 Accept。
+        /// 暂停接受新连接（不关闭监听 <see cref="Socket"/>）。 已挂起的 Accept 最多仍会完成 <see cref="AcceptConcurrency"/> 个，之后不再发起新的 Accept。
         /// </summary>
         public void Pause()
         {
@@ -147,8 +142,7 @@ namespace ExtenderApp.Common.Networks
         }
 
         /// <summary>
-        /// 恢复接受新连接。
-        /// 触发后新的 Accept 将继续挂起并接入。
+        /// 恢复接受新连接。 触发后新的 Accept 将继续挂起并接入。
         /// </summary>
         public void Resume()
         {
@@ -206,8 +200,7 @@ namespace ExtenderApp.Common.Networks
         }
 
         /// <summary>
-        /// 轻量级的异步“手动复位事件”（Async Manual Reset Event）。
-        /// 用于实现“暂停/恢复”闸门：
+        /// 轻量级的异步“手动复位事件”（Async Manual Reset Event）。 用于实现“暂停/恢复”闸门：
         /// - Set()：打开闸门，允许等待者继续；
         /// - Reset()：关闭闸门，使后续等待者阻塞；
         /// - WaitAsync()：等待闸门被打开。
@@ -229,9 +222,7 @@ namespace ExtenderApp.Common.Networks
             /// <summary>
             /// 初始化异步手动复位事件。
             /// </summary>
-            /// <param name="initialState">
-            /// 初始状态：true 表示闸门打开（无需等待即可通过）；false 表示闸门关闭（等待 Set()）。
-            /// </param>
+            /// <param name="initialState">初始状态：true 表示闸门打开（无需等待即可通过）；false 表示闸门关闭（等待 Set()）。</param>
             public AsyncManualResetEvent(bool initialState = false)
             {
                 _tcs = new(TaskCreationOptions.RunContinuationsAsynchronously);

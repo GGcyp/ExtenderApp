@@ -5,10 +5,10 @@ namespace ExtenderApp.Data
 {
     /// <summary>
     /// 轻量的顺序写入 + 顺序读取封装。
-    /// - 通过 <see cref="Sequence{T}"/> 提供写缓冲（<see cref="GetSpan"/> / <see cref="GetMemory"/> / <see cref="Write(in T)"/> 等）；
-    /// - 通过内部 <see cref="SequenceReader{T}"/> 提供只读的顺序读取（<see cref="TryRead(out T)"/> / <see cref="TryRead(int, out ReadOnlySequence{T})"/> / <see cref="TryPeek(out T)"/> 等）；
-    /// - 写入后会将读取视图标记为“脏”，下次访问 <see cref="UpdateReader()"/> 时自动刷新到最新快照。
-    /// 注意：
+    /// - 通过 <see cref="Sequence{T}"/> 提供写缓冲（ <see cref="GetSpan"/> / <see cref="GetMemory"/> / <see cref="Write(in T)"/> 等）；
+    /// - 通过内部 <see cref="SequenceReader{T}"/> 提供只读的顺序读取（ <see cref="TryRead(out T)"/> / <see cref="TryRead(int, out ReadOnlySequence{T})"/> / <see
+    ///   cref="TryPeek(out T)"/> 等）；
+    /// - 写入后会将读取视图标记为“脏”，下次访问 <see cref="UpdateReader()"/> 时自动刷新到最新快照。 注意：
     /// 1) 本类型为 ref struct，不可装箱、不可捕获到闭包、不可跨异步、不可存入堆结构；
     /// 2) 非线程安全：同一实例请勿在多线程并发读写。
     /// </summary>
@@ -213,8 +213,7 @@ namespace ExtenderApp.Data
         }
 
         /// <summary>
-        /// 申请一个可写的 <see cref="Span{T}"/>，用于直接写入。
-        /// 申请写缓冲后会使读取视图变脏，下一次读取将刷新。
+        /// 申请一个可写的 <see cref="Span{T}"/>，用于直接写入。 申请写缓冲后会使读取视图变脏，下一次读取将刷新。
         /// </summary>
         /// <param name="sizeHint">期望大小（提示值，可为 0）。</param>
         /// <exception cref="ObjectDisposedException">当未持有可写序列时抛出。</exception>
@@ -225,8 +224,7 @@ namespace ExtenderApp.Data
         }
 
         /// <summary>
-        /// 申请一个可写的 <see cref="Memory{T}"/>，用于异步/延迟写入。
-        /// 申请写缓冲后会使读取视图变脏，下一次读取将刷新。
+        /// 申请一个可写的 <see cref="Memory{T}"/>，用于异步/延迟写入。 申请写缓冲后会使读取视图变脏，下一次读取将刷新。
         /// </summary>
         /// <param name="sizeHint">期望大小（提示值，可为 0）。</param>
         /// <exception cref="ObjectDisposedException">当未持有可写序列时抛出。</exception>
@@ -254,8 +252,7 @@ namespace ExtenderApp.Data
         }
 
         /// <summary>
-        /// 提交此前通过 <see cref="GetSpan(int)"/> 或 <see cref="GetMemory(int)"/> 获取的写缓冲中已写入的元素数，
-        /// 前进写入位置并使读取快照失效。
+        /// 提交此前通过 <see cref="GetSpan(int)"/> 或 <see cref="GetMemory(int)"/> 获取的写缓冲中已写入的元素数， 前进写入位置并使读取快照失效。
         /// </summary>
         /// <param name="count">已写入且需要提交的元素数量。</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -523,17 +520,15 @@ namespace ExtenderApp.Data
         }
 
         /// <summary>
-        /// 获取指向当前可写缓冲区起始位置的引用。
-        /// 等价于 <see cref="GetSpan(int)"/> 后调用 <see cref="Span{T}.GetPinnableReference"/>，
-        /// 便于通过 <c>ref</c> 方式直接写入，再配合 <see cref="WriteAdvance(int)"/> 提交已写入的元素数。
+        /// 获取指向当前可写缓冲区起始位置的引用。 等价于 <see cref="GetSpan(int)"/> 后调用 <see cref="Span{T}.GetPinnableReference"/>， 便于通过 <c>ref</c> 方式直接写入，再配合 <see
+        /// cref="WriteAdvance(int)"/> 提交已写入的元素数。
         /// </summary>
         /// <param name="sizeHint">期望的最小连续容量（提示值，允许为 0）。</param>
         /// <returns>返回可写缓冲区第一个元素的引用。</returns>
         /// <exception cref="ObjectDisposedException">当未持有可写序列或序列已释放时抛出。</exception>
         /// <remarks>
         /// 使用说明：
-        /// - 返回的引用仅在下一次申请写缓冲（如调用 <see cref="GetSpan(int)"/>、<see cref="GetMemory(int)"/>、<see cref="Write(in T)"/> 等）
-        ///   或推进（<see cref="WriteAdvance(int)"/>）之前有效；请勿缓存或跨越上述调用后继续使用。
+        /// - 返回的引用仅在下一次申请写缓冲（如调用 <see cref="GetSpan(int)"/>、 <see cref="GetMemory(int)"/>、 <see cref="Write(in T)"/> 等） 或推进（ <see cref="WriteAdvance(int)"/>）之前有效；请勿缓存或跨越上述调用后继续使用。
         /// - 引用本身未固定（未 pin）；如需与非托管代码交互并要求固定，请在 <c>fixed</c> 语句中使用。
         /// - 写入完成后务必调用 <see cref="WriteAdvance(int)"/> 通知实际写入的元素数量。
         /// </remarks>
@@ -562,8 +557,7 @@ namespace ExtenderApp.Data
         }
 
         /// <summary>
-        /// 创建一个用于“窥视”的副本。
-        /// 注意：该方法返回的是当前实例的按值副本，用于只读预览；请勿对副本调用 <see cref="Dispose"/> 以避免重复归还租约。
+        /// 创建一个用于“窥视”的副本。 注意：该方法返回的是当前实例的按值副本，用于只读预览；请勿对副本调用 <see cref="Dispose"/> 以避免重复归还租约。
         /// </summary>
         public SequenceBuffer<T> CreatePeekBuffer()
         {

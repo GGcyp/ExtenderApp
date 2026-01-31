@@ -1,13 +1,12 @@
 ﻿using System.Threading.Tasks.Sources;
-using ExtenderApp.Common.DataBuffers;
-using ExtenderApp.Common.ObjectPools;
+using ExtenderApp.Data;
 
 namespace ExtenderApp.Common.Threads
 {
     public sealed class AwaitableEventArgs : IValueTaskSource, IThreadPoolWorkItem
     {
         public static readonly ObjectPool<AwaitableEventArgs> _pool
-            = ObjectPool.CreateDefaultPool<AwaitableEventArgs>();
+            = ObjectPool.Create<AwaitableEventArgs>();
 
         /// <summary>
         /// 从对象池中获取一个 <see cref="AwaitableEventArgs"/> 实例。
@@ -51,8 +50,7 @@ namespace ExtenderApp.Common.Threads
         }
 
         /// <summary>
-        /// 标记操作成功完成，并在线程池中执行一个无参数的委托。
-        /// 这允许将工作卸载到后台线程。
+        /// 标记操作成功完成，并在线程池中执行一个无参数的委托。 这允许将工作卸载到后台线程。
         /// </summary>
         /// <param name="action">要在线程池中执行的委托。</param>
         public AwaitableEventArgs SetResult(Action action)
@@ -90,8 +88,7 @@ namespace ExtenderApp.Common.Threads
         }
 
         /// <summary>
-        /// 标记操作成功完成，并在线程池中执行一个带有一个参数的委托。
-        /// 此重载通过传递状态参数来避免创建闭包，从而减少内存分配。
+        /// 标记操作成功完成，并在线程池中执行一个带有一个参数的委托。 此重载通过传递状态参数来避免创建闭包，从而减少内存分配。
         /// </summary>
         /// <typeparam name="T">传递给委托的参数类型。</typeparam>
         /// <param name="action">要在线程池中执行的委托。</param>
@@ -132,8 +129,7 @@ namespace ExtenderApp.Common.Threads
         }
 
         /// <summary>
-        /// 标记操作成功完成，并在线程池中执行一个带有两个参数的委托。
-        /// 此重载通过传递状态参数来避免创建闭包，从而减少内存分配。
+        /// 标记操作成功完成，并在线程池中执行一个带有两个参数的委托。 此重载通过传递状态参数来避免创建闭包，从而减少内存分配。
         /// </summary>
         /// <typeparam name="T1">传递给委托的第一个参数类型。</typeparam>
         /// <typeparam name="T2">传递给委托的第二个参数类型。</typeparam>
@@ -232,15 +228,13 @@ namespace ExtenderApp.Common.Threads
     }
 
     /// <summary>
-    /// 表示一个可等待的、可池化的通用异步操作参数。
-    /// 此类实现了 <see cref="IValueTaskSource{TResult}"/>，使其能够被 <see cref="ValueTask{TResult}"/> 等待，
-    /// 从而在异步操作同步完成时避免不必要的堆内存分配。
+    /// 表示一个可等待的、可池化的通用异步操作参数。 此类实现了 <see cref="IValueTaskSource{TResult}"/>，使其能够被 <see cref="ValueTask{TResult}"/> 等待， 从而在异步操作同步完成时避免不必要的堆内存分配。
     /// </summary>
     /// <typeparam name="T">异步操作返回的结果类型。</typeparam>
     public sealed class AwaitableEventArgs<T> : IValueTaskSource<T>, IThreadPoolWorkItem
     {
         public static readonly ObjectPool<AwaitableEventArgs<T>> _pool
-            = ObjectPool.CreateDefaultPool<AwaitableEventArgs<T>>();
+            = ObjectPool.Create<AwaitableEventArgs<T>>();
 
         /// <summary>
         /// 从对象池中获取一个 <see cref="AwaitableEventArgs{T}"/> 实例。
@@ -294,8 +288,7 @@ namespace ExtenderApp.Common.Threads
         }
 
         /// <summary>
-        /// 标记操作成功完成，并使用指定函数生成的结果进行设置。
-        /// 这允许延迟计算结果，直到需要完成操作时才执行。
+        /// 标记操作成功完成，并使用指定函数生成的结果进行设置。 这允许延迟计算结果，直到需要完成操作时才执行。
         /// </summary>
         /// <param name="func">用于生成结果的函数。</param>
         public AwaitableEventArgs<T> SetResult(Func<T> func)
@@ -332,8 +325,7 @@ namespace ExtenderApp.Common.Threads
         }
 
         /// <summary>
-        /// 标记操作成功完成，并使用带一个参数的函数生成结果。
-        /// 此重载通过传递状态参数 <paramref name="item1"/> 来避免创建闭包，从而减少内存分配。
+        /// 标记操作成功完成，并使用带一个参数的函数生成结果。 此重载通过传递状态参数 <paramref name="item1"/> 来避免创建闭包，从而减少内存分配。
         /// </summary>
         /// <typeparam name="T1">传递给函数的参数类型。</typeparam>
         /// <param name="func">用于生成结果的函数。</param>
@@ -373,8 +365,7 @@ namespace ExtenderApp.Common.Threads
         }
 
         /// <summary>
-        /// 标记操作成功完成，并使用带两个参数的函数生成结果。
-        /// 此重载通过传递状态参数 <paramref name="item1"/> 和 <paramref name="item2"/> 来避免创建闭包，从而减少内存分配。
+        /// 标记操作成功完成，并使用带两个参数的函数生成结果。 此重载通过传递状态参数 <paramref name="item1"/> 和 <paramref name="item2"/> 来避免创建闭包，从而减少内存分配。
         /// </summary>
         /// <typeparam name="T1">传递给函数的第一个参数类型。</typeparam>
         /// <typeparam name="T2">传递给函数的第二个参数类型。</typeparam>

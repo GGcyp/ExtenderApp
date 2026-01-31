@@ -7,20 +7,16 @@ using ExtenderApp.Data;
 namespace ExtenderApp.Common.Networks.LinkClients
 {
     /// <summary>
-    /// 链路客户端的帧化器实现。
-    /// /// 负责：
+    /// 链路客户端的帧化器实现。 负责：
     /// - 将接收到的字节流按协议解析为 Frame（TryBERDecodeSequence）；
-    /// - 根据消息类型与负载长度构造可写帧头以供发送（EncodeSequence）。
-    /// 实现遵循 ILinkClientFramer 的契约（接口中已经包含了对外方法的详细文档），
-    /// 此类管理接收缓存以处理半包/粘包场景，并在 Dispose 时释放缓存资源。
+    /// - 根据消息类型与负载长度构造可写帧头以供发送（EncodeSequence）。 实现遵循 ILinkClientFramer 的契约（接口中已经包含了对外方法的详细文档）， 此类管理接收缓存以处理半包/粘包场景，并在 Dispose 时释放缓存资源。
     /// </summary>
     public class LinkClientFramer : DisposableObject, ILinkClientFramer
     {
         private const int intLength = sizeof(int);
 
         /// <summary>
-        /// 默认 TCP 魔数（ASCII: "TCP!"）。
-        /// 用于帧的对齐与快速判定。
+        /// 默认 TCP 魔数（ASCII: "TCP!"）。 用于帧的对齐与快速判定。
         /// </summary>
         public static readonly ReadOnlyMemory<byte> TcpMagic = new byte[] { 0x54, 0x43, 0x50, 0x21 }; // "TCP!"
 
@@ -130,9 +126,9 @@ namespace ExtenderApp.Common.Networks.LinkClients
             }
         }
 
-        public void Encode(ReadOnlySpan<byte> messageSpan, out FrameContext framedMessage)
+        public void Encode(ref FrameContext framedMessage)
         {
-            // 构造帧头并返回一个可写 ByteBuffer，写入者可以在其后写入 payload
+            ReadOnlyMemory<byte> messageSpan = framedMessage.UnreadMemory;
             int magicLen = Magic.Length;
             int headerLen = magicLen + intLength; //length(4)
             int length = messageSpan.Length;
@@ -145,7 +141,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
 
             BinaryPrimitives.WriteInt32BigEndian(span.Slice(magicLen + intLength, intLength), length);
             block.Write(messageSpan);
-            framedMessage = new(block);
+            framedMessage.WriteNextPayload(block);
         }
 
         public ValueTask<FrameContext> ReadFrameAsync(CancellationToken token = default)
