@@ -1,29 +1,31 @@
-﻿using ExtenderApp.Data;
+﻿using ExtenderApp.Abstract;
+using ExtenderApp.Data;
 
 namespace ExtenderApp.Common.Serializations.Binary.Formatters
 {
-    /// <summary>
-    /// CharFormatter 类是一个内部类，继承自 StructFormatter<char>，用于格式化字符类型的数据。
-    /// </summary>
-    internal class CharFormatter : StructFormatter<char>
+    internal class CharFormatter : BinaryFormatterBase<Char>
     {
-        public CharFormatter(ByteBufferConvert bufferConvert, BinaryOptions options) : base(bufferConvert, options)
+        private readonly IBinaryFormatter<UInt16> _uint16;
+        public override int DefaultLength => _uint16.DefaultLength;
+
+        public CharFormatter(IBinaryFormatter<UInt16> uint16)
         {
+            _uint16 = uint16;
         }
 
         public override char Deserialize(ref ByteBuffer buffer)
         {
-            return _bufferConvert.ReadChar(ref buffer);
+            return (char)_uint16.Deserialize(ref buffer);
         }
 
         public override void Serialize(ref ByteBuffer buffer, char value)
         {
-            _bufferConvert.Write(ref buffer, value);
+            _uint16.Serialize(ref buffer, (UInt16)value);
         }
 
         public override long GetLength(char value)
         {
-            return _bufferConvert.GetByteCount(value);
+            return _uint16.GetLength((UInt16)value);
         }
     }
 }

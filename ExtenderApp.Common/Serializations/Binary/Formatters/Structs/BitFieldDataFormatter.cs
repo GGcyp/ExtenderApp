@@ -7,7 +7,7 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
     {
         public override int DefaultLength => 1;
 
-        public BitFieldDataFormatter(ByteBufferConvert convert, BinaryOptions options) : base(convert, options)
+        public BitFieldDataFormatter(BinaryOptions options) : base(options)
         {
         }
 

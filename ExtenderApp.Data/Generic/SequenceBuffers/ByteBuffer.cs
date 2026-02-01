@@ -580,7 +580,7 @@ namespace ExtenderApp.Data
         /// <exception cref="InvalidOperationException">
         /// 当没有可读数据（Remaining == 0）时抛出。
         /// </exception>
-        public int Read(Span<byte> destination)
+        public int Read(scoped Span<byte> destination)
             => _buffer.Read(destination);
 
         /// <summary>

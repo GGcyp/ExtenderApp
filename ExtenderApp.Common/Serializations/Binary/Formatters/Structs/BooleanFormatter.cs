@@ -7,25 +7,27 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
     /// </summary>
     internal sealed class BooleanFormatter : StructFormatter<Boolean>
     {
-        public override int DefaultLength => 1;
-
-        public BooleanFormatter(ByteBufferConvert bufferConvert, BinaryOptions options) : base(bufferConvert, options)
+        public BooleanFormatter(BinaryOptions options) : base(options)
         {
         }
 
         public override bool Deserialize(ref ByteBuffer buffer)
         {
-            return _bufferConvert.ReadBoolean(ref buffer);
+            byte value = buffer.Read();
+            if (value == Options.True)
+            {
+                return true;
+            }
+            else if (value == Options.False)
+            {
+                return false;
+            }
+            throw new InvalidOperationException($"无法转换类型: {value}");
         }
 
         public override void Serialize(ref ByteBuffer buffer, bool value)
         {
-            _bufferConvert.Write(ref buffer, value);
-        }
-
-        public override long GetLength(bool value)
-        {
-            return _bufferConvert.GetByteCount(value);
+            buffer.Write(value ? Options.True : Options.False);
         }
     }
 }

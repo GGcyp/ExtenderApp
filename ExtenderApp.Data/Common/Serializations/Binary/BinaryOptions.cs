@@ -9,49 +9,93 @@ namespace ExtenderApp.Data
     public class BinaryOptions
     {
         /// <summary>
-        /// 获取或设置二进制代码对象
+        /// 空值编码。
         /// </summary>
-        public BinaryCode BinaryCode { get; set; }
+        public byte Nil { get; set; } = 0xc0;
 
         /// <summary>
-        /// 获取或设置二进制范围对象
+        /// 布尔值False编码。
         /// </summary>
-        public BinaryRang BinaryRang { get; set; }
+        public byte False { get; set; } = 0xc2;
 
         /// <summary>
-        /// 获取或设置二进制长度对象
+        /// 布尔值True编码。
         /// </summary>
-        public BinaryLength BinaryLength { get; set; }
+        public byte True { get; set; } = 0xc3;
 
         /// <summary>
-        /// 获取或设置日期时间常量对象
+        /// 32位浮点数数据标记。
         /// </summary>
-        public BinaryDateTime BinaryDateTime { get; set; }
+        public byte Float32 { get; set; } = 0xca;
 
         /// <summary>
-        /// 获取或设置最大对象图深度
+        /// 64位浮点数数据标记。
         /// </summary>
-        public int MaximumObjectGraphDepth { get; private set; }
+        public byte Float64 { get; set; } = 0xcb;
 
         /// <summary>
-        /// 获取UTF-8编码对象。
+        /// 8位无符号整数数据标记。
         /// </summary>
-        /// <value>
-        /// 表示UTF-8编码的<see cref="Encoding"/>对象。
-        /// </value>
-        public Encoding BinaryEncoding { get; }
+        public byte UInt8 { get; set; } = 0xcc;
 
         /// <summary>
-        /// 二进制选项类的构造函数
+        /// 16位无符号整数数据标记。
         /// </summary>
-        public BinaryOptions(Encoding? encoder = null)
-        {
-            BinaryCode = new BinaryCode();
-            BinaryRang = new BinaryRang();
-            BinaryLength = new BinaryLength();
-            BinaryDateTime = new BinaryDateTime();
-            MaximumObjectGraphDepth = 500;
-            BinaryEncoding = encoder ?? Encoding.UTF8; // 使用UTF-8编码
-        }
+        public byte UInt16 { get; set; } = 0xcd;
+
+        /// <summary>
+        /// 32位无符号整数数据标记。
+        /// </summary>
+        public byte UInt32 { get; set; } = 0xce;
+
+        /// <summary>
+        /// 64位无符号整数数据标记。
+        /// </summary>
+        public byte UInt64 { get; set; } = 0xcf;
+
+        /// <summary>
+        /// 8位有符号整数数据标记。
+        /// </summary>
+        public byte Int8 { get; set; } = 0xd0;
+
+        /// <summary>
+        /// 16位有符号整数数据标记。
+        /// </summary>
+        public byte Int16 { get; set; } = 0xd1;
+
+        /// <summary>
+        /// 32位有符号整数数据标记。
+        /// </summary>
+        public byte Int32 { get; set; } = 0xd2;
+
+        /// <summary>
+        /// 64位有符号整数数据标记。
+        /// </summary>
+        public byte Int64 { get; set; } = 0xd3;
+
+        /// <summary>
+        /// 8位字符串长度编码标记。
+        /// </summary>
+        public byte Str8 { get; set; } = 0xd9;
+
+        /// <summary>
+        /// 16位字符串长度编码标记。
+        /// </summary>
+        public byte Str16 { get; set; } = 0xda;
+
+        /// <summary>
+        /// 32位字符串长度编码标记。
+        /// </summary>
+        public byte Str32 { get; set; } = 0xdb;
+
+        /// <summary>
+        /// 16位数组长度编码标记。
+        /// </summary>
+        public byte Array16 { get; set; } = 0xdc;
+
+        /// <summary>
+        /// 32位数组长度编码标记。
+        /// </summary>
+        public byte Array32 { get; set; } = 0xdd;
     }
 }

@@ -9,8 +9,7 @@ using Microsoft.Extensions.DependencyInjection;
 namespace ExtenderApp.Common.Serializations.Binary
 {
     /// <summary>
-    /// 提供用于注册二进制序列化组件和常用序列化/反序列化扩展方法的静态辅助类。
-    /// 此类负责将格式化器、转换器和 <see cref="IBinarySerialization"/> 服务注册到 DI 容器。
+    /// 提供用于注册二进制序列化组件和常用序列化/反序列化扩展方法的静态辅助类。 此类负责将格式化器、转换器和 <see cref="IBinarySerialization"/> 服务注册到 DI 容器。
     /// </summary>
     internal static class BinarySerializarionExtensions
     {
@@ -23,9 +22,7 @@ namespace ExtenderApp.Common.Serializations.Binary
         {
             services.AddSingleton(typeof(IBinaryFormatter<>), typeof(GenericFormatter<>));
             services.AddSingleton<IBinaryFormatterResolver, BinaryFormatterResolver>();
-            services.AddSingleton<BinaryConvert>();
             services.AddSingleton<BinaryOptions>();
-            services.AddSingleton<ByteBufferConvert>();
             services.AddSingleton<IBinarySerialization, BinarySerialization>();
 
             services.AddBinaryFormatter();
@@ -34,26 +31,26 @@ namespace ExtenderApp.Common.Serializations.Binary
         }
 
         /// <summary>
-        /// 向服务集合中添加内置的二进制格式化器并将格式化器存储注册为单例。
-        /// （私有实现细节，仅在内部使用。）
+        /// 向服务集合中添加内置的二进制格式化器并将格式化器存储注册为单例。 （私有实现细节，仅在内部使用。）
         /// </summary>
         /// <param name="services">目标服务集合。</param>
         private static IServiceCollection AddBinaryFormatter(this IServiceCollection services)
         {
             var store = new BinaryFormatterStore();
 
+            store.AddUnManagedFormatter<byte>();
+            store.AddUnManagedFormatter<ushort>();
+            store.AddUnManagedFormatter<uint>();
+            store.AddUnManagedFormatter<ulong>();
+            store.AddUnManagedFormatter<sbyte>();
+            store.AddUnManagedFormatter<short>();
+            store.AddUnManagedFormatter<int>();
+            store.AddUnManagedFormatter<long>();
+
             store.AddStructFormatter<Nil, NilFormatter>();
             store.AddStructFormatter<Guid, GuidFormatter>();
-            store.AddStructFormatter<int, Int32Formatter>();
             store.AddStructFormatter<char, CharFormatter>();
-            store.AddStructFormatter<long, Int64Formatter>();
-            store.AddStructFormatter<short, Int16Formatter>();
-            store.AddStructFormatter<sbyte, SByteFormatter>();
-            store.AddStructFormatter<uint, UInt32Formatter>();
             store.AddStructFormatter<bool, BooleanFormatter>();
-            store.AddStructFormatter<ulong, UInt64Formatter>();
-            store.AddStructFormatter<float, SingleFormatter>();
-            store.AddStructFormatter<ushort, UInt16Formatter>();
             store.AddStructFormatter<double, DoubleFormatter>();
             store.AddStructFormatter<DateTime, DateTimeFormatter>();
             store.AddStructFormatter<TimeSpan, TimeSpanFormatter>();
@@ -76,19 +73,22 @@ namespace ExtenderApp.Common.Serializations.Binary
         }
 
         /// <summary>
-        /// 为 <see cref="IBinaryFormatterStore"/> 添加字节数组与相关集合的格式化器。
-        /// （私有实现细节，仅在内部使用。）
+        /// 为 <see cref="IBinaryFormatterStore"/> 添加字节数组与相关集合的格式化器。 （私有实现细节，仅在内部使用。）
         /// </summary>
         /// <param name="store">要添加格式化器的格式化器存储实例。</param>
         private static void AddByteArrayFormatter(this IBinaryFormatterStore store)
         {
-            store.Add<byte, ByteFormatter>();
             store.AddNullableFormatter<byte>();
             store.Add<byte[], ByteArrayFormatter>();
             store.AddListFormatter<byte>();
             store.AddLinkedListFormatter<byte>();
             store.AddQueueFormatter<byte>();
             store.AddStackFormatter<byte>();
+        }
+
+        private static void AddUnManagedFormatter<T>(this IBinaryFormatterStore store) where T : unmanaged
+        {
+            store.Add<T, UnManagedFornatter<T>>();
         }
 
         #region Serialize

@@ -386,7 +386,7 @@ namespace ExtenderApp.Data
         /// <param name="value">目标缓冲区</param>
         /// <returns>读取数量</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public int Read(Span<T> value)
+        public int Read(scoped Span<T> value)
         {
             if (value.IsEmpty || value.Length == 0)
                 return 0;

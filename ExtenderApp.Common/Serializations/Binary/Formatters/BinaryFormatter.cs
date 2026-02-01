@@ -11,22 +11,16 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
         /// <summary>
         /// 二进制选项（类型码、范围、长度、时间等运行时配置）。
         /// </summary>
-        protected readonly BinaryOptions _binaryOptions;
-
-        /// <summary>
-        /// 面向 <see cref="ByteBuffer"/> 的写入适配器集合，用于输出各原始类型/头部等。
-        /// </summary>
-        protected readonly ByteBufferConvert _bufferConvert;
+        protected readonly BinaryOptions Options;
 
         /// <summary>
         /// 使用指定的写适配器与二进制选项初始化格式化器。
         /// </summary>
         /// <param name="blockConvert">字节块写入适配器集合。</param>
         /// <param name="options">二进制选项。</param>
-        protected BinaryFormatter(ByteBufferConvert blockConvert, BinaryOptions options)
+        protected BinaryFormatter(BinaryOptions options)
         {
-            _binaryOptions = options;
-            _bufferConvert = blockConvert;
+            Options = options;
         }
     }
 }

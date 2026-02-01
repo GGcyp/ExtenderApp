@@ -8,7 +8,7 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
     /// <remarks>继承自 <see cref="BinaryFormatter{T}"/> 泛型类，专门用于对字符串类型的对象进行格式化。</remarks>
     internal class StringFormatter : BinaryFormatter<string>
     {
-        public StringFormatter(ByteBufferConvert convert, BinaryOptions options) : base(convert, options)
+        public StringFormatter(BinaryOptions options) : base(options)
         {
         }
 
@@ -20,7 +20,7 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
             {
                 return DefaultLength;
             }
-            return _binaryOptions.BinaryEncoding.GetMaxByteCount(value.Length) + DefaultLength;
+            return Options.BinaryEncoding.GetMaxByteCount(value.Length) + DefaultLength;
             //return Value.DefaultLength + DefaultLength;
         }
 

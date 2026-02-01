@@ -21,7 +21,7 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
         /// <param name="binarybufferConvert">二进制写入转换器</param>
         /// <param name="binarybufferConvert">二进制读取转换器</param>
         /// <param name="options">二进制选项</param>
-        public ArrayFormatter(IBinaryFormatterResolver resolver, ByteBufferConvert convert, BinaryOptions options) : base(convert, options)
+        public ArrayFormatter(IBinaryFormatterResolver resolver, BinaryOptions options) : base(options)
         {
             _binaryFormatter = resolver.GetFormatter<T>();
         }
@@ -76,7 +76,7 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
             }
         }
 
-        public override long GetLength(T[] value)
+        public override long GetLength(T[]? value)
         {
             if (value == null)
             {
