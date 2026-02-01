@@ -7,10 +7,12 @@ namespace ExtenderApp.Test
     public class TestMainViewModel : ExtenderAppViewModel
     {
         private readonly ILZ4Compression lZ4Compression;
+        private readonly IBinarySerialization binarySerialization;
 
-        public TestMainViewModel(ILZ4Compression lZ4Compression)
+        public TestMainViewModel(ILZ4Compression lZ4Compression, IBinarySerialization binarySerialization)
         {
             this.lZ4Compression = lZ4Compression;
+            this.binarySerialization = binarySerialization;
         }
 
         public override void Inject(IServiceProvider serviceProvider)
@@ -28,15 +30,16 @@ namespace ExtenderApp.Test
 
         private void TestCompression(byte[] bytes)
         {
-            lZ4Compression.TryCompress(bytes.AsMemory(), out ByteBlock block);
-            LogDebug("压缩后长度: " + block.Length);
-            lZ4Compression.TryDecompress(block.UnreadMemory, out block);
-            LogDebug($"与元数据对比结果{bytes.AsSpan().SequenceEqual(block)}");
+            //lZ4Compression.TryCompress(bytes.AsMemory(), out ByteBlock block);
+            //LogDebug("压缩后长度: " + block.Length);
+            //lZ4Compression.TryDecompress(block.UnreadMemory, out block);
+            //LogDebug($"与元数据对比结果{bytes.AsSpan().SequenceEqual(block)}");
 
-            lZ4Compression.TryCompress(new ByteBuffer(bytes), out var buffer);
-            LogDebug("压缩后长度: " + buffer.Length);
-            lZ4Compression.TryDecompress(buffer, out buffer);
-            LogDebug($"与元数据对比结果{bytes.AsSpan().SequenceEqual(buffer.UnreadSequence.First.Span)}");
+            //lZ4Compression.TryCompress(new ByteBuffer(bytes), out var buffer);
+            //LogDebug("压缩后长度: " + buffer.Length);
+            //lZ4Compression.TryDecompress(buffer, out buffer);
+            //LogDebug($"与元数据对比结果{bytes.AsSpan().SequenceEqual(buffer.UnreadSequence.First.Span)}");
+            binarySerialization.Serialize(bytes, lZ4Compression);
         }
 
         private ExpectLocalFileInfo CreatTestExpectLocalFileInfo(string fileName)
