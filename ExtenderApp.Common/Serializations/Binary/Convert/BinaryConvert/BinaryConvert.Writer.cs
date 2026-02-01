@@ -253,76 +253,6 @@ namespace ExtenderApp.Common.Serializations.Binary
         }
 
         /// <summary>
-        /// 尝试写入扩展类型（ext）的头部，不包含扩展数据体。
-        /// </summary>
-        /// <param name="destination">目标字节数组。</param>
-        /// <param name="extensionHeader">扩展头部信息（类型码与长度）。</param>
-        /// <param name="bytesWritten">所需/实际写入的总字节数（2/3/4/6）。</param>
-        /// <returns>成功写入返回 true；空间不足返回 false。</returns>
-        /// <remarks>
-        /// 编码选择：fixext 1/2/4/8/16；否则 ext8/16/32。类型码为 <see cref="sbyte"/>，最终按单字节写出。
-        /// </remarks>
-        public bool TryWriteExtensionFormatHeader(Span<byte> destination, ExtensionHeader extensionHeader, out int bytesWritten)
-        {
-            int dataLength = (int)extensionHeader.Length;
-            byte typeCode = unchecked((byte)extensionHeader.TypeCode);
-            switch (dataLength)
-            {
-                case 1 or 2 or 4 or 8 or 16:
-                    bytesWritten = 2;
-                    if (destination.Length < bytesWritten)
-                    {
-                        return false;
-                    }
-
-                    destination[0] = dataLength switch
-                    {
-                        1 => BinaryCode.FixExt1,
-                        2 => BinaryCode.FixExt2,
-                        4 => BinaryCode.FixExt4,
-                        8 => BinaryCode.FixExt8,
-                        16 => BinaryCode.FixExt16,
-                        _ => throw new Exception(string.Format("无法执行的编码:{0}", dataLength)),
-                    };
-                    destination[1] = unchecked(typeCode);
-                    return true;
-                case <= byte.MaxValue:
-                    bytesWritten = 3;
-                    if (destination.Length < bytesWritten)
-                    {
-                        return false;
-                    }
-
-                    destination[0] = BinaryCode.Ext8;
-                    destination[1] = unchecked((byte)dataLength);
-                    destination[2] = unchecked(typeCode);
-                    return true;
-                case <= ushort.MaxValue:
-                    bytesWritten = 4;
-                    if (destination.Length < bytesWritten)
-                    {
-                        return false;
-                    }
-
-                    destination[0] = BinaryCode.Ext16;
-                    WriteBigEndian(destination.Slice(1), (ushort)dataLength);
-                    destination[3] = unchecked(typeCode);
-                    return true;
-                default:
-                    bytesWritten = 6;
-                    if (destination.Length < bytesWritten)
-                    {
-                        return false;
-                    }
-
-                    destination[0] = BinaryCode.Ext32;
-                    WriteBigEndian(destination.Slice(1), dataLength);
-                    destination[5] = unchecked(typeCode);
-                    return true;
-            }
-        }
-
-        /// <summary>
         /// 尝试写入负固定整数（negative fixint），不进行范围验证。
         /// </summary>
         /// <param name="destination">目标字节数组。</param>
@@ -987,22 +917,6 @@ namespace ExtenderApp.Common.Serializations.Binary
             if (byteCount <= byte.MaxValue) return 2;
             if (byteCount <= ushort.MaxValue) return 3;
             return 5;
-        }
-
-        /// <summary>
-        /// 获取扩展格式头编码后的字节数。
-        /// </summary>
-        /// <param name="extensionHeader">扩展头信息（包含类型码和长度）。</param>
-        /// <returns>根据数据长度，返回 2 (fixext), 3 (ext8), 4 (ext16), 或 6 (ext32)。</returns>
-        public int GetByteCountExtensionFormatHeader(ExtensionHeader extensionHeader)
-        {
-            return (int)extensionHeader.Length switch
-            {
-                1 or 2 or 4 or 8 or 16 => 2,
-                <= byte.MaxValue => 3,
-                <= ushort.MaxValue => 4,
-                _ => 6,
-            };
         }
 
         /// <summary>

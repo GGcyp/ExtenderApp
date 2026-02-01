@@ -34,6 +34,14 @@ namespace ExtenderApp.Abstract
         void Serialize<T>(T value, out ByteBuffer buffer);
 
         /// <summary>
+        /// 从只读字节跨度中反序列化出目标类型实例。
+        /// </summary>
+        /// <typeparam name="T">目标对象类型。</typeparam>
+        /// <param name="span">包含序列化数据的只读字节跨度。</param>
+        /// <returns>反序列化得到的对象实例；若数据为空或反序列化失败可返回 null（或由实现抛出异常）。</returns>
+        T? Deserialize<T>(ReadOnlySpan<byte> span);
+
+        /// <summary>
         /// 从只读内存中反序列化出目标类型实例。
         /// </summary>
         /// <typeparam name="T">目标对象类型。</typeparam>

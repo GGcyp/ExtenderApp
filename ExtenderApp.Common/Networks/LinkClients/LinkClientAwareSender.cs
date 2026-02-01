@@ -76,7 +76,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
             if (FormatterManager is null)
                 throw new InvalidOperationException("转换器管理为空，不能使用泛型方法");
 
-            //var formatter = FormatterManager.GetFormatter<T>();
+            //var formatter = FormatterManager.TryGetFormatter<T>();
             //if (formatter is null)
             //    throw new InvalidOperationException($"未找到类型 {typeof(T).FullName} 的格式化器，无法发送数据");
 
@@ -198,7 +198,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
             //    for (int i = 0; i < message.FrameContext.Count; i++)
             //    {
             //        var frame = message.FrameContext[i];
-            //        var formatter = FormatterManager.GetFormatter(frame.MessageType);
+            //        var formatter = FormatterManager.TryGetFormatter(frame.MessageType);
             //        if (formatter is null)
             //        {
             //            // 未找到对应格式化器，跳过

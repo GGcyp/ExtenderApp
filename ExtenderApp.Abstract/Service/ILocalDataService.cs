@@ -35,9 +35,9 @@ namespace ExtenderApp.Abstract
         /// <typeparam name="T">要保存的数据类型。</typeparam>
         /// <param name="fileName">目标文件名或相对于数据目录的路径。</param>
         /// <param name="data">待保存的数据实例。</param>
-        /// <param name="compressionType">可选的压缩策略（默认为 <see cref="CompressionType.Lz4Block"/>）。</param>
+        /// <param name="compressionType">可选的压缩策略（默认为 <see cref="CompressionType.Block"/>）。</param>
         /// <returns>操作结果：成功或失败（失败时包含错误信息或异常）。</returns>
-        Result SaveData<T>(string fileName, T data, CompressionType compressionType = CompressionType.Lz4Block);
+        Result SaveData<T>(string fileName, T data, CompressionType compressionType = CompressionType.Block);
 
         /// <summary>
         /// 异步将数据序列化并保存到本地存储。
@@ -46,8 +46,8 @@ namespace ExtenderApp.Abstract
         /// <param name="fileName">目标文件名或相对于数据目录的路径。</param>
         /// <param name="data">待保存的数据实例。</param>
         /// <param name="token">取消令牌。调用方可通过该令牌请求取消保存操作。</param>
-        /// <param name="compressionType">可选的压缩策略（默认为 <see cref="CompressionType.Lz4Block"/>）。</param>
+        /// <param name="compressionType">可选的压缩策略（默认为 <see cref="CompressionType.Block"/>）。</param>
         /// <returns>异步操作结果：成功或失败（失败时包含错误信息或异常）。</returns>
-        ValueTask<Result> SaveDataAsync<T>(string fileName, T data, CancellationToken token = default, CompressionType compressionType = CompressionType.Lz4Block);
+        ValueTask<Result> SaveDataAsync<T>(string fileName, T data, CancellationToken token = default, CompressionType compressionType = CompressionType.Block);
     }
 }

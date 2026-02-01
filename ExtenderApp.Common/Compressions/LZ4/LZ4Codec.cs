@@ -1,4 +1,4 @@
-﻿namespace ExtenderApp.Common.Serializations.Binary.LZ4
+﻿namespace ExtenderApp.Common.Compressions.LZ4
 {
     internal static partial class LZ4Codec
     {
@@ -30,7 +30,7 @@
         /// </summary>
         private const int NOTCOMPRESSIBLE_DETECTIONLEVEL = 6;
 
-        #endregion
+        #endregion Configuration
 
         #region Consts
 
@@ -93,8 +93,7 @@
             7, 1, 2, 4, 6, 4, 4, 5, 7, 2, 6, 5, 7, 6, 7, 7,
         };
 
-        #endregion
-
+        #endregion Consts
 
         /// <summary>
         /// 计算最大输出长度

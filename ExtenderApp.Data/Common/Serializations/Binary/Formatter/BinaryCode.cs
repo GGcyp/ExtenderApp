@@ -83,6 +83,31 @@ namespace ExtenderApp.Data
         public byte Bin32 { get; set; } = 0xc6;
 
         /// <summary>
+        /// 1字节扩展格式数据开头标记。
+        /// </summary>
+        public byte FixExt1 { get; set; } = 0xd4;
+
+        /// <summary>
+        /// 2字节扩展格式数据开头标记。
+        /// </summary>
+        public byte FixExt2 { get; set; } = 0xd5;
+
+        /// <summary>
+        /// 4字节扩展格式数据开头标记。
+        /// </summary>
+        public byte FixExt4 { get; set; } = 0xd6;
+
+        /// <summary>
+        /// 8字节扩展格式数据开头标记。
+        /// </summary>
+        public byte FixExt8 { get; set; } = 0xd7;
+
+        /// <summary>
+        /// 16字节扩展格式数据开头标记。
+        /// </summary>
+        public byte FixExt16 { get; set; } = 0xd8;
+
+        /// <summary>
         /// 8位扩展类型数据标记。
         /// </summary>
         public byte Ext8 { get; set; } = 0xc7;
@@ -146,31 +171,6 @@ namespace ExtenderApp.Data
         /// 64位有符号整数数据标记。
         /// </summary>
         public byte Int64 { get; set; } = 0xd3;
-
-        /// <summary>
-        /// 1字节扩展格式数据开头标记。
-        /// </summary>
-        public byte FixExt1 { get; set; } = 0xd4;
-
-        /// <summary>
-        /// 2字节扩展格式数据开头标记。
-        /// </summary>
-        public byte FixExt2 { get; set; } = 0xd5;
-
-        /// <summary>
-        /// 4字节扩展格式数据开头标记。
-        /// </summary>
-        public byte FixExt4 { get; set; } = 0xd6;
-
-        /// <summary>
-        /// 8字节扩展格式数据开头标记。
-        /// </summary>
-        public byte FixExt8 { get; set; } = 0xd7;
-
-        /// <summary>
-        /// 16字节扩展格式数据开头标记。
-        /// </summary>
-        public byte FixExt16 { get; set; } = 0xd8;
 
         /// <summary>
         /// 8位字符串长度编码标记。

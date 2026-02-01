@@ -5,8 +5,7 @@ namespace ExtenderApp.Data
     /// <summary>
     /// 使用 ArrayPool&lt;T&gt; 管理的可增长顺序缓冲。
     /// - Length 表示已写入元素的数量（写指针/写边界）。
-    /// - Consumed 表示当前读取位置（读指针）。
-    /// 线程不安全；需要在使用完毕后调用 <see cref="Dispose"/> 归还数组到池。
+    /// - Consumed 表示当前读取位置（读指针）。 线程不安全；需要在使用完毕后调用 <see cref="Dispose"/> 归还数组到池。
     /// </summary>
     /// <typeparam name="T">元素类型。</typeparam>
     public struct MemoryBlock<T>
@@ -409,8 +408,7 @@ namespace ExtenderApp.Data
 
         /// <summary>
         /// 将未消费的数据移动到缓冲起始处并重置读写指针。
-        /// - 场景：当 Consumed > 0 且还有剩余未读数据时，调用此方法把 unread 数据拷贝到 array[0..Remaining-1]，
-        ///   以便回收前面的已消费区域用于后续写入。
+        /// - 场景：当 Consumed &gt; 0 且还有剩余未读数据时，调用此方法把 unread 数据拷贝到 array[0..Remaining-1]， 以便回收前面的已消费区域用于后续写入。
         /// - 若所有数据都已消费，则行为等同于 Reset()。
         /// </summary>
         public void Compact()
@@ -540,12 +538,16 @@ namespace ExtenderApp.Data
 
         #region FormMemoryBlock
 
-        /// <summary>隐式转换为已写入范围的只读 UnreadSpan。</summary>
+        /// <summary>
+        /// 隐式转换为已写入范围的只读 UnreadSpan。
+        /// </summary>
         /// <param name="block">源块。</param>
         public static implicit operator ReadOnlySpan<T>(in MemoryBlock<T> block)
             => block.UnreadSpan;
 
-        /// <summary>隐式转换为已写入范围的只读 UnreadMemory。</summary>
+        /// <summary>
+        /// 隐式转换为已写入范围的只读 UnreadMemory。
+        /// </summary>
         /// <param name="block">源块。</param>
         public static implicit operator ReadOnlyMemory<T>(in MemoryBlock<T> block)
             => block.UnreadMemory;

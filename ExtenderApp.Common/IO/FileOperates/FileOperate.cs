@@ -10,16 +10,14 @@ using Microsoft.Win32.SafeHandles;
 namespace ExtenderApp.Common.IO
 {
     /// <summary>
-    /// 文件操作抽象基类：提供基于偏移的同步/异步读写、按策略扩容、以及容量与时间元信息维护。
-    /// 具体的 IO 行为由派生类通过 ExecuteRead/ExecuteWrite* 系列抽象方法实现。
+    /// 文件操作抽象基类：提供基于偏移的同步/异步读写、按策略扩容、以及容量与时间元信息维护。 具体的 IO 行为由派生类通过 ExecuteRead/ExecuteWrite* 系列抽象方法实现。
     /// </summary>
     public abstract class FileOperate : DisposableObject, IFileOperate
     {
         private const int AllocationGranularity = 64 * 1024; // 保守对齐（Windows 常见）
 
         /// <summary>
-        /// 当前逻辑容量（字节）。通常等于底层文件长度。
-        /// 扩容成功后应同步更新该值（派生类在 ChangeCapacity 中完成）。
+        /// 当前逻辑容量（字节）。通常等于底层文件长度。 扩容成功后应同步更新该值（派生类在 ChangeCapacity 中完成）。
         /// </summary>
         public long Capacity { get; private set; }
 
@@ -91,7 +89,7 @@ namespace ExtenderApp.Common.IO
         #region Read
 
         /// <inheritdoc/>
-        public Result<byte[]> Read()
+        public Result<byte[]> Read(long filePosition = 0)
         {
             return Read(0, (int)Info.Length);
         }
@@ -122,36 +120,7 @@ namespace ExtenderApp.Common.IO
         }
 
         /// <inheritdoc/>
-        public Result<int> Read(long filePosition, byte[] bytes, int bytesStart, int length)
-        {
-            try
-            {
-                ThrowIfDisposed();
-                if (length == 0) return Result.Success(0);
-                if (bytes is null) throw new ArgumentNullException(nameof(bytes));
-                if (bytesStart < 0 || length < 0 || bytesStart > bytes.Length - length)
-                    throw new ArgumentOutOfRangeException("目标数组区间无效。");
-                if (filePosition < 0) throw new ArgumentOutOfRangeException(nameof(filePosition));
-                if (!CanRead) return Result.Failure<int>("文件不支持读取操作。");
-
-                var read = ExecuteRead(filePosition, bytes, bytesStart, length);
-                LastOperateTime = DateTime.Now;
-                return Result.Success(read);
-            }
-            catch (Exception ex)
-            {
-                return Result.FromException<int>(ex);
-            }
-        }
-
-        /// <inheritdoc/>
-        public Result<int> Read(Span<byte> span)
-        {
-            return Read(0, span);
-        }
-
-        /// <inheritdoc/>
-        public Result<int> Read(long filePosition, Span<byte> span)
+        public Result<int> Read(Span<byte> span, long filePosition = 0)
         {
             try
             {
@@ -175,13 +144,7 @@ namespace ExtenderApp.Common.IO
         }
 
         /// <inheritdoc/>
-        public Result<int> Read(Memory<byte> memory)
-        {
-            return Read(0, memory);
-        }
-
-        /// <inheritdoc/>
-        public Result<int> Read(long filePosition, Memory<byte> memory)
+        public Result<int> Read(Memory<byte> memory, long filePosition = 0)
         {
             try
             {
@@ -206,7 +169,7 @@ namespace ExtenderApp.Common.IO
         #region ReadAsync
 
         /// <inheritdoc/>
-        public ValueTask<Result<byte[]>> ReadAsync(CancellationToken token = default)
+        public ValueTask<Result<byte[]>> ReadAsync(long filePosition = 0, CancellationToken token = default)
         {
             return ReadAsync(0, (int)Info.Length, token);
         }
@@ -235,41 +198,7 @@ namespace ExtenderApp.Common.IO
         }
 
         /// <inheritdoc/>
-        public async ValueTask<Result<int>> ReadAsync(long filePosition, int length, byte[] bytes, int bytesStart, CancellationToken token = default)
-        {
-            try
-            {
-                if (length == 0)
-                    return Result.Success(0);
-                if (length < 0)
-                    throw new ArgumentOutOfRangeException(nameof(length), "读取长度必须大于零。");
-
-                CheckBytes(bytes);
-                if (bytesStart < 0 || bytesStart >= bytes.Length)
-                    throw new ArgumentOutOfRangeException(nameof(bytesStart));
-                if (filePosition + length > Info.Length)
-                    throw new ArgumentOutOfRangeException(nameof(length), "读取范围超出文件长度。");
-                if (!CanRead)
-                    return Result.Failure<int>("文件不支持读取操作。");
-
-                var read = await ExecuteReadAsync(filePosition, bytes, bytesStart, length, token);
-                LastOperateTime = DateTime.Now;
-                return Result.Success(read);
-            }
-            catch (Exception ex)
-            {
-                return Result.FromException<int>(ex);
-            }
-        }
-
-        /// <inheritdoc/>
-        public ValueTask<Result<int>> ReadAsync(Memory<byte> memory, CancellationToken token = default)
-        {
-            return ReadAsync(0, memory, token);
-        }
-
-        /// <inheritdoc/>
-        public async ValueTask<Result<int>> ReadAsync(long filePosition, Memory<byte> memory, CancellationToken token = default)
+        public async ValueTask<Result<int>> ReadAsync(Memory<byte> memory, long filePosition = 0, CancellationToken token = default)
         {
             try
             {
@@ -295,13 +224,7 @@ namespace ExtenderApp.Common.IO
         #region Write
 
         /// <inheritdoc/>
-        public Result<int> Write(ReadOnlySpan<byte> span)
-        {
-            return Write(0, span);
-        }
-
-        /// <inheritdoc/>
-        public Result<int> Write(long filePosition, ReadOnlySpan<byte> span)
+        public Result<int> Write(ReadOnlySpan<byte> span, long filePosition = 0)
         {
             try
             {
@@ -324,13 +247,7 @@ namespace ExtenderApp.Common.IO
         }
 
         /// <inheritdoc/>
-        public Result<int> Write(ReadOnlyMemory<byte> memory)
-        {
-            return Write(0, memory);
-        }
-
-        /// <inheritdoc/>
-        public Result<int> Write(long filePosition, ReadOnlyMemory<byte> memory)
+        public Result<int> Write(ReadOnlyMemory<byte> memory, long filePosition = 0)
         {
             try
             {
@@ -353,13 +270,7 @@ namespace ExtenderApp.Common.IO
         }
 
         /// <inheritdoc/>
-        public Result<int> Write(ReadOnlySequence<byte> sequence)
-        {
-            return Write(0, sequence);
-        }
-
-        /// <inheritdoc/>
-        public Result<int> Write(long filePosition, ReadOnlySequence<byte> sequence)
+        public Result<int> Write(ReadOnlySequence<byte> sequence, long filePosition = 0)
         {
             try
             {
@@ -389,13 +300,7 @@ namespace ExtenderApp.Common.IO
         #region WriteAsync
 
         /// <inheritdoc/>
-        public ValueTask<Result<int>> WriteAsync(ReadOnlyMemory<byte> memory, CancellationToken token = default)
-        {
-            return WriteAsync(0, memory, token);
-        }
-
-        /// <inheritdoc/>
-        public async ValueTask<Result<int>> WriteAsync(long filePosition, ReadOnlyMemory<byte> memory, CancellationToken token = default)
+        public async ValueTask<Result<int>> WriteAsync(ReadOnlyMemory<byte> memory, long filePosition = 0, CancellationToken token = default)
         {
             try
             {
@@ -417,12 +322,8 @@ namespace ExtenderApp.Common.IO
             }
         }
 
-        public ValueTask<Result<int>> WriteAsync(ReadOnlySequence<byte> sequence, CancellationToken token = default)
-        {
-            return WriteAsync(0, sequence, token);
-        }
-
-        public async ValueTask<Result<int>> WriteAsync(long filePosition, ReadOnlySequence<byte> sequence, CancellationToken token = default)
+        /// <inheritdoc/>
+        public async ValueTask<Result<int>> WriteAsync(ReadOnlySequence<byte> sequence, long filePosition = 0, CancellationToken token = default)
         {
             try
             {
@@ -628,9 +529,7 @@ namespace ExtenderApp.Common.IO
         #region ExpandCanpacity
 
         /// <summary>
-        /// 将底层存储扩展至指定容量，并更新最后操作时间。
-        /// 实际扩容由派生类在 <see cref="ChangeCapacity"/> 中实现。
-        /// 调用方应避免与其他并发写操作同时调用（本方法未加锁，通常由写入路径持锁后调用）。
+        /// 将底层存储扩展至指定容量，并更新最后操作时间。 实际扩容由派生类在 <see cref="ChangeCapacity"/> 中实现。 调用方应避免与其他并发写操作同时调用（本方法未加锁，通常由写入路径持锁后调用）。
         /// </summary>
         public void ExpandCapacity(long newCapacity)
         {
@@ -667,9 +566,7 @@ namespace ExtenderApp.Common.IO
         private static extern bool GetFileInformationByHandle(SafeFileHandle hFile, out BY_HANDLE_FILE_INFORMATION lpFileInformation);
 
         /// <summary>
-        /// 获取文件的唯一标识符 (GUID)。
-        /// 在 Windows 上，此 GUID 基于卷序列号和文件索引号，即使文件移动或重命名也能保持不变。
-        /// 在其他操作系统上，它基于文件完整路径的 SHA1 哈希值。
+        /// 获取文件的唯一标识符 (GUID)。 在 Windows 上，此 GUID 基于卷序列号和文件索引号，即使文件移动或重命名也能保持不变。 在其他操作系统上，它基于文件完整路径的 SHA1 哈希值。
         /// </summary>
         /// <returns>表示文件的唯一 Guid。</returns>
         public Guid GetFileGuid()

@@ -26,6 +26,9 @@ namespace ExtenderApp.Common.IO.FileParsers
         #region Deserialize
 
         ///<inheritdoc/>
+        public abstract T? Deserialize<T>(ReadOnlySpan<byte> span);
+
+        ///<inheritdoc/>
         public abstract T? Deserialize<T>(ReadOnlyMemory<byte> memory);
 
         ///<inheritdoc/>

@@ -38,7 +38,7 @@ namespace ExtenderApp.Services
 
         private readonly IFileOperateProvider _fileOperateProvider;
 
-        public PluginService(IJsonSerialization jsonSerialize,IFileOperateProvider fileOperateProvider,  IServiceScopeStore serviceScopeStore, ILifetimeScope lifetimeScope)
+        public PluginService(IJsonSerialization jsonSerialize, IFileOperateProvider fileOperateProvider, IServiceScopeStore serviceScopeStore, ILifetimeScope lifetimeScope)
         {
             _plugins = new();
             _jsonSerialize = jsonSerialize;
@@ -102,7 +102,7 @@ namespace ExtenderApp.Services
                 if (!fileInfo.Exists) continue;
 
                 //解析模组的信息
-                PluginInfo info = _jsonSerialize.Deserialize<PluginInfo>(_fileOperateProvider.GetOperate(new FileOperateInfo(fileInfo)));
+                PluginInfo info = _jsonSerialize.Deserialize<PluginInfo>(_fileOperateProvider, fileInfo);
 
                 if (Contains(info)) continue;
 

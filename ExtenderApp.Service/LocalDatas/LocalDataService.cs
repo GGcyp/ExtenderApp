@@ -74,7 +74,7 @@ namespace ExtenderApp.Services
         #region Save
 
         ///<inheritdoc/>
-        public Result SaveData<T>(string fileName, T data, CompressionType compressionType = CompressionType.Lz4Block)
+        public Result SaveData<T>(string fileName, T data, CompressionType compressionType = CompressionType.Block)
         {
             //try
             //{
@@ -90,7 +90,7 @@ namespace ExtenderApp.Services
         }
 
         ///<inheritdoc/>
-        public ValueTask<Result> SaveDataAsync<T>(string fileName, T data, CancellationToken token = default, CompressionType compressionType = CompressionType.Lz4Block)
+        public ValueTask<Result> SaveDataAsync<T>(string fileName, T data, CancellationToken token = default, CompressionType compressionType = CompressionType.Block)
         {
             if (string.IsNullOrEmpty(fileName))
                 return ValueTask.FromResult(Result.Failure("文件名不能为空"));

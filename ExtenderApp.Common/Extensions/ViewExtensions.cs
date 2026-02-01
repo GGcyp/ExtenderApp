@@ -9,8 +9,7 @@ namespace ExtenderApp.Common
     public static class ViewExtensions
     {
         /// <summary>
-        /// 将指定的视图类型 <typeparamref name="TView"/> 与视图模型类型 <typeparamref name="TViewModel"/>
-        /// 一起注册为瞬态（Transient）。在解析视图实例时会自动从容器解析对应的视图模型并注入到视图中。
+        /// 将指定的视图类型 <typeparamref name="TView"/> 与视图模型类型 <typeparamref name="TViewModel"/> 一起注册为瞬态（Transient）。在解析视图实例时会自动从容器解析对应的视图模型并注入到视图中。
         /// </summary>
         /// <typeparam name="TView">要注册的视图类型，必须实现 <see cref="IView"/>。</typeparam>
         /// <typeparam name="TViewModel">要注册的视图模型类型，必须实现 <see cref="IViewModel"/>。</typeparam>
@@ -42,10 +41,7 @@ namespace ExtenderApp.Common
         /// <typeparam name="TViewModel">视图模型类型，必须实现 <see cref="IViewModel"/>。</typeparam>
         /// <param name="services">要添加注册的 <see cref="IServiceCollection"/> 实例。</param>
         /// <returns>返回传入的 <see cref="IServiceCollection"/> 以便链式调用。</returns>
-        /// <remarks>
-        /// 此扩展方法适用于你希望通过接口（<typeparamref name="TIView"/>）解析视图实例时，
-        /// 实际返回由容器创建的具体类型 <typeparamref name="TView"/> 的场景。
-        /// </remarks>
+        /// <remarks>此扩展方法适用于你希望通过接口（ <typeparamref name="TIView"/>）解析视图实例时， 实际返回由容器创建的具体类型 <typeparamref name="TView"/> 的场景。</remarks>
         /// <exception cref="ArgumentNullException">当 <paramref name="services"/> 为 <c>null</c> 时抛出。</exception>
         public static IServiceCollection AddView<TIView, TView, TViewModel>(this IServiceCollection services)
             where TIView : class, IView

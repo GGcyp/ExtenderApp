@@ -395,8 +395,7 @@ namespace ExtenderApp.ViewModels
         /// <typeparam name="T">期望加载的数据类型。</typeparam>
         /// <param name="fileName">目标文件名或相对路径（相对于数据根目录）。</param>
         /// <returns>
-        /// 操作结果：成功时 <see cref="Result{T}.Value"/> 包含反序列化后的数据（可能为 <c>null</c>）；失败时包含错误信息或异常。
-        /// 本方法将调用注入的 <see cref="ILocalDataService"/> 实现完成具体 IO 与序列化逻辑。
+        /// 操作结果：成功时 <see cref="Result{T}.Value"/> 包含反序列化后的数据（可能为 <c>null</c>）；失败时包含错误信息或异常。 本方法将调用注入的 <see cref="ILocalDataService"/> 实现完成具体 IO 与序列化逻辑。
         /// </returns>
         protected Result<T?> LoadData<T>(string fileName)
         {
@@ -409,10 +408,7 @@ namespace ExtenderApp.ViewModels
         /// <typeparam name="T">期望加载的数据类型。</typeparam>
         /// <param name="fileName">目标文件名或相对路径（相对于数据根目录）。</param>
         /// <param name="token">取消令牌；调用方可通过该令牌请求取消异步读取操作。</param>
-        /// <returns>
-        /// 异步操作结果：成功时返回包含反序列化数据的 <see cref="Result{T}"/>；失败时包含错误信息或异常。
-        /// 方法内部委托给注入的 <see cref="ILocalDataService"/> 的异步实现。
-        /// </returns>
+        /// <returns>异步操作结果：成功时返回包含反序列化数据的 <see cref="Result{T}"/>；失败时包含错误信息或异常。 方法内部委托给注入的 <see cref="ILocalDataService"/> 的异步实现。</returns>
         protected ValueTask<Result<T?>> LoadDataAsync<T>(string fileName, CancellationToken token = default)
         {
             return GetRequiredService<ILocalDataService>().LoadDataAsync<T>(fileName, token);

@@ -86,17 +86,6 @@ namespace ExtenderApp.Common.Serializations.Binary
             {
                 return TryBytesLength(ref buffer);
             }
-            else if (code == BinaryCode.FixExt1 ||
-                code == BinaryCode.FixExt2 ||
-                code == BinaryCode.FixExt4 ||
-                code == BinaryCode.FixExt8 ||
-                code == BinaryCode.FixExt16 ||
-                code == BinaryCode.Ext8 ||
-                code == BinaryCode.Ext16 ||
-                code == BinaryCode.Ext32)
-            {
-                return TryExtensionHeader(ref buffer);
-            }
 
             throw new FileNotFoundException(string.Format("没有找到这个二进制所代表的意思：{0}", code));
         }
@@ -303,64 +292,6 @@ namespace ExtenderApp.Common.Serializations.Binary
                         else
                         {
                             length = default;
-                            return false;
-                        }
-
-                    default:
-                        throw ThrowUnreachable();
-                }
-            }
-        }
-
-        #endregion
-
-        #region ExtensionHeader
-
-        /// <summary>
-        /// 尝试读取扩展头，并尝试前进读取器到扩展头的长度位置
-        /// </summary>
-        /// <param name="buffer">二进制读取器</param>
-        /// <returns>如果成功读取扩展头并成功前进读取器到扩展头的长度位置，则返回true；否则返回false</returns>
-        private bool TryExtensionHeader(ref ByteBuffer buffer)
-                    => TryExtensionHeader(ref buffer, out ExtensionHeader header) && buffer.TryReadAdvance(header.Length);
-
-        /// <summary>
-        /// 尝试从给定的二进制读取器中读取扩展头。
-        /// </summary>
-        /// <param name="buffer">二进制读取器。</param>
-        /// <param name="extensionHeader">读取的扩展头。</param>
-        /// <returns>如果成功读取扩展头，则返回true；否则返回false。</returns>
-        /// <remarks>
-        /// 该方法首先尝试使用快速路径读取扩展头。如果快速路径失败，则调用慢速路径。
-        /// 快速路径和慢速路径都会处理不同的解码结果，并根据结果执行相应的操作。
-        /// </remarks>
-        public bool TryExtensionHeader(ref ByteBuffer buffer, out ExtensionHeader extensionHeader)
-        {
-            DecodeResult readResult = _binaryConvert.TryReadExtensionHeader(buffer.UnreadSpan, out extensionHeader, out int tokenSize);
-
-            return SlowPath(ref buffer, readResult, ref extensionHeader, ref tokenSize);
-
-            bool SlowPath(ref ByteBuffer buffer, DecodeResult readResult, ref ExtensionHeader extensionHeader, ref int tokenSize)
-            {
-                switch (readResult)
-                {
-                    case DecodeResult.Success:
-                        buffer.ReadAdvance(tokenSize);
-                        return true;
-                    case DecodeResult.TokenMismatch:
-                        //throw ThrowInvalidCode(Buffer.UnreadSpan[0]);
-                        return false;
-                    case DecodeResult.EmptyBuffer:
-                    case DecodeResult.InsufficientBuffer:
-                        Span<byte> span = stackalloc byte[tokenSize];
-                        if (buffer.TryCopyTo(span))
-                        {
-                            readResult = _binaryConvert.TryReadExtensionHeader(span, out extensionHeader, out tokenSize);
-                            return SlowPath(ref buffer, readResult, ref extensionHeader, ref tokenSize);
-                        }
-                        else
-                        {
-                            extensionHeader = default;
                             return false;
                         }
 
@@ -721,52 +652,6 @@ namespace ExtenderApp.Common.Serializations.Binary
                         {
                             readResult = _binaryConvert.TryReadDateTime(span, out value, out tokenSize);
                             return SlowPath(ref buffer, readResult, value, ref tokenSize);
-                        }
-                        else
-                        {
-                            throw ThrowNotEnoughBytesException();
-                        }
-
-                    default:
-                        throw ThrowUnreachable();
-                }
-            }
-        }
-
-        /// <summary>
-        /// 读取带有扩展头的日期时间。
-        /// </summary>
-        /// <param name="buffer">二进制读取器。</param>
-        /// <param name="header">扩展头。</param>
-        /// <returns>读取到的日期时间。</returns>
-        /// <exception cref="ArgumentOutOfRangeException">当读取到的数据不足以表示日期时间时抛出。</exception>
-        public DateTime ReadDateTime(ref ByteBuffer buffer, ExtensionHeader header)
-        {
-            DecodeResult readResult = _binaryConvert.TryReadDateTime(buffer.UnreadSpan, header, out DateTime value, out int tokenSize);
-            if (readResult == DecodeResult.Success)
-            {
-                buffer.ReadAdvance(tokenSize);
-                return value;
-            }
-
-            return SlowPath(ref buffer, header, readResult, value, ref tokenSize);
-
-            DateTime SlowPath(ref ByteBuffer buffer, ExtensionHeader header, DecodeResult readResult, DateTime value, ref int tokenSize)
-            {
-                switch (readResult)
-                {
-                    case DecodeResult.Success:
-                        buffer.ReadAdvance(tokenSize);
-                        return value;
-                    case DecodeResult.TokenMismatch:
-                        throw ThrowInvalidCode(buffer.UnreadSpan[0]);
-                    case DecodeResult.EmptyBuffer:
-                    case DecodeResult.InsufficientBuffer:
-                        Span<byte> span = stackalloc byte[tokenSize];
-                        if (buffer.TryCopyTo(span))
-                        {
-                            readResult = _binaryConvert.TryReadDateTime(span, header, out value, out tokenSize);
-                            return SlowPath(ref buffer, header, readResult, value, ref tokenSize);
                         }
                         else
                         {

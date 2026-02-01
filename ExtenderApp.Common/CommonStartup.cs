@@ -22,6 +22,7 @@ namespace ExtenderApp.Common
             services.AddMainThreadContext();
             services.AddStartupExecuter();
             services.AddServiceScopeStore();
+            services.AddCompressions();
         }
     }
 }

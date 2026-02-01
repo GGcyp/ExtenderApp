@@ -200,148 +200,16 @@ namespace ExtenderApp.Common.Serializations.Binary
         /// <returns>解码结果。</returns>
         public DecodeResult TryReadDateTime(ReadOnlySpan<byte> source, out DateTime value, out int tokenSize)
         {
-            DecodeResult result = TryReadExtensionHeader(source, out ExtensionHeader header, out tokenSize);
+            DecodeResult result = TryReadDateTime(source, out value, out tokenSize);
             if (result != DecodeResult.Success)
             {
                 value = default;
                 return result;
             }
 
-            result = TryReadDateTime(source.Slice(tokenSize), header, out value, out int extensionSize);
+            result = TryReadDateTime(source.Slice(tokenSize), out value, out int extensionSize);
             tokenSize += extensionSize;
             return result;
-        }
-
-        /// <summary>
-        /// 尝试从字节序列中读取日期时间值。
-        /// </summary>
-        /// <param name="source">包含要解码的字节序列的只读字节序列。</param>
-        /// <param name="header">扩展头信息。</param>
-        /// <param name="value">输出参数，用于接收解码后的日期时间值。</param>
-        /// <param name="tokenSize">输出参数，用于接收解码后的字节序列的长度。</param>
-        /// <returns>返回一个DecodeResult枚举值，表示解码结果。</returns>
-        public DecodeResult TryReadDateTime(ReadOnlySpan<byte> source, ExtensionHeader header, out DateTime value, out int tokenSize)
-        {
-            tokenSize = checked((int)header.Length);
-            if (header.TypeCode != BinaryDateTime.DateTime)
-            {
-                value = default;
-                return DecodeResult.TokenMismatch;
-            }
-
-            if (source.Length < tokenSize)
-            {
-                value = default;
-                return DecodeResult.InsufficientBuffer;
-            }
-
-            switch (header.Length)
-            {
-                case 4:
-                    AssumesTrue(TryReadBigEndian(source, out uint uintValue));
-                    value = BinaryDateTime.UnixEpoch.AddSeconds(uintValue);
-                    return DecodeResult.Success;
-                case 8:
-                    AssumesTrue(TryReadBigEndian(source, out ulong ulongValue));
-                    long nanoseconds = (long)(ulongValue >> 34);
-                    ulong seconds = ulongValue & 0x00000003ffffffffL;
-                    value = BinaryDateTime.UnixEpoch.AddSeconds(seconds).AddTicks(nanoseconds / BinaryDateTime.NanosecondsPerTick);
-                    return DecodeResult.Success;
-                case 12:
-                    AssumesTrue(TryReadBigEndian(source, out uintValue));
-                    nanoseconds = uintValue;
-                    AssumesTrue(TryReadBigEndian(source.Slice(sizeof(uint)), out long longValue));
-                    value = BinaryDateTime.UnixEpoch.AddSeconds(longValue).AddTicks(nanoseconds / BinaryDateTime.NanosecondsPerTick);
-                    return DecodeResult.Success;
-                default:
-                    value = default;
-                    return DecodeResult.TokenMismatch;
-            }
-        }
-
-        /// <summary>
-        /// 尝试从字节序列中读取扩展头信息。
-        /// </summary>
-        /// <param name="source">包含要解码的字节序列的只读字节序列。</param>
-        /// <param name="extensionHeader">输出参数，用于接收解码后的扩展头信息。</param>
-        /// <param name="tokenSize">输出参数，用于接收解码后的字节序列的长度。</param>
-        /// <returns>返回一个DecodeResult枚举值，表示解码结果。</returns>
-        public DecodeResult TryReadExtensionHeader(ReadOnlySpan<byte> source, out ExtensionHeader extensionHeader, out int tokenSize)
-        {
-            tokenSize = 2;
-            if (source.Length < tokenSize)
-            {
-                extensionHeader = default;
-                return source.Length == 0 ? DecodeResult.EmptyBuffer : DecodeResult.InsufficientBuffer;
-            }
-
-            uint length = 0;
-            byte code = source[0];
-
-            if (code == BinaryCode.FixExt1)
-            {
-                length = 1;
-            }
-            else if (code == BinaryCode.FixExt2)
-            {
-                length = 2;
-            }
-            else if (code == BinaryCode.FixExt4)
-            {
-                length = 4;
-            }
-            else if (code == BinaryCode.FixExt8)
-            {
-                length = 8;
-            }
-            else if (code == BinaryCode.FixExt16)
-            {
-                length = 16;
-            }
-            else if (code == BinaryCode.Ext8)
-            {
-                tokenSize = 3;
-                if (source.Length < tokenSize)
-                {
-                    extensionHeader = default;
-                    return DecodeResult.InsufficientBuffer;
-                }
-
-                length = source[1];
-            }
-            else if (code == BinaryCode.Ext16)
-            {
-                tokenSize = 4;
-                if (source.Length < tokenSize)
-                {
-                    extensionHeader = default;
-                    return DecodeResult.InsufficientBuffer;
-                }
-
-                AssumesTrue(TryReadBigEndian(source.Slice(1), out ushort ushortValue));
-                length = ushortValue;
-            }
-            else if (code == BinaryCode.Ext32)
-            {
-                tokenSize = 6;
-                if (source.Length < tokenSize)
-                {
-                    extensionHeader = default;
-                    return DecodeResult.InsufficientBuffer;
-                }
-
-                AssumesTrue(TryReadBigEndian(source.Slice(1), out uint uintValue));
-                length = uintValue;
-            }
-            else
-            {
-                extensionHeader = default;
-                return DecodeResult.TokenMismatch;
-            }
-
-            sbyte typeCode = unchecked((sbyte)source[tokenSize - 1]);
-            extensionHeader = new ExtensionHeader(typeCode, length);
-            return DecodeResult.Success;
         }
 
         /// <summary>

@@ -1,5 +1,4 @@
-﻿
-namespace ExtenderApp.Common.Serializations.Binary.LZ4
+﻿namespace ExtenderApp.Common.Compressions.LZ4
 {
     internal partial class LZ4Codec
     {

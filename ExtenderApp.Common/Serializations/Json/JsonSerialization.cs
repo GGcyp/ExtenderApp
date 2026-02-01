@@ -29,11 +29,6 @@ namespace ExtenderApp.Common.Serializations.Json
             return JsonSerializer.Deserialize<T>(json, _jsonSerializerOptions);
         }
 
-        public T? Deserialize<T>(ReadOnlySpan<byte> span)
-        {
-            return JsonSerializer.Deserialize<T>(span, _jsonSerializerOptions);
-        }
-
         public string SerializeToString<T>(T value)
         {
             return JsonSerializer.Serialize(value, _jsonSerializerOptions);
@@ -55,6 +50,11 @@ namespace ExtenderApp.Common.Serializations.Json
             var bytes = JsonSerializer.SerializeToUtf8Bytes(value, _jsonSerializerOptions);
             buffer = ByteBuffer.CreateBuffer();
             buffer.Write(bytes);
+        }
+
+        public override T? Deserialize<T>(ReadOnlySpan<byte> span) where T : default
+        {
+            return JsonSerializer.Deserialize<T>(span, _jsonSerializerOptions);
         }
 
         public override T? Deserialize<T>(ReadOnlyMemory<byte> memory) where T : default

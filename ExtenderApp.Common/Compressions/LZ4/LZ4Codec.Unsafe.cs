@@ -1,4 +1,4 @@
-﻿namespace ExtenderApp.Common.Serializations.Binary.LZ4
+﻿namespace ExtenderApp.Common.Compressions.LZ4
 {
     /// <summary>
     /// LZ4 压缩编解码器类

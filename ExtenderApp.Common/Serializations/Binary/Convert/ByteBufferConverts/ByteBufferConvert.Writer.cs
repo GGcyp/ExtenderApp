@@ -676,20 +676,6 @@ namespace ExtenderApp.Common.Serializations.Binary
 
         #endregion String
 
-        /// <summary>
-        /// 写入扩展格式头部信息。
-        /// </summary>
-        /// <param name="buffer">Bytebuffer对象，用于写入数据。</param>
-        /// <param name="extensionHeader">要写入的扩展头部信息。</param>
-        /// <remarks>
-        /// 在编写数据头部信息时，同时请求足够空间来存储后续有效载荷数据的策略。 这样做的目的是为了提高程序的效率，通过减少内存分配的次数来避免潜在的性能问题。
-        /// </remarks>
-        public void WriteExtensionFormatHeader(ref ByteBuffer buffer, ExtensionHeader extensionHeader)
-        {
-            Span<byte> span = buffer.GetSpan((int)(extensionHeader.Length + 6));
-            AssumesTrue(_binaryConvert.TryWriteExtensionFormatHeader(span, extensionHeader, out int written));
-            buffer.WriteAdvance(written);
-        }
 
         /// <summary>
         /// 假设条件为真，否则抛出异常。
@@ -767,16 +753,6 @@ namespace ExtenderApp.Common.Serializations.Binary
         /// (str16), 或 5 (str32)。
         /// </returns>
         public int GetByteCountStringHeader(int byteCount) => _binaryConvert.GetByteCountStringHeader((uint)byteCount);
-
-        /// <summary>
-        /// 获取扩展格式头编码后的字节数。
-        /// </summary>
-        /// <param name="extensionHeader">扩展头信息（包含类型码和长度）。</param>
-        /// <returns>
-        /// 根据数据长度，返回 2 (fixext), 3 (ext8), 4
-        /// (ext16), 或 6 (ext32)。
-        /// </returns>
-        public int GetByteCountExtensionFormatHeader(ExtensionHeader extensionHeader) => _binaryConvert.GetByteCountExtensionFormatHeader(extensionHeader);
 
         /// <summary>
         /// 获取 8 位有符号整数在最紧凑编码下的字节数。

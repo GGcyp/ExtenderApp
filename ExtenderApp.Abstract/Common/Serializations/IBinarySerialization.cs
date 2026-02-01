@@ -21,5 +21,13 @@
         /// <typeparam name="T">目标类型。</typeparam>
         /// <returns>返回类型的默认序列化字节长度；若格式化器不提供默认值，返回实现约定的值（例如 0 或 -1 表示未知）。</returns>
         long GetDefaulLength<T>();
+
+        /// <summary>
+        /// 尝试获取指定类型的二进制格式化器。
+        /// </summary>
+        /// <typeparam name="T">指定类型</typeparam>
+        /// <param name="formatter">二进制格式化器实例</param>
+        /// <returns>若成功获取格式化器则返回 true，否则返回 false。</returns>
+        bool TryGetFormatter<T>(out IBinaryFormatter<T> formatter);
     }
 }
