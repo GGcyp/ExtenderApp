@@ -7,13 +7,13 @@ namespace ExtenderApp.Data
     /// <summary>
     /// 面向 byte 的缓冲块，内部直接复用 <see cref="MemoryBlock{T}"/>（T=byte）。
     /// - Length 表示已写入字节数（写指针/写边界）。
-    /// - Consumed 表示当前读取位置（读指针）。 线程不安全；使用完毕需调用
-    /// <see cref="Dispose"/> 归还到数组池。
+    /// - Consumed 表示当前读取位置（读指针）。
+    /// 线程不安全；使用完毕需调用 <see cref="Dispose"/> 归还到数组池。
     /// </summary>
     public struct ByteBlock : IDisposable
     {
         /// <summary>
-        ///底层内存块。
+        /// 底层内存块。
         /// </summary>
         private MemoryBlock<byte> _block;
 
@@ -23,7 +23,7 @@ namespace ExtenderApp.Data
         public int Length => _block.Length;
 
         /// <summary>
-        /// 当前读取位置（读指针）。范围：0到 <see cref="Length"/> 之间。
+        /// 当前读取位置（读指针）。范围：0 到 <see cref="Length"/> 之间。
         /// </summary>
         public int Position => _block.Consumed;
 
@@ -43,7 +43,7 @@ namespace ExtenderApp.Data
         public bool IsEmpty => _block.IsEmpty;
 
         /// <summary>
-        /// 内存块中剩余可读取的字节数
+        /// 内存块中剩余可读取的字节数。
         /// </summary>
         public int Remaining => _block.Remaining;
 
@@ -54,11 +54,13 @@ namespace ExtenderApp.Data
 
         /// <summary>
         /// 获得已写入范围的只读字节切片。
+        /// 注意：该切片引用底层缓冲，生命周期应短于本实例且不得在 <see cref="Dispose"/> 后使用。
         /// </summary>
         public ReadOnlySpan<byte> UnreadSpan => _block.UnreadSpan;
 
         /// <summary>
         /// 获得已写入范围的只读字节内存。
+        /// 注意：该切片引用底层缓冲，生命周期应短于本实例且不得在 <see cref="Dispose"/> 后使用。
         /// </summary>
         public ReadOnlyMemory<byte> UnreadMemory => _block.UnreadMemory;
 
@@ -91,7 +93,7 @@ namespace ExtenderApp.Data
         /// <summary>
         /// 从字节数组初始化。
         /// </summary>
-        /// <param name="bytes">指定字节数组</param>
+        /// <param name="bytes">指定字节数组。</param>
         public ByteBlock(byte[] bytes) : this(bytes.AsMemory())
         {
         }
@@ -99,8 +101,8 @@ namespace ExtenderApp.Data
         /// <summary>
         /// 从字节数组初始化，并使用指定数组池。
         /// </summary>
-        /// <param name="bytes">指定字节数组</param>
-        /// <param name="pool">数组池</param>
+        /// <param name="bytes">指定字节数组。</param>
+        /// <param name="pool">数组池。</param>
         public ByteBlock(byte[] bytes, ArrayPool<byte> pool) : this(bytes.AsMemory(), pool)
         {
         }
@@ -146,9 +148,7 @@ namespace ExtenderApp.Data
         /// <summary>
         /// 复制构造：克隆另一个 <see cref="ByteBlock"/> 的内容与读写指针。
         /// </summary>
-        /// <param name="block">
-        /// 源实例（仅拷贝已写入范围 0..Length）。
-        /// </param>
+        /// <param name="block">源实例（仅拷贝已写入范围 0..Length）。</param>
         public ByteBlock(in ByteBlock block) : this(block._block)
         {
         }
@@ -166,6 +166,7 @@ namespace ExtenderApp.Data
         /// 从 ByteBuffer 初始化。
         /// </summary>
         /// <param name="buffer">源 ByteBuffer。</param>
+        /// <exception cref="ArgumentException">当 <paramref name="buffer"/> 为空时抛出。</exception>
         public ByteBlock(ByteBuffer buffer)
         {
             if (buffer.IsEmpty)
@@ -183,10 +184,10 @@ namespace ExtenderApp.Data
         public Memory<byte> GetMemory(int sizeHint = 0) => _block.GetMemory(sizeHint);
 
         /// <summary>
-        /// 获取用于写入的可写 UnreadSpan，起点为当前 <see cref="Length"/>。
+        /// 获取用于写入的可写 Span，起点为当前 <see cref="Length"/>。
         /// </summary>
         /// <param name="sizeHint">预计要写入的最小字节数提示，用于触发扩容。</param>
-        /// <returns>从写指针开始的可写 <see cref="System.Span{T}"/>。</returns>
+        /// <returns>从写指针开始的可写 <see cref="Span{T}"/>。</returns>
         public Span<byte> GetSpan(int sizeHint = 0) => _block.GetSpan(sizeHint);
 
         /// <summary>
@@ -222,7 +223,7 @@ namespace ExtenderApp.Data
         }
 
         /// <summary>
-        /// 将可读数据（Length - Consumed）复制到目标 UnreadSpan。
+        /// 将可读数据（Length - Consumed）复制到目标 <paramref name="destination"/>。
         /// </summary>
         /// <param name="destination">目标缓冲。</param>
         /// <returns>若目标有足够空间则返回 true。</returns>
@@ -230,7 +231,7 @@ namespace ExtenderApp.Data
             => _block.TryCopyTo(destination);
 
         /// <summary>
-        /// 将可读数据（Length - Consumed）复制到目标 UnreadSpan。
+        /// 将可读数据（Length - Consumed）复制到目标 <paramref name="destination"/>，并输出写入字节数。
         /// </summary>
         /// <param name="destination">目标缓冲。</param>
         /// <param name="written">实际写入的字节数。</param>
@@ -241,7 +242,7 @@ namespace ExtenderApp.Data
         /// <summary>
         /// 尝试将可读数据复制到目标原生内存块。
         /// </summary>
-        /// <param name="memory">目标原生内存块</param>
+        /// <param name="memory">目标原生内存块。</param>
         /// <returns>若目标有足够空间则返回 true。</returns>
         public bool TryCopyTo(NativeByteMemory memory)
         {
@@ -261,9 +262,7 @@ namespace ExtenderApp.Data
         /// <summary>
         /// 查看相对当前读指针偏移处的字节（不移动指针）。
         /// </summary>
-        /// <param name="offset">
-        /// 相对偏移量（从 Consumed 开始，需 ≥ 0）。
-        /// </param>
+        /// <param name="offset">相对偏移量（从 Consumed 开始，需 ≥ 0）。</param>
         /// <param name="value">输出字节。</param>
         /// <returns>若存在可读字节则返回 true。</returns>
         public bool TryPeek(long offset, out byte value) => _block.TryPeek(offset, out value);
@@ -271,16 +270,14 @@ namespace ExtenderApp.Data
         /// <summary>
         /// 获取当前块的浅拷贝，可用于多次读取而不改变读写指针。
         /// </summary>
-        /// <returns>浅拷贝实例</returns>
+        /// <returns>浅拷贝实例。</returns>
         public ByteBlock PeekByteBlock() => this;
 
         /// <summary>
         /// 将读指针设置为绝对位置（0..Length）。
         /// </summary>
         /// <param name="count">新的读指针位置。</param>
-        /// <exception cref="ArgumentOutOfRangeException">
-        /// 当位置不在 0..Length 范围内时抛出。
-        /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">当位置不在 0..Length 范围内时抛出。</exception>
         public void Rewind(int count) => _block.Rewind(count);
 
         /// <summary>
@@ -313,9 +310,7 @@ namespace ExtenderApp.Data
         /// <summary>
         /// 克隆一个新的 <see cref="ByteBlock"/>（包含当前已写入数据与读写位置）。
         /// </summary>
-        /// <returns>
-        /// 新的 <see cref="ByteBlock"/> 实例。
-        /// </returns>
+        /// <returns>新的 <see cref="ByteBlock"/> 实例。</returns>
         public ByteBlock Clone() => new ByteBlock(this);
 
         /// <summary>
@@ -331,9 +326,7 @@ namespace ExtenderApp.Data
         /// </summary>
         /// <param name="start">开始索引（不能提前于已读取的位置）。</param>
         /// <param name="length">要反转的元素个数（不能多于未读取的个数）。</param>
-        /// <exception cref="ArgumentOutOfRangeException">
-        /// 当 start 或 length 超出已写入范围时抛出。
-        /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">当 start 或 length 超出已写入范围时抛出。</exception>
         public void Reverse(int start, int length)
         {
             _block.Reverse(start, length);
@@ -347,6 +340,10 @@ namespace ExtenderApp.Data
             _block.Dispose();
         }
 
+        /// <summary>
+        /// 返回已写入范围内字节的十六进制表示（带空格分隔），用于调试。
+        /// </summary>
+        /// <returns>十六进制字符串表示。</returns>
         public override string ToString()
         {
             StringBuilder sb = new(Length);
@@ -370,18 +367,14 @@ namespace ExtenderApp.Data
         /// <summary>
         /// 写入整个字节数组到当前写指针位置。
         /// </summary>
-        /// <param name="value">
-        /// 要写入的字节数组。为 null 时将导致异常。
-        /// </param>
+        /// <param name="value">要写入的字节数组。为 null 时将导致异常。</param>
         public void Write(byte[] value)
             => _block.Write(value.AsMemory());
 
         /// <summary>
         /// 将字符串按指定编码写入当前写指针位置（不包含长度或终止符），不改变读指针。
         /// </summary>
-        /// <param name="value">
-        /// 要写入的字符串；null 或空字符串时不执行任何操作。
-        /// </param>
+        /// <param name="value">要写入的字符串；null 或空字符串时不执行任何操作。</param>
         /// <param name="encoding">字符编码，默认 UTF-8。</param>
         public void Write(string value, Encoding? encoding = null)
         {
@@ -398,8 +391,8 @@ namespace ExtenderApp.Data
         /// <summary>
         /// 写入多个相同字节到当前写指针位置。
         /// </summary>
-        /// <param name="value">需要写入的字节</param>
-        /// <param name="count">写入个数</param>
+        /// <param name="value">需要写入的字节。</param>
+        /// <param name="count">写入个数。</param>
         public void Write(byte value, int count)
         {
             Ensure(count);
@@ -432,7 +425,7 @@ namespace ExtenderApp.Data
         /// <summary>
         /// 将另一个 <see cref="ByteBlock"/> 的未读数据写入当前块。
         /// </summary>
-        /// <param name="value">将写入<see cref="ByteBlock"/></param>
+        /// <param name="value">来源 <see cref="ByteBlock"/>，其未读数据将被复制到当前块。</param>
         public void Write(in ByteBlock value)
         {
             Write(value.UnreadSpan);
@@ -440,11 +433,9 @@ namespace ExtenderApp.Data
 
         /// <summary>
         /// 将 <see cref="ByteBuffer"/> 的未读数据逐段写入当前块。
+        /// 写入过程中会推进源缓冲的读取位置，不改变当前块的读指针。
         /// </summary>
         /// <param name="buffer">源缓冲，将读取其未读片段并写入当前块。</param>
-        /// <remarks>
-        /// 会根据 <paramref name="buffer"/> 的剩余长度预留容量；写入过程中会推进源缓冲的读取位置，不改变当前块的读指针。
-        /// </remarks>
         public void Write(ByteBuffer buffer)
         {
             Ensure((int)buffer.Remaining);
@@ -468,7 +459,7 @@ namespace ExtenderApp.Data
         /// <summary>
         /// 将 <see cref="NativeByteMemory"/> 的内容写入当前块。
         /// </summary>
-        /// <param name="memory">指定原生内存块</param>
+        /// <param name="memory">指定原生内存块。</param>
         public void Write(NativeByteMemory memory)
         {
             Write(memory.Span);
@@ -738,54 +729,34 @@ namespace ExtenderApp.Data
         /// 读取当前未读的第一个字节，并将读指针前进 1（不影响写指针）。
         /// </summary>
         /// <returns>读取到的字节。</returns>
-        /// <exception cref="InvalidOperationException">
-        /// 当没有可读数据（Remaining == 0）时抛出。
-        /// </exception>
+        /// <exception cref="InvalidOperationException">当没有可读数据（Remaining == 0）时抛出。</exception>
         public byte Read()
             => _block.Read();
 
         /// <summary>
-        /// 读取最多 <paramref
-        /// name="destination"/>.Length 个未读字节到目标跨度，并将读指针前进相应长度（不影响写指针）。
+        /// 读取最多 <paramref name="destination"/>.Length 个未读字节到目标跨度，并将读指针前进相应长度（不影响写指针）。
         /// </summary>
         /// <param name="destination">接收数据的目标跨度。</param>
-        /// <returns>实际读取的字节数。</returns>
-        /// <exception cref="InvalidOperationException">
-        /// 当没有可读数据（Remaining == 0）时抛出。
-        /// </exception>
-        /// <remarks>
-        /// 读取数量为 Math.Min(destination.Length, Remaining)。
-        /// </remarks>
+        /// <returns>实际读取的字节数（等于 Math.Min(destination.Length, Remaining)）。</returns>
+        /// <exception cref="InvalidOperationException">当没有可读数据（Remaining == 0）时抛出。</exception>
         public int Read(Span<byte> destination)
             => _block.Read(destination);
 
         /// <summary>
-        /// 读取最多 <paramref
-        /// name="destination"/>.Length 个未读字节到目标内存，并将读指针前进相应长度（不影响写指针）。
+        /// 读取最多 <paramref name="destination"/>.Length 个未读字节到目标内存，并将读指针前进相应长度（不影响写指针）。
         /// </summary>
         /// <param name="destination">接收数据的目标内存。</param>
-        /// <returns>实际读取的字节数。</returns>
-        /// <exception cref="InvalidOperationException">
-        /// 当没有可读数据（Remaining == 0）时抛出。
-        /// </exception>
-        /// <remarks>
-        /// 等同于调用 Read(destination.Span)。实际读取数量为
-        /// Math.Min(destination.Length, Remaining)。
-        /// </remarks>
+        /// <returns>实际读取的字节数（等于 Math.Min(destination.Length, Remaining)）。</returns>
+        /// <exception cref="InvalidOperationException">当没有可读数据（Remaining == 0）时抛出。</exception>
         public int Read(Memory<byte> destination)
             => _block.Read(destination);
 
         /// <summary>
         /// 读取最多 <paramref name="byteCount"/> 个未读字节，并将读指针前进相应长度（不影响写指针）。
         /// </summary>
-        /// <param name="byteCount">
-        /// 期望读取的字节数；若超过可读数量将按 <see
-        /// cref="Remaining"/> 截断。
-        /// </param>
+        /// <param name="byteCount">期望读取的字节数；若超过可读数量将按 <see cref="Remaining"/> 截断。</param>
         /// <returns>指向所读数据的只读跨度。</returns>
-        /// <exception cref="InvalidOperationException">
-        /// 当没有可读数据（ <see cref="Remaining"/> == 0）时抛出。
-        /// </exception>
+        /// <exception cref="InvalidOperationException">当没有可读数据（Remaining == 0）时抛出。</exception>
         public ReadOnlySpan<byte> Read(int byteCount)
         {
             return _block.Read(byteCount);
@@ -796,6 +767,8 @@ namespace ExtenderApp.Data
         /// 支持类型：byte/sbyte、short/ushort、int/uint、long/ulong、float、double、decimal、bool、char、Guid、DateTime、DateTimeOffset、TimeSpan、string。
         /// </summary>
         /// <typeparam name="T">目标类型。</typeparam>
+        /// <param name="isBigEndian">对于数值类型，是否按大端序解码（默认 true）。</param>
+        /// <returns>解析得到的目标类型值。</returns>
         /// <exception cref="InvalidOperationException">当剩余数据不足以读取目标类型时抛出。</exception>
         /// <exception cref="NotSupportedException">当目标类型不受支持时抛出。</exception>
         public T Read<T>(bool isBigEndian = true)
@@ -836,6 +809,7 @@ namespace ExtenderApp.Data
         public short ReadInt16(bool isBigEndian = true)
         {
             var span = Read(sizeof(short));
+
             return isBigEndian
                 ? BinaryPrimitives.ReadInt16BigEndian(span)
                 : BinaryPrimitives.ReadInt16LittleEndian(span);
@@ -1040,9 +1014,7 @@ namespace ExtenderApp.Data
         /// </summary>
         /// <param name="encoding">字符编码，默认 UTF-8。</param>
         /// <returns>解析得到的字符串。</returns>
-        /// <exception cref="ArgumentOutOfRangeException">
-        /// 当没有可读数据（Remaining == 0）时抛出。
-        /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">当没有可读数据（Remaining == 0）时抛出。</exception>
         public string ReadString(Encoding? encoding = null)
         {
             return ReadString(Remaining, encoding);
@@ -1051,14 +1023,10 @@ namespace ExtenderApp.Data
         /// <summary>
         /// 使用指定编码读取给定字节数为字符串，并将读指针前进相应字节数（不影响写指针）。
         /// </summary>
-        /// <param name="byteCount">
-        /// 要读取并解码的字节数（必须在 1..Remaining 范围内）。
-        /// </param>
+        /// <param name="byteCount">要读取并解码的字节数（必须在 1..Remaining 范围内）。</param>
         /// <param name="encoding">字符编码，默认 UTF-8。</param>
         /// <returns>解析得到的字符串。</returns>
-        /// <exception cref="ArgumentOutOfRangeException">
-        /// 当 <paramref name="byteCount"/> ≤ 0 或大于可读字节数（Remaining）时抛出。
-        /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">当 <paramref name="byteCount"/> ≤ 0 或大于可读字节数（Remaining）时抛出。</exception>
         public string ReadString(int byteCount, Encoding? encoding = null)
         {
             if (byteCount <= 0 || byteCount > Remaining)
@@ -1074,23 +1042,26 @@ namespace ExtenderApp.Data
         #region FormByteBlock
 
         /// <summary>
-        /// 隐式转换为已写入范围的只读字节 UnreadSpan。
-        /// 注意：该切片引用底层缓冲，生命周期应短于本实例且不得在 <see
-        /// cref="Dispose"/> 后使用。
+        /// 隐式转换为已写入范围的只读字节 <see cref="UnreadSpan"/>。
+        /// 注意：该切片引用底层缓冲，生命周期应短于本实例且不得在 <see cref="Dispose"/> 后使用。
         /// </summary>
         /// <param name="block">源实例。</param>
         public static implicit operator ReadOnlySpan<byte>(in ByteBlock block)
             => block.UnreadSpan;
 
         /// <summary>
-        /// 隐式转换为已写入范围的只读字节 UnreadMemory。
-        /// 注意：该切片引用底层缓冲，生命周期应短于本实例且不得在 <see
-        /// cref="Dispose"/> 后使用。
+        /// 隐式转换为已写入范围的只读字节内存 <see cref="UnreadMemory"/>。
+        /// 注意：该切片引用底层缓冲，生命周期应短于本实例且不得在 <see cref="Dispose"/> 后使用。
         /// </summary>
         /// <param name="block">源实例。</param>
         public static implicit operator ReadOnlyMemory<byte>(in ByteBlock block)
             => block.UnreadMemory;
 
+        /// <summary>
+        /// 将 <see cref="ByteBlock"/> 显式转换为 <see cref="ByteBuffer"/>。
+        /// 返回的 <see cref="ByteBuffer"/> 将包装当前已写入范围内的只读内存（不改变原实例的读写指针）。
+        /// </summary>
+        /// <param name="block">源 <see cref="ByteBlock"/> 实例。</param>
         public static explicit operator ByteBuffer(in ByteBlock block)
             => new ByteBuffer(block.UnreadMemory);
 
@@ -1098,18 +1069,38 @@ namespace ExtenderApp.Data
 
         #region ToByteBlock
 
+        /// <summary>
+        /// 将只读字节切片显式转换为新的 <see cref="ByteBlock"/>（拷贝数据）。
+        /// </summary>
+        /// <param name="span">源字节切片。</param>
         public static explicit operator ByteBlock(ReadOnlySpan<byte> span)
             => new ByteBlock(span);
 
+        /// <summary>
+        /// 将只读字节内存显式转换为新的 <see cref="ByteBlock"/>（拷贝数据）。
+        /// </summary>
+        /// <param name="memory">源字节内存。</param>
         public static explicit operator ByteBlock(ReadOnlyMemory<byte> memory)
             => new ByteBlock(memory);
 
+        /// <summary>
+        /// 将多段字节序列显式转换为新的 <see cref="ByteBlock"/>。
+        /// </summary>
+        /// <param name="sequence">源 <see cref="ReadOnlySequence{Byte}"/>。</param>
         public static explicit operator ByteBlock(ReadOnlySequence<byte> sequence)
             => new ByteBlock((ByteBuffer)sequence);
 
+        /// <summary>
+        /// 将 <see cref="MemoryBlock{byte}"/> 显式转换为 <see cref="ByteBlock"/>（拷贝其已写入范围）。
+        /// </summary>
+        /// <param name="block">源内存块。</param>
         public static explicit operator ByteBlock(MemoryBlock<byte> block)
             => new ByteBlock(block);
 
+        /// <summary>
+        /// 将 <see cref="ByteBuffer"/> 显式转换为 <see cref="ByteBlock"/>（拷贝其未读数据）。
+        /// </summary>
+        /// <param name="buffer">源缓冲。</param>
         public static explicit operator ByteBlock(ByteBuffer buffer)
             => new ByteBlock(buffer);
 

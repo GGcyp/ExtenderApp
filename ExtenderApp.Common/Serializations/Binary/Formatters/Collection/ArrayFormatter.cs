@@ -43,7 +43,7 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
                 return default;
             }
 
-            if (TryReadArrayHeader(ref buffer))
+            if (!TryReadArrayHeader(ref buffer))
             {
                 throw new InvalidOperationException("数据格式不匹配，无法反序列化为数组");
             }
@@ -88,7 +88,7 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
         {
             if (value == null)
             {
-                return GetNilLength();
+                return NilLength;
             }
 
             long result = _int.GetLength(value.Length) + 1;

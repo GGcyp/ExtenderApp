@@ -1,6 +1,6 @@
 ﻿using System.Buffers;
 using ExtenderApp.Abstract;
-using ExtenderApp.Common.Serializations.Binary;
+using ExtenderApp.Common;
 using ExtenderApp.Data;
 
 namespace ExtenderApp.Common.Compressions.LZ4
@@ -12,7 +12,7 @@ namespace ExtenderApp.Common.Compressions.LZ4
         /// </summary>
         private const int CompressionMinLength = 64;
 
-        private const byte LZ4CompressionSign = 64;
+        private const byte LZ4CompressionMark = 64;
         private const byte LZ4CompressionArrayEndSign = 64;
 
         /// <summary>
@@ -97,13 +97,13 @@ namespace ExtenderApp.Common.Compressions.LZ4
             }
 
             buffer = ByteBuffer.CreateBuffer();
-            _binarySerialization.Serialize(ref buffer, LZ4CompressionSign);
-            _binarySerialization.Serialize(ref buffer, CompressionType.BlockArray);
+            buffer.Write(LZ4CompressionMark);
+            _binarySerialization.Serialize(CompressionType.BlockArray, ref buffer);
             foreach (var item in sequence)
             {
                 CompressArray(item.Span, ref buffer);
             }
-            _binarySerialization.Serialize(ref buffer, LZ4CompressionArrayEndSign);
+            _binarySerialization.Serialize(LZ4CompressionArrayEndSign, ref buffer);
             return true;
         }
 
@@ -116,10 +116,10 @@ namespace ExtenderApp.Common.Compressions.LZ4
             compressBlock.WriteAdvance(compressLength);
 
             block = new(compressLength);
-            _binarySerialization.Serialize(ref block, LZ4CompressionSign);
-            _binarySerialization.Serialize(ref block, CompressionType.Block);
-            _binarySerialization.Serialize(ref block, compressLength);
-            _binarySerialization.Serialize(ref block, span.Length);
+            block.Write(LZ4CompressionMark);
+            _binarySerialization.Serialize(CompressionType.Block, ref block);
+            _binarySerialization.Serialize(compressLength, ref block);
+            _binarySerialization.Serialize(span.Length, ref block);
             block.Write(compressBlock);
             compressBlock.Dispose();
         }
@@ -133,10 +133,10 @@ namespace ExtenderApp.Common.Compressions.LZ4
             compressBlock.WriteAdvance(compressLength);
 
             buffer = ByteBuffer.CreateBuffer();
-            _binarySerialization.Serialize(ref buffer, LZ4CompressionSign);
-            _binarySerialization.Serialize(ref buffer, CompressionType.Block);
-            _binarySerialization.Serialize(ref buffer, compressLength);
-            _binarySerialization.Serialize(ref buffer, span.Length);
+            buffer.Write(LZ4CompressionMark);
+            _binarySerialization.Serialize(CompressionType.Block, ref buffer);
+            _binarySerialization.Serialize(compressLength, ref buffer);
+            _binarySerialization.Serialize(span.Length, ref buffer);
             buffer.Write(compressBlock);
             compressBlock.Dispose();
         }
@@ -149,8 +149,8 @@ namespace ExtenderApp.Common.Compressions.LZ4
             var compressLength = LZ4CodecEncode(span, compressSpan);
             compressBlock.WriteAdvance(compressLength);
 
-            _binarySerialization.Serialize(ref buffer, compressLength);
-            _binarySerialization.Serialize(ref buffer, span.Length);
+            _binarySerialization.Serialize(compressLength, ref buffer);
+            _binarySerialization.Serialize(span.Length, ref buffer);
             buffer.Write(compressBlock);
             compressBlock.Dispose();
         }
@@ -163,7 +163,7 @@ namespace ExtenderApp.Common.Compressions.LZ4
         public override bool TryDecompress(ReadOnlySpan<byte> input, out ByteBlock block)
         {
             block = new();
-            if (_binarySerialization.Deserialize<byte>(input) != LZ4CompressionSign)
+            if (_binarySerialization.Deserialize<byte>(input) != LZ4CompressionMark)
             {
                 return false;
             }
@@ -177,7 +177,7 @@ namespace ExtenderApp.Common.Compressions.LZ4
         public override bool TryDecompress(ReadOnlyMemory<byte> input, out ByteBlock block)
         {
             block = new();
-            if (_binarySerialization.Deserialize<byte>(input) != LZ4CompressionSign)
+            if (_binarySerialization.Deserialize<byte>(input) != LZ4CompressionMark)
             {
                 return false;
             }
@@ -191,7 +191,7 @@ namespace ExtenderApp.Common.Compressions.LZ4
         public override bool TryDecompress(ReadOnlySequence<byte> input, out ByteBuffer buffer)
         {
             buffer = new();
-            if (_binarySerialization.Deserialize<byte>(input) != LZ4CompressionSign)
+            if (_binarySerialization.Deserialize<byte>(input) != LZ4CompressionMark)
             {
                 return false;
             }
@@ -201,7 +201,7 @@ namespace ExtenderApp.Common.Compressions.LZ4
         private bool TryDecompress(ByteBlock input, out ByteBlock output)
         {
             output = new();
-            if (_binarySerialization.Deserialize<byte>(ref input) != LZ4CompressionSign)
+            if (_binarySerialization.Deserialize<byte>(ref input) != LZ4CompressionMark)
             {
                 return false;
             }
@@ -274,7 +274,7 @@ namespace ExtenderApp.Common.Compressions.LZ4
         private bool TryDecompress(ByteBuffer input, out ByteBuffer output)
         {
             output = new();
-            if (_binarySerialization.Deserialize<byte>(ref input) != LZ4CompressionSign)
+            if (_binarySerialization.Deserialize<byte>(ref input) != LZ4CompressionMark)
             {
                 return false;
             }

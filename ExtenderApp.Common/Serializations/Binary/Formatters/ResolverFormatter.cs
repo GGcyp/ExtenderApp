@@ -23,7 +23,7 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
         protected ResolverFormatter(IBinaryFormatterResolver resolver)
         {
             _resolver = resolver;
-            DefaultLength = GetNilLength();
+            DefaultLength = NilLength;
         }
 
         /// <summary>

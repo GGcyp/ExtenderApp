@@ -17,6 +17,8 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
         /// </summary>
         private static readonly object _lock = new();
 
+        protected const int NilLength = 1;
+
         /// <summary>
         /// 缓存的当前格式化器方法信息详情（懒初始化）。
         /// </summary>
@@ -59,7 +61,7 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
         /// </summary>
         public BinaryFormatter()
         {
-            DefaultLength = GetNilLength();
+            DefaultLength = NilLength;
         }
 
         /// <summary>
@@ -91,7 +93,7 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
         /// </summary>
         /// <param name="buffer">来源缓冲区（按引用）。</param>
         /// <returns>如果当前位置为数组头部标记返回 true，否则返回 false。</returns>
-        protected bool TryReadArrayHeader(ref ByteBuffer buffer)
+        protected static bool TryReadArrayHeader(ref ByteBuffer buffer)
         {
             return TryReadMark(ref buffer, BinaryOptions.Array);
         }
@@ -101,7 +103,7 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
         /// </summary>
         /// <param name="buffer">来源缓冲区（按引用）。</param>
         /// <returns>如果当前位置为 MapHeader 标记返回 true，否则返回 false。</returns>
-        public bool TryReadMapHeader(ref ByteBuffer buffer)
+        protected static bool TryReadMapHeader(ref ByteBuffer buffer)
         {
             return TryReadMark(ref buffer, BinaryOptions.MapHeader);
         }
@@ -112,7 +114,7 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
         /// <param name="buffer">来源缓冲区（按引用）。</param>
         /// <param name="mark">预期的标记字节值。</param>
         /// <returns>若当前位置字节与 <paramref name="mark"/> 相等返回 true，否则返回 false（并回退）。</returns>
-        protected bool TryReadMark(ref ByteBuffer buffer, byte mark)
+        protected static bool TryReadMark(ref ByteBuffer buffer, byte mark)
         {
             if (buffer.Read() != mark)
             {
@@ -126,7 +128,7 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
         /// 向目标缓冲区写入数组头标记。
         /// </summary>
         /// <param name="buffer">目标缓冲区（按引用）。</param>
-        protected void WriteArrayHeader(ref ByteBuffer buffer)
+        protected static void WriteArrayHeader(ref ByteBuffer buffer)
         {
             buffer.Write(BinaryOptions.Array);
         }
@@ -135,7 +137,7 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
         /// 向目标缓冲区写入 MapHeader 标记。
         /// </summary>
         /// <param name="buffer">目标缓冲区（按引用）。</param>
-        protected void WriteMapHeader(ref ByteBuffer buffer)
+        protected static void WriteMapHeader(ref ByteBuffer buffer)
         {
             buffer.Write(BinaryOptions.MapHeader);
         }
@@ -144,7 +146,7 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
         /// 抛出一个操作相关的 <see cref="InvalidOperationException"/>。
         /// </summary>
         /// <param name="message">异常消息。</param>
-        protected void ThrowOperationException(string message)
+        protected static void ThrowOperationException(string message)
         {
             throw new InvalidOperationException(message);
         }
@@ -153,7 +155,7 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
         /// 将 Nil 标记写入到目标 <see cref="ByteBuffer"/>。
         /// </summary>
         /// <param name="buffer">目标写入器（按引用）。</param>
-        protected void WriteNil(ref ByteBuffer buffer)
+        protected static void WriteNil(ref ByteBuffer buffer)
         {
             buffer.Write(BinaryOptions.Nil);
         }
@@ -163,23 +165,9 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
         /// </summary>
         /// <param name="buffer">数据来源（按引用）。</param>
         /// <returns>若为 Nil 返回 true，否则返回 false。</returns>
-        protected bool TryReadNil(ref ByteBuffer buffer)
+        protected static bool TryReadNil(ref ByteBuffer buffer)
         {
-            if (buffer.Read() != BinaryOptions.Nil)
-            {
-                buffer.Rewind(1);
-                return false;
-            }
-            return true;
-        }
-
-        /// <summary>
-        /// 获取 Nil 标记的默认长度（字节数）。
-        /// </summary>
-        /// <returns>Nil 标记的默认长度。</returns>
-        protected int GetNilLength()
-        {
-            return 1;
+            return TryReadMark(ref buffer, BinaryOptions.Nil);
         }
     }
 }

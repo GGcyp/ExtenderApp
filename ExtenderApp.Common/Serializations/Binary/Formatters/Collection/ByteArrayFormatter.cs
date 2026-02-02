@@ -53,7 +53,7 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters.Collection
         {
             if (value == null)
             {
-                return GetNilLength();
+                return NilLength;
             }
 
             long result = _int.GetLength(value.Length);

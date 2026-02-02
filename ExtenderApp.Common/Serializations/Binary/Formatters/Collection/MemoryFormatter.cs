@@ -59,7 +59,7 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
         public override long GetLength(Memory<T> value)
         {
             if (value.IsEmpty)
-                return GetNilLength();
+                return NilLength;
 
             long length = 5;
             for (var i = 0; i < value.Length; i++)

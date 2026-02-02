@@ -36,6 +36,44 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
         private readonly DeserializeDelegate _deserializeInvoker;
         private readonly GetLengthDelegate _getLengthInvoker;
 
+        /// <summary>
+        /// 按 mark 索引的固定数据长度表（不含类型标记字节）。
+        /// 数组长度为 256（byte 的取值范围）；未定义的 mark 使用 DefaltLengt 表示。
+        /// 由静态初始化函数填充常见数值类型的字节长度，以便快速通过 mark 获取数据长度。
+        /// </summary>
+        private static readonly byte[] LengthArray = CreatLengthArray();
+
+        /// <summary>
+        /// 构造并返回长度查表数组（长度 256），表项为对应标记的数据长度（以字节为单位，不包含类型标记本身）。
+        /// 未识别的 mark 保持为 <see cref="DefaltLengt"/>。
+        /// </summary>
+        /// <returns>长度为 256 的 int 数组。</returns>
+        private static byte[] CreatLengthArray()
+        {
+            // byte 的取值范围 0..255，需要 256 个槽
+            var arr = new byte[byte.MaxValue + 1];
+
+            // 浮点类型
+            arr[BinaryOptions.Float32] = (byte)GetSize<Single>();
+            arr[BinaryOptions.Float64] = (byte)GetSize<Double>();
+
+            // 无符号整数
+            arr[BinaryOptions.UInt8] = (byte)GetSize<Byte>();
+            arr[BinaryOptions.UInt16] = (byte)GetSize<UInt16>();
+            arr[BinaryOptions.UInt32] = (byte)GetSize<UInt32>();
+            arr[BinaryOptions.UInt64] = (byte)GetSize<UInt64>();
+
+            // 有符号整数
+            arr[BinaryOptions.Int8] = (byte)GetSize<SByte>();
+            arr[BinaryOptions.Int16] = (byte)GetSize<Int16>();
+            arr[BinaryOptions.Int32] = (byte)GetSize<Int32>();
+            arr[BinaryOptions.Int64] = (byte)GetSize<Int64>();
+
+            // 其他标记（如 String/Array/MapHeader）不是固定数据长度，不在表中填充
+            return arr;
+        }
+
+        private readonly byte _mark;
         public override int DefaultLength { get; }
 
         /// <summary>
@@ -58,10 +96,15 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
             }
 
             DefaultLength = GetLength<T>();
+            _mark = BinaryOptions.GetByteByType<T>();
         }
 
         public override T Deserialize(ref ByteBuffer buffer)
         {
+            byte mark = buffer.NextCode;
+            if (GetSizeByMark(mark) > GetSizeByMark(_mark))
+                throw new InvalidOperationException($"无法将数据内{BinaryOptions.GetNameByMark(mark)}类型转换成{BinaryOptions.GetNameByMark(_mark)}");
+
             return _deserializeInvoker(ref buffer);
         }
 
@@ -146,7 +189,7 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
 
         #endregion Long 路径 (位拷贝 + 整数压缩)
 
-        #region 基础读写逻辑 (静态工具)
+        #region Read
 
         /// <summary>
         /// 读取并返回用于浮点路径的 double 值（支持 float32/float64 及整数压缩还原）。
@@ -182,7 +225,9 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
             throw new InvalidDataException($"标识 {mark} 无法读取为 64 位整数。");
         }
 
-        #endregion 基础读写逻辑 (静态工具)
+        #endregion Read
+
+        #region Write
 
         /// <summary>
         /// 将 <see cref="double"/> 按最紧凑格式写入缓冲区（可能写 float32 或 float64）。
@@ -208,10 +253,15 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
             else if (mark == BinaryOptions.Int16) buffer.Write((short)value);
             else if (mark == BinaryOptions.UInt16) buffer.Write((ushort)value);
             else if (mark == BinaryOptions.Int32) buffer.Write((int)value);
+            else if (mark == BinaryOptions.UInt32) buffer.Write((uint)value);
             else if (mark == BinaryOptions.UInt64) buffer.Write((ulong)value);
             else if (mark == BinaryOptions.Int64) buffer.Write(value);
             else buffer.Write((ulong)value);
         }
+
+        #endregion Write
+
+        #region GetLength
 
         /// <summary>
         /// 获取 double 按最紧凑格式编码所需字节数并返回使用的标识（如能无损降为 float32 则使用 float32 标识）。
@@ -294,6 +344,23 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
         private static int GetLength<TValue>()
         {
             return GetSize<TValue>() + 1;
+        }
+
+        #endregion GetLength
+
+        /// <summary>
+        /// 根据 mark 快速返回该 mark 对应的数据字节大小（不含类型标记字节）。
+        /// 若 mark 未在固定表中定义，则抛出 <see cref="InvalidOperationException"/>。
+        /// </summary>
+        /// <param name="mark">类型标记字节。</param>
+        /// <returns>对应的数据字节大小。</returns>
+        private static int GetSizeByMark(byte mark)
+        {
+            int result = LengthArray[mark];
+            if (result <= 0)
+                throw new InvalidOperationException($"标识 {mark} 无法映射为已知类型大小。");
+
+            return result;
         }
 
         /// <summary>

@@ -50,7 +50,7 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
         {
             if (value.IsEmpty)
             {
-                return GetNilLength();
+                return NilLength;
             }
             return _int.GetLength(value.Remaining) + 1 + value.Remaining;
         }

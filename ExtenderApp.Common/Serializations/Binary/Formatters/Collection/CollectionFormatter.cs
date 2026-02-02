@@ -86,7 +86,7 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
         {
             if (value == null)
             {
-                return GetNilLength();
+                return NilLength;
             }
 
             long result = _int.GetLength(value.Count()) + 1;

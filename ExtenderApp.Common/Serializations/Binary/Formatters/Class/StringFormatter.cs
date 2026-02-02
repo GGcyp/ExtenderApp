@@ -25,7 +25,7 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
                 return string.Empty;
             }
 
-            if (TryReadMark(ref buffer, BinaryOptions.String))
+            if (!TryReadMark(ref buffer, BinaryOptions.String))
             {
                 ThrowOperationException("无法反序列化为字符串类型，数据标记不匹配。");
             }
