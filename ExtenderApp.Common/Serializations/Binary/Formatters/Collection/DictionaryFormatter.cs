@@ -10,7 +10,7 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
     /// <typeparam name="TValue">字典值的类型。</typeparam>
     public class DictionaryFormatter<TKey, TValue> : InterfaceDictionaryFormatter<TKey, TValue, Dictionary<TKey, TValue>> where TKey : notnull
     {
-        public DictionaryFormatter(IBinaryFormatterResolver resolver, ByteBufferConvert convert, BinaryOptions options) : base(resolver, convert, options)
+        public DictionaryFormatter(IBinaryFormatterResolver resolver) : base(resolver)
         {
 
         }

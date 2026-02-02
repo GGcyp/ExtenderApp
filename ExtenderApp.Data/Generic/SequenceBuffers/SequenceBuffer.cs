@@ -246,7 +246,7 @@ namespace ExtenderApp.Data
             }
 
             var lastReader = reader;
-            reader = new SequenceReader<T>(_sequence);
+            reader = new SequenceReader<T>(_sequence!);
             reader.Advance(lastReader.Consumed);
             readerDirty = false;
         }

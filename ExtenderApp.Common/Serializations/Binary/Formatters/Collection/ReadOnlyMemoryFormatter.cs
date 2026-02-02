@@ -1,29 +1,32 @@
 ﻿using ExtenderApp.Abstract;
-using ExtenderApp.Common.Serializations.Binary;
-using ExtenderApp.Common.Serializations.Binary.Formatters;
 using ExtenderApp.Data;
 
 namespace ExtenderApp.Common.Serializations.Binary.Formatters
 {
-    internal class ReadOnlyMemoryFormatter<T> : BinaryFormatter<ReadOnlyMemory<T>>
+    internal class ReadOnlyMemoryFormatter<T> : ResolverFormatter<ReadOnlyMemory<T>>
     {
-        private readonly IBinaryFormatter<T> _formatter;
+        private readonly IBinaryFormatter<T> _t;
+        private readonly IBinaryFormatter<int> _int;
 
-        public override int DefaultLength => 1;
-
-        public ReadOnlyMemoryFormatter(IBinaryFormatterResolver resolver, ByteBufferConvert convert, BinaryOptions options) : base(convert, options)
+        public ReadOnlyMemoryFormatter(IBinaryFormatterResolver resolver) : base(resolver)
         {
-            _formatter = resolver.GetFormatter<T>();
+            _t = GetFormatter<T>();
+            _int = GetFormatter<int>();
         }
 
         public override ReadOnlyMemory<T> Deserialize(ref ByteBuffer buffer)
         {
-            if (_bufferConvert.TryReadNil(ref buffer))
+            if (TryReadNil(ref buffer))
             {
                 return Memory<T>.Empty;
             }
 
-            var length = _bufferConvert.ReadArrayHeader(ref buffer);
+            if (!TryReadArrayHeader(ref buffer))
+            {
+                ThrowOperationException("无法将当前数据反序列化为 ReadOnlyMemory<T> 类型。");
+            }
+
+            var length = _int.Deserialize(ref buffer);
             if (length == 0)
             {
                 return Memory<T>.Empty;
@@ -31,7 +34,7 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
             var array = new T[length];
             for (var i = 0; i < length; i++)
             {
-                array[i] = _formatter.Deserialize(ref buffer);
+                array[i] = _t.Deserialize(ref buffer);
             }
             return new Memory<T>(array);
         }
@@ -40,28 +43,28 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
         {
             if (value.IsEmpty)
             {
-                _bufferConvert.WriteNil(ref buffer);
+                WriteNil(ref buffer);
                 return;
             }
 
-            _bufferConvert.WriteArrayHeader(ref buffer, value.Length);
+            WriteArrayHeader(ref buffer);
+            _int.Serialize(ref buffer, value.Length);
             for (var i = 0; i < value.Length; i++)
             {
-                _formatter.Serialize(ref buffer, value.Span[i]);
+                _t.Serialize(ref buffer, value.Span[i]);
             }
         }
 
         public override long GetLength(ReadOnlyMemory<T> value)
         {
             if (value.IsEmpty)
-                return 1;
+                return GetNilLength();
 
-            long length = 5;
+            long length = _int.GetLength(value.Length) + 1;
             for (var i = 0; i < value.Length; i++)
             {
-                length += _formatter.GetLength(value.Span[i]);
+                length += _t.GetLength(value.Span[i]);
             }
-
             return length;
         }
     }

@@ -1,5 +1,4 @@
-﻿
-using ExtenderApp.Abstract;
+﻿using ExtenderApp.Abstract;
 using ExtenderApp.Data;
 
 namespace ExtenderApp.Common.Serializations.Binary.Formatters
@@ -7,20 +6,28 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
     /// <summary>
     /// 字节块格式化器。
     /// </summary>
-    internal class ByteBlockFormatter : BinaryFormatter<ByteBlock>
+    internal class ByteBlockFormatter : ResolverFormatter<ByteBlock>
     {
-        public override int DefaultLength => 1;
-        public ByteBlockFormatter(ByteBufferConvert blockConvert, BinaryOptions options) : base(blockConvert, options)
+        private readonly IBinaryFormatter<int> _int;
+
+        public ByteBlockFormatter(IBinaryFormatterResolver resolver) : base(resolver)
         {
+            _int = GetFormatter<int>();
         }
 
         public override ByteBlock Deserialize(ref ByteBuffer buffer)
         {
-            if (_bufferConvert.TryReadNil(ref buffer))
+            if (TryReadNil(ref buffer))
             {
                 return new();
             }
-            var length = _bufferConvert.ReadArrayHeader(ref buffer);
+
+            if (!TryReadArrayHeader(ref buffer))
+            {
+                ThrowOperationException("无法将当前数据反序列化为 ByteBlock 类型，数据格式不匹配。");
+            }
+
+            var length = _int.Deserialize(ref buffer);
             ByteBlock block = new(length);
             block.Write(buffer);
             buffer.ReadAdvance(length);
@@ -31,10 +38,11 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
         {
             if (value.IsEmpty)
             {
-                _bufferConvert.WriteNil(ref buffer);
+                WriteNil(ref buffer);
                 return;
             }
-            _bufferConvert.WriteMapHeader(ref buffer, value.Remaining);
+            WriteArrayHeader(ref buffer);
+            _int.Serialize(ref buffer, value.Remaining);
             buffer.Write(value);
         }
 
@@ -42,9 +50,9 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
         {
             if (value.IsEmpty)
             {
-                return 1;
+                return GetNilLength();
             }
-            return _bufferConvert.GetByteCountMapHeader(value.Remaining) + value.Remaining;
+            return _int.GetLength(value.Remaining) + 1 + value.Remaining;
         }
     }
 }

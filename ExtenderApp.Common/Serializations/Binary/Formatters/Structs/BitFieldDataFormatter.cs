@@ -1,39 +1,34 @@
 ﻿using System.Buffers;
+using ExtenderApp.Abstract;
 using ExtenderApp.Data;
 
 namespace ExtenderApp.Common.Serializations.Binary.Formatters
 {
-    internal class BitFieldDataFormatter : BinaryFormatter<BitFieldData>
+    internal class BitFieldDataFormatter : ResolverFormatter<BitFieldData>
     {
-        public override int DefaultLength => 1;
+        private readonly IBinaryFormatter<int> _int;
 
-        public BitFieldDataFormatter(BinaryOptions options) : base(options)
+        public BitFieldDataFormatter(IBinaryFormatterResolver resolver) : base(resolver)
         {
+            _int = GetFormatter<int>();
         }
 
         public override BitFieldData Deserialize(ref ByteBuffer buffer)
         {
-            if (!_bufferConvert.TryReadArrayHeader(ref buffer, out var length))
+            if (TryReadNil(ref buffer))
             {
                 return BitFieldData.Empty;
             }
-            var bitFieldData = new BitFieldData(length);
 
-            int index = 0;
-            var memories = _bufferConvert.ReadRaw(ref buffer, length);
-            foreach (var memory in memories)
+            if (!TryReadArrayHeader(ref buffer))
             {
-                for (int i = 0; i < memory.Length; i++)
-                {
-                    var code = memory.Span[i];
-                    if (code > 0xFF)
-                    {
-                        bitFieldData.Set(i);
-                    }
-                    index++;
-                }
+                ThrowOperationException("无法反序列化为 BitFieldData，数据格式不正确。");
             }
 
+            int length = _int.Deserialize(ref buffer);
+            var block = buffer.Read(length);
+            var bitFieldData = new BitFieldData(block.UnreadSpan);
+            block.Dispose();
             return bitFieldData;
         }
 
@@ -41,14 +36,15 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
         {
             if (value.IsEmpty)
             {
-                _bufferConvert.WriteNil(ref buffer);
+                WriteNil(ref buffer);
                 return;
             }
 
             var bytes = ArrayPool<byte>.Shared.Rent(value.Length);
             value.ToBytes(bytes);
-            _bufferConvert.WriteArrayHeader(ref buffer, value.Length);
-            _bufferConvert.WriteRaw(ref buffer, bytes.AsSpan(0, value.Length));
+            WriteArrayHeader(ref buffer);
+            _int.Serialize(ref buffer, value.Length);
+            buffer.Write(bytes.AsMemory(0, value.Length));
             ArrayPool<byte>.Shared.Return(bytes);
         }
 
@@ -57,7 +53,7 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
             if (value.IsEmpty)
                 return 1; // 如果是null，返回1字节表示null
 
-            return _bufferConvert.GetByteCountArrayHeader(value.Length) + value.Length;
+            return _int.GetLength(value.Length) + 1 + value.Length;
         }
     }
 }

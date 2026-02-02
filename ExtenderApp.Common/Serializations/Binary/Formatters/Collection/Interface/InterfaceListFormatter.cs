@@ -12,7 +12,7 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
     {
         private readonly CollectionHelpers<TList> _helpers;
 
-        public InterfaceListFormatter(IBinaryFormatterResolver resolver, ByteBufferConvert convert, BinaryOptions options) : base(resolver, convert, options)
+        public InterfaceListFormatter(IBinaryFormatterResolver resolver) : base(resolver)
         {
             _helpers = new CollectionHelpers<TList>();
         }

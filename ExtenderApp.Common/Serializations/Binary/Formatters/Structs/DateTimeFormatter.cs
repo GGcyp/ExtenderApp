@@ -1,33 +1,36 @@
-﻿using ExtenderApp.Data;
+﻿using ExtenderApp.Abstract;
+using ExtenderApp.Data;
 
 namespace ExtenderApp.Common.Serializations.Binary.Formatters
 {
     /// <summary>
     /// 日期时间格式化类
     /// </summary>
-    public sealed class DateTimeFormatter : StructFormatter<DateTime>
+    public sealed class DateTimeFormatter : ResolverFormatter<DateTime>
     {
-        public override int DefaultLength => 9;
+        private readonly IBinaryFormatter<long> _long;
+        public override int DefaultLength => _long.DefaultLength;
 
-        public DateTimeFormatter(ByteBufferConvert blockConvert, BinaryOptions options) : base(blockConvert, options)
+        public DateTimeFormatter(IBinaryFormatterResolver resolver) : base(resolver)
         {
+            _long = GetFormatter<long>();
         }
 
         public override DateTime Deserialize(ref ByteBuffer buffer)
         {
-            var dateData = _bufferConvert.ReadInt64(ref buffer);
+            var dateData = _long.Deserialize(ref buffer);
             return DateTime.FromBinary(dateData);
         }
 
         public override void Serialize(ref ByteBuffer buffer, DateTime value)
         {
             var dateData = value.ToBinary();
-            _bufferConvert.Write(ref buffer, dateData);
+            _long.Serialize(ref buffer, dateData);
         }
 
         public override long GetLength(DateTime value)
         {
-            return _bufferConvert.GetByteCount(value);
+            return _long.GetLength(value.ToBinary());
         }
     }
 }

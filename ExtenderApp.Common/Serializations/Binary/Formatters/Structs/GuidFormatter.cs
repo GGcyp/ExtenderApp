@@ -1,20 +1,15 @@
-﻿using ExtenderApp.Abstract;
-using ExtenderApp.Data;
+﻿using ExtenderApp.Data;
 
 namespace ExtenderApp.Common.Serializations.Binary.Formatters
 {
     /// <summary>
     /// Guid格式化器
     /// </summary>
-    internal class GuidFormatter : ResolverFormatter<Guid>
+    internal class GuidFormatter : BinaryFormatter<Guid>
     {
         private const int GuidByteLength = 16;
 
         public override int DefaultLength => GuidByteLength;
-
-        public GuidFormatter(IBinaryFormatterResolver resolver) : base(resolver)
-        {
-        }
 
         public override Guid Deserialize(ref ByteBuffer buffer)
         {

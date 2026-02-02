@@ -7,12 +7,14 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
     /// 用于数组格式化的扩展格式化器
     /// </summary>
     /// <typeparam name="T">数组元素的类型</typeparam>
-    public sealed class ArrayFormatter<T> : BinaryFormatter<T[]?>
+    public sealed class ArrayFormatter<T> : ResolverFormatter<T[]?>
     {
         /// <summary>
         /// 二进制格式化器
         /// </summary>
-        private readonly IBinaryFormatter<T> _binaryFormatter;
+        private readonly IBinaryFormatter<T> _t;
+
+        private readonly IBinaryFormatter<int> _int;
 
         /// <summary>
         /// 初始化ArrayFormatter对象
@@ -21,9 +23,10 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
         /// <param name="binarybufferConvert">二进制写入转换器</param>
         /// <param name="binarybufferConvert">二进制读取转换器</param>
         /// <param name="options">二进制选项</param>
-        public ArrayFormatter(IBinaryFormatterResolver resolver, BinaryOptions options) : base(options)
+        public ArrayFormatter(IBinaryFormatterResolver resolver) : base(resolver)
         {
-            _binaryFormatter = resolver.GetFormatter<T>();
+            _t = GetFormatter<T>();
+            _int = GetFormatter<int>();
         }
 
         public override int DefaultLength => 1;
@@ -35,12 +38,17 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
         /// <returns>反序列化后的数组</returns>
         public override T[]? Deserialize(ref ByteBuffer buffer)
         {
-            if (_bufferConvert.TryReadNil(ref buffer))
+            if (TryReadNil(ref buffer))
             {
                 return default;
             }
 
-            var len = _bufferConvert.ReadArrayHeader(ref buffer);
+            if (TryReadArrayHeader(ref buffer))
+            {
+                throw new InvalidOperationException("数据格式不匹配，无法反序列化为数组");
+            }
+
+            var len = _int.Deserialize(ref buffer);
             if (len == 0)
             {
                 return Array.Empty<T>();
@@ -49,7 +57,7 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
             var array = new T[len];
             for (int i = 0; i < array.Length; i++)
             {
-                array[i] = _binaryFormatter.Deserialize(ref buffer);
+                array[i] = _t.Deserialize(ref buffer);
             }
             return array;
         }
@@ -63,15 +71,15 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
         {
             if (value == null || value == Array.Empty<T>())
             {
-                _bufferConvert.WriteNil(ref buffer);
+                WriteNil(ref buffer);
             }
             else
             {
-                _bufferConvert.WriteArrayHeader(ref buffer, value.Length);
-
+                WriteArrayHeader(ref buffer);
+                _int.Serialize(ref buffer, value.Length);
                 for (int i = 0; i < value.Length; i++)
                 {
-                    _binaryFormatter.Serialize(ref buffer, value[i]);
+                    _t.Serialize(ref buffer, value[i]);
                 }
             }
         }
@@ -80,11 +88,14 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
         {
             if (value == null)
             {
-                return 1;
+                return GetNilLength();
             }
 
-            var result = DefaultLength;
-            result += value.Length * _binaryFormatter.DefaultLength;
+            long result = _int.GetLength(value.Length) + 1;
+            for (int i = 0; i < value.Length; i++)
+            {
+                result += _t.GetLength(value[i]);
+            }
             return result;
         }
     }

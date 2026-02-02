@@ -1,104 +1,239 @@
 ﻿using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using ExtenderApp.Data;
 
 namespace ExtenderApp.Common.Serializations.Binary.Formatters
 {
     /// <summary>
-    /// 非托管结构体的二进制格式化器基类，支持高效读写基础数值类型及结构体本体。
+    /// 非托管结构体的二进制格式化器基类（支持到 8 字节内的 unmanaged 类型）。
+    /// 根据目标类型在运行时选择两种序列化路径：基于整数位拷贝的 long 路径或基于数值的 double 路径（用于 float/double）。
+    /// 采用类型标记 + 紧凑数据长度的编码格式以减少存储开销。
     /// </summary>
-    /// <typeparam name="T">目标结构体类型，必须为 unmanaged。</typeparam>
+    /// <typeparam name="T">目标结构体类型，必须为 unmanaged 且推荐大小不超过 8 字节。</typeparam>
     internal class UnManagedFornatter<T> : BinaryFormatter<T> where T : unmanaged
     {
+        /// <summary>
+        /// 序列化委托签名：将值序列化写入 <see cref="ByteBuffer"/>。
+        /// </summary>
+        /// <param name="buffer">目标字节缓冲区。</param>
+        /// <param name="value">待序列化的值。</param>
+        private delegate void SerializeDelegate(ref ByteBuffer buffer, T value);
+
+        /// <summary>
+        /// 反序列化委托签名：从 <see cref="ByteBuffer"/> 读取并返回值。
+        /// </summary>
+        /// <param name="buffer">来源字节缓冲区。</param>
+        /// <returns>反序列化得到的值。</returns>
+        private delegate T DeserializeDelegate(ref ByteBuffer buffer);
+
+        /// <summary>
+        /// 计算序列化长度委托签名（返回包含类型标记的总字节数）。
+        /// </summary>
+        /// <param name="value">待测长度的值。</param>
+        /// <returns>序列化后的总字节数。</returns>
+        private delegate long GetLengthDelegate(T value);
+
+        private readonly SerializeDelegate _serializeInvoker;
+        private readonly DeserializeDelegate _deserializeInvoker;
+        private readonly GetLengthDelegate _getLengthInvoker;
+
         public override int DefaultLength { get; }
 
         /// <summary>
-        /// 初始化格式化器并指定二进制选项。
+        /// 构造函数：根据泛型 <typeparamref name="T"/> 决定使用哪条序列化/反序列化路径并初始化委托缓存。
         /// </summary>
-        /// <param name="options">二进制编码选项。</param>
-        protected UnManagedFornatter(BinaryOptions options) : base(options)
+        public UnManagedFornatter()
         {
+            // 初始化分发委托：浮点走 double 路径，其他类型走 long 路径
+            if (typeof(T) == typeof(double) || typeof(T) == typeof(float))
+            {
+                _serializeInvoker = SerializeAsDouble;
+                _deserializeInvoker = DeserializeAsDouble;
+                _getLengthInvoker = GetLengthAsDouble;
+            }
+            else
+            {
+                _serializeInvoker = SerializeAsLong;
+                _deserializeInvoker = DeserializeAsLong;
+                _getLengthInvoker = GetLengthAsLong;
+            }
+
             DefaultLength = GetLength<T>();
         }
 
         public override T Deserialize(ref ByteBuffer buffer)
         {
-            return Read(ref buffer);
+            return _deserializeInvoker(ref buffer);
         }
 
         public override void Serialize(ref ByteBuffer buffer, T value)
         {
-            Write(ref buffer, Unsafe.As<T, long>(ref value));
+            _serializeInvoker(ref buffer, value);
         }
 
         public override long GetLength(T value)
         {
-            return GetLength<T>();
+            return _getLengthInvoker(value);
+        }
+
+        #region Double 路径 (支持浮点压缩)
+
+        /// <summary>
+        /// 将浮点类型（float/double）按 float32/float64 最紧凑规则写入缓冲区。
+        /// 使用位拷贝把 <typeparamref name="T"/> 写入到 <see cref="double"/> 的内存表示中，再走 double 写入逻辑。
+        /// </summary>
+        private void SerializeAsDouble(ref ByteBuffer buffer, T value)
+        {
+            double data = 0d;
+            Unsafe.WriteUnaligned(ref Unsafe.As<double, byte>(ref data), value);
+            Write(ref buffer, data);
         }
 
         /// <summary>
-        /// 从缓冲区读取结构体（按类型标记和紧凑数值长度推断），返回结构体实例。
+        /// 从缓冲区读取并恢复为 <typeparamref name="T"/>。支持从 integer/float 标识读取并还原为浮点数位或数值。
         /// </summary>
-        /// <param name="buffer">字节缓冲区。</param>
-        /// <returns>读取到的结构体实例。</returns>
-        /// <exception cref="InvalidDataException">遇到未知类型标记时抛出。</exception>
-        protected T Read(ref ByteBuffer buffer)
+        /// <param name="buffer">来源缓冲区。</param>
+        /// <returns>恢复后的 <typeparamref name="T"/> 实例。</returns>
+        private T DeserializeAsDouble(ref ByteBuffer buffer)
         {
             byte mark = buffer.Read();
-            int length = 0;
-
-            if (mark == Options.Int8) length = GetSize<SByte>();
-            else if (mark == Options.UInt8) length = GetSize<Byte>();
-            else if (mark == Options.Int16) length = GetSize<Int16>();
-            else if (mark == Options.UInt16) length = GetSize<UInt16>();
-            else if (mark == Options.Int32) length = GetSize<Int32>();
-            else if (mark == Options.UInt32) length = GetSize<UInt32>();
-            else if (mark == Options.Int64) length = GetSize<Int64>();
-            else if (mark == Options.UInt64) length = GetSize<UInt64>();
-            else throw new InvalidDataException($"未知标识: {mark}");
-
-            Span<byte> temp = stackalloc byte[length - 1];
-            buffer.Read(temp);
-            return Read(temp);
+            double data = ReadAsDouble(ref buffer, mark);
+            return Unsafe.ReadUnaligned<T>(ref Unsafe.As<double, byte>(ref data));
         }
 
         /// <summary>
-        /// 从字节序列读取结构体实例（未做字节序转换）。
+        /// 计算浮点类型值的序列化长度（含类型标记），会在可能且无损的情况下把 double 压缩为 float32。
         /// </summary>
-        /// <param name="span">结构体字节序列。</param>
-        /// <returns>结构体实例。</returns>
-        private T Read(ReadOnlySpan<byte> span)
+        private long GetLengthAsDouble(T value)
         {
-            T value = Unsafe.ReadUnaligned<T>(ref MemoryMarshal.GetReference(span));
-            return value;
+            double data = 0;
+            Unsafe.WriteUnaligned(ref Unsafe.As<double, byte>(ref data), value);
+            return GetLength(data, out _);
+        }
+
+        #endregion Double 路径 (支持浮点压缩)
+
+        #region Long 路径 (位拷贝 + 整数压缩)
+
+        /// <summary>
+        /// 将任意非浮点 unmanaged 类型按位拷贝到 long 的低位后使用整数压缩写入。
+        /// </summary>
+        private void SerializeAsLong(ref ByteBuffer buffer, T value)
+        {
+            long data = 0;
+            Unsafe.WriteUnaligned(ref Unsafe.As<long, byte>(ref data), value);
+            Write(ref buffer, data);
         }
 
         /// <summary>
-        /// 将数值按最紧凑类型编码写入缓冲区，并写入类型标记。
+        /// 从缓冲区按整数标识读取并把位模式写回到 <typeparamref name="T"/> 实例。
         /// </summary>
-        /// <param name="buffer">目标缓冲区。</param>
-        /// <param name="value">待写入的数值。</param>
-        protected void Write(ref ByteBuffer buffer, long value)
+        private T DeserializeAsLong(ref ByteBuffer buffer)
+        {
+            byte mark = buffer.Read();
+            long data = ReadAsLong(ref buffer, mark);
+            return Unsafe.ReadUnaligned<T>(ref Unsafe.As<long, byte>(ref data));
+        }
+
+        /// <summary>
+        /// 计算按 long 路径序列化的长度（含类型标记）。
+        /// </summary>
+        private long GetLengthAsLong(T value)
+        {
+            long data = 0;
+            Unsafe.WriteUnaligned(ref Unsafe.As<long, byte>(ref data), value);
+            return GetLength(data, out _);
+        }
+
+        #endregion Long 路径 (位拷贝 + 整数压缩)
+
+        #region 基础读写逻辑 (静态工具)
+
+        /// <summary>
+        /// 读取并返回用于浮点路径的 double 值（支持 float32/float64 及整数压缩还原）。
+        /// </summary>
+        /// <param name="buffer">来源缓冲区。</param>
+        /// <param name="mark">类型标记。</param>
+        /// <returns>还原为 double 的数值。</returns>
+        private static double ReadAsDouble(ref ByteBuffer buffer, byte mark)
+        {
+            if (mark == BinaryOptions.Float32) return buffer.ReadSingle();
+            if (mark == BinaryOptions.Float64) return buffer.ReadDouble();
+            // 允许浮点从压缩的整数读取并数值还原
+            return ReadAsLong(ref buffer, mark);
+        }
+
+        /// <summary>
+        /// 根据类型标记从缓冲区读取并返回 64 位整数表示（按位或数值填充到 long）。
+        /// </summary>
+        /// <param name="buffer">来源缓冲区。</param>
+        /// <param name="mark">类型标记。</param>
+        /// <returns>以 long 表示的读取结果（保持位模式/数值一致性）。</returns>
+        /// <exception cref="InvalidDataException">当标识无法映射为 64 位整数时抛出。</exception>
+        private static long ReadAsLong(ref ByteBuffer buffer, byte mark)
+        {
+            if (mark == BinaryOptions.Int8) return (sbyte)buffer.Read();
+            if (mark == BinaryOptions.UInt8) return buffer.Read();
+            if (mark == BinaryOptions.Int16) return buffer.ReadInt16();
+            if (mark == BinaryOptions.UInt16) return buffer.ReadUInt16();
+            if (mark == BinaryOptions.Int32) return buffer.ReadInt32();
+            if (mark == BinaryOptions.UInt32) return buffer.ReadUInt32();
+            if (mark == BinaryOptions.Int64) return buffer.ReadInt64();
+            if (mark == BinaryOptions.UInt64) return (long)buffer.ReadUInt64();
+            throw new InvalidDataException($"标识 {mark} 无法读取为 64 位整数。");
+        }
+
+        #endregion 基础读写逻辑 (静态工具)
+
+        /// <summary>
+        /// 将 <see cref="double"/> 按最紧凑格式写入缓冲区（可能写 float32 或 float64）。
+        /// </summary>
+        private static void Write(ref ByteBuffer buffer, double value)
         {
             int length = GetLength(value, out var mark);
             buffer.Write(mark);
 
-            if (mark == Options.Int8 || mark == Options.UInt8) buffer.Write((byte)value);
-            else if (mark == Options.Int16) buffer.Write((short)value);
-            else if (mark == Options.UInt16) buffer.Write((ushort)value);
-            else if (mark == Options.Int32) buffer.Write((int)value);
-            else if (mark == Options.UInt64) buffer.Write((ulong)value);
-            else if (mark == Options.Int64) buffer.Write(value);
+            if (mark == BinaryOptions.Float32) buffer.Write((float)value);
+            else buffer.Write(value);
+        }
+
+        /// <summary>
+        /// 将 long 按最紧凑整数格式写入缓冲区（包含类型标记）。
+        /// </summary>
+        private static void Write(ref ByteBuffer buffer, long value)
+        {
+            GetLength(value, out var mark);
+            buffer.Write(mark);
+
+            if (mark == BinaryOptions.Int8 || mark == BinaryOptions.UInt8) buffer.Write((byte)value);
+            else if (mark == BinaryOptions.Int16) buffer.Write((short)value);
+            else if (mark == BinaryOptions.UInt16) buffer.Write((ushort)value);
+            else if (mark == BinaryOptions.Int32) buffer.Write((int)value);
+            else if (mark == BinaryOptions.UInt64) buffer.Write((ulong)value);
+            else if (mark == BinaryOptions.Int64) buffer.Write(value);
             else buffer.Write((ulong)value);
         }
 
         /// <summary>
-        /// 获取 long 类型按最紧凑编码的长度及类型标记。
+        /// 获取 double 按最紧凑格式编码所需字节数并返回使用的标识（如能无损降为 float32 则使用 float32 标识）。
         /// </summary>
-        /// <param name="value">待编码的数值。</param>
-        /// <param name="mark">输出：类型标记。</param>
-        /// <returns>编码所需字节数（含类型标记）。</returns>
-        protected int GetLength(long value, out byte mark)
+        private static int GetLength(double value, out byte mark)
+        {
+            if (value < float.MaxValue && value > float.MinValue && (double)(float)value == value)
+            {
+                mark = BinaryOptions.Float32;
+                return GetLength<float>();
+            }
+            else
+            {
+                mark = BinaryOptions.Float64;
+                return GetLength<double>();
+            }
+        }
+
+        /// <summary>
+        /// 获取 long 按最紧凑整数编码所需字节数并返回使用的标识。
+        /// </summary>
+        private static int GetLength(long value, out byte mark)
         {
             if (value > 0)
             {
@@ -106,62 +241,57 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
             }
             else if (value > SByte.MinValue)
             {
-                mark = Options.Int8;
+                mark = BinaryOptions.Int8;
                 return GetLength<SByte>();
             }
             else if (value > Int16.MinValue)
             {
-                mark = Options.Int16;
+                mark = BinaryOptions.Int16;
                 return GetLength<Int16>();
             }
             else if (value > Int32.MinValue)
             {
-                mark = Options.Int32;
+                mark = BinaryOptions.Int32;
                 return GetLength<Int32>();
             }
             else
             {
-                mark = Options.Int64;
+                mark = BinaryOptions.Int64;
                 return GetLength<Int64>();
             }
         }
 
         /// <summary>
-        /// 获取 ulong 类型按最紧凑编码的长度及类型标记。
+        /// 获取 ulong 按最紧凑整数编码所需字节数并返回使用的标识。
         /// </summary>
-        /// <param name="value">待编码的数值。</param>
-        /// <param name="mark">输出：类型标记。</param>
-        /// <returns>编码所需字节数（含类型标记）。</returns>
-        protected int GetLength(ulong value, out byte mark)
+        private static int GetLength(ulong value, out byte mark)
         {
             if (value <= Byte.MaxValue)
             {
-                mark = Options.UInt8;
+                mark = BinaryOptions.UInt8;
                 return GetLength<Byte>();
             }
             else if (value <= UInt16.MaxValue)
             {
-                mark = Options.UInt16;
+                mark = BinaryOptions.UInt16;
                 return GetLength<UInt16>();
             }
             else if (value <= UInt32.MaxValue)
             {
-                mark = Options.UInt32;
+                mark = BinaryOptions.UInt32;
                 return GetLength<UInt32>();
             }
             else
             {
-                mark = Options.UInt64;
+                mark = BinaryOptions.UInt64;
                 return GetLength<UInt64>();
             }
         }
 
         /// <summary>
-        /// 获取指定类型编码所需总字节数（含类型标记）。
+        /// 获取指定数值类型的序列化总字节数（类型标记 + 数据）。
         /// </summary>
-        /// <typeparam name="TValue">数值类型。</typeparam>
-        /// <returns>编码总字节数。</returns>
-        protected int GetLength<TValue>()
+        private static int GetLength<TValue>()
         {
             return GetSize<TValue>() + 1;
         }
@@ -169,9 +299,7 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
         /// <summary>
         /// 获取指定类型的字节大小。
         /// </summary>
-        /// <typeparam name="TValue">数值类型。</typeparam>
-        /// <returns>类型字节大小。</returns>
-        protected int GetSize<TValue>()
+        private static int GetSize<TValue>()
         {
             return Unsafe.SizeOf<TValue>();
         }

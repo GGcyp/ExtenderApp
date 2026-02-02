@@ -459,8 +459,8 @@ namespace ExtenderApp.Data
 
             encoding ??= Encoding.UTF8;
             var byteCount = encoding.GetByteCount(value);
-            var memory = GetMemory(byteCount);
-            encoding.GetBytes(value, memory.Span);
+            var span = GetSpan(byteCount);
+            encoding.GetBytes(value, span);
             WriteAdvance(byteCount);
         }
 

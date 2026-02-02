@@ -5,7 +5,7 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
 {
     internal class LinkedListFormatter<T> : CollectionFormatter<T, LinkedList<T>>
     {
-        public LinkedListFormatter(IBinaryFormatterResolver resolver, ByteBufferConvert convert, BinaryOptions options) : base(resolver, convert, options)
+        public LinkedListFormatter(IBinaryFormatterResolver resolver) : base(resolver)
         {
         }
 

@@ -9,7 +9,7 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
     /// <typeparam name="T">HashSet<TLinkClient> 中元素的类型。</typeparam>
     internal class HashSetFormatter<T> : CollectionFormatter<T, HashSet<T>>
     {
-        public HashSetFormatter(IBinaryFormatterResolver resolver, ByteBufferConvert convert, BinaryOptions options) : base(resolver, convert, options)
+        public HashSetFormatter(IBinaryFormatterResolver resolver) : base(resolver)
         {
         }
 

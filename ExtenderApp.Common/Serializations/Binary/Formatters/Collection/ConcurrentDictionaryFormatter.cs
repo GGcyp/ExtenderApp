@@ -1,14 +1,11 @@
 ﻿using System.Collections.Concurrent;
 using ExtenderApp.Abstract;
-using ExtenderApp.Common.Serializations.Binary;
-using ExtenderApp.Common.Serializations.Binary.Formatters;
-using ExtenderApp.Data;
 
 namespace ExtenderApp.Common.Serializations.Binary.Formatters.Collection
 {
     internal class ConcurrentDictionaryFormatter<TKey, TValue> : InterfaceDictionaryFormatter<TKey, TValue, ConcurrentDictionary<TKey, TValue>> where TKey : notnull
     {
-        public ConcurrentDictionaryFormatter(IBinaryFormatterResolver resolver, ByteBufferConvert convert, BinaryOptions options) : base(resolver, convert, options)
+        public ConcurrentDictionaryFormatter(IBinaryFormatterResolver resolver) : base(resolver)
         {
         }
 

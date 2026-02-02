@@ -3,14 +3,15 @@ using ExtenderApp.Data;
 
 namespace ExtenderApp.Common.Serializations.Binary.Formatters
 {
-    internal class CharFormatter : BinaryFormatterBase<Char>
+    internal class CharFormatter : ResolverFormatter<Char>
     {
         private readonly IBinaryFormatter<UInt16> _uint16;
+
         public override int DefaultLength => _uint16.DefaultLength;
 
-        public CharFormatter(IBinaryFormatter<UInt16> uint16)
+        public CharFormatter(IBinaryFormatterResolver resolver) : base(resolver)
         {
-            _uint16 = uint16;
+            _uint16 = GetFormatter<UInt16>();
         }
 
         public override char Deserialize(ref ByteBuffer buffer)

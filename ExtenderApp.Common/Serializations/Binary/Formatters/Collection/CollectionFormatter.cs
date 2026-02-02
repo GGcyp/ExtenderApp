@@ -8,15 +8,15 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
     /// </summary>
     /// <typeparam name="T">集合中元素的类型。</typeparam>
     /// <typeparam name="TCollection">集合的类型。</typeparam>
-    public abstract class CollectionFormatter<T, TCollection> : BinaryFormatter<TCollection?>
+    public abstract class CollectionFormatter<T, TCollection> : ResolverFormatter<TCollection?>
         where TCollection : IEnumerable<T>
     {
         /// <summary>
         /// 用于序列化和反序列化集合中单个元素的格式化器。
         /// </summary>
-        private readonly IBinaryFormatter<T> _formatter;
+        private readonly IBinaryFormatter<T> _t;
 
-        public override int DefaultLength => 5;
+        private readonly IBinaryFormatter<int> _int;
 
         /// <summary>
         /// 初始化 CollectionFormatter 实例。
@@ -25,9 +25,10 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
         /// <param name="binarybufferConvert">二进制写入转换器。</param>
         /// <param name="binarybufferConvert">二进制读取转换器。</param>
         /// <param name="options">二进制选项。</param>
-        protected CollectionFormatter(IBinaryFormatterResolver resolver, ByteBufferConvert convert, BinaryOptions options) : base(convert, options)
+        protected CollectionFormatter(IBinaryFormatterResolver resolver) : base(resolver)
         {
-            _formatter = resolver.GetFormatter<T>();
+            _t = resolver.GetFormatter<T>();
+            _int = resolver.GetFormatter<int>();
         }
 
         /// <summary>
@@ -39,17 +40,17 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
         {
             if (value == null)
             {
-                _bufferConvert.WriteNil(ref buffer);
+                WriteNil(ref buffer);
                 return;
             }
 
             var count = value.Count();
-
-            _bufferConvert.WriteArrayHeader(ref buffer, count);
+            WriteArrayHeader(ref buffer);
+            _int.Serialize(ref buffer, count);
 
             foreach (T item in value)
             {
-                _formatter.Serialize(ref buffer, item);
+                _t.Serialize(ref buffer, item);
             }
         }
 
@@ -60,34 +61,38 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
         /// <returns>反序列化出的集合对象。</returns>
         public override TCollection? Deserialize(ref ByteBuffer buffer)
         {
-            if (_bufferConvert.TryReadNil(ref buffer))
+            if (TryReadNil(ref buffer))
             {
                 return default(TCollection);
             }
 
-            var len = _bufferConvert.ReadArrayHeader(ref buffer);
+            if (!TryReadArrayHeader(ref buffer))
+            {
+                throw new InvalidOperationException("数据类型不匹配。");
+            }
 
+            var len = _int.Deserialize(ref buffer);
 
             var result = Create(len);
             for (int i = 0; i < len; i++)
             {
-                Add(result, _formatter.Deserialize(ref buffer));
+                Add(result, _t.Deserialize(ref buffer));
             }
 
             return result;
         }
 
-        public override long GetLength(TCollection value)
+        public override long GetLength(TCollection? value)
         {
             if (value == null)
             {
-                return 1;
+                return GetNilLength();
             }
 
-            long result = DefaultLength;
+            long result = _int.GetLength(value.Count()) + 1;
             foreach (var item in value)
             {
-                result += _formatter.GetLength(item);
+                result += _t.GetLength(item);
             }
             return result;
         }

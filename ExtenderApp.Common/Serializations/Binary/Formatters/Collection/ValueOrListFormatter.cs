@@ -7,7 +7,7 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
 {
     internal class ValueOrListFormatter<T> : CollectionFormatter<T, ValueOrList<T>>
     {
-        public ValueOrListFormatter(IBinaryFormatterResolver resolver, ByteBufferConvert convert, BinaryOptions options) : base(resolver, convert, options)
+        public ValueOrListFormatter(IBinaryFormatterResolver resolver) : base(resolver)
         {
         }
 

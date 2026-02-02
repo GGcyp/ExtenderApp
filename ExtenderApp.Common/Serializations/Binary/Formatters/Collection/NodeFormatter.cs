@@ -1,42 +1,29 @@
 ﻿using ExtenderApp.Abstract;
-
-using ExtenderApp.Common.Serializations.Binary;
-using ExtenderApp.Common.Serializations.Binary.Formatters;
 using ExtenderApp.Data;
 
 namespace ExtenderApp.Common.Serializations.Binary.Formatters
 {
     /// <summary> 抽象类 NodeFormatter，用于格式化 Node<TLinkClient> 类型的节点。 </summary> <typeparam name="T">表示 Node<TLinkClient> 类型的泛型参数。</typeparam>
-    public abstract class NodeFormatter<T> : BinaryFormatterBase<T> where T : Node<T>, IEnumerable<T>
+    public abstract class NodeFormatter<T> : ResolverFormatter<T> where T : Node<T>, IEnumerable<T>
     {
-        /// <summary>
-        /// 获取节点格式化的长度。
-        /// </summary>
-        /// <returns>返回值为 1。</returns>
-        public override int DefaultLength => 1;
+        private readonly IBinaryFormatter<int> _int;
 
-        /// <summary>
-        /// 使用指定的参数初始化 NodeFormatter 实例。
-        /// </summary>
-        /// <param name="resolver">二进制格式化解析器。</param>
-        /// <param name="binarybufferConvert">二进制写入转换器。</param>
-        /// <param name="binarybufferConvert">二进制读取转换器。</param>
-        /// <param name="options">二进制选项。</param>
-        protected NodeFormatter()
+        protected NodeFormatter(IBinaryFormatterResolver resolver) : base(resolver)
         {
+            _int = GetFormatter<int>();
         }
 
         /// <summary> 从给定的 ByteBuffer 中反序列化一个 Node<TLinkClient> 类型的对象。 </summary> <param name="buffer">ByteBuffer 对象，用于读取二进制数据。</param>
         /// <returns>返回反序列化后的 Node<TLinkClient> 类型的对象。</returns>
         public override sealed T Deserialize(ref ByteBuffer buffer)
         {
-            if (_bufferConvert.TryReadNil(ref buffer))
+            if (TryReadNil(ref buffer))
             {
-                return default;
+                return default!;
             }
 
             T root = ProtectedDeserialize(ref buffer);
-            int count = _bufferConvert.ReadInt32(ref buffer);
+            int count = _int.Deserialize(ref buffer);
             if (count == 0)
                 return root;
 
@@ -50,7 +37,7 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
                 for (int i = 0; i < childCount; i++)
                 {
                     T child = ProtectedDeserialize(ref buffer);
-                    int subCount = _bufferConvert.ReadInt32(ref buffer);
+                    int subCount = _int.Deserialize(ref buffer);
                     parent.Add(child);
                     if (subCount > 0)
                         queue.Push((child, subCount));
@@ -65,7 +52,7 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
         {
             if (value == null)
             {
-                _bufferConvert.WriteNil(ref buffer);
+                WriteNil(ref buffer);
                 return;
             }
 
@@ -76,7 +63,7 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
             {
                 T node = queue.Dequeue();
                 ProtectedSerialize(ref buffer, node);
-                _bufferConvert.WriteInt32(ref buffer, node.Count);
+                _int.Serialize(ref buffer, node.Count);
                 for (int i = 0; i < node.Count; i++)
                 {
                     queue.Enqueue(node[i]);

@@ -12,7 +12,7 @@ namespace ExtenderApp.Views
     /// <typeparam name="T">ObservableCollection<TLinkClient> 中元素的类型。</typeparam>
     public class ObservableCollectionFormatter<T> : CollectionFormatter<T, ObservableCollection<T>>
     {
-        public ObservableCollectionFormatter(IBinaryFormatterResolver resolver, ByteBufferConvert convert, BinaryOptions options) : base(resolver, convert, options)
+        public ObservableCollectionFormatter(IBinaryFormatterResolver resolver) : base(resolver)
         {
         }
 

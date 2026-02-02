@@ -52,7 +52,9 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
         //}
 
         private delegate void EnumSerialize(ref ByteBuffer buffer, ref T value);
+
         private delegate T EnumDeserialize(ref ByteBuffer buffer);
+
         private delegate long EnumGetLength(T value);
 
         private EnumSerialize serializer;
@@ -64,33 +66,44 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
         public EnumFormatter(IBinaryFormatterResolver resolver) : base(resolver)
         {
             var type = typeof(T).GetEnumUnderlyingType();
+            deserializer = default!;
+            serializer = default!;
+            getLength = default!;
 
             switch (Type.GetTypeCode(type))
             {
                 case TypeCode.Byte:
                     DefaultLength = CreateEnumSerialize(GetFormatter<byte>());
                     break;
+
                 case TypeCode.Int16:
                     DefaultLength = CreateEnumSerialize(GetFormatter<Int16>());
                     break;
+
                 case TypeCode.Int32:
                     DefaultLength = CreateEnumSerialize(GetFormatter<Int32>());
                     break;
+
                 case TypeCode.Int64:
                     DefaultLength = CreateEnumSerialize(GetFormatter<Int64>());
                     break;
+
                 case TypeCode.SByte:
                     DefaultLength = CreateEnumSerialize(GetFormatter<SByte>());
                     break;
+
                 case TypeCode.UInt16:
                     DefaultLength = CreateEnumSerialize(GetFormatter<UInt16>());
                     break;
+
                 case TypeCode.UInt32:
                     DefaultLength = CreateEnumSerialize(GetFormatter<UInt32>());
                     break;
+
                 case TypeCode.UInt64:
                     DefaultLength = CreateEnumSerialize(GetFormatter<UInt64>());
                     break;
+
                 default:
                     throw new NotSupportedException(string.Format("这个枚举未找到转换类型{0}", type.FullName));
             }

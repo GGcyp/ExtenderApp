@@ -144,7 +144,7 @@ namespace ExtenderApp.Data
         /// </summary>
         /// <param name="sizeHint">所需内存的大小提示。</param>
         /// <returns>指定大小的内存。</returns>
-        public Memory<T> GetMemory(int sizeHint = 0) => GetSegment(sizeHint).AvailableMemory;
+        public Memory<T> GetMemory(int sizeHint = 0) => GetSegment(sizeHint).RemainingMemory;
 
         /// <summary>
         /// 获取指定大小的跨度。
@@ -179,13 +179,14 @@ namespace ExtenderApp.Data
         /// <returns>具有指定大小可用内存的段。</returns>
         private SequenceSegment GetSegment(int sizeHint)
         {
-            //原先设计
-            int? minBufferSize = null;
+            int minBufferSize = -1;
+            bool needNewSegment = false;
             if (sizeHint == 0)
             {
                 if (last == null || last.WritableBytes == 0)
                 {
                     minBufferSize = -1;
+                    needNewSegment = true;
                 }
             }
             else
@@ -193,10 +194,11 @@ namespace ExtenderApp.Data
                 if (last == null || last.WritableBytes < sizeHint)
                 {
                     minBufferSize = System.Math.Max(MinimumSpanLength, sizeHint);
+                    needNewSegment = true;
                 }
             }
 
-            if (minBufferSize.HasValue)
+            if (needNewSegment)
             {
                 SequenceSegment segment;
                 if (SegmentPool.Count > 0)
@@ -206,11 +208,11 @@ namespace ExtenderApp.Data
 
                 if (_arrayPool != null)
                 {
-                    segment.Assign(_arrayPool.Rent(minBufferSize.Value == -1 ? DefaultLengthFromArrayPool : minBufferSize.Value));
+                    segment.Assign(_arrayPool.Rent(minBufferSize == -1 ? DefaultLengthFromArrayPool : minBufferSize));
                 }
                 else
                 {
-                    segment.Assign(_memoryPool!.Rent(minBufferSize.Value));
+                    segment.Assign(_memoryPool!.Rent(minBufferSize));
                 }
 
                 Append(segment);

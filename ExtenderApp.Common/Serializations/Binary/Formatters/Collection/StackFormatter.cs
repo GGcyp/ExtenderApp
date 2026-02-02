@@ -9,7 +9,7 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
     /// <typeparam name="T">Stack<TLinkClient> 集合中元素的类型。</typeparam>
     internal class StackFormatter<T> : CollectionFormatter<T, Stack<T>>
     {
-        public StackFormatter(IBinaryFormatterResolver resolver, ByteBufferConvert convert, BinaryOptions options) : base(resolver, convert, options)
+        public StackFormatter(IBinaryFormatterResolver resolver) : base(resolver)
         {
         }
 
