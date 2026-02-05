@@ -19,10 +19,13 @@ namespace ExtenderApp.Test
         public override void Inject(IServiceProvider serviceProvider)
         {
             base.Inject(serviceProvider);
-            binarySerialization.Serialize(1111111111L, out ByteBuffer buffer);
-            var value3 = binarySerialization.Deserialize<long>(buffer);
-            LogDebug("value3:" + value3);
-            buffer.Dispose();
+            //binarySerialization.Serialize(1111111111L, out ByteBuffer buffer);
+            //var value3 = binarySerialization.Deserialize<long>(buffer);
+            //LogDebug("value3:" + value3);
+            //buffer.Dispose();
+            Guid guid1 = new("sss");
+            Guid guid2 = new("sss");
+            LogDebug(guid1 == guid2);
         }
 
         private ExpectLocalFileInfo CreatTestExpectLocalFileInfo(string fileName)

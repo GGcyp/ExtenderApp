@@ -8,7 +8,7 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
     /// </summary>
     /// <typeparam name="T">列表中元素的类型</typeparam>
     /// <typeparam name="TList">列表的类型，必须实现IList<TLinkClient>接口并且有一个无参构造函数</typeparam>
-    public class InterfaceListFormatter<T, TList> : CollectionFormatter<T, TList> where TList : class, IList<T>, new()
+    public class InterfaceListFormatter<T, TList> : InterfaceCollectionFormatter<T, TList> where TList : class, IList<T>, new()
     {
         private readonly CollectionHelpers<TList> _helpers;
 

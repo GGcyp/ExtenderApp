@@ -1,10 +1,6 @@
-﻿using System.Buffers;
-using System.Linq.Expressions;
-using System.Reflection;
-using System.Security.Cryptography;
+﻿using System.Security.Cryptography;
 using System.Text;
 using ExtenderApp.Abstract;
-using ExtenderApp.Common.IO;
 
 using ExtenderApp.Data;
 
@@ -55,7 +51,7 @@ namespace ExtenderApp.Common.Hash
         /// 构造函数
         /// </summary>
         /// <param name="poolStore">对象池存储</param>
-        public HashProvider( IFileOperateProvider fileStore)
+        public HashProvider(IFileOperateProvider fileStore)
         {
             _fileOperateProvider = fileStore;
             _encoding = Encoding.UTF8; // 默认使用UTF8编码

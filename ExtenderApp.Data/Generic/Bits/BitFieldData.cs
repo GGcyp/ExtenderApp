@@ -91,7 +91,7 @@ namespace ExtenderApp.Data
         /// <param name="span">源字节序列（按实现约定解析为位，通常为大端字节序的块顺序）。</param>
         public BitFieldData(ReadOnlySpan<byte> span)
         {
-            // 此构造按输入字节数量决定 Length（将 span.Length 视为字节长度）
+            // 此构造按输入字节数量决定 WrittenCount（将 span.WrittenCount 视为字节长度）
             int lengthInBits = span.Length * BitsPerByte;
             Length = lengthInBits;
             _data = ArrayPool<ulong>.Shared.Rent((Length + BitsPerULong - 1) / BitsPerULong);
@@ -524,7 +524,7 @@ namespace ExtenderApp.Data
         }
 
         /// <summary>
-        /// 枚举位序列（按索引从 0 到 Length-1），可用于记录、导出或逐位处理。
+        /// 枚举位序列（按索引从 0 到 WrittenCount-1），可用于记录、导出或逐位处理。
         /// </summary>
         public IEnumerator<bool> GetEnumerator()
         {

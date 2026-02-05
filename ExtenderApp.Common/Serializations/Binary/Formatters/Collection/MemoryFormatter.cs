@@ -23,7 +23,7 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
 
             if (!TryReadArrayHeader(ref buffer))
             {
-                ThrowOperationException("无法将当前数据反序列化为 Memory<T> 类型的值，数据格式不匹配。");
+                ThrowOperationException("无法将当前数据反序列化为 Memory<TLinkClient> 类型的值，数据格式不匹配。");
             }
 
             var length = _int.Deserialize(ref buffer);

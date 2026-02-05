@@ -28,10 +28,10 @@ namespace ExtenderApp.Common.Networks
         /// </summary>
         public ILinkClientFactory? ClientFactory { get; set; }
 
-        /// <summary>
-        /// 可选的插件管理器；若设置，将在构建时通过 <see cref="ILinkClientAwareSender{TLinkClient}.SetClientPluginManager"/> 注入到客户端。
-        /// </summary>
-        public ILinkClientPluginManager? PluginManager { get; set; }
+        ///// <summary>
+        ///// 可选的插件管理器；若设置，将在构建时通过 <see cref="ILinkClientAwareSender{TLinkClient}.SetClientPluginManager"/> 注入到客户端。
+        ///// </summary>
+        //public ILinkClientPluginManager? PluginManager { get; set; }
 
         /// <summary>
         /// 可选的格式化器管理器；若设置，将在构建时通过 <see cref="ILinkClientAwareSender{TLinkClient}.SetClientFormatterManager"/> 注入到客户端。
@@ -40,17 +40,17 @@ namespace ExtenderApp.Common.Networks
 
         public ILinkClientFramer? Framer { get; set; }
 
-        /// <summary>
-        /// 使用运行时服务提供者与默认客户端工厂初始化构建器。
-        /// </summary>
-        /// <param name="provider">用于构建时解析依赖的 <see cref="IServiceProvider"/>，不得为 null。</param>
-        /// <param name="factory">创建客户端实例的工厂，实现不得为 null。</param>
-        public LinkClientBuilder(IServiceProvider provider, ILinkClientFactory factory, ILinkClientPluginManager pluginManager)
-        {
-            ClientFactory = factory;
-            _provider = provider;
-            PluginManager = pluginManager;
-        }
+        ///// <summary>
+        ///// 使用运行时服务提供者与默认客户端工厂初始化构建器。
+        ///// </summary>
+        ///// <param name="provider">用于构建时解析依赖的 <see cref="IServiceProvider"/>，不得为 null。</param>
+        ///// <param name="factory">创建客户端实例的工厂，实现不得为 null。</param>
+        //public LinkClientBuilder(IServiceProvider provider, ILinkClientFactory factory, ILinkClientPluginManager pluginManager)
+        //{
+        //    ClientFactory = factory;
+        //    _provider = provider;
+        //    PluginManager = pluginManager;
+        //}
 
         /// <summary>
         /// 初始化并设置一个 <see cref="ILinkClientFormatterManager"/> 实例，并通过回调允许调用方注册格式化器。
@@ -66,16 +66,16 @@ namespace ExtenderApp.Common.Networks
             return this;
         }
 
-        /// <summary>
-        /// 初始化并设置一个 <see cref="ILinkClientPluginManager{TLinkClient}"/> 实例，并通过回调允许调用方注册插件。
-        /// </summary>
-        /// <param name="action"></param>
-        /// <param name="manager"></param>
-        /// <returns></returns>
-        public LinkClientBuilder SetPluginManager(ILinkClientPluginManager manager)
-        {
-            return this;
-        }
+        ///// <summary>
+        ///// 初始化并设置一个 <see cref="ILinkClientPluginManager{TLinkClient}"/> 实例，并通过回调允许调用方注册插件。
+        ///// </summary>
+        ///// <param name="action"></param>
+        ///// <param name="manager"></param>
+        ///// <returns></returns>
+        //public LinkClientBuilder SetPluginManager(ILinkClientPluginManager manager)
+        //{
+        //    return this;
+        //}
 
         ///// <summary>
         ///// 使用默认地址族（IPv4）构建并返回客户端实例。

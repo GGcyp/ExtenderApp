@@ -11,7 +11,7 @@ namespace ExtenderApp.Common.IO.FileOperates
     internal class ConcurrentFileOperate : FileOperate
     {
         /// <summary>
-        /// 当前已登记的正在操作的区间集合，元素为 (start, end)。
+        /// 当前已登记的正在操作的区间集合，元素为 (Start, end)。
         /// </summary>
         private readonly List<(long, long)> _wrPositions;
 

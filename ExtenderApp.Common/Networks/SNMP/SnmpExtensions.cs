@@ -123,7 +123,7 @@ namespace ExtenderApp.Common.Networks.SNMP
         }
 
         /// <summary>
-        /// 将 <see cref="SnmpOid"/> 的点分表示按 OBJECT IDENTIFIER 的 BER base-128 编码写入目标块（包含 Tag/Length/Content）。
+        /// 将 <see cref="SnmpOid"/> 的点分表示按 OBJECT IDENTIFIER 的 BER base-128 编码写入目标块（包含 Tag/Capacity/Content）。
         /// </summary>
         /// <param name="oid">要编码的 OID。</param>
         /// <param name="block">目标字节块，编码结果追加到该块末尾。</param>
@@ -134,7 +134,7 @@ namespace ExtenderApp.Common.Networks.SNMP
             if (s.Length == 0)
                 throw new ArgumentException("OID 不能为空");
 
-            // 1) 计算 components 数量并估算内容长度（不包含 Tag/Length）
+            // 1) 计算 components 数量并估算内容长度（不包含 Tag/Capacity）
             int pos = 0;
             int compIndex = 0;
             ulong first = 0, second = 0;
@@ -177,7 +177,7 @@ namespace ExtenderApp.Common.Networks.SNMP
             contentLen += 1;
 
             // 2) 写 Tag (OBJECT IDENTIFIER = 0x06)
-            // 与 Length（使用 BEREncoding 的写入函数）
+            // 与 Capacity（使用 BEREncoding 的写入函数）
             block.Write((byte)UniversalTagNumber.ObjectIdentifier); // tag 0x06
             BEREncoding.EncodeLength(ref block, contentLen);
 
@@ -451,7 +451,7 @@ namespace ExtenderApp.Common.Networks.SNMP
             if (block.IsEmpty)
                 return false;
 
-            // 先预览 Tag/Length，决定处理分支且在需要时推进原始块的读取位置。
+            // 先预览 Tag/Capacity，决定处理分支且在需要时推进原始块的读取位置。
             var temp = block.PeekByteBlock();
             var tag = BEREncoding.DecodeTag(ref temp);
 

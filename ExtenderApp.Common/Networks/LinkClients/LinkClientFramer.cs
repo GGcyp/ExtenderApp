@@ -11,7 +11,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
     /// - 将接收到的字节流按协议解析为 Frame（TryBERDecodeSequence）；
     /// - 根据消息类型与负载长度构造可写帧头以供发送（EncodeSequence）。 实现遵循 ILinkClientFramer 的契约（接口中已经包含了对外方法的详细文档）， 此类管理接收缓存以处理半包/粘包场景，并在 Dispose 时释放缓存资源。
     /// </summary>
-    public class LinkClientFramer : DisposableObject, ILinkClientFramer
+    public class LinkClientFramer : DisposableObject
     {
         private const int intLength = sizeof(int);
 

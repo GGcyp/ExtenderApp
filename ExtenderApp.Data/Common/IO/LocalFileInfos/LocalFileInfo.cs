@@ -1,8 +1,4 @@
-﻿using System.Buffers.Binary;
-using System.Security.Cryptography;
-using System.Text;
-
-namespace ExtenderApp.Data
+﻿namespace ExtenderApp.Data
 {
     /// <summary>
     /// 表示一个本地文件的元信息快照与常用路径操作辅助。
@@ -12,17 +8,12 @@ namespace ExtenderApp.Data
     /// - 读取依赖磁盘状态的属性（如长度、时间戳）前，可调用 <see cref="UpdateFileInfo"/> 刷新缓存。<br/>
     /// - 本类型不负责创建/删除文件，仅提供路径与信息访问。
     /// </remarks>
-    public struct LocalFileInfo : IEquatable<LocalFileInfo>
+    public readonly struct LocalFileInfo : IEquatable<LocalFileInfo>
     {
         /// <summary>
         /// 空对象。
         /// </summary>
         public static readonly LocalFileInfo Empty = new LocalFileInfo();
-
-        /// <summary>
-        /// 文件完整路径的哈希码缓存。
-        /// </summary>
-        public HashValue Hash { get; }
 
         /// <summary>
         /// 底层 <see cref="System.IO.FileInfo"/> 实例（可能指向不存在的文件）。
@@ -91,6 +82,15 @@ namespace ExtenderApp.Data
         public bool IsEmpty => FileInfo is null;
 
         /// <summary>
+        /// 使用文件路径初始化。
+        /// 仅包装路径，不会创建文件；目录需已存在。
+        /// </summary>
+        /// <param name="filePath">文件路径。</param>
+        public LocalFileInfo(string filePath) : this(new FileInfo(filePath))
+        {
+        }
+
+        /// <summary>
         /// 使用现有的 <see cref="FileInfo"/> 初始化。
         /// 要求目录必须已存在；否则抛出异常。
         /// </summary>
@@ -100,16 +100,6 @@ namespace ExtenderApp.Data
         {
             FileInfo = fileInfo;
             FileNameWithoutExtension = Path.GetFileNameWithoutExtension(fileInfo.FullName);
-            Hash = GetHash(FullPath);
-        }
-
-        /// <summary>
-        /// 使用文件路径初始化。
-        /// 仅包装路径，不会创建文件；目录需已存在。
-        /// </summary>
-        /// <param name="filePath">文件路径。</param>
-        public LocalFileInfo(string filePath) : this(new FileInfo(filePath))
-        {
         }
 
         /// <summary>
@@ -207,13 +197,6 @@ namespace ExtenderApp.Data
             return FullPath.Equals(other.FullPath);
         }
 
-        private static HashValue GetHash(string text)
-        {
-            byte[] utf8 = Encoding.UTF8.GetBytes(text ?? string.Empty);
-            byte[] hash = SHA256.HashData(utf8);
-            return HashValue.SHA256ComputeHash(hash);
-        }
-
         public static bool operator ==(LocalFileInfo left, LocalFileInfo right)
         {
             return left.Equals(right);
@@ -240,12 +223,15 @@ namespace ExtenderApp.Data
             return localFileInfo.IsEmpty ? string.Empty : localFileInfo.FullPath;
         }
 
-        public override int GetHashCode()
-        {
-            return Hash.GetHashCode();
-        }
+        //public override int GetHashCode()
+        //{
+        //    var hash = FullPath.gethas
+        //    int code = hash.GetHashCode();
+        //    hash.Dispose();
+        //    return code;
+        //}
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             return obj is LocalFileInfo && Equals((LocalFileInfo)obj);
         }

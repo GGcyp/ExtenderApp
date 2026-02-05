@@ -13,7 +13,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
     /// <summary>
     /// 简易的 HTTP 客户端，基于底层 ITcpLinker 封装为可发送请求并接收响应的客户端。
     /// - 支持明文和 TLS（通过 SslStream）请求发送/接收。
-    /// - 使用 HttpParser 对响应进行增量解析（基于 Content-Length）。
+    /// - 使用 HttpParser 对响应进行增量解析（基于 Content-Capacity）。
     /// - 对外以 ValueTask&lt;HttpResponseMessage&gt; 形式返回解析结果。
     /// </summary>
     internal class HttpLinkClient : LinkClient<ITcpLinker>, IHttpLinkClient, IValueTaskSource<HttpResponseMessage>, IDisposable

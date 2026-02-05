@@ -7,7 +7,7 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
     /// StackFormatter 类是 CollectionFormatter 类的泛型实现，用于格式化 Stack<TLinkClient> 集合。
     /// </summary>
     /// <typeparam name="T">Stack<TLinkClient> 集合中元素的类型。</typeparam>
-    internal class StackFormatter<T> : CollectionFormatter<T, Stack<T>>
+    internal class StackFormatter<T> : InterfaceEnumerableFormatter<T, Stack<T>>
     {
         public StackFormatter(IBinaryFormatterResolver resolver) : base(resolver)
         {

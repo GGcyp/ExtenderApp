@@ -48,7 +48,7 @@ namespace ExtenderApp.Data
         }
 
         /// <summary>
-        /// 设置文本内容（会设置/覆盖 Content-Type 与 Content-Length 头）。
+        /// 设置文本内容（会设置/覆盖 Content-Type 与 Content-WrittenCount 头）。
         /// </summary>
         /// <param name="text">文本内容。</param>
         /// <param name="encoding">可选编码（默认 UTF-8）。</param>
@@ -59,11 +59,11 @@ namespace ExtenderApp.Data
             WriteToBody(text, encoding);
             // 修正错误的默认 Content-Type（之前为 "bodyText/plain" 的拼写错误）
             Headers.SetValue(HttpHeaders.ContentType, string.IsNullOrEmpty(contentType) ? $"text/plain; charset={encoding.WebName}" : contentType);
-            Headers.SetValue(HttpHeaders.ContentLength, Body.Length.ToString());
+            Headers.SetValue(HttpHeaders.ContentLength, Body.WrittenCount.ToString());
         }
 
         /// <summary>
-        /// 设置二进制内容（会设置/覆盖 Content-Type 与 Content-Length 头）。
+        /// 设置二进制内容（会设置/覆盖 Content-Type 与 Content-WrittenCount 头）。
         /// </summary>
         /// <param name="span">要写入的字节切片（拷贝到内部 ByteBlock）。</param>
         /// <param name="contentType">Content-Type，默认 application/octet-stream。</param>
@@ -82,7 +82,7 @@ namespace ExtenderApp.Data
         }
 
         /// <summary>
-        /// 设置二进制内容（会设置/覆盖 Content-Type 与 Content-Length 头）。
+        /// 设置二进制内容（会设置/覆盖 Content-Type 与 Content-WrittenCount 头）。
         /// </summary>
         /// <param name="block">要写入的字节块（拷贝到内部 ByteBlock）。</param>
         /// <param name="contentType">Content-Type，默认 application/octet-stream。</param>
@@ -97,7 +97,7 @@ namespace ExtenderApp.Data
             Body = block;
 
             Headers!.SetValue(HttpHeaders.ContentType, contentType ?? "application/octet-stream");
-            Headers!.SetValue(HttpHeaders.ContentLength, block.Length.ToString());
+            Headers!.SetValue(HttpHeaders.ContentLength, block.WrittenCount.ToString());
         }
 
         /// <summary>

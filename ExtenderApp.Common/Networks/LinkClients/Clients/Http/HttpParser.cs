@@ -11,7 +11,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
     /// <summary>
     /// 简单的 HTTP 请求/响应解析器。
     /// - 以 ASCII/ISO-8859-1 解码首行与头部（HTTP 头通常为 ASCII）。
-    /// - 仅支持基于 Content-Length 的正文提取，不支持 chunked/分块编码。
+    /// - 仅支持基于 Content-Capacity 的正文提取，不支持 chunked/分块编码。
     /// - 方法为 TryParse 风格：数据不足时返回 false，调用方可等待更多字节再重试。
     /// </summary>
     internal class HttpParser : DisposableObject, IHttpParser
@@ -38,8 +38,8 @@ namespace ExtenderApp.Common.Networks.LinkClients
         private int headerBlockLen;
 
         /// <summary>
-        /// 根据响应头中的 Content-Length 解析得到的主体长度（字节）。
-        /// 若未提供 Content-Length，则为 0（当前实现不支持 chunked 编码）。
+        /// 根据响应头中的 Content-Capacity 解析得到的主体长度（字节）。
+        /// 若未提供 Content-Capacity，则为 0（当前实现不支持 chunked 编码）。
         /// </summary>
         private int contentLength;
 
@@ -251,7 +251,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
             // Reason-Phrase（可能包含空格）
             message.ReasonPhrase = parts.Length >= 3 ? parts[2] : string.Empty;
 
-            // Body（基于 Content-Length）
+            // Body（基于 Content-Capacity）
             if (message.Headers.TryGetValues(HttpHeaders.ContentLength, out var maybeLen))
             {
                 if (int.TryParse(maybeLen[0] ?? string.Empty, out var parsedLen))
@@ -321,7 +321,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
                     message.Version = new Version(major, minor);
             }
 
-            // Content-Length
+            // Content-Capacity
             if (message.Headers.TryGetValues(HttpHeaders.ContentLength, out var maybeLen))
             {
                 if (int.TryParse(maybeLen[0] ?? string.Empty, out var parsedLen))

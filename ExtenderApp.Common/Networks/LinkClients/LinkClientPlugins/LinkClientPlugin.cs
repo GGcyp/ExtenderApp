@@ -9,14 +9,14 @@ namespace ExtenderApp.Common.Networks
     /// </summary>
     public abstract class LinkClientPlugin<TLinkClient> : DisposableObject, ILinkClientPlugin
     {
-        protected ILinkClientAwareSender Linker { get; private set; }
+        protected TLinkClient? Linker { get; private set; }
 
         public LinkClientPlugin()
         {
-            Linker = null!;
+            Linker = default!;
         }
 
-        public virtual Result OnAttach(ILinkClientAwareSender client)
+        public virtual Result OnAttach(TLinkClient client)
         {
             Linker = client;
             return Result.Success();

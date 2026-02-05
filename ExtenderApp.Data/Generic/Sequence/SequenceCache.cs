@@ -8,7 +8,7 @@ namespace ExtenderApp.Data
     /// - 提供写入/读取方法（基于 <see cref="Sequence{T}"/> 与临时 <see cref="SequenceReader{T}"/>）；
     /// - 当序列中无未读数据时，会自动释放（将租约归还到池中）。
     /// </summary>
-    /// <typeparam name="T">元素类型。</typeparam>
+    /// <typeparam name="T">元素类型，必须是无偏置的非托管类型并实现 <see cref="IEquatable{T}"/>。</typeparam>
     public class SequenceCache<T> : DisposableObject where T : unmanaged, IEquatable<T>
     {
         private readonly SequencePool<T> _pool;
@@ -19,15 +19,18 @@ namespace ExtenderApp.Data
         // 为方便使用也缓存当前 Sequence 引用（当 _rental.IsEmpty == false 时有效）
         private Sequence<T>? sequence;
 
-        // 已消费（读取）的元素总数（相对于 sequence.Length 的偏移）
+        // 已消费（读取）的元素总数（相对于 Sequence.WrittenCount 的偏移）
         private long consumed;
 
+        /// <summary>
+        /// 初始化 <see cref="SequenceCache{T}"/> 类的新实例，使用 <see cref="SequencePool{T}.Shared"/>。
+        /// </summary>
         public SequenceCache() : this(SequencePool<T>.Shared)
         {
         }
 
         /// <summary>
-        /// 使用指定的序列池构造。如果为 null 则使用 <see cref="SequencePool{T}.Shared"/>.
+        /// 使用指定的序列池构造。如果为 null 则使用 <see cref="SequencePool{T}.Shared"/>。
         /// </summary>
         /// <param name="pool">序列池。</param>
         public SequenceCache(SequencePool<T> pool)
@@ -36,12 +39,12 @@ namespace ExtenderApp.Data
         }
 
         /// <summary>
-        /// 当前是否持有租用的序列。
+        /// 获取当前是否持有租用的序列。
         /// </summary>
         public bool HasSequence => !_rental.IsEmpty;
 
         /// <summary>
-        /// 当前序列中剩余（未读取）的元素数。
+        /// 获取当前序列中剩余（未读取）的元素数。
         /// </summary>
         public long Remaining
         {
@@ -54,7 +57,7 @@ namespace ExtenderApp.Data
         }
 
         /// <summary>
-        /// 是否为空：既未持有可写序列，又没有未读数据。
+        /// 获取一个值，指示当前是否为空：既未持有可写序列，又没有未读数据。
         /// </summary>
         public bool IsEmpty => !HasSequence || Remaining == 0;
 
@@ -89,7 +92,8 @@ namespace ExtenderApp.Data
         /// 申请可写 Span（会延迟租用序列）。
         /// </summary>
         /// <param name="sizeHint">期望的最小连续容量。</param>
-        /// <returns>可写 Span。</returns>
+        /// <returns>返回可用的 <see cref="Span{T}"/>。</returns>
+        /// <exception cref="ObjectDisposedException">当对象已释放时抛出。</exception>
         public Span<T> GetSpan(int sizeHint = 0)
         {
             EnsureNotDisposed();
@@ -101,7 +105,8 @@ namespace ExtenderApp.Data
         /// 申请可写 Memory（会延迟租用序列）。
         /// </summary>
         /// <param name="sizeHint">期望的最小连续容量。</param>
-        /// <returns>可写 Memory。</returns>
+        /// <returns>返回可用的 <see cref="Memory{T}"/>。</returns>
+        /// <exception cref="ObjectDisposedException">当对象已释放时抛出。</exception>
         public Memory<T> GetMemory(int sizeHint = 0)
         {
             EnsureNotDisposed();
@@ -113,6 +118,8 @@ namespace ExtenderApp.Data
         /// 将先前通过 <see cref="GetSpan(int)"/> / <see cref="GetMemory(int)"/> 获取的写缓冲提交为已写入长度。
         /// </summary>
         /// <param name="count">已写入的元素数量。</param>
+        /// <exception cref="ObjectDisposedException">当对象已释放时抛出。</exception>
+        /// <exception cref="InvalidOperationException">尚未租用序列以写入时抛出。</exception>
         public void WriteAdvance(int count)
         {
             EnsureNotDisposed();
@@ -126,6 +133,7 @@ namespace ExtenderApp.Data
         /// 直接写入一段只读跨度数据（会延迟租用序列）。
         /// </summary>
         /// <param name="data">要写入的数据。</param>
+        /// <exception cref="ObjectDisposedException">当对象已释放时抛出。</exception>
         public void Write(ReadOnlySpan<T> data)
         {
             EnsureNotDisposed();
@@ -139,8 +147,10 @@ namespace ExtenderApp.Data
 
         /// <summary>
         /// 从序列当前位置尝试读取一个元素并前进（消费）。
-        /// 若不存在数据返回 false。
         /// </summary>
+        /// <param name="value">输出读取到的值；若读取失败则为默认值。</param>
+        /// <returns>若成功读取返回 true；否则返回 false。</returns>
+        /// <exception cref="ObjectDisposedException">当对象已释放时抛出。</exception>
         public bool TryRead(out T value)
         {
             EnsureNotDisposed();
@@ -159,10 +169,11 @@ namespace ExtenderApp.Data
         }
 
         /// <summary>
-        /// 将数据读取到目标跨度并前进（消费），返回实际读取的元素数量（可能小于目标长度）。
+        /// 将数据读取到目标跨度并前进（消费）。
         /// </summary>
         /// <param name="destination">目标跨度。</param>
-        /// <returns>实际读取数量。</returns>
+        /// <returns>实际读取并填充到 <paramref name="destination"/> 的元素数量。</returns>
+        /// <exception cref="ObjectDisposedException">当对象已释放时抛出。</exception>
         public int Read(Span<T> destination)
         {
             EnsureNotDisposed();
@@ -196,6 +207,9 @@ namespace ExtenderApp.Data
         /// 将读取位置向前移动指定元素数（相当于消费）。
         /// </summary>
         /// <param name="count">要前进的元素数量。</param>
+        /// <exception cref="ObjectDisposedException">当对象已释放时抛出。</exception>
+        /// <exception cref="InvalidOperationException">没有可租用的序列时抛出。</exception>
+        /// <exception cref="ArgumentOutOfRangeException">尝试前进的长度超过了剩余可用数据长度。</exception>
         public void ReadAdvance(long count)
         {
             EnsureNotDisposed();
@@ -224,6 +238,11 @@ namespace ExtenderApp.Data
             }
         }
 
+        /// <summary>
+        /// 获取针对当前缓存序列的 <see cref="SequenceReader{T}"/>。
+        /// </summary>
+        /// <returns>返回定位在当前消费偏移处的 <see cref="SequenceReader{T}"/>。</returns>
+        /// <exception cref="ObjectDisposedException">当对象已释放时抛出。</exception>
         public SequenceReader<T> GetSequenceReader()
         {
             EnsureNotDisposed();
@@ -234,11 +253,15 @@ namespace ExtenderApp.Data
             return reader;
         }
 
+        /// <inheritdoc/>
         protected override void DisposeManagedResources()
         {
             Reset();
         }
 
+        /// <summary>
+        /// 检查对象是否已释放，若已释放则抛出异常。
+        /// </summary>
         private void EnsureNotDisposed()
         {
             ThrowIfDisposed();

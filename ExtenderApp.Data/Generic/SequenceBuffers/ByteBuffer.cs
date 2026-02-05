@@ -17,8 +17,6 @@ namespace ExtenderApp.Data
     /// </summary>
     public ref struct ByteBuffer
     {
-        public static ByteBuffer CreateBuffer() => new ByteBuffer(SequencePool<byte>.Shared);
-
         /// <summary>
         /// 内部泛型块实现，封装实际的写入/读取逻辑。
         /// </summary>
@@ -110,11 +108,9 @@ namespace ExtenderApp.Data
         public bool IsEmpty => _buffer.IsEmpty;
 
         /// <summary>
-        /// 创建一个空的字节缓冲实例。
-        /// 需要创建可用的字节缓存，请使用其他构造函数。
-        /// 例如<see cref="CreateBuffer"/>
+        /// 创建一个新的 <see cref="ByteBuffer"/> 实例，使用共享的字节序列池。
         /// </summary>
-        public ByteBuffer()
+        public ByteBuffer() : this(SequencePool<byte>.Shared)
         {
         }
 
@@ -273,262 +269,6 @@ namespace ExtenderApp.Data
             _buffer.Write(value);
         }
 
-        /// <summary>
-        /// 写入一个 16 位有符号整数（short）。
-        /// </summary>
-        /// <param name="value">要写入的值。</param>
-        /// <param name="isBigEndian">是否采用大端字节序（默认大端，常用于网络协议）。</param>
-        /// <remarks>写入字节数：2。</remarks>
-        public void Write(short value, bool isBigEndian = true)
-        {
-            const int shortCount = sizeof(short);
-            Span<byte> bytes = GetSpan(shortCount);
-            if (isBigEndian)
-                BinaryPrimitives.WriteInt16BigEndian(bytes, value);
-            else
-                BinaryPrimitives.WriteInt16LittleEndian(bytes, value);
-            WriteAdvance(shortCount);
-        }
-
-        /// <summary>
-        /// 写入一个 32 位有符号整数（int）。
-        /// </summary>
-        /// <param name="value">要写入的值。</param>
-        /// <param name="isBigEndian">是否采用大端字节序。</param>
-        /// <remarks>写入字节数：4。</remarks>
-        public void Write(int value, bool isBigEndian = true)
-        {
-            const int intCount = sizeof(int);
-            Span<byte> bytes = GetSpan(intCount);
-            if (isBigEndian)
-                BinaryPrimitives.WriteInt32BigEndian(bytes, value);
-            else
-                BinaryPrimitives.WriteInt32LittleEndian(bytes, value);
-            WriteAdvance(intCount);
-        }
-
-        /// <summary>
-        /// 写入一个 64 位有符号整数（long）。
-        /// </summary>
-        /// <param name="value">要写入的值。</param>
-        /// <param name="isBigEndian">是否采用大端字节序。</param>
-        /// <remarks>写入字节数：8。</remarks>
-        public void Write(long value, bool isBigEndian = true)
-        {
-            const int longCount = sizeof(long);
-            Span<byte> bytes = GetSpan(longCount);
-            if (isBigEndian)
-                BinaryPrimitives.WriteInt64BigEndian(bytes, value);
-            else
-                BinaryPrimitives.WriteInt64LittleEndian(bytes, value);
-            WriteAdvance(longCount);
-        }
-
-        /// <summary>
-        /// 写入一个 32 位单精度浮点数（float）。
-        /// </summary>
-        /// <param name="value">要写入的值。</param>
-        /// <param name="isBigEndian">是否采用大端字节序。</param>
-        /// <remarks>写入字节数：4。使用 IEEE 754 位模式。</remarks>
-        public void Write(float value, bool isBigEndian = true)
-        {
-            const int floatCount = sizeof(float);
-            Span<byte> bytes = GetSpan(floatCount);
-            if (isBigEndian)
-                BinaryPrimitives.WriteSingleBigEndian(bytes, value);
-            else
-                BinaryPrimitives.WriteSingleLittleEndian(bytes, value);
-            WriteAdvance(floatCount);
-        }
-
-        /// <summary>
-        /// 写入一个 64 位双精度浮点数（double）。
-        /// </summary>
-        /// <param name="value">要写入的值。</param>
-        /// <param name="isBigEndian">是否采用大端字节序。</param>
-        /// <remarks>写入字节数：8。使用 IEEE 754 位模式。</remarks>
-        public void Write(double value, bool isBigEndian = true)
-        {
-            const int doubleCount = sizeof(double);
-            Span<byte> bytes = GetSpan(doubleCount);
-            if (isBigEndian)
-                BinaryPrimitives.WriteDoubleBigEndian(bytes, value);
-            else
-                BinaryPrimitives.WriteDoubleLittleEndian(bytes, value);
-            WriteAdvance(doubleCount);
-        }
-
-        /// <summary>
-        /// 写入一个 16 位无符号整数（ushort）。
-        /// </summary>
-        /// <param name="value">要写入的值。</param>
-        /// <param name="isBigEndian">是否采用大端字节序。</param>
-        /// <remarks>写入字节数：2。</remarks>
-        public void Write(ushort value, bool isBigEndian = true)
-        {
-            const int ushortCount = sizeof(ushort);
-            Span<byte> bytes = GetSpan(ushortCount);
-            if (isBigEndian)
-                BinaryPrimitives.WriteUInt16BigEndian(bytes, value);
-            else
-                BinaryPrimitives.WriteUInt16LittleEndian(bytes, value);
-            WriteAdvance(ushortCount);
-        }
-
-        /// <summary>
-        /// 写入一个 32 位无符号整数（uint）。
-        /// </summary>
-        /// <param name="value">要写入的值。</param>
-        /// <param name="isBigEndian">是否采用大端字节序。</param>
-        /// <remarks>写入字节数：4。</remarks>
-        public void Write(uint value, bool isBigEndian = true)
-        {
-            const int uintCount = sizeof(uint);
-            Span<byte> bytes = GetSpan(uintCount);
-            if (isBigEndian)
-                BinaryPrimitives.WriteUInt32BigEndian(bytes, value);
-            else
-                BinaryPrimitives.WriteUInt32LittleEndian(bytes, value);
-            WriteAdvance(uintCount);
-        }
-
-        /// <summary>
-        /// 写入一个 64 位无符号整数（ulong）。
-        /// </summary>
-        /// <param name="value">要写入的值。</param>
-        /// <param name="isBigEndian">是否采用大端字节序。</param>
-        /// <remarks>写入字节数：8。</remarks>
-        public void Write(ulong value, bool isBigEndian = true)
-        {
-            const int ulongCount = sizeof(ulong);
-            Span<byte> bytes = GetSpan(ulongCount);
-            if (isBigEndian)
-                BinaryPrimitives.WriteUInt64BigEndian(bytes, value);
-            else
-                BinaryPrimitives.WriteUInt64LittleEndian(bytes, value);
-            WriteAdvance(ulongCount);
-        }
-
-        /// <summary>
-        /// 写入一个 <see cref="decimal"/> 值（内部 128 位结构，顺序写入四个 Int32，高位在前）。
-        /// </summary>
-        /// <param name="value">要写入的十进制数。</param>
-        /// <remarks>写入字节数：16。字段顺序与 <see cref="decimal.GetBits(decimal)"/> 返回数组一致。</remarks>
-        public void Write(decimal value)
-        {
-            int[] bits = decimal.GetBits(value);
-            for (int i = 0; i < bits.Length; i++)
-            {
-                Write(bits[i], isBigEndian: true);
-            }
-        }
-
-        /// <summary>
-        /// 写入一个布尔值（1 字节：true=0x01，false=0x00）。
-        /// </summary>
-        /// <param name="value">要写入的布尔值。</param>
-        public void Write(bool value)
-        {
-            Write(value ? (byte)1 : (byte)0);
-        }
-
-        /// <summary>
-        /// 写入单个字符。默认使用 UTF-8 编码（长度可变），不写入长度前缀。
-        /// </summary>
-        /// <param name="value">要写入的字符。</param>
-        /// <param name="encoding">字符编码，默认为 UTF-8。</param>
-        public void Write(char value, Encoding? encoding = null)
-        {
-            encoding ??= Encoding.UTF8;
-            Span<char> span = stackalloc char[1] { value };
-            var byteCount = encoding.GetByteCount(span);
-            var memory = GetMemory(byteCount);
-            encoding.GetBytes(span, memory.Span);
-            WriteAdvance(byteCount);
-        }
-
-        /// <summary>
-        /// 写入一段字符跨度。默认 UTF-8 编码，不写长度前缀。
-        /// </summary>
-        /// <param name="value">要写入的字符跨度。</param>
-        /// <param name="encoding">字符编码（默认 UTF-8）。</param>
-        public void Write(ReadOnlySpan<char> value, Encoding? encoding = null)
-        {
-            if (value.IsEmpty)
-                return;
-
-            encoding ??= Encoding.UTF8;
-            var byteCount = encoding.GetByteCount(value);
-            var span = GetSpan(byteCount);
-            encoding.GetBytes(value, span);
-            WriteAdvance(byteCount);
-        }
-
-        /// <summary>
-        /// 写入一段只读字符内存。默认 UTF-8 编码，不写长度前缀。
-        /// </summary>
-        /// <param name="value">要写入的字符内存。</param>
-        /// <param name="encoding">字符编码（默认 UTF-8）。</param>
-        public void Write(ReadOnlyMemory<char> value, Encoding? encoding = null)
-        {
-            if (value.IsEmpty)
-                return;
-
-            encoding ??= Encoding.UTF8;
-            var byteCount = encoding.GetByteCount(value.Span);
-            var memory = GetMemory(byteCount);
-            encoding.GetBytes(value.Span, memory.Span);
-            WriteAdvance(byteCount);
-        }
-
-        /// <summary>
-        /// 写入一个 GUID（16 字节，按其内部字节表示，与 <see cref="Guid.TryWriteBytes"/> 一致）。
-        /// </summary>
-        /// <param name="value">要写入的 GUID。</param>
-        /// <remarks>写入字节数：16。</remarks>
-        public void Write(Guid value)
-        {
-            Span<byte> bytes = stackalloc byte[16];
-            value.TryWriteBytes(bytes);
-            Write(bytes);
-        }
-
-        /// <summary>
-        /// 写入一个 <see cref="DateTime"/> 的 Ticks（Int64）。默认为大端序。
-        /// </summary>
-        /// <param name="value">日期时间值。</param>
-        /// <param name="isBigEndian">是否大端字节序。</param>
-        /// <remarks>写入字节数：8。</remarks>
-        public void Write(DateTime value, bool isBigEndian = true)
-        {
-            long ticks = value.Ticks;
-            Write(ticks, isBigEndian);
-        }
-
-        /// <summary>
-        /// 写入一个 <see cref="DateTimeOffset"/> 的 Ticks（Int64）。不写偏移量。
-        /// </summary>
-        /// <param name="value">日期时间偏移值。</param>
-        /// <param name="isBigEndian">是否大端字节序。</param>
-        /// <remarks>仅写入 <see cref="DateTimeOffset.Ticks"/>；如需保留 Offset 需另行写入。</remarks>
-        public void Write(DateTimeOffset value, bool isBigEndian = true)
-        {
-            long ticks = value.Ticks;
-            Write(ticks, isBigEndian);
-        }
-
-        /// <summary>
-        /// 写入一个 <see cref="TimeSpan"/> 的 Ticks（Int64）。
-        /// </summary>
-        /// <param name="value">时间间隔值。</param>
-        /// <param name="isBigEndian">是否大端字节序。</param>
-        /// <remarks>写入字节数：8。</remarks>
-        public void Write(TimeSpan value, bool isBigEndian = true)
-        {
-            long ticks = value.Ticks;
-            Write(ticks, isBigEndian);
-        }
-
         #endregion Write
 
         #region Read
@@ -536,12 +276,12 @@ namespace ExtenderApp.Data
         /// <summary>
         /// 从当前位置尝试读取一个元素并前进。
         /// </summary>
-        /// <param name="value">输出读取到的元素。</param>
+        /// <param name="destination">输出读取到的元素。</param>
         /// <returns>读取成功返回 true，否则 false。</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool TryRead(out byte value)
+        public bool TryRead(out byte destination)
         {
-            return _buffer.TryRead(out value);
+            return _buffer.TryRead(out destination);
         }
 
         /// <summary>
@@ -573,7 +313,7 @@ namespace ExtenderApp.Data
         }
 
         /// <summary>
-        /// 读取最多 <paramref name="destination"/>.Length 个未读字节到目标跨度，并将读指针前进相应长度（不影响写指针）。
+        /// 读取最多 <paramref name="destination"/>.WrittenCount 个未读字节到目标跨度，并将读指针前进相应长度（不影响写指针）。
         /// </summary>
         /// <param name="destination">接收数据的目标跨度。</param>
         /// <returns>实际读取的字节数。</returns>
@@ -585,7 +325,7 @@ namespace ExtenderApp.Data
 
         /// <summary>
         /// 读取最多 <paramref
-        /// name="destination"/>.Length 个未读字节到目标内存，并将读指针前进相应长度（不影响写指针）。
+        /// name="destination"/>.WrittenCount 个未读字节到目标内存，并将读指针前进相应长度（不影响写指针）。
         /// </summary>
         /// <param name="destination">接收数据的目标内存。</param>
         /// <returns>实际读取的字节数。</returns>
@@ -594,305 +334,10 @@ namespace ExtenderApp.Data
         /// </exception>
         /// <remarks>
         /// 等同于调用 Read(destination.Span)。实际读取数量为
-        /// Math.Min(destination.Length, Remaining)。
+        /// Math.Min(destination.WrittenCount, Remaining)。
         /// </remarks>
         public int Read(Memory<byte> destination)
             => _buffer.Read(destination);
-
-        /// <summary>
-        /// 读取最多 <paramref name="byteCount"/> 个未读字节，并将读指针前进相应长度（不影响写指针）。
-        /// </summary>
-        /// <param name="byteCount">
-        /// 期望读取的字节数；若超过可读数量将按 <see
-        /// cref="Remaining"/> 截断。
-        /// </param>
-        /// <returns>指向所读数据的只读跨度。</returns>
-        /// <exception cref="InvalidOperationException">
-        /// 当没有可读数据（ <see cref="Remaining"/> == 0）时抛出。
-        /// </exception>
-        public ByteBlock Read(int byteCount)
-        {
-            int length = Math.Min(byteCount, (int)Remaining);
-            ByteBlock block = new(length);
-            var span = block.GetSpan(length);
-            Read(span.Slice(0, length));
-            block.WriteAdvance(length);
-            return block;
-        }
-
-        /// <summary>
-        /// 泛型读取一个值，并将读指针前进相应字节数（数值类型默认按大端序）。
-        /// 支持类型：byte/sbyte、short/ushort、int/uint、long/ulong、float、double、decimal、bool、char、Guid、DateTime、DateTimeOffset、TimeSpan、string。
-        /// </summary>
-        /// <typeparam name="T">目标类型。</typeparam>
-        /// <exception cref="InvalidOperationException">当剩余数据不足以读取目标类型时抛出。</exception>
-        /// <exception cref="NotSupportedException">当目标类型不受支持时抛出。</exception>
-        public T Read<T>(bool isBigEndian = true)
-        {
-            var type = typeof(T);
-            object result = type switch
-            {
-                _ when type == typeof(byte) => Read(),
-                _ when type == typeof(sbyte) => unchecked((sbyte)Read()),
-                _ when type == typeof(short) => ReadInt16(isBigEndian),
-                _ when type == typeof(ushort) => ReadUInt16(isBigEndian),
-                _ when type == typeof(int) => ReadInt32(isBigEndian),
-                _ when type == typeof(uint) => ReadUInt32(isBigEndian),
-                _ when type == typeof(long) => ReadInt64(isBigEndian),
-                _ when type == typeof(ulong) => ReadUInt64(isBigEndian),
-                _ when type == typeof(float) => ReadSingle(isBigEndian),
-                _ when type == typeof(double) => ReadDouble(isBigEndian),
-                _ when type == typeof(decimal) => ReadDecimal(),
-                _ when type == typeof(bool) => ReadBoolean(),
-                _ when type == typeof(char) => ReadChar(), // 默认 UTF-8
-                _ when type == typeof(Guid) => ReadGuid(),
-                _ when type == typeof(DateTime) => ReadDateTime(isBigEndian),
-                _ when type == typeof(DateTimeOffset) => ReadDateTimeOffset(isBigEndian),
-                _ when type == typeof(TimeSpan) => ReadTimeSpan(isBigEndian),
-                _ when type == typeof(string) => ReadString(), // 读取剩余全部为字符串
-                _ => throw new NotSupportedException($"ByteBuffer.Read<T> 不支持类型: {type.FullName}")
-            };
-
-            return (T)result;
-        }
-
-        /// <summary>
-        /// 读取一个 16 位有符号整数（short），并将读指针前进 2 字节。
-        /// </summary>
-        /// <param name="isBigEndian">是否按大端序解码（默认大端）。</param>
-        /// <returns>解析得到的 short 值。</returns>
-        /// <exception cref="InvalidOperationException">当没有可读数据时抛出。</exception>
-        public short ReadInt16(bool isBigEndian = true)
-        {
-            var block = Read(sizeof(short));
-            var result = block.ReadInt16(isBigEndian);
-            block.Dispose();
-            return result;
-        }
-
-        /// <summary>
-        /// 读取一个 32 位有符号整数（int），并将读指针前进 4 字节。
-        /// </summary>
-        /// <param name="isBigEndian">是否按大端序解码（默认大端）。</param>
-        /// <returns>解析得到的 int 值。</returns>
-        /// <exception cref="InvalidOperationException">当没有可读数据时抛出。</exception>
-        public int ReadInt32(bool isBigEndian = true)
-        {
-            var block = Read(sizeof(int));
-            var result = block.ReadInt32(isBigEndian);
-            block.Dispose();
-            return result;
-        }
-
-        /// <summary>
-        /// 读取一个 64 位有符号整数（long），并将读指针前进 8 字节。
-        /// </summary>
-        /// <param name="isBigEndian">是否按大端序解码（默认大端）。</param>
-        /// <returns>解析得到的 long 值。</returns>
-        /// <exception cref="InvalidOperationException">当没有可读数据时抛出。</exception>
-        public long ReadInt64(bool isBigEndian = true)
-        {
-            var block = Read(sizeof(long));
-            var result = block.ReadInt64(isBigEndian);
-            block.Dispose();
-            return result;
-        }
-
-        /// <summary>
-        /// 读取一个 16 位无符号整数（ushort），并将读指针前进 2 字节。
-        /// </summary>
-        /// <param name="isBigEndian">是否按大端序解码（默认大端）。</param>
-        /// <returns>解析得到的 ushort 值。</returns>
-        /// <exception cref="InvalidOperationException">当没有可读数据时抛出。</exception>
-        public ushort ReadUInt16(bool isBigEndian = true)
-        {
-            var block = Read(sizeof(ushort));
-            var result = block.ReadUInt16(isBigEndian);
-            block.Dispose();
-            return result;
-        }
-
-        /// <summary>
-        /// 读取一个 32 位无符号整数（uint），并将读指针前进 4 字节。
-        /// </summary>
-        /// <param name="isBigEndian">是否按大端序解码（默认大端）。</param>
-        /// <returns>解析得到的 uint 值。</returns>
-        /// <exception cref="InvalidOperationException">当没有可读数据时抛出。</exception>
-        public uint ReadUInt32(bool isBigEndian = true)
-        {
-            var block = Read(sizeof(uint));
-            var result = block.ReadUInt32(isBigEndian);
-            block.Dispose();
-            return result;
-        }
-
-        /// <summary>
-        /// 读取一个 64 位无符号整数（ulong），并将读指针前进 8 字节。
-        /// </summary>
-        /// <param name="isBigEndian">是否按大端序解码（默认大端）。</param>
-        /// <returns>解析得到的 ulong 值。</returns>
-        /// <exception cref="InvalidOperationException">当没有可读数据时抛出。</exception>
-        public ulong ReadUInt64(bool isBigEndian = true)
-        {
-            var block = Read(sizeof(ulong));
-            var result = block.ReadUInt64(isBigEndian);
-            block.Dispose();
-            return result;
-        }
-
-        /// <summary>
-        /// 读取一个 32 位单精度浮点数（float，IEEE 754），并将读指针前进 4 字节。
-        /// </summary>
-        /// <param name="isBigEndian">是否按大端序解码（默认大端）。</param>
-        /// <returns>解析得到的 float 值。</returns>
-        /// <exception cref="InvalidOperationException">当没有可读数据时抛出。</exception>
-        public float ReadSingle(bool isBigEndian = true)
-        {
-            var block = Read(sizeof(float));
-            var result = block.ReadSingle(isBigEndian);
-            block.Dispose();
-            return result;
-        }
-
-        /// <summary>
-        /// 读取一个 64 位双精度浮点数（double，IEEE 754），并将读指针前进 8 字节。
-        /// </summary>
-        /// <param name="isBigEndian">是否按大端序解码（默认大端）。</param>
-        /// <returns>解析得到的 double 值。</returns>
-        /// <exception cref="InvalidOperationException">当没有可读数据时抛出。</exception>
-        public double ReadDouble(bool isBigEndian = true)
-        {
-            var block = Read(sizeof(double));
-            var result = block.ReadDouble(isBigEndian);
-            block.Dispose();
-            return result;
-        }
-
-        /// <summary>
-        /// 读取一个 <see cref="decimal"/>（16 字节），按四个 Int32（高位在前）组合，并将读指针前进 16 字节。
-        /// </summary>
-        /// <returns>解析得到的 decimal 值。</returns>
-        /// <remarks>内部通过 <see cref="decimal.GetBits(decimal)"/> 的位布局进行还原，使用大端序读取每个 Int32 段。</remarks>
-        /// <exception cref="InvalidOperationException">当没有可读数据时抛出。</exception>
-        public decimal ReadDecimal()
-        {
-            Span<int> bits = stackalloc int[4];
-            for (int i = 0; i < bits.Length; i++)
-            {
-                bits[i] = ReadInt32(isBigEndian: true);
-            }
-            return new decimal(bits);
-        }
-
-        /// <summary>
-        /// 读取一个布尔值，并将读指针前进 1 字节。
-        /// </summary>
-        /// <returns>true 当字节非 0；否则 false。</returns>
-        /// <exception cref="InvalidOperationException">当没有可读数据时抛出。</exception>
-        public bool ReadBoolean()
-        {
-            byte value = Read();
-            return value != 0;
-        }
-
-        /// <summary>
-        /// 按指定编码读取一个字符，并将读指针前进相应字节数。
-        /// </summary>
-        /// <param name="encoding">字符编码，默认 UTF-8。</param>
-        /// <returns>解码得到的字符。</returns>
-        public char ReadChar(Encoding? encoding = null)
-        {
-            encoding ??= Encoding.UTF8;
-            int maxByteCount = encoding.GetMaxByteCount(1);
-            var block = Read(maxByteCount);
-            var result = block.ReadChar(encoding);
-            block.Dispose();
-            return result;
-        }
-
-        /// <summary>
-        /// 读取 16 字节并构造 <see cref="Guid"/>，并将读指针前进 16 字节。
-        /// </summary>
-        /// <returns>解析得到的 Guid。</returns>
-        /// <exception cref="InvalidOperationException">当没有可读数据时抛出。</exception>
-        public Guid ReadGuid()
-        {
-            var block = Read(16);
-            var result = block.ReadGuid();
-            block.Dispose();
-            return result;
-        }
-
-        /// <summary>
-        /// 读取一个 <see cref="DateTime"/> 的 Ticks（Int64），并将读指针前进 8 字节。
-        /// </summary>
-        /// <param name="isBigEndian">是否按大端序解码（默认大端）。</param>
-        /// <returns>基于 ticks 创建的 DateTime，<see cref="DateTime.Kind"/> 为 Unspecified。</returns>
-        /// <exception cref="InvalidOperationException">当没有可读数据时抛出。</exception>
-        public DateTime ReadDateTime(bool isBigEndian = true)
-        {
-            long ticks = ReadInt64(isBigEndian);
-            return new DateTime(ticks);
-        }
-
-        /// <summary>
-        /// 读取一个 <see cref="DateTimeOffset"/> 的 Ticks（Int64），并将读指针前进 8 字节。
-        /// </summary>
-        /// <param name="isBigEndian">是否按大端序解码（默认大端）。</param>
-        /// <returns>以零偏移量构造的 DateTimeOffset（不含原始 Offset 信息）。</returns>
-        /// <remarks>仅还原 <see cref="DateTimeOffset.Ticks"/>；若协议需要保留偏移量，请单独编码/读取 Offset。</remarks>
-        /// <exception cref="InvalidOperationException">当没有可读数据时抛出。</exception>
-        public DateTimeOffset ReadDateTimeOffset(bool isBigEndian = true)
-        {
-            long ticks = ReadInt64(isBigEndian);
-            return new DateTimeOffset(ticks, TimeSpan.Zero);
-        }
-
-        /// <summary>
-        /// 读取一个 <see cref="TimeSpan"/> 的 Ticks（Int64），并将读指针前进 8 字节。
-        /// </summary>
-        /// <param name="isBigEndian">是否按大端序解码（默认大端）。</param>
-        /// <returns>解析得到的 TimeSpan。</returns>
-        /// <exception cref="InvalidOperationException">当没有可读数据时抛出。</exception>
-        public TimeSpan ReadTimeSpan(bool isBigEndian = true)
-        {
-            long ticks = ReadInt64(isBigEndian);
-            return new TimeSpan(ticks);
-        }
-
-        /// <summary>
-        /// 使用指定编码读取剩余全部未读字节为字符串，并将读指针前进相应字节数（不影响写指针）。
-        /// </summary>
-        /// <param name="encoding">字符编码，默认 UTF-8。</param>
-        /// <returns>解析得到的字符串。</returns>
-        /// <exception cref="ArgumentOutOfRangeException">
-        /// 当没有可读数据（Remaining == 0）时抛出。
-        /// </exception>
-        public string ReadString(Encoding? encoding = null)
-        {
-            return ReadString((int)Remaining, encoding);
-        }
-
-        /// <summary>
-        /// 使用指定编码读取给定字节数为字符串，并将读指针前进相应字节数（不影响写指针）。
-        /// </summary>
-        /// <param name="byteCount">
-        /// 要读取并解码的字节数（必须在 1..Remaining 范围内）。
-        /// </param>
-        /// <param name="encoding">字符编码，默认 UTF-8。</param>
-        /// <returns>解析得到的字符串。</returns>
-        /// <exception cref="ArgumentOutOfRangeException">
-        /// 当 <paramref name="byteCount"/> ≤ 0 或大于可读字节数（Remaining）时抛出。
-        /// </exception>
-        public string ReadString(int byteCount, Encoding? encoding = null)
-        {
-            if (byteCount <= 0 || byteCount > Remaining)
-                throw new ArgumentOutOfRangeException(nameof(byteCount));
-            var block = Read(byteCount);
-            var result = block.ReadString(encoding);
-            block.Dispose();
-            return result;
-        }
 
         #endregion Read
 
@@ -1061,23 +506,29 @@ namespace ExtenderApp.Data
         }
 
         /// <summary>
-        /// 创建一个用于“窥视”的副本。
-        /// 注意：返回的是当前实例的按值副本，用于只读预览；请勿对副本调用 <see cref="Dispose"/> 以避免重复释放。
-        /// </summary>
-        public ByteBuffer CreatePeekBuffer() => _buffer.Reader;
-
-        /// <summary>
-        /// 获取当前序列的只读内存列表视图。
-        /// </summary>
-        /// <returns>只读内存列表</returns>
-        public IReadOnlyList<ReadOnlyMemory<byte>> ToReadOnlyList() => _buffer.ToReadOnlyList();
-
-        /// <summary>
         /// 释放底层序列资源（若有）。
         /// </summary>
         public void Dispose()
         {
             _buffer.Dispose();
+        }
+
+        /// <summary>
+        /// 将未读数格式为十六进制字符串。
+        /// </summary>
+        /// <returns>十六进制字符串。</returns>
+        public override string ToString()
+        {
+            StringBuilder sb = new((int)Remaining);
+            foreach (var memory in UnreadSequence)
+            {
+                ReadOnlySpan<byte> span = memory.Span;
+                for (int i = 0; i < span.Length; i++)
+                {
+                    sb.AppendFormat("{0:X2} ", span[i]);
+                }
+            }
+            return sb.ToString();
         }
 
         /// <summary>

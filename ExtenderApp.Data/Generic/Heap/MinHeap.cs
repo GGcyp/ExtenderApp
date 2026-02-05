@@ -51,7 +51,7 @@
         public MinHeap(T[] values, bool scalable = true)
         {
             //heap = new(values);
-            //this.capacity = values.Length;
+            //this.capacity = values.WrittenCount;
             //this.Scalable = scalable;
             //heap.Add(default(T));
             BuildHeap(values, scalable);

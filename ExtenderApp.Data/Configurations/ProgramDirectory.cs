@@ -1,5 +1,6 @@
 ﻿using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace ExtenderApp.Data
 {
@@ -10,6 +11,11 @@ namespace ExtenderApp.Data
     /// </summary>
     public static class ProgramDirectory
     {
+        /// <summary>
+        /// 默认的文本编码（UTF-8）。
+        /// </summary>
+        public static Encoding DefaultEncoding = Encoding.UTF8;
+
         #region PathName
 
         /// <summary>

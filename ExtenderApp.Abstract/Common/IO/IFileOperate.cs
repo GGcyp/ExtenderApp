@@ -104,10 +104,10 @@ namespace ExtenderApp.Abstract
         /// <summary>
         /// 从指定位置读取固定长度的字节数组。
         /// </summary>
-        /// <param name="filePosition">起始读取位置（字节偏移）。</param>
         /// <param name="length">要读取的字节数。</param>
+        /// <param name="filePosition">起始读取位置（字节偏移）。</param>
         /// <returns>一个 <see cref="Result{T}"/>，成功时包含读取到的字节数组。</returns>
-        Result<byte[]> Read(long filePosition, int length);
+        Result<byte[]> Read(int length, long filePosition);
 
         /// <summary>
         /// 将文件数据读取到提供的 <paramref name="span"/> 中。
@@ -162,11 +162,5 @@ namespace ExtenderApp.Abstract
         /// </summary>
         /// <param name="newCapacity">新的目标容量（字节）。</param>
         void ExpandCapacity(long newCapacity);
-
-        /// <summary>
-        /// 获取文件的唯一标识符 (GUID)。
-        /// </summary>
-        /// <returns>表示文件的唯一 <see cref="Guid"/>。</returns>
-        Guid GetFileGuid();
     }
 }

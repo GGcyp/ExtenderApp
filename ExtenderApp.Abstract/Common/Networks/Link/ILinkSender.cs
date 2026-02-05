@@ -12,14 +12,36 @@ namespace ExtenderApp.Abstract
     public interface ILinkSender
     {
         /// <summary>
+        /// 同步发送指定的只读字节跨度数据。
+        /// </summary>
+        /// <remarks>
+        /// 该重载通常用于小块数据或位于栈上的 <see cref="Span{T}"/>，以避免不必要的内存装箱或分配。
+        /// </remarks>
+        /// <param name="span">要发送的数据跨度。</param>
+        /// <returns>
+        /// 一个包含 <see cref="SocketOperationValue"/> 的 <see cref="Result{T}"/> 实例，语义与 <see cref="Send(Memory{byte})"/> 一致。
+        /// </returns>
+        Result<SocketOperationValue> Send(ReadOnlySpan<byte> span);
+
+        /// <summary>
         /// 同步发送指定缓冲区的数据。
         /// </summary>
         /// <param name="memory">要发送的有效数据窗口。调用方负责提供合适的长度与内容。</param>
         /// <returns>
-        /// 一个 <see cref="Result{T}"/> 实例，其中：
-        /// - 失败时，<see cref="Result.Exception"/> 包含相应的异常信息。
+        /// 一个包含 <see cref="SocketOperationValue"/> 的 <see cref="Result{T}"/> 实例，其中：
+        /// <br/>- 成功时，可通过 <see cref="SocketOperationValue.BytesTransferred"/> 获取实际发出的字节数。
+        /// <br/>- 失败时，<see cref="Result.Exception"/> 包含相应的网络或逻辑异常信息。
         /// </returns>
         Result<SocketOperationValue> Send(Memory<byte> memory);
+
+        /// <summary>
+        /// 同步发送非连续存储的内存块（Scatter 发送）数据。
+        /// </summary>
+        /// <param name="buffer">包含多个内存分片的列表。实现应按顺序发送列表中的所有分片。</param>
+        /// <returns>
+        /// 一个包含 <see cref="SocketOperationValue"/> 的 <see cref="Result{T}"/> 实例。
+        /// </returns>
+        Result<SocketOperationValue> Send(IList<ArraySegment<byte>> buffer);
 
         /// <summary>
         /// 异步发送指定缓冲区的数据。
@@ -27,9 +49,19 @@ namespace ExtenderApp.Abstract
         /// <param name="memory">要发送的有效数据窗口。</param>
         /// <param name="token">用于取消异步操作的令牌。实现应尊重并响应该令牌。</param>
         /// <returns>
-        /// 一个表示异步操作的 <see cref="ValueTask{TResult}"/>。其结果是一个 <see cref="Result{T}"/>，语义与 <see cref="Send(Memory{byte})"/> 相同。
+        /// 一个表示异步操作的 <see cref="ValueTask{TResult}"/>。其结果是一个 <see cref="Result{T}"/>，语义与 <see cref="Send(Memory{byte})"/> 一致。
         /// 当操作被取消时，应返回一个包含 <see cref="OperationCanceledException"/> 的失败 <see cref="Result"/>。
         /// </returns>
         ValueTask<Result<SocketOperationValue>> SendAsync(Memory<byte> memory, CancellationToken token = default);
+
+        /// <summary>
+        /// 异步发送非连续存储的内存块（Scatter 发送）数据。
+        /// </summary>
+        /// <param name="buffer">要发送的非连续内存分片列表。</param>
+        /// <param name="token">用于取消异步操作的令牌。</param>
+        /// <returns>
+        /// 一个表示异步操作的 <see cref="ValueTask{TResult}"/>。其结果是一个 <see cref="Result{T}"/>，语义与同步 Scatter 发送方法一致。
+        /// </returns>
+        ValueTask<Result<SocketOperationValue>> SendAsync(IList<ArraySegment<byte>> buffer, CancellationToken token = default);
     }
 }

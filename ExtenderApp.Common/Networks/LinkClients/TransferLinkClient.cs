@@ -8,7 +8,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
     /// 支持插件与格式化器的链接客户端发送器基类。
     /// </summary>
     /// <typeparam name="TLinker">指定类型连接器</typeparam>
-    public class LinkClientAwareSender<TLinker> : LinkClient<TLinker>, ILinkClientAwareSender
+    public class TransferLinkClient<TLinker> : LinkClient<TLinker, ITransferLinkClient>, ITransferLinkClient<TLinker>
         where TLinker : ILinker
     {
         /// <summary>
@@ -30,7 +30,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
 
         public ILinkClientFormatterManager? FormatterManager { get; protected set; }
 
-        public LinkClientAwareSender(TLinker linker) : base(linker)
+        public TransferLinkClient(TLinker linker) : base(linker)
         {
             _receiveLock = new();
             _waitEvent = new(true);
@@ -76,9 +76,9 @@ namespace ExtenderApp.Common.Networks.LinkClients
             if (FormatterManager is null)
                 throw new InvalidOperationException("转换器管理为空，不能使用泛型方法");
 
-            //var formatter = FormatterManager.TryGetFormatter<T>();
+            //var formatter = FormatterManager.TryGetFormatter<TLinkClient>();
             //if (formatter is null)
-            //    throw new InvalidOperationException($"未找到类型 {typeof(T).FullName} 的格式化器，无法发送数据");
+            //    throw new InvalidOperationException($"未找到类型 {typeof(TLinkClient).FullName} 的格式化器，无法发送数据");
 
             //var buffer = formatter.Serialize(data);
             //LinkClientPluginSendMessage pluginSendData = new(buffer, formatter.MessageType);
@@ -87,7 +87,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
             //ByteBuffer sendBuffer = default;
             //if (Framer != null)
             //{
-            //    Framer.Encode(pluginSendData.MessageType, (int)pluginSendData.ResultOutMessageBuffer.Length, out var framedMessage);
+            //    Framer.Encode(pluginSendData.MessageType, (int)pluginSendData.ResultOutMessageBuffer.Capacity, out var framedMessage);
 
             // sendBuffer = ByteBuffer.CreateBuffer(); sendBuffer.Write(framedMessage); sendBuffer.Write(pluginSendData.ResultOutMessageBuffer);
 
@@ -147,7 +147,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
                     catch (Exception ex)
                     {
                         // 非取消异常：通知插件并退出循环（认为链路已异常断开）
-                        PluginManager?.OnDisconnected(ex);
+                        //PluginManager?.OnDisconnected(ex);
                         break;
                     }
 

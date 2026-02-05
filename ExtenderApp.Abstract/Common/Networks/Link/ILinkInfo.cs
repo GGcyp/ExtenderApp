@@ -87,5 +87,13 @@ namespace ExtenderApp.Abstract
         /// - 语义与 <see cref="SendCounter"/> 对应，用于累计接收字节数或消息数并提供周期性统计信息。
         /// </remarks>
         ValueCounter ReceiveCounter { get; }
+
+        /// <summary>
+        /// 为链接器设置指定的选项。
+        /// </summary>
+        /// <param name="optionLevel">选项所属的协议层级（例如 IP/Tcp/Socket）。</param>
+        /// <param name="optionName">要设置的选项名称。</param>
+        /// <param name="optionValue">选项值。</param>
+        void SetOption(LinkOptionLevel optionLevel, LinkOptionName optionName, DataBuffer optionValue);
     }
 }

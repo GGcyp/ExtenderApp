@@ -1,6 +1,7 @@
-﻿
-
-using System.Text;
+﻿using System.Text;
+using HttpMethod = ExtenderApp.Data.HttpMethod;
+using HttpRequestMessage = ExtenderApp.Data.HttpRequestMessage;
+using HttpResponseMessage = ExtenderApp.Data.HttpResponseMessage;
 
 namespace ExtenderApp.Abstract
 {
@@ -31,7 +32,7 @@ namespace ExtenderApp.Abstract
         /// <returns>
         /// 如果成功解析出完整请求并填充 <paramref name="message"/>，返回 <c>true</c>；否则返回 <c>false</c>（表示数据不足或不是有效请求）。
         /// </returns>
-        bool TryParseRequest(ReadOnlySpan<byte> buffer, out Data.HttpRequestMessage? message, out int bytesConsumed, Encoding? encoding = null);
+        bool TryParseRequest(ReadOnlySpan<byte> buffer, out HttpRequestMessage? message, out int bytesConsumed, Encoding? encoding = null);
 
         /// <summary>
         /// 尝试从给定的字节缓冲解析出一个完整的 HTTP 响应消息（status-line + headers + 可选 body）。
@@ -57,6 +58,6 @@ namespace ExtenderApp.Abstract
         /// <returns>
         /// 如果成功解析出完整响应并填充 <paramref name="message"/>, 返回 <c>true</c>；否则返回 <c>false</c>。
         /// </returns>
-        bool TryParseResponse(ReadOnlySpan<byte> buffer, Data.HttpRequestMessage requestMessage, out Data.HttpResponseMessage? message, out int bytesConsumed, Encoding? encoding = null);
+        bool TryParseResponse(ReadOnlySpan<byte> buffer, HttpRequestMessage requestMessage, out HttpResponseMessage? message, out int bytesConsumed, Encoding? encoding = null);
     }
 }

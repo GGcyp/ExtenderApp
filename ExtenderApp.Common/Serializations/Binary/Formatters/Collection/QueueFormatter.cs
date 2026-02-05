@@ -1,13 +1,12 @@
 ﻿using ExtenderApp.Abstract;
-using ExtenderApp.Data;
 
 namespace ExtenderApp.Common.Serializations.Binary.Formatters
 {
     /// <summary>
-    /// 队列格式化器类，继承自<see cref="CollectionFormatter{T, Queue{T}}" />。
+    /// 队列格式化器类，继承自<see cref="InterfaceEnumerableFormatter{T, Queue{T}}" />。
     /// </summary>
     /// <typeparam name="T">队列中元素的类型。</typeparam>
-    internal class QueueFormatter<T> : CollectionFormatter<T, Queue<T>>
+    internal class QueueFormatter<T> : InterfaceEnumerableFormatter<T, Queue<T>>
     {
         public QueueFormatter(IBinaryFormatterResolver resolver) : base(resolver)
         {

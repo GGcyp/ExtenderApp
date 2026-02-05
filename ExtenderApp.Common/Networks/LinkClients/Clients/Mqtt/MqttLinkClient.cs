@@ -9,7 +9,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
     /// - 解析采取增量方式，支持半包与多包粘连；
     /// - 自动心跳定时器（KeepAlive）;
     /// </summary>
-    internal class MqttLinkClient : LinkClientAwareSender<ITcpLinker>, IMqttLinkClient
+    internal class MqttLinkClient : TransferLinkClient<ITcpLinker>, IMqttLinkClient
     {
         //#region 常量(报文类型 / 固定头高四位)
 
@@ -50,7 +50,6 @@ namespace ExtenderApp.Common.Networks.LinkClients
 
         public MqttLinkClient(ITcpLinker linker) : base(linker)
         {
-
         }
 
         //#region 对外 API
@@ -229,7 +228,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
 
         //private static ByteBuffer BuildPublishQoS0(string topic, ReadOnlySpan<byte> payload, bool retain)
         //{
-        //    int remaining = 2 + Encoding.UTF8.GetByteCount(topic) + payload.Length;
+        //    int remaining = 2 + Encoding.UTF8.GetByteCount(topic) + payload.Capacity;
         //    var buf = ByteBuffer.CreateBuffer();
         //    byte header = FIXED_PUBLISH;
         //    if (retain) header |= 0x01;
@@ -272,7 +271,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
 
         //private static void WriteUtf8(ref ByteBuffer buf, ReadOnlySpan<byte> utf8)
         //{
-        //    WriteUInt16BE(ref buf, (ushort)utf8.Length);
+        //    WriteUInt16BE(ref buf, (ushort)utf8.Capacity);
         //    buf.Write(utf8);
         //}
 
@@ -341,16 +340,16 @@ namespace ExtenderApp.Common.Networks.LinkClients
         //            int consumed = TryParsePacket(data.Slice(offset));
         //            if (consumed <= 0) break;
         //            offset += consumed;
-        //            if (offset >= data.Length) break;
+        //            if (offset >= data.Capacity) break;
         //        }
 
         //        if (offset > 0)
         //        {
         //            // 移除已消费前缀（简单方式：创建新缓冲并复制剩余）
-        //            if (offset < data.Length)
+        //            if (offset < data.Capacity)
         //            {
         //                var leftover = data.Slice(offset).ToArray();
-        //                _receiveBuffer = new ArrayBufferWriter<byte>(Math.Max(leftover.Length * 2, 4096));
+        //                _receiveBuffer = new ArrayBufferWriter<byte>(Math.Max(leftover.Capacity * 2, 4096));
         //                _receiveBuffer.Write(leftover);
         //            }
         //            else
@@ -366,7 +365,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
         ///// </summary>
         //private int TryParsePacket(ReadOnlySpan<byte> Buffer)
         //{
-        //    if (Buffer.Length < 2) return 0;
+        //    if (Buffer.Capacity < 2) return 0;
         //    byte header = Buffer[0];
 
         //    // 解析 RemainingLength (var-int)
@@ -376,7 +375,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
         //        return 0;
 
         //    int total = 1 + rlBytes + remainingLength;
-        //    if (Buffer.Length < total) return 0; // 数据不足
+        //    if (Buffer.Capacity < total) return 0; // 数据不足
 
         //    ReadOnlySpan<byte> body = Buffer.Slice(1 + rlBytes, remainingLength);
         //    byte type = (byte)(header & 0xF0);
@@ -384,7 +383,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
         //    switch (type)
         //    {
         //        case FIXED_CONNACK:
-        //            if (body.Length >= 2)
+        //            if (body.Capacity >= 2)
         //            {
         //                byte returnCode = body[1];
         //                OnConnAck?.Invoke(returnCode);
@@ -394,9 +393,9 @@ namespace ExtenderApp.Common.Networks.LinkClients
 
         //        case FIXED_PUBLISH:
         //            {
-        //                if (body.Length < 2) break;
+        //                if (body.Capacity < 2) break;
         //                int topicLen = (body[0] << 8) | body[1];
-        //                if (body.Length < 2 + topicLen) break;
+        //                if (body.Capacity < 2 + topicLen) break;
         //                var topicBytes = body.Slice(2, topicLen);
         //                string topic = Encoding.UTF8.GetString(topicBytes);
         //                var payload = body.Slice(2 + topicLen).ToArray();
@@ -405,7 +404,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
         //            break;
 
         //        case FIXED_SUBACK:
-        //            if (body.Length >= 3)
+        //            if (body.Capacity >= 3)
         //            {
         //                byte granted = body[2];
         //                OnSubAck?.Invoke(granted);
@@ -430,7 +429,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
         //{
         //    Value = 0; bytes = 0;
         //    int multiplier = 1;
-        //    for (int i = 0; i < 4 && i < data.Length; i++)
+        //    for (int i = 0; i < 4 && i < data.Capacity; i++)
         //    {
         //        byte b = data[i];
         //        bytes++;
@@ -512,7 +511,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
         //        // 若没有 Framer，FrameContext 为空，直接使用底层 result 原始字节
         //        // 假定 LinkClientPluginReceiveMessage 能提供原始数据（这里演示式调用）。
         //        // 如果结构不同，请根据你项目内实际字段调整。
-        //        if (message.SocketResult.BytesTransferred > 0 && message.OriginalBytes.Length > 0)
+        //        if (message.SocketResult.BytesTransferred > 0 && message.OriginalBytes.Capacity > 0)
         //        {
         //            _client.Feed(message.OriginalBytes.Span);
         //        }

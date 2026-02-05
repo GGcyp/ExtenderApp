@@ -1,9 +1,8 @@
 ﻿using ExtenderApp.Abstract;
-using ExtenderApp.Data;
 
 namespace ExtenderApp.Common.Serializations.Binary.Formatters
 {
-    internal class LinkedListFormatter<T> : CollectionFormatter<T, LinkedList<T>>
+    internal class LinkedListFormatter<T> : InterfaceCollectionFormatter<T, LinkedList<T>>
     {
         public LinkedListFormatter(IBinaryFormatterResolver resolver) : base(resolver)
         {

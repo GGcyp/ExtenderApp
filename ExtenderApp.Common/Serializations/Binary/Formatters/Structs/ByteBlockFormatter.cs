@@ -29,8 +29,9 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
 
             var length = _int.Deserialize(ref buffer);
             ByteBlock block = new(length);
-            block.Write(buffer);
-            buffer.ReadAdvance(length);
+            var readBlock = buffer.Read(length);
+            block.Write(readBlock);
+            readBlock.Dispose();
             return block;
         }
 

@@ -78,6 +78,9 @@ namespace ExtenderApp.Common.Networks
         /// </summary>
         public short Version => vts.Version;
 
+        /// <summary>
+        /// 当前轮次的 Accept 令牌版本号。
+        /// </summary>
         public short AcceptVersion => vtsAccept.Version;
 
         /// <summary>
@@ -152,11 +155,44 @@ namespace ExtenderApp.Common.Networks
                 ctr = token.UnsafeRegister(static s => ((AwaitableSocketEventArgs)s!).Cancel(), this);
             }
 
+            BufferList = default;
             SetBuffer(memory);
 
             if (!socket.SendAsync(this))
             {
-                // 同步完成
+                OnCompleted(this);
+            }
+
+            return this;
+        }
+
+        /// <summary>
+        /// 发送非连续的多个缓冲区数据（Scatter 发送）。
+        /// </summary>
+        /// <param name="socket">目标套接字。</param>
+        /// <param name="bufferList">包含多个 <see cref="ArraySegment{T}"/> 的列表。SAEA 要求非连续内存必须使用该类型。</param>
+        /// <param name="token">取消令牌。</param>
+        /// <param name="flags">发送标志。</param>
+        /// <returns>操作结果的 <see cref="ValueTask"/>。</returns>
+        public ValueTask<Result<SocketOperationValue>> SendAsync(Socket socket, IList<ArraySegment<byte>> bufferList, CancellationToken token, SocketFlags flags = SocketFlags.None)
+        {
+            ResetState();
+            SocketFlags = flags;
+            this.token = token;
+            pendingOperation = PendingOperation.Send;
+
+            if (token.CanBeCanceled)
+            {
+                currentSocket = socket;
+                ctr = token.UnsafeRegister(static s => ((AwaitableSocketEventArgs)s!).Cancel(), this);
+            }
+
+            // 设置 BufferList 会自动清除之前可能存在的单缓冲区
+            BufferList = bufferList;
+            SetBuffer(default);
+
+            if (!socket.SendAsync(this))
+            {
                 OnCompleted(this);
             }
 
@@ -203,6 +239,42 @@ namespace ExtenderApp.Common.Networks
             return this;
         }
 
+        /// <summary>
+        /// UDP 发送到指定远端的多个缓冲区数据（Scatter 发送，未 Connect 的 UDP 使用）。
+        /// </summary>
+        /// <param name="socket">UDP 套接字。</param>
+        /// <param name="bufferList">包含多个 <see cref="ArraySegment{T}"/> 的列表。SAEA 要求非连续内存必须使用该类型。</param>
+        /// <param name="token">取消令牌；取消时将关闭 <paramref name="socket"/> 以中断 I/O。</param>
+        /// <param name="flags">发送标志，通常为 <see cref="SocketFlags.None"/>。</param>
+        /// <returns>
+        /// 一个表示操作结果的 <see cref="ValueTask"/>。成功时，其结果为包含 <see cref="SocketOperationValue"/> 的 <see cref="Result{T}"/>； 失败时 await 会抛出 <see
+        /// cref="SocketException"/>；取消时则抛出 <see cref="OperationCanceledException"/>。
+        /// </returns>
+        public ValueTask<Result<SocketOperationValue>> SendToAsync(Socket socket, IList<ArraySegment<byte>> bufferList, CancellationToken token, SocketFlags flags = SocketFlags.None)
+        {
+            ResetState();
+            SocketFlags = flags;
+            this.token = token;
+            pendingOperation = PendingOperation.Send;
+
+            if (token.CanBeCanceled)
+            {
+                currentSocket = socket;
+                ctr = token.UnsafeRegister(static s => ((AwaitableSocketEventArgs)s!).Cancel(), this);
+            }
+
+            // 设置 BufferList 会自动清除之前可能存在的单缓冲区
+            BufferList = bufferList;
+            SetBuffer(default);
+
+            if (!socket.SendToAsync(this))
+            {
+                OnCompleted(this);
+            }
+
+            return this;
+        }
+
         #endregion Send
 
         #region Receive
@@ -234,6 +306,37 @@ namespace ExtenderApp.Common.Networks
             }
 
             SetBuffer(buffer);
+            BufferList = null;
+
+            if (!socket.ReceiveAsync(this))
+            {
+                OnCompleted(this);
+            }
+
+            return this;
+        }
+
+        /// <summary>
+        /// 接收数据到非连续的多个缓冲区（Gather 接收）。
+        /// </summary>
+        /// <param name="socket">源套接字。</param>
+        /// <param name="bufferList">用于存放接收数据的 <see cref="ArraySegment{T}"/> 列表。</param>
+        /// <param name="token">取消令牌。</param>
+        /// <returns>操作结果的 <see cref="ValueTask"/>。</returns>
+        public ValueTask<Result<SocketOperationValue>> ReceiveAsync(Socket socket, IList<ArraySegment<byte>> bufferList, CancellationToken token)
+        {
+            ResetState();
+            this.token = token;
+            pendingOperation = PendingOperation.Receive;
+
+            if (token.CanBeCanceled)
+            {
+                currentSocket = socket;
+                ctr = token.UnsafeRegister(static s => ((AwaitableSocketEventArgs)s!).Cancel(), this);
+            }
+
+            BufferList = bufferList;
+            SetBuffer(default);
 
             if (!socket.ReceiveAsync(this))
             {
@@ -431,7 +534,11 @@ namespace ExtenderApp.Common.Networks
             token = default;
             AcceptSocket = null;
             RemoteEndPoint = null;
-            // SetBuffer(null, 0, 0) is implicitly handled by new SetBuffer calls
+
+            // 核心变动：必须显式清除 BufferList，因为 SAEA 中它是持久持有的
+            // 且设置 BufferList 为 null 是为了让后续 SetBuffer 调用有效（反之亦然）
+            BufferList = null;
+            SetBuffer(default);
         }
 
         #endregion Awaitable

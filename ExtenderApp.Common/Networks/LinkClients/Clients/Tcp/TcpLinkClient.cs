@@ -6,7 +6,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
     /// <summary>
     /// Tcp 链路客户端实现。
     /// </summary>
-    internal class TcpLinkClient : LinkClientAwareSender<ITcpLinker>, ITcpLinkClient
+    public abstract class TcpLinkClient : LinkClient<ITcpLinker, ITcpLinkClient>, ITcpLinkClient
     {
         public bool NoDelay
         {
@@ -18,49 +18,8 @@ namespace ExtenderApp.Common.Networks.LinkClients
         {
         }
 
-        public void Connect(IPAddress[] addresses, int port)
-        {
-            ThrowIfDisposed();
-            try
-            {
-                Linker.Connect(addresses, port);
+        public abstract void Connect(IPAddress[] addresses, int port);
 
-                var endPoint = Linker.RemoteEndPoint;
-                if (endPoint == null)
-                    throw new InvalidOperationException("无法获取远程端点信息");
-
-                // 连接成功后启动接收循环
-                StartReceive();
-                PluginManager?.OnConnected(endPoint, null);
-            }
-            catch (Exception ex)
-            {
-                PluginManager?.OnConnected(Linker.RemoteEndPoint!, ex);
-                throw;
-            }
-        }
-
-        public async ValueTask ConnectAsync(IPAddress[] addresses, int port, CancellationToken token = default)
-        {
-            ThrowIfDisposed();
-
-            try
-            {
-                await Linker.ConnectAsync(addresses, port, token);
-
-                var endPoint = Linker.RemoteEndPoint;
-                if (endPoint == null)
-                    throw new InvalidOperationException("无法获取远程端点信息");
-
-                // 连接成功后启动接收循环
-                StartReceive();
-                PluginManager?.OnConnected(endPoint, null);
-            }
-            catch (Exception ex)
-            {
-                PluginManager?.OnConnected(null!, ex);
-                throw;
-            }
-        }
+        public abstract ValueTask ConnectAsync(IPAddress[] addresses, int port, CancellationToken token = default);
     }
 }

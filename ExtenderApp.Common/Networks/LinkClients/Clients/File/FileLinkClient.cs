@@ -6,7 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace ExtenderApp.Common.Networks.LinkClients
 {
-    internal class FileLinkClient : LinkClientAwareSender<ITcpLinker>, IFileLinkClient, IValueTaskSource<Result>
+    internal class FileLinkClient : TransferLinkClient<ITcpLinker>, IFileLinkClient, IValueTaskSource<Result>
     {
         private const int DefaultChunkSize = 65536;
         private const int FileProt = 88883;
@@ -28,9 +28,9 @@ namespace ExtenderApp.Common.Networks.LinkClients
             _fileOperateProvider = provider.GetRequiredService<IFileOperateProvider>();
             _provider = provider;
 
-            FormatterManager!.AddBinaryFormatter<FileDataPacket>(OnFilePacket);
-            FormatterManager!.AddBinaryFormatter<FileDtoRequest>(OnRequest);
-            FormatterManager!.AddBinaryFormatter<FileResponse>(OnResponse);
+            //FormatterManager!.AddBinaryFormatter<FileDataPacket>(OnFilePacket);
+            //FormatterManager!.AddBinaryFormatter<FileDtoRequest>(OnRequest);
+            //FormatterManager!.AddBinaryFormatter<FileResponse>(OnResponse);
         }
 
         private void OnResponse(LinkClientReceivedValue<FileResponse> response)
@@ -139,7 +139,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
 
         private FileDto GetFileDto(IFileOperate operate, int chunkSize)
         {
-            var fileId = operate.GetFileGuid();
+            var fileId = Guid.NewGuid();
             var fileName = operate.Info.FileName;
             var fileSize = operate.Info.Length;
             var chunkCount = (fileSize + chunkSize - 1) / chunkSize;

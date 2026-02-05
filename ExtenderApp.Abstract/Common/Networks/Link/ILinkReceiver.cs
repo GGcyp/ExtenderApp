@@ -1,6 +1,4 @@
 ﻿using ExtenderApp.Data;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace ExtenderApp.Abstract
 {
@@ -18,11 +16,20 @@ namespace ExtenderApp.Abstract
         /// </summary>
         /// <param name="memory">可写缓冲区，用于承载本次接收的数据。调用方负责提供合适大小的缓冲区。</param>
         /// <returns>
-        /// 一个 <see cref="Result{T}"/> 实例，其中：
-        /// - 成功时，<see cref="Result{T}.Data"/> 包含一个 <see cref="SocketOperationValue"/>，其 <see cref="SocketOperationValue.BytesTransferred"/> 表示实际接收的字节数。
-        /// - 失败时，<see cref="Result.Exception"/> 包含相应的异常信息。
+        /// 一个包含 <see cref="SocketOperationValue"/> 的 <see cref="Result{T}"/> 实例，其中：
+        /// <br/>- 成功时，可通过 <see cref="SocketOperationValue.BytesTransferred"/> 获取实际收到的字节数。
+        /// <br/>- 失败时，<see cref="Result.Exception"/> 包含相应的异常信息。
         /// </returns>
         Result<SocketOperationValue> Receive(Memory<byte> memory);
+
+        /// <summary>
+        /// 同步接收数据到非连续存储的内存块（Gather 接收）中。
+        /// </summary>
+        /// <param name="buffer">用于存放接收数据的 <see cref="ArraySegment{T}"/> 列表。系统将按顺序填充这些分片。</param>
+        /// <returns>
+        /// 一个包含 <see cref="SocketOperationValue"/> 的 <see cref="Result{T}"/> 实例。
+        /// </returns>
+        Result<SocketOperationValue> Receive(IList<ArraySegment<byte>> buffer);
 
         /// <summary>
         /// 异步接收数据到指定缓冲区。
@@ -34,5 +41,15 @@ namespace ExtenderApp.Abstract
         /// 当操作被取消时，应返回一个包含 <see cref="OperationCanceledException"/> 的失败 <see cref="Result"/>。
         /// </returns>
         ValueTask<Result<SocketOperationValue>> ReceiveAsync(Memory<byte> memory, CancellationToken token = default);
+
+        /// <summary>
+        /// 异步接收数据到非连续存储的内存块（Gather 接收）中。
+        /// </summary>
+        /// <param name="buffer">用于存放接收数据的非连续内存分片列表。</param>
+        /// <param name="token">用于取消异步操作的令牌。</param>
+        /// <returns>
+        /// 一个表示异步操作的 <see cref="ValueTask{TResult}"/>。其结果是一个 <see cref="Result{T}"/>，语义与同步 Gather 接收方法一致。
+        /// </returns>
+        ValueTask<Result<SocketOperationValue>> ReceiveAsync(IList<ArraySegment<byte>> buffer, CancellationToken token = default);
     }
 }

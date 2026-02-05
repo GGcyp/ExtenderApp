@@ -5,7 +5,8 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace ExtenderApp.Common.Networks
 {
-    internal class LinkClientPluginManager : DisposableObject, ILinkClientPluginManager
+    internal class LinkClientPluginManager<TLinkClient> : DisposableObject
+        where TLinkClient : ILinkClient
     {
         private readonly IServiceProvider _serviceProvider;
         private readonly SortedList<int, ILinkClientPlugin> _plugins;
@@ -149,11 +150,12 @@ namespace ExtenderApp.Common.Networks
             return Result.Success();
         }
 
-        public Result OnAttach(ILinkClientAwareSender client)
+        public Result OnAttach(TLinkClient client)
         {
             return ForeachPlugin(static (plugin, client) =>
             {
-                return plugin.OnAttach(client);
+                //return plugin.OnAttach(client);
+                return Result.Success();
             }, client);
         }
 

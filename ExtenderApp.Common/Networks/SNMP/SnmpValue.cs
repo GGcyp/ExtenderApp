@@ -46,7 +46,7 @@ namespace ExtenderApp.Common.Networks.SNMP
         /// <returns>用于日志或 UI 的字符串表示。</returns>
         public override string ToString()
         {
-            // ValueList<T>.ToString() 应实现友好显示；防御性地处理未初始化情况。
+            // ValueList<TLinkClient>.ToString() 应实现友好显示；防御性地处理未初始化情况。
             try
             {
                 return Buffer.ToString() ?? "<null>";

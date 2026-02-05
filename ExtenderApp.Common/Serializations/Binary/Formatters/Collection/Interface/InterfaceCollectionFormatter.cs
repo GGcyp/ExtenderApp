@@ -1,26 +1,117 @@
 ﻿using ExtenderApp.Abstract;
 using ExtenderApp.Data;
 
-namespace ExtenderApp.Common.Serializations.Binary.Formatters.Collection
+namespace ExtenderApp.Common.Serializations.Binary.Formatters
 {
     /// <summary>
-    /// InterfaceCollectionFormatter 类是对 CollectionFormatter 类的一个扩展，用于处理实现了 ICollection<TLinkClient> 接口的集合类型。
+    /// 一个抽象类，用于将集合类型的数据序列化和反序列化。
     /// </summary>
     /// <typeparam name="T">集合中元素的类型。</typeparam>
-    internal class InterfaceCollectionFormatter<T> : CollectionFormatter<T, ICollection<T>>
+    /// <typeparam name="TCollection">集合的类型。</typeparam>
+    public abstract class InterfaceCollectionFormatter<T, TCollection> : ResolverFormatter<TCollection?>
+        where TCollection : ICollection<T>
     {
-        public InterfaceCollectionFormatter(IBinaryFormatterResolver resolver) : base(resolver)
+        /// <summary>
+        /// 用于序列化和反序列化集合中单个元素的格式化器。
+        /// </summary>
+        private readonly IBinaryFormatter<T> _t;
+
+        /// <summary>
+        /// 用于序列化和反序列化整数的格式化器。
+        /// </summary>
+        private readonly IBinaryFormatter<int> _int;
+
+        /// <summary>
+        /// 初始化 CollectionFormatter 实例。
+        /// </summary>
+        /// <param name="formatter">用于序列化和反序列化集合中单个元素的格式化器。</param>
+        /// <param name="binarybufferConvert">二进制写入转换器。</param>
+        /// <param name="binarybufferConvert">二进制读取转换器。</param>
+        /// <param name="options">二进制选项。</param>
+        protected InterfaceCollectionFormatter(IBinaryFormatterResolver resolver) : base(resolver)
         {
+            _t = resolver.GetFormatter<T>();
+            _int = resolver.GetFormatter<int>();
         }
 
-        protected override void Add(ICollection<T> collection, T value)
+        /// <summary>
+        /// 将集合对象序列化为二进制数据。
+        /// </summary>
+        /// <param name="buffer">二进制写入器。</param>
+        /// <param name="value">要序列化的集合对象。</param>
+        public override void Serialize(ref ByteBuffer buffer, TCollection? value)
         {
-            collection.Add(value);
+            if (value == null)
+            {
+                WriteNil(ref buffer);
+                return;
+            }
+
+            var count = value.Count;
+            WriteArrayHeader(ref buffer);
+            _int.Serialize(ref buffer, count);
+
+            foreach (T item in value)
+            {
+                _t.Serialize(ref buffer, item);
+            }
         }
 
-        protected override ICollection<T> Create(int count)
+        /// <summary>
+        /// 从二进制数据中反序列化出集合对象。
+        /// </summary>
+        /// <param name="buffer">二进制读取器。</param>
+        /// <returns>反序列化出的集合对象。</returns>
+        public override TCollection? Deserialize(ref ByteBuffer buffer)
         {
-            return new List<T>(count);
+            if (TryReadNil(ref buffer))
+            {
+                return default(TCollection);
+            }
+
+            if (!TryReadArrayHeader(ref buffer))
+            {
+                throw new InvalidOperationException("数据类型不匹配。");
+            }
+
+            var len = _int.Deserialize(ref buffer);
+
+            var result = Create(len);
+            for (int i = 0; i < len; i++)
+            {
+                Add(result, _t.Deserialize(ref buffer));
+            }
+
+            return result;
         }
+
+        public override long GetLength(TCollection? value)
+        {
+            if (value == null)
+            {
+                return NilLength;
+            }
+
+            long result = _int.GetLength(value.Count) + 1;
+            foreach (var item in value)
+            {
+                result += _t.GetLength(item);
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// 将元素添加到集合中。
+        /// </summary>
+        /// <param name="collection">目标集合。</param>
+        /// <param name="value">要添加的元素。</param>
+        protected abstract void Add(TCollection collection, T value);
+
+        /// <summary>
+        /// 创建一个指定大小的集合。
+        /// </summary>
+        /// <param name="count">集合的大小。</param>
+        /// <returns>创建的集合对象。</returns>
+        protected abstract TCollection Create(int count);
     }
 }

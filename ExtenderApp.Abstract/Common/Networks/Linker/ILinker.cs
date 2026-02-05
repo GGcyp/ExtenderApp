@@ -14,13 +14,5 @@ namespace ExtenderApp.Abstract
         /// </summary>
         /// <returns>克隆后的 <see cref="ILinker"/> 实例。</returns>
         ILinker Clone();
-
-        /// <summary>
-        /// 为链接器设置指定的选项。
-        /// </summary>
-        /// <param name="optionLevel">选项所属的协议层级（例如 IP/Tcp/Socket）。</param>
-        /// <param name="optionName">要设置的选项名称。</param>
-        /// <param name="optionValue">选项值。</param>
-        void SetOption(LinkOptionLevel optionLevel, LinkOptionName optionName, DataBuffer optionValue);
     }
 }

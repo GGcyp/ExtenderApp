@@ -35,7 +35,7 @@ namespace ExtenderApp.Common
             buffer = new();
             try
             {
-                buffer = ByteBuffer.CreateBuffer();
+                buffer = new ();
                 var result = fileOperate.Read(buffer.GetMemory(length), position);
                 if (!result.IsSuccess)
                 {
@@ -137,7 +137,7 @@ namespace ExtenderApp.Common
         {
             try
             {
-                if (block.Length == 0)
+                if (block.WrittenCount == 0)
                     return Result.Success();
 
                 if (block.IsEmpty)

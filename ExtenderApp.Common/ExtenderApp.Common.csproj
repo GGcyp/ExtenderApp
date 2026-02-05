@@ -21,6 +21,14 @@
     <ProjectReference Include="..\ExtenderApp.Data\ExtenderApp.Data.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Pipelines\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.IO.Pipelines" Version="9.0.10" />
+  </ItemGroup>
+
 	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
 		<ItemGroup>
 			<TargetFolder Include="E:\WPF_Project\ExtenderApp\ExtenderApp\bin\Debug\net8.0-windows8.0" />

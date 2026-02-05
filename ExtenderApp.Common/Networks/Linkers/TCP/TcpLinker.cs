@@ -2,7 +2,6 @@
 using System.Net.Sockets;
 using ExtenderApp.Abstract;
 using ExtenderApp.Common.Networks;
-using ExtenderApp.Data;
 
 namespace ExtenderApp.Common
 {
@@ -28,6 +27,8 @@ namespace ExtenderApp.Common
 
         public ValueTask ConnectAsync(IPAddress[] addresses, int port, CancellationToken token = default)
         {
+            SendSlim.Wait();
+            ReceiveSlim.Wait();
             ThrowIfDisposed();
             ArgumentNullException.ThrowIfNull(addresses);
             if (IPEndPoint.MinPort > port || IPEndPoint.MaxPort < port)
@@ -35,26 +36,6 @@ namespace ExtenderApp.Common
                 throw new ArgumentOutOfRangeException(nameof(port), "端口号超出有效范围。");
             }
             return Socket.ConnectAsync(addresses, port, token);
-        }
-
-        protected override ValueTask ExecuteConnectAsync(EndPoint remoteEndPoint, CancellationToken token)
-        {
-            return Socket.ConnectAsync(remoteEndPoint, token);
-        }
-
-        protected override ValueTask ExecuteDisconnectAsync(CancellationToken token)
-        {
-            return Socket.DisconnectAsync(true, token);
-        }
-
-        protected override ValueTask<Result<SocketOperationValue>> ExecuteReceiveAsync(AwaitableSocketEventArgs args, Memory<byte> memory, CancellationToken token)
-        {
-            return args.ReceiveAsync(Socket, memory, token);
-        }
-
-        protected override ValueTask<Result<SocketOperationValue>> ExecuteSendAsync(AwaitableSocketEventArgs args, Memory<byte> memory, CancellationToken token)
-        {
-            return args.SendAsync(Socket, memory, token);
         }
 
         protected override ILinker Clone(Socket socket)

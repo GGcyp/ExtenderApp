@@ -8,7 +8,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
     /// 连接服务端格式化器基类。
     /// </summary>
     /// <typeparam name="T">指定格式</typeparam>
-    internal abstract class LinkClientFormatter<T> : ILinkClientFormatter<T>
+    internal abstract class LinkClientFormatter<T> 
     {
         /// <summary>
         /// 与业务数据类型 <typeparamref name="T"/> 关联的稳定哈希。
@@ -29,7 +29,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
 
         public ByteBuffer Serialize(T value)
         {
-            ByteBuffer buffer = ByteBuffer.CreateBuffer();
+            ByteBuffer buffer = new();
             Serialize(value, ref buffer);
             return buffer;
         }

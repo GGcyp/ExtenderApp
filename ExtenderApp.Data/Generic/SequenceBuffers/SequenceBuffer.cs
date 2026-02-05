@@ -383,23 +383,38 @@ namespace ExtenderApp.Data
         /// <summary>
         /// 读取数据到目标缓冲区，同时前进读取位置。
         /// </summary>
-        /// <param name="value">目标缓冲区</param>
+        /// <param name="destination">目标缓冲区</param>
         /// <returns>读取数量</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public int Read(scoped Span<T> value)
+        public int Read(scoped Span<T> destination)
         {
-            if (value.IsEmpty || value.Length == 0)
-                return 0;
+            if (destination.IsEmpty)
+                throw new ArgumentNullException(nameof(destination));
+            if (IsEmpty) return 0;
 
             UpdateReader();
-            int totalRead = 0;
-            int index = 0;
-            foreach (var segment in Sequence.Slice(CurrentSpanIndex))
-            {
-                int minLength = Math.Min(segment.Length, value.Length - totalRead);
 
-                segment.Slice(0, minLength).Span.CopyTo(value.Slice(index));
-                index += minLength;
+            int totalRead = 0;
+            if (UnreadSequence.IsSingleSegment)
+            {
+                totalRead = Math.Min(UnreadSequence.First.Length, destination.Length);
+                UnreadSequence.First.Span.CopyTo(destination);
+            }
+            else
+            {
+                ReadOnlySequence<T> sequence = UnreadSequence;
+                SequencePosition position = sequence.Start;
+                while (sequence.TryGet(ref position, out ReadOnlyMemory<T> memory))
+                {
+                    ReadOnlySpan<T> span = memory.Span;
+                    span.CopyTo(destination);
+                    int length = span.Length;
+                    totalRead += length;
+                    if (position.GetObject() != null)
+                        destination = destination.Slice(length);
+                    else
+                        break;
+                }
             }
             ReadAdvance(totalRead);
             return totalRead;
@@ -408,26 +423,12 @@ namespace ExtenderApp.Data
         /// <summary>
         /// 读取数据到目标缓冲区，同时前进读取位置。
         /// </summary>
-        /// <param name="value">目标缓冲区</param>
+        /// <param name="destination">目标缓冲区</param>
         /// <returns>读取数量</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public int Read(Memory<T> value)
+        public int Read(Memory<T> destination)
         {
-            if (value.IsEmpty || value.Length == 0)
-                return 0;
-
-            UpdateReader();
-            int totalRead = 0;
-            int index = 0;
-            foreach (var segment in Sequence.Slice(CurrentSpanIndex))
-            {
-                int minLength = Math.Min(segment.Length, value.Length - totalRead);
-
-                segment.Slice(0, minLength).CopyTo(value.Slice(index));
-                index += minLength;
-            }
-            ReadAdvance(totalRead);
-            return totalRead;
+            return Read(destination.Span);
         }
 
         /// <summary>
@@ -566,13 +567,6 @@ namespace ExtenderApp.Data
         }
 
         /// <summary>
-        /// 获取当前序列的只读内存列表视图。
-        /// </summary>
-        /// <returns>只读内存列表</returns>
-        public IReadOnlyList<ReadOnlyMemory<T>> ToReadOnlyList()
-            => new ReadOnlyList<T>(this);
-
-        /// <summary>
         /// 释放持有的序列资源（若有）。
         /// </summary>
         public void Dispose()
@@ -599,18 +593,6 @@ namespace ExtenderApp.Data
         {
             buffer.UpdateReader();
             return buffer.reader;
-        }
-
-        public class ReadOnlyList<TValue> : List<ReadOnlyMemory<TValue>>, IReadOnlyList<ReadOnlyMemory<TValue>>
-            where TValue : unmanaged, IEquatable<TValue>
-        {
-            public ReadOnlyList(in SequenceBuffer<TValue> buffer)
-            {
-                foreach (var segment in buffer.Sequence)
-                {
-                    Add(segment);
-                }
-            }
         }
 
         #endregion FromSequenceBuffer

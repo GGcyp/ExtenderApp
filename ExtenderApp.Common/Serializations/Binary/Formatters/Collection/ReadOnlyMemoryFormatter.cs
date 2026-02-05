@@ -23,7 +23,7 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
 
             if (!TryReadArrayHeader(ref buffer))
             {
-                ThrowOperationException("无法将当前数据反序列化为 ReadOnlyMemory<T> 类型。");
+                ThrowOperationException("无法将当前数据反序列化为 ReadOnlyMemory<TLinkClient> 类型。");
             }
 
             var length = _int.Deserialize(ref buffer);

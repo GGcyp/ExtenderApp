@@ -1,7 +1,6 @@
 ﻿using System.Buffers;
 using System.Net;
 using System.Runtime.InteropServices;
-
 using ExtenderApp.Abstract;
 using ExtenderApp.Data;
 using Microsoft.Extensions.DependencyInjection;
@@ -77,7 +76,7 @@ namespace ExtenderApp.Common.Networks
         /// <returns>发送结果。</returns>
         public static Result<SocketOperationValue> Send(this ILinker linker, ref ByteBlock block)
         {
-            var result = linker.Send(block.UnreadMemory);
+            var result = linker.Send(block.UnreadSpan);
             block.ReadAdvance(result.Value.BytesTransferred);
             return result;
         }
@@ -92,9 +91,11 @@ namespace ExtenderApp.Common.Networks
         /// - TCP：内部处理“部分发送”，会在每段上循环直至耗尽。 <br/>
         /// - UDP：按分段逐帧发送；若需单帧发送，请先合并为单块再调用。
         /// </remarks>
-        public static Result<SocketOperationValue> Send(this ILinker linker, ByteBuffer buffer)
+        public static Result<SocketOperationValue> Send(this ILinker linker, ref ByteBuffer buffer)
         {
-            return linker.Send(buffer.UnreadSequence);
+            var result = linker.Send(buffer);
+            buffer.ReadAdvance(result.Value.BytesTransferred);
+            return result;
         }
 
         /// <summary>
@@ -112,28 +113,25 @@ namespace ExtenderApp.Common.Networks
             int total = 0;
             var value = SocketOperationValue.Empty;
 
-            foreach (var segment in sequence)
+            SequencePosition position = sequence.Start;
+            while (sequence.TryGet(ref position, out var segment))
             {
                 var remaining = segment;
                 while (remaining.Length > 0)
                 {
                     var result = linker.Send(remaining);
-
                     if (!result)
                         return result;
-
+                    value = result.Value;
                     if (value.BytesTransferred <= 0)
                         return Result.FromException<SocketOperationValue>(result.Exception!);
-
                     total += value.BytesTransferred;
-
                     if (value.BytesTransferred < remaining.Length)
                         remaining = remaining.Slice(value.BytesTransferred);
                     else
                         break;
                 }
             }
-
             return Result.Success(new SocketOperationValue(total, value.RemoteEndPoint, value.ReceiveMessageFromPacketInfo));
         }
 
@@ -214,7 +212,8 @@ namespace ExtenderApp.Common.Networks
             int total = 0;
             var value = SocketOperationValue.Empty;
 
-            foreach (var segment in sequence)
+            SequencePosition position = sequence.Start;
+            while (sequence.TryGet(ref position, out var segment))
             {
                 var remaining = segment;
                 while (remaining.Length > 0)

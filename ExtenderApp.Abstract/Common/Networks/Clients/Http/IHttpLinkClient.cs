@@ -1,4 +1,6 @@
 ﻿using System.Net.Security;
+using HttpRequestMessage = ExtenderApp.Data.HttpRequestMessage;
+using HttpResponseMessage = ExtenderApp.Data.HttpResponseMessage;
 
 namespace ExtenderApp.Abstract
 {
@@ -14,7 +16,7 @@ namespace ExtenderApp.Abstract
         /// <param name="options">SSL 配置（当请求为 HTTPS 时使用），若为 null 则使用默认 AuthenticationOptions。</param>
         /// <param name="token">可选取消令牌。</param>
         /// <returns>解析完成的 HttpResponseMessage。</returns>
-        ValueTask<Data.HttpResponseMessage> SendAsync(Data.HttpRequestMessage request, SslClientAuthenticationOptions? options = null, CancellationToken token = default);
+        ValueTask<HttpResponseMessage> SendAsync(HttpRequestMessage request, SslClientAuthenticationOptions? options = null, CancellationToken token = default);
 
         /// <summary>
         /// 放入新的 HTTP 解析器实例。

@@ -1,11 +1,9 @@
 ﻿using ExtenderApp.Abstract;
-using ExtenderApp.Common.Serializations.Binary;
-using ExtenderApp.Common.Serializations.Binary.Formatters;
 using ExtenderApp.Data;
 
 namespace ExtenderApp.Common.Serializations.Binary.Formatters
 {
-    internal class ValueOrListFormatter<T> : CollectionFormatter<T, ValueOrList<T>>
+    internal class ValueOrListFormatter<T> : InterfaceCollectionFormatter<T, ValueOrList<T>>
     {
         public ValueOrListFormatter(IBinaryFormatterResolver resolver) : base(resolver)
         {

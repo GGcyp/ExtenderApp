@@ -1,8 +1,6 @@
 ﻿using System.Collections.ObjectModel;
 using ExtenderApp.Abstract;
-using ExtenderApp.Common.Serializations.Binary;
 using ExtenderApp.Common.Serializations.Binary.Formatters;
-using ExtenderApp.Data;
 
 namespace ExtenderApp.Views
 {
@@ -10,7 +8,7 @@ namespace ExtenderApp.Views
     /// ObservableCollectionFormatter 类是对 CollectionFormatter 类的一个泛型扩展，用于处理 ObservableCollection<TLinkClient> 类型的集合格式化。
     /// </summary>
     /// <typeparam name="T">ObservableCollection<TLinkClient> 中元素的类型。</typeparam>
-    public class ObservableCollectionFormatter<T> : CollectionFormatter<T, ObservableCollection<T>>
+    public class ObservableCollectionFormatter<T> : InterfaceCollectionFormatter<T, ObservableCollection<T>>
     {
         public ObservableCollectionFormatter(IBinaryFormatterResolver resolver) : base(resolver)
         {

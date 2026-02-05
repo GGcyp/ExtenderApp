@@ -59,7 +59,7 @@
             System.IO.File.Move(info.FullPath, targetPath);
         }
 
-        #endregion
+        #endregion Move
 
         #region Delete
 
@@ -76,6 +76,6 @@
             info.FileInfo.Delete();
         }
 
-        #endregion
+        #endregion Delete
     }
 }

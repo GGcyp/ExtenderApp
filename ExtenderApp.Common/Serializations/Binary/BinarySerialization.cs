@@ -45,7 +45,7 @@ namespace ExtenderApp.Common.Serializations.Binary
 
         public override void Serialize<T>(T value, out ByteBuffer buffer)
         {
-            buffer = ByteBuffer.CreateBuffer();
+            buffer = new ();
             _resolver.GetFormatterWithVerify<T>().Serialize(ref buffer, value);
         }
 
@@ -57,7 +57,7 @@ namespace ExtenderApp.Common.Serializations.Binary
         {
             if (TryGetFormatter(out IBinaryFormatter<T> formatter))
             {
-                ByteBuffer buffer = ByteBuffer.CreateBuffer();
+                ByteBuffer buffer = new ();
                 buffer.Write(span);
                 T result = formatter.Deserialize(ref buffer);
                 buffer.Dispose();

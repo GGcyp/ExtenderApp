@@ -48,7 +48,7 @@ namespace ExtenderApp.Common.Serializations.Json
         public override void Serialize<T>(T value, out ByteBuffer buffer)
         {
             var bytes = JsonSerializer.SerializeToUtf8Bytes(value, _jsonSerializerOptions);
-            buffer = ByteBuffer.CreateBuffer();
+            buffer = new ();
             buffer.Write(bytes);
         }
 

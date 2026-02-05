@@ -10,7 +10,8 @@ namespace ExtenderApp.Common.Networks.LinkClients
 
         protected override ITcpLinkClient CreateLinkClient(ITcpLinker linker)
         {
-            return new TcpLinkClient(linker);
+            //return new TcpLinkClient(linker);
+            return default;
         }
     }
 }

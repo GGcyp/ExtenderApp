@@ -1,6 +1,5 @@
 ﻿using System.Buffers;
 using ExtenderApp.Abstract;
-using ExtenderApp.Common;
 using ExtenderApp.Data;
 
 namespace ExtenderApp.Common.Compressions.LZ4
@@ -96,7 +95,7 @@ namespace ExtenderApp.Common.Compressions.LZ4
                 return true;
             }
 
-            buffer = ByteBuffer.CreateBuffer();
+            buffer = new();
             buffer.Write(LZ4CompressionMark);
             _binarySerialization.Serialize(CompressionType.BlockArray, ref buffer);
             foreach (var item in sequence)
@@ -132,7 +131,7 @@ namespace ExtenderApp.Common.Compressions.LZ4
             var compressLength = LZ4CodecEncode(span, compressSpan);
             compressBlock.WriteAdvance(compressLength);
 
-            buffer = ByteBuffer.CreateBuffer();
+            buffer = new();
             buffer.Write(LZ4CompressionMark);
             _binarySerialization.Serialize(CompressionType.Block, ref buffer);
             _binarySerialization.Serialize(compressLength, ref buffer);
@@ -304,7 +303,7 @@ namespace ExtenderApp.Common.Compressions.LZ4
             }
 
             int length = _binarySerialization.Deserialize<int>(ref input);
-            output = ByteBuffer.CreateBuffer();
+            output = new();
             ByteBlock inputBlock = new(input);
             int decopressLength = LZ4CodecDecode(inputBlock, output.GetSpan(length).Slice(0, length));
             inputBlock.Dispose();
@@ -320,7 +319,7 @@ namespace ExtenderApp.Common.Compressions.LZ4
 
         private bool TryDecompressArray(ByteBuffer input, out ByteBuffer output)
         {
-            output = ByteBuffer.CreateBuffer();
+            output = new();
 
             while (input.TryPeek(out byte next))
             {

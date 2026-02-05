@@ -8,7 +8,7 @@ namespace ExtenderApp.Common.IO
     /// <summary>
     /// 文件存储类，用于管理文件操作的并发处理。
     /// </summary>
-    internal class FileOperateProvider : EvictionCache<HashValue, IFileOperate>, IFileOperateProvider
+    internal class FileOperateProvider : EvictionCache<int, IFileOperate>, IFileOperateProvider
     {
         public IFileOperate GetOperate(FileOperateInfo info)
         {
@@ -17,7 +17,7 @@ namespace ExtenderApp.Common.IO
 
         public IFileOperate GetOperate(FileOperateInfo info, FileOperateType type)
         {
-            var hash = info.LocalFileInfo.Hash;
+            var hash = GetInfoHashCode(info);
             if (TryGet(hash, out var result))
                 return result;
 
@@ -29,33 +29,39 @@ namespace ExtenderApp.Common.IO
                 result = FileOperateFactory.Create(type, info);
                 AddOrUpdate(hash, result);
             }
+
             return result;
         }
 
         public void ReleaseOperate(IFileOperate fileOperate)
         {
-            ReleaseOperate(fileOperate.Info.Hash, out var value);
+            var hash = GetInfoHashCode(fileOperate.Info);
+            Remove(hash, out _);
         }
 
         public void ReleaseOperate(FileOperateInfo info)
         {
-            ReleaseOperate(info.LocalFileInfo.Hash, out var value);
+            var hash = GetInfoHashCode(info);
+            Remove(hash, out _);
         }
 
         public void ReleaseOperate(FileOperateInfo info, out IFileOperate? fileOperate)
         {
-            ReleaseOperate(info.LocalFileInfo.Hash, out var value);
-            fileOperate = value;
+            var hash = GetInfoHashCode(info);
+            Remove(hash, out fileOperate);
         }
 
-        public void ReleaseOperate(HashValue id, out IFileOperate? fileOperate)
-        {
-            Remove(id, out fileOperate);
-        }
-
-        protected override void Evict(HashValue key, IFileOperate value)
+        protected override void Evict(int key, IFileOperate value)
         {
             value.Dispose();
+        }
+
+        public int GetInfoHashCode(FileOperateInfo info)
+        {
+            var hash = info.LocalFileInfo.FullPath.AsSpan().GetHashValue_SHA256();
+            int hashCode = hash.GetHashCode();
+            hash.Dispose();
+            return hashCode;
         }
     }
 }

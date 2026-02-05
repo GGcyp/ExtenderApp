@@ -15,7 +15,7 @@ namespace ExtenderApp.Common.Encodings
         #region 编码方法
 
         /// <summary>
-        /// 将有符号整数按 ASN.1 INTEGER 的最短补码形式编码并写入目标块（包含 Tag/Length/Value）。
+        /// 将有符号整数按 ASN.1 INTEGER 的最短补码形式编码并写入目标块（包含 Tag/Capacity/Value）。
         /// </summary>
         /// <param name="block">目标写入块。</param>
         /// <param name="value">要编码的整数值。</param>
@@ -57,7 +57,7 @@ namespace ExtenderApp.Common.Encodings
         }
 
         /// <summary>
-        /// 将指定字符串按 UTF-8 编码写为 ASN.1 UTF8String（包含 Tag/Length/Value）。
+        /// 将指定字符串按 UTF-8 编码写为 ASN.1 UTF8String（包含 Tag/Capacity/Value）。
         /// </summary>
         /// <param name="block">目标写入块。</param>
         /// <param name="value">要编码的字符串（非空）。</param>
@@ -80,7 +80,7 @@ namespace ExtenderApp.Common.Encodings
         }
 
         /// <summary>
-        /// 将 <see cref="ByteBuffer"/> 的剩余可读数据作为一个 SEQUENCE 的内容写入目标块（写入 Tag/Length/Value）。
+        /// 将 <see cref="ByteBuffer"/> 的剩余可读数据作为一个 SEQUENCE 的内容写入目标块（写入 Tag/Capacity/Value）。
         /// </summary>
         /// <param name="block">目标写入块。</param>
         /// <param name="buffer">包含要写入的序列内容的 <see cref="ByteBuffer"/> （其未读内容会被写入）。</param>
@@ -94,7 +94,7 @@ namespace ExtenderApp.Common.Encodings
         }
 
         /// <summary>
-        /// 将 <see cref="ByteBlock"/> 的未读数据作为一个 SEQUENCE 的内容写入目标块（写入 Tag/Length/Value）。
+        /// 将 <see cref="ByteBlock"/> 的未读数据作为一个 SEQUENCE 的内容写入目标块（写入 Tag/Capacity/Value）。
         /// </summary>
         /// <param name="block">目标写入块。</param>
         /// <param name="buffer">包含要写入的序列内容的 <see cref="ByteBlock"/>。</param>
@@ -108,7 +108,7 @@ namespace ExtenderApp.Common.Encodings
         }
 
         /// <summary>
-        /// 将字符串按指定编码写成 OCTET STRING（包含 Tag/Length/Value）。
+        /// 将字符串按指定编码写成 OCTET STRING（包含 Tag/Capacity/Value）。
         /// </summary>
         /// <param name="block">目标写入块。</param>
         /// <param name="value">要编码的字符串。</param>
@@ -132,7 +132,7 @@ namespace ExtenderApp.Common.Encodings
         }
 
         /// <summary>
-        /// 将布尔值按 ASN.1 BOOLEAN 编码并写入（Tag/Length/Value）。
+        /// 将布尔值按 ASN.1 BOOLEAN 编码并写入（Tag/Capacity/Value）。
         /// </summary>
         /// <param name="block">目标写入块。</param>
         /// <param name="value">布尔值，true 编码为 0xFF，false 为 0x00。</param>
@@ -143,7 +143,7 @@ namespace ExtenderApp.Common.Encodings
         }
 
         /// <summary>
-        /// 将单字节值以指定 <see cref="Asn1Tag"/> 编码并写入（Tag/Length/Value）。
+        /// 将单字节值以指定 <see cref="Asn1Tag"/> 编码并写入（Tag/Capacity/Value）。
         /// </summary>
         /// <param name="block">目标写入块。</param>
         /// <param name="value">要写入的单字节值。</param>
@@ -290,7 +290,7 @@ namespace ExtenderApp.Common.Encodings
         #region 解码方法
 
         /// <summary>
-        /// 从 <see cref="ByteBlock"/> 中解码一个 ASN.1 INTEGER 并返回 Int64（包含 Tag/Length 的消费）。
+        /// 从 <see cref="ByteBlock"/> 中解码一个 ASN.1 INTEGER 并返回 Int64（包含 Tag/Capacity 的消费）。
         /// </summary>
         /// <param name="block">源字节块，读取位置会推进。</param>
         /// <returns>解码得到的 Int64 值。</returns>
@@ -331,7 +331,7 @@ namespace ExtenderApp.Common.Encodings
         }
 
         /// <summary>
-        /// 从 <see cref="ByteBlock"/> 中解码 BOOLEAN（包含 Tag/Length/Value）。
+        /// 从 <see cref="ByteBlock"/> 中解码 BOOLEAN（包含 Tag/Capacity/Value）。
         /// </summary>
         /// <param name="block">源字节块。</param>
         /// <returns>解析得到的布尔值。</returns>
@@ -351,7 +351,7 @@ namespace ExtenderApp.Common.Encodings
         }
 
         /// <summary>
-        /// 从 <see cref="ByteBlock"/> 中解码一个 UTF8String 并返回字符串（包含 Tag/Length/Value 的消费）。
+        /// 从 <see cref="ByteBlock"/> 中解码一个 UTF8String 并返回字符串（包含 Tag/Capacity/Value 的消费）。
         /// </summary>
         /// <param name="block">源字节块。</param>
         /// <returns>解码得到的字符串。</returns>
@@ -435,7 +435,7 @@ namespace ExtenderApp.Common.Encodings
         }
 
         /// <summary>
-        /// 预读并解析当前位置的 Tag（不会消费 Value/Length，仅推进 Tag 的字节），返回解析得到的 <see cref="Asn1Tag"/>。
+        /// 预读并解析当前位置的 Tag（不会消费 Value/Capacity，仅推进 Tag 的字节），返回解析得到的 <see cref="Asn1Tag"/>。
         /// </summary>
         /// <param name="block">源字节块。</param>
         /// <param name="tag">输出解析到的 Tag（成功时）。</param>
@@ -480,9 +480,9 @@ namespace ExtenderApp.Common.Encodings
         }
 
         /// <summary>
-        /// 从 <see cref="ByteBlock"/> 中读取并解析 BER 的 Length 字段（仅支持确定长度表示）。
+        /// 从 <see cref="ByteBlock"/> 中读取并解析 BER 的 Capacity 字段（仅支持确定长度表示）。
         /// </summary>
-        /// <param name="block">源字节块，读取位置会推进到 Length 字段之后。</param>
+        /// <param name="block">源字节块，读取位置会推进到 Capacity 字段之后。</param>
         /// <returns>返回 Value 部分的长度（字节数）。</returns>
         /// <exception cref="InvalidDataException">当遇到无限长度或超出支持范围时抛出。</exception>
         public static int DecodeLength(ref ByteBlock block)
