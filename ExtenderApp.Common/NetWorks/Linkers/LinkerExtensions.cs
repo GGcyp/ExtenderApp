@@ -294,7 +294,7 @@ namespace ExtenderApp.Common.Networks
         /// <param name="endPoint">目标远端终结点。</param>
         /// <param name="token">取消令牌。</param>
         /// <returns>发送结果。</returns>
-        /// <exception cref="ArgumentNullException">block 为空（IsEmpty）。</exception>
+        /// <exception cref="ArgumentNullException">Block 为空（IsEmpty）。</exception>
         /// <remarks>
         /// - 仅读取 <see cref="ByteBlock.UnreadMemory"/>；不修改读指针。 <br/>
         /// - 若需要发送后自动释放，请调用上层封装或自行在外部 finally 里释放。

@@ -77,8 +77,8 @@ namespace ExtenderApp.Data
             }
         }
 
-        //public abstract object Get();
+        //public abstract object GetBlock();
 
-        //public abstract void Release(object obj);
+        //public abstract void ReleaseSegment(object obj);
     }
 }

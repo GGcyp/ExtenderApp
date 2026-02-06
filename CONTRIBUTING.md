@@ -16,9 +16,7 @@
 - PR 应包括自检清单，至少包含：编译通过、测试通过、格式化已应用、没有未处理的 TODO。
 
 ## 文档注释要求
-- 对于方法使用 `<summary>` 描述功能；对于参数使用 `<param name="...">`，对返回值使用 `<returns>`，如有可能抛出的异常请使用 `<exception cref="...">`。
-- 注释语言为中文（简体）。
-- 对于涉及字节序、兼容性或协议细节的成员，请在注释中标注默认行为（例如：默认使用大端字节序）。
+所有 public 类型、public 成员（方法、属性、事件、构造函数）、以及 public 的泛型参数行为要有 XML 文档注释。注释应使用 `<summary>` 描述用途，必要时使用 `<param name="...">`、`<returns>`、`<exception cref="...">`。对于涉及内存/池/引用清理的类型，请说明清理策略（何时清零，何时不清零，使用 RuntimeHelpers.IsReferenceOrContainsReferences<T>() 判定等）。
 
 ## 工具与检查
 - 推荐在 Visual Studio 中启用代码格式化和分析规则（例如：__Tools > Options__ 中的格式化设置），并在 CI 中运行 `dotnet format` 与 `dotnet build`。

@@ -126,7 +126,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
             message = response;
             bytesConsumed = 0;
 
-            // 把新的字节写入内部缓存（复用 block）
+            // 把新的字节写入内部缓存（复用 Block）
             block.Write(buffer);
 
             if (response is null)

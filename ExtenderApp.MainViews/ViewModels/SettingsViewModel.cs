@@ -42,7 +42,7 @@ namespace ExtenderApp.MainViews.ViewModels
                 return;
 
             // 获取 ScrollViewer 内容面板（StackPanel）
-            //var panel = View.settingsPanel; // 不是 block.Parent，也不是 block.Parent.Parent
+            //var panel = View.settingsPanel; // 不是 Block.Parent，也不是 Block.Parent.Parent
 
             //var scrollViewer = View.settingsBar;
             //if (panel == null || scrollViewer == null)
@@ -51,8 +51,8 @@ namespace ExtenderApp.MainViews.ViewModels
             //panel.UpdateLayout();
             //scrollViewer.UpdateLayout();
 
-            //// 计算 block 相对于内容面板的 Y 坐标
-            //var transform = block.TransformToAncestor(panel);
+            //// 计算 Block 相对于内容面板的 Y 坐标
+            //var transform = Block.TransformToAncestor(panel);
             //var point = transform.Transform(new Point(0, 0));
 
             //// 滚动到该控件的顶部

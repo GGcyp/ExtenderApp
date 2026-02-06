@@ -141,7 +141,7 @@
         PageDown = 20,
 
         /// <summary>
-        /// End 键。
+        /// end 键。
         /// </summary>
         End = 21,
 

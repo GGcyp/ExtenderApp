@@ -482,12 +482,12 @@ namespace ExtenderApp.Common.Networks.SNMP
                     snmpValue = new SnmpValue(UniversalTagNumber.OctetString, DataBuffer<ByteBlock>.Get(bb));
                     break;
                 //case BEREncoding.ObjectIdentifierTag:
-                //    if (!SnmpOid.TryBERDecodeSequence(ref block, out var oid))
+                //    if (!SnmpOid.TryBERDecodeSequence(ref Block, out var oid))
                 //        return false;
                 //    // 将 OID 的点分字符串以 UTF8 存入 ByteBlock 作为值的表示（调用方可按需求转换）
                 //    var oidBytes = Encoding.UTF8.GetBytes(oid.Oid);
                 //    var ob = new ByteBlock(oidBytes);
-                //    snmpValue = new SnmpValue(SnmpDataType.ObjectIdentifier, DataBuffer<ByteBlock>.Get(ob));
+                //    snmpValue = new SnmpValue(SnmpDataType.ObjectIdentifier, DataBuffer<ByteBlock>.GetBlock(ob));
                 //    break;
                 case UniversalTagNumber.Sequence:
                     if (!tag.IsConstructed)

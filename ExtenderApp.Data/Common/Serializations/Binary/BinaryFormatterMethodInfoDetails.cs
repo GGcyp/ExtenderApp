@@ -15,12 +15,12 @@ namespace ExtenderApp.Data
     public struct BinaryFormatterMethodInfoDetails
     {
         /// <summary>
-        /// 写入方法的反射信息，形如：void Serialize(ref ByteBuffer buffer, T value)。
+        /// 写入方法的反射信息，形如：void Serialize(ref ByteBuffer Block, T value)。
         /// </summary>
         public MethodInfo Serialize { get; }
 
         /// <summary>
-        /// 读取方法的反射信息，形如：T Deserialize(ref ByteBuffer buffer)。
+        /// 读取方法的反射信息，形如：T Deserialize(ref ByteBuffer Block)。
         /// </summary>
         public MethodInfo Deserialize { get; }
 

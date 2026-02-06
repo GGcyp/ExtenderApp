@@ -560,13 +560,13 @@ namespace ExtenderApp.Data
         private void ValidateRange(int startIndex, int endIndex)
         {
             if (startIndex < 0 || startIndex >= Length)
-                throw new IndexOutOfRangeException($"Start index {startIndex} is out of range (0-{Length - 1})");
+                throw new IndexOutOfRangeException($"start index {startIndex} is out of range (0-{Length - 1})");
 
             if (endIndex < 0 || endIndex >= Length)
-                throw new IndexOutOfRangeException($"End index {endIndex} is out of range (0-{Length - 1})");
+                throw new IndexOutOfRangeException($"end index {endIndex} is out of range (0-{Length - 1})");
 
             if (startIndex > endIndex)
-                throw new ArgumentException("Start index must be less than or equal to end index");
+                throw new ArgumentException("start index must be less than or equal to end index");
         }
 
         /// <summary>
