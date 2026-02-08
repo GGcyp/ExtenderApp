@@ -100,9 +100,9 @@ namespace ExtenderApp.Data
         public const string Allow = "Allow";
 
         /// <summary>
-        /// Content-WrittenCount 标头，指定伴随正文数据的长度（以字节为单位）。
+        /// Content-Committed 标头，指定伴随正文数据的长度（以字节为单位）。
         /// </summary>
-        public const string ContentLength = "Content-WrittenCount";
+        public const string ContentLength = "Content-Committed";
 
         /// <summary>
         /// Content-Type 标头，指定伴随正文数据的 MIME 类型。
@@ -418,7 +418,7 @@ namespace ExtenderApp.Data
         /// <param name="encoding">用于将字符编码为字节的编码；若为 <c>null</c>，默认使用 <see cref="Encoding.ASCII"/>。</param>
         /// <remarks>
         /// 实现细节：
-        /// - 先根据编码和字符串长度估算所需字节数（使用 <see cref="Encoding.GetMaxByteCount"/>），并加上 body.WrittenCount 作为申请大小提示；
+        /// - 先根据编码和字符串长度估算所需字节数（使用 <see cref="Encoding.GetMaxByteCount"/>），并加上 body.Committed 作为申请大小提示；
         /// - 通过 <see cref="ByteBuffer"/>构造函数，创建目标缓冲并调用 <see cref="ByteBuffer.GetSpan(int)"/> 获取可写 <see cref="Span{T}"/>；
         /// - 使用 <see cref="Encoder"/> 对 <see cref="StringBuilder"/> 的每个块逐段编码到目标 span，最后调用一次带 flush 的 Convert 将编码器状态刷新干净；
         /// - 调用 <see cref="ByteBuffer.WriteAdvance(int)"/> 提交已写入字节数，然后将 body 追加到缓冲末尾。
@@ -427,7 +427,7 @@ namespace ExtenderApp.Data
         public static void BuildByteBuffer(this StringBuilder builder, ByteBlock body, out ByteBuffer buffer, Encoding? encoding = null)
         {
             encoding ??= Encoding.ASCII;
-            int length = encoding.GetMaxByteCount(builder.Length) + body.WrittenCount;
+            int length = encoding.GetMaxByteCount(builder.Length) + body.Committed;
             buffer = new ();
             Span<byte> span = buffer.GetSpan(length);
 
@@ -451,9 +451,9 @@ namespace ExtenderApp.Data
             spanPos += bytesFlushed;
 
             // 提交写入的字节数
-            buffer.WriteAdvance(spanPos);
+            buffer.Advance(spanPos);
 
-            buffer.Write(body);
+            buffer.Write(body.CommittedSpan);
             return;
         }
     }

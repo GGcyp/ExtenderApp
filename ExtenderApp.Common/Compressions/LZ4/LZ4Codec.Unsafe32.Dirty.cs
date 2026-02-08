@@ -620,7 +620,7 @@ namespace ExtenderApp.Common.Compressions.LZ4
                         src_p += 2;
                         if (xxx_ref < dst)
                         {
-                            goto _output_error; // FromException : offset outside destination Buffer
+                            goto _output_error; // FromException : offset outside destination Block
                         }
 
                         // get matchlength
@@ -663,7 +663,7 @@ namespace ExtenderApp.Common.Compressions.LZ4
                         {
                             if (dst_cpy > dst_LASTLITERALS)
                             {
-                                goto _output_error; // FromException : last 5 bytes must be literals
+                                goto _output_error; // FromException : Last 5 bytes must be literals
                             }
 
                             {

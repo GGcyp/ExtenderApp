@@ -190,7 +190,7 @@ namespace ExtenderApp.Services
         /// <returns>封装了操作与参数的 <see cref="DataBuffer"/> 实例。</returns>
         private DataBuffer GetDataBuffer<T>(Action<T> action, T send)
         {
-            var buffer = DataBuffer<Action<T>, T>.Get(action, send);
+            var buffer = DataBuffer.FromValue(action, send);
             _callbacks.TryAdd(buffer, Invoke<T>);
             return buffer;
         }

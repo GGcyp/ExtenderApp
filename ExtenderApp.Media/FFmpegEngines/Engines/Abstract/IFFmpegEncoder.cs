@@ -34,7 +34,7 @@ namespace ExtenderApp.FFmpegEngines
 
         /// <summary>
         /// 尝试从编码输出队列中取出一个编码后的包并出队。
-        /// <para>约定：出队成功后包的资源所有权转移给调用方；调用方需在使用完成后通过 <c>FFmpegEngine.Return</c> 归还底层包。</para>
+        /// <para>约定：出队成功后包的资源所有权转移给调用方；调用方需在使用完成后通过 <c>FFmpegEngine.Release</c> 归还底层包。</para>
         /// </summary>
         /// <param name="packet">输出编码后的包。</param>
         /// <returns>如果成功取到一个包则返回 <c>true</c>；否则返回 <c>false</c>。</returns>

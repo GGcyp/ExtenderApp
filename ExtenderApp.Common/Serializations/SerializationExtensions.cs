@@ -166,9 +166,9 @@ namespace ExtenderApp.Common
         {
             ArgumentNullException.ThrowIfNull(binarySerialization);
 
-            ByteBuffer buffer = new(block);
+            ByteBuffer buffer = new(block.Block);
             var result = binarySerialization.Deserialize<T>(ref buffer);
-            block.ReadAdvance((int)buffer.Consumed);
+            block.Advance((int)buffer.Committed);
             buffer.Dispose();
             return result;
         }
@@ -189,7 +189,7 @@ namespace ExtenderApp.Common
 
             if (compression.TryDecompress(span, out var block))
             {
-                var result = serialization.Deserialize<T>(block.UnreadMemory);
+                var result = serialization.Deserialize<T>(block.CommittedMemory);
                 block.Dispose();
                 return result;
             }
@@ -212,7 +212,7 @@ namespace ExtenderApp.Common
 
             if (compression.TryDecompress(memory.Span, out var block))
             {
-                var result = serialization.Deserialize<T>(block.UnreadMemory);
+                var result = serialization.Deserialize<T>(block.CommittedMemory);
                 block.Dispose();
                 return result;
             }
@@ -290,7 +290,7 @@ namespace ExtenderApp.Common
             ArgumentNullException.ThrowIfNull(operate);
 
             operate.Read(out ByteBuffer buffer, position);
-            var result = serialization.Deserialize<T>(buffer.UnreadSequence);
+            var result = serialization.Deserialize<T>(buffer.CommittedSequence);
             buffer.Dispose();
             return result;
         }
@@ -334,7 +334,7 @@ namespace ExtenderApp.Common
             ArgumentNullException.ThrowIfNull(compression);
             if (compression.TryDecompress(memory.Span, out var block))
             {
-                var result = serialization.Deserialize<T>(block.UnreadMemory);
+                var result = serialization.Deserialize<T>(block.CommittedMemory);
                 block.Dispose();
                 return result;
             }
@@ -412,14 +412,14 @@ namespace ExtenderApp.Common
             ArgumentNullException.ThrowIfNull(compression);
 
             T? result = default;
-            if (compression.TryDecompress(buffer.UnreadSequence, out var decompressedBuffer))
+            if (compression.TryDecompress(buffer.CommittedSequence, out var decompressedBuffer))
             {
-                result = serialization.Deserialize<T>(decompressedBuffer.UnreadSequence);
+                result = serialization.Deserialize<T>(decompressedBuffer.CommittedSequence);
                 decompressedBuffer.Dispose();
             }
             else
             {
-                result = serialization.Deserialize<T>(buffer.UnreadSequence);
+                result = serialization.Deserialize<T>(buffer.CommittedSequence);
             }
             buffer.Dispose();
             return result;

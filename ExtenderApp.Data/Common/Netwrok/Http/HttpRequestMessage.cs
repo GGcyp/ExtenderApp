@@ -104,7 +104,7 @@ namespace ExtenderApp.Data
         }
 
         /// <summary>
-        /// 设置文本内容（只写入 Body，并可设置 Content-Type；Content-WrittenCount 不在此处设置，由序列化前统一补齐）。
+        /// 设置文本内容（只写入 Body，并可设置 Content-Type；Content-Committed 不在此处设置，由序列化前统一补齐）。
         /// </summary>
         /// <param name="text">文本内容。</param>
         /// <param name="encoding">可选编码（默认 UTF-8）。</param>
@@ -114,7 +114,7 @@ namespace ExtenderApp.Data
             encoding ??= Encoding.UTF8;
             WriteToBody(text, encoding);
 
-            // 仅在 caller 提供 contentType 时设置；Content-WrittenCount 由 EnsureRequestHeaders 在序列化前统一设置
+            // 仅在 caller 提供 contentType 时设置；Content-Committed 由 EnsureRequestHeaders 在序列化前统一设置
             if (!string.IsNullOrEmpty(contentType))
             {
                 Headers.SetValue(HttpHeaders.ContentType, contentType);
@@ -127,7 +127,7 @@ namespace ExtenderApp.Data
         }
 
         /// <summary>
-        /// 设置二进制内容（写入 Body，仅设置 Content-Type，不设置 Content-WrittenCount）。
+        /// 设置二进制内容（写入 Body，仅设置 Content-Type，不设置 Content-Committed）。
         /// </summary>
         /// <param name="span">要写入的字节切片（拷贝到内部 ByteBlock）。</param>
         /// <param name="contentType">Content-Type，默认 application/octet-stream。</param>
@@ -147,7 +147,7 @@ namespace ExtenderApp.Data
         }
 
         /// <summary>
-        /// 设置二进制内容（写入 Body，仅设置 Content-Type，不设置 Content-WrittenCount）。
+        /// 设置二进制内容（写入 Body，仅设置 Content-Type，不设置 Content-Committed）。
         /// </summary>
         /// <param name="block">要写入的字节块（拷贝到内部 ByteBlock）。</param>
         /// <param name="contentType">Content-Type，默认 application/octet-stream。</param>
@@ -159,7 +159,7 @@ namespace ExtenderApp.Data
             }
 
             Body.Dispose();
-            Body = new ByteBlock(block.Remaining);
+            Body = new ByteBlock(block.Committed);
             Body.Write(block);
 
             if (!string.IsNullOrEmpty(contentType))
@@ -168,7 +168,7 @@ namespace ExtenderApp.Data
 
         /// <summary>
         /// 将当前 Params 以 application/x-www-form-urlencoded 作为请求体设置（覆盖现有 Body）。
-        /// 只设置 Content-Type；Content-WrittenCount 由序列化前统一补齐。
+        /// 只设置 Content-Type；Content-Committed 由序列化前统一补齐。
         /// </summary>
         public void SetFormContentFromParams(Encoding? encoding = null)
         {
@@ -194,12 +194,12 @@ namespace ExtenderApp.Data
             Body = new ByteBlock(length);
             Span<byte> span = Body.GetSpan(length);
             int actualLength = encoding.GetBytes(bodyText ?? string.Empty, span);
-            Body.WriteAdvance(actualLength);
+            Body.Advance(actualLength);
         }
 
         /// <summary>
         /// 序列化请求（start-line + headers + CRLF + body）为 ByteBuffer，可直接发送到网络流。
-        /// - 在写出头部前通过 EnsureRequestHeaders 统一补齐 Host / Content-WrittenCount 等。
+        /// - 在写出头部前通过 EnsureRequestHeaders 统一补齐 Host / Content-Committed 等。
         /// </summary>
         /// <param name="encoding">用于将 headers/start-line 编码为字节的编码，默认 ASCII（HTTP 头通常用 ASCII 或 ISO-8859-1）。</param>
         public ByteBuffer ToBuffer(Encoding? encoding = null)
@@ -226,7 +226,7 @@ namespace ExtenderApp.Data
             sb.Append(Version.Minor);
             sb.Append(HttpHeaders.NextLine);
 
-            // 统一在这里补齐请求所需的头（Host / Content-WrittenCount / 可选默认 Content-Type）
+            // 统一在这里补齐请求所需的头（Host / Content-Committed / 可选默认 Content-Type）
             Headers.EnsureRequestHeaders(RequestUri, Body);
 
             // 由 HttpHeader.BuildHeaderBlock 负责把所有头写出

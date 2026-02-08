@@ -76,7 +76,7 @@ namespace ExtenderApp.Common.Encodings
 
             Span<byte> span = block.GetSpan(length);
             Encoding.UTF8.GetBytes(value, span);
-            block.WriteAdvance(length);
+            block.Advance(length);
         }
 
         /// <summary>
@@ -219,7 +219,7 @@ namespace ExtenderApp.Common.Encodings
                 }
 
                 // 反转字节并设置最高位（除最后一个）
-                var numberSpan = numberBlock.UnreadSpan;
+                var numberSpan = numberBlock.CommittedSpan;
                 for (int i = numberSpan.Length - 1; i >= 0; i--)
                 {
                     byte t = numberSpan[i];
@@ -376,7 +376,7 @@ namespace ExtenderApp.Common.Encodings
         public static bool TryDecodeOctetString(ref ByteBlock block, out ByteBlock valueBlock)
         {
             valueBlock = new ByteBlock();
-            var temp = block.PeekByteBlock();
+            var temp = block;
             if (temp.Remaining == 0)
                 return false;
 
@@ -386,7 +386,7 @@ namespace ExtenderApp.Common.Encodings
 
             int length = DecodeLength(ref temp);
             valueBlock.Write(temp.Read(length));
-            block.ReadAdvance(temp.Consumed - block.Consumed);
+            block.Advance(temp.Consumed - block.Consumed);
             return true;
         }
 
@@ -397,7 +397,7 @@ namespace ExtenderApp.Common.Encodings
         /// <returns>若当前位置为 NULL 并成功解析返回 true，否则 false。</returns>
         public static bool TryDecodeNull(ref ByteBlock block)
         {
-            var temp = block.PeekByteBlock();
+            var temp = block;
             if (temp.Remaining == 0)
                 return false;
             var tag = DecodeTag(ref temp);
@@ -407,7 +407,7 @@ namespace ExtenderApp.Common.Encodings
             if (length != 0)
                 return false;
 
-            block.ReadAdvance(temp.Consumed - block.Consumed);
+            block.Advance(temp.Consumed - block.Consumed);
             return true;
         }
 
@@ -418,7 +418,7 @@ namespace ExtenderApp.Common.Encodings
         /// <returns>若当前位置为构造型 Sequence 且剩余长度足够返回 true，否则 false。</returns>
         public static bool TryDecodeSequence(ref ByteBlock block)
         {
-            var temp = block.PeekByteBlock();
+            var temp = block;
             if (block.Remaining == 0)
                 return false;
 
@@ -426,7 +426,7 @@ namespace ExtenderApp.Common.Encodings
             if (tag.ToUTagNumber() != UniversalTagNumber.Sequence || !tag.IsConstructed)
                 return false;
 
-            block.ReadAdvance(temp.Consumed - block.Consumed);
+            block.Advance(temp.Consumed - block.Consumed);
             int length = DecodeLength(ref block);
             if (block.Remaining < length)
                 return false;
@@ -443,11 +443,11 @@ namespace ExtenderApp.Common.Encodings
         public static bool TryDecodeTag(ref ByteBlock block, out Asn1Tag tag)
         {
             tag = default;
-            var temp = block.PeekByteBlock();
+            var temp = block;
             if (temp.Remaining == 0)
                 return false;
             tag = DecodeTag(ref temp);
-            block.ReadAdvance(temp.Consumed - block.Consumed);
+            block.Advance(temp.Consumed - block.Consumed);
             return true;
         }
 

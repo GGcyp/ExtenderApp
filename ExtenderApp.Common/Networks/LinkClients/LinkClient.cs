@@ -32,20 +32,9 @@ namespace ExtenderApp.Common.Networks.LinkClients
 
         #endregion ILinker 直通属性
 
-        public ILinkClientFramer? Framer { get; protected set; }
-
-        public ReadOnlyMemory<byte> Magic => Framer?.Magic ?? ReadOnlyMemory<byte>.Empty;
-
         public LinkClient(TLinker linker)
         {
             Linker = linker ?? throw new ArgumentNullException(nameof(linker));
-        }
-
-        public void SetClientFramer(ILinkClientFramer framer)
-        {
-            ThrowIfDisposed();
-            ArgumentNullException.ThrowIfNull(framer, nameof(framer));
-            Framer = framer;
         }
 
         public void SetOption(LinkOptionLevel optionLevel, LinkOptionName optionName, DataBuffer optionValue)
@@ -53,37 +42,14 @@ namespace ExtenderApp.Common.Networks.LinkClients
             ThrowIfDisposed();
             Linker.SetOption(optionLevel, optionName, optionValue);
         }
-
-        public void SetMagic(ReadOnlySpan<byte> magic)
-        {
-            if (Framer == null)
-                throw new InvalidOperationException("未设置帧器，无法配置 Magic");
-            Framer.SetMagic(magic);
-        }
     }
 
     public abstract class LinkClient<TLinker, TLinkClient> : LinkClient<TLinker>, ILinkClient<TLinkClient>
         where TLinker : ILinker
         where TLinkClient : ILinkClient
     {
-        public ILinkClientPluginManager<TLinkClient>? PluginManager { get; protected set; }
-        
         public LinkClient(TLinker linker) : base(linker)
         {
-        }
-
-        public void SetClientPluginManager(ILinkClientPluginManager<TLinkClient> pluginManager)
-        {
-            ThrowIfDisposed();
-            ArgumentNullException.ThrowIfNull(pluginManager, nameof(pluginManager));
-            PluginManager = pluginManager;
-        }
-
-        protected override void DisposeManagedResources()
-        {
-            PluginManager.DisposeSafe();
-            Framer.DisposeSafe();
-            Linker.DisposeSafe();
         }
 
         protected override ValueTask DisposeAsyncManagedResources()

@@ -55,7 +55,7 @@ namespace ExtenderApp.Data
         /// <param name="maximumRetained">对象池中最大保留对象数，-1表示无限制</param>
         /// <param name="canReuse">是否可以重用对象池，默认为true</param>
         /// <returns>返回创建的对象池</returns>
-        public static ObjectPool<T> Create<T>(PooledObjectPolicy<T> policy, ObjectPoolProvider? objectPoolProvider = null, int maximumRetained = -1) where T : class
+        public static ObjectPool<T> Create<T>(PooledObjectPolicy<T> policy, ObjectPoolProvider? objectPoolProvider = null, int maximumRetained = -1) where T : class, new()
         {
             Type poolType = typeof(T);
             if (PoolDict.TryGetValue(poolType, out var pool))

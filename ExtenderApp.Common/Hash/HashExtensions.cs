@@ -130,8 +130,8 @@ namespace ExtenderApp.Common.Hash
             int length = encoding.GetMaxByteCount(span.Length);
             using ByteBlock block = new(length);
             length = encoding.GetBytes(span, block.GetSpan(length));
-            block.WriteAdvance(length);
-            var result = block.UnreadSpan.ComputeHash_SHA1();
+            block.Advance(length);
+            var result = block.CommittedSpan.ComputeHash_SHA1();
             return result;
         }
 
@@ -178,8 +178,8 @@ namespace ExtenderApp.Common.Hash
             int length = encoding.GetMaxByteCount(span.Length);
             using ByteBlock block = new(length);
             length = encoding.GetBytes(span, block.GetSpan(length));
-            block.WriteAdvance(length);
-            var result = block.UnreadSpan.ComputeHash_SHA256();
+            block.Advance(length);
+            var result = block.CommittedSpan.ComputeHash_SHA256();
             return result;
         }
 
@@ -226,8 +226,8 @@ namespace ExtenderApp.Common.Hash
             int length = encoding.GetMaxByteCount(span.Length);
             using ByteBlock block = new(length);
             length = encoding.GetBytes(span, block.GetSpan(length));
-            block.WriteAdvance(length);
-            var result = block.UnreadSpan.ComputeHash_SHA384();
+            block.Advance(length);
+            var result = block.CommittedSpan.ComputeHash_SHA384();
             return result;
         }
 
@@ -274,8 +274,8 @@ namespace ExtenderApp.Common.Hash
             int length = encoding.GetMaxByteCount(span.Length);
             using ByteBlock block = new(length);
             length = encoding.GetBytes(span, block.GetSpan(length));
-            block.WriteAdvance(length);
-            var result = block.UnreadSpan.ComputeHash_MD5();
+            block.Advance(length);
+            var result = block.CommittedSpan.ComputeHash_MD5();
             return result;
         }
 
@@ -322,8 +322,8 @@ namespace ExtenderApp.Common.Hash
             int length = encoding.GetMaxByteCount(span.Length);
             using ByteBlock block = new(length);
             length = encoding.GetBytes(span, block.GetSpan(length));
-            block.WriteAdvance(length);
-            var result = block.UnreadSpan.ComputeHash_HMACMD5();
+            block.Advance(length);
+            var result = block.CommittedSpan.ComputeHash_HMACMD5();
             return result;
         }
 

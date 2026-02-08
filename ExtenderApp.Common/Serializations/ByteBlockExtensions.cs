@@ -6,9 +6,7 @@ using ExtenderApp.Data;
 namespace ExtenderApp.Common.Serializations
 {
     /// <summary>
-    /// 为 <see cref="ByteBlock"/> 提供高性能二进制读写扩展方法。
-    /// 该类通过封装基于 <see cref="BinaryDataExtensions"/> 的底层逻辑，实现对常用基础类型的顺序读写。
-    /// 注意：由于操作直接针对 <see cref="Span{T}"/>，所有数值类型默认支持大端序（Big-Endian）和位模式转换。
+    /// 为 <see cref="ByteBlock"/> 提供高性能二进制读写扩展方法。 该类通过封装基于 <see cref="BinaryDataExtensions"/> 的底层逻辑，实现对常用基础类型的顺序读写。 注意：由于操作直接针对 <see cref="Span{T}"/>，所有数值类型默认支持大端序（Big-Endian）和位模式转换。
     /// </summary>
     public static class ByteBlockExtensions
     {
@@ -19,9 +17,9 @@ namespace ExtenderApp.Common.Serializations
         /// <summary>
         /// 将一个非托管类型的数据写入字节块，并将写入指针前进相应字节数。
         /// </summary>
-        /// <typeparam name="T">指定<typeparamref name="T"/>类型</typeparam>
+        /// <typeparam name="T">指定 <typeparamref name="T"/> 类型</typeparam>
         /// <param name="block">目标字节块实例。</param>
-        /// <param name="value">要写入的<typeparamref name="T"/>值。</param>
+        /// <param name="value">要写入的 <typeparamref name="T"/> 值。</param>
         /// <param name="isBigEndian">是否采用大端字节序。</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void Write<T>(this ref ByteBlock block, in T value, bool isBigEndian = true)
@@ -30,12 +28,12 @@ namespace ExtenderApp.Common.Serializations
             int size = Marshal.SizeOf<T>();
             Span<byte> span = block.GetSpan(size);
             MemoryMarshal.Write(span, in value);
-            block.WriteAdvance(size);
+            block.Advance(size);
             if (BitConverter.IsLittleEndian == isBigEndian)
             {
                 span.Reverse();
             }
-        }   
+        }
 
         /// <summary>
         /// 写入一个 128 位精度的高精度浮点数（decimal），并将写入指针前进 16 字节。
@@ -48,7 +46,7 @@ namespace ExtenderApp.Common.Serializations
         {
             const int size = 16;
             block.GetSpan(size).WriteDecimal(value);
-            block.WriteAdvance(size);
+            block.Advance(size);
         }
 
         /// <summary>
@@ -61,7 +59,7 @@ namespace ExtenderApp.Common.Serializations
         {
             const int size = 16;
             block.GetSpan(size).WriteGuid(value);
-            block.WriteAdvance(size);
+            block.Advance(size);
         }
 
         /// <summary>
@@ -73,7 +71,7 @@ namespace ExtenderApp.Common.Serializations
         public static void WriteBoolean(this ref ByteBlock block, bool value)
         {
             block.GetSpan(1).WriteBoolean(value);
-            block.WriteAdvance(1);
+            block.Advance(1);
         }
 
         /// <summary>
@@ -101,7 +99,7 @@ namespace ExtenderApp.Common.Serializations
             Span<char> chars = stackalloc char[1] { value };
             int byteCount = encoding.GetByteCount(chars);
             encoding.GetBytes(chars, block.GetSpan(byteCount));
-            block.WriteAdvance(byteCount);
+            block.Advance(byteCount);
         }
 
         /// <summary>
@@ -116,7 +114,7 @@ namespace ExtenderApp.Common.Serializations
             encoding ??= DefaultEncoding;
             int byteCount = encoding.GetByteCount(value);
             encoding.GetBytes(value, block.GetSpan(byteCount));
-            block.WriteAdvance(byteCount);
+            block.Advance(byteCount);
         }
 
         #endregion Write
@@ -142,7 +140,7 @@ namespace ExtenderApp.Common.Serializations
                 span.Reverse();
             }
             return MemoryMarshal.Read<T>(span);
-        }  
+        }
 
         /// <summary>
         /// 从当前位置读取一个 decimal 值并前进 16 字节。
@@ -205,7 +203,7 @@ namespace ExtenderApp.Common.Serializations
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static DateTime ReadDateTime(this ref ByteBlock block, bool isBigEndian = true)
         {
-            return new DateTime(block.ReadInt64(isBigEndian));
+            return new DateTime(block.Read(isBigEndian));
         }
 
         /// <summary>

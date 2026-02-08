@@ -1,6 +1,4 @@
-﻿
-
-namespace ExtenderApp.Data
+﻿namespace ExtenderApp.Data
 {
     /// <summary>
     /// 通用层，对象池提供器
@@ -12,7 +10,7 @@ namespace ExtenderApp.Data
         /// 生成一个 <see cref="ObjectPool"/> 实例。
         /// </summary>
         /// <typeparam name="T">用这个类型生成对象池</typeparam>
-        public ObjectPool<T> Create<T>()
+        public ObjectPool<T> Create<T>() where T : class, new()
         {
             return Create(new DefaultPooledObjectPolicy<T>());
         }
@@ -25,6 +23,6 @@ namespace ExtenderApp.Data
         /// <param name="maximumRetained">对象池中最多保留的对象数量</param>
         /// <returns>生成的 <see cref="ObjectPool{T}"/> 对象</returns>
         /// <remarks>此方法是一个抽象方法，需要子类实现。</remarks>
-        public abstract ObjectPool<T> Create<T>(PooledObjectPolicy<T> policy, int maximumRetained = -1);
+        public abstract ObjectPool<T> Create<T>(PooledObjectPolicy<T> policy, int maximumRetained = -1) where T : class, new();
     }
 }

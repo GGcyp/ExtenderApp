@@ -173,7 +173,7 @@ namespace ExtenderApp.Common.Networks.SNMP
 
             if (compIndex < 2) throw new ArgumentException("OID 至少两个分量");
 
-            // 第一个字节为 40*first + second
+            // 第一个字节为 40*First + second
             contentLen += 1;
 
             // 2) 写 Tag (OBJECT IDENTIFIER = 0x06)
@@ -389,7 +389,7 @@ namespace ExtenderApp.Common.Networks.SNMP
         {
             // 读取并校验 Tag
             snmpOid = default;
-            var tempBlock = block.PeekByteBlock();
+            var tempBlock = block;
             var tag = BEREncoding.DecodeTag(ref tempBlock);
             if (tag.ToUTagNumber() != UniversalTagNumber.ObjectIdentifier || tag.IsConstructed)
                 return false;
@@ -399,13 +399,13 @@ namespace ExtenderApp.Common.Networks.SNMP
             if (length < 1)
                 return false;
 
-            block.ReadAdvance(tempBlock.Consumed - block.Consumed);
+            block.Advance(tempBlock.Consumed - block.Consumed);
 
             ReadOnlySpan<byte> data = block.Read(length);
             if (data.Length != length)
                 throw new System.IO.InvalidDataException("数据长度不足，无法读取完整 OID 内容");
 
-            // 解析内容：第一个字节合并为 first 和 second，其余为
+            // 解析内容：第一个字节合并为 First 和 second，其余为
             // base-128 编码分量
             int pos = 0;
             byte firstByte = data[pos++];
@@ -452,7 +452,7 @@ namespace ExtenderApp.Common.Networks.SNMP
                 return false;
 
             // 先预览 Tag/Capacity，决定处理分支且在需要时推进原始块的读取位置。
-            var temp = block.PeekByteBlock();
+            var temp = block;
             var tag = BEREncoding.DecodeTag(ref temp);
 
             int len = 0;
@@ -462,7 +462,7 @@ namespace ExtenderApp.Common.Networks.SNMP
             {
                 case UniversalTagNumber.Null:
                     len = BEREncoding.DecodeLength(ref temp);
-                    block.ReadAdvance(temp.Consumed - block.Consumed);
+                    block.Advance(temp.Consumed - block.Consumed);
                     if (len > 0)
                         block.Read(len); // 跳过可能存在的值字节（规范上应为0）
                     snmpValue = SnmpValue.Empty;
@@ -474,7 +474,7 @@ namespace ExtenderApp.Common.Networks.SNMP
 
                 case UniversalTagNumber.OctetString:
                     len = BEREncoding.DecodeLength(ref temp);
-                    block.ReadAdvance(temp.Consumed - block.Consumed);
+                    block.Advance(temp.Consumed - block.Consumed);
                     if (block.Remaining < len)
                         throw new System.IO.InvalidDataException("数据长度不足，无法读取完整 OctetString 内容");
                     data = block.Read(len);
@@ -494,7 +494,7 @@ namespace ExtenderApp.Common.Networks.SNMP
                         return false;
 
                     len = BEREncoding.DecodeLength(ref temp);
-                    block.ReadAdvance(temp.Consumed - block.Consumed);
+                    block.Advance(temp.Consumed - block.Consumed);
                     data = block.Read(len);
                     if (data.Length != len)
                         throw new System.IO.InvalidDataException("数据长度不足，无法读取完整 Sequence 内容");
@@ -508,7 +508,7 @@ namespace ExtenderApp.Common.Networks.SNMP
 
         public static bool TryBERDecodeSequence(ref ByteBlock block, SnmpPduType type)
         {
-            var temp = block.PeekByteBlock();
+            var temp = block;
             if (block.Remaining == 0)
                 return false;
 
@@ -516,7 +516,7 @@ namespace ExtenderApp.Common.Networks.SNMP
             if (tag.TagValue != (int)type || !tag.IsConstructed)
                 return false;
 
-            block.ReadAdvance(temp.Consumed - block.Consumed);
+            block.Advance(temp.Consumed - block.Consumed);
             int length = BEREncoding.DecodeLength(ref block);
             if (block.Remaining < length)
                 return false;

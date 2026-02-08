@@ -75,49 +75,49 @@ namespace ExtenderApp.Common.Networks.LinkClients
             message = default;
             bytesConsumed = 0;
 
-            // 写入接收数据到内部缓冲（复用单个 ByteBlock）
-            block.Write(buffer);
+            //// 写入接收数据到内部缓冲（复用单个 ByteBlock）
+            //block.Write(buffer);
 
-            if (request is null)
-            {
-                // 解析头部
-                if (!TryParseRequestHeader(encoding, out message))
-                {
-                    return false; // 头部未完整到达
-                }
-                request = message;
-                block.ReadAdvance(headerBlockLen);
-            }
+            //if (request is null)
+            //{
+            //    // 解析头部
+            //    if (!TryParseRequestHeader(encoding, out message))
+            //    {
+            //        return false; // 头部未完整到达
+            //    }
+            //    request = message;
+            //    block.Advance(headerBlockLen);
+            //}
 
-            if (contentLength == 0)
-                return true;
+            //if (contentLength == 0)
+            //    return true;
 
-            bytesConsumed = headerBlockLen + contentLength;
-            ReadOnlySpan<byte> unread = block.UnreadSpan;
-            int stillNeedLen = contentLength - block.Remaining;
-            // 检查 body 是否完整
-            if (stillNeedLen > 0 && stillNeedLen > block.WritableBytes)
-            {
-                block.Ensure(stillNeedLen);
-                return false; // body 未到齐
-            }
+            //bytesConsumed = headerBlockLen + contentLength;
+            //ReadOnlySpan<byte> unread = block.CommittedSpan;
+            //int stillNeedLen = contentLength - block.Remaining;
+            //// 检查 body 是否完整
+            //if (stillNeedLen > 0 && stillNeedLen > block.Available)
+            //{
+            //    block.Ensure(stillNeedLen);
+            //    return false; // body 未到齐
+            //}
 
-            // 复制 body 到新的 ByteBlock（现有类型 API 要求 copy）
-            if (block.Remaining < contentLength)
-            {
-                return false;
-            }
+            //// 复制 body 到新的 ByteBlock（现有类型 API 要求 copy）
+            //if (block.Remaining < contentLength)
+            //{
+            //    return false;
+            //}
 
-            ReadOnlySpan<byte> bodySpan = unread.Slice(0, contentLength);
-            message!.SetContent(block: new ByteBlock(bodySpan));
+            //ReadOnlySpan<byte> bodySpan = unread.Slice(0, contentLength);
+            //message!.SetContent(block: new ByteBlock(bodySpan));
 
-            // 消费内部缓冲并压缩（移除已解析数据）
-            block.ReadAdvance(bytesConsumed);
-            block.Dispose();
-            block = new(DefaultHeaderSize);
-            request = null;
-            headerBlockLen = 0;
-            contentLength = 0;
+            //// 消费内部缓冲并压缩（移除已解析数据）
+            //block.Advance(bytesConsumed);
+            //block.Dispose();
+            //block = new(DefaultHeaderSize);
+            //request = null;
+            //headerBlockLen = 0;
+            //contentLength = 0;
             return true;
         }
 
@@ -126,55 +126,55 @@ namespace ExtenderApp.Common.Networks.LinkClients
             message = response;
             bytesConsumed = 0;
 
-            // 把新的字节写入内部缓存（复用 Block）
-            block.Write(buffer);
+            //// 把新的字节写入内部缓存（复用 Block）
+            //block.Write(buffer);
 
-            if (response is null)
-            {
-                // 解析头部
-                if (!TryParseResponseHeader(encoding, requestMessage, out message))
-                {
-                    return false; // 头部未完整到达
-                }
-                response = message;
-                block.ReadAdvance(headerBlockLen);
-            }
+            //if (response is null)
+            //{
+            //    // 解析头部
+            //    if (!TryParseResponseHeader(encoding, requestMessage, out message))
+            //    {
+            //        return false; // 头部未完整到达
+            //    }
+            //    response = message;
+            //    block.Advance(headerBlockLen);
+            //}
 
-            if (contentLength == 0)
-                return true;
+            //if (contentLength == 0)
+            //    return true;
 
-            bytesConsumed = headerBlockLen + contentLength;
-            ReadOnlySpan<byte> unread = block.UnreadSpan;
-            int stillNeedLen = contentLength - block.Remaining;
-            // 检查 body 是否完整
-            if (stillNeedLen > 0 && stillNeedLen > block.WritableBytes)
-            {
-                block.Ensure(stillNeedLen);
-                return false; // body 未到齐
-            }
+            //bytesConsumed = headerBlockLen + contentLength;
+            //ReadOnlySpan<byte> unread = block.CommittedSpan;
+            //int stillNeedLen = contentLength - block.Remaining;
+            //// 检查 body 是否完整
+            //if (stillNeedLen > 0 && stillNeedLen > block.Available)
+            //{
+            //    block.Ensure(stillNeedLen);
+            //    return false; // body 未到齐
+            //}
 
-            if (block.Remaining < contentLength)
-            {
-                return false;
-            }
+            //if (block.Remaining < contentLength)
+            //{
+            //    return false;
+            //}
 
-            ReadOnlySpan<byte> bodySpan = unread.Slice(0, contentLength);
-            response.SetContent(new ByteBlock(bodySpan));
+            //ReadOnlySpan<byte> bodySpan = unread.Slice(0, contentLength);
+            //response.SetContent(new ByteBlock(bodySpan));
 
-            // 消费内部缓冲并重置（与请求解析一致的行为）
-            block.ReadAdvance(bytesConsumed);
-            block.Dispose();
-            block = new(DefaultHeaderSize);
-            response = null;
-            headerBlockLen = 0;
-            contentLength = 0;
+            //// 消费内部缓冲并重置（与请求解析一致的行为）
+            //block.Advance(bytesConsumed);
+            //block.Dispose();
+            //block = new(DefaultHeaderSize);
+            //response = null;
+            //headerBlockLen = 0;
+            //contentLength = 0;
             return true;
         }
 
         private bool TryParseResponseHeader(Encoding? encoding, HttpRequestMessage requestMessage, out HttpResponseMessage message)
         {
             message = null!;
-            ReadOnlySpan<byte> unread = block.UnreadSpan;
+            ReadOnlySpan<byte> unread = block.CommittedSpan;
             // 查找头部结束标记 "\r\n\r\n"
             int headerEnd = unread.IndexOf(HeaderTerminator);
             if (headerEnd < 0)
@@ -264,7 +264,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
         private bool TryParseRequestHeader(Encoding? encoding, out HttpRequestMessage message)
         {
             message = null!;
-            ReadOnlySpan<byte> unread = block.UnreadSpan;
+            ReadOnlySpan<byte> unread = block.CommittedSpan;
             int headerEnd = unread.IndexOf(HeaderTerminator);
             if (headerEnd < 0)
                 return false; // 头部还未完整到达

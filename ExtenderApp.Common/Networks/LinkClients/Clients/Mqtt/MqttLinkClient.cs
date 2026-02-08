@@ -213,7 +213,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
         //    variableLen = 2 + 4 + 1 + 1 + 2;
         //    int remaining = variableLen + payloadLen;
 
-        //    var buf = ByteBuffer.CreateBuffer();
+        //    var buf = ByteBuffer.GetBuffer();
         //    buf.Write(FIXED_CONNECT);
         //    WriteVarInt(ref buf, remaining);
         //    WriteUtf8(ref buf, proto);
@@ -229,7 +229,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
         //private static ByteBuffer BuildPublishQoS0(string topic, ReadOnlySpan<byte> payload, bool retain)
         //{
         //    int remaining = 2 + Encoding.UTF8.GetByteCount(topic) + payload.Capacity;
-        //    var buf = ByteBuffer.CreateBuffer();
+        //    var buf = ByteBuffer.GetBuffer();
         //    byte header = FIXED_PUBLISH;
         //    if (retain) header |= 0x01;
         //    buf.Write(header);
@@ -242,7 +242,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
         //private static ByteBuffer BuildSubscribe(string topic, QosLevel qos, ushort packetId)
         //{
         //    int remaining = 2 /*PacketId*/ + 2 + Encoding.UTF8.GetByteCount(topic) + 1;
-        //    var buf = ByteBuffer.CreateBuffer();
+        //    var buf = ByteBuffer.GetBuffer();
         //    buf.Write(FIXED_SUBSCRIBE);
         //    WriteVarInt(ref buf, remaining);
         //    WriteUInt16BE(ref buf, packetId);
@@ -253,7 +253,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
 
         //private static ByteBuffer BuildFixed(byte fixedHeader)
         //{
-        //    var buf = ByteBuffer.CreateBuffer();
+        //    var buf = ByteBuffer.GetBuffer();
         //    buf.Write(fixedHeader);
         //    buf.Write((byte)0); // RemainingLength = 0
         //    return buf;
@@ -281,7 +281,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
         //    WriteUInt16BE(ref buf, (ushort)len);
         //    var span = buf.GetSpan(len);
         //    Encoding.UTF8.GetBytes(text, span);
-        //    buf.WriteAdvance(len);
+        //    buf.Advance(len);
         //}
 
         //private static void WriteUInt16BE(ref ByteBuffer buf, ushort Value)
@@ -289,7 +289,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
         //    var s = buf.GetSpan(2);
         //    s[0] = (byte)(Value >> 8);
         //    s[1] = (byte)(Value & 0xFF);
-        //    buf.WriteAdvance(2);
+        //    buf.Advance(2);
         //}
 
         //private static void WriteVarInt(ref ByteBuffer buf, int Value)
@@ -309,7 +309,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
         //#region 发送底层
 
         //private ValueTask SendRawAsync(ByteBuffer packet, CancellationToken token)
-        //    => Linker.SendAsync(packet.UnreadSequence, token);
+        //    => Linker.SendAsync(packet.CommittedSequence, token);
 
         //private ushort NextPacketId()
         //{
@@ -363,21 +363,21 @@ namespace ExtenderApp.Common.Networks.LinkClients
         ///// <summary>
         ///// 尝试解析一个完整报文，返回消费的字节数（不足返回 0）。
         ///// </summary>
-        //private int TryParsePacket(ReadOnlySpan<byte> Buffer)
+        //private int TryParsePacket(ReadOnlySpan<byte> Block)
         //{
-        //    if (Buffer.Capacity < 2) return 0;
-        //    byte header = Buffer[0];
+        //    if (Block.Capacity < 2) return 0;
+        //    byte header = Block[0];
 
         //    // 解析 RemainingLength (var-int)
         //    int remainingLength;
         //    int rlBytes;
-        //    if (!TryReadVarInt(Buffer.Slice(1), out remainingLength, out rlBytes))
+        //    if (!TryReadVarInt(Block.Slice(1), out remainingLength, out rlBytes))
         //        return 0;
 
         //    int total = 1 + rlBytes + remainingLength;
-        //    if (Buffer.Capacity < total) return 0; // 数据不足
+        //    if (Block.Capacity < total) return 0; // 数据不足
 
-        //    ReadOnlySpan<byte> body = Buffer.Slice(1 + rlBytes, remainingLength);
+        //    ReadOnlySpan<byte> body = Block.Slice(1 + rlBytes, remainingLength);
         //    byte type = (byte)(header & 0xF0);
 
         //    switch (type)

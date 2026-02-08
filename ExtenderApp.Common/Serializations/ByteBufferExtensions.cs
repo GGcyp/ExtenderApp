@@ -8,7 +8,7 @@ namespace ExtenderApp.Common.Serializations
     /// <summary>
     /// 为 <see cref="ByteBuffer"/> 提供高性能二进制读写扩展方法。
     /// 该类封装了对基础数值类型、布尔、<see cref="Guid"/>, <see cref="decimal"/>, <see cref="DateTime"/> 与 字符/字符串 的顺序读写。
-    /// 注意：写操作使用 <see cref="ByteBuffer.GetSpan(int)"/> + <see cref="ByteBuffer.WriteAdvance(int)"/>；
+    /// 注意：写操作使用 <see cref="ByteBuffer.GetSpan(int)"/> + <see cref="ByteBuffer.Advance(int)"/>；
     /// 读操作在遇到多段序列边界时会将数据复制到临时 <see cref="ByteBlock"/> 以保证读取连续性。
     /// </summary>
     public static class ByteBufferExtensions
@@ -39,7 +39,7 @@ namespace ExtenderApp.Common.Serializations
             {
                 span.Reverse();
             }
-            buffer.WriteAdvance(size);
+            buffer.Advance(size);
         }
 
         /// <summary>
@@ -53,7 +53,7 @@ namespace ExtenderApp.Common.Serializations
         {
             const int size = 16;
             buffer.GetSpan(size).WriteDecimal(value);
-            buffer.WriteAdvance(size);
+            buffer.Advance(size);
         }
 
         /// <summary>
@@ -66,7 +66,7 @@ namespace ExtenderApp.Common.Serializations
         {
             const int size = 16;
             buffer.GetSpan(size).WriteGuid(value);
-            buffer.WriteAdvance(size);
+            buffer.Advance(size);
         }
 
         /// <summary>
@@ -78,7 +78,7 @@ namespace ExtenderApp.Common.Serializations
         public static void WriteBoolean(this ref ByteBuffer buffer, bool value)
         {
             buffer.GetSpan(1).WriteBoolean(value);
-            buffer.WriteAdvance(1);
+            buffer.Advance(1);
         }
 
         /// <summary>
@@ -106,7 +106,7 @@ namespace ExtenderApp.Common.Serializations
             Span<char> chars = stackalloc char[1] { value };
             int byteCount = encoding.GetByteCount(chars);
             encoding.GetBytes(chars, buffer.GetSpan(byteCount));
-            buffer.WriteAdvance(byteCount);
+            buffer.Advance(byteCount);
         }
 
         /// <summary>
@@ -121,7 +121,7 @@ namespace ExtenderApp.Common.Serializations
             encoding ??= DefaultEncoding;
             int byteCount = encoding.GetByteCount(value);
             encoding.GetBytes(value, buffer.GetSpan(byteCount));
-            buffer.WriteAdvance(byteCount);
+            buffer.Advance(byteCount);
         }
 
         #endregion Write

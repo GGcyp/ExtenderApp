@@ -72,20 +72,18 @@ namespace ExtenderApp.Common.Networks
         /// 同步发送 <see cref="ByteBlock"/> 中尚未读取的数据，并按发送量推进其读取位置。
         /// </summary>
         /// <param name="linker">目标链接。</param>
-        /// <param name="block">字节块；方法内部会根据发送量调用 <see cref="ByteBlock.ReadAdvance(int)"/>。</param>
+        /// <param name="block">字节块；方法内部会根据发送量调用 <see cref="ByteBlock.Advance(int)"/>。</param>
         /// <returns>发送结果。</returns>
-        public static Result<SocketOperationValue> Send(this ILinker linker, ref ByteBlock block)
+        public static Result<SocketOperationValue> Send(this ILinker linker, ByteBlock block)
         {
-            var result = linker.Send(block.UnreadSpan);
-            block.ReadAdvance(result.Value.BytesTransferred);
-            return result;
+            return linker.Send(block.CommittedSpan);
         }
 
         /// <summary>
         /// 同步发送 <see cref="ByteBuffer"/> 中尚未读取的数据。
         /// </summary>
         /// <param name="linker">目标链接。</param>
-        /// <param name="buffer">只读缓冲视图；其 <see cref="ByteBuffer.UnreadSequence"/> 将被发送。</param>
+        /// <param name="buffer">只读缓冲视图；其 <see cref="ByteBuffer.CommittedSequence"/> 将被发送。</param>
         /// <returns>发送结果（累加所有分段的已发送字节数与最后一次结果的端点/标志）。</returns>
         /// <remarks>
         /// - TCP：内部处理“部分发送”，会在每段上循环直至耗尽。 <br/>
@@ -94,7 +92,7 @@ namespace ExtenderApp.Common.Networks
         public static Result<SocketOperationValue> Send(this ILinker linker, ref ByteBuffer buffer)
         {
             var result = linker.Send(buffer);
-            buffer.ReadAdvance(result.Value.BytesTransferred);
+            buffer.Advance(result.Value.BytesTransferred);
             return result;
         }
 
@@ -177,14 +175,14 @@ namespace ExtenderApp.Common.Networks
         /// <returns>发送结果任务。</returns>
         public static ValueTask<Result<SocketOperationValue>> SendAsync(this ILinker linker, ByteBlock block, CancellationToken token = default)
         {
-            return linker.SendAsync(block.UnreadMemory, token);
+            return linker.SendAsync(block.CommittedMemory, token);
         }
 
         /// <summary>
         /// 异步发送 <see cref="ByteBuffer"/> 中尚未读取的数据。
         /// </summary>
         /// <param name="linker">目标链接。</param>
-        /// <param name="buffer">只读缓冲视图；其 <see cref="ByteBuffer.UnreadSequence"/> 将被发送。</param>
+        /// <param name="buffer">只读缓冲视图；其 <see cref="ByteBuffer.CommittedSequence"/> 将被发送。</param>
         /// <param name="token">取消令牌。</param>
         /// <returns>发送结果任务（累加所有分段的已发送字节数与最后一次结果的端点/标志）。</returns>
         /// <remarks>
@@ -193,7 +191,7 @@ namespace ExtenderApp.Common.Networks
         /// </remarks>
         public static ValueTask<Result<SocketOperationValue>> SendAsync(this ILinker linker, ByteBuffer buffer, CancellationToken token = default)
         {
-            return linker.SendAsync(buffer.UnreadSequence, token);
+            return linker.SendAsync(buffer.CommittedSequence, token);
         }
 
         /// <summary>
@@ -248,11 +246,11 @@ namespace ExtenderApp.Common.Networks
         /// <param name="endPoint">目标远端终结点。</param>
         /// <param name="token">取消令牌。</param>
         /// <returns>一次发送操作的结果。</returns>
-        /// <exception cref="ArgumentNullException">Buffer 为空（IsEmpty）。</exception>
+        /// <exception cref="ArgumentNullException">Block 为空（IsEmpty）。</exception>
         /// <remarks>
         /// - 内部将把 <paramref name="buffer"/> 克隆为 <see cref="ByteBlock"/>，避免直接处理 ref struct； 发送结束后自动释放克隆。 <br/>
         /// - 若需要避免额外复制，可先手动合并为 <see cref="ByteBlock"/> 调用另一个重载。 <br/>
-        /// - 仅发送未读部分（UnreadSequence）；不推进原缓冲读指针。
+        /// - 仅发送未读部分（CommittedSequence）；不推进原缓冲读指针。
         /// </remarks>
         public static ValueTask<Result<SocketOperationValue>> SendToAsync<TLinker>(this TLinker linker, ByteBuffer buffer, EndPoint endPoint, CancellationToken token = default)
             where TLinker : IUdpLinker
@@ -280,7 +278,7 @@ namespace ExtenderApp.Common.Networks
         private static async ValueTask<Result<SocketOperationValue>> PrivateSendToAsync<TLinker>(this TLinker linker, ByteBlock block, EndPoint endPoint, CancellationToken token = default)
             where TLinker : IUdpLinker
         {
-            var result = await linker.SendToAsync(block.UnreadMemory, endPoint, token);
+            var result = await linker.SendToAsync(block.CommittedMemory, endPoint, token);
             block.Dispose();
             return result;
         }
@@ -296,7 +294,7 @@ namespace ExtenderApp.Common.Networks
         /// <returns>发送结果。</returns>
         /// <exception cref="ArgumentNullException">Block 为空（IsEmpty）。</exception>
         /// <remarks>
-        /// - 仅读取 <see cref="ByteBlock.UnreadMemory"/>；不修改读指针。 <br/>
+        /// - 仅读取 <see cref="ByteBlock.CommittedMemory"/>；不修改读指针。 <br/>
         /// - 若需要发送后自动释放，请调用上层封装或自行在外部 finally 里释放。
         /// </remarks>
         public static ValueTask<Result<SocketOperationValue>> SendToAsync<TLinker>(this TLinker linker, ByteBlock block, EndPoint endPoint, CancellationToken token = default)
@@ -305,7 +303,7 @@ namespace ExtenderApp.Common.Networks
             if (block.IsEmpty)
                 throw new ArgumentNullException(nameof(block));
 
-            return linker.SendToAsync(block.UnreadMemory, endPoint, token);
+            return linker.SendToAsync(block.CommittedMemory, endPoint, token);
         }
 
         /// <summary>
@@ -343,7 +341,7 @@ namespace ExtenderApp.Common.Networks
         {
             var memory = buffer.GetMemory(sizeHint);
             var result = linker.Receive(memory);
-            buffer.WriteAdvance(result.Value.BytesTransferred);
+            buffer.Advance(result.Value.BytesTransferred);
             return result;
         }
 

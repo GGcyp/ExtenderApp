@@ -51,7 +51,7 @@
         public MaxHeap(T[] values, bool scalable = true)
         {
             //heap = new(values);
-            //this.capacity = values.WrittenCount;
+            //this.capacity = values.Committed;
             //this.Scalable = scalable;
             //heap.Add(default(T));
             BuildHeap(values, scalable);

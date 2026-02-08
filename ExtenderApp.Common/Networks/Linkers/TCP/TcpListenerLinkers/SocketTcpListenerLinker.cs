@@ -200,16 +200,16 @@ namespace ExtenderApp.Common.Networks
         }
 
         /// <summary>
-        /// 轻量级的异步“手动复位事件”（Async Manual Reset Event）。 用于实现“暂停/恢复”闸门：
+        /// 轻量级的异步“手动复位事件”（Async Manual Release Event）。 用于实现“暂停/恢复”闸门：
         /// - Set()：打开闸门，允许等待者继续；
-        /// - Reset()：关闭闸门，使后续等待者阻塞；
+        /// - Release()：关闭闸门，使后续等待者阻塞；
         /// - WaitAsync()：等待闸门被打开。
         /// </summary>
         /// <remarks>
         /// 设计要点：
         /// - 基于 <see cref="TaskCompletionSource{TResult}"/> 的无锁/低锁实现；
         /// - Set 为幂等操作，重复调用不会抛异常；
-        /// - Reset 仅在当前任务已完成时重建新的 <see cref="TaskCompletionSource{TResult}"/>，避免不必要的分配；
+        /// - Release 仅在当前任务已完成时重建新的 <see cref="TaskCompletionSource{TResult}"/>，避免不必要的分配；
         /// - 适用于“许多等待者同时被释放”的广播式唤醒场景。
         /// </remarks>
         private sealed class AsyncManualResetEvent

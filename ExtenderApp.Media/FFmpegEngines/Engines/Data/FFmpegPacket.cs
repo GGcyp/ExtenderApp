@@ -10,7 +10,7 @@ namespace ExtenderApp.FFmpegEngines
     /// 解码线程在消费包时比较 <see cref="Generation"/>，若代际不匹配则丢弃该包，避免 Seek 前后的旧包被错误解码。
     /// </para>
     /// <para>
-    /// 说明：该类型为只读值类型，仅携带元数据与原生包指针，不负责资源释放；包的回收/释放应由调用方统一通过 <c>FFmpegEngine.Return</c> 处理。
+    /// 说明：该类型为只读值类型，仅携带元数据与原生包指针，不负责资源释放；包的回收/释放应由调用方统一通过 <c>FFmpegEngine.Release</c> 处理。
     /// </para>
     /// </summary>
     public readonly struct FFmpegPacket

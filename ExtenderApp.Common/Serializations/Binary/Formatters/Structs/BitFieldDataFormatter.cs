@@ -27,7 +27,7 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
 
             int length = _int.Deserialize(ref buffer);
             var block = buffer.Read(length);
-            var bitFieldData = new BitFieldData(block.UnreadSpan);
+            var bitFieldData = new BitFieldData(block.CommittedSpan);
             block.Dispose();
             return bitFieldData;
         }

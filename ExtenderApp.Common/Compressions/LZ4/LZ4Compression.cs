@@ -90,7 +90,7 @@ namespace ExtenderApp.Common.Compressions.LZ4
                     compressBlock.Write(item);
                 }
 
-                Compress(compressBlock.UnreadSpan, out buffer);
+                Compress(compressBlock.CommittedSpan, out buffer);
                 compressBlock.Dispose();
                 return true;
             }
@@ -112,7 +112,7 @@ namespace ExtenderApp.Common.Compressions.LZ4
             ByteBlock compressBlock = new(maxCompressedLength);
             var compressSpan = compressBlock.GetSpan(maxCompressedLength).Slice(0, maxCompressedLength);
             var compressLength = LZ4CodecEncode(span, compressSpan);
-            compressBlock.WriteAdvance(compressLength);
+            compressBlock.Advance(compressLength);
 
             block = new(compressLength);
             block.Write(LZ4CompressionMark);
@@ -129,7 +129,7 @@ namespace ExtenderApp.Common.Compressions.LZ4
             ByteBlock compressBlock = new(maxCompressedLength);
             var compressSpan = compressBlock.GetSpan(maxCompressedLength).Slice(0, maxCompressedLength);
             var compressLength = LZ4CodecEncode(span, compressSpan);
-            compressBlock.WriteAdvance(compressLength);
+            compressBlock.Advance(compressLength);
 
             buffer = new();
             buffer.Write(LZ4CompressionMark);
@@ -146,7 +146,7 @@ namespace ExtenderApp.Common.Compressions.LZ4
             ByteBlock compressBlock = new(maxCompressedLength);
             var compressSpan = compressBlock.GetSpan(maxCompressedLength).Slice(0, maxCompressedLength);
             var compressLength = LZ4CodecEncode(span, compressSpan);
-            compressBlock.WriteAdvance(compressLength);
+            compressBlock.Advance(compressLength);
 
             _binarySerialization.Serialize(compressLength, ref buffer);
             _binarySerialization.Serialize(span.Length, ref buffer);
@@ -237,7 +237,7 @@ namespace ExtenderApp.Common.Compressions.LZ4
                 output.Dispose();
                 return false;
             }
-            output.WriteAdvance(decopressLength);
+            output.Advance(decopressLength);
             return true;
         }
 
@@ -265,7 +265,7 @@ namespace ExtenderApp.Common.Compressions.LZ4
                     output.Dispose();
                     return false;
                 }
-                output.WriteAdvance(decopressLength);
+                output.Advance(decopressLength);
             }
             return true;
         }
@@ -313,7 +313,7 @@ namespace ExtenderApp.Common.Compressions.LZ4
                 output.Dispose();
                 return false;
             }
-            output.WriteAdvance(decopressLength);
+            output.Advance(decopressLength);
             return true;
         }
 
@@ -345,7 +345,7 @@ namespace ExtenderApp.Common.Compressions.LZ4
                     output.Dispose();
                     return false;
                 }
-                output.WriteAdvance(decopressLength);
+                output.Advance(decopressLength);
             }
             return true;
         }

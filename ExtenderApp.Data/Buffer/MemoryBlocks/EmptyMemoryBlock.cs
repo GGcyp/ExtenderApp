@@ -1,4 +1,4 @@
-﻿namespace ExtenderApp.Data
+﻿namespace ExtenderApp.Data.Buffer
 {
     /// <summary>
     /// 空序列段实现。
@@ -8,7 +8,7 @@
     {
         protected override Memory<T> AvailableMemory => Memory<T>.Empty;
 
-        protected override void EnsureCapacity(int sizeHint)
+        protected override void EnsureCapacityProtected(int sizeHint)
         {
         }
 

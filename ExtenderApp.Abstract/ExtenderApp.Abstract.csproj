@@ -7,6 +7,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Common\Networks\Clients\Tcp\**" />
+    <EmbeddedResource Remove="Common\Networks\Clients\Tcp\**" />
+    <None Remove="Common\Networks\Clients\Tcp\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Autofac.Extensions.DependencyInjection" Version="10.0.0" />
     <PackageReference Include="Microsoft.Extensions.Caching.Abstractions" Version="10.0.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.0" />
@@ -17,10 +23,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\ExtenderApp.Data\ExtenderApp.Data.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Common\Networks\Clients\Tcp\" />
   </ItemGroup>
 
 </Project>

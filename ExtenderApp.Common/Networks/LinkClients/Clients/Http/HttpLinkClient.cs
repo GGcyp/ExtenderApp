@@ -19,7 +19,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
     internal class HttpLinkClient : LinkClient<ITcpLinker>, IHttpLinkClient, IValueTaskSource<HttpResponseMessage>, IDisposable
     {
         /// <summary>
-        ///  发送或请求明文 HTTP 请求时使用的 TcpLinkerStream。
+        /// 发送或请求明文 HTTP 请求时使用的 TcpLinkerStream。
         /// </summary>
         private readonly TcpLinkerStream _tcpLinkerStream;
 
@@ -186,18 +186,8 @@ namespace ExtenderApp.Common.Networks.LinkClients
         /// </summary>
         private ValueTask SendRequestMessage(ByteBuffer byteBuffer, CancellationToken token)
         {
-            return SendRequestMessage(byteBuffer.UnreadSequence, byteBuffer.Rental, token);
-        }
-
-        /// <summary>
-        /// 将已租用的 ReadOnlySequence 的所有段发送到底层 Linker，然后释放租约。
-        /// </summary>
-        /// <param name="memories">要发送的只读序列（可能为多段）。</param>
-        /// <param name="rental">序列租约，发送后需释放。</param>
-        private async ValueTask SendRequestMessage(ReadOnlySequence<byte> memories, SequencePool<byte>.SequenceRental rental, CancellationToken token)
-        {
-            await Linker.SendAsync(memories, token).ConfigureAwait(false);
-            rental.Dispose();
+            //return SendRequestMessage(byteBuffer.CommittedSequence, byteBuffer.Rental, token);
+            return ValueTask.CompletedTask;
         }
 
         /// <summary>
@@ -205,21 +195,9 @@ namespace ExtenderApp.Common.Networks.LinkClients
         /// </summary>
         private ValueTask SendAuthenticateRequestMessage(ByteBuffer byteBuffer, CancellationToken token)
         {
-            return SendAuthenticateRequestMessage(byteBuffer.UnreadSequence, byteBuffer.Rental, token);
+            return default;
         }
 
-        /// <summary>
-        /// 将只读序列的每个段写入 SslStream 并 Flush，然后释放序列租约。
-        /// </summary>
-        private async ValueTask SendAuthenticateRequestMessage(ReadOnlySequence<byte> memories, SequencePool<byte>.SequenceRental rental, CancellationToken token)
-        {
-            foreach (var segment in memories)
-            {
-                await _sslStream.WriteAsync(segment, token).ConfigureAwait(false);
-            }
-            await _sslStream.FlushAsync(token).ConfigureAwait(false);
-            rental.Dispose();
-        }
 
         /// <summary>
         /// 确保接收循环任务正在运行；若尚未运行则在线程池中启动一个任务。
@@ -238,8 +216,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
         }
 
         /// <summary>
-        /// 接收循环：从 currentStream 读取字节并交给 HttpParser 进行增量解析。
-        /// 解析成功时通过 vts.SetResult 完成等待的任务；出现错误则通过 vts.SetException 传递异常。
+        /// 接收循环：从 currentStream 读取字节并交给 HttpParser 进行增量解析。 解析成功时通过 vts.SetResult 完成等待的任务；出现错误则通过 vts.SetException 传递异常。
         /// </summary>
         /// <param name="token">取消令牌。</param>
         private async Task ReceiveLoopAsync(CancellationToken token)

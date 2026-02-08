@@ -9,20 +9,19 @@
 
   <ItemGroup>
     <Compile Remove="Networks\Http\**" />
+    <Compile Remove="Pipelines\**" />
     <Compile Remove="Serializations\Binary\Convert\**" />
     <EmbeddedResource Remove="Networks\Http\**" />
+    <EmbeddedResource Remove="Pipelines\**" />
     <EmbeddedResource Remove="Serializations\Binary\Convert\**" />
     <None Remove="Networks\Http\**" />
+    <None Remove="Pipelines\**" />
     <None Remove="Serializations\Binary\Convert\**" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\ExtenderApp.Abstract\ExtenderApp.Abstract.csproj" />
     <ProjectReference Include="..\ExtenderApp.Data\ExtenderApp.Data.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Pipelines\" />
   </ItemGroup>
 
   <ItemGroup>

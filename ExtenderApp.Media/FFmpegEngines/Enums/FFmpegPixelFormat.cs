@@ -121,7 +121,7 @@
         /// <summary>
         /// packed RGB 1:2:1 bitstream, 4bpp,
         /// (msb)1B 2G 1R(lsb), a byte contains
-        /// two pixels, the first pixel in the
+        /// two pixels, the First pixel in the
         /// byte is the one composed by the 4 msb bits
         /// </summary>
         PIX_FMT_BGR4 = 18,
@@ -139,7 +139,7 @@
         /// <summary>
         /// packed RGB 1:2:1 bitstream, 4bpp,
         /// (msb)1R 2G 1B(lsb), a byte contains
-        /// two pixels, the first pixel in the
+        /// two pixels, the First pixel in the
         /// byte is the one composed by the 4 msb bits
         /// </summary>
         PIX_FMT_RGB4 = 21,
@@ -152,7 +152,7 @@
         /// <summary>
         /// planar YUV 4:2:0, 12bpp, 1 plane for Y
         /// and 1 plane for the UV components,
-        /// which are interleaved (first byte U
+        /// which are interleaved (First byte U
         /// and the following byte V)
         /// </summary>
         PIX_FMT_NV12 = 23,
@@ -1131,7 +1131,7 @@
         /// <summary>
         /// planar YUV 4:4:4, 24bpp, 1 plane for Y
         /// and 1 plane for the UV components,
-        /// which are interleaved (first byte U
+        /// which are interleaved (First byte U
         /// and the following byte V)
         /// </summary>
         PIX_FMT_NV24 = 188,

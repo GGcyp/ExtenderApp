@@ -1,7 +1,7 @@
 ﻿namespace ExtenderApp.Data
 {
     /// <summary>
-    /// Key 枚举定义了常用键盘按键的标识符。 用于表示各种标准键盘按键，包括功能键、字母、数字、控制键、媒体键等。 部分枚举值存在别名（如 Enter/Return），数值相同。
+    /// Key 枚举定义了常用键盘按键的标识符。 用于表示各种标准键盘按键，包括功能键、字母、数字、控制键、媒体键等。 部分枚举值存在别名（如 Enter/Release），数值相同。
     /// </summary>
     public enum Key
     {
@@ -41,7 +41,7 @@
         Enter = 6,
 
         /// <summary>
-        /// Return 键（与 Enter 相同）。
+        /// Release 键（与 Enter 相同）。
         /// </summary>
         Return = 6,
 

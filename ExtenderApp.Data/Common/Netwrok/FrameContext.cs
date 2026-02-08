@@ -24,12 +24,12 @@
         /// <summary>
         /// 访问帧负载的字节数据。
         /// </summary>
-        public ReadOnlySpan<byte> UnreadSpan => payloadMemory.IsEmpty ? payloadBlock.UnreadSpan : payloadMemory.Span;
+        public ReadOnlySpan<byte> CommittedSpan => payloadMemory.IsEmpty ? payloadBlock.CommittedSpan : payloadMemory.Span;
 
         /// <summary>
         /// 访问帧负载的字节数据。
         /// </summary>
-        public ReadOnlyMemory<byte> UnreadMemory => payloadMemory.IsEmpty ? payloadBlock.UnreadMemory : payloadMemory;
+        public ReadOnlyMemory<byte> UnreadMemory => payloadMemory.IsEmpty ? payloadBlock.CommittedMemory : payloadMemory;
 
         public FrameContext(int capactiy) : this(new ByteBlock(capactiy))
         {

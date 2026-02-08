@@ -77,7 +77,8 @@ namespace ExtenderApp.Common.Networks.SNMP
 
         public static implicit operator SnmpValue(byte[] value)
         {
-            return new SnmpValue(UniversalTagNumber.OctetString, DataBuffer<ByteBlock>.Get(new ByteBlock(value)));
+            return default;
+            //return new SnmpValue(UniversalTagNumber.OctetString, DataBuffer<ByteBlock>.Get(new ByteBlock(value)));
         }
 
         public static implicit operator SnmpValue(ByteBlock value)

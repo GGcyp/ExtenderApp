@@ -203,7 +203,7 @@ namespace ExtenderApp.Data
             _head = 0;
             _tail = Count;
 
-            // 仅在老数组不是 Array.Empty 并且 pool 非空时归还
+            // 仅在老数组不是 buffer.EmptySequence 并且 pool 非空时归还
             if (!object.ReferenceEquals(old, Array.Empty<T>()))
             {
                 try
@@ -213,7 +213,7 @@ namespace ExtenderApp.Data
                 catch
                 {
                     // 为防止在归还时抛出异常影响逻辑，吞掉异常。
-                    // 一般情况下只要旧数组是通过 Rent 获取的，Return 不应抛出。
+                    // 一般情况下只要旧数组是通过 Rent 获取的，Release 不应抛出。
                 }
             }
         }

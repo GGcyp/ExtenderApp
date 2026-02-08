@@ -35,10 +35,10 @@ namespace ExtenderApp.Common.Caches.ByteAllocator
         public abstract bool CanExpand { get; }
 
         /// <inheritdoc/>
-        public abstract ReadOnlySpan<byte> UnreadSpan { get; }
+        public abstract ReadOnlySpan<byte> CommittedSpan { get; }
 
         /// <inheritdoc/>
-        public abstract ReadOnlyMemory<byte> UnreadMemory { get; }
+        public abstract ReadOnlyMemory<byte> CommittedMemory { get; }
 
         /// <inheritdoc/>
         public abstract ArraySegment<byte> UnreadSegment { get; }
@@ -81,7 +81,7 @@ namespace ExtenderApp.Common.Caches.ByteAllocator
             EnsureCapacity(1);
             var span = GetSpan(1);
             span[0] = value;
-            WriteAdvance(1);
+            Advance(1);
         }
 
         /// <inheritdoc/>
@@ -94,7 +94,7 @@ namespace ExtenderApp.Common.Caches.ByteAllocator
             EnsureCapacity(length);
             var span = GetSpan(length);
             source.CopyTo(span);
-            WriteAdvance(length);
+            Advance(length);
         }
 
         /// <inheritdoc/>
@@ -110,7 +110,7 @@ namespace ExtenderApp.Common.Caches.ByteAllocator
         }
 
         /// <inheritdoc/>
-        public void WriteAdvance(int count)
+        public void Advance(int count)
         {
             ThrowIfDisposed();
             if (count < 0)
@@ -133,8 +133,8 @@ namespace ExtenderApp.Common.Caches.ByteAllocator
             if (buffer.Length > Remaining)
                 throw new InvalidOperationException("请求读取的数据长度超过了当前可用数据量。");
 
-            UnreadSpan.CopyTo(buffer);
-            ReadAdvance(buffer.Length);
+            CommittedSpan.CopyTo(buffer);
+            Advance(buffer.Length);
         }
 
         /// <inheritdoc/>
@@ -144,7 +144,7 @@ namespace ExtenderApp.Common.Caches.ByteAllocator
         }
 
         /// <inheritdoc/>
-        public void ReadAdvance(long count)
+        public void Advance(long count)
         {
             ThrowIfDisposed();
             if (count < 0)
@@ -183,7 +183,7 @@ namespace ExtenderApp.Common.Caches.ByteAllocator
             ThrowIfDisposed();
             if (Remaining > 0)
             {
-                value = UnreadSpan[0];
+                value = CommittedSpan[0];
                 return true;
             }
             value = default;
@@ -195,7 +195,7 @@ namespace ExtenderApp.Common.Caches.ByteAllocator
         {
             if (TryPeek(out value))
             {
-                ReadAdvance(1);
+                Advance(1);
                 return true;
             }
             return false;

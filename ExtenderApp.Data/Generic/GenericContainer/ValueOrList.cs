@@ -134,7 +134,7 @@ namespace ExtenderApp.Data
         /// <summary>
         /// 将整个集合复制到兼容的一维数组中，从指定索引处开始复制。
         /// </summary>
-        /// <param name="array">一维 System.Array，它是目标数组的起始位置。</param>
+        /// <param name="array">一维 System.buffer，它是目标数组的起始位置。</param>
         /// <param name="arrayIndex">array 中从零开始的索引，从此处开始复制集合中的元素。</param>
         public void CopyTo(T[] array, int arrayIndex)
         {

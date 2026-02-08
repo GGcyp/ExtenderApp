@@ -340,7 +340,7 @@ namespace ExtenderApp.Data
             {
                 if (right.Column != 1 && right.Row != 1)
                     //左矩阵的列数必须等于右矩阵的行数才能进行乘法运算。
-                    throw new ArgumentException("The number of columns in the first matrix must be equal to the number of rows in the second matrix for multiplication to be possible.");
+                    throw new ArgumentException("The number of columns in the First matrix must be equal to the number of rows in the second matrix for multiplication to be possible.");
 
                 return left * right[0, 0];
             }
@@ -413,7 +413,7 @@ namespace ExtenderApp.Data
             {
                 if (right.Column != 1 && right.Row != 1)
                     //左矩阵的列数必须等于右矩阵的行数才能进行除法运算。
-                    throw new ArgumentException("The number of columns in the first matrix must be equal to the number of rows in the second matrix for division to be possible.");
+                    throw new ArgumentException("The number of columns in the First matrix must be equal to the number of rows in the second matrix for division to be possible.");
 
 
                 return left / right[0, 0];

@@ -15,7 +15,7 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
         {
             Span<byte> span = stackalloc byte[GuidByteLength];
             buffer.TryCopyTo(span);
-            buffer.ReadAdvance(GuidByteLength);
+            buffer.Advance(GuidByteLength);
             return new Guid(span);
         }
 
@@ -23,7 +23,7 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
         {
             var span = buffer.GetSpan(GuidByteLength);
             value.TryWriteBytes(span);
-            buffer.WriteAdvance(GuidByteLength);
+            buffer.Advance(GuidByteLength);
         }
 
         public override long GetLength(Guid value)

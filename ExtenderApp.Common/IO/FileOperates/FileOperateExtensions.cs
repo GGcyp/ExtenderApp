@@ -35,14 +35,14 @@ namespace ExtenderApp.Common
             buffer = new();
             try
             {
-                buffer = new ();
+                buffer = new();
                 var result = fileOperate.Read(buffer.GetMemory(length), position);
                 if (!result.IsSuccess)
                 {
                     buffer.Dispose();
                     return result;
                 }
-                buffer.WriteAdvance(result);
+                buffer.Advance(result);
                 return result;
             }
             catch (Exception ex)
@@ -83,7 +83,7 @@ namespace ExtenderApp.Common
                     block.Dispose();
                     return result;
                 }
-                block.WriteAdvance(result);
+                block.Advance(result);
                 return result;
             }
             catch (Exception ex)
@@ -104,20 +104,20 @@ namespace ExtenderApp.Common
         /// <param name="buffer">要写入的顺序缓冲（写入后由目标实现或调用方决定释放策略）。</param>
         /// <param name="position">写入起始位置（字节偏移），默认为 0。</param>
         /// <returns>操作结果；当缓冲长度为0时返回成功；发生异常时返回封装的异常结果。</returns>
-        public static Result Write(this IFileOperate fileOperate, ref ByteBuffer buffer, long position = 0)
+        public static Result Write(this IFileOperate fileOperate, ByteBuffer buffer, long position = 0)
         {
             try
             {
-                if (buffer.Length == 0)
+                if (buffer.Capacity == 0)
                     return Result.Success();
                 if (buffer.IsEmpty)
                     throw new ArgumentNullException(nameof(buffer));
 
-                var result = fileOperate.Write(buffer.UnreadSequence, position);
+                var result = fileOperate.Write(buffer.CommittedSequence, position);
                 if (!result.IsSuccess)
                     return result;
 
-                buffer.WriteAdvance(result);
+                buffer.Advance(result);
                 return result;
             }
             catch (Exception ex)
@@ -137,17 +137,17 @@ namespace ExtenderApp.Common
         {
             try
             {
-                if (block.WrittenCount == 0)
+                if (block.Committed == 0)
                     return Result.Success();
 
                 if (block.IsEmpty)
                     throw new ArgumentNullException(nameof(block));
 
-                var result = fileOperate.Write(block.UnreadMemory, position);
+                var result = fileOperate.Write(block.CommittedMemory, position);
                 if (!result.IsSuccess)
                     return result;
 
-                block.WriteAdvance(result);
+                block.Advance(result);
                 return result;
             }
             catch (Exception ex)

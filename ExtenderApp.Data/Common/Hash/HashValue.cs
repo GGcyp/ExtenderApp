@@ -7,14 +7,12 @@
     public readonly struct HashValue : IEquatable<HashValue>, IDisposable
     {
         /// <summary>
-        /// 与 SHA-1 输出长度相同的“全零占位”哈希值（20 字节）。
-        /// <remarks>注意：这不是对空输入计算得到的实际 SHA-1 摘要，仅用于占位或默认值场景。</remarks>
+        /// 与 SHA-1 输出长度相同的“全零占位”哈希值（20 字节）。 <remarks>注意：这不是对空输入计算得到的实际 SHA-1 摘要，仅用于占位或默认值场景。</remarks>
         /// </summary>
         public static HashValue SHA1Empty = new HashValue();
 
         /// <summary>
-        /// 与 SHA-256 输出长度相同的“全零占位”哈希值（32 字节）。
-        /// <remarks>注意：这不是对空输入计算得到的实际 SHA-256 摘要，仅用于占位或默认值场景。</remarks>
+        /// 与 SHA-256 输出长度相同的“全零占位”哈希值（32 字节）。 <remarks>注意：这不是对空输入计算得到的实际 SHA-256 摘要，仅用于占位或默认值场景。</remarks>
         /// </summary>
         public static HashValue SHA256Empty = new HashValue();
 
@@ -32,7 +30,7 @@
         /// 获取哈希值的原始字节长度。
         /// </summary>
         /// <value>哈希摘要的字节总数。</value>
-        public int Length => _block.Remaining;
+        public int Length => _block.Committed;
 
         /// <summary>
         /// 获取一个值，指示当前哈希值是否为空或未初始化。
@@ -41,14 +39,14 @@
         public bool IsEmpty => _block.IsEmpty;
 
         /// <summary>
-        /// 获取指向当前哈希摘要内存的只读跨度 (<see cref="ReadOnlySpan{T}"/>)。
+        /// 获取指向当前哈希摘要内存的只读跨度 ( <see cref="ReadOnlySpan{T}"/>)。
         /// </summary>
-        public ReadOnlySpan<byte> UnreadSpan => _block.UnreadSpan;
+        public ReadOnlySpan<byte> CommittedSpan => _block.CommittedSpan;
 
         /// <summary>
-        /// 获取表示当前哈希摘要内存的只读内存块 (<see cref="ReadOnlyMemory{T}"/>)。
+        /// 获取表示当前哈希摘要内存的只读内存块 ( <see cref="ReadOnlyMemory{T}"/>)。
         /// </summary>
-        public ReadOnlyMemory<byte> UnreadMemory => _block.UnreadMemory;
+        public ReadOnlyMemory<byte> UnreadMemory => _block.CommittedMemory;
 
         /// <summary>
         /// 使用指定的 <see cref="ByteBlock"/> 初始化 <see cref="HashValue"/> 的新实例。
@@ -57,10 +55,10 @@
         /// <exception cref="ArgumentNullException">当 <paramref name="block"/> 为空或不包含有效数据时抛出。</exception>
         public HashValue(ByteBlock block)
         {
-            if (block.IsEmpty || CheckHashLength(block.WrittenCount))
+            if (block.IsEmpty || CheckHashLength(block.Committed))
                 throw new ArgumentNullException(nameof(block));
 
-            _block = new(block);
+            _block = new(block.CommittedSpan);
         }
 
         /// <summary>
@@ -73,7 +71,7 @@
             if (span.IsEmpty || CheckHashLength(span.Length))
                 throw new ArgumentException("哈希数据不能为空。", nameof(span));
 
-            _block = new ByteBlock(span);
+            _block = new(span);
         }
 
         /// <summary>
@@ -169,7 +167,7 @@
         public string ToHexString()
         {
             if (IsEmpty) return string.Empty;
-            return Convert.ToHexString(UnreadSpan).ToLowerInvariant();
+            return Convert.ToHexString(CommittedSpan).ToLowerInvariant();
         }
 
         /// <summary>
@@ -179,7 +177,7 @@
         public string ToBase64String()
         {
             if (IsEmpty) return string.Empty;
-            return Convert.ToBase64String(UnreadSpan);
+            return Convert.ToBase64String(CommittedSpan);
         }
 
         #endregion Convert
@@ -227,7 +225,7 @@
             => new(block);
 
         public static implicit operator ByteBlock(HashValue hashValue)
-            => new(hashValue._block);
+            => new(hashValue._block.CommittedSpan);
 
         #endregion Implicit
     }
