@@ -1,7 +1,7 @@
 ﻿using System.Collections.Concurrent;
 using ExtenderApp.Abstract;
 using ExtenderApp.Common.Serializations.Binary.Formatters.Collection;
-using ExtenderApp.Data;
+using ExtenderApp.Contracts;
 
 namespace ExtenderApp.Common.Serializations.Binary.Formatters
 {

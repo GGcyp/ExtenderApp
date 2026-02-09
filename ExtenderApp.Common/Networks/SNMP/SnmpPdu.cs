@@ -1,6 +1,6 @@
 ﻿using System.Formats.Asn1;
 using ExtenderApp.Common.Encodings;
-using ExtenderApp.Data;
+using ExtenderApp.Contracts;
 
 namespace ExtenderApp.Common.Networks.SNMP
 {

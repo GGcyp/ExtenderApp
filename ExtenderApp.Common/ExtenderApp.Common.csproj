@@ -21,7 +21,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\ExtenderApp.Abstract\ExtenderApp.Abstract.csproj" />
-    <ProjectReference Include="..\ExtenderApp.Data\ExtenderApp.Data.csproj" />
+    <ProjectReference Include="..\ExtenderApp.Data\ExtenderApp.Contracts.csproj" />
   </ItemGroup>
 
   <ItemGroup>

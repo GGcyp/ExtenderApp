@@ -1,13 +1,13 @@
 ﻿using System.Text;
-using HttpMethod = ExtenderApp.Data.HttpMethod;
-using HttpRequestMessage = ExtenderApp.Data.HttpRequestMessage;
-using HttpResponseMessage = ExtenderApp.Data.HttpResponseMessage;
+using HttpMethod = ExtenderApp.Contracts.HttpMethod;
+using HttpRequestMessage = ExtenderApp.Contracts.HttpRequestMessage;
+using HttpResponseMessage = ExtenderApp.Contracts.HttpResponseMessage;
 
 namespace ExtenderApp.Abstract
 {
     /// <summary>
     /// 抽象的 HTTP 字节流解析器接口。
-    /// 实现负责从原始字节流（ReadOnlySpan<byte>）中解析出完整的 <see cref="Data.HttpRequestMessage"/> / <see cref="Data.HttpResponseMessage"/>。
+    /// 实现负责从原始字节流（ReadOnlySpan<byte>）中解析出完整的 <see cref="Contracts.HttpRequestMessage"/> / <see cref="Contracts.HttpResponseMessage"/>。
     /// 解析器应支持增量解析（当数据不足时返回 false，不消费字节），并在成功解析时通过 <paramref name="bytesConsumed"/> 返回已消费的字节数。
     /// </summary>
     public interface IHttpParser
@@ -17,7 +17,7 @@ namespace ExtenderApp.Abstract
         /// </summary>
         /// <param name="buffer">要解析的字节数据（只读切片）。解析器不得修改该切片。</param>
         /// <param name="message">
-        /// 输出解析得到的 <see cref="Data.HttpRequestMessage"/> 实例。
+        /// 输出解析得到的 <see cref="Contracts.HttpRequestMessage"/> 实例。
         /// 当方法返回 false 或解析不完整时该值应为 <c>null</c>。
         /// 注意：返回非 null 的消息通常实现了 <see cref="System.IDisposable"/>，调用方应在适当时机调用 <c>Dispose()</c> 以释放可能的底层缓冲/资源。
         /// </param>
@@ -43,7 +43,7 @@ namespace ExtenderApp.Abstract
         /// 可以为 <c>null</c>，但在可用时应提供以便更准确地解析响应语义。
         /// </param>
         /// <param name="message">
-        /// 输出解析得到的 <see cref="Data.HttpResponseMessage"/> 实例。
+        /// 输出解析得到的 <see cref="Contracts.HttpResponseMessage"/> 实例。
         /// 当方法返回 false 或解析不完整时该值应为 <c>null</c>。
         /// 注意：返回非 null 的消息通常实现了 <see cref="System.IDisposable"/>，调用方应在适当时机调用 <c>Dispose()</c> 以释放可能的底层缓冲/资源。
         /// </param>

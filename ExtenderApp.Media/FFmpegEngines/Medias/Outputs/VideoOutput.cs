@@ -1,6 +1,6 @@
 ﻿using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using ExtenderApp.Data;
+using ExtenderApp.Contracts;
 using ExtenderApp.Views;
 
 namespace ExtenderApp.FFmpegEngines.Medias.Outputs

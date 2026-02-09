@@ -1,7 +1,7 @@
 ﻿
 using ExtenderApp.Abstract;
 using ExtenderApp.Common;
-using ExtenderApp.Data;
+using ExtenderApp.Contracts;
 using ExtenderApp.Services;
 using ExtenderApp.Torrents.Models;
 using ExtenderApp.Torrents.Models.Formatters;

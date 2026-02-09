@@ -56,7 +56,7 @@ namespace ExtenderApp.Views.Clipboards
             return _dispatcherService.InvokeAsync(Clipboard.ContainsText).GetAwaiter().GetResult();
         }
 
-        public bool ContainsText(Data.TextDataFormat format)
+        public bool ContainsText(Contracts.TextDataFormat format)
         {
             if (_dispatcherService.CheckAccess())
                 return Clipboard.ContainsText((TextDataFormat)format);
@@ -70,7 +70,7 @@ namespace ExtenderApp.Views.Clipboards
             return _dispatcherService.InvokeAsync(Clipboard.GetText).GetAwaiter().GetResult();
         }
 
-        public string GetText(Data.TextDataFormat format)
+        public string GetText(Contracts.TextDataFormat format)
         {
             if (_dispatcherService.CheckAccess())
                 return Clipboard.GetText((TextDataFormat)format);
@@ -137,7 +137,7 @@ namespace ExtenderApp.Views.Clipboards
             _dispatcherService.Invoke(() => Clipboard.SetText(text));
         }
 
-        public void SetText(string text, Data.TextDataFormat format)
+        public void SetText(string text, Contracts.TextDataFormat format)
         {
             if (_dispatcherService.CheckAccess())
             {

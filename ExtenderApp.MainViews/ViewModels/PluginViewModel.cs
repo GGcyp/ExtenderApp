@@ -1,7 +1,7 @@
 ﻿using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.Input;
 using ExtenderApp.Abstract;
-using ExtenderApp.Data;
+using ExtenderApp.Contracts;
 using ExtenderApp.ViewModels;
 
 namespace ExtenderApp.MainViews.ViewModels

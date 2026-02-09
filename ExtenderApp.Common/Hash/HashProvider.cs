@@ -2,7 +2,7 @@
 using System.Text;
 using ExtenderApp.Abstract;
 
-using ExtenderApp.Data;
+using ExtenderApp.Contracts;
 
 namespace ExtenderApp.Common.Hash
 {

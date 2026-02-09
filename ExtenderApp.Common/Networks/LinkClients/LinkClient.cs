@@ -1,7 +1,7 @@
 ﻿using System.Net;
 using System.Net.Sockets;
 using ExtenderApp.Abstract;
-using ExtenderApp.Data;
+using ExtenderApp.Contracts;
 
 namespace ExtenderApp.Common.Networks.LinkClients
 {

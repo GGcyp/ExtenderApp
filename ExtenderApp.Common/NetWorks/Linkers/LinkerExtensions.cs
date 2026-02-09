@@ -2,7 +2,7 @@
 using System.Net;
 using System.Runtime.InteropServices;
 using ExtenderApp.Abstract;
-using ExtenderApp.Data;
+using ExtenderApp.Contracts;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace ExtenderApp.Common.Networks

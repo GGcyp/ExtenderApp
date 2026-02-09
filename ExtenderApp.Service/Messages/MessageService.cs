@@ -1,7 +1,7 @@
 ﻿using System.Runtime.CompilerServices;
 using ExtenderApp.Abstract;
 using ExtenderApp.Common.Messages;
-using ExtenderApp.Data;
+using ExtenderApp.Contracts;
 using Microsoft.Extensions.Logging;
 
 namespace ExtenderApp.Services

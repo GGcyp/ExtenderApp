@@ -1,5 +1,5 @@
 ﻿using System.Threading.Tasks.Sources;
-using ExtenderApp.Data;
+using ExtenderApp.Contracts;
 
 namespace ExtenderApp.Common.Threads
 {

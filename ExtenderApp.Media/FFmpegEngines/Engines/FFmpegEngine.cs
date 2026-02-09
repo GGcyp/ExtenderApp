@@ -1,7 +1,7 @@
 ﻿using System.Collections.Concurrent;
 using System.IO;
 using System.Runtime.InteropServices;
-using ExtenderApp.Data;
+using ExtenderApp.Contracts;
 using ExtenderApp.FFmpegEngines.Decoders;
 using FFmpeg.AutoGen;
 
@@ -557,7 +557,7 @@ namespace ExtenderApp.FFmpegEngines
         /// <description>创建出的 <see cref="AVIOContext"/>（内部调用 <c>avio_context_free</c>）。</description>
         /// </item>
         /// <item>
-        /// <description><paramref name="buffer"/>（释放 IO buffer）。</description>
+        /// <description><paramref name="buffer"/>（释放 IO TArray）。</description>
         /// </item>
         /// <item>
         /// <description><see cref="GCHandle"/>（必须显式 Free，否则句柄泄漏/对象无法回收）。</description>

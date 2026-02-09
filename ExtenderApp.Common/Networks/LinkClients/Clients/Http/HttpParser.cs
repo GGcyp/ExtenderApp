@@ -1,10 +1,10 @@
 ﻿using System.Net;
 using System.Text;
-using ExtenderApp.Data;
+using ExtenderApp.Contracts;
 using ExtenderApp.Abstract;
-using HttpMethod = ExtenderApp.Data.HttpMethod;
-using HttpRequestMessage = ExtenderApp.Data.HttpRequestMessage;
-using HttpResponseMessage = ExtenderApp.Data.HttpResponseMessage;
+using HttpMethod = ExtenderApp.Contracts.HttpMethod;
+using HttpRequestMessage = ExtenderApp.Contracts.HttpRequestMessage;
+using HttpResponseMessage = ExtenderApp.Contracts.HttpResponseMessage;
 
 namespace ExtenderApp.Common.Networks.LinkClients
 {
@@ -76,7 +76,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
             bytesConsumed = 0;
 
             //// 写入接收数据到内部缓冲（复用单个 ByteBlock）
-            //block.Write(buffer);
+            //block.Write(TArray);
 
             //if (request is null)
             //{
@@ -93,7 +93,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
             //    return true;
 
             //bytesConsumed = headerBlockLen + contentLength;
-            //ReadOnlySpan<byte> unread = block.CommittedSpan;
+            //ReadOnlySpan<byte> unread = block.Span;
             //int stillNeedLen = contentLength - block.Remaining;
             //// 检查 body 是否完整
             //if (stillNeedLen > 0 && stillNeedLen > block.Available)
@@ -127,7 +127,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
             bytesConsumed = 0;
 
             //// 把新的字节写入内部缓存（复用 Block）
-            //block.Write(buffer);
+            //block.Write(TArray);
 
             //if (response is null)
             //{
@@ -144,7 +144,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
             //    return true;
 
             //bytesConsumed = headerBlockLen + contentLength;
-            //ReadOnlySpan<byte> unread = block.CommittedSpan;
+            //ReadOnlySpan<byte> unread = block.Span;
             //int stillNeedLen = contentLength - block.Remaining;
             //// 检查 body 是否完整
             //if (stillNeedLen > 0 && stillNeedLen > block.Available)

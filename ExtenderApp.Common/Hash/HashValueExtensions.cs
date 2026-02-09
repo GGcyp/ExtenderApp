@@ -1,6 +1,6 @@
 ﻿using System.Text;
 using ExtenderApp.Common.Hash;
-using ExtenderApp.Data;
+using ExtenderApp.Contracts;
 
 namespace ExtenderApp.Common
 {

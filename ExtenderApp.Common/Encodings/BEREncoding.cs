@@ -1,7 +1,7 @@
 ﻿using System.Buffers.Binary;
 using System.Formats.Asn1;
 using System.Text;
-using ExtenderApp.Data;
+using ExtenderApp.Contracts;
 
 namespace ExtenderApp.Common.Encodings
 {
@@ -500,7 +500,7 @@ namespace ExtenderApp.Common.Encodings
             if (byteCount > 4)
                 throw new InvalidDataException("长度超过支持的最大范围（4字节）");
 
-            // 直接读取到局部 buffer（高位对齐），避免对临时 ByteBlock 的写入/状态依赖
+            // 直接读取到局部 TArray（高位对齐），避免对临时 ByteBlock 的写入/状态依赖
             Span<byte> buf = stackalloc byte[4];
             int offset = 4 - byteCount;
             for (int i = 0; i < byteCount; i++)

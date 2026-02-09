@@ -22,7 +22,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\ExtenderApp.Data\ExtenderApp.Data.csproj" />
+    <ProjectReference Include="..\ExtenderApp.Buffer\ExtenderApp.Buffer.csproj" />
+    <ProjectReference Include="..\ExtenderApp.Contracts\ExtenderApp.Contracts.csproj" />
+    <ProjectReference Include="..\ExtenderApp.Data\ExtenderApp.Contracts.csproj" />
   </ItemGroup>
 
 </Project>

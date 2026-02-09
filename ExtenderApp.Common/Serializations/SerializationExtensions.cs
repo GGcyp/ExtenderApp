@@ -4,7 +4,7 @@ using System.Runtime.InteropServices;
 using ExtenderApp.Abstract;
 using ExtenderApp.Common.Serializations.Binary;
 using ExtenderApp.Common.Serializations.Json;
-using ExtenderApp.Data;
+using ExtenderApp.Contracts;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace ExtenderApp.Common

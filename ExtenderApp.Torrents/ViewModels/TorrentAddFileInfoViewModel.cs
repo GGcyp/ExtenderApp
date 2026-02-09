@@ -2,7 +2,7 @@
 using System.Windows;
 using CommunityToolkit.Mvvm.Input;
 using ExtenderApp.Abstract;
-using ExtenderApp.Data;
+using ExtenderApp.Contracts;
 using ExtenderApp.Torrents.Models;
 using ExtenderApp.Torrents.Views;
 using ExtenderApp.ViewModels;

@@ -1,6 +1,6 @@
 ﻿using System.Windows;
 using ExtenderApp.Abstract;
-using ExtenderApp.Data;
+using ExtenderApp.Contracts;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace ExtenderApp.Views

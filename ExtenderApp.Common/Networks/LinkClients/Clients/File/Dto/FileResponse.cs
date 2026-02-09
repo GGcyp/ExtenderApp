@@ -1,4 +1,4 @@
-﻿namespace ExtenderApp.Data
+﻿namespace ExtenderApp.Contracts
 {
     /// <summary>
     /// 表示对文件传输请求的响应。

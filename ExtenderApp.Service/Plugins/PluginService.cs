@@ -6,7 +6,7 @@ using ExtenderApp.Abstract;
 using ExtenderApp.Common;
 using ExtenderApp.Common.Error;
 using ExtenderApp.Common.Scopes;
-using ExtenderApp.Data;
+using ExtenderApp.Contracts;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace ExtenderApp.Services

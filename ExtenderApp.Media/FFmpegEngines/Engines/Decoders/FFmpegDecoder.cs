@@ -1,6 +1,6 @@
 ﻿using System.Runtime.CompilerServices;
 using System.Threading.Channels;
-using ExtenderApp.Data;
+using ExtenderApp.Contracts;
 using FFmpeg.AutoGen;
 
 namespace ExtenderApp.FFmpegEngines.Decoders

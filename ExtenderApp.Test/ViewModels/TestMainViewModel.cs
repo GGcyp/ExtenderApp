@@ -1,6 +1,6 @@
 ﻿using ExtenderApp.Abstract;
 using ExtenderApp.Common;
-using ExtenderApp.Data;
+using ExtenderApp.Contracts;
 using ExtenderApp.ViewModels;
 
 namespace ExtenderApp.Test
@@ -19,10 +19,10 @@ namespace ExtenderApp.Test
         public override void Inject(IServiceProvider serviceProvider)
         {
             base.Inject(serviceProvider);
-            //binarySerialization.Serialize(1111111111L, out ByteBuffer buffer);
-            //var value3 = binarySerialization.Deserialize<long>(buffer);
+            //binarySerialization.Serialize(1111111111L, out ByteBuffer TArray);
+            //var value3 = binarySerialization.Deserialize<long>(TArray);
             //LogDebug("value3:" + value3);
-            //buffer.Dispose();
+            //TArray.Dispose();
             Guid guid1 = new("sss");
             Guid guid2 = new("sss");
             LogDebug(guid1 == guid2);

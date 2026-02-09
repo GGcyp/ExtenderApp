@@ -1,7 +1,7 @@
 ﻿using System.Net;
 using ExtenderApp.Abstract;
 using ExtenderApp.Common.Serializations.Binary.Formatters;
-using ExtenderApp.Data;
+using ExtenderApp.Contracts;
 
 namespace ExtenderApp.Common.Serializations.Binary.Formatters.Class
 {

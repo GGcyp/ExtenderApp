@@ -1,6 +1,6 @@
 ﻿using System.Net;
 using System.Net.Sockets;
-using ExtenderApp.Data;
+using ExtenderApp.Contracts;
 
 namespace ExtenderApp.Abstract
 {

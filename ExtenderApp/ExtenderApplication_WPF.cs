@@ -5,7 +5,7 @@ using System.Windows;
 using Autofac;
 using Autofac.Extensions.DependencyInjection;
 using ExtenderApp.Abstract;
-using ExtenderApp.Data;
+using ExtenderApp.Contracts;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;

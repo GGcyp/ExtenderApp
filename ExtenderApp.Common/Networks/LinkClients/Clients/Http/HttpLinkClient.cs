@@ -4,9 +4,9 @@ using System.Net.Security;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks.Sources;
 using ExtenderApp.Abstract;
-using ExtenderApp.Data;
-using HttpRequestMessage = ExtenderApp.Data.HttpRequestMessage;
-using HttpResponseMessage = ExtenderApp.Data.HttpResponseMessage;
+using ExtenderApp.Contracts;
+using HttpRequestMessage = ExtenderApp.Contracts.HttpRequestMessage;
+using HttpResponseMessage = ExtenderApp.Contracts.HttpResponseMessage;
 
 namespace ExtenderApp.Common.Networks.LinkClients
 {
@@ -152,7 +152,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
                 // 必要时调整请求（例如 302/303 将方法改为 GET 并清除 Body）
                 if (response.StatusCode == HttpStatusCode.Redirect || response.StatusCode == HttpStatusCode.RedirectMethod)
                 {
-                    request.Method = Data.HttpMethod.Get;
+                    request.Method = Contracts.HttpMethod.Get;
                     request.Body.Dispose();
                 }
 

@@ -1,5 +1,5 @@
 ﻿using System.Net;
-using ExtenderApp.Data;
+using ExtenderApp.Contracts;
 
 namespace ExtenderApp.Abstract
 {

@@ -3,7 +3,7 @@ using ExtenderApp.Abstract;
 using ExtenderApp.Common.Serializations.Binary.Formatters;
 using ExtenderApp.Common.Serializations.Binary.Formatters.Class;
 using ExtenderApp.Common.Serializations.Binary.Formatters.Collection;
-using ExtenderApp.Data;
+using ExtenderApp.Contracts;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace ExtenderApp.Common.Serializations.Binary

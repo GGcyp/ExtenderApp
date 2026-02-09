@@ -1,5 +1,5 @@
 ﻿using System.Security.Cryptography;
-using ExtenderApp.Data;
+using ExtenderApp.Contracts;
 
 namespace ExtenderApp.Abstract
 {

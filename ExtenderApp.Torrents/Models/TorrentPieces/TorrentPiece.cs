@@ -1,5 +1,5 @@
 ﻿using ExtenderApp.Common.DataBuffers;
-using ExtenderApp.Data;
+using ExtenderApp.Contracts;
 using ExtenderApp.Models;
 
 namespace ExtenderApp.Torrents.Models

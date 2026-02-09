@@ -1,7 +1,7 @@
 ﻿using ExtenderApp.Abstract;
 using ExtenderApp.Common.DataBuffers;
 using ExtenderApp.Common.Serializations.Binary.Formatters;
-using ExtenderApp.Data;
+using ExtenderApp.Contracts;
 
 namespace ExtenderApp.Torrents.Models.Formatters
 {

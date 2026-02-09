@@ -1,6 +1,6 @@
 ﻿using System.Net;
 using ExtenderApp.Common.Networks.LinkClients;
-using ExtenderApp.Data;
+using ExtenderApp.Contracts;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace ExtenderApp.Common.Networks

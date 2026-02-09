@@ -1,0 +1,321 @@
+﻿using System.Buffers;
+using ExtenderApp.Contracts;
+
+namespace ExtenderApp.Buffer
+{
+    /// <summary>
+    /// 表示用于写入缓冲区的抽象写入器。
+    /// </summary>
+    /// <remarks>继承自 <see cref="FreezeObject"/>，在调用 <see cref="Release"/> 前会检查冻结状态以避免在被引用时回收。 实现者应提供用于推进写入位置和获取可写内存/跨度的具体逻辑。 实现此抽象类的类型通常用于可重用或池化的缓冲写入场景。</remarks>
+    public abstract class AbstractBuffer<T> : FreezeObject, IBufferWriter<T>, IPinnable
+    {
+        private const string ErrorMessage = "当前缓存还被引用中，无法进行回收操作。";
+
+        /// <summary>
+        /// 被固定次数（Pin 调用次数）和当前固定状态的标志。 由于 Pin/Unpin 的调用可能不成对（例如多次 Pin 而未及时 Unpin），因此通过 IsPinned 标志来跟踪当前是否处于固定状态，并通过 memoryHandle 来保存最后一次 Pin 返回的句柄以便在 Unpin 时正确释放。
+        /// </summary>
+        private int pinCount;
+
+        /// <summary>
+        /// 当内存被固定时保存的 MemoryHandle，以便在 Unpin 时正确释放。 该字段仅在 IsPinned 为 true 时有效；当 IsPinned 为 false 时应为 default。 派生类在实现 PinProtected 时应确保正确设置此字段，并在 UnpinProtected 中负责释放对应的内存句柄。
+        /// </summary>
+        private MemoryHandle memoryHandle;
+
+        public bool IsPinned => Interlocked.CompareExchange(ref pinCount, 0, 0) > 0;
+
+        /// <summary>
+        /// 缓冲区的总容量（以元素数计）。
+        /// </summary>
+        public abstract long Capacity { get; }
+
+        /// <summary>
+        /// 当前缓冲区可供写入的元素数量（剩余可写空间）。
+        /// </summary>
+        /// <remarks>语义为从当前写入位置到底层存储末尾的可用元素数，不包含需要扩容后才可用的空间。</remarks>
+        public abstract int Available { get; }
+
+        /// <summary>
+        /// 缓冲区中已提交（已写入）的元素总数。
+        /// </summary>
+        /// <remarks>
+        /// 该值表示已准备好被读取或消费的数据长度（可用于构建 <see cref="CommittedSequence"/>）。 使用 <see cref="OnCommittedChanged"/> 或订阅 <see cref="CommittedChanged"/> 以在提交长度改变时接收通知。
+        /// </remarks>
+        public abstract long Committed { get; }
+
+        /// <summary>
+        /// 表示已提交数据的只读序列（ReadOnlySequence），用于将缓冲区内容作为可读序列暴露给调用方。
+        /// </summary>
+        public abstract ReadOnlySequence<T> CommittedSequence { get; }
+
+        /// <summary>
+        /// 当已提交长度发生变化时触发的事件。订阅者可在此更新缓存的外部状态（例如序列长度缓存）。
+        /// </summary>
+        public event Action? CommittedChanged;
+
+        /// <summary>
+        /// 触发 <see cref="CommittedChanged"/> 事件以通知已提交长度已变更。
+        /// </summary>
+        protected void OnCommittedChanged() => CommittedChanged?.Invoke();
+
+        /// <summary>
+        /// 将写入位置向前推进指定数量的元素。
+        /// </summary>
+        /// <param name="count">要推进的元素数量（必须为非负值）。</param>
+        public abstract void Advance(int count);
+
+        /// <summary>
+        /// 获取一个至少包含 <paramref name="sizeHint"/> 个元素的可写 <see cref="Memory{T}"/>。
+        /// </summary>
+        /// <param name="sizeHint">建议的最小可用大小（可为 0，表示不作特殊建议）。</param>
+        /// <returns>用于写入的 <see cref="Memory{T}"/>。</returns>
+        public abstract Memory<T> GetMemory(int sizeHint = 0);
+
+        /// <summary>
+        /// 获取一个至少包含 <paramref name="sizeHint"/> 个元素的可写 <see cref="Span{T}"/>。
+        /// </summary>
+        /// <param name="sizeHint">建议的最小可用大小（可为 0，表示不作特殊建议）。</param>
+        /// <returns>用于写入的 <see cref="Span{T}"/>。</returns>
+        public abstract Span<T> GetSpan(int sizeHint = 0);
+
+        /// <summary>
+        /// 清空当前缓冲区的内容并重置写入位置。 调用此方法后， <see cref="Committed"/> 将重置为 0， <see cref="CommittedSequence"/> 将变为空序列。 具体实现可能会选择保留底层存储以供后续写入使用（例如池化场景），但应确保调用此方法后缓冲区状态被正确重置以允许重新使用。
+        /// </summary>
+        public abstract void Clear();
+
+        #region Write
+
+        /// <summary>
+        /// 将指定的只读跨度 <paramref name="source"/> 的内容写入当前缓冲区（从当前写入位置开始），并将写入位置向前推进相应数量。
+        /// </summary>
+        /// <param name="source">要写入的只读数据跨度。</param>
+        /// <remarks>实现通过调用 <see cref="GetSpan(int)"/> 获取足够的写入空间并调用 <see cref="Advance(int)"/> 推进写入位置。 如果底层缓冲无法满足写入需求，具体实现可能会扩容或抛出异常（由派生类决定）。</remarks>
+        public void Write(ReadOnlySpan<T> source)
+        {
+            int length = source.Length;
+            source.CopyTo(GetSpan(length));
+            Advance(length);
+        }
+
+        /// <summary>
+        /// 将指定的只读内存 <paramref name="memory"/> 的内容写入当前缓冲区（从当前写入位置开始），并推进写入位置。
+        /// </summary>
+        /// <param name="memory">要写入的只读内存。</param>
+        public void Write(ReadOnlyMemory<T> memory)
+        {
+            Write(memory.Span);
+        }
+
+        /// <summary>
+        /// 将指定数组 <paramref name="array"/> 的全部内容写入当前缓冲区（从当前写入位置开始），并推进写入位置。
+        /// </summary>
+        /// <param name="array">要写入的数组（不能为 null）。</param>
+        public void Write(T[] array)
+        {
+            Write(array.AsSpan());
+        }
+
+        /// <summary>
+        /// 将一个元素（按引用方式传入以减少拷贝）写入当前缓冲区并推进写入位置 1。
+        /// </summary>
+        /// <param name="item">要写入的元素（以 <c>in</c> 传入以避免复制开销）。</param>
+        public void Write(in T item)
+        {
+            GetSpan(1)[0] = item;
+            Advance(1);
+        }
+
+        /// <summary>
+        /// 将单个元素写入当前缓冲区并推进写入位置 1。
+        /// </summary>
+        /// <param name="item">要写入的元素。</param>
+        public void Write(T item)
+        {
+            GetSpan(1)[0] = item;
+            Advance(1);
+        }
+
+        /// <summary>
+        /// 将枚举序列 <paramref name="items"/> 的所有元素逐个写入当前缓冲区（每个元素通过 <see cref="Write(T)"/> 写入）。
+        /// </summary>
+        /// <param name="items">要写入的枚举集合，允许为任何实现了 <see cref="IEnumerable{T}"/> 的序列。</param>
+        /// <remarks>
+        /// 对于大型或高频写入场景，建议尽量使用批量写入（例如 <see cref="ReadOnlySpan{T}"/> / <see cref="ReadOnlyMemory{T}"/> 或 <see cref="ReadOnlySequence{T}"/>） 以减少多次扩容与调用开销。
+        /// </remarks>
+        public void Write(IEnumerable<T> items)
+        {
+            foreach (var item in items)
+                Write(item);
+        }
+
+        /// <summary>
+        /// 将多段只读序列 <paramref name="memories"/> 中的所有段依次写入当前缓冲区。
+        /// </summary>
+        /// <param name="memories">要写入的只读序列（可能由多段组成）。</param>
+        /// <remarks>逐段读取序列中的 <see cref="ReadOnlyMemory{T}"/> 并调用对应的写入方法以保证零拷贝或最小拷贝开销。</remarks>
+        public void Write(ReadOnlySequence<T> memories)
+        {
+            if (memories.IsSingleSegment)
+            {
+                Write(memories.First);
+            }
+            else
+            {
+                SequencePosition start = memories.Start;
+                while (memories.TryGet(ref start, out ReadOnlyMemory<T> memory))
+                    Write(memory);
+            }
+        }
+
+        /// <summary>
+        /// 将另一个 <see cref="AbstractBuffer{T}"/> 的已提交数据写入当前缓冲区（等效于写入其 <see cref="CommittedSequence"/>）。
+        /// </summary>
+        /// <param name="other">来源缓冲区，其已提交数据将被复制到当前缓冲区。</param>
+        /// <remarks>此方法不会修改来源缓冲区的状态。调用方应遵循两端的生命周期约定以避免并发修改问题。</remarks>
+        public void Write(AbstractBuffer<T> other)
+        {
+            Write(other.CommittedSequence);
+        }
+
+        #endregion Write
+
+        #region Update
+
+        /// <summary>
+        /// 更新已提交长度以反映已写入数据的状态变化。调用此方法时会验证传入的跨度和提交位置是否在有效范围内，并在验证通过后调用 <see cref="UpdateCommittedProtected"/> 以执行实际的提交状态更新逻辑。 更新完成后会触发 <see
+        /// cref="OnCommittedChanged"/> 以通知订阅者提交长度已变更。
+        /// </summary>
+        /// <param name="span">需要更新后的数据片段。</param>
+        /// <param name="committedPosition">需要更新的坐标位置。</param>
+        public void UpdateCommitted(Span<T> span, long committedPosition = 0)
+        {
+            if (span.IsEmpty)
+                return;
+
+            if (committedPosition < 0 || committedPosition + span.Length > Committed)
+                throw new ArgumentOutOfRangeException(nameof(committedPosition), "committedPosition 必须在已写入范围内，且 span 能完全写入。");
+
+            UpdateCommittedProtected(span, (int)committedPosition);
+            OnCommittedChanged();
+        }
+
+        /// <summary>
+        /// 更新已提交长度的受保护方法，由 <see cref="UpdateCommitted"/> 调用以执行实际的提交状态更新逻辑。派生类应在此方法中实现根据传入的已写入数据跨度和相对于当前提交位置的偏移量来更新内部提交状态（例如调整已提交长度、更新相关缓存等）。 该方法由
+        /// <see cref="UpdateCommitted"/> 进行参数验证后调用，因此派生类可以假设传入的参数已经过验证并且符合预期范围。
+        /// </summary>
+        /// <param name="span">需要更新后的数据片段。</param>
+        /// <param name="committedPosition">需要更新的坐标位置。</param>
+        protected abstract void UpdateCommittedProtected(Span<T> span, long committedPosition);
+
+        #endregion Update
+
+        #region Release
+
+        /// <summary>
+        /// 尝试释放/回收当前缓冲区实例的资源。 在调用此方法时会先尝试解除冻结状态以允许回收（如果当前未被冻结）。 如果对象处于冻结状态（被引用）则不会进行释放并返回 false；如果成功释放则返回 true。
+        /// </summary>
+        /// <returns>如果成功释放则返回 true；如果当前对象处于冻结状态（被引用）则返回 false。</returns>
+        public bool TryRelease()
+        {
+            Unfreeze(); // 尝试解除冻结以允许回收（如果当前未被冻结）
+            if (IsFrozen)
+                return false;
+
+            ReleaseProtected();
+            return true;
+        }
+
+        /// <summary>
+        /// 释放/回收当前缓冲区实例的资源。 在调用此方法时会先尝试解除冻结状态以允许回收（如果当前未被冻结）。 如果对象处于冻结状态（被引用）则会抛出 <see cref="InvalidOperationException"/>；如果成功释放则调用派生类的 <see
+        /// cref="ReleaseProtected"/> 完成实际回收逻辑。
+        /// </summary>
+        /// <exception cref="InvalidOperationException">当当前缓冲区被引用（冻结）时抛出。</exception>
+        public void Release()
+        {
+            Unfreeze(); // 尝试解除冻结以允许回收（如果当前未被冻结）
+            CheckFrozen(ErrorMessage);
+            ReleaseProtected();
+        }
+
+        #endregion Release
+
+        /// <summary>
+        /// 缓冲区内容转换为数组。 具体实现由派生类提供，通常会返回一个包含已提交数据的数组副本。 调用此方法可能会涉及内存分配和数据复制，因此在性能敏感场景下应谨慎使用。
+        /// </summary>
+        /// <returns>转存好的数组实例</returns>
+        public abstract T[] ToArray();
+
+        protected override void Dispose(bool disposing)
+        {
+            Release();
+            base.Dispose(disposing);
+        }
+
+        /// <summary>
+        /// 派生类实现具体的释放/回收逻辑（例如归还池、释放底层资源等）。
+        /// </summary>
+        protected abstract void ReleaseProtected();
+
+        /// <summary>
+        /// 将指定索引处的元素固定在内存中并返回对应的 <see cref="MemoryHandle"/>，以便调用方可以安全地获取该元素的地址或传递给非托管代码。
+        /// </summary>
+        /// <param name="elementIndex">要固定的元素在缓冲区中的索引（相对于缓冲区起始位置的零基索引）。派生类应对越界情况进行验证并抛出合适的异常（例如 <see cref="ArgumentOutOfRangeException"/>）。</param>
+        /// <returns>
+        /// 一个 <see cref="MemoryHandle"/> 实例，表示已固定的内存句柄。调用方在完成对固定内存的使用后必须调用 <see cref="Unpin"/> 以释放固定状态。 如果缓冲区当前已经处于固定状态（ <see cref="Pin"/> 已被调用且尚未
+        /// <see cref="Unpin"/>），则返回先前保存的同一 <see cref="MemoryHandle"/> 实例。
+        /// </returns>
+        /// <remarks>
+        /// - 此方法通过内部标记防止重复固定（多次调用将返回相同的句柄），实际的固定逻辑由 <see cref="PinProtected"/> 实现。
+        /// - 派生类在实现 <see cref="PinProtected"/> 时必须确保固定期间底层内存不会被移动或回收，并在 <see cref="UnpinProtected"/> 中正确释放固定状态。
+        /// - 本方法及其派生实现通常不是线程安全的；如果需要在多线程场景中使用，请在调用方进行同步。
+        /// </remarks>
+        public MemoryHandle Pin(int elementIndex)
+        {
+            if (!IsPinned)
+            {
+                Freeze(); // 固定前先冻结以防止回收
+                memoryHandle = PinProtected(elementIndex);
+            }
+
+            Interlocked.Increment(ref pinCount);
+            return memoryHandle;
+        }
+
+        /// <summary>
+        /// 派生类在此方法中实现将指定索引处元素固定到托管外的具体逻辑，并返回对应的 <see cref="MemoryHandle"/>。
+        /// </summary>
+        /// <param name="elementIndex">要固定的元素索引（从 0 开始）。实现应在索引无效时抛出 <see cref="ArgumentOutOfRangeException"/> 或其他合适的异常。</param>
+        /// <returns>表示已固定内存的 <see cref="MemoryHandle"/>。实现必须保证返回的句柄在调用 <see cref="UnpinProtected"/> 前保持有效。</returns>
+        /// <remarks>
+        /// - 该方法由基类的 <see cref="Pin(int)"/> 调用；派生实现可以假设基类已更新固定标志（IsPinned）。
+        /// - 实现应确保在固定期间底层内存不会被移动或回收，并负责为 <see cref="UnpinProtected"/> 提供对等的释放逻辑。
+        /// - 建议实现避免分配大量托管资源，并遵循低延迟、高可靠性的约定。
+        /// </remarks>
+        protected abstract MemoryHandle PinProtected(int elementIndex);
+
+        /// <summary>
+        /// 释放先前通过 <see cref="Pin(int)"/> 固定的元素，允许该内存再次被移动或回收。
+        /// </summary>
+        /// <remarks>
+        /// - 本方法首先调用派生类的 <see cref="UnpinProtected"/> 以执行具体释放逻辑，然后将内部固定标志清除并重置保存的 <see cref="MemoryHandle"/>。
+        /// - 调用此方法后先前由 <see cref="Pin(int)"/> 返回的 <see cref="MemoryHandle"/> 将不再有效，不得再访问其地址。
+        /// - 此方法对重复调用应为无害（幂等）：若当前未固定，派生实现应能安全处理无操作或快速返回。
+        /// - 与 <see cref="Pin(int)"/> 一样，线程安全性由调用方负责；若在多线程场景下使用，请外部同步调用。
+        /// </remarks>
+        public virtual void Unpin()
+        {
+            Interlocked.Decrement(ref pinCount);
+            if (IsPinned)
+                return;
+
+            Unfreeze(); // 解除冻结以允许回收
+            memoryHandle.Dispose();
+            memoryHandle = default;
+        }
+
+        /// <summary>
+        /// 隐式将缓冲区转换为只读序列，便于将已提交数据作为 <see cref="ReadOnlySequence{T}"/> 传递。
+        /// </summary>
+        /// <param name="buffer">源缓冲区实例。</param>
+        public static implicit operator ReadOnlySequence<T>(AbstractBuffer<T> buffer) => buffer.CommittedSequence;
+    }
+}

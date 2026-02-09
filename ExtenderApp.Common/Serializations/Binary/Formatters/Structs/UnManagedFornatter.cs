@@ -1,6 +1,6 @@
 ﻿using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using ExtenderApp.Data;
+using ExtenderApp.Contracts;
 
 namespace ExtenderApp.Common.Serializations.Binary.Formatters
 {
@@ -70,7 +70,7 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
             arr[BinaryOptions.Int32] = (byte)GetSize<Int32>();
             arr[BinaryOptions.Int64] = (byte)GetSize<Int64>();
 
-            // 其他标记（如 String/buffer/MapHeader）不是固定数据长度，不在表中填充
+            // 其他标记（如 String/TArray/MapHeader）不是固定数据长度，不在表中填充
             return arr;
         }
 

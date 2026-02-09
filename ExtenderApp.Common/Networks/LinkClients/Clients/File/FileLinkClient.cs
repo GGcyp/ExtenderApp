@@ -1,7 +1,7 @@
 ﻿using System.Net;
 using System.Threading.Tasks.Sources;
 using ExtenderApp.Abstract;
-using ExtenderApp.Data;
+using ExtenderApp.Contracts;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace ExtenderApp.Common.Networks.LinkClients

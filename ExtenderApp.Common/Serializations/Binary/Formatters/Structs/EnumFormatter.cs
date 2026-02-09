@@ -1,6 +1,6 @@
 ﻿using System.Runtime.CompilerServices;
 using ExtenderApp.Abstract;
-using ExtenderApp.Data;
+using ExtenderApp.Contracts;
 
 namespace ExtenderApp.Common.Serializations.Binary.Formatters
 {

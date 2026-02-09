@@ -1,6 +1,6 @@
 ﻿using System.Collections.ObjectModel;
 using System.ComponentModel;
-using ExtenderApp.Data;
+using ExtenderApp.Contracts;
 using MonoTorrent;
 using MonoTorrent.Client;
 using ExtenderApp.Common;

@@ -1,5 +1,5 @@
 ﻿using System.Text;
-using ExtenderApp.Data;
+using ExtenderApp.Contracts;
 
 namespace ExtenderApp.Common.Caches
 {

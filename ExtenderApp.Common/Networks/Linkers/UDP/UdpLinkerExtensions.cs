@@ -2,7 +2,7 @@
 using System.Net.Sockets;
 using ExtenderApp.Abstract;
 using ExtenderApp.Common.Networks;
-using ExtenderApp.Data;
+using ExtenderApp.Contracts;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace ExtenderApp.Common

@@ -1,5 +1,5 @@
 ﻿using System.Buffers;
-using ExtenderApp.Data;
+using ExtenderApp.Contracts;
 using ExtenderApp.Media.Audios;
 using NAudio.Wave;
 using SoundTouch;

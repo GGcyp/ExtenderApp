@@ -1,6 +1,6 @@
 ﻿using System.Collections.Concurrent;
 using ExtenderApp.Abstract;
-using ExtenderApp.Data;
+using ExtenderApp.Contracts;
 using Microsoft.Extensions.Logging;
 
 namespace ExtenderApp.Services

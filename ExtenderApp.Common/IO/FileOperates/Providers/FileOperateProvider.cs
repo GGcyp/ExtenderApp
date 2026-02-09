@@ -1,7 +1,7 @@
 ﻿using ExtenderApp.Abstract;
 using ExtenderApp.Common.Caches;
 using ExtenderApp.Common.IO.FileOperates;
-using ExtenderApp.Data;
+using ExtenderApp.Contracts;
 
 namespace ExtenderApp.Common.IO
 {

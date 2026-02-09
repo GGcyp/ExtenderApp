@@ -1,5 +1,5 @@
 ﻿using System.Runtime.InteropServices;
-using ExtenderApp.Data;
+using ExtenderApp.Contracts;
 using FFmpeg.AutoGen;
 
 namespace ExtenderApp.FFmpegEngines
@@ -40,7 +40,7 @@ namespace ExtenderApp.FFmpegEngines
         /// <summary>
         /// AVIOContext 使用的缓冲区。
         /// <para>
-        /// 对 FFmpeg 而言，该 buffer 属于 IO 层缓存，用于减少回调次数、提升吞吐量。
+        /// 对 FFmpeg 而言，该 TArray 属于 IO 层缓存，用于减少回调次数、提升吞吐量。
         /// </para>
         /// </summary>
         private readonly NativeByteMemory _buffer;
@@ -64,7 +64,7 @@ namespace ExtenderApp.FFmpegEngines
         /// 该构造函数只做“资源封装”，不负责分配 IOContext；外部通常先创建：
         /// <list type="bullet">
         /// <item><description><see cref="GCHandle"/>：用于通过 opaque 传递托管对象。</description></item>
-        /// <item><description><see cref="NativeByteMemory"/>：作为 IO buffer。</description></item>
+        /// <item><description><see cref="NativeByteMemory"/>：作为 IO TArray。</description></item>
         /// <item><description><see cref="AVIOContext"/>：由 <c>avio_alloc_context</c> 创建。</description></item>
         /// </list>
         /// </para>
@@ -72,7 +72,7 @@ namespace ExtenderApp.FFmpegEngines
         /// <param name="engine">用于释放指针资源的引擎实例。</param>
         /// <param name="handle">用于回调 opaque 的托管句柄。</param>
         /// <param name="context">FFmpeg 侧的 AVIOContext 指针。</param>
-        /// <param name="buffer">IO buffer。</param>
+        /// <param name="buffer">IO TArray。</param>
         public FFmpegIOContext(FFmpegEngine engine, GCHandle handle, NativeIntPtr<AVIOContext> context, NativeByteMemory buffer)
         {
             _engine = engine;

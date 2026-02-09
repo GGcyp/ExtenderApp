@@ -2,7 +2,7 @@
 using System.Buffers.Binary;
 using System.Threading.Channels;
 using ExtenderApp.Abstract;
-using ExtenderApp.Data;
+using ExtenderApp.Contracts;
 
 namespace ExtenderApp.Common.Networks.LinkClients
 {

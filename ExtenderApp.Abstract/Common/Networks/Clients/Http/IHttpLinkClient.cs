@@ -1,6 +1,6 @@
 ﻿using System.Net.Security;
-using HttpRequestMessage = ExtenderApp.Data.HttpRequestMessage;
-using HttpResponseMessage = ExtenderApp.Data.HttpResponseMessage;
+using HttpRequestMessage = ExtenderApp.Contracts.HttpRequestMessage;
+using HttpResponseMessage = ExtenderApp.Contracts.HttpResponseMessage;
 
 namespace ExtenderApp.Abstract
 {

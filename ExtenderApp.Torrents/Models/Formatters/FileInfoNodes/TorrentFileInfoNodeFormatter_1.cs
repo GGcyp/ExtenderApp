@@ -2,7 +2,7 @@
 using ExtenderApp.Common.DataBuffers;
 using ExtenderApp.Common.IO;
 using ExtenderApp.Common.Serializations.Binary;
-using ExtenderApp.Data;
+using ExtenderApp.Contracts;
 using MonoTorrent;
 
 namespace ExtenderApp.Torrents.Models

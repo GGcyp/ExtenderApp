@@ -2,7 +2,7 @@
 using System.Text.Json;
 using ExtenderApp.Abstract;
 using ExtenderApp.Common.IO.FileParsers;
-using ExtenderApp.Data;
+using ExtenderApp.Contracts;
 
 namespace ExtenderApp.Common.Serializations.Json
 {

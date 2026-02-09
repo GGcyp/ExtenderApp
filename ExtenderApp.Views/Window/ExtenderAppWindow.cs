@@ -2,7 +2,7 @@
 using System.Windows.Input;
 using System.Windows.Media;
 using ExtenderApp.Abstract;
-using ExtenderApp.Data;
+using ExtenderApp.Contracts;
 
 namespace ExtenderApp.Views
 {
@@ -79,8 +79,8 @@ namespace ExtenderApp.Views
         {
             base.OnPreviewKeyDown(e);
 
-            Data.Key key = (Data.Key)e.Key;
-            Data.ModifierKeys modifiers = (Data.ModifierKeys)Keyboard.Modifiers;
+            Contracts.Key key = (Contracts.Key)e.Key;
+            Contracts.ModifierKeys modifiers = (Contracts.ModifierKeys)Keyboard.Modifiers;
             bool isRepeat = e.IsRepeat;
             _messageService.Publish(this, new KeyDownEvent(key, modifiers, isRepeat, false));
 
@@ -94,8 +94,8 @@ namespace ExtenderApp.Views
         {
             base.OnPreviewKeyUp(e);
 
-            Data.Key key = (Data.Key)e.Key;
-            Data.ModifierKeys modifiers = (Data.ModifierKeys)Keyboard.Modifiers;
+            Contracts.Key key = (Contracts.Key)e.Key;
+            Contracts.ModifierKeys modifiers = (Contracts.ModifierKeys)Keyboard.Modifiers;
             bool isRepeat = e.IsRepeat;
             _messageService.Publish(this, new KeyUpEvent(key, modifiers, isRepeat, false));
 

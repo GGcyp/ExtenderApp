@@ -1,5 +1,5 @@
 ﻿using System.Collections.Concurrent;
-using ExtenderApp.Data;
+using ExtenderApp.Contracts;
 
 namespace ExtenderApp.Common.Messages
 {
