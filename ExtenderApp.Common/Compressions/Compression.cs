@@ -1,21 +1,32 @@
-﻿using System.Buffers;
-using ExtenderApp.Abstract;
+﻿using ExtenderApp.Abstract;
+using ExtenderApp.Buffer;
 using ExtenderApp.Contracts;
 
 namespace ExtenderApp.Common.Compressions
 {
+    /// <summary>
+    /// 压缩器抽象类，提供压缩和解压缩的基本接口。
+    /// </summary>
     public abstract class Compression : DisposableObject, ICompression
     {
-        public abstract bool TryCompress(ReadOnlySpan<byte> input, out ByteBlock block);
+        #region TryCompress
 
-        public abstract bool TryCompress(ReadOnlySequence<byte> input, out ByteBuffer buffer, CompressionType compression = CompressionType.BlockArray);
+        /// <inheritdoc/>
+        public abstract bool TryCompress(ReadOnlySpan<byte> span, out AbstractBuffer<byte> output);
 
-        public abstract bool TryCompress(ReadOnlyMemory<byte> input, out ByteBlock block);
+        /// <inheritdoc/>
+        public abstract bool TryCompress(AbstractBuffer<byte> input, out AbstractBuffer<byte> output, CompressionType compression = CompressionType.Block);
 
-        public abstract bool TryDecompress(ReadOnlySpan<byte> input, out ByteBlock block);
+        #endregion TryCompress
 
-        public abstract bool TryDecompress(ReadOnlySequence<byte> input, out ByteBuffer buffer);
+        #region TryDecompress
 
-        public abstract bool TryDecompress(ReadOnlyMemory<byte> input, out ByteBlock block);
+        /// <inheritdoc/>
+        public abstract bool TryDecompress(ReadOnlySpan<byte> span, out AbstractBuffer<byte> output);
+
+        /// <inheritdoc/>
+        public abstract bool TryDecompress(AbstractBuffer<byte> input, out AbstractBuffer<byte> output);
+
+        #endregion TryDecompress
     }
 }

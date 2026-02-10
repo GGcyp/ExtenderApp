@@ -1,4 +1,5 @@
 ﻿using System.Buffers;
+using ExtenderApp.Buffer.Reader;
 using ExtenderApp.Buffer.Sequence;
 
 namespace ExtenderApp.Buffer
@@ -7,7 +8,7 @@ namespace ExtenderApp.Buffer
     /// 针对 <see cref="SequenceBuffer{T}"/> 的向前只读读取器（轻量结构）。 在构造时会冻结目标缓冲以防止被释放；使用结束后应调用 <see cref="Dispose"/> 以尝试释放/解冻缓冲。
     /// </summary>
     /// <typeparam name="T">元素类型。</typeparam>
-    public struct ValueSequenceBufferReader<T> : IDisposable, IEquatable<ValueSequenceBufferReader<T>> where T : unmanaged, IEquatable<T>
+    public struct ValueSequenceBufferReader<T> : IDisposable, IEquatable<ValueSequenceBufferReader<T>>
     {
         private SequenceBufferSegment<T>? currentSegment;
         private int segmentConsumed; // 已在当前段内消费的数量（相对于段起点）
@@ -276,25 +277,45 @@ namespace ExtenderApp.Buffer
 
         public T[] ToArray() => UnreadSequence.ToArray();
 
+        /// <summary>
+        /// 确定此读取器是否与另一个读取器相等（比较所属缓冲和已消费位置）。
+        /// </summary>
+        /// <param name="other">要比较的另一读取器。</param>
+        /// <returns>若二者引用相同缓冲且已消费数相同则返回 true。</returns>
         public bool Equals(ValueSequenceBufferReader<T> other)
         {
             return Buffer == other.Buffer && Consumed == other.Consumed;
         }
 
+        /// <summary>
+        /// 相等运算符重载，比较两个读取器是否相等。
+        /// </summary>
         public static bool operator ==(ValueSequenceBufferReader<T> left, ValueSequenceBufferReader<T> right)
             => left.Equals(right);
 
+        /// <summary>
+        /// 不等运算符重载，比较两个读取器是否不相等。
+        /// </summary>
         public static bool operator !=(ValueSequenceBufferReader<T> left, ValueSequenceBufferReader<T> right)
             => !left.Equals(right);
 
+        /// <summary>
+        /// 重写的对象相等比较，支持与任意对象比较。
+        /// </summary>
         public override bool Equals(object? obj)
             => obj is ValueSequenceBufferReader<T> other && Equals(other);
 
+        /// <summary>
+        /// 重写的哈希代码实现，基于底层缓冲引用和已消费位置生成。
+        /// </summary>
         public override int GetHashCode()
             => HashCode.Combine(Buffer, Consumed);
 
+        /// <summary>
+        /// 返回此读取器的文本表示，包含已消费与剩余信息。
+        /// </summary>
         public override string ToString()
-            => $"SequenceBufferReader(Committed={Consumed}, Remaining={Remaining}, IsCompleted={IsCompleted})";
+            => $"SequenceBufferReader(Consumed={Consumed}, Remaining={Remaining}, IsCompleted={IsCompleted})";
 
         /// <summary>
         /// 释放读取器占用的引用：尝试释放/解冻底层序列以允许回收（若序列未被其它引用冻结）。
@@ -304,17 +325,33 @@ namespace ExtenderApp.Buffer
             Buffer.TryRelease();
         }
 
+        /// <summary>
+        /// 隐式从 <see cref="SequenceBuffer{T}"/> 创建一个读取器，构造时会冻结目标缓冲。
+        /// </summary>
         public static implicit operator ValueSequenceBufferReader<T>(SequenceBuffer<T> buffer)
             => new ValueSequenceBufferReader<T>(buffer);
 
+        /// <summary>
+        /// 隐式将读取器转换为 <see cref="ReadOnlySequence{T}"/>，表示当前未读的数据序列。
+        /// </summary>
         public static implicit operator ReadOnlySequence<T>(ValueSequenceBufferReader<T> reader)
             => reader.UnreadSequence;
 
-        public static implicit operator SequenceReader<T>(ValueSequenceBufferReader<T> reader)
+        public static implicit operator SequenceBuffer<T>(ValueSequenceBufferReader<T> reader)
+            => reader.Buffer;
+
+        public static implicit operator ValueSequenceBufferReader<T>(SequenceBufferReader<T> reader)
         {
-            var sequenceReader = new SequenceReader<T>(reader.UnreadSequence);
-            sequenceReader.Advance(reader.Consumed);
-            return sequenceReader;
+            ValueSequenceBufferReader<T> vReader = new(reader);
+            vReader.Advance((int)reader.Consumed);
+            return vReader;
+        }
+
+        public static implicit operator SequenceBufferReader<T>(ValueSequenceBufferReader<T> reader)
+        {
+            var sReader = SequenceBufferReader<T>.GetReader(reader);
+            sReader.Advance((int)reader.Consumed);
+            return sReader;
         }
     }
 }

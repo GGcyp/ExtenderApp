@@ -1,5 +1,6 @@
-﻿using System.Buffers;
+﻿using System;
 using ExtenderApp.Abstract;
+using ExtenderApp.Buffer;
 using ExtenderApp.Contracts;
 
 namespace ExtenderApp.Common.Compressions.LZ4
@@ -42,115 +43,106 @@ namespace ExtenderApp.Common.Compressions.LZ4
         #region Compress
 
         /// <inheritdoc/>
-        public override bool TryCompress(ReadOnlySpan<byte> input, out ByteBlock block)
+        public override bool TryCompress(ReadOnlySpan<byte> span, out AbstractBuffer<byte> output)
         {
-            block = new();
-            if (input.Length < CompressionMinLength)
+            if (span.IsEmpty)
             {
-                return false;
-            }
-
-            Compress(input, out block);
-            return true;
-        }
-
-        /// <inheritdoc/>
-        public override bool TryCompress(ReadOnlyMemory<byte> input, out ByteBlock block)
-        {
-            block = new();
-            if (input.Length < CompressionMinLength)
-            {
-                return false;
-            }
-
-            Compress(input.Span, out block);
-            return true;
-        }
-
-        /// <inheritdoc/>
-        public override bool TryCompress(ReadOnlySequence<byte> sequence, out ByteBuffer buffer, CompressionType compression = CompressionType.BlockArray)
-        {
-            buffer = new();
-            if (sequence.Length < CompressionMinLength || compression == CompressionType.None)
-            {
-                return false;
-            }
-
-            if (sequence.IsSingleSegment)
-            {
-                Compress(sequence.First.Span, out buffer);
+                output = AbstractBuffer<byte>.Empty;
                 return true;
             }
 
-            if (compression == CompressionType.Block)
+            if (span.Length < CompressionMinLength)
             {
-                ByteBlock compressBlock = new((int)sequence.Length);
-                foreach (var item in sequence)
+                output = MemoryBlock<byte>.GetBuffer(span);
+                return true;
+            }
+
+            var maxCompressedLength = LZ4Codec.MaximumOutputLength(span.Length);
+            var compressBlock = MemoryBlock<byte>.GetBuffer(maxCompressedLength);
+            var compressSpan = compressBlock.GetSpan(maxCompressedLength).Slice(0, maxCompressedLength);
+            var compressLength = LZ4CodecEncode(span, compressSpan);
+            compressBlock.Advance(compressLength);
+
+            var sequence = SequenceBuffer<byte>.GetBuffer();
+            Compress(span.Length, compressBlock, sequence);
+            output = sequence;
+            return true;
+        }
+
+        /// <inheritdoc/>
+        public override bool TryCompress(AbstractBuffer<byte> input, out AbstractBuffer<byte> output, CompressionType compressionType = CompressionType.Block)
+        {
+            if (input == null || input.Committed == 0)
+            {
+                output = AbstractBuffer<byte>.Empty;
+                return true;
+            }
+
+            var sequence = SequenceBuffer<byte>.GetBuffer();
+            output = sequence;
+            if (input is MemoryBlock<byte> memoryBlock)
+            {
+                Compress(memoryBlock, sequence);
+            }
+            else
+            {
+                if (compressionType == CompressionType.Block)
                 {
-                    compressBlock.Write(item);
+                    Compress(input.ToMemoryBlock(), sequence);
                 }
-
-                Compress(compressBlock.CommittedSpan, out buffer);
-                compressBlock.Dispose();
+                else
+                {
+                    //Compress(sequenceBuffer, sequence);
+                }
                 return true;
             }
-
-            buffer = new();
-            buffer.Write(LZ4CompressionMark);
-            _binarySerialization.Serialize(CompressionType.BlockArray, ref buffer);
-            foreach (var item in sequence)
-            {
-                CompressArray(item.Span, ref buffer);
-            }
-            _binarySerialization.Serialize(LZ4CompressionArrayEndSign, ref buffer);
             return true;
         }
 
-        private void Compress(ReadOnlySpan<byte> span, out ByteBlock block)
+        private void Compress(MemoryBlock<byte> input, SequenceBuffer<byte> output)
         {
-            var maxCompressedLength = LZ4Codec.MaximumOutputLength(span.Length);
-            ByteBlock compressBlock = new(maxCompressedLength);
+            var maxCompressedLength = LZ4Codec.MaximumOutputLength((int)input.Committed);
+            var compressBlock = MemoryBlock<byte>.GetBuffer(maxCompressedLength);
             var compressSpan = compressBlock.GetSpan(maxCompressedLength).Slice(0, maxCompressedLength);
-            var compressLength = LZ4CodecEncode(span, compressSpan);
+            var compressLength = LZ4CodecEncode(input.CommittedSpan, compressSpan);
             compressBlock.Advance(compressLength);
 
-            block = new(compressLength);
-            block.Write(LZ4CompressionMark);
-            _binarySerialization.Serialize(CompressionType.Block, ref block);
-            _binarySerialization.Serialize(compressLength, ref block);
-            _binarySerialization.Serialize(span.Length, ref block);
-            block.Write(compressBlock);
-            compressBlock.Dispose();
+            Compress(input.Committed, compressBlock, output);
+            input.TryRelease();
         }
 
-        private void Compress(ReadOnlySpan<byte> span, out ByteBuffer buffer)
+        private void Compress(long inputLength, MemoryBlock<byte> compress, SequenceBuffer<byte> output)
         {
-            var maxCompressedLength = LZ4Codec.MaximumOutputLength(span.Length);
-            ByteBlock compressBlock = new(maxCompressedLength);
-            var compressSpan = compressBlock.GetSpan(maxCompressedLength).Slice(0, maxCompressedLength);
-            var compressLength = LZ4CodecEncode(span, compressSpan);
-            compressBlock.Advance(compressLength);
-
-            buffer = new();
-            buffer.Write(LZ4CompressionMark);
-            _binarySerialization.Serialize(CompressionType.Block, ref buffer);
-            _binarySerialization.Serialize(compressLength, ref buffer);
-            _binarySerialization.Serialize(span.Length, ref buffer);
-            buffer.Write(compressBlock);
-            compressBlock.Dispose();
+            output.Write(LZ4CompressionMark);
+            _binarySerialization.Serialize(CompressionType.Block, output);
+            _binarySerialization.Serialize(compress.Committed, output);
+            _binarySerialization.Serialize(inputLength, output);
+            output.Append(compress);
+            compress.TryRelease();
         }
 
-        private void CompressArray(ReadOnlySpan<byte> span, ref ByteBuffer buffer)
+        private void Compress(AbstractBuffer<byte> input, SequenceBuffer<byte> output)
+        {
+            output.Write(LZ4CompressionMark);
+            _binarySerialization.Serialize(CompressionType.BlockArray, output);
+            foreach (var memory in input)
+            {
+                CompressArray(memory.Span, output);
+            }
+            _binarySerialization.Serialize(LZ4CompressionArrayEndSign, output);
+        }
+
+        private void CompressArray(ReadOnlySpan<byte> span, SequenceBuffer<byte> buffer)
         {
             var maxCompressedLength = LZ4Codec.MaximumOutputLength(span.Length);
-            ByteBlock compressBlock = new(maxCompressedLength);
+            MemoryBlock<byte> compressBlock = MemoryBlock<byte>.GetBuffer(maxCompressedLength);
             var compressSpan = compressBlock.GetSpan(maxCompressedLength).Slice(0, maxCompressedLength);
             var compressLength = LZ4CodecEncode(span, compressSpan);
             compressBlock.Advance(compressLength);
 
-            _binarySerialization.Serialize(compressLength, ref buffer);
-            _binarySerialization.Serialize(span.Length, ref buffer);
-            buffer.Write(compressBlock);
+            _binarySerialization.Serialize(compressLength, buffer);
+            _binarySerialization.Serialize(span.Length, buffer);
+            buffer.Append(compressBlock);
             compressBlock.Dispose();
         }
 
@@ -159,194 +151,92 @@ namespace ExtenderApp.Common.Compressions.LZ4
         #region Decompress
 
         /// <inheritdoc/>
-        public override bool TryDecompress(ReadOnlySpan<byte> input, out ByteBlock block)
+        public override bool TryDecompress(ReadOnlySpan<byte> span, out AbstractBuffer<byte> output)
         {
-            block = new();
-            if (_binarySerialization.Deserialize<byte>(input) != LZ4CompressionMark)
+            if (span.IsEmpty)
             {
-                return false;
+                output = AbstractBuffer<byte>.Empty;
+                return true;
             }
-            ByteBlock inputBlock = new(input);
-            bool result = TryDecompress(inputBlock, out block);
-            inputBlock.Dispose();
-            return result;
+
+            var block = MemoryBlock<byte>.GetBuffer(span);
+            try
+            {
+                return TryDecompress(block, out output);
+            }
+            finally
+            {
+                block.TryRelease();
+            }
         }
 
         /// <inheritdoc/>
-        public override bool TryDecompress(ReadOnlyMemory<byte> input, out ByteBlock block)
+        public override bool TryDecompress(AbstractBuffer<byte> input, out AbstractBuffer<byte> output)
         {
-            block = new();
-            if (_binarySerialization.Deserialize<byte>(input) != LZ4CompressionMark)
+            if (input == null || input.Committed == 0)
             {
-                return false;
+                output = AbstractBuffer<byte>.Empty;
+                return true;
             }
-            ByteBlock inputBlock = new(input);
-            bool result = TryDecompress(inputBlock, out block);
-            inputBlock.Dispose();
-            return result;
+
+            return TryDecompress(input, out output);
         }
 
-        /// <inheritdoc/>
-        public override bool TryDecompress(ReadOnlySequence<byte> input, out ByteBuffer buffer)
+        private bool TryDecompressBlock(AbstractBuffer<byte> input, out AbstractBuffer<byte> output)
         {
-            buffer = new();
-            if (_binarySerialization.Deserialize<byte>(input) != LZ4CompressionMark)
-            {
-                return false;
-            }
-            return TryDecompress(new(input), out buffer);
-        }
-
-        private bool TryDecompress(ByteBlock input, out ByteBlock output)
-        {
-            output = new();
-            if (_binarySerialization.Deserialize<byte>(ref input) != LZ4CompressionMark)
-            {
-                return false;
-            }
-
-            CompressionType compressionType = _binarySerialization.Deserialize<CompressionType>(ref input);
-
-            switch (compressionType)
-            {
-                case CompressionType.Block:
-                    return TryDecompressBlock(input, out output);
-
-                case CompressionType.BlockArray:
-                    return TryDecompressArray(input, out output);
-            }
-
-            return false;
-        }
-
-        private bool TryDecompressBlock(ByteBlock input, out ByteBlock output)
-        {
-            output = new();
+            output = AbstractBuffer<byte>.Empty;
             int compressedLength = _binarySerialization.Deserialize<int>(ref input);
             if (input.Remaining < compressedLength)
             {
-                output.Dispose();
                 return false;
             }
 
             int length = _binarySerialization.Deserialize<int>(ref input);
-            output = new(length);
+            output = new MemoryBlock<byte>(length);
             int decopressLength = LZ4CodecDecode(input, output.GetSpan(length).Slice(0, length));
             if (decopressLength != length)
             {
-                output.Dispose();
+                output.TryRelease();
+                output = AbstractBuffer<byte>.Empty;
                 return false;
             }
             output.Advance(decopressLength);
             return true;
         }
 
-        private bool TryDecompressArray(ByteBlock input, out ByteBlock output)
+        private bool TryDecompressArray(AbstractBuffer<byte> input, out AbstractBuffer<byte> output)
         {
-            output = new();
+            var sequence = SequenceBuffer<byte>.GetBuffer();
+            output = sequence;
+
             while (input.TryPeek(out byte next))
             {
                 if (next == LZ4CompressionArrayEndSign)
                 {
+                    // consume the end sign
+                    _binarySerialization.Deserialize<byte>(ref input);
                     break;
                 }
 
                 int compressedLength = _binarySerialization.Deserialize<int>(ref input);
                 if (input.Remaining < compressedLength)
                 {
-                    output.Dispose();
+                    sequence.TryRelease();
+                    output = AbstractBuffer<byte>.Empty;
                     return false;
                 }
 
                 int length = _binarySerialization.Deserialize<int>(ref input);
-                int decopressLength = LZ4CodecDecode(input, output.GetSpan(length).Slice(0, length));
+                int decopressLength = LZ4CodecDecode(input, sequence.GetSpan(length).Slice(0, length));
                 if (decopressLength != length)
                 {
-                    output.Dispose();
+                    sequence.TryRelease();
+                    output = AbstractBuffer<byte>.Empty;
                     return false;
                 }
-                output.Advance(decopressLength);
-            }
-            return true;
-        }
-
-        private bool TryDecompress(ByteBuffer input, out ByteBuffer output)
-        {
-            output = new();
-            if (_binarySerialization.Deserialize<byte>(ref input) != LZ4CompressionMark)
-            {
-                return false;
+                sequence.Advance(decopressLength);
             }
 
-            CompressionType compressionType = _binarySerialization.Deserialize<CompressionType>(ref input);
-
-            switch (compressionType)
-            {
-                case CompressionType.Block:
-                    return TryDecompressBlock(input, out output);
-
-                case CompressionType.BlockArray:
-                    return TryDecompressArray(input, out output);
-            }
-
-            return false;
-        }
-
-        private bool TryDecompressBlock(ByteBuffer input, out ByteBuffer output)
-        {
-            output = new();
-            int compressedLength = _binarySerialization.Deserialize<int>(ref input);
-            if (input.Remaining < compressedLength)
-            {
-                output.Dispose();
-                return false;
-            }
-
-            int length = _binarySerialization.Deserialize<int>(ref input);
-            output = new();
-            ByteBlock inputBlock = new(input);
-            int decopressLength = LZ4CodecDecode(inputBlock, output.GetSpan(length).Slice(0, length));
-            inputBlock.Dispose();
-
-            if (decopressLength != length)
-            {
-                output.Dispose();
-                return false;
-            }
-            output.Advance(decopressLength);
-            return true;
-        }
-
-        private bool TryDecompressArray(ByteBuffer input, out ByteBuffer output)
-        {
-            output = new();
-
-            while (input.TryPeek(out byte next))
-            {
-                if (next == LZ4CompressionArrayEndSign)
-                {
-                    break;
-                }
-
-                int compressedLength = _binarySerialization.Deserialize<int>(ref input);
-                if (input.Remaining < compressedLength)
-                {
-                    output.Dispose();
-                    return false;
-                }
-
-                int length = _binarySerialization.Deserialize<int>(ref input);
-                ByteBlock inputBlock = new(input);
-                int decopressLength = LZ4CodecDecode(inputBlock, output.GetSpan(length).Slice(0, length));
-                inputBlock.Dispose();
-
-                if (decopressLength != length)
-                {
-                    output.Dispose();
-                    return false;
-                }
-                output.Advance(decopressLength);
-            }
             return true;
         }
 

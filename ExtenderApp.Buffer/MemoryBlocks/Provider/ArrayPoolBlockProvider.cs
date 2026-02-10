@@ -40,7 +40,7 @@ namespace ExtenderApp.Buffer.MemoryBlocks
         {
             var block = _blockPool.Get();
             block.ArrayPool = _arrayPool;
-            block.BlockProvider = this;
+            block.Initialize(this);
             return block;
         }
 
@@ -48,6 +48,8 @@ namespace ExtenderApp.Buffer.MemoryBlocks
         {
             if (buffer is ArrayPoolMemoryBlock memoryBlock)
             {
+                // 先由块自身清理内部状态，再归还底层数组并回收对象
+                memoryBlock.PrepareForRelease();
                 _arrayPool.Return(memoryBlock.TArray);
                 memoryBlock.TArray = default!;
                 memoryBlock.ArrayPool = default!;
@@ -57,6 +59,34 @@ namespace ExtenderApp.Buffer.MemoryBlocks
             {
                 buffer.Dispose();
             }
+        }
+
+        /// <summary>
+        /// 获取一个新的 <see cref="MemoryBlock{T}"/>，并将指定的可写跨度中的数据写入该内存块。
+        /// </summary>
+        /// <param name="span">要写入内存块的数据可写跨度。</param>
+        /// <returns>返回已初始化并包含写入数据的 <see cref="MemoryBlock{T}"/> 实例。调用方负责在不再使用时释放或归还该内存块。</returns>
+        public MemoryBlock<T> GetBuffer(Span<T> span)
+        {
+            var block = _blockPool.Get();
+            block.ArrayPool = _arrayPool;
+            block.Initialize(this);
+            block.Write(span);
+            return block;
+        }
+
+        /// <summary>
+        /// 获取一个新的 <see cref="MemoryBlock{T}"/>，并将指定的只读跨度中的数据写入该内存块。
+        /// </summary>
+        /// <param name="span">要写入内存块的数据只读跨度。</param>
+        /// <returns>返回已初始化并包含写入数据的 <see cref="MemoryBlock{T}"/> 实例。调用方负责在不再使用时释放或归还该内存块。</returns>
+        public MemoryBlock<T> GetBuffer(ReadOnlySpan<T> span)
+        {
+            var block = _blockPool.Get();
+            block.ArrayPool = _arrayPool;
+            block.Initialize(this);
+            block.Write(span);
+            return block;
         }
 
         /// <summary>

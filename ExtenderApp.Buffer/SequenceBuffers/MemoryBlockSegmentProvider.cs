@@ -34,7 +34,7 @@ namespace ExtenderApp.Buffer.Sequence
 
         protected override void ReleaseSegmentProtected(SequenceBufferSegment<T> segment)
         {
-            if(segment is MemoryBlockSequenceBufferSegment blockSegment)
+            if (segment is MemoryBlockSequenceBufferSegment blockSegment)
             {
                 blockSegment.Block.CommittedChanged -= blockSegment.UpdateRunningIndex;
                 blockSegment.Block.TryRelease();

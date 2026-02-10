@@ -6,7 +6,7 @@ namespace ExtenderApp.Common.Caches.ByteAllocator
     /// <summary>
     /// 字节缓冲区抽象基类，实现了基础的读写逻辑、位置管理和容量校验。
     /// </summary>
-    public abstract class ByteBuffer : DisposableObject, IByteBuffer
+    public abstract class ByteBuffer : DisposableObject
     {
         /// <summary>
         /// 获取当前已写入且未被清理的数据末尾位置。

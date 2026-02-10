@@ -59,6 +59,32 @@ namespace ExtenderApp.Buffer
         }
 
         /// <summary>
+        /// 初始化此读取器以绑定到指定缓冲区。会冻结缓冲区的引用（防止回收）并冻结写入以阻止并发写入。
+        /// Provider 在分配读取器后应调用此方法。
+        /// </summary>
+        /// <param name="buffer">要绑定的缓冲区。</param>
+        protected internal virtual void Initialize(AbstractBuffer<T> buffer)
+        {
+            Buffer = buffer ?? throw new ArgumentNullException(nameof(buffer));
+            Consumed = 0;
+
+            // 冻结缓冲区以防止被回收，并冻结写入以防止写入侧在读取期间修改数据
+            Buffer.Freeze();
+            Buffer.FreezeWrite();
+        }
+
+        /// <summary>
+        /// 在将读取器返回提供者/池之前调用以清理状态并解除写入冻结。
+        /// </summary>
+        protected internal virtual void PrepareForRelease()
+        {
+            Buffer?.UnfreezeWrite();
+            Buffer?.TryRelease();
+            Buffer = default!;
+            Consumed = 0;
+        }
+
+        /// <summary>
         /// 尝试预览下一个元素而不推进读取位置。
         /// </summary>
         /// <param name="item">输出元素（当返回 true 时有效）。</param>
@@ -210,7 +236,12 @@ namespace ExtenderApp.Buffer
         /// </summary>
         protected override void DisposeManagedResources()
         {
-            Buffer?.TryRelease();
+            if (Buffer != null)
+            {
+                // 确保写入冻结被解除
+                Buffer.UnfreezeWrite();
+                Buffer.TryRelease();
+            }
         }
 
         /// <summary>

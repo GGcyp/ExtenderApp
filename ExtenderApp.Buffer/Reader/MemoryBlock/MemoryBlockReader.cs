@@ -25,9 +25,9 @@ namespace ExtenderApp.Buffer.Reader
 
         /// <summary>
         /// 当前绑定的 <see cref="MemoryBlock{T}"/> 缓冲区实例。
-        /// 该属性隐藏基类的 <see cref="AbstractBufferReader{T}.Buffer"/>，由提供者在分配读取器时设置。
+        /// 该属性通过包装基类的 <see cref="AbstractBufferReader{T}.Buffer"/> 提供强类型访问。
         /// </summary>
-        public new MemoryBlock<T> Buffer { get; internal set; }
+        public new MemoryBlock<T> Buffer => (MemoryBlock<T>)base.Buffer;
 
         /// <summary>
         /// 返回从当前已消费位置到缓冲区已提交末尾的只读序列视图。
@@ -51,11 +51,11 @@ namespace ExtenderApp.Buffer.Reader
 
         /// <summary>
         /// 创建一个未绑定到具体缓冲区的 <see cref="MemoryBlockReader{T}"/> 实例。
-        /// 提供者在分配后会设置 <see cref="Buffer"/>。
+        /// 提供者在分配后会设置 <see cref="Buffer"/>（通过基类 Initialize）。
         /// </summary>
         public MemoryBlockReader()
         {
-            Buffer = default!;
+            // base constructor already initializes state
         }
 
         /// <summary>

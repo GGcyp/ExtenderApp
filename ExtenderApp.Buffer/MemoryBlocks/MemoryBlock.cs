@@ -125,8 +125,6 @@ namespace ExtenderApp.Buffer
             return AvailableMemory.Slice(elementIndex).Pin();
         }
 
-        #region Operations
-
         /// <summary>
         /// 将结束索引向前移动指定数量，表示向块中写入了更多元素。 实现了 IBufferWriter{T}.Advance 的语义检查。
         /// </summary>
@@ -134,6 +132,7 @@ namespace ExtenderApp.Buffer
         /// <exception cref="ArgumentOutOfRangeException">当 <paramref name="count"/> 为负或移动后 <see cref="end"/> 超过底层内存长度时抛出。</exception>
         public override void Advance(int count)
         {
+            CheckWriteFrozen();
             if (count < 0 || committed + count > AvailableMemory.Length)
                 throw new ArgumentOutOfRangeException(nameof(count), "count 必须是非负数，且移动后的结束索引不能超过内存长度。");
 
@@ -148,6 +147,7 @@ namespace ExtenderApp.Buffer
         /// <exception cref="ArgumentOutOfRangeException">当 <paramref name="count"/> 为负或回退后 <see cref="end"/> 小于 <see cref="start"/> 时抛出。</exception>
         public void Rewind(int count)
         {
+            CheckWriteFrozen();
             if (count < 0 || committed - count < 0)
                 throw new ArgumentOutOfRangeException(nameof(count), "count 必须是非负数，且移动后的结束索引不能小于 0。");
 
@@ -189,6 +189,7 @@ namespace ExtenderApp.Buffer
         /// </summary>
         public override void Clear()
         {
+            CheckWriteFrozen();
             ClearReferences(0, committed);
             OnCommittedChanged();
         }
@@ -201,6 +202,7 @@ namespace ExtenderApp.Buffer
         /// <exception cref="ArgumentOutOfRangeException">当参数不定义一个有效的已写入范围时抛出。</exception>
         public void Reverse(int start, int length)
         {
+            CheckWriteFrozen();
             if (start < 0 || length < 0 || start + length > committed)
                 throw new ArgumentOutOfRangeException("start 和 length 必须定义一个有效的已写入范围。");
             Span.Slice(start, length).Reverse();
@@ -211,10 +213,11 @@ namespace ExtenderApp.Buffer
         /// </summary>
         public void Reverse()
         {
+            CheckWriteFrozen();
             Span.Reverse();
         }
 
-        protected sealed override void ReleaseProtected()
+        protected override sealed void ReleaseProtected()
         {
             if (BlockProvider != null)
             {
@@ -228,12 +231,32 @@ namespace ExtenderApp.Buffer
             }
         }
 
+        /// <summary>
+        /// 由对应的提供者在分配后调用以初始化块的生命周期信息（绑定提供者并重置已提交计数）。
+        /// </summary>
+        /// <param name="provider">分配此块的提供者实例。</param>
+        protected internal virtual void Initialize(MemoryBlockProvider<T> provider)
+        {
+            BlockProvider = provider;
+            committed = 0;
+        }
+
+        /// <summary>
+        /// 由提供者在回收前调用以重置块的内部状态（清除已提交计数与对提供者的引用）。
+        /// 不负责清理底层存储（由提供者在回收时根据实现决定）。
+        /// </summary>
+        protected internal void PrepareForRelease()
+        {
+            // 清除已写入数据引用以协助回收
+            ClearReferences(0, committed);
+            committed = 0;
+            BlockProvider = default!;
+        }
+
         protected override void UpdateCommittedProtected(Span<T> span, long committedPosition)
         {
             span.CopyTo(Span.Slice((int)committedPosition));
         }
-
-        #endregion Operations
 
         /// <summary>
         /// 确保块有足够的可写空间以容纳指定数量的元素。 派生类应在此方法内扩展或分配底层存储（若必要），并保证调用者随后从 <see cref="RemainingMemory"/> / <see cref="RemainingSpan"/> 获取到的容量至少满足 <paramref name="sizeHint"/>。
@@ -280,6 +303,15 @@ namespace ExtenderApp.Buffer
         public static bool operator !=(MemoryBlock<T>? left, MemoryBlock<T>? right) => !Equals(left, right);
 
         public static implicit operator ReadOnlySequence<T>(MemoryBlock<T> block)
-            => new ReadOnlySequence<T>(block.CommittedMemory);
+            => new ReadOnlySequence<T>(block);
+
+        public static implicit operator ReadOnlyMemory<T>(MemoryBlock<T> block)
+            => block.CommittedMemory;
+
+        public static implicit operator ReadOnlySpan<T>(MemoryBlock<T> block)
+            => block.CommittedSpan;
+
+        public static implicit operator ArraySegment<T>(MemoryBlock<T> block)
+            => block.CommittedSegment;
     }
 }

@@ -1,4 +1,5 @@
-﻿using ExtenderApp.Contracts;
+﻿using ExtenderApp.Buffer;
+using ExtenderApp.Contracts;
 
 namespace ExtenderApp.Abstract
 {
@@ -30,7 +31,7 @@ namespace ExtenderApp.Abstract
         /// <param name="block">目标写入器。</param>
         /// <param name="value">要序列化的值。</param>
         /// <param name="version">序列化所采用的协议版本。</param>
-        void Serialize(ref ByteBuffer block, T value, Version version);
+        void Serialize(AbstractBuffer<byte> block, T value, Version version);
 
         /// <summary>
         /// 按指定 <paramref name="version"/> 的协议从 <see cref="ByteBuffer"/> 读取并构造一个 <typeparamref name="T"/> 实例。
@@ -39,7 +40,7 @@ namespace ExtenderApp.Abstract
         /// <param name="block">数据来源。</param>
         /// <param name="version">反序列化所采用的协议版本。</param>
         /// <returns>反序列化得到的对象。</returns>
-        T Deserialize(ref ByteBuffer block, Version version);
+        T Deserialize(AbstractBufferReader<byte> block, Version version);
 
         /// <summary>
         /// 返回在指定 <paramref name="version"/> 下序列化 <paramref name="value"/> 预计需要的字节数，用于预留写缓冲。

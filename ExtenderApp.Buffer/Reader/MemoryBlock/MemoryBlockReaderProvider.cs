@@ -14,7 +14,7 @@
         {
             var reader = _readerPool.Get();
             reader.ReaderProvider = this;
-            reader.Buffer = buffer;
+            reader.Initialize(buffer);
             return reader;
         }
 
@@ -22,7 +22,7 @@
         {
             if (reader is MemoryBlockReader<T> memoryBlockReader)
             {
-                memoryBlockReader.Buffer = default!;
+                memoryBlockReader.PrepareForRelease();
                 memoryBlockReader.ReaderProvider = default!;
                 _readerPool.Release(memoryBlockReader);
             }

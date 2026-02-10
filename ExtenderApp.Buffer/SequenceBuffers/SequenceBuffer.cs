@@ -7,7 +7,7 @@ namespace ExtenderApp.Buffer
     /// 基础序列实现，使用段提供者管理多个段并实现 <see cref="IBufferWriter{T}"/>。 提供在首部/末尾/中间插入段以及按位置查找段的功能，并支持基于 <see cref="AutomaticCompactMemory"/> 的紧凑操作。
     /// </summary>
     /// <typeparam name="T">序列中元素的类型。</typeparam>
-    public class SequenceBuffer<T> : AbstractBuffer<T>
+    public partial class SequenceBuffer<T> : AbstractBuffer<T>
     {
         /// <summary>
         /// 自动增长的最大大小。
@@ -131,6 +131,7 @@ namespace ExtenderApp.Buffer
         /// <exception cref="InvalidOperationException">若在未获取内存前调用该方法将抛出。</exception>
         public override void Advance(int count)
         {
+            CheckWriteFrozen();
             if (Last is null)
                 throw new InvalidOperationException("在获取内存之前不能进行推进操作");
 
@@ -168,9 +169,16 @@ namespace ExtenderApp.Buffer
         /// <summary>
         /// 将指定段追加到序列末尾。若当前最后一段已部分消费，则直接链入；否则替换空段并释放原段链。
         /// </summary>
-        /// <param name="segment">要追加的段，不能为空。</param>
+        /// <param name="segment">要追加的段，不能为空且应为未链接的段实例。</param>
         public void Append(SequenceBufferSegment<T> segment)
         {
+            CheckWriteFrozen();
+            ArgumentNullException.ThrowIfNull(segment, nameof(segment));
+
+            // 防止重复插入已链接的段，要求传入段为未链接状态
+            if (segment.Prev != null || segment.Next != null)
+                throw new InvalidOperationException("要追加的段必须是未链接的段实例。");
+
             if (Last == null)
             {
                 First = segment;
@@ -186,27 +194,22 @@ namespace ExtenderApp.Buffer
                 return;
             }
 
-            // Last 是空（或未消费）且需要替换为新段 —— 与以前实现行为一致：
-            var current = First;
-            if (First != Last)
-            {
-                while (current!.Next != Last)
-                {
-                    current = current.Next;
-                }
-            }
-            else
-            {
-                First = segment;
-            }
+            // Last 是空（或未消费）且需要替换为新段 —— 先完成链入再释放旧段，确保在释放期间链表保持可恢复状态
+            var oldLast = Last;
+            var prev = oldLast.Prev;
 
-            current!.SetNext(segment);
-            Last.Release();
+            if (prev == null)
+                First = segment;      // oldLast 是首段，直接将新段设为首段
+            else
+                prev.SetNext(segment);// 将 prev 的 next 指向新段
+
+            oldLast.Release();
             Last = segment;
         }
 
         private void Prepend(SequenceBufferSegment<T> segment)
         {
+            CheckWriteFrozen();
             if (First == null)
             {
                 First = segment;
@@ -259,6 +262,7 @@ namespace ExtenderApp.Buffer
         /// <param name="segment">要插入的新段，不能为空。</param>
         public void InsertAtPosition(long position, SequenceBufferSegment<T> segment)
         {
+            CheckWriteFrozen();
             ArgumentNullException.ThrowIfNull(segment, nameof(segment));
             if (position < 0 || position > Committed)
                 throw new ArgumentOutOfRangeException(nameof(position));
@@ -394,6 +398,30 @@ namespace ExtenderApp.Buffer
         #endregion Operations for segment management
 
         protected override void ReleaseProtected() => OwnerProvider.Release(this);
+
+        /// <summary>
+        /// 由提供者在分配后调用以初始化序列的生命周期（绑定提供者并重置段链）。
+        /// </summary>
+        /// <param name="provider">分配此序列的提供者实例。</param>
+        internal void Initialize(SequenceBufferProvider<T> provider)
+        {
+            OwnerProvider = provider;
+            First = null;
+            Last = null;
+            minimumSpanCommitted = 0;
+        }
+
+        /// <summary>
+        /// 由提供者在回收前调用以重置序列的内部状态并清除对提供者的引用。
+        /// </summary>
+        internal void PrepareForRelease()
+        {
+            First?.Release();
+            First = null;
+            Last = null;
+            minimumSpanCommitted = 0;
+            OwnerProvider = default!;
+        }
 
         public override void Clear()
         {

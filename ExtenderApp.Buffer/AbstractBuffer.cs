@@ -1,4 +1,7 @@
 ﻿using System.Buffers;
+using System.Collections;
+using System.Collections.Generic;
+using System.Threading;
 using ExtenderApp.Contracts;
 
 namespace ExtenderApp.Buffer
@@ -7,9 +10,12 @@ namespace ExtenderApp.Buffer
     /// 表示用于写入缓冲区的抽象写入器。
     /// </summary>
     /// <remarks>继承自 <see cref="FreezeObject"/>，在调用 <see cref="Release"/> 前会检查冻结状态以避免在被引用时回收。 实现者应提供用于推进写入位置和获取可写内存/跨度的具体逻辑。 实现此抽象类的类型通常用于可重用或池化的缓冲写入场景。</remarks>
-    public abstract class AbstractBuffer<T> : FreezeObject, IBufferWriter<T>, IPinnable
+    public abstract class AbstractBuffer<T> : FreezeObject, IBufferWriter<T>, IPinnable, IEnumerable<ReadOnlyMemory<T>>
     {
         private const string ErrorMessage = "当前缓存还被引用中，无法进行回收操作。";
+        private const string WriteFrozenMessage = "当前缓存处于写入冻结状态，无法进行写入操作。";
+
+        public static readonly AbstractBuffer<T> Empty = new EmptyBuffer<T>();
 
         /// <summary>
         /// 被固定次数（Pin 调用次数）和当前固定状态的标志。 由于 Pin/Unpin 的调用可能不成对（例如多次 Pin 而未及时 Unpin），因此通过 IsPinned 标志来跟踪当前是否处于固定状态，并通过 memoryHandle 来保存最后一次 Pin 返回的句柄以便在 Unpin 时正确释放。
@@ -21,7 +27,45 @@ namespace ExtenderApp.Buffer
         /// </summary>
         private MemoryHandle memoryHandle;
 
+        /// <summary>
+        /// 写入冻结引用计数。大于 0 表示写入被冻结。
+        /// </summary>
+        private long writeFreezeCount;
+
         public bool IsPinned => Interlocked.CompareExchange(ref pinCount, 0, 0) > 0;
+
+        /// <summary>
+        /// 指示当前缓冲区是否处于写入冻结状态（引用计数大于 0 时视为冻结）。
+        /// </summary>
+        public bool IsWriteFrozen => Interlocked.Read(ref writeFreezeCount) > 0;
+
+        /// <summary>
+        /// 将写入操作设为冻结（支持嵌套）。在冻结期间，所有写入/提交相关操作将抛出 <see cref="InvalidOperationException"/>。
+        /// </summary>
+        public void FreezeWrite()
+        {
+            Interlocked.Increment(ref writeFreezeCount);
+        }
+
+        /// <summary>
+        /// 解除一次写入冻结（引用计数递减）。
+        /// </summary>
+        public void UnfreezeWrite()
+        {
+            var newCount = Interlocked.Decrement(ref writeFreezeCount);
+            if (newCount < 0)
+                Interlocked.Exchange(ref writeFreezeCount, 0);
+        }
+
+        /// <summary>
+        /// 当缓冲区处于写入冻结状态时抛出异常。
+        /// </summary>
+        /// <param name="message">异常消息。</param>
+        protected void CheckWriteFrozen(string message = WriteFrozenMessage)
+        {
+            if (IsWriteFrozen)
+                throw new InvalidOperationException(message);
+        }
 
         /// <summary>
         /// 缓冲区的总容量（以元素数计）。
@@ -91,6 +135,7 @@ namespace ExtenderApp.Buffer
         /// <remarks>实现通过调用 <see cref="GetSpan(int)"/> 获取足够的写入空间并调用 <see cref="Advance(int)"/> 推进写入位置。 如果底层缓冲无法满足写入需求，具体实现可能会扩容或抛出异常（由派生类决定）。</remarks>
         public void Write(ReadOnlySpan<T> source)
         {
+            CheckWriteFrozen();
             int length = source.Length;
             source.CopyTo(GetSpan(length));
             Advance(length);
@@ -102,6 +147,7 @@ namespace ExtenderApp.Buffer
         /// <param name="memory">要写入的只读内存。</param>
         public void Write(ReadOnlyMemory<T> memory)
         {
+            CheckWriteFrozen();
             Write(memory.Span);
         }
 
@@ -111,6 +157,7 @@ namespace ExtenderApp.Buffer
         /// <param name="array">要写入的数组（不能为 null）。</param>
         public void Write(T[] array)
         {
+            CheckWriteFrozen();
             Write(array.AsSpan());
         }
 
@@ -120,6 +167,7 @@ namespace ExtenderApp.Buffer
         /// <param name="item">要写入的元素（以 <c>in</c> 传入以避免复制开销）。</param>
         public void Write(in T item)
         {
+            CheckWriteFrozen();
             GetSpan(1)[0] = item;
             Advance(1);
         }
@@ -130,6 +178,7 @@ namespace ExtenderApp.Buffer
         /// <param name="item">要写入的元素。</param>
         public void Write(T item)
         {
+            CheckWriteFrozen();
             GetSpan(1)[0] = item;
             Advance(1);
         }
@@ -143,6 +192,7 @@ namespace ExtenderApp.Buffer
         /// </remarks>
         public void Write(IEnumerable<T> items)
         {
+            CheckWriteFrozen();
             foreach (var item in items)
                 Write(item);
         }
@@ -154,6 +204,7 @@ namespace ExtenderApp.Buffer
         /// <remarks>逐段读取序列中的 <see cref="ReadOnlyMemory{T}"/> 并调用对应的写入方法以保证零拷贝或最小拷贝开销。</remarks>
         public void Write(ReadOnlySequence<T> memories)
         {
+            CheckWriteFrozen();
             if (memories.IsSingleSegment)
             {
                 Write(memories.First);
@@ -164,16 +215,6 @@ namespace ExtenderApp.Buffer
                 while (memories.TryGet(ref start, out ReadOnlyMemory<T> memory))
                     Write(memory);
             }
-        }
-
-        /// <summary>
-        /// 将另一个 <see cref="AbstractBuffer{T}"/> 的已提交数据写入当前缓冲区（等效于写入其 <see cref="CommittedSequence"/>）。
-        /// </summary>
-        /// <param name="other">来源缓冲区，其已提交数据将被复制到当前缓冲区。</param>
-        /// <remarks>此方法不会修改来源缓冲区的状态。调用方应遵循两端的生命周期约定以避免并发修改问题。</remarks>
-        public void Write(AbstractBuffer<T> other)
-        {
-            Write(other.CommittedSequence);
         }
 
         #endregion Write
@@ -188,6 +229,7 @@ namespace ExtenderApp.Buffer
         /// <param name="committedPosition">需要更新的坐标位置。</param>
         public void UpdateCommitted(Span<T> span, long committedPosition = 0)
         {
+            CheckWriteFrozen();
             if (span.IsEmpty)
                 return;
 
@@ -217,7 +259,7 @@ namespace ExtenderApp.Buffer
         public bool TryRelease()
         {
             Unfreeze(); // 尝试解除冻结以允许回收（如果当前未被冻结）
-            if (IsFrozen)
+            if (IsFrozen || IsWriteFrozen)
                 return false;
 
             ReleaseProtected();
@@ -232,6 +274,7 @@ namespace ExtenderApp.Buffer
         public void Release()
         {
             Unfreeze(); // 尝试解除冻结以允许回收（如果当前未被冻结）
+            CheckWriteFrozen();
             CheckFrozen(ErrorMessage);
             ReleaseProtected();
         }
@@ -312,10 +355,54 @@ namespace ExtenderApp.Buffer
             memoryHandle = default;
         }
 
+        public IEnumerator<ReadOnlyMemory<T>> GetEnumerator()
+        {
+            var sequence = CommittedSequence;
+            if (sequence.IsEmpty)
+                yield break;
+
+            var position = sequence.Start;
+            while (sequence.TryGet(ref position, out ReadOnlyMemory<T> memory))
+            {
+                yield return memory;
+            }
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
+        }
+
         /// <summary>
         /// 隐式将缓冲区转换为只读序列，便于将已提交数据作为 <see cref="ReadOnlySequence{T}"/> 传递。
         /// </summary>
         /// <param name="buffer">源缓冲区实例。</param>
-        public static implicit operator ReadOnlySequence<T>(AbstractBuffer<T> buffer) => buffer.CommittedSequence;
+        public static implicit operator ReadOnlySequence<T>(AbstractBuffer<T> buffer)
+            => buffer.CommittedSequence;
+
+        #region ToBuffer
+
+        public static explicit operator AbstractBuffer<T>(Span<T> span)
+            => MemoryBlock<T>.GetBuffer(span);
+
+        public static explicit operator AbstractBuffer<T>(ReadOnlySpan<T> span)
+            => MemoryBlock<T>.GetBuffer(span);
+
+        public static implicit operator AbstractBuffer<T>(Memory<T> memory)
+            => MemoryBlock<T>.GetBuffer(memory);
+
+        public static implicit operator AbstractBuffer<T>(ReadOnlyMemory<T> memory)
+            => MemoryBlock<T>.GetBuffer(memory);
+
+        public static implicit operator AbstractBuffer<T>(T[] array)
+            => MemoryBlock<T>.GetBuffer(array);
+
+        public static implicit operator AbstractBuffer<T>(ArraySegment<T> segment)
+            => MemoryBlock<T>.GetBuffer(segment);
+
+        public static implicit operator AbstractBuffer<T>(ReadOnlySequence<T> memories)
+            => SequenceBuffer<T>.GetBuffer(memories);
+
+        #endregion ToBuffer
     }
 }
