@@ -1,5 +1,5 @@
 ﻿using ExtenderApp.Abstract;
-using ExtenderApp.Contracts;
+using ExtenderApp.Buffer;
 
 namespace ExtenderApp.Common.Serializations.Binary.Formatters
 {
@@ -16,14 +16,24 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
             _long = GetFormatter<long>();
         }
 
-        public override TimeSpan Deserialize(ref ByteBuffer buffer)
+        public override void Serialize(AbstractBuffer<byte> buffer, TimeSpan value)
         {
-            return new TimeSpan(_long.Deserialize(ref buffer));
+            _long.Serialize(buffer, value.Ticks);
         }
 
-        public override void Serialize(ref ByteBuffer buffer, TimeSpan value)
+        public override void Serialize(ref SpanWriter<byte> writer, TimeSpan value)
         {
-            _long.Serialize(ref buffer, value.Ticks);
+            _long.Serialize(ref writer, value.Ticks);
+        }
+
+        public override TimeSpan Deserialize(AbstractBufferReader<byte> reader)
+        {
+            return new TimeSpan(_long.Deserialize(reader));
+        }
+
+        public override TimeSpan Deserialize(ref SpanReader<byte> reader)
+        {
+            return new TimeSpan(_long.Deserialize(ref reader));
         }
 
         public override long GetLength(TimeSpan value)

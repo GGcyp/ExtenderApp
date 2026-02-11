@@ -1,7 +1,6 @@
 ﻿using System.Buffers;
 using System.Collections;
-using System.Collections.Generic;
-using System.Threading;
+using System.Runtime.CompilerServices;
 using ExtenderApp.Contracts;
 
 namespace ExtenderApp.Buffer
@@ -18,12 +17,14 @@ namespace ExtenderApp.Buffer
         public static readonly AbstractBuffer<T> Empty = new EmptyBuffer<T>();
 
         /// <summary>
-        /// 被固定次数（Pin 调用次数）和当前固定状态的标志。 由于 Pin/Unpin 的调用可能不成对（例如多次 Pin 而未及时 Unpin），因此通过 IsPinned 标志来跟踪当前是否处于固定状态，并通过 memoryHandle 来保存最后一次 Pin 返回的句柄以便在 Unpin 时正确释放。
+        /// 被固定次数（Pin 调用次数）和当前固定状态的标志。 由于 Pin/Unpin 的调用可能不成对（例如多次 Pin 而未及时 Unpin），因此通过 IsPinned 标志来跟踪当前是否处于固定状态，并通过 memoryHandle 来保存最后一次 Pin 返回的句柄以便在
+        /// Unpin 时正确释放。
         /// </summary>
         private int pinCount;
 
         /// <summary>
-        /// 当内存被固定时保存的 MemoryHandle，以便在 Unpin 时正确释放。 该字段仅在 IsPinned 为 true 时有效；当 IsPinned 为 false 时应为 default。 派生类在实现 PinProtected 时应确保正确设置此字段，并在 UnpinProtected 中负责释放对应的内存句柄。
+        /// 当内存被固定时保存的 MemoryHandle，以便在 Unpin 时正确释放。 该字段仅在 IsPinned 为 true 时有效；当 IsPinned 为 false 时应为 default。 派生类在实现 PinProtected 时应确保正确设置此字段，并在
+        /// UnpinProtected 中负责释放对应的内存句柄。
         /// </summary>
         private MemoryHandle memoryHandle;
 
@@ -42,6 +43,7 @@ namespace ExtenderApp.Buffer
         /// <summary>
         /// 将写入操作设为冻结（支持嵌套）。在冻结期间，所有写入/提交相关操作将抛出 <see cref="InvalidOperationException"/>。
         /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void FreezeWrite()
         {
             Interlocked.Increment(ref writeFreezeCount);
@@ -50,6 +52,7 @@ namespace ExtenderApp.Buffer
         /// <summary>
         /// 解除一次写入冻结（引用计数递减）。
         /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void UnfreezeWrite()
         {
             var newCount = Interlocked.Decrement(ref writeFreezeCount);
@@ -61,6 +64,7 @@ namespace ExtenderApp.Buffer
         /// 当缓冲区处于写入冻结状态时抛出异常。
         /// </summary>
         /// <param name="message">异常消息。</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected void CheckWriteFrozen(string message = WriteFrozenMessage)
         {
             if (IsWriteFrozen)
@@ -122,6 +126,19 @@ namespace ExtenderApp.Buffer
         public abstract Span<T> GetSpan(int sizeHint = 0);
 
         /// <summary>
+        /// 获取当前缓冲区可供写入的内存区域（从当前写入位置开始）。 返回的内存长度应等于 <see cref="Available"/>，表示从当前写入位置到底层存储末尾的可用元素数。 调用方可以使用返回的内存进行写入，并在完成后调用 <see
+        /// cref="Advance(int)"/> 推进写入位置。
+        /// </summary>
+        /// <returns>当前缓冲区剩余可供写入的内存区域。</returns>
+        public Memory<T> GetAvailableMemory() => GetMemory(Available);
+
+        /// <summary>
+        /// 获取当前缓冲区可供写入的跨度（从当前写入位置开始）。 返回的跨度长度应等于 <see cref="Available"/>，表示从当前写入位置到底层存储末尾的可用元素数。 调用方可以使用返回的跨度进行写入，并在完成后调用 <see cref="Advance(int)"/> 推进写入位置。
+        /// </summary>
+        /// <returns>当前缓冲区剩余可供写入的内存区域。</returns>
+        public Span<T> GetAvailableSpan() => GetSpan(Available);
+
+        /// <summary>
         /// 清空当前缓冲区的内容并重置写入位置。 调用此方法后， <see cref="Committed"/> 将重置为 0， <see cref="CommittedSequence"/> 将变为空序列。 具体实现可能会选择保留底层存储以供后续写入使用（例如池化场景），但应确保调用此方法后缓冲区状态被正确重置以允许重新使用。
         /// </summary>
         public abstract void Clear();
@@ -133,7 +150,7 @@ namespace ExtenderApp.Buffer
         /// </summary>
         /// <param name="source">要写入的只读数据跨度。</param>
         /// <remarks>实现通过调用 <see cref="GetSpan(int)"/> 获取足够的写入空间并调用 <see cref="Advance(int)"/> 推进写入位置。 如果底层缓冲无法满足写入需求，具体实现可能会扩容或抛出异常（由派生类决定）。</remarks>
-        public void Write(ReadOnlySpan<T> source)
+        public virtual void Write(ReadOnlySpan<T> source)
         {
             CheckWriteFrozen();
             int length = source.Length;
@@ -262,8 +279,7 @@ namespace ExtenderApp.Buffer
             if (IsFrozen || IsWriteFrozen)
                 return false;
 
-            ReleaseProtected();
-            return true;
+            return TryReleaseProtected();
         }
 
         /// <summary>
@@ -279,24 +295,21 @@ namespace ExtenderApp.Buffer
             ReleaseProtected();
         }
 
-        #endregion Release
-
-        /// <summary>
-        /// 缓冲区内容转换为数组。 具体实现由派生类提供，通常会返回一个包含已提交数据的数组副本。 调用此方法可能会涉及内存分配和数据复制，因此在性能敏感场景下应谨慎使用。
-        /// </summary>
-        /// <returns>转存好的数组实例</returns>
-        public abstract T[] ToArray();
-
-        protected override void Dispose(bool disposing)
-        {
-            Release();
-            base.Dispose(disposing);
-        }
-
         /// <summary>
         /// 派生类实现具体的释放/回收逻辑（例如归还池、释放底层资源等）。
         /// </summary>
         protected abstract void ReleaseProtected();
+
+        /// <summary>
+        /// 派生类实现具体的解除固定逻辑（例如释放固定句柄、允许内存移动等）。 该方法由基类的 <see cref="Unpin"/> 调用以执行实际的解除固定操作。 派生实现应确保在调用此方法后底层内存可以被安全地移动或回收，并且之前由 <see
+        /// cref="PinProtected"/> 返回的 <see cref="MemoryHandle"/> 不再有效。
+        /// </summary>
+        /// <returns>如果成功解除固定则返回 true；如果当前未处于固定状态或无法解除固定则返回 false。</returns>
+        protected abstract bool TryReleaseProtected();
+
+        #endregion Release
+
+        #region Pin
 
         /// <summary>
         /// 将指定索引处的元素固定在内存中并返回对应的 <see cref="MemoryHandle"/>，以便调用方可以安全地获取该元素的地址或传递给非托管代码。
@@ -354,6 +367,31 @@ namespace ExtenderApp.Buffer
             memoryHandle.Dispose();
             memoryHandle = default;
         }
+
+        #endregion Pin
+
+        /// <summary>
+        /// 对当前缓冲区进行切片以创建一个新的 <see cref="AbstractBuffer{T}"/> 实例，该实例表示原缓冲区中从指定起始位置开始、长度为指定值的连续元素子范围。 切片后的缓冲区共享原缓冲区的底层存储，但其容量、已提交长度和可用空间将根据切片范围进行调整。 具体实现由派生类提供，通常会返回一个新的缓冲区实例，该实例引用原缓冲区的底层存储但具有独立的写入位置和提交状态。
+        /// </summary>
+        /// <param name="start">切片的起始位置（相对于原缓冲区的零基索引）。</param>
+        /// <param name="length">切片的长度（以元素数计）。</param>
+        /// <returns>一个新的 <see cref="AbstractBuffer{T}"/> 实例，表示原缓冲区中指定范围的切片。</returns>
+        public abstract AbstractBuffer<T> Slice(long start, long length);
+
+        /// <summary>
+        /// 缓冲区内容转换为数组。 具体实现由派生类提供，通常会返回一个包含已提交数据的数组副本。 调用此方法可能会涉及内存分配和数据复制，因此在性能敏感场景下应谨慎使用。
+        /// </summary>
+        /// <returns>转存好的数组实例</returns>
+        public abstract T[] ToArray();
+
+        protected override void Dispose(bool disposing)
+        {
+            Release();
+            base.Dispose(disposing);
+        }
+
+        public override string ToString()
+            => $"AbstractBuffer<{typeof(T).Name}>: Capacity={Capacity}, Committed={Committed}, Available={Available}, IsFrozen={IsFrozen}, IsWriteFrozen={IsWriteFrozen}, IsPinned={IsPinned}";
 
         public IEnumerator<ReadOnlyMemory<T>> GetEnumerator()
         {

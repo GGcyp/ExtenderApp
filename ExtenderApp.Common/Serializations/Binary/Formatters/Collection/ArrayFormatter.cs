@@ -1,5 +1,5 @@
 ﻿using ExtenderApp.Abstract;
-using ExtenderApp.Contracts;
+using ExtenderApp.Buffer;
 
 namespace ExtenderApp.Common.Serializations.Binary.Formatters
 {
@@ -29,26 +29,53 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
             _int = GetFormatter<int>();
         }
 
-        public override int DefaultLength => 1;
-
-        /// <summary>
-        /// 反序列化数组
-        /// </summary>
-        /// <param name="buffer">扩展二进制读取器</param>
-        /// <returns>反序列化后的数组</returns>
-        public override T[]? Deserialize(ref ByteBuffer buffer)
+        public override void Serialize(AbstractBuffer<byte> buffer, T[]? value)
         {
-            if (TryReadNil(ref buffer))
+            if (value == null || value == Array.Empty<T>())
+            {
+                WriteNil(buffer);
+            }
+            else
+            {
+                WriteArrayHeader(buffer);
+                _int.Serialize(buffer, value.Length);
+                for (int i = 0; i < value.Length; i++)
+                {
+                    _t.Serialize(buffer, value[i]);
+                }
+            }
+        }
+
+        public override void Serialize(ref SpanWriter<byte> writer, T[]? value)
+        {
+            if (value == null || value == Array.Empty<T>())
+            {
+                WriteNil(ref writer);
+            }
+            else
+            {
+                WriteArrayHeader(ref writer);
+                _int.Serialize(ref writer, value.Length);
+                for (int i = 0; i < value.Length; i++)
+                {
+                    _t.Serialize(ref writer, value[i]);
+                }
+            }
+        }
+
+        public override T[]? Deserialize(AbstractBufferReader<byte> reader)
+        {
+            if (TryReadNil(reader))
             {
                 return default;
             }
 
-            if (!TryReadArrayHeader(ref buffer))
+            if (!TryReadArrayHeader(reader))
             {
                 throw new InvalidOperationException("数据格式不匹配，无法反序列化为数组");
             }
 
-            var len = _int.Deserialize(ref buffer);
+            var len = _int.Deserialize(reader);
             if (len == 0)
             {
                 return Array.Empty<T>();
@@ -57,31 +84,35 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
             var array = new T[len];
             for (int i = 0; i < array.Length; i++)
             {
-                array[i] = _t.Deserialize(ref buffer);
+                array[i] = _t.Deserialize(reader);
             }
             return array;
         }
 
-        /// <summary>
-        /// 序列化数组
-        /// </summary>
-        /// <param name="buffer">扩展二进制写入器</param>
-        /// <param name="value">要序列化的数组</param>
-        public override void Serialize(ref ByteBuffer buffer, T[]? value)
+        public override T[]? Deserialize(ref SpanReader<byte> reader)
         {
-            if (value == null || value == Array.Empty<T>())
+            if (TryReadNil(ref reader))
             {
-                WriteNil(ref buffer);
+                return default;
             }
-            else
+
+            if (!TryReadArrayHeader(ref reader))
             {
-                WriteArrayHeader(ref buffer);
-                _int.Serialize(ref buffer, value.Length);
-                for (int i = 0; i < value.Length; i++)
-                {
-                    _t.Serialize(ref buffer, value[i]);
-                }
+                throw new InvalidOperationException("数据格式不匹配，无法反序列化为数组");
             }
+
+            var len = _int.Deserialize(ref reader);
+            if (len == 0)
+            {
+                return Array.Empty<T>();
+            }
+
+            var array = new T[len];
+            for (int i = 0; i < array.Length; i++)
+            {
+                array[i] = _t.Deserialize(ref reader);
+            }
+            return array;
         }
 
         public override long GetLength(T[]? value)

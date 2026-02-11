@@ -1,5 +1,5 @@
 ﻿using ExtenderApp.Abstract;
-using ExtenderApp.Contracts;
+using ExtenderApp.Buffer;
 
 namespace ExtenderApp.Common.Serializations.Binary.Formatters
 {
@@ -21,65 +21,89 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
         /// </summary>
         private readonly IBinaryFormatter<int> _int;
 
-        /// <summary>
-        /// 初始化 CollectionFormatter 实例。
-        /// </summary>
-        /// <param name="formatter">用于序列化和反序列化集合中单个元素的格式化器。</param>
-        /// <param name="binarybufferConvert">二进制写入转换器。</param>
-        /// <param name="binarybufferConvert">二进制读取转换器。</param>
-        /// <param name="options">二进制选项。</param>
         protected InterfaceCollectionFormatter(IBinaryFormatterResolver resolver) : base(resolver)
         {
             _t = resolver.GetFormatter<T>();
             _int = resolver.GetFormatter<int>();
         }
 
-        /// <summary>
-        /// 将集合对象序列化为二进制数据。
-        /// </summary>
-        /// <param name="buffer">二进制写入器。</param>
-        /// <param name="value">要序列化的集合对象。</param>
-        public override void Serialize(ref ByteBuffer buffer, TCollection? value)
+        public override void Serialize(AbstractBuffer<byte> buffer, TCollection? value)
         {
             if (value == null)
             {
-                WriteNil(ref buffer);
+                WriteNil(buffer);
                 return;
             }
 
             var count = value.Count;
-            WriteArrayHeader(ref buffer);
-            _int.Serialize(ref buffer, count);
+            WriteArrayHeader(buffer);
+            _int.Serialize(buffer, count);
 
             foreach (T item in value)
             {
-                _t.Serialize(ref buffer, item);
+                _t.Serialize(buffer, item);
             }
         }
 
-        /// <summary>
-        /// 从二进制数据中反序列化出集合对象。
-        /// </summary>
-        /// <param name="buffer">二进制读取器。</param>
-        /// <returns>反序列化出的集合对象。</returns>
-        public override TCollection? Deserialize(ref ByteBuffer buffer)
+        public override void Serialize(ref SpanWriter<byte> writer, TCollection? value)
         {
-            if (TryReadNil(ref buffer))
+            if (value == null)
             {
-                return default(TCollection);
+                WriteNil(ref writer);
+                return;
             }
 
-            if (!TryReadArrayHeader(ref buffer))
+            var count = value.Count;
+            WriteArrayHeader(ref writer);
+            _int.Serialize(ref writer, count);
+
+            foreach (T item in value)
+            {
+                _t.Serialize(ref writer, item);
+            }
+        }
+
+        public override TCollection? Deserialize(AbstractBufferReader<byte> reader)
+        {
+            if (TryReadNil(reader))
+            {
+                return default;
+            }
+
+            if (!TryReadArrayHeader(reader))
             {
                 throw new InvalidOperationException("数据类型不匹配。");
             }
 
-            var len = _int.Deserialize(ref buffer);
+            var len = _int.Deserialize(reader);
 
             var result = Create(len);
             for (int i = 0; i < len; i++)
             {
-                Add(result, _t.Deserialize(ref buffer));
+                Add(result, _t.Deserialize(reader));
+            }
+
+            return result;
+        }
+
+        public override TCollection? Deserialize(ref SpanReader<byte> reader)
+        {
+            if (TryReadNil(ref reader))
+            {
+                return default;
+            }
+
+            if (!TryReadArrayHeader(ref reader))
+            {
+                throw new InvalidOperationException("数据类型不匹配。");
+            }
+
+            var len = _int.Deserialize(ref reader);
+
+            var result = Create(len);
+            for (int i = 0; i < len; i++)
+            {
+                Add(result, _t.Deserialize(ref reader));
             }
 
             return result;

@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using ExtenderApp.Contracts;
 
-namespace ExtenderApp.Common.Serializations
+namespace ExtenderApp.Buffer
 {
     /// <summary>
     /// 为 <see cref="ByteBlock"/> 提供高性能二进制读写扩展方法。 该类通过封装基于 <see cref="BinaryDataExtensions"/> 的底层逻辑，实现对常用基础类型的顺序读写。 注意：由于操作直接针对 <see cref="Span{T}"/>，所有数值类型默认支持大端序（Big-Endian）和位模式转换。
@@ -119,118 +119,118 @@ namespace ExtenderApp.Common.Serializations
 
         #endregion Write
 
-        #region Read
+        //#region Read
 
-        /// <summary>
-        /// 写入一个非托管类型的数据，并将写入指针前进相应字节数。
-        /// </summary>
-        /// <typeparam name="T">非托管类型数据类型</typeparam>
-        /// <param name="block">源字节块实例。</param>
-        /// <param name="isBigEndian">是否按大端序解码。</param>
-        /// <returns>解码后的 <typeparamref name="T"/> 值。</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static T Read<T>(this ref ByteBlock block, bool isBigEndian = true)
-            where T : unmanaged
-        {
-            int size = Marshal.SizeOf<T>();
-            Span<byte> span = stackalloc byte[size];
-            block.Read(span);
-            if (BitConverter.IsLittleEndian == isBigEndian)
-            {
-                span.Reverse();
-            }
-            return MemoryMarshal.Read<T>(span);
-        }
+        ///// <summary>
+        ///// 写入一个非托管类型的数据，并将写入指针前进相应字节数。
+        ///// </summary>
+        ///// <typeparam name="T">非托管类型数据类型</typeparam>
+        ///// <param name="block">源字节块实例。</param>
+        ///// <param name="isBigEndian">是否按大端序解码。</param>
+        ///// <returns>解码后的 <typeparamref name="T"/> 值。</returns>
+        //[MethodImpl(MethodImplOptions.AggressiveInlining)]
+        //public static T Read<T>(this ref ByteBlock block, bool isBigEndian = true)
+        //    where T : unmanaged
+        //{
+        //    int size = Marshal.SizeOf<T>();
+        //    Span<byte> span = stackalloc byte[size];
+        //    block.Read(span);
+        //    if (BitConverter.IsLittleEndian == isBigEndian)
+        //    {
+        //        span.Reverse();
+        //    }
+        //    return MemoryMarshal.Read<T>(span);
+        //}
 
-        /// <summary>
-        /// 从当前位置读取一个 decimal 值并前进 16 字节。
-        /// </summary>
-        /// <param name="block">源字节块实例。</param>
-        /// <returns>解码后的 decimal 值。</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static decimal ReadDecimal(this ref ByteBlock block)
-        {
-            const int size = 16;
-            return block.Read(size).ReadDecimal();
-        }
+        ///// <summary>
+        ///// 从当前位置读取一个 decimal 值并前进 16 字节。
+        ///// </summary>
+        ///// <param name="block">源字节块实例。</param>
+        ///// <returns>解码后的 decimal 值。</returns>
+        //[MethodImpl(MethodImplOptions.AggressiveInlining)]
+        //public static decimal ReadDecimal(this ref ByteBlock block)
+        //{
+        //    const int size = 16;
+        //    return block.Read(size).ReadDecimal();
+        //}
 
-        /// <summary>
-        /// 从当前位置读取一个字符并前进相应字节数。
-        /// </summary>
-        /// <param name="block">源字节块实例。</param>
-        /// <param name="encoding">指定编码，若为 null 则使用默认编码。</param>
-        /// <returns>解码后的 <see cref="char"/> 值。</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static char ReadChar(this ref ByteBlock block, Encoding? encoding = null)
-        {
-            encoding ??= DefaultEncoding;
-            int maxByteCount = encoding.GetMaxByteCount(1);
-            ReadOnlySpan<byte> span = block.Read(maxByteCount);
-            Span<char> chars = stackalloc char[1];
-            int actualByteCount = encoding.GetChars(span, chars);
-            return chars[0];
-        }
+        ///// <summary>
+        ///// 从当前位置读取一个字符并前进相应字节数。
+        ///// </summary>
+        ///// <param name="block">源字节块实例。</param>
+        ///// <param name="encoding">指定编码，若为 null 则使用默认编码。</param>
+        ///// <returns>解码后的 <see cref="char"/> 值。</returns>
+        //[MethodImpl(MethodImplOptions.AggressiveInlining)]
+        //public static char ReadChar(this ref ByteBlock block, Encoding? encoding = null)
+        //{
+        //    encoding ??= DefaultEncoding;
+        //    int maxByteCount = encoding.GetMaxByteCount(1);
+        //    ReadOnlySpan<byte> span = block.Read(maxByteCount);
+        //    Span<char> chars = stackalloc char[1];
+        //    int actualByteCount = encoding.GetChars(span, chars);
+        //    return chars[0];
+        //}
 
-        /// <summary>
-        /// 从当前位置读取一个 Guid 并前进 16 字节。
-        /// </summary>
-        /// <param name="block">源字节块实例。</param>
-        /// <returns>解析出的 Guid。</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Guid ReadGuid(this ref ByteBlock block)
-        {
-            const int size = 16;
-            return block.Read(size).ReadGuid();
-        }
+        ///// <summary>
+        ///// 从当前位置读取一个 Guid 并前进 16 字节。
+        ///// </summary>
+        ///// <param name="block">源字节块实例。</param>
+        ///// <returns>解析出的 Guid。</returns>
+        //[MethodImpl(MethodImplOptions.AggressiveInlining)]
+        //public static Guid ReadGuid(this ref ByteBlock block)
+        //{
+        //    const int size = 16;
+        //    return block.Read(size).ReadGuid();
+        //}
 
-        /// <summary>
-        /// 读取一个布尔值（1 字节），并前进指针。
-        /// </summary>
-        /// <param name="block">源字节块实例。</param>
-        /// <returns>解析出的布尔值。</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool ReadBoolean(this ref ByteBlock block)
-        {
-            return block.Read(1).ReadBoolean();
-        }
+        ///// <summary>
+        ///// 读取一个布尔值（1 字节），并前进指针。
+        ///// </summary>
+        ///// <param name="block">源字节块实例。</param>
+        ///// <returns>解析出的布尔值。</returns>
+        //[MethodImpl(MethodImplOptions.AggressiveInlining)]
+        //public static bool ReadBoolean(this ref ByteBlock block)
+        //{
+        //    return block.Read(1).ReadBoolean();
+        //}
 
-        /// <summary>
-        /// 读取日期时间（Ticks），并前进读取指针 8 字节。
-        /// </summary>
-        /// <param name="block">源字节块实例。</param>
-        /// <param name="isBigEndian">Ticks 的字节序格式。</param>
-        /// <returns>解析出的 DateTime 结构。</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static DateTime ReadDateTime(this ref ByteBlock block, bool isBigEndian = true)
-        {
-            return new DateTime(block.Read(isBigEndian));
-        }
+        ///// <summary>
+        ///// 读取日期时间（Ticks），并前进读取指针 8 字节。
+        ///// </summary>
+        ///// <param name="block">源字节块实例。</param>
+        ///// <param name="isBigEndian">Ticks 的字节序格式。</param>
+        ///// <returns>解析出的 DateTime 结构。</returns>
+        //[MethodImpl(MethodImplOptions.AggressiveInlining)]
+        //public static DateTime ReadDateTime(this ref ByteBlock block, bool isBigEndian = true)
+        //{
+        //    return new DateTime(block.Read(isBigEndian));
+        //}
 
-        /// <summary>
-        /// 读取所有剩余可用字节并将其解码为字符串内容。
-        /// </summary>
-        /// <param name="block">源字节块实例。</param>
-        /// <param name="encoding">指定编码，若为 null 则使用默认编码。</param>
-        /// <returns>解码后的字符串内容。</returns>
-        public static string ReadString(this ref ByteBlock block, Encoding? encoding = null)
-        {
-            return block.ReadString(block.Remaining > int.MaxValue ? int.MaxValue : (int)block.Remaining, encoding);
-        }
+        ///// <summary>
+        ///// 读取所有剩余可用字节并将其解码为字符串内容。
+        ///// </summary>
+        ///// <param name="block">源字节块实例。</param>
+        ///// <param name="encoding">指定编码，若为 null 则使用默认编码。</param>
+        ///// <returns>解码后的字符串内容。</returns>
+        //public static string ReadString(this ref ByteBlock block, Encoding? encoding = null)
+        //{
+        //    return block.ReadString(block.Remaining > int.MaxValue ? int.MaxValue : (int)block.Remaining, encoding);
+        //}
 
-        /// <summary>
-        /// 读取指定数量的字节并将其解码为字符串内容，完成后前进相应指针。
-        /// </summary>
-        /// <param name="block">源字节块实例。</param>
-        /// <param name="byteCount">要读取的字节数量。</param>
-        /// <param name="encoding">指定编码，若为 null 则使用默认编码。</param>
-        /// <returns>解码后的字符串内容。</returns>
-        public static string ReadString(this ref ByteBlock block, int byteCount, Encoding? encoding = null)
-        {
-            if (byteCount <= 0) return string.Empty;
-            encoding ??= DefaultEncoding;
-            return encoding.GetString(block.Read(byteCount));
-        }
+        ///// <summary>
+        ///// 读取指定数量的字节并将其解码为字符串内容，完成后前进相应指针。
+        ///// </summary>
+        ///// <param name="block">源字节块实例。</param>
+        ///// <param name="byteCount">要读取的字节数量。</param>
+        ///// <param name="encoding">指定编码，若为 null 则使用默认编码。</param>
+        ///// <returns>解码后的字符串内容。</returns>
+        //public static string ReadString(this ref ByteBlock block, int byteCount, Encoding? encoding = null)
+        //{
+        //    if (byteCount <= 0) return string.Empty;
+        //    encoding ??= DefaultEncoding;
+        //    return encoding.GetString(block.Read(byteCount));
+        //}
 
-        #endregion Read
+        //#endregion Read
     }
 }

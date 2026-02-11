@@ -1,30 +1,30 @@
 ﻿using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using ExtenderApp.Abstract;
+using ExtenderApp.Buffer;
 using ExtenderApp.Contracts;
 
 namespace ExtenderApp.Common.Serializations.Binary.Formatters
 {
     /// <summary>
-    /// 非托管结构体的二进制格式化器基类（支持到 8 字节内的 unmanaged 类型）。
-    /// 根据目标类型在运行时选择两种序列化路径：基于整数位拷贝的 long 路径或基于数值的 double 路径（用于 float/double）。
-    /// 采用类型标记 + 紧凑数据长度的编码格式以减少存储开销。
+    /// 非托管结构体的二进制格式化器基类（支持到 8 字节内的 unmanaged 类型）。 根据目标类型在运行时选择两种序列化路径：基于整数位拷贝的 long 路径或基于数值的 double 路径（用于 float/double）。 采用类型标记 + 紧凑数据长度的编码格式以减少存储开销。
     /// </summary>
     /// <typeparam name="T">目标结构体类型，必须为 unmanaged 且推荐大小不超过 8 字节。</typeparam>
     internal sealed class UnManagedFornatter<T> : BinaryFormatter<T> where T : unmanaged
     {
         /// <summary>
-        /// 序列化委托签名：将值序列化写入 <see cref="ByteBuffer"/>。
+        /// 序列化委托签名：将值序列化写入 <see cref="SpanWriter{byte}"/>。
         /// </summary>
-        /// <param name="buffer">目标字节缓冲区。</param>
+        /// <param name="writer">目标栈上写入器。</param>
         /// <param name="value">待序列化的值。</param>
-        private delegate void SerializeDelegate(ref ByteBuffer buffer, T value);
+        private delegate void SerializeDelegate(ref SpanWriter<byte> writer, T value);
 
         /// <summary>
-        /// 反序列化委托签名：从 <see cref="ByteBuffer"/> 读取并返回值。
+        /// 反序列化委托签名：从 <see cref="SpanReader{byte}"/> 读取并返回值。
         /// </summary>
-        /// <param name="buffer">来源字节缓冲区。</param>
+        /// <param name="reader">来源栈上读取器。</param>
         /// <returns>反序列化得到的值。</returns>
-        private delegate T DeserializeDelegate(ref ByteBuffer buffer);
+        private delegate T DeserializeDelegate(ref SpanReader<byte> reader);
 
         /// <summary>
         /// 计算序列化长度委托签名（返回包含类型标记的总字节数）。
@@ -38,15 +38,12 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
         private readonly GetLengthDelegate _getLengthInvoker;
 
         /// <summary>
-        /// 按 mark 索引的固定数据长度表（不含类型标记字节）。
-        /// 数组长度为 256（byte 的取值范围）；未定义的 mark 使用默认 0 表示不可识别。
-        /// 由静态初始化函数填充常见数值类型的字节长度，以便快速通过 mark 获取数据长度。
+        /// 按 mark 索引的固定数据长度表（不含类型标记字节）。 数组长度为 256（byte 的取值范围）；未定义的 mark 使用默认 0 表示不可识别。 由静态初始化函数填充常见数值类型的字节长度，以便快速通过 mark 获取数据长度。
         /// </summary>
         private static readonly byte[] LengthArray = CreatLengthArray();
 
         /// <summary>
-        /// 构造并返回长度查表数组（长度 256），表项为对应标记的数据长度（以字节为单位，不包含类型标记本身）。
-        /// 未识别的 mark 保持为 0。
+        /// 构造并返回长度查表数组（长度 256），表项为对应标记的数据长度（以字节为单位，不包含类型标记本身）。 未识别的 mark 保持为 0。
         /// </summary>
         /// <returns>长度为 256 的字节数组。</returns>
         private static byte[] CreatLengthArray()
@@ -104,37 +101,49 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
             _mark = BinaryOptions.GetByteByType<T>();
         }
 
-        /// <summary>
-        /// 从 <paramref name="buffer"/> 反序列化出类型 <typeparamref name="T"/> 的值。
-        /// 在读取前会校验缓冲内的类型标记是否可安全转换为目标类型。
-        /// </summary>
-        /// <param name="buffer">来源字节缓冲区（以 ref 传入，读取会改变内部位置）。</param>
-        /// <returns>反序列化得到的 <typeparamref name="T"/> 值。</returns>
-        /// <exception cref="InvalidOperationException">当缓冲内的标记表示的类型比目标类型更大且不可安全转换时抛出。</exception>
-        public override T Deserialize(ref ByteBuffer buffer)
+        public override T Deserialize(ref SpanReader<byte> reader)
         {
-            byte mark = buffer.NextCode;
+            if (!reader.TryPeek(out byte mark))
+                throw new InvalidOperationException("无法读取类型标记，数据已读尽。");
+
             if (GetSizeByMark(mark) > GetSizeByMark(_mark))
                 throw new InvalidOperationException($"无法将数据内{BinaryOptions.GetNameByMark(mark)}类型转换成{BinaryOptions.GetNameByMark(_mark)}");
 
-            return _deserializeInvoker(ref buffer);
+            return _deserializeInvoker(ref reader);
         }
 
-        /// <summary>
-        /// 将值序列化写入到 <paramref name="buffer"/> 中。
-        /// </summary>
-        /// <param name="buffer">目标字节缓冲区（以 ref 传入，将被写入数据）。</param>
-        /// <param name="value">要序列化的值。</param>
-        public override void Serialize(ref ByteBuffer buffer, T value)
+        public override void Serialize(ref SpanWriter<byte> writer, T value)
         {
-            _serializeInvoker(ref buffer, value);
+            _serializeInvoker(ref writer, value);
         }
 
-        /// <summary>
-        /// 计算给定 <paramref name="value"/> 序列化后的总字节数（包含类型标记）。
-        /// </summary>
-        /// <param name="value">要计算长度的值。</param>
-        /// <returns>序列化后的总字节数（长整型）。</returns>
+        public override T Deserialize(AbstractBufferReader<byte> reader)
+        {
+            if (!reader.TryPeek(out byte mark))
+                throw new InvalidOperationException("无法读取类型标记，数据已读尽。");
+
+            if (GetSizeByMark(mark) > GetSizeByMark(_mark))
+                throw new InvalidOperationException($"无法将数据内{BinaryOptions.GetNameByMark(mark)}类型转换成{BinaryOptions.GetNameByMark(_mark)}");
+
+            // 对于非托管类型，通常很小，直接读取到栈上 Span 处理以复用逻辑
+            long totalLen = GetSizeByMark(mark) + 1;
+            Span<byte> temp = stackalloc byte[(int)totalLen];
+            if (reader.Read(temp) != (int)totalLen)
+                throw new InvalidDataException("数据包不完整，无法反序列化。");
+
+            var spanReader = new SpanReader<byte>(temp);
+            return _deserializeInvoker(ref spanReader);
+        }
+
+        public override void Serialize(AbstractBuffer<byte> buffer, T value)
+        {
+            var length = GetLength(value);
+            var span = buffer.GetSpan((int)length);
+            var writer = new SpanWriter<byte>(span);
+            Serialize(ref writer, value);
+            buffer.Advance(writer.Consumed);
+        }
+
         public override long GetLength(T value)
         {
             return _getLengthInvoker(value);
@@ -143,27 +152,26 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
         #region Double 路径 (支持浮点压缩)
 
         /// <summary>
-        /// 将浮点类型（float/double）按 float32/float64 最紧凑规则写入缓冲区。
-        /// 使用位拷贝把 <typeparamref name="T"/> 写入到 <see cref="double"/> 的内存表示中，再走 double 写入逻辑。
+        /// 将浮点类型（float/double）按 float32/float64 最紧凑规则写入写入器。 使用位拷贝把 <typeparamref name="T"/> 写入到 <see cref="double"/> 的内存表示中，再走 double 写入逻辑。
         /// </summary>
-        /// <param name="buffer">目标缓冲区。</param>
+        /// <param name="writer">目标栈上写入器。</param>
         /// <param name="value">待序列化的值（T 为 float 或 double）。</param>
-        private void SerializeAsDouble(ref ByteBuffer buffer, T value)
+        private void SerializeAsDouble(ref SpanWriter<byte> writer, T value)
         {
             double data = 0d;
             Unsafe.WriteUnaligned(ref Unsafe.As<double, byte>(ref data), value);
-            Write(ref buffer, data);
+            Write(ref writer, data);
         }
 
         /// <summary>
-        /// 从缓冲区读取并恢复为 <typeparamref name="T"/>。支持从 integer/float 标识读取并还原为浮点数位或数值。
+        /// 从读取器读取并恢复为 <typeparamref name="T"/>。支持从 integer/float 标识读取并还原为浮点数位或数值。
         /// </summary>
-        /// <param name="buffer">来源缓冲区。</param>
+        /// <param name="reader">来源读取器。</param>
         /// <returns>恢复后的 <typeparamref name="T"/> 实例。</returns>
-        private T DeserializeAsDouble(ref ByteBuffer buffer)
+        private T DeserializeAsDouble(ref SpanReader<byte> reader)
         {
-            byte mark = buffer.Read();
-            double data = ReadAsDouble(ref buffer, mark);
+            byte mark = reader.Read();
+            double data = ReadAsDouble(ref reader, mark);
             return Unsafe.ReadUnaligned<T>(ref Unsafe.As<double, byte>(ref data));
         }
 
@@ -186,24 +194,24 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
         /// <summary>
         /// 将任意非浮点 unmanaged 类型按位拷贝到 long 的低位后使用整数压缩写入。
         /// </summary>
-        /// <param name="buffer">目标缓冲区。</param>
+        /// <param name="writer">目标栈上写入器。</param>
         /// <param name="value">待序列化的值（T 非浮点类型）。</param>
-        private void SerializeAsLong(ref ByteBuffer buffer, T value)
+        private void SerializeAsLong(ref SpanWriter<byte> writer, T value)
         {
             long data = 0;
             Unsafe.WriteUnaligned(ref Unsafe.As<long, byte>(ref data), value);
-            Write(ref buffer, data);
+            Write(ref writer, data);
         }
 
         /// <summary>
-        /// 从缓冲区按整数标识读取并把位模式写回到 <typeparamref name="T"/> 实例。
+        /// 从读取器按整数标识读取并把位模式写回到 <typeparamref name="T"/> 实例。
         /// </summary>
-        /// <param name="buffer">来源缓冲区。</param>
+        /// <param name="reader">来源读取器。</param>
         /// <returns>恢复后的 <typeparamref name="T"/> 实例。</returns>
-        private T DeserializeAsLong(ref ByteBuffer buffer)
+        private T DeserializeAsLong(ref SpanReader<byte> reader)
         {
-            byte mark = buffer.Read();
-            long data = ReadAsLong(ref buffer, mark);
+            byte mark = reader.Read();
+            long data = ReadAsLong(ref reader, mark);
             return Unsafe.ReadUnaligned<T>(ref Unsafe.As<long, byte>(ref data));
         }
 
@@ -226,57 +234,67 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
         /// <summary>
         /// 读取并返回用于浮点路径的 double 值（支持 float32/float64 及整数压缩还原）。
         /// </summary>
-        /// <param name="buffer">来源缓冲区。</param>
+        /// <param name="reader">来源读取器。</param>
         /// <param name="mark">类型标记。</param>
         /// <returns>还原为 double 的数值。</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static double ReadAsDouble(ref ByteBuffer buffer, byte mark)
+        private static double ReadAsDouble(ref SpanReader<byte> reader, byte mark)
         {
-            if (mark == BinaryOptions.Float32) return Read<float>(ref buffer);
-            if (mark == BinaryOptions.Float64) return Read<double>(ref buffer);
+            if (mark == BinaryOptions.Float32) return Read<float>(ref reader);
+            if (mark == BinaryOptions.Float64) return Read<double>(ref reader);
             // 允许浮点从压缩的整数读取并数值还原
-            return ReadAsLong(ref buffer, mark);
+            return ReadAsLong(ref reader, mark);
         }
 
         /// <summary>
-        /// 根据类型标记从缓冲区读取并返回 64 位整数表示（按位或数值填充到 long）。
+        /// 根据类型标记从读取器读取并返回 64 位整数表示（按位或数值填充到 long）。
         /// </summary>
-        /// <param name="buffer">来源缓冲区。</param>
+        /// <param name="reader">来源读取器。</param>
         /// <param name="mark">类型标记。</param>
         /// <returns>以 long 表示的读取结果（保持位模式/数值一致性）。</returns>
         /// <exception cref="InvalidDataException">当标识无法映射为 64 位整数时抛出。</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static long ReadAsLong(ref ByteBuffer buffer, byte mark)
+        private static long ReadAsLong(ref SpanReader<byte> reader, byte mark)
         {
-            if (mark == BinaryOptions.Int8) return (sbyte)buffer.Read();
-            if (mark == BinaryOptions.UInt8) return buffer.Read();
-            if (mark == BinaryOptions.Int16) return Read<short>(ref buffer);
-            if (mark == BinaryOptions.UInt16) return Read<ushort>(ref buffer);
-            if (mark == BinaryOptions.Int32) return Read<int>(ref buffer);
-            if (mark == BinaryOptions.UInt32) return Read<uint>(ref buffer);
+            if (mark == BinaryOptions.Int8) return (sbyte)reader.Read();
+            if (mark == BinaryOptions.UInt8) return reader.Read();
+            if (mark == BinaryOptions.Int16) return Read<short>(ref reader);
+            if (mark == BinaryOptions.UInt16) return Read<ushort>(ref reader);
+            if (mark == BinaryOptions.Int32) return Read<int>(ref reader);
+            if (mark == BinaryOptions.UInt32) return Read<uint>(ref reader);
             if (mark == BinaryOptions.Int64 ||
-                mark == BinaryOptions.UInt64) return Read<long>(ref buffer);
+                mark == BinaryOptions.UInt64) return Read<long>(ref reader);
             throw new InvalidDataException($"标识 {mark} 无法读取为 64 位整数。");
         }
 
         /// <summary>
-        /// 从缓冲区读取指定类型的原始字节并转换为对应的值类型。
+        /// 从读取器读取指定类型的原始字节并转换为对应的值类型。
         /// </summary>
         /// <typeparam name="TValue">目标值类型（unmanaged）。</typeparam>
-        /// <param name="buffer">来源缓冲区。</param>
+        /// <param name="reader">来源读取器。</param>
         /// <returns>读取并转换得到的 <typeparamref name="TValue"/>。</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static TValue Read<TValue>(ref ByteBuffer buffer) where TValue : unmanaged
+        private static TValue Read<TValue>(ref SpanReader<byte> reader) where TValue : unmanaged
         {
             int size = GetSize<TValue>();
-            Span<byte> span = stackalloc byte[size];
-            buffer.Read(span);
+            if (reader.Remaining < size)
+                throw new InvalidOperationException("读取器剩余字节不足以获取目标类型。");
+
+            ReadOnlySpan<byte> span = reader.UnreadSpan.Slice(0, size);
+            TValue result;
             if (BitConverter.IsLittleEndian)
             {
-                span.Reverse();
+                Span<byte> temp = stackalloc byte[size];
+                span.CopyTo(temp);
+                temp.Reverse();
+                result = MemoryMarshal.Read<TValue>(temp);
             }
-
-            return MemoryMarshal.Read<TValue>(span);
+            else
+            {
+                result = MemoryMarshal.Read<TValue>(span);
+            }
+            reader.Advance(size);
+            return result;
         }
 
         #endregion Read
@@ -284,58 +302,58 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
         #region Write
 
         /// <summary>
-        /// 将 <see cref="double"/> 按最紧凑格式写入缓冲区（可能写 float32 或 float64）。
+        /// 将 <see cref="double"/> 按最紧凑格式写入写入器（可能写 float32 或 float64）。
         /// </summary>
-        /// <param name="buffer">目标缓冲区。</param>
+        /// <param name="writer">目标栈上写入器。</param>
         /// <param name="value">要写入的 double 值。</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static void Write(ref ByteBuffer buffer, double value)
+        private static void Write(ref SpanWriter<byte> writer, double value)
         {
             GetLength(value, out var mark);
-            if (mark == BinaryOptions.Float32) Write(ref buffer, (float)value);
-            else Write(ref buffer, value);
+            if (mark == BinaryOptions.Float32) Write(ref writer, (float)value);
+            else Write(ref writer, value);
         }
 
         /// <summary>
-        /// 将 long 按最紧凑整数格式写入缓冲区（包含类型标记）。
+        /// 将 long 按最紧凑整数格式写入写入器（包含类型标记）。
         /// </summary>
-        /// <param name="buffer">目标缓冲区。</param>
+        /// <param name="writer">目标栈上写入器。</param>
         /// <param name="value">要写入的 long 值。</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static void Write(ref ByteBuffer buffer, long value)
+        private static void Write(ref SpanWriter<byte> writer, long value)
         {
             GetLength(value, out var mark);
-            buffer.Write(mark);
+            writer.Write(mark);
 
-            if (mark == BinaryOptions.Int8 || mark == BinaryOptions.UInt8) Write(ref buffer, (byte)value);
-            else if (mark == BinaryOptions.Int16) Write(ref buffer, (short)value);
-            else if (mark == BinaryOptions.UInt16) Write(ref buffer, (ushort)value);
-            else if (mark == BinaryOptions.Int32) Write(ref buffer, (int)value);
-            else if (mark == BinaryOptions.UInt32) Write(ref buffer, (uint)value);
-            else if (mark == BinaryOptions.UInt64) Write(ref buffer, (ulong)value);
-            else if (mark == BinaryOptions.Int64) Write(ref buffer, value);
-            else Write(ref buffer, (ulong)value);
+            if (mark == BinaryOptions.Int8 || mark == BinaryOptions.UInt8) Write(ref writer, (byte)value);
+            else if (mark == BinaryOptions.Int16) Write(ref writer, (short)value);
+            else if (mark == BinaryOptions.UInt16) Write(ref writer, (ushort)value);
+            else if (mark == BinaryOptions.Int32) Write(ref writer, (int)value);
+            else if (mark == BinaryOptions.UInt32) Write(ref writer, (uint)value);
+            else if (mark == BinaryOptions.UInt64) Write(ref writer, (ulong)value);
+            else if (mark == BinaryOptions.Int64) Write(ref writer, value);
+            else Write(ref writer, (ulong)value);
         }
 
         /// <summary>
-        /// 将值类型字节写入缓冲区（不包含类型标记，由调用方负责）。
+        /// 将值类型字节写入写入器（不包含类型标记，由调用方负责）。
         /// </summary>
         /// <typeparam name="TValue">要写入的值类型（unmanaged）。</typeparam>
-        /// <param name="buffer">目标缓冲区。</param>
+        /// <param name="writer">目标栈上写入器。</param>
         /// <param name="value">要写入的值。</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static void Write<TValue>(ref ByteBuffer buffer, TValue value)
+        private static void Write<TValue>(ref SpanWriter<byte> writer, TValue value)
             where TValue : unmanaged
         {
             int size = GetSize<TValue>();
-            Span<byte> span = buffer.GetSpan(size);
+            Span<byte> span = writer.UnwrittenSpan.Slice(0, size);
             MemoryMarshal.Write(span, value);
-            buffer.Advance(size);
 
             if (BitConverter.IsLittleEndian)
             {
                 span.Reverse();
             }
+            writer.Advance(size);
         }
 
         #endregion Write
@@ -443,8 +461,7 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
         #endregion GetLength
 
         /// <summary>
-        /// 根据 mark 快速返回该 mark 对应的数据字节大小（不含类型标记字节）。
-        /// 若 mark 未在固定表中定义，则抛出 <see cref="InvalidOperationException"/>。
+        /// 根据 mark 快速返回该 mark 对应的数据字节大小（不含类型标记字节）。 若 mark 未在固定表中定义，则抛出 <see cref="InvalidOperationException"/>。
         /// </summary>
         /// <param name="mark">类型标记字节。</param>
         /// <returns>对应的数据字节大小。</returns>

@@ -1,7 +1,7 @@
 ﻿using System.Linq.Expressions;
 using System.Reflection;
 using ExtenderApp.Abstract;
-using ExtenderApp.Contracts;
+using ExtenderApp.Buffer;
 
 namespace ExtenderApp.Common.Serializations.Binary.Formatters
 {
@@ -16,52 +16,61 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
     /// </remarks>
     public abstract class AutoFormatter<T> : ResolverFormatter<T>
     {
-        /// <summary>
-        /// 用于表达式树的共享参数：ref <see cref="ByteBuffer"/>。 所有生成的调用表达式都会共享此参数以确保签名一致。
-        /// </summary>
-        public static readonly ParameterExpression ByteBufferParameter = Expression.Parameter(typeof(ByteBuffer).MakeByRefType());
+        #region ParameterExpressions
 
         /// <summary>
-        /// 序列化委托签名。
+        /// 用于表达式树的共享参数： <see cref="AbstractBuffer{byte}"/>。
         /// </summary>
-        /// <param name="buffer">目标缓存（ref）。</param>
-        /// <param name="value">要序列化的值。</param>
-        public delegate void SerializeMethod(ref ByteBuffer buffer, T value);
+        public static readonly ParameterExpression BufferParameter = Expression.Parameter(typeof(AbstractBuffer<byte>), "buffer");
 
         /// <summary>
-        /// 反序列化委托签名。
+        /// 用于表达式树的共享参数：ref <see cref="SpanWriter{byte}"/>。
         /// </summary>
-        /// <param name="buffer">数据来源（ref）。</param>
-        /// <returns>反序列化得到的值。</returns>
-        public delegate T DeserializeMethod(ref ByteBuffer buffer);
+        public static readonly ParameterExpression SpanWriterParameter = Expression.Parameter(typeof(SpanWriter<byte>).MakeByRefType(), "writer");
 
         /// <summary>
-        /// 获取序列化长度委托签名。
+        /// 用于表达式树的共享参数： <see cref="AbstractBufferReader{byte}"/>。
         /// </summary>
-        /// <param name="value">目标值。</param>
-        /// <returns>序列化所需字节数。</returns>
+        public static readonly ParameterExpression BufferReaderParameter = Expression.Parameter(typeof(AbstractBufferReader<byte>), "reader");
+
+        /// <summary>
+        /// 用于表达式树的共享参数：ref <see cref="SpanReader{byte}"/>。
+        /// </summary>
+        public static readonly ParameterExpression SpanReaderParameter = Expression.Parameter(typeof(SpanReader<byte>).MakeByRefType(), "reader");
+
+        #endregion ParameterExpressions
+
+        #region Delegates
+
+        public delegate void SerializeBufferMethod(AbstractBuffer<byte> buffer, T value);
+
+        public delegate void SerializeSpanMethod(ref SpanWriter<byte> writer, T value);
+
+        public delegate T DeserializeBufferMethod(AbstractBufferReader<byte> reader);
+
+        public delegate T DeserializeSpanMethod(ref SpanReader<byte> reader);
+
         private delegate long GetLengthMethod(T value);
 
-        /// <summary>
-        /// 序列化方法（在 <see cref="Init"/> 编译前调用将抛出异常）。
-        /// </summary>
-        private readonly SerializeMethod _serialize = static (ref ByteBuffer _, T _) =>
+        #endregion Delegates
+
+        private readonly SerializeBufferMethod _serializeBuffer = static (AbstractBuffer<byte> _, T _) =>
                 throw new InvalidOperationException(string.Format("未调用Init,无法序列化:{0}", typeof(T).FullName));
 
-        /// <summary>
-        /// 反序列化方法（在 <see cref="Init"/> 编译前调用将抛出异常）。
-        /// </summary>
-        private readonly DeserializeMethod _deserialize = static (ref ByteBuffer _) =>
-                throw new InvalidOperationException(string.Format("未调用Init,反序列化:{0}", typeof(T).FullName));
+        private readonly SerializeSpanMethod _serializeSpan = static (ref SpanWriter<byte> _, T _) =>
+                throw new InvalidOperationException(string.Format("未调用Init,无法序列化:{0}", typeof(T).FullName));
 
-        /// <summary>
-        /// 获取对象长度的方法（在 <see cref="Init"/> 编译前调用将抛出异常）。
-        /// </summary>
+        private readonly DeserializeBufferMethod _deserializeBuffer = static (AbstractBufferReader<byte> _) =>
+                throw new InvalidOperationException(string.Format("未调用Init,无法反序列化:{0}", typeof(T).FullName));
+
+        private readonly DeserializeSpanMethod _deserializeSpan = static (ref SpanReader<byte> _) =>
+                throw new InvalidOperationException(string.Format("未调用Init,无法反序列化:{0}", typeof(T).FullName));
+
         private readonly GetLengthMethod _getLength = static (T _) =>
                 throw new InvalidOperationException(string.Format("未调用Init,无法获取序列化后长度:{0}", typeof(T).FullName));
 
         /// <summary>
-        /// 指示 <typeparamref name="T"/> 是否为引用类型。 用于在序列化/反序列化/长度估算时处理 Nil 语义。
+        /// 指示 <typeparamref name="T"/> 是否为引用类型。用于在序列化/反序列化/长度估算时处理 Nil 语义。
         /// </summary>
         private readonly bool IsClass;
 
@@ -74,227 +83,145 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
         /// 使用解析器构造并编译当前类型的序列化/反序列化/长度估算委托。
         /// </summary>
         /// <param name="resolver">格式化器解析器。</param>
-        /// <exception cref="InvalidOperationException">当引用类型缺少公共无参构造函数时抛出。</exception>
         public AutoFormatter(IBinaryFormatterResolver resolver) : base(resolver)
         {
             Type type = typeof(T);
+            ParameterExpression parameter = Expression.Parameter(typeof(T), "value");
 
-            // 统一的 TLinkClient 参数表达式（确保所有成员访问表达式共享同一 ParameterExpression）
-            ParameterExpression parameter = Expression.Parameter(typeof(T));
-
-            // 将统一参数传入 Store，确保成员表达式与后续 Lambda 使用相同的 ParameterExpression
             AutoMemberDetailsStore store = new(this, parameter);
             Init(store);
+
             List<AutoMemberDetails> list = store.memberDetails;
             int length = list.Count;
-            Expression[] serializes = new Expression[length];
-            MemberBinding[] deserializes = new MemberBinding[length];
+
+            Expression[] serializesBuffer = new Expression[length];
+            Expression[] serializesSpan = new Expression[length];
+            MemberBinding[] deserializesBuffer = new MemberBinding[length];
+            MemberBinding[] deserializesSpan = new MemberBinding[length];
             Expression[] getLengths = new Expression[length];
 
             for (int i = 0; i < length; i++)
             {
                 var details = list[i];
-                serializes[i] = details.Serialize;
-                deserializes[i] = details.Deserialize;
+                serializesBuffer[i] = details.SerializeBuffer;
+                serializesSpan[i] = details.SerializeSpan;
+                deserializesBuffer[i] = details.DeserializeBuffer;
+                deserializesSpan[i] = details.DeserializeSpan;
                 getLengths[i] = details.GetLength;
                 DefaultLength += details.DefaultLength;
             }
 
             IsClass = type.IsClass;
             if (IsClass)
-                DefaultLength = 1; // 引用类型包含 Nil 标记（注意：此处仅设置为 1，未叠加成员默认长度）
+                DefaultLength = NilLength;
 
-            // 编译 Serialize(ref ByteBuffer, TLinkClient)
-            var serializeBody = Expression.Block(serializes);
-            var serializeLambda = Expression.Lambda<SerializeMethod>(serializeBody, ByteBufferParameter, parameter);
-            _serialize = serializeLambda.Compile();
+            // 编译 Serialize 方法
+            _serializeBuffer = Expression.Lambda<SerializeBufferMethod>(Expression.Block(serializesBuffer), BufferParameter, parameter).Compile();
+            _serializeSpan = Expression.Lambda<SerializeSpanMethod>(Expression.Block(serializesSpan), SpanWriterParameter, parameter).Compile();
 
-            // 编译 Deserialize(ref ByteBuffer)：值类型直接 new；引用类型查找公共无参构造
-            NewExpression newExpr;
-            if (typeof(T).IsValueType)
-            {
-                newExpr = Expression.New(type);
-            }
-            else
-            {
-                var ctor = typeof(T).GetConstructor(Type.EmptyTypes);
-                if (ctor is null)
-                    throw new InvalidOperationException(string.Format("类型 {0} 缺少公共无参构造函数，无法自动反序列化。", typeof(T).FullName));
-                newExpr = Expression.New(ctor);
-            }
+            // 编译 Deserialize 方法
+            NewExpression newExpr = type.IsValueType
+                ? Expression.New(type)
+                : Expression.New(type.GetConstructor(Type.EmptyTypes) ?? throw new InvalidOperationException(string.Format("类型 {0} 缺少公共无参构造函数。", type.FullName)));
 
-            // 以 MemberInit 将成员绑定至新建对象
-            Expression deserializeBody = Expression.MemberInit(newExpr, deserializes);
-            var deserializeLambda = Expression.Lambda<DeserializeMethod>(deserializeBody, ByteBufferParameter);
-            _deserialize = deserializeLambda.Compile();
+            _deserializeBuffer = Expression.Lambda<DeserializeBufferMethod>(Expression.MemberInit(newExpr, deserializesBuffer), BufferReaderParameter).Compile();
+            _deserializeSpan = Expression.Lambda<DeserializeSpanMethod>(Expression.MemberInit(newExpr, deserializesSpan), SpanReaderParameter).Compile();
 
-            // 编译 GetLength(TLinkClient) —— 非空场景下各成员长度之和
-            Expression totalLen = getLengths[0];
+            // 编译 GetLength 方法
+            Expression totalLen = getLengths.Length > 0 ? getLengths[0] : Expression.Constant(0L);
             for (int i = 1; i < getLengths.Length; i++)
             {
                 totalLen = Expression.Add(totalLen, getLengths[i]);
             }
-            var getLengthLambda = Expression.Lambda<GetLengthMethod>(totalLen, parameter);
-            _getLength = getLengthLambda.Compile();
+            _getLength = Expression.Lambda<GetLengthMethod>(totalLen, parameter).Compile();
         }
 
-        /// <summary>
-        /// 从 <see cref="ByteBuffer"/> 反序列化为 <typeparamref name="T"/>。
-        /// </summary>
-        /// <param name="buffer">数据来源（ref）。</param>
-        /// <returns>反序列化得到的值；若读取到 Nil 且 <typeparamref name="T"/> 为引用类型则返回 null。</returns>
-        public override T Deserialize(ref ByteBuffer buffer)
-        {
-            if (TryReadNil(ref buffer))
-                return default!;
-
-            return _deserialize(ref buffer);
-        }
-
-        /// <summary>
-        /// 将 <paramref name="value"/> 序列化写入 <see cref="ByteBuffer"/>。
-        /// </summary>
-        /// <param name="buffer">目标缓存（ref）。</param>
-        /// <param name="value">要序列化的值。</param>
-        public override void Serialize(ref ByteBuffer buffer, T value)
+        public override void Serialize(AbstractBuffer<byte> buffer, T value)
         {
             if (IsClass && value is null)
             {
-                WriteNil(ref buffer);
+                WriteNil(buffer);
                 return;
             }
-
-            _serialize(ref buffer, value);
+            _serializeBuffer(buffer, value);
         }
 
-        /// <summary>
-        /// 估算（或精确计算）序列化 <paramref name="value"/> 需要的字节数。 引用类型或可空值类型为 null 时返回 1（空值标记）。
-        /// </summary>
-        /// <param name="value">目标值。</param>
-        /// <returns>所需字节数。</returns>
+        public override void Serialize(ref SpanWriter<byte> writer, T value)
+        {
+            if (IsClass && value is null)
+            {
+                WriteNil(ref writer);
+                return;
+            }
+            _serializeSpan(ref writer, value);
+        }
+
+        public override T Deserialize(AbstractBufferReader<byte> reader)
+        {
+            if (IsClass && TryReadNil(reader))
+                return default!;
+            return _deserializeBuffer(reader);
+        }
+
+        public override T Deserialize(ref SpanReader<byte> reader)
+        {
+            if (IsClass && TryReadNil(ref reader))
+                return default!;
+            return _deserializeSpan(ref reader);
+        }
+
         public override long GetLength(T value)
         {
             if (IsClass && value is null)
-                return 1;
+                return NilLength;
             return _getLength(value);
         }
 
-        /// <summary>
-        /// 基于提供的属性与字段集合，构建并编译序列化/反序列化/长度委托。
-        /// </summary>
-        /// <param name="store">成员收集器。</param>
         protected abstract void Init(AutoMemberDetailsStore store);
 
-        /// <summary>
-        /// 创建针对某成员的序列化调用表达式：formatter.Serialize(ref ByteBuffer, member)。
-        /// </summary>
-        /// <param name="member">成员访问表达式。</param>
-        /// <param name="serializeMethodInfo">序列化方法信息。</param>
-        /// <param name="formatter">成员类型对应的格式化器实例。</param>
-        /// <returns>方法调用表达式。</returns>
-        private MethodCallExpression CreateSerializeExpression(MemberExpression member, MethodInfo serializeMethodInfo, IBinaryFormatter formatter)
+        private MethodCallExpression CreateSerializeExpression(MemberExpression member, MethodInfo method, ParameterExpression param, IBinaryFormatter formatter)
         {
-            var instance = Expression.Convert(Expression.Constant(formatter), serializeMethodInfo.DeclaringType!);
-            return Expression.Call(instance, serializeMethodInfo, ByteBufferParameter, member);
+            var instance = Expression.Convert(Expression.Constant(formatter), method.DeclaringType!);
+            return Expression.Call(instance, method, param, member);
         }
 
-        /// <summary>
-        /// 创建针对某成员的反序列化绑定表达式：member = formatter.Deserialize(ref ByteBuffer)。
-        /// </summary>
-        /// <param name="memberInfo">目标成员信息。</param>
-        /// <param name="deserializeMethodInfo">反序列化方法信息。</param>
-        /// <param name="formatter">成员类型对应的格式化器实例。</param>
-        /// <returns>成员赋值绑定。</returns>
-        private MemberAssignment CreateDeserializeExpression(MemberInfo memberInfo, MethodInfo deserializeMethodInfo, IBinaryFormatter formatter)
+        private MemberAssignment CreateDeserializeExpression(MemberInfo memberInfo, MethodInfo method, ParameterExpression param, IBinaryFormatter formatter)
         {
-            var instance = Expression.Convert(Expression.Constant(formatter), deserializeMethodInfo.DeclaringType!);
-            var call = Expression.Call(instance, deserializeMethodInfo, ByteBufferParameter);
-
+            var instance = Expression.Convert(Expression.Constant(formatter), method.DeclaringType!);
+            var call = Expression.Call(instance, method, param);
             var targetType = memberInfo is PropertyInfo p ? p.PropertyType : ((FieldInfo)memberInfo).FieldType;
-            Expression value = call;
-            if (call.Type != targetType)
-                value = Expression.Convert(call, targetType);
-
-            return Expression.Bind(memberInfo, value);
+            return Expression.Bind(memberInfo, call.Type != targetType ? Expression.Convert(call, targetType) : call);
         }
 
-        /// <summary>
-        /// 创建针对某成员的 GetLength 调用表达式：formatter.GetLength(member)。
-        /// </summary>
-        /// <param name="member">成员访问表达式。</param>
-        /// <param name="getLengthMethodInfo">估算长度方法信息。</param>
-        /// <param name="formatter">成员类型对应的格式化器实例。</param>
-        /// <returns>方法调用表达式。</returns>
-        private MethodCallExpression CreateGetLengthExpression(MemberExpression member, MethodInfo getLengthMethodInfo, IBinaryFormatter formatter)
+        private MethodCallExpression CreateGetLengthExpression(MemberExpression member, MethodInfo method, IBinaryFormatter formatter)
         {
-            var instance = Expression.Convert(Expression.Constant(formatter), getLengthMethodInfo.DeclaringType!);
-            return Expression.Call(instance, getLengthMethodInfo, member);
+            var instance = Expression.Convert(Expression.Constant(formatter), method.DeclaringType!);
+            return Expression.Call(instance, method, member);
         }
 
-        /// <summary>
-        /// 为属性创建成员信息（序列化/反序列化/长度估算表达式及默认长度）。
-        /// </summary>
-        /// <param name="parameter">统一的对象参数表达式。</param>
-        /// <param name="propertyInfo">属性信息。</param>
-        /// <returns>成员描述信息。</returns>
-        private AutoMemberDetails CreateAutoMemberInfo(Expression parameter, PropertyInfo propertyInfo)
+        private AutoMemberDetails CreateAutoMemberInfo(Expression parameter, MemberInfo info)
         {
-            ArgumentNullException.ThrowIfNull(parameter);
-            ArgumentNullException.ThrowIfNull(propertyInfo);
+            Type memberType = info is PropertyInfo p ? p.PropertyType : ((FieldInfo)info).FieldType;
+            MemberExpression member = Expression.MakeMemberAccess(parameter, info);
+            var formatter = GetFormatter(memberType);
+            var md = formatter.MethodInfoDetails;
 
-            MemberExpression member = Expression.Property(parameter, propertyInfo);
-
-            var formatter = GetFormatter(propertyInfo.PropertyType);
-            var info = formatter.MethodInfoDetails;
-            MethodCallExpression serialize = CreateSerializeExpression(member, info.Serialize, formatter);
-            MemberBinding deserialize = CreateDeserializeExpression(propertyInfo, info.Deserialize, formatter);
-            MethodCallExpression getLength = CreateGetLengthExpression(member, info.GetLength, formatter);
-
-            return new AutoMemberDetails(serialize, deserialize, getLength, propertyInfo.Name, formatter.DefaultLength);
+            return new AutoMemberDetails(
+                CreateSerializeExpression(member, md.SerializeBuffer, BufferParameter, formatter),
+                CreateSerializeExpression(member, md.SerializeSpan, SpanWriterParameter, formatter),
+                CreateDeserializeExpression(info, md.DeserializeBuffer, BufferReaderParameter, formatter),
+                CreateDeserializeExpression(info, md.DeserializeSpan, SpanReaderParameter, formatter),
+                CreateGetLengthExpression(member, md.GetLength, formatter),
+                info.Name,
+                formatter.DefaultLength);
         }
 
-        /// <summary>
-        /// 为字段创建成员信息（序列化/反序列化/长度估算表达式及默认长度）。
-        /// </summary>
-        /// <param name="parameter">统一的对象参数表达式。</param>
-        /// <param name="fieldInfo">字段信息。</param>
-        /// <returns>成员描述信息。</returns>
-        private AutoMemberDetails CreateAutoMemberInfo(Expression parameter, FieldInfo fieldInfo)
-        {
-            ArgumentNullException.ThrowIfNull(parameter);
-            ArgumentNullException.ThrowIfNull(fieldInfo);
-
-            MemberExpression member = Expression.Field(parameter, fieldInfo);
-
-            var formatter = GetFormatter(fieldInfo.FieldType);
-            var info = formatter.MethodInfoDetails;
-            MethodCallExpression serialize = CreateSerializeExpression(member, info.Serialize, formatter);
-            MemberBinding deserialize = CreateDeserializeExpression(fieldInfo, info.Deserialize, formatter);
-            MethodCallExpression getLength = CreateGetLengthExpression(member, info.GetLength, formatter);
-            return new AutoMemberDetails(serialize, deserialize, getLength, fieldInfo.Name, formatter.DefaultLength);
-        }
-
-        /// <summary>
-        /// 成员收集器：用于在构造过程中声明需要参与序列化/反序列化/长度估算的属性或字段。 持有统一的 <see cref="ParameterExpression"/> 以避免表达式树中的参数不一致问题。
-        /// </summary>
         protected struct AutoMemberDetailsStore
         {
-            private const string PropertyInfoString = nameof(PropertyInfo);
-            private const string FieldInfoString = nameof(FieldInfo);
-
             private AutoFormatter<T> autoFormatter;
             private ParameterExpression parameter;
-
-            /// <summary>
-            /// 已收集的成员详情列表（按添加顺序生成序列化/反序列化/长度表达式）。
-            /// </summary>
             public List<AutoMemberDetails> memberDetails;
 
-            /// <summary>
-            /// 使用给定格式化器与参数表达式创建成员收集器。
-            /// </summary>
-            /// <param name="autoFormatter">目标自动格式化器。</param>
-            /// <param name="parameter">统一的对象参数表达式。</param>
             public AutoMemberDetailsStore(AutoFormatter<T> autoFormatter, ParameterExpression parameter)
             {
                 this.autoFormatter = autoFormatter;
@@ -302,152 +229,48 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
                 memberDetails = new();
             }
 
-            /// <summary>
-            /// 添加一个属性或字段（通过成员访问表达式选择）。
-            /// </summary>
-            /// <typeparam name="TMember">成员信息类型： <see cref="PropertyInfo"/> 或 <see cref="FieldInfo"/>。</typeparam>
-            /// <param name="selector">成员访问表达式，如 x =&gt; x.Property 或 x =&gt; x.Field。</param>
-            /// <returns>当前收集器（支持链式调用）。</returns>
-            /// <exception cref="InvalidOperationException">当表达式不是成员访问时抛出。</exception>
-            /// <exception cref="ArgumentException">当表达式不是属性或字段访问时抛出。</exception>
             public AutoMemberDetailsStore Add<TMember>(Expression<Func<T, TMember>> selector)
             {
-                ArgumentNullException.ThrowIfNull(selector, nameof(selector));
-
                 Expression body = selector.Body;
-
-                if (body is UnaryExpression u && u.NodeType == ExpressionType.Convert)
-                    body = u.Operand;
-
-                if (body is not MemberExpression m)
-                    throw new InvalidOperationException("传入的必须是属性或字段");
-
-                AutoMemberDetails details = default;
-                string infoName = string.Empty;
-                switch (m.Member)
-                {
-                    case PropertyInfo pi:
-                        details = autoFormatter.CreateAutoMemberInfo(parameter, pi);
-                        infoName = PropertyInfoString;
-                        break;
-
-                    case FieldInfo fi:
-                        details = autoFormatter.CreateAutoMemberInfo(parameter, fi);
-                        infoName = FieldInfoString;
-                        break;
-
-                    default:
-                        throw new ArgumentException("selector 必须为属性或字段访问表达式，例如 x => x.Property", nameof(selector));
-                }
-
-                // 重复检查（基于成员名）
-                CheckDuplicate(details.Name, PropertyInfoString);
-
-                memberDetails.Add(details);
-
-                return this;
+                if (body is UnaryExpression u && u.NodeType == ExpressionType.Convert) body = u.Operand;
+                if (body is not MemberExpression m) throw new InvalidOperationException("必须是属性或字段");
+                return Add(m.Member);
             }
 
-            /// <summary>
-            /// 添加一个属性（通过反射信息）。
-            /// </summary>
-            /// <param name="propertyInfo">属性信息。</param>
-            /// <returns>当前收集器。</returns>
-            public AutoMemberDetailsStore Add(PropertyInfo propertyInfo)
+            public AutoMemberDetailsStore Add(PropertyInfo propertyInfo) => Add((MemberInfo)propertyInfo);
+
+            public AutoMemberDetailsStore Add(FieldInfo fieldInfo) => Add((MemberInfo)fieldInfo);
+
+            private AutoMemberDetailsStore Add(MemberInfo info)
             {
-                ArgumentNullException.ThrowIfNull(propertyInfo, nameof(propertyInfo));
-
-                AutoMemberDetails details = autoFormatter.CreateAutoMemberInfo(parameter, propertyInfo);
-
-                CheckDuplicate(details.Name, PropertyInfoString);
-
-                memberDetails.Add(details);
-
-                return this;
-            }
-
-            /// <summary>
-            /// 添加一个字段（通过反射信息）。
-            /// </summary>
-            /// <param name="fieldInfo">字段信息。</param>
-            /// <returns>当前收集器。</returns>
-            public AutoMemberDetailsStore Add(FieldInfo fieldInfo)
-            {
-                ArgumentNullException.ThrowIfNull(fieldInfo, nameof(fieldInfo));
-
-                AutoMemberDetails details = autoFormatter.CreateAutoMemberInfo(parameter, fieldInfo);
-
-                CheckDuplicate(details.Name, FieldInfoString);
-
-                memberDetails.Add(details);
-
-                return this;
-            }
-
-            /// <summary>
-            /// 检查是否重复添加同名成员。
-            /// </summary>
-            /// <param name="name">成员名称。</param>
-            /// <param name="infoName">成员类型名提示（仅用于错误信息）。</param>
-            /// <exception cref="Exception">当发现重复成员时抛出。</exception>
-            private void CheckDuplicate(string name, string infoName)
-            {
+                var details = autoFormatter.CreateAutoMemberInfo(parameter, info);
                 for (int i = 0; i < memberDetails.Count; i++)
-                {
-                    var item = memberDetails[i];
-                    if (item.Name == name)
-                    {
-                        throw new Exception(string.Format("重复添加{0}名称为：{1} : 在第{2}个输入", infoName, name, i));
-                    }
-                }
+                    if (memberDetails[i].Name == details.Name)
+                        throw new Exception($"重复添加成员：{details.Name}");
+                memberDetails.Add(details);
+                return this;
             }
         }
 
-        /// <summary>
-        /// 单个成员（属性/字段）的表达式与元数据聚合。
-        /// </summary>
         protected readonly struct AutoMemberDetails
         {
-            /// <summary>
-            /// 针对该成员的序列化调用表达式。
-            /// </summary>
-            public Expression Serialize { get; }
-
-            /// <summary>
-            /// 针对该成员的反序列化成员绑定。
-            /// </summary>
-            public MemberBinding Deserialize { get; }
-
-            /// <summary>
-            /// 针对该成员的长度估算调用表达式。
-            /// </summary>
+            public Expression SerializeBuffer { get; }
+            public Expression SerializeSpan { get; }
+            public MemberBinding DeserializeBuffer { get; }
+            public MemberBinding DeserializeSpan { get; }
             public Expression GetLength { get; }
-
-            /// <summary>
-            /// 成员名称（用于重复校验与诊断）。
-            /// </summary>
             public string Name { get; }
-
-            /// <summary>
-            /// 成员的默认预估长度（由成员类型的格式化器提供）。
-            /// </summary>
             public int DefaultLength { get; }
 
-            /// <summary>
-            /// 使用给定的表达式与元信息构造成员详情。
-            /// </summary>
-            /// <param name="serialize">序列化表达式。</param>
-            /// <param name="deserialize">反序列化绑定。</param>
-            /// <param name="getLength">长度估算表达式。</param>
-            /// <param name="name">成员名称。</param>
-            /// <param name="defaultLength">成员默认预估长度。</param>
-            public AutoMemberDetails(Expression serialize, MemberBinding deserialize, Expression getLength, string name, int defaultLength)
+            public AutoMemberDetails(Expression serBuf, Expression serSpan, MemberBinding desBuf, MemberBinding desSpan, Expression getLen, string name, int defLen)
             {
-                Serialize = serialize;
-                Deserialize = deserialize;
-                GetLength = getLength;
+                SerializeBuffer = serBuf;
+                SerializeSpan = serSpan;
+                DeserializeBuffer = desBuf;
+                DeserializeSpan = desSpan;
+                GetLength = getLen;
                 Name = name;
-                DefaultLength = defaultLength;
+                DefaultLength = defLen;
             }
         }
     }

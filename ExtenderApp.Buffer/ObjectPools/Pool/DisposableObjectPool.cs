@@ -4,7 +4,7 @@
     /// 默认可以被销毁对象的对象池
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public sealed class DisposableObjectPool<T> : DefaultObjectPool<T>, IDisposable where T : class, new()
+    public sealed class DisposableObjectPool<T> : DefaultObjectPool<T>, IDisposable where T : class
     {
         private volatile bool _isDisposed;
 

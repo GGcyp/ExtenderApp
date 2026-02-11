@@ -2,7 +2,6 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Security.Cryptography;
 using System.Text;
-using ExtenderApp.Buffer;
 using ExtenderApp.Buffer.MemoryBlocks;
 
 namespace ExtenderApp.Buffer
@@ -325,7 +324,7 @@ namespace ExtenderApp.Buffer
         /// </summary>
         /// <param name="block">来源内存块，其已写入范围将被追加到当前块。</param>
         public void Write(MemoryBlock<byte> block)
-            => Block.Write(block);
+            => Block.Write(block.CommittedSpan);
 
         /// <summary>
         /// 将 <see cref="NativeByteMemory"/> 的内容写入当前块并推进写指针。

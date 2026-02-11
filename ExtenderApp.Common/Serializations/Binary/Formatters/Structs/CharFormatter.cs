@@ -1,5 +1,5 @@
 ﻿using ExtenderApp.Abstract;
-using ExtenderApp.Contracts;
+using ExtenderApp.Buffer;
 
 namespace ExtenderApp.Common.Serializations.Binary.Formatters
 {
@@ -14,14 +14,24 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
             _uint16 = GetFormatter<UInt16>();
         }
 
-        public override char Deserialize(ref ByteBuffer buffer)
+        public override void Serialize(AbstractBuffer<byte> buffer, char value)
         {
-            return (char)_uint16.Deserialize(ref buffer);
+            _uint16.Serialize(buffer, (UInt16)value);
         }
 
-        public override void Serialize(ref ByteBuffer buffer, char value)
+        public override void Serialize(ref SpanWriter<byte> writer, char value)
         {
-            _uint16.Serialize(ref buffer, (UInt16)value);
+            _uint16.Serialize(ref writer, (UInt16)value);
+        }
+
+        public override char Deserialize(AbstractBufferReader<byte> reader)
+        {
+            return (char)_uint16.Deserialize(reader);
+        }
+
+        public override char Deserialize(ref SpanReader<byte> reader)
+        {
+            return (char)_uint16.Deserialize(ref reader);
         }
 
         public override long GetLength(char value)

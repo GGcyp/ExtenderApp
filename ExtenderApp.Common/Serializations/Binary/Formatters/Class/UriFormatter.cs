@@ -1,4 +1,7 @@
-﻿using ExtenderApp.Abstract;
+﻿using System;
+using ExtenderApp.Abstract;
+using ExtenderApp.Buffer;
+using ExtenderApp.Buffer.Reader;
 using ExtenderApp.Contracts;
 
 namespace ExtenderApp.Common.Serializations.Binary.Formatters
@@ -18,40 +21,37 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
 
         public override int DefaultLength => _formatter.DefaultLength;
 
-        public override Uri Deserialize(ref ByteBuffer buffer)
+        public override Uri Deserialize(AbstractBufferReader<byte> reader)
         {
-            //if(_bufferConvert.TryReadNil(ref Block))
-            //{
-            //    return null;
-            //}
-
-            //_bufferConvert.TryReadStringSpan(ref Block, out ReadOnlySpan<byte> bytes);
-            //var Value = _bufferConvert.UTF8ToString(bytes);
-            //return new Uri(Value);
-
-            var result = _formatter.Deserialize(ref buffer);
+            var result = _formatter.Deserialize(reader);
+            if (string.IsNullOrEmpty(result))
+                return null!;
             return new Uri(result);
         }
 
-        public override void Serialize(ref ByteBuffer buffer, Uri value)
+        public override Uri Deserialize(ref SpanReader<byte> reader)
         {
-            //if(Value == null)
-            //{
-            //    _bufferConvert.WriteNil(ref Block);
-            //}
-            //else
-            //{
-            //    _bufferConvert.Write(ref Block, Value.ToString());
-            //}
+            var result = _formatter.Deserialize(ref reader);
+            if (string.IsNullOrEmpty(result))
+                return null!;
+            return new Uri(result);
+        }
 
-            _formatter.Serialize(ref buffer, value.ToString());
+        public override void Serialize(AbstractBuffer<byte> buffer, Uri value)
+        {
+            _formatter.Serialize(buffer, value?.ToString() ?? string.Empty);
+        }
+
+        public override void Serialize(ref SpanWriter<byte> writer, Uri value)
+        {
+            _formatter.Serialize(ref writer, value?.ToString() ?? string.Empty);
         }
 
         public override long GetLength(Uri value)
         {
-            if(value == null)
+            if (value == null)
             {
-                return 1;
+                return NilLength;
             }
 
             return _formatter.GetLength(value.ToString());

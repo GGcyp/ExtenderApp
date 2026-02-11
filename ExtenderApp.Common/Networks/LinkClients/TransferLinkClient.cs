@@ -35,7 +35,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
             _waitEvent = new(true);
             if (Connected)
             {
-                StartReceive();
+                //StartReceive();
             }
         }
     }

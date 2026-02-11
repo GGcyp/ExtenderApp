@@ -1,4 +1,5 @@
 ﻿using ExtenderApp.Abstract;
+using ExtenderApp.Buffer;
 using ExtenderApp.Contracts;
 
 namespace ExtenderApp.Common.Serializations.Binary.Formatters
@@ -18,14 +19,24 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
 
         public override int DefaultLength => _innerFormatter.DefaultLength;
 
-        public override T Deserialize(ref ByteBuffer buffer)
+        public override void Serialize(AbstractBuffer<byte> buffer, T value)
         {
-            return _innerFormatter.Deserialize(ref buffer);
+            _innerFormatter.Serialize(buffer, value);
         }
 
-        public override void Serialize(ref ByteBuffer buffer, T value)
+        public override void Serialize(ref SpanWriter<byte> writer, T value)
         {
-            _innerFormatter.Serialize(ref buffer, value);
+            _innerFormatter.Serialize(ref writer, value);
+        }
+
+        public override T Deserialize(AbstractBufferReader<byte> reader)
+        {
+            return _innerFormatter.Deserialize(reader);
+        }
+
+        public override T Deserialize(ref SpanReader<byte> reader)
+        {
+            return _innerFormatter.Deserialize(ref reader);
         }
 
         public override long GetLength(T value)

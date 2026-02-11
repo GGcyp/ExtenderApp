@@ -36,14 +36,13 @@ namespace ExtenderApp.Buffer.Sequence
         /// 获取一个可以承载至少 <paramref name="sizeHint"/> 个元素的序列缓冲段。
         /// </summary>
         /// <param name="sizeHint">期望的最小可写元素数，传 0 表示不限。</param>
-        /// <returns>
-        /// 一个包装好的 <see cref="SequenceBufferSegment{T}"/> 实例。派生实现可决定是否复用或新建。
-        /// 返回的段必须与其底层 <see cref="MemoryBlock{T}"/> 的生命周期策略一致（例如归还到提供者或由调用方负责释放）。
-        /// </returns>
+        /// <returns>一个包装好的 <see cref="SequenceBufferSegment{T}"/> 实例。派生实现可决定是否复用或新建。 返回的段必须与其底层 <see cref="MemoryBlock{T}"/> 的生命周期策略一致（例如归还到提供者或由调用方负责释放）。</returns>
         public SequenceBufferSegment<T> GetSegment(int sizeHint)
         {
             var buffer = _provider.GetBuffer(sizeHint);
-            return GetSegmentProtected(buffer);
+            var segment = GetSegmentProtected(buffer);
+            segment.Initialize(this);
+            return segment;
         }
 
         /// <summary>
@@ -57,7 +56,9 @@ namespace ExtenderApp.Buffer.Sequence
             if (block is null)
                 throw new ArgumentNullException(nameof(block));
 
-            return GetSegmentProtected(block);
+            var segment = GetSegmentProtected(block);
+            segment.Initialize(this);
+            return segment;
         }
 
         /// <summary>

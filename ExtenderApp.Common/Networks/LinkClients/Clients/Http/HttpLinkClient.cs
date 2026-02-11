@@ -89,114 +89,114 @@ namespace ExtenderApp.Common.Networks.LinkClients
             };
         }
 
-        public async ValueTask SetHttpParser(IHttpParser httpParser, CancellationToken token = default)
-        {
-            ArgumentNullException.ThrowIfNull(httpParser, nameof(httpParser));
+        //public async ValueTask SetHttpParser(IHttpParser httpParser, CancellationToken token = default)
+        //{
+        //    ArgumentNullException.ThrowIfNull(httpParser, nameof(httpParser));
 
-            if (receiveTask is not null)
-                await receiveTask.WaitAsync(token);
+        //    if (receiveTask is not null)
+        //        await receiveTask.WaitAsync(token);
 
-            Parser = httpParser;
-        }
+        //    Parser = httpParser;
+        //}
 
-        public async ValueTask<HttpResponseMessage> SendAsync(HttpRequestMessage request, SslClientAuthenticationOptions? options = null, CancellationToken token = default)
-        {
-            ArgumentNullException.ThrowIfNull(request);
-            ArgumentNullException.ThrowIfNull(request.RequestUri);
-            receiveCts = CancellationTokenSource.CreateLinkedTokenSource(token);
-            token = receiveCts.Token;
+        //public async ValueTask<HttpResponseMessage> SendAsync(HttpRequestMessage request, SslClientAuthenticationOptions? options = null, CancellationToken token = default)
+        //{
+        //    ArgumentNullException.ThrowIfNull(request);
+        //    ArgumentNullException.ThrowIfNull(request.RequestUri);
+        //    receiveCts = CancellationTokenSource.CreateLinkedTokenSource(token);
+        //    token = receiveCts.Token;
 
-            int redirectCount = 0;
-            Uri currentUri = request.RequestUri;
-            int maxRedirects = request.MaxRedirects;
+        //    int redirectCount = 0;
+        //    Uri currentUri = request.RequestUri;
+        //    int maxRedirects = request.MaxRedirects;
 
-            while (true)
-            {
-                await ConnectAsync(request.RequestUri, token).ConfigureAwait(false);
+        //    while (true)
+        //    {
+        //        await ConnectAsync(request.RequestUri, token).ConfigureAwait(false);
 
-                currentRequest = request;
-                currentStream = request.IsHttps ? _sslStream : _tcpLinkerStream;
-                if (request.IsHttps)
-                {
-                    options = options ?? AuthenticationOptions;
-                    options.TargetHost = request.RequestUri!.Host;
-                    await _sslStream.AuthenticateAsClientAsync(options, token).ConfigureAwait(false);
-                    await SendAuthenticateRequestMessage(request.ToBuffer(), token).ConfigureAwait(false);
-                }
-                else
-                {
-                    await SendRequestMessage(request.ToBuffer(), token).ConfigureAwait(false);
-                }
+        //        currentRequest = request;
+        //        currentStream = request.IsHttps ? _sslStream : _tcpLinkerStream;
+        //        if (request.IsHttps)
+        //        {
+        //            options = options ?? AuthenticationOptions;
+        //            options.TargetHost = request.RequestUri!.Host;
+        //            await _sslStream.AuthenticateAsClientAsync(options, token).ConfigureAwait(false);
+        //            await SendAuthenticateRequestMessage(request.ToBuffer(), token).ConfigureAwait(false);
+        //        }
+        //        else
+        //        {
+        //            await SendRequestMessage(request.ToBuffer(), token).ConfigureAwait(false);
+        //        }
 
-                // 准备等待源并启动接收任务（若尚未启动）
-                vts.Reset();
-                EnsureReceiveTaskRunning(token);
-                var response = await new ValueTask<HttpResponseMessage>(this, vts.Version).ConfigureAwait(false);
+        //        // 准备等待源并启动接收任务（若尚未启动）
+        //        vts.Reset();
+        //        EnsureReceiveTaskRunning(token);
+        //        var response = await new ValueTask<HttpResponseMessage>(this, vts.Version).ConfigureAwait(false);
 
-                // 如果不是重定向，直接返回
-                if (response.StatusCode != HttpStatusCode.Redirect || redirectCount >= maxRedirects)
-                    return response;
+        //        // 如果不是重定向，直接返回
+        //        if (response.StatusCode != HttpStatusCode.Redirect || redirectCount >= maxRedirects)
+        //            return response;
 
-                // 获取 Location 头（需检查是否存在并能解析）
-                string? location = string.Empty;
-                if (!response.Headers.TryGetValues(HttpHeaders.Location, out var locs))
-                {
-                    location = locs.FirstOrDefault();
-                    if (string.IsNullOrEmpty(location))
-                        return response;
-                }
+        //        // 获取 Location 头（需检查是否存在并能解析）
+        //        string? location = string.Empty;
+        //        if (!response.Headers.TryGetValues(HttpHeaders.Location, out var locs))
+        //        {
+        //            location = locs.FirstOrDefault();
+        //            if (string.IsNullOrEmpty(location))
+        //                return response;
+        //        }
 
-                Uri newUri = new Uri(currentUri, location); // 解析相对/绝对
-                redirectCount++;
+        //        Uri newUri = new Uri(currentUri, location); // 解析相对/绝对
+        //        redirectCount++;
 
-                // 必要时调整请求（例如 302/303 将方法改为 GET 并清除 Body）
-                if (response.StatusCode == HttpStatusCode.Redirect || response.StatusCode == HttpStatusCode.RedirectMethod)
-                {
-                    request.Method = Contracts.HttpMethod.Get;
-                    request.Body.Dispose();
-                }
+        //        // 必要时调整请求（例如 302/303 将方法改为 GET 并清除 Body）
+        //        if (response.StatusCode == HttpStatusCode.Redirect || response.StatusCode == HttpStatusCode.RedirectMethod)
+        //        {
+        //            request.Method = Contracts.HttpMethod.Get;
+        //            request.Body.Dispose();
+        //        }
 
-                if (!string.Equals(currentUri.Host, newUri.Host, StringComparison.OrdinalIgnoreCase) || currentUri.Port != newUri.Port)
-                {
-                    await Linker.DisconnectAsync().ConfigureAwait(false);
-                }
+        //        if (!string.Equals(currentUri.Host, newUri.Host, StringComparison.OrdinalIgnoreCase) || currentUri.Port != newUri.Port)
+        //        {
+        //            await Linker.DisconnectAsync().ConfigureAwait(false);
+        //        }
 
-                // 准备下次循环
-                currentUri = newUri;
-                request.RequestUri = newUri;
-                request.Headers.SetValue(HttpHeaders.Host, newUri.Authority);
-            }
-        }
+        //        // 准备下次循环
+        //        currentUri = newUri;
+        //        request.RequestUri = newUri;
+        //        request.Headers.SetValue(HttpHeaders.Host, newUri.Authority);
+        //    }
+        //}
 
-        /// <summary>
-        /// 连接到指定请求 URI 的主机与端口。
-        /// </summary>
-        /// <param name="requestUri">目标 URI，不能为空。</param>
-        /// <param name="token">取消令牌。</param>
-        /// <returns>表示连接操作的 ValueTask。</returns>
-        private ValueTask ConnectAsync(Uri? requestUri, CancellationToken token)
-        {
-            ArgumentNullException.ThrowIfNull(requestUri);
-            int port = requestUri.Port > 0 ? requestUri.Port : 80;
-            return Linker.ConnectAsync(new DnsEndPoint(requestUri.Host, port), token);
-        }
+        ///// <summary>
+        ///// 连接到指定请求 URI 的主机与端口。
+        ///// </summary>
+        ///// <param name="requestUri">目标 URI，不能为空。</param>
+        ///// <param name="token">取消令牌。</param>
+        ///// <returns>表示连接操作的 ValueTask。</returns>
+        //private ValueTask ConnectAsync(Uri? requestUri, CancellationToken token)
+        //{
+        //    ArgumentNullException.ThrowIfNull(requestUri);
+        //    int port = requestUri.Port > 0 ? requestUri.Port : 80;
+        //    return Linker.ConnectAsync(new DnsEndPoint(requestUri.Host, port), token);
+        //}
 
-        /// <summary>
-        /// 将 ByteBuffer 转换并通过底层 Linker 发送（用于明文请求）。
-        /// </summary>
-        private ValueTask SendRequestMessage(ByteBuffer byteBuffer, CancellationToken token)
-        {
-            //return SendRequestMessage(byteBuffer.CommittedSequence, byteBuffer.Rental, token);
-            return ValueTask.CompletedTask;
-        }
+        ///// <summary>
+        ///// 将 ByteBuffer 转换并通过底层 Linker 发送（用于明文请求）。
+        ///// </summary>
+        //private ValueTask SendRequestMessage(ByteBuffer byteBuffer, CancellationToken token)
+        //{
+        //    //return SendRequestMessage(byteBuffer.CommittedSequence, byteBuffer.Rental, token);
+        //    return ValueTask.CompletedTask;
+        //}
 
-        /// <summary>
-        /// 将 ByteBuffer 转换并通过 SslStream 写出（用于 HTTPS 请求发送前，SslStream 已完成握手）。
-        /// </summary>
-        private ValueTask SendAuthenticateRequestMessage(ByteBuffer byteBuffer, CancellationToken token)
-        {
-            return default;
-        }
+        ///// <summary>
+        ///// 将 ByteBuffer 转换并通过 SslStream 写出（用于 HTTPS 请求发送前，SslStream 已完成握手）。
+        ///// </summary>
+        //private ValueTask SendAuthenticateRequestMessage(ByteBuffer byteBuffer, CancellationToken token)
+        //{
+        //    return default;
+        //}
 
 
         /// <summary>
@@ -293,6 +293,16 @@ namespace ExtenderApp.Common.Networks.LinkClients
         /// </summary>
         public void OnCompleted(Action<object?> continuation, object? state, short token, ValueTaskSourceOnCompletedFlags flags)
             => vts.OnCompleted(continuation, state, token, flags);
+
+        public ValueTask<HttpResponseMessage> SendAsync(HttpRequestMessage request, SslClientAuthenticationOptions? options = null, CancellationToken token = default)
+        {
+            throw new NotImplementedException();
+        }
+
+        public ValueTask SetHttpParser(IHttpParser httpParser, CancellationToken token = default)
+        {
+            throw new NotImplementedException();
+        }
 
         #endregion IValueTaskSource<HttpResponseMessage>（委托 vts）
     }

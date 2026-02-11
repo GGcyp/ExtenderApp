@@ -22,10 +22,11 @@ namespace ExtenderApp.Common.Networks
 
         public static uint ToUInt32(this IPAddress ipAddress)
         {
-            ValueIPAddress valueIPAddress = ValueIPAddress.FromIPAddress(ipAddress);
-            var result = valueIPAddress.ToUInt32();
-            valueIPAddress.Dispose();
-            return result;
+            //ValueIPAddress valueIPAddress = ValueIPAddress.FromIPAddress(ipAddress);
+            //var result = valueIPAddress.ToUInt32();
+            //valueIPAddress.Dispose();
+            //return result;
+            return 0;
         }
     }
 }

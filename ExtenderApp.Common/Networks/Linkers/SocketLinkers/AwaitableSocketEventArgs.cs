@@ -2,6 +2,7 @@
 using System.Net.Sockets;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks.Sources;
+using ExtenderApp.Buffer;
 using ExtenderApp.Contracts;
 
 namespace ExtenderApp.Common.Networks
@@ -535,8 +536,7 @@ namespace ExtenderApp.Common.Networks
             AcceptSocket = null;
             RemoteEndPoint = null;
 
-            // 核心变动：必须显式清除 BufferList，因为 SAEA 中它是持久持有的
-            // 且设置 BufferList 为 null 是为了让后续 SetBuffer 调用有效（反之亦然）
+            // 核心变动：必须显式清除 BufferList，因为 SAEA 中它是持久持有的 且设置 BufferList 为 null 是为了让后续 SetBuffer 调用有效（反之亦然）
             BufferList = null;
             SetBuffer(default);
         }

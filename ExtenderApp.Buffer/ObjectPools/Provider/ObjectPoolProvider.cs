@@ -23,6 +23,6 @@
         /// <param name="maximumRetained">对象池中最多保留的对象数量</param>
         /// <returns>生成的 <see cref="ObjectPool{T}"/> 对象</returns>
         /// <remarks>此方法是一个抽象方法，需要子类实现。</remarks>
-        public abstract ObjectPool<T> Create<T>(PooledObjectPolicy<T> policy, int maximumRetained = -1) where T : class, new();
+        public abstract ObjectPool<T> Create<T>(PooledObjectPolicy<T> policy, int maximumRetained = -1) where T : class;
     }
 }

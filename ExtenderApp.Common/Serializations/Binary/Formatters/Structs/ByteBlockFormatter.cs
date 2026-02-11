@@ -1,5 +1,5 @@
 ﻿using ExtenderApp.Abstract;
-using ExtenderApp.Contracts;
+using ExtenderApp.Buffer;
 
 namespace ExtenderApp.Common.Serializations.Binary.Formatters
 {
@@ -15,36 +15,67 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
             _int = GetFormatter<int>();
         }
 
-        public override ByteBlock Deserialize(ref ByteBuffer buffer)
+        public override void Serialize(AbstractBuffer<byte> buffer, ByteBlock value)
         {
-            if (TryReadNil(ref buffer))
+            if (value.IsEmpty)
+            {
+                WriteNil(buffer);
+                return;
+            }
+
+            WriteArrayHeader(buffer);
+            _int.Serialize(buffer, value.Committed);
+            buffer.Write(value.CommittedSpan);
+        }
+
+        public override void Serialize(ref SpanWriter<byte> writer, ByteBlock value)
+        {
+            if (value.IsEmpty)
+            {
+                WriteNil(ref writer);
+                return;
+            }
+            WriteArrayHeader(ref writer);
+            _int.Serialize(ref writer, value.Committed);
+            writer.Write(value);
+        }
+
+        public override ByteBlock Deserialize(AbstractBufferReader<byte> reader)
+        {
+            if (TryReadNil(reader))
             {
                 return new();
             }
 
-            if (!TryReadArrayHeader(ref buffer))
+            if (!TryReadArrayHeader(reader))
             {
                 ThrowOperationException("无法将当前数据反序列化为 ByteBlock 类型，数据格式不匹配。");
             }
 
-            var length = _int.Deserialize(ref buffer);
+            var length = _int.Deserialize(reader);
             ByteBlock block = new(length);
-            var readBlock = buffer.Read(length);
-            block.Write(readBlock);
-            readBlock.Dispose();
+            var readLength = reader.Read(block.GetSpan(length).Slice(0, length));
+            block.Advance(readLength);
             return block;
         }
 
-        public override void Serialize(ref ByteBuffer buffer, ByteBlock value)
+        public override ByteBlock Deserialize(ref SpanReader<byte> reader)
         {
-            if (value.IsEmpty)
+            if (TryReadNil(ref reader))
             {
-                WriteNil(ref buffer);
-                return;
+                return new();
             }
-            WriteArrayHeader(ref buffer);
-            _int.Serialize(ref buffer, value.Remaining);
-            buffer.Write(value);
+
+            if (!TryReadArrayHeader(ref reader))
+            {
+                ThrowOperationException("无法将当前数据反序列化为 ByteBlock 类型，数据格式不匹配。");
+            }
+
+            var length = _int.Deserialize(ref reader);
+            ByteBlock block = new(length);
+            var readLength = reader.Read(block.GetSpan(length).Slice(0, length));
+            block.Advance(readLength);
+            return block;
         }
 
         public override long GetLength(ByteBlock value)
@@ -53,7 +84,7 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
             {
                 return NilLength;
             }
-            return _int.GetLength(value.Remaining) + 1 + value.Remaining;
+            return _int.GetLength(value.Committed) + 1 + value.Committed;
         }
     }
 }

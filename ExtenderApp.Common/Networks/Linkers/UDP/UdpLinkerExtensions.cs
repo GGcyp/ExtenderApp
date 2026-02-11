@@ -1,6 +1,7 @@
 ﻿using System.Net;
 using System.Net.Sockets;
 using ExtenderApp.Abstract;
+using ExtenderApp.Buffer;
 using ExtenderApp.Common.Networks;
 using ExtenderApp.Contracts;
 using Microsoft.Extensions.DependencyInjection;

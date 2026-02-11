@@ -1,8 +1,5 @@
-﻿using System.Security.Cryptography;
-using System.Text;
+﻿using System.Text;
 using ExtenderApp.Abstract;
-
-using ExtenderApp.Contracts;
 
 namespace ExtenderApp.Common.Hash
 {
@@ -11,32 +8,6 @@ namespace ExtenderApp.Common.Hash
     /// </summary>
     internal class HashProvider : IHashProvider
     {
-        /// <summary>
-        /// 哈希池策略类
-        /// </summary>
-        /// <typeparam name="T">哈希算法类型</typeparam>
-        private class HashPoolPolicy<T> : FactoryPooledObjectPolicy<T> where T : HashAlgorithm
-        {
-            /// <summary>
-            /// 构造函数
-            /// </summary>
-            /// <param name="factory">工厂方法</param>
-            public HashPoolPolicy(Func<T> factory) : base(factory)
-            {
-            }
-
-            /// <summary>
-            /// 释放对象
-            /// </summary>
-            /// <param name="obj">待释放对象</param>
-            /// <returns>是否成功释放对象</returns>
-            public override bool Release(T obj)
-            {
-                obj.Initialize();
-                return true;
-            }
-        }
-
         /// <summary>
         /// 文件操作提供者
         /// </summary>

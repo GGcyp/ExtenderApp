@@ -61,11 +61,8 @@ namespace ExtenderApp.Common.Serializations.Binary
             store.AddClassFormatter<Version, VersionFoematter>();
             store.AddClassFormatter<IPAddress, IPAddressFormatter>();
             store.AddClassFormatter<IPEndPoint, IPEndPoinFormatter>();
-
-            store.AddStructFormatter<BitFieldData, BitFieldDataFormatter>();
             store.AddStructFormatter<LocalFileInfo, LocalFileInfoFormatter>();
 
-            store.Add<ByteBlock, ByteBlockFormatter>();
             store.Add<Result, ResultFormatter>();
             store.AddByteArrayFormatter();
 

@@ -1,5 +1,6 @@
 ﻿using System.Collections.Concurrent;
 using ExtenderApp.Abstract;
+using ExtenderApp.Buffer;
 using ExtenderApp.Contracts;
 using Microsoft.Extensions.Logging;
 

@@ -1,5 +1,5 @@
-﻿using System.Buffers;
-using ExtenderApp.Abstract;
+﻿using ExtenderApp.Abstract;
+using ExtenderApp.Buffer;
 using ExtenderApp.Contracts;
 
 namespace ExtenderApp.Common.IO.FileParsers
@@ -16,10 +16,13 @@ namespace ExtenderApp.Common.IO.FileParsers
         public abstract byte[] Serialize<T>(T value);
 
         ///<inheritdoc/>
-        public abstract void Serialize<T>(T value, Span<byte> span);
+        public abstract void Serialize<T>(T value, ref SpanWriter<byte> span);
 
         ///<inheritdoc/>
-        public abstract void Serialize<T>(T value, out ByteBuffer buffer);
+        public abstract void Serialize<T>(T value, AbstractBuffer<byte> buffer);
+
+        ///<inheritdoc/>
+        public abstract void Serialize<T>(T value, out AbstractBuffer<byte> buffer);
 
         #endregion Serialize
 
@@ -29,10 +32,13 @@ namespace ExtenderApp.Common.IO.FileParsers
         public abstract T? Deserialize<T>(ReadOnlySpan<byte> span);
 
         ///<inheritdoc/>
-        public abstract T? Deserialize<T>(ReadOnlyMemory<byte> memory);
+        public abstract T? Deserialize<T>(ref SpanReader<byte> reader);
 
         ///<inheritdoc/>
-        public abstract T? Deserialize<T>(ReadOnlySequence<byte> memories);
+        public abstract T? Deserialize<T>(AbstractBuffer<byte> buffer);
+
+        ///<inheritdoc/>
+        public abstract T? Deserialize<T>(AbstractBufferReader<byte> reader);
 
         #endregion Deserialize
     }

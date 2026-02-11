@@ -1,7 +1,7 @@
 ﻿using System.Net;
 using System.Net.Sockets;
 using ExtenderApp.Abstract;
-using ExtenderApp.Contracts;
+using ExtenderApp.Buffer;
 
 namespace ExtenderApp.Common.Networks
 {

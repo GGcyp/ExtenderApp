@@ -54,31 +54,31 @@ namespace ExtenderApp.Common.Networks.LinkClients
 
         private async Task OnRequestAsync(FileDtoRequest request)
         {
-            FileRequestDecision decision = new(request);
-            RequestReceived?.Invoke(this, decision);
+            //FileRequestDecision decision = new(request);
+            //RequestReceived?.Invoke(this, decision);
 
-            var result = await decision.GetResult();
+            //var result = await decision.GetResult();
 
-            if (!result)
-            {
-                await SendAsync(new FileResponse(false));
-                return;
-            }
+            //if (!result)
+            //{
+            //    await SendAsync(new FileResponse(false));
+            //    return;
+            //}
 
-            var bitField = result.Value;
-            var requestList = request.FileDtos;
-            ValueOrList<FileDto> dtos = new(bitField.TrueCount);
-            for (int i = 0; i < bitField.Length; i++)
-            {
-                if (bitField[i])
-                {
-                    dtos.Add(requestList[i]);
-                }
-            }
-            FileResponse response = new(result, dtos);
-            await SendAsync(response);
+            //var bitField = result.Value;
+            //var requestList = request.FileDtos;
+            //ValueOrList<FileDto> dtos = new(bitField.TrueCount);
+            //for (int i = 0; i < bitField.Length; i++)
+            //{
+            //    if (bitField[i])
+            //    {
+            //        dtos.Add(requestList[i]);
+            //    }
+            //}
+            //FileResponse response = new(result, dtos);
+            //await SendAsync(response);
 
-            CreateListenerLinker();
+            //CreateListenerLinker();
         }
 
         #region Push
@@ -120,18 +120,18 @@ namespace ExtenderApp.Common.Networks.LinkClients
 
         private ValueTask<Result> PrivateSendRequestAsync(FileDtoRequest request, CancellationToken token)
         {
-            // 异步发送请求
-            var sendValueTask = SendAsync(request, token);
+            //// 异步发送请求
+            //var sendValueTask = SendAsync(request, token);
 
-            // 检查发送操作是否已同步完成
-            if (sendValueTask.IsCompletedSuccessfully)
-            {
-                var result = sendValueTask.GetAwaiter().GetResult();
-                if (!result)
-                {
-                    return ValueTask.FromException<Result>(result.Exception ?? new Exception("发送文件推送请求失败。"));
-                }
-            }
+            //// 检查发送操作是否已同步完成
+            //if (sendValueTask.IsCompletedSuccessfully)
+            //{
+            //    var result = sendValueTask.GetAwaiter().GetResult();
+            //    if (!result)
+            //    {
+            //        return ValueTask.FromException<Result>(result.Exception ?? new Exception("发送文件推送请求失败。"));
+            //    }
+            //}
 
             // 操作将异步完成，返回 false
             return new ValueTask<Result>(this, Version);

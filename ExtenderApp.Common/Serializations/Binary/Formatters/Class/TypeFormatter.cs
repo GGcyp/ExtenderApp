@@ -1,4 +1,7 @@
-﻿using ExtenderApp.Abstract;
+﻿using System;
+using ExtenderApp.Abstract;
+using ExtenderApp.Buffer;
+using ExtenderApp.Buffer.Reader;
 using ExtenderApp.Contracts;
 
 namespace ExtenderApp.Common.Serializations.Binary.Formatters
@@ -15,12 +18,12 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
             _string = resolver.GetFormatter<string>();
         }
 
-        public override Type Deserialize(ref ByteBuffer buffer)
+        public override Type Deserialize(AbstractBufferReader<byte> reader)
         {
-            var typeName = _string.Deserialize(ref buffer);
+            var typeName = _string.Deserialize(reader);
             if (string.IsNullOrEmpty(typeName))
             {
-                return null;
+                return null!;
             }
             try
             {
@@ -29,20 +32,43 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
             catch (Exception)
             {
                 // 如果类型无法解析，返回 null
-                return null;
+                return null!;
             }
         }
 
-        public override void Serialize(ref ByteBuffer buffer, Type value)
+        public override Type Deserialize(ref SpanReader<byte> reader)
         {
-            _string.Serialize(ref buffer, value?.AssemblyQualifiedName ?? string.Empty);
+            var typeName = _string.Deserialize(ref reader);
+            if (string.IsNullOrEmpty(typeName))
+            {
+                return null!;
+            }
+            try
+            {
+                return Type.GetType(typeName, throwOnError: true);
+            }
+            catch (Exception)
+            {
+                // 如果类型无法解析，返回 null
+                return null!;
+            }
+        }
+
+        public override void Serialize(AbstractBuffer<byte> buffer, Type value)
+        {
+            _string.Serialize(buffer, value?.AssemblyQualifiedName ?? string.Empty);
+        }
+
+        public override void Serialize(ref SpanWriter<byte> writer, Type value)
+        {
+            _string.Serialize(ref writer, value?.AssemblyQualifiedName ?? string.Empty);
         }
 
         public override long GetLength(Type value)
         {
             if (value == null)
             {
-                return 1;
+                return NilLength;
             }
 
             return _string.GetLength(value.AssemblyQualifiedName);

@@ -1,4 +1,4 @@
-﻿using ExtenderApp.Contracts;
+﻿using ExtenderApp.Buffer;
 
 namespace ExtenderApp.Common.Networks.LinkClients
 {
@@ -20,9 +20,9 @@ namespace ExtenderApp.Common.Networks.LinkClients
         /// <summary>
         /// 数据块内容。
         /// </summary>
-        public ByteBlock Data { get; }
+        public AbstractBuffer<byte> Data { get; }
 
-        public FileDataPacket(Guid fileId, long position, ByteBlock data)
+        public FileDataPacket(Guid fileId, long position, AbstractBuffer<byte> data)
         {
             FileId = fileId;
             Position = position;

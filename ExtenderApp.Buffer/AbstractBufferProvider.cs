@@ -22,9 +22,6 @@ namespace ExtenderApp.Buffer
         /// </returns>
         public TBuffer GetBuffer(int sizeHint = DefaultInitialBufferSize)
         {
-            if (sizeHint < 0)
-                sizeHint = DefaultInitialBufferSize;
-
             return CreateBufferProtected(sizeHint);
         }
 

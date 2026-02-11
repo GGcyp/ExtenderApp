@@ -1,5 +1,5 @@
 ﻿using ExtenderApp.Abstract;
-using ExtenderApp.Contracts;
+using ExtenderApp.Buffer;
 
 namespace ExtenderApp.Common.Serializations.Binary.Formatters
 {
@@ -22,25 +22,46 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
 
         public override int DefaultLength => _formatter.DefaultLength;
 
-        public override T? Deserialize(ref ByteBuffer buffer)
-        {
-            if (TryReadNil(ref buffer))
-            {
-                return null;
-            }
-            return _formatter.Deserialize(ref buffer);
-        }
-
-        public override void Serialize(ref ByteBuffer buffer, T? value)
+        public override void Serialize(AbstractBuffer<byte> buffer, T? value)
         {
             if (value.HasValue)
             {
-                _formatter.Serialize(ref buffer, value.Value);
+                _formatter.Serialize(buffer, value.Value);
             }
             else
             {
-                WriteNil(ref buffer);
+                WriteNil(buffer);
             }
+        }
+
+        public override void Serialize(ref SpanWriter<byte> writer, T? value)
+        {
+            if (value.HasValue)
+            {
+                _formatter.Serialize(ref writer, value.Value);
+            }
+            else
+            {
+                WriteNil(ref writer);
+            }
+        }
+
+        public override T? Deserialize(AbstractBufferReader<byte> reader)
+        {
+            if (TryReadNil(reader))
+            {
+                return null;
+            }
+            return _formatter.Deserialize(reader);
+        }
+
+        public override T? Deserialize(ref SpanReader<byte> reader)
+        {
+            if (TryReadNil(ref reader))
+            {
+                return null;
+            }
+            return _formatter.Deserialize(ref reader);
         }
 
         public override long GetLength(T? value)

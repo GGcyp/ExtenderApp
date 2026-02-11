@@ -60,7 +60,6 @@ namespace ExtenderApp.Common.IO
         {
             var hash = info.LocalFileInfo.FullPath.AsSpan().GetHashValue_SHA256();
             int hashCode = hash.GetHashCode();
-            hash.Dispose();
             return hashCode;
         }
     }

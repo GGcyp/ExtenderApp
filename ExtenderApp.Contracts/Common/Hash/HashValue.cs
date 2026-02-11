@@ -55,8 +55,9 @@
         /// <exception cref="ArgumentNullException">当 <paramref name="hashSpan"/> 为空或不包含有效数据时抛出。</exception>
         public HashValue(Span<byte> hashSpan)
         {
-            if (hashSpan.IsEmpty || CheckHashLength(hashSpan.Length))
-                throw new ArgumentNullException(nameof(hashSpan));
+            if (hashSpan.IsEmpty)
+                throw new ArgumentException("哈希数据不能为空。", nameof(hashSpan));
+            CheckHashLength(hashSpan.Length);
 
             hashBytes = hashSpan.ToArray();
         }
@@ -68,9 +69,9 @@
         /// <exception cref="ArgumentException">当 <paramref name="hashSpan"/> 为空或长度为 0 时抛出。</exception>
         public HashValue(ReadOnlySpan<byte> hashSpan)
         {
-            if (hashSpan.IsEmpty || CheckHashLength(hashSpan.Length))
+            if (hashSpan.IsEmpty)
                 throw new ArgumentException("哈希数据不能为空。", nameof(hashSpan));
-
+            CheckHashLength(hashSpan.Length);
             hashBytes = hashSpan.ToArray();
         }
 
@@ -79,14 +80,14 @@
         /// </summary>
         /// <param name="length">哈希长度</param>
         /// <returns>如果合法返回 true，否者返回 false</returns>
-        private static bool CheckHashLength(int length)
+        private static void CheckHashLength(int length)
         {
             for (int i = 0; i < HashLengths.Length; i++)
             {
                 if (HashLengths[i] == length)
-                    return true;
+                    return;
             }
-            return false;
+            throw new ArgumentException($"哈希数据长度无效。支持的长度为：{string.Join(", ", HashLengths)} 字节。");
         }
 
         /// <summary>

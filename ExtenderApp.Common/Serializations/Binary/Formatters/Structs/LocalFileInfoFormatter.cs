@@ -1,4 +1,5 @@
 ﻿using ExtenderApp.Abstract;
+using ExtenderApp.Buffer;
 using ExtenderApp.Contracts;
 
 namespace ExtenderApp.Common.Serializations.Binary.Formatters
@@ -14,26 +15,48 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
             _string = resolver.GetFormatter<string>();
         }
 
-        public override LocalFileInfo Deserialize(ref ByteBuffer buffer)
+        public override void Serialize(AbstractBuffer<byte> buffer, LocalFileInfo value)
         {
-            if (TryReadNil(ref buffer))
+            if (value.IsEmpty)
+            {
+                WriteNil(buffer);
+                return;
+            }
+            _string.Serialize(buffer, value.FullPath);
+        }
+
+        public override void Serialize(ref SpanWriter<byte> writer, LocalFileInfo value)
+        {
+            if (value.IsEmpty)
+            {
+                WriteNil(ref writer);
+                return;
+            }
+            _string.Serialize(ref writer, value.FullPath);
+        }
+
+        public override LocalFileInfo Deserialize(AbstractBufferReader<byte> reader)
+        {
+            if (TryReadNil(reader))
                 return LocalFileInfo.Empty;
 
-            var result = _string.Deserialize(ref buffer);
+            var result = _string.Deserialize(reader);
             if (string.IsNullOrEmpty(result))
                 return LocalFileInfo.Empty;
 
             return result;
         }
 
-        public override void Serialize(ref ByteBuffer buffer, LocalFileInfo value)
+        public override LocalFileInfo Deserialize(ref SpanReader<byte> reader)
         {
-            if (value.IsEmpty)
-            {
-                WriteNil(ref buffer);
-                return;
-            }
-            _string.Serialize(ref buffer, value.FullPath);
+            if (TryReadNil(ref reader))
+                return LocalFileInfo.Empty;
+
+            var result = _string.Deserialize(ref reader);
+            if (string.IsNullOrEmpty(result))
+                return LocalFileInfo.Empty;
+
+            return result;
         }
 
         public override long GetLength(LocalFileInfo value)

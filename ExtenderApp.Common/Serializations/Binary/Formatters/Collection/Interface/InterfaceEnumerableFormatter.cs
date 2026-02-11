@@ -1,4 +1,6 @@
 ﻿using ExtenderApp.Abstract;
+using ExtenderApp.Buffer;
+using ExtenderApp.Buffer.Reader;
 using ExtenderApp.Contracts;
 
 namespace ExtenderApp.Common.Serializations.Binary.Formatters
@@ -25,44 +27,85 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
             _int = GetFormatter<int>();
         }
 
-        public override TEnumerable Deserialize(ref ByteBuffer buffer)
+        public override TEnumerable Deserialize(ref SpanReader<byte> reader)
         {
-            if (TryReadNil(ref buffer))
+            if (TryReadNil(ref reader))
             {
                 return default!;
             }
 
-            if (!TryReadArrayHeader(ref buffer))
+            if (!TryReadArrayHeader(ref reader))
             {
                 throw new InvalidOperationException("数据类型不匹配。");
             }
 
-            var len = _int.Deserialize(ref buffer);
+            var len = _int.Deserialize(ref reader);
 
             var result = Create(len);
             for (int i = 0; i < len; i++)
             {
-                Add(result, _t.Deserialize(ref buffer));
+                Add(result, _t.Deserialize(ref reader));
             }
 
             return result;
         }
 
-        public override void Serialize(ref ByteBuffer buffer, TEnumerable value)
+        public override TEnumerable Deserialize(AbstractBufferReader<byte> reader)
+        {
+            if (TryReadNil(reader))
+            {
+                return default!;
+            }
+
+            if (!TryReadArrayHeader(reader))
+            {
+                throw new InvalidOperationException("数据类型不匹配。");
+            }
+
+            var len = _int.Deserialize(reader);
+
+            var result = Create(len);
+            for (int i = 0; i < len; i++)
+            {
+                Add(result, _t.Deserialize(reader));
+            }
+
+            return result;
+        }
+
+        public override void Serialize(ref SpanWriter<byte> writer, TEnumerable value)
         {
             if (value == null)
             {
-                WriteNil(ref buffer);
+                WriteNil(ref writer);
                 return;
             }
 
             var count = value.Count();
-            WriteArrayHeader(ref buffer);
-            _int.Serialize(ref buffer, count);
+            WriteArrayHeader(ref writer);
+            _int.Serialize(ref writer, count);
 
             foreach (T item in value)
             {
-                _t.Serialize(ref buffer, item);
+                _t.Serialize(ref writer, item);
+            }
+        }
+
+        public override void Serialize(AbstractBuffer<byte> buffer, TEnumerable value)
+        {
+            if (value == null)
+            {
+                WriteNil(buffer);
+                return;
+            }
+
+            var count = value.Count();
+            WriteArrayHeader(buffer);
+            _int.Serialize(buffer, count);
+
+            foreach (T item in value)
+            {
+                _t.Serialize(buffer, item);
             }
         }
 

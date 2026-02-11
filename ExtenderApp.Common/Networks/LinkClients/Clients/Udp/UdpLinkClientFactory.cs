@@ -10,7 +10,8 @@ namespace ExtenderApp.Common.Networks.LinkClients
 
         protected override IUdpTransferLinkClient CreateLinkClient(IUdpLinker linker)
         {
-            return new UdpLinkClient(linker);
+            //return new UdpLinkClient(linker);
+            return default!;
         }
     }
 }

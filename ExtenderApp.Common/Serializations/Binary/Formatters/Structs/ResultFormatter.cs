@@ -1,4 +1,5 @@
 ﻿using ExtenderApp.Abstract;
+using ExtenderApp.Buffer;
 using ExtenderApp.Contracts;
 
 namespace ExtenderApp.Common.Serializations.Binary.Formatters
@@ -17,17 +18,30 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
             _string = GetFormatter<string>();
         }
 
-        public override Result Deserialize(ref ByteBuffer buffer)
+        public override void Serialize(AbstractBuffer<byte> buffer, Result value)
         {
-            var code = _bool.Deserialize(ref buffer);
-            var messenge = _string.Deserialize(ref buffer);
+            _bool.Serialize(buffer, value);
+            _string.Serialize(buffer, value!);
+        }
+
+        public override void Serialize(ref SpanWriter<byte> writer, Result value)
+        {
+            _bool.Serialize(ref writer, value);
+            _string.Serialize(ref writer, value!);
+        }
+
+        public override Result Deserialize(AbstractBufferReader<byte> reader)
+        {
+            var code = _bool.Deserialize(reader);
+            var messenge = _string.Deserialize(reader);
             return new Result(code, messenge);
         }
 
-        public override void Serialize(ref ByteBuffer buffer, Result value)
+        public override Result Deserialize(ref SpanReader<byte> reader)
         {
-            _bool.Serialize(ref buffer, value);
-            _string.Serialize(ref buffer, value!);
+            var code = _bool.Deserialize(ref reader);
+            var messenge = _string.Deserialize(ref reader);
+            return new Result(code, messenge);
         }
 
         public override long GetLength(Result value)
@@ -37,7 +51,6 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
     }
 
     /// <summary>
-    /// 
     /// </summary>
     /// <typeparam name="T"></typeparam>
     internal class ResultFormatter<T> : ResolverFormatter<Result<T>>
@@ -53,19 +66,34 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
             _value = GetFormatter<T>();
         }
 
-        public override Result<T> Deserialize(ref ByteBuffer buffer)
+        public override void Serialize(AbstractBuffer<byte> buffer, Result<T> value)
         {
-            var code = _bool.Deserialize(ref buffer);
-            var messenge = _string.Deserialize(ref buffer);
-            var value = _value.Deserialize(ref buffer);
+            _bool.Serialize(buffer, value);
+            _string.Serialize(buffer, value!);
+            _value.Serialize(buffer, value!);
+        }
+
+        public override void Serialize(ref SpanWriter<byte> writer, Result<T> value)
+        {
+            _bool.Serialize(ref writer, value);
+            _string.Serialize(ref writer, value!);
+            _value.Serialize(ref writer, value!);
+        }
+
+        public override Result<T> Deserialize(AbstractBufferReader<byte> reader)
+        {
+            var code = _bool.Deserialize(reader);
+            var messenge = _string.Deserialize(reader);
+            var value = _value.Deserialize(reader);
             return new Result<T>(code, value, messenge);
         }
 
-        public override void Serialize(ref ByteBuffer buffer, Result<T> value)
+        public override Result<T> Deserialize(ref SpanReader<byte> reader)
         {
-            _bool.Serialize(ref buffer, value);
-            _string.Serialize(ref buffer, value!);
-            _value.Serialize(ref buffer, value!);
+            var code = _bool.Deserialize(ref reader);
+            var messenge = _string.Deserialize(ref reader);
+            var value = _value.Deserialize(ref reader);
+            return new Result<T>(code, value, messenge);
         }
 
         public override long GetLength(Result<T> value)

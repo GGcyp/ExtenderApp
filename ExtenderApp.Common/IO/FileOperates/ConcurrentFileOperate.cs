@@ -1,4 +1,6 @@
-﻿using ExtenderApp.Contracts;
+﻿using System.Collections.Concurrent;
+using ExtenderApp.Buffer;
+using ExtenderApp.Contracts;
 
 namespace ExtenderApp.Common.IO.FileOperates
 {
@@ -44,6 +46,8 @@ namespace ExtenderApp.Common.IO.FileOperates
             Stream.SetLength(length);
         }
 
+        #region Read
+
         protected override byte[] ExecuteRead(long filePosition, int length)
         {
             EnterOperate(filePosition, length);
@@ -52,19 +56,6 @@ namespace ExtenderApp.Common.IO.FileOperates
                 byte[] bytes = new byte[length];
                 RandomAccess.Read(Stream.SafeFileHandle, bytes, filePosition);
                 return bytes;
-            }
-            finally
-            {
-                ExitOperate(filePosition, length);
-            }
-        }
-
-        protected override int ExecuteRead(long filePosition, byte[] bytes, int bytesStart, int length)
-        {
-            EnterOperate(filePosition, length);
-            try
-            {
-                return RandomAccess.Read(Stream.SafeFileHandle, bytes.AsSpan(bytesStart, length), filePosition);
             }
             finally
             {
@@ -85,19 +76,6 @@ namespace ExtenderApp.Common.IO.FileOperates
             }
         }
 
-        protected override int ExecuteRead(long filePosition, Memory<byte> memory)
-        {
-            EnterOperate(filePosition, memory.Length);
-            try
-            {
-                return RandomAccess.Read(Stream.SafeFileHandle, memory.Span, filePosition);
-            }
-            finally
-            {
-                ExitOperate(filePosition, memory.Length);
-            }
-        }
-
         protected override async ValueTask<byte[]> ExecuteReadAsync(long filePosition, int length, CancellationToken token)
         {
             await EnterOperateAsync(filePosition, length);
@@ -113,31 +91,29 @@ namespace ExtenderApp.Common.IO.FileOperates
             }
         }
 
-        protected override async ValueTask<int> ExecuteReadAsync(long filePosition, byte[] bytes, int bytesStart, int length, CancellationToken token)
+        protected override async ValueTask<long> ExecuteReadAsync(long filePosition, long length, AbstractBuffer<byte> buffer, CancellationToken token)
         {
-            await EnterOperateAsync(filePosition, length);
+            await EnterOperateAsync(filePosition, buffer.Committed);
             try
             {
-                return await RandomAccess.ReadAsync(Stream.SafeFileHandle, bytes.AsMemory(bytesStart, length), filePosition, token);
+                var sequence = buffer.CommittedSequence;
+                SequencePosition position = sequence.Start;
+                while (sequence.TryGet(ref position, out ReadOnlyMemory<byte> memory))
+                {
+                    await RandomAccess.WriteAsync(Stream.SafeFileHandle, memory, filePosition);
+                    filePosition += memory.Length;
+                }
+                return buffer.Committed;
             }
             finally
             {
-                ExitOperate(filePosition, length);
+                ExitOperate(filePosition, buffer.Committed);
             }
         }
 
-        protected override async ValueTask<int> ExecuteReadAsync(long filePosition, Memory<byte> memory, CancellationToken token)
-        {
-            await EnterOperateAsync(filePosition, memory.Length);
-            try
-            {
-                return await RandomAccess.ReadAsync(Stream.SafeFileHandle, memory, filePosition, token);
-            }
-            finally
-            {
-                ExitOperate(filePosition, memory.Length);
-            }
-        }
+        #endregion Read
+
+        #region Write
 
         protected override void ExecuteWrite(long filePosition, ReadOnlySpan<byte> span)
         {
@@ -152,31 +128,47 @@ namespace ExtenderApp.Common.IO.FileOperates
             }
         }
 
-        protected override void ExecuteWrite(long filePosition, ReadOnlyMemory<byte> memory)
+        protected override long ExecuteWrite(long filePosition, AbstractBuffer<byte> buffer)
         {
-            EnterOperate(filePosition, memory.Length);
+            EnterOperate(filePosition, buffer.Committed);
             try
             {
-                RandomAccess.Write(Stream.SafeFileHandle, memory.Span, filePosition);
+                var sequence = buffer.CommittedSequence;
+                SequencePosition position = sequence.Start;
+                while (sequence.TryGet(ref position, out ReadOnlyMemory<byte> memory))
+                {
+                    RandomAccess.Write(Stream.SafeFileHandle, memory.Span, filePosition);
+                    filePosition += memory.Length;
+                }
+                return buffer.Committed;
             }
             finally
             {
-                ExitOperate(filePosition, memory.Length);
+                ExitOperate(filePosition, buffer.Committed);
             }
         }
 
-        protected override async ValueTask ExecuteWriteAsync(long filePosition, ReadOnlyMemory<byte> memory, CancellationToken token)
+        protected override async ValueTask<long> ExecuteWriteAsync(long filePosition, AbstractBuffer<byte> buffer, CancellationToken token)
         {
-            await EnterOperateAsync(filePosition, memory.Length);
+            await EnterOperateAsync(filePosition, buffer.Committed);
             try
             {
-                await RandomAccess.WriteAsync(Stream.SafeFileHandle, memory, filePosition, token);
+                var sequence = buffer.CommittedSequence;
+                SequencePosition position = sequence.Start;
+                while (sequence.TryGet(ref position, out ReadOnlyMemory<byte> memory))
+                {
+                    await RandomAccess.WriteAsync(Stream.SafeFileHandle, memory, filePosition);
+                    filePosition += memory.Length;
+                }
+                return buffer.Committed;
             }
             finally
             {
-                ExitOperate(filePosition, memory.Length);
+                ExitOperate(filePosition, buffer.Committed);
             }
         }
+
+        #endregion Write
 
         /// <summary>
         /// 检查给定区间 [position, position + length) 是否可以立即操作（与已登记区间无重叠）。
@@ -200,8 +192,7 @@ namespace ExtenderApp.Common.IO.FileOperates
         }
 
         /// <summary>
-        /// 同步进入指定区间的“操作临界区”：
-        /// 若当前与已登记区间重叠则阻塞等待，直到成功登记该区间后返回。
+        /// 同步进入指定区间的“操作临界区”： 若当前与已登记区间重叠则阻塞等待，直到成功登记该区间后返回。
         /// </summary>
         /// <param name="position">操作起始偏移。</param>
         /// <param name="length">操作长度（小于等于 0 时直接返回）。</param>
@@ -225,8 +216,7 @@ namespace ExtenderApp.Common.IO.FileOperates
         }
 
         /// <summary>
-        /// 异步进入指定区间的“操作临界区”：
-        /// 若当前与已登记区间重叠则异步等待，直到成功登记该区间后返回。
+        /// 异步进入指定区间的“操作临界区”： 若当前与已登记区间重叠则异步等待，直到成功登记该区间后返回。
         /// </summary>
         /// <param name="position">操作起始偏移。</param>
         /// <param name="length">操作长度（小于等于 0 时直接返回）。</param>
@@ -284,10 +274,7 @@ namespace ExtenderApp.Common.IO.FileOperates
         /// <param name="position">起始偏移。</param>
         /// <param name="length">长度。</param>
         /// <returns>登记成功返回 true；若与现有区间重叠返回 false。</returns>
-        /// <remarks>
-        /// 调用方需在成功后保证对应的 <see cref="ExitOperate(long, long)"/> 被调用。
-        /// 注意：内部调用 <see cref="CanOperate(long, long)"/>，该方法也会加锁（可重入），可视需要内联以减少重入成本。
-        /// </remarks>
+        /// <remarks>调用方需在成功后保证对应的 <see cref="ExitOperate(long, long)"/> 被调用。 注意：内部调用 <see cref="CanOperate(long, long)"/>，该方法也会加锁（可重入），可视需要内联以减少重入成本。</remarks>
         private bool TryAddRange(long position, long length)
         {
             lock (_wrLock)

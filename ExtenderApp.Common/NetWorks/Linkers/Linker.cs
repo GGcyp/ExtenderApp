@@ -1,13 +1,13 @@
 ﻿using System.Net;
 using System.Net.Sockets;
 using ExtenderApp.Abstract;
+using ExtenderApp.Buffer;
 using ExtenderApp.Contracts;
 
 namespace ExtenderApp.Common.Networks
 {
     /// <summary>
-    /// 为 <see cref="ILinker"/> 提供一个抽象基类，实现了统一的发送/接收/连接/断开模板以及并发门控。
-    /// 该类负责处理流量统计、容量限制、并发同步以及生命周期管理。
+    /// 为 <see cref="ILinker"/> 提供一个抽象基类，实现了统一的发送/接收/连接/断开模板以及并发门控。 该类负责处理流量统计、容量限制、并发同步以及生命周期管理。
     /// </summary>
     public abstract class Linker : DisposableObject, ILinker
     {

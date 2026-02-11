@@ -25,10 +25,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
         /// </summary>
         public static readonly ReadOnlyMemory<byte> UdpMagic = new byte[] { 0x55, 0x44, 0x50, 0x21 }; // "UDP!"
 
-        //// 私有接收缓存：用于在解析过程中累积不完整的数据（处理半包/粘包）。
-        //private readonly SequenceCache<byte> _receiveCache;
 
-        private readonly Channel<FrameContext> _frameChannel;
 
         public ReadOnlyMemory<byte> Magic { get; private set; }
 
@@ -39,8 +36,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
         /// <param name="magic">初始魔数字节序列；传入 null 则使用 <see cref="TcpMagic"/> 作为默认值。</param>
         public LinkClientFramer(ReadOnlySpan<byte> magic)
         {
-            //_receiveCache = new();
-            _frameChannel = Channel.CreateUnbounded<FrameContext>();
+
             SetMagic(magic);
         }
 
@@ -126,28 +122,28 @@ namespace ExtenderApp.Common.Networks.LinkClients
             //}
         }
 
-        public void Encode(ref FrameContext framedMessage)
-        {
-            ReadOnlyMemory<byte> messageSpan = framedMessage.UnreadMemory;
-            int magicLen = Magic.Length;
-            int headerLen = magicLen + intLength; //length(4)
-            int length = messageSpan.Length;
+        //public void Encode(ref FrameContext framedMessage)
+        //{
+        //    ReadOnlyMemory<byte> messageSpan = framedMessage.UnreadMemory;
+        //    int magicLen = Magic.Length;
+        //    int headerLen = magicLen + intLength; //length(4)
+        //    int length = messageSpan.Length;
 
-            // 创建可写缓冲
-            ByteBlock block = new(headerLen + messageSpan.Length);
-            Span<byte> span = block.GetSpan(headerLen);
+        //    // 创建可写缓冲
+        //    ByteBlock block = new(headerLen + messageSpan.Length);
+        //    Span<byte> span = block.GetSpan(headerLen);
 
-            Magic.Span.CopyTo(span.Slice(0, magicLen));
+        //    Magic.Span.CopyTo(span.Slice(0, magicLen));
 
-            BinaryPrimitives.WriteInt32BigEndian(span.Slice(magicLen + intLength, intLength), length);
-            block.Write(messageSpan);
-            framedMessage.WriteNextPayload(block);
-        }
+        //    BinaryPrimitives.WriteInt32BigEndian(span.Slice(magicLen + intLength, intLength), length);
+        //    block.Write(messageSpan);
+        //    framedMessage.WriteNextPayload(block);
+        //}
 
-        public ValueTask<FrameContext> ReadFrameAsync(CancellationToken token = default)
-        {
-            return _frameChannel.Reader.ReadAsync(token);
-        }
+        //public ValueTask<FrameContext> ReadFrameAsync(CancellationToken token = default)
+        //{
+        //    return _frameChannel.Reader.ReadAsync(token);
+        //}
 
         private bool TryReadInt32BigEndian(SequenceReader<byte> reader, out int value)
         {

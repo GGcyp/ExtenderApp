@@ -3,9 +3,8 @@
 namespace ExtenderApp.Buffer.MemoryBlocks
 {
     /// <summary>
-    /// 基于固定内存片段的 <see cref="MemoryBlockProvider{T}"/> 实现。
-    /// 提供将外部传入的 <see cref="Memory{T}"/> / <see cref="ReadOnlyMemory{T}"/> 包装为可复用的 <see cref="MemoryBlock{T}"/> 的能力，
-    /// 适用于需要将已有内存转为 MemoryBlock 管理语义的场景。
+    /// 基于固定内存片段的 <see cref="MemoryBlockProvider{T}"/> 实现。 提供将外部传入的 <see cref="Memory{T}"/> / <see cref="ReadOnlyMemory{T}"/> 包装为可复用的 <see
+    /// cref="MemoryBlock{T}"/> 的能力， 适用于需要将已有内存转为 MemoryBlock 管理语义的场景。
     /// </summary>
     internal class FixedMemoryBlockProvider<T> : MemoryBlockProvider<T>
     {

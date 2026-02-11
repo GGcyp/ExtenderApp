@@ -219,16 +219,21 @@ namespace ExtenderApp.Buffer
 
         protected override sealed void ReleaseProtected()
         {
-            if (BlockProvider != null)
-            {
-                var provider = BlockProvider;
-                BlockProvider = null;
-                provider.Release(this);
-            }
-            else
-            {
-                Dispose();
-            }
+            if (BlockProvider == null)
+                throw new InvalidOperationException("无法释放内存块：未绑定提供者。请确保块已正确初始化并由提供者分配。");
+
+            BlockProvider.Release(this);
+            BlockProvider = null;
+        }
+
+        protected override sealed bool TryReleaseProtected()
+        {
+            if (BlockProvider == null)
+                return false;
+
+            BlockProvider.Release(this);
+            BlockProvider = null;
+            return true;
         }
 
         /// <summary>
@@ -242,8 +247,7 @@ namespace ExtenderApp.Buffer
         }
 
         /// <summary>
-        /// 由提供者在回收前调用以重置块的内部状态（清除已提交计数与对提供者的引用）。
-        /// 不负责清理底层存储（由提供者在回收时根据实现决定）。
+        /// 由提供者在回收前调用以重置块的内部状态（清除已提交计数与对提供者的引用）。 不负责清理底层存储（由提供者在回收时根据实现决定）。
         /// </summary>
         protected internal void PrepareForRelease()
         {
@@ -281,6 +285,15 @@ namespace ExtenderApp.Buffer
 
         public override T[] ToArray() => CommittedMemory.ToArray();
 
+        /// <summary>
+        /// 对当前块内已写入的元素范围进行切片，返回一个新的 <see cref="MemoryBlock{T}"/> 实例表示该范围。
+        /// </summary>
+        /// <param name="start">切片起始索引（相对于已写入区域）。</param>
+        /// <param name="length">切片长度（元素数量）。</param>
+        /// <returns>新的 <see cref="MemoryBlock{T}"/> 实例</returns>
+        public override MemoryBlock<T> Slice(long start, long length) 
+            => FixedMemoryBlockProvider<T>.Default.GetBuffer(Memory.Slice((int)start, (int)length));
+
         public bool Equals(MemoryBlock<T>? other) => other?.CommittedSpan.SequenceEqual(CommittedSpan) ?? false;
 
         public override bool Equals(object? obj) => obj is MemoryBlock<T> other && Equals(other);
@@ -289,13 +302,7 @@ namespace ExtenderApp.Buffer
 
         public override string ToString()
         {
-            StringBuilder sb = new(CommittedMemory.Length);
-            ReadOnlySpan<T> span = CommittedSpan;
-            for (int i = 0; i < committed; i++)
-            {
-                sb.AppendFormat("{0:X2} ", span[i]);
-            }
-            return sb.ToString();
+            return $"MemoryBlock<{typeof(T).Name}>: Committed={Committed}, Available={Available}, Capacity={Capacity}";
         }
 
         public static bool operator ==(MemoryBlock<T>? left, MemoryBlock<T>? right) => Equals(left, right);

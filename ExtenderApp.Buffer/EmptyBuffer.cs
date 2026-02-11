@@ -27,7 +27,12 @@ namespace ExtenderApp.Buffer
 
         public override Span<T> GetSpan(int sizeHint = 0)
         {
-            return Span<T>.Empty
+            return Span<T>.Empty;
+        }
+
+        public override AbstractBuffer<T> Slice(long start, long length)
+        {
+            return AbstractBuffer<T>.Empty;
         }
 
         public override T[] ToArray()
@@ -42,6 +47,11 @@ namespace ExtenderApp.Buffer
 
         protected override void ReleaseProtected()
         {
+        }
+
+        protected override bool TryReleaseProtected()
+        {
+            return true;
         }
 
         protected override void UpdateCommittedProtected(Span<T> span, long committedPosition)

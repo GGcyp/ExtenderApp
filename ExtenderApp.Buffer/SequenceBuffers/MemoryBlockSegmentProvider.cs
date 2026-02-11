@@ -64,15 +64,18 @@ namespace ExtenderApp.Buffer.Sequence
 
             protected internal override ReadOnlyMemory<T> CommittedMemory => Block.CommittedMemory;
 
-            protected internal override void Advance(int count) => Block.Advance(count);
-
             protected override Memory<T> GetMemotyProtected(int sizeHint = 0) => Block.GetMemory(sizeHint);
 
             protected override Span<T> GetSpanProtected(int sizeHint = 0) => Block.GetSpan(sizeHint);
 
+            protected override void AdvanceProtected(int count) => Block.Advance(count);
+
             public override MemoryHandle Pin(int elementIndex) => Block.Pin(elementIndex);
 
             public override void Unpin() => Block.Unpin();
+
+            public override SequenceBufferSegment<T> Slice(int start, int length) 
+                => SegmentProvider?.GetSegment(Block.Slice(start, length)) ?? SequenceBufferSegment<T>.Empty;
         }
     }
 }

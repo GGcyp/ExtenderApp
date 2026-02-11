@@ -1,8 +1,8 @@
-﻿using System.Buffers;
+﻿using System.Text;
 using System.Text.Json;
 using ExtenderApp.Abstract;
+using ExtenderApp.Buffer;
 using ExtenderApp.Common.IO.FileParsers;
-using ExtenderApp.Contracts;
 
 namespace ExtenderApp.Common.Serializations.Json
 {
@@ -39,32 +39,77 @@ namespace ExtenderApp.Common.Serializations.Json
             return JsonSerializer.SerializeToUtf8Bytes(value, _jsonSerializerOptions);
         }
 
-        public override void Serialize<T>(T value, Span<byte> span)
+        public override void Serialize<T>(T value, ref SpanWriter<byte> writer)
         {
-            var bytes = JsonSerializer.SerializeToUtf8Bytes(value, _jsonSerializerOptions);
-            bytes.AsSpan().CopyTo(span);
+            var jsonstring = JsonSerializer.Serialize(value, _jsonSerializerOptions);
+
+            Encoding encoding = Encoding.UTF8;
+            int maxLength = encoding.GetMaxByteCount(jsonstring.Length);
+            if (writer.Remaining < maxLength)
+            {
+                throw new InvalidOperationException("SpanWriter 空间不足以写入序列化数据。");
+            }
+            writer.Advance(Encoding.UTF8.GetBytes(jsonstring, writer.UnwrittenSpan));
         }
 
-        public override void Serialize<T>(T value, out ByteBuffer buffer)
+        public override void Serialize<T>(T value, AbstractBuffer<byte> buffer)
         {
-            var bytes = JsonSerializer.SerializeToUtf8Bytes(value, _jsonSerializerOptions);
-            buffer = new ();
-            buffer.Write(bytes);
+            var jsonstring = JsonSerializer.Serialize(value, _jsonSerializerOptions);
+
+            Encoding encoding = Encoding.UTF8;
+            int maxLength = encoding.GetMaxByteCount(jsonstring.Length);
+            Span<byte> span = buffer.GetSpan(maxLength);
+            if (span.Length < maxLength)
+            {
+                throw new InvalidOperationException("AbstractBuffer<byte> 空间不足以写入序列化数据。");
+            }
+            buffer.Advance(Encoding.UTF8.GetBytes(jsonstring, span));
         }
 
-        public override T? Deserialize<T>(ReadOnlySpan<byte> span) where T : default
+        public override void Serialize<T>(T value, out AbstractBuffer<byte> buffer)
         {
-            return JsonSerializer.Deserialize<T>(span, _jsonSerializerOptions);
+            var jsonstring = JsonSerializer.Serialize(value, _jsonSerializerOptions);
+
+            Encoding encoding = Encoding.UTF8;
+            int maxLength = encoding.GetMaxByteCount(jsonstring.Length);
+            buffer = MemoryBlock<byte>.GetBuffer(maxLength);
+            Span<byte> span = buffer.GetSpan(maxLength);
+            if (span.Length < maxLength)
+            {
+                buffer.TryRelease();
+                throw new InvalidOperationException("AbstractBuffer<byte> 空间不足以写入序列化数据。");
+            }
+            buffer.Advance(Encoding.UTF8.GetBytes(jsonstring, span));
         }
 
-        public override T? Deserialize<T>(ReadOnlyMemory<byte> memory) where T : default
+        public override T Deserialize<T>(ReadOnlySpan<byte> span)
         {
-            return JsonSerializer.Deserialize<T>(memory.Span, _jsonSerializerOptions);
+            return JsonSerializer.Deserialize<T>(span, _jsonSerializerOptions)!;
         }
 
-        public override T? Deserialize<T>(ReadOnlySequence<byte> memories) where T : default
+        public override T Deserialize<T>(ref SpanReader<byte> reader)
         {
-            return JsonSerializer.Deserialize<T>(memories.ToArray(), _jsonSerializerOptions);
+            var span = reader.UnreadSpan;
+            var result = JsonSerializer.Deserialize<T>(span, _jsonSerializerOptions);
+            reader.Advance(span.Length);
+            return result!;
+        }
+
+        public override T Deserialize<T>(AbstractBuffer<byte> buffer)
+        {
+            var block = buffer.ToMemoryBlock();
+            var result = JsonSerializer.Deserialize<T>(block, _jsonSerializerOptions);
+            block.TryRelease();
+            return result!;
+        }
+
+        public override T Deserialize<T>(AbstractBufferReader<byte> reader)
+        {
+            var block = reader.Buffer.ToMemoryBlock();
+            var result = JsonSerializer.Deserialize<T>(block, _jsonSerializerOptions);
+            reader.Advance(block.Committed);
+            block.TryRelease();
+            return result!;
         }
     }
 }

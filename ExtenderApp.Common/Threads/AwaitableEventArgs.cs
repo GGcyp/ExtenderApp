@@ -1,4 +1,5 @@
 ﻿using System.Threading.Tasks.Sources;
+using ExtenderApp.Buffer;
 using ExtenderApp.Contracts;
 
 namespace ExtenderApp.Common.Threads

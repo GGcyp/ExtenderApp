@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using System.IO.MemoryMappedFiles;
+using ExtenderApp.Buffer;
 using ExtenderApp.Contracts;
 
 namespace ExtenderApp.Common.IO
@@ -30,21 +31,12 @@ namespace ExtenderApp.Common.IO
         //    if (capacity < Capacity)
         //        return;
 
-        //    FileStream stream = OperateInfo.OpenFile();
-        //    if (capacity == 0)
-        //    {
-        //        capacity = stream.DefaultLength == 0L ? Utility.KilobytesToBytes(4) : stream.DefaultLength;
-        //    }
+        // FileStream stream = OperateInfo.OpenFile(); if (capacity == 0) { capacity = stream.DefaultLength == 0L ? Utility.KilobytesToBytes(4) :
+        // stream.DefaultLength; }
 
-        //    if (AllocationStrategy != AllocationStrategy.None)
-        //    {
-        //        SwitchAllocationStrategy(stream, capacity);
-        //    }
+        // if (AllocationStrategy != AllocationStrategy.None) { SwitchAllocationStrategy(stream, capacity); }
 
-        //    if (stream.DefaultLength < capacity)
-        //    {
-        //        stream.SetLength(capacity);
-        //    }
+        // if (stream.DefaultLength < capacity) { stream.SetLength(capacity); }
 
         //    Capacity = capacity;
         //    mmFile = MemoryMappedFile.CreateFromFile(stream, Info.FileName, Capacity, OperateInfo, HandleInheritability.None, false);
@@ -106,22 +98,7 @@ namespace ExtenderApp.Common.IO
             throw new NotImplementedException();
         }
 
-        protected override void ExecuteWrite(long filePosition, ReadOnlyMemory<byte> memory)
-        {
-            throw new NotImplementedException();
-        }
-
-        protected override ValueTask ExecuteWriteAsync(long filePosition, ReadOnlyMemory<byte> memory, CancellationToken token)
-        {
-            throw new NotImplementedException();
-        }
-
         protected override byte[] ExecuteRead(long filePosition, int length)
-        {
-            throw new NotImplementedException();
-        }
-
-        protected override int ExecuteRead(long filePosition, byte[] bytes, int bytesStart, int length)
         {
             throw new NotImplementedException();
         }
@@ -131,27 +108,27 @@ namespace ExtenderApp.Common.IO
             throw new NotImplementedException();
         }
 
-        protected override int ExecuteRead(long filePosition, Memory<byte> memory)
-        {
-            throw new NotImplementedException();
-        }
-
         protected override ValueTask<byte[]> ExecuteReadAsync(long filePosition, int length, CancellationToken token)
         {
             throw new NotImplementedException();
         }
 
-        protected override ValueTask<int> ExecuteReadAsync(long filePosition, byte[] bytes, int bytesStart, int length, CancellationToken token)
-        {
-            throw new NotImplementedException();
-        }
-
-        protected override ValueTask<int> ExecuteReadAsync(long filePosition, Memory<byte> memory, CancellationToken token)
-        {
-            throw new NotImplementedException();
-        }
-
         protected override void ChangeCapacity(long length)
+        {
+            throw new NotImplementedException();
+        }
+
+        protected override long ExecuteWrite(long filePosition, AbstractBuffer<byte> buffer)
+        {
+            throw new NotImplementedException();
+        }
+
+        protected override ValueTask<long> ExecuteWriteAsync(long filePosition, AbstractBuffer<byte> buffer, CancellationToken token)
+        {
+            throw new NotImplementedException();
+        }
+
+        protected override ValueTask<long> ExecuteReadAsync(long filePosition, long length, AbstractBuffer<byte> buffer, CancellationToken token)
         {
             throw new NotImplementedException();
         }

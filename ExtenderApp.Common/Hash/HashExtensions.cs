@@ -3,6 +3,7 @@ using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
 using ExtenderApp.Abstract;
+using ExtenderApp.Buffer;
 using ExtenderApp.Contracts;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -38,7 +39,7 @@ namespace ExtenderApp.Common.Hash
             services.AddSingleton<IHashProvider, HashProvider>();
             services.ConfigureSingletonInstance<IBinaryFormatterStore>(b =>
             {
-                b.AddStructFormatter<HashValue, HashValueFormatter>();
+                //b.AddStructFormatter<HashValue, HashValueFormatter>();
             });
             return services;
         }
@@ -61,8 +62,7 @@ namespace ExtenderApp.Common.Hash
         }
 
         /// <summary>
-        /// 使用 FNV-1a 算法计算字符串的哈希值。
-        /// 该方法通过 <see cref="ReadOnlySpan{T}"/> 和 <see cref="Unsafe"/> 访问跳过边界检查以优化密集计算性能。
+        /// 使用 FNV-1a 算法计算字符串的哈希值。 该方法通过 <see cref="ReadOnlySpan{T}"/> 和 <see cref="Unsafe"/> 访问跳过边界检查以优化密集计算性能。
         /// </summary>
         /// <param name="str">要计算哈希值的字符串。</param>
         /// <param name="hash">初始哈希偏移值（默认使用 FNV_offset_basis）。</param>
@@ -128,10 +128,11 @@ namespace ExtenderApp.Common.Hash
         {
             encoding ??= HashEncoding;
             int length = encoding.GetMaxByteCount(span.Length);
-            using ByteBlock block = new(length);
+            ByteBlock block = new(length);
             length = encoding.GetBytes(span, block.GetSpan(length));
             block.Advance(length);
             var result = block.CommittedSpan.ComputeHash_SHA1();
+            block.Dispose();
             return result;
         }
 
@@ -176,10 +177,11 @@ namespace ExtenderApp.Common.Hash
         {
             encoding ??= HashEncoding;
             int length = encoding.GetMaxByteCount(span.Length);
-            using ByteBlock block = new(length);
+            ByteBlock block = new(length);
             length = encoding.GetBytes(span, block.GetSpan(length));
             block.Advance(length);
             var result = block.CommittedSpan.ComputeHash_SHA256();
+            block.Dispose();
             return result;
         }
 
@@ -224,10 +226,11 @@ namespace ExtenderApp.Common.Hash
         {
             encoding ??= HashEncoding;
             int length = encoding.GetMaxByteCount(span.Length);
-            using ByteBlock block = new(length);
+            ByteBlock block = new(length);
             length = encoding.GetBytes(span, block.GetSpan(length));
             block.Advance(length);
             var result = block.CommittedSpan.ComputeHash_SHA384();
+            block.Dispose();
             return result;
         }
 
@@ -272,10 +275,11 @@ namespace ExtenderApp.Common.Hash
         {
             encoding ??= HashEncoding;
             int length = encoding.GetMaxByteCount(span.Length);
-            using ByteBlock block = new(length);
+            ByteBlock block = new(length);
             length = encoding.GetBytes(span, block.GetSpan(length));
             block.Advance(length);
             var result = block.CommittedSpan.ComputeHash_MD5();
+            block.Dispose();
             return result;
         }
 
@@ -320,10 +324,11 @@ namespace ExtenderApp.Common.Hash
         {
             encoding ??= HashEncoding;
             int length = encoding.GetMaxByteCount(span.Length);
-            using ByteBlock block = new(length);
+            ByteBlock block = new(length);
             length = encoding.GetBytes(span, block.GetSpan(length));
             block.Advance(length);
             var result = block.CommittedSpan.ComputeHash_HMACMD5();
+            block.Dispose();
             return result;
         }
 

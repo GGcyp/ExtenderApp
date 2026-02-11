@@ -1,10 +1,13 @@
-﻿using System;
-using ExtenderApp.Abstract;
+﻿using ExtenderApp.Abstract;
 using ExtenderApp.Buffer;
+using ExtenderApp.Buffer.Reader;
 using ExtenderApp.Contracts;
 
 namespace ExtenderApp.Common.Compressions.LZ4
 {
+    /// <summary>
+    /// LZ4 压缩实现类，提供基于 LZ4 算法的压缩和解压功能。
+    /// </summary>
     internal class LZ4Compression : Compression, ILZ4Compression
     {
         /// <summary>
@@ -156,17 +159,23 @@ namespace ExtenderApp.Common.Compressions.LZ4
             if (span.IsEmpty)
             {
                 output = AbstractBuffer<byte>.Empty;
-                return true;
+                return false;
             }
 
-            var block = MemoryBlock<byte>.GetBuffer(span);
-            try
+            SpanReader<byte> reader = span;
+            if (reader.Read() != LZ4CompressionMark)
             {
-                return TryDecompress(block, out output);
+                output = AbstractBuffer<byte>.Empty;
+                return false;
             }
-            finally
+
+            if (_binarySerialization.Deserialize<CompressionType>(ref reader) == CompressionType.Block)
             {
-                block.TryRelease();
+                return TryDecompressBlock(reader, out output);
+            }
+            else
+            {
+                return TryDecompressArray(reader, out output);
             }
         }
 
@@ -179,10 +188,15 @@ namespace ExtenderApp.Common.Compressions.LZ4
                 return true;
             }
 
+            if (input is MemoryBlock<byte> memoryBlock)
+            {
+                return TryDecompress(memoryBlock.CommittedSpan, out output);
+            }
+
             return TryDecompress(input, out output);
         }
 
-        private bool TryDecompressBlock(AbstractBuffer<byte> input, out AbstractBuffer<byte> output)
+        private bool TryDecompressBlock(SpanReader<byte> input, out AbstractBuffer<byte> output)
         {
             output = AbstractBuffer<byte>.Empty;
             int compressedLength = _binarySerialization.Deserialize<int>(ref input);
@@ -192,7 +206,7 @@ namespace ExtenderApp.Common.Compressions.LZ4
             }
 
             int length = _binarySerialization.Deserialize<int>(ref input);
-            output = new MemoryBlock<byte>(length);
+            output = MemoryBlock<byte>.GetBuffer(length);
             int decopressLength = LZ4CodecDecode(input, output.GetSpan(length).Slice(0, length));
             if (decopressLength != length)
             {
@@ -204,20 +218,13 @@ namespace ExtenderApp.Common.Compressions.LZ4
             return true;
         }
 
-        private bool TryDecompressArray(AbstractBuffer<byte> input, out AbstractBuffer<byte> output)
+        private bool TryDecompressArray(SpanReader<byte> input, out AbstractBuffer<byte> output)
         {
             var sequence = SequenceBuffer<byte>.GetBuffer();
             output = sequence;
 
-            while (input.TryPeek(out byte next))
+            while (input.TryPeek(out byte next) && next != LZ4CompressionArrayEndSign)
             {
-                if (next == LZ4CompressionArrayEndSign)
-                {
-                    // consume the end sign
-                    _binarySerialization.Deserialize<byte>(ref input);
-                    break;
-                }
-
                 int compressedLength = _binarySerialization.Deserialize<int>(ref input);
                 if (input.Remaining < compressedLength)
                 {

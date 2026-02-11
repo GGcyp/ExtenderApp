@@ -1,4 +1,5 @@
 ﻿using System.Collections.Concurrent;
+using ExtenderApp.Contracts;
 
 namespace ExtenderApp.Buffer
 {
@@ -44,6 +45,34 @@ namespace ExtenderApp.Buffer
             }
 
             return Create(new DefaultPooledObjectPolicy<T>());
+        }
+
+        /// <summary>
+        /// 通过一个工厂方法创建一个对象池。
+        /// </summary>
+        /// <typeparam name="T">对象池中的对象类型</typeparam>
+        /// <param name="func">创建对象的工厂方法</param>
+        /// <returns>返回创建的对象池</returns>
+        public static ObjectPool<T> Create<T>(Func<T> func, ObjectPoolProvider? objectPoolProvider = null, int maximumRetained = -1) where T : class
+        {
+            Type poolType = typeof(T);
+            if (PoolDict.TryGetValue(poolType, out var pool))
+            {
+                return (ObjectPool<T>)pool;
+            }
+
+            lock (PoolDict)
+            {
+                if (PoolDict.TryGetValue(poolType, out pool))
+                {
+                    return (ObjectPool<T>)pool;
+                }
+
+                var provider = objectPoolProvider ?? DefaultObjectPoolProvider.Default;
+                var objPool = provider.Create(new FactoryPooledObjectPolicy<T>(func), maximumRetained);
+                PoolDict.TryAdd(poolType, objPool);
+                return objPool;
+            }
         }
 
         /// <summary>

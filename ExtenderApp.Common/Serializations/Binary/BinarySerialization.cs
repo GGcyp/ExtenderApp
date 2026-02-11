@@ -1,7 +1,6 @@
-﻿using System.Buffers;
-using ExtenderApp.Abstract;
+﻿using ExtenderApp.Abstract;
+using ExtenderApp.Buffer;
 using ExtenderApp.Common.IO.FileParsers;
-using ExtenderApp.Contracts;
 
 namespace ExtenderApp.Common.Serializations.Binary
 {
@@ -22,65 +21,76 @@ namespace ExtenderApp.Common.Serializations.Binary
 
         #region Serialize
 
-        public override void Serialize<T>(T value, Span<byte> span)
+        public override void Serialize<T>(T value, ref SpanWriter<byte> writer)
         {
-            if (span.IsEmpty)
-                throw new ArgumentNullException(nameof(span));
+            if (writer.UnwrittenSpan.IsEmpty)
+                throw new ArgumentNullException(nameof(writer));
 
-            Serialize(value, out ByteBuffer buffer);
-            if (buffer.Remaining > span.Length)
-                throw new ArgumentException("数组内存空间不足", nameof(span));
-
-            buffer.TryCopyTo(span);
-            buffer.Dispose();
+            var formatter = _resolver.GetFormatterWithVerify<T>();
+            formatter.Serialize(ref writer, value);
         }
 
         public override byte[] Serialize<T>(T value)
         {
-            Serialize(value, out ByteBuffer buffer);
+            Serialize(value, out AbstractBuffer<byte> buffer);
             var result = buffer.ToArray();
-            buffer.Dispose();
+            buffer.TryRelease();
             return result;
         }
 
-        public override void Serialize<T>(T value, out ByteBuffer buffer)
+        public override void Serialize<T>(T value, AbstractBuffer<byte> buffer)
         {
-            buffer = new ();
-            _resolver.GetFormatterWithVerify<T>().Serialize(ref buffer, value);
+            _resolver.GetFormatterWithVerify<T>().Serialize(buffer, value);
+        }
+
+        public override void Serialize<T>(T value, out AbstractBuffer<byte> buffer)
+        {
+            buffer = SequenceBufferProvider<byte>.Shared.GetBuffer();
+            _resolver.GetFormatterWithVerify<T>().Serialize(buffer, value);
         }
 
         #endregion Serialize
 
         #region Deserialize
 
-        public override T? Deserialize<T>(ReadOnlySpan<byte> span) where T : default
+        public override T Deserialize<T>(ReadOnlySpan<byte> span)
         {
             if (TryGetFormatter(out IBinaryFormatter<T> formatter))
             {
-                ByteBuffer buffer = new ();
-                buffer.Write(span);
-                T result = formatter.Deserialize(ref buffer);
-                buffer.Dispose();
-                return result;
+                SpanReader<byte> reader = new(span);
+                return formatter.Deserialize(ref reader);
             }
-            return default;
+            return default!;
         }
 
-        public override T? Deserialize<T>(ReadOnlyMemory<byte> memory) where T : default
-        {
-            return Deserialize<T>(new ReadOnlySequence<byte>(memory));
-        }
-
-        public override T? Deserialize<T>(ReadOnlySequence<byte> memories) where T : default
+        public override T Deserialize<T>(ref SpanReader<byte> reader)
         {
             if (TryGetFormatter(out IBinaryFormatter<T> formatter))
             {
-                ByteBuffer buffer = new(memories);
-                T result = formatter.Deserialize(ref buffer);
-                buffer.Dispose();
+                return formatter.Deserialize(ref reader);
+            }
+            return default!;
+        }
+
+        public override T Deserialize<T>(AbstractBuffer<byte> buffer)
+        {
+            if (TryGetFormatter(out IBinaryFormatter<T> formatter))
+            {
+                var arr = buffer.ToArray();
+                SpanReader<byte> reader = new(arr);
+                var result = formatter.Deserialize(ref reader);
                 return result;
             }
-            return default;
+            return default!;
+        }
+
+        public override T Deserialize<T>(AbstractBufferReader<byte> reader)
+        {
+            if (TryGetFormatter(out IBinaryFormatter<T> formatter))
+            {
+                return formatter.Deserialize(reader);
+            }
+            return default!;
         }
 
         #endregion Deserialize

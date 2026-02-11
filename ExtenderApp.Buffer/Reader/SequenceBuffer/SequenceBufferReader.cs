@@ -4,9 +4,7 @@ using ExtenderApp.Buffer.Sequence;
 namespace ExtenderApp.Buffer.Reader
 {
     /// <summary>
-    /// 针对内部的 <see cref="SequenceBuffer{T}"/> 实现的缓冲读取器，支持基于段的推进逻辑。
-    /// 此类维护当前所在段及在段内的已消费偏移，并覆盖了 <see cref="AbstractBufferReader{T}.Advance(long)"/>
-    /// 以实现跨段推进的行为。
+    /// 针对内部的 <see cref="SequenceBuffer{T}"/> 实现的缓冲读取器，支持基于段的推进逻辑。 此类维护当前所在段及在段内的已消费偏移，并覆盖了 <see cref="AbstractBufferReader{T}.Advance(long)"/> 以实现跨段推进的行为。
     /// </summary>
     /// <typeparam name="T">元素类型。</typeparam>
     public class SequenceBufferReader<T> : AbstractBufferReader<T>
@@ -20,14 +18,12 @@ namespace ExtenderApp.Buffer.Reader
             => (SequenceBufferReader<T>)SequenceBufferReaderProvider<T>.Default.GetReader(buffer);
 
         /// <summary>
-        /// 内部使用的读取器提供者引用（用于回收/复用）。
-        /// 使用 <c>new</c> 隐藏基类成员，仅供同程序集或提供者实现访问。
+        /// 内部使用的读取器提供者引用（用于回收/复用）。 使用 <c>new</c> 隐藏基类成员，仅供同程序集或提供者实现访问。
         /// </summary>
         internal new SequenceBufferReaderProvider<T>? ReaderProvider { get; set; }
 
         /// <summary>
-        /// 特化后的缓冲区引用，隐藏基类的同名属性以返回具体的 <see cref="SequenceBuffer{T}"/> 类型。
-        /// 仅由框架内部设置。
+        /// 特化后的缓冲区引用，隐藏基类的同名属性以返回具体的 <see cref="SequenceBuffer{T}"/> 类型。 仅由框架内部设置。
         /// </summary>
         public new SequenceBuffer<T> Buffer => (SequenceBuffer<T>)base.Buffer;
 
@@ -35,8 +31,7 @@ namespace ExtenderApp.Buffer.Reader
         private long segmentConsumed; // 已在当前段内消费的数量（相对于段起点）
 
         /// <summary>
-        /// 获取从当前已消费位置到已提交末尾的只读序列视图。
-        /// 若当前未定位到任何段则返回 <see cref="ReadOnlySequence{T}.Empty"/>。
+        /// 获取从当前已消费位置到已提交末尾的只读序列视图。 若当前未定位到任何段则返回 <see cref="ReadOnlySequence{T}.Empty"/>。
         /// </summary>
         public override ReadOnlySequence<T> UnreadSequence
         {
@@ -54,7 +49,6 @@ namespace ExtenderApp.Buffer.Reader
         /// </summary>
         public SequenceBufferReader()
         {
-            Buffer = default!;
             segmentConsumed = 0;
         }
 
@@ -71,8 +65,7 @@ namespace ExtenderApp.Buffer.Reader
         }
 
         /// <summary>
-        /// 在将读取器回收到池中之前重置其状态，清除对缓冲区的引用并重置内部定位。
-        /// 供提供者在回收时调用。
+        /// 在将读取器回收到池中之前重置其状态，清除对缓冲区的引用并重置内部定位。 供提供者在回收时调用。
         /// </summary>
         protected internal override void PrepareForRelease()
         {
@@ -83,8 +76,7 @@ namespace ExtenderApp.Buffer.Reader
         }
 
         /// <summary>
-        /// 将读取位置向前推进指定数量的元素（支持跨段推进）。
-        /// 此实现会在内部维护当前段与段内偏移，并递增 <see cref="AbstractBufferReader{T}.Consumed"/>。
+        /// 将读取位置向前推进指定数量的元素（支持跨段推进）。 此实现会在内部维护当前段与段内偏移，并递增 <see cref="AbstractBufferReader{T}.Consumed"/>。
         /// </summary>
         /// <param name="count">推进的元素数量（必须为非负且不超过已提交的总长度）。</param>
         public override sealed void Advance(long count)

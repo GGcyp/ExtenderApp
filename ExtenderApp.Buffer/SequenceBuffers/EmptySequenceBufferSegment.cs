@@ -20,8 +20,18 @@ namespace ExtenderApp.Buffer.Sequence
             return default;
         }
 
+        public override SequenceBufferSegment<T> Slice(int start, int length)
+        {
+            return Empty;
+        }
+
         public override void Unpin()
         {
+        }
+
+        protected override void AdvanceProtected(int count)
+        {
+            throw new NotImplementedException();
         }
 
         protected override Memory<T> GetMemotyProtected(int sizeHint = 0)
@@ -32,10 +42,6 @@ namespace ExtenderApp.Buffer.Sequence
         protected override Span<T> GetSpanProtected(int sizeHint = 0)
         {
             return Span<T>.Empty;
-        }
-
-        protected internal override void Advance(int count)
-        {
         }
     }
 }

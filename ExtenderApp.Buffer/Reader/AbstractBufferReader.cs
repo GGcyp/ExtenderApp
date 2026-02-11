@@ -97,6 +97,7 @@ namespace ExtenderApp.Buffer
                 return false;
             }
 
+            // 直接使用 FirstSpan 以避免跨段分配；当序列为空或跨段时 FirstSpan 会返回首段
             item = UnreadSequence.Slice(0, 1).FirstSpan[0];
             return true;
         }

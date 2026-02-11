@@ -1,4 +1,6 @@
-﻿namespace ExtenderApp.Contracts
+﻿using System.Runtime.CompilerServices;
+
+namespace ExtenderApp.Contracts
 {
     /// <summary>
     /// 表示一个支持引用计数冻结/解冻操作的对象。
@@ -25,6 +27,7 @@
         /// 将实例设为冻结状态（引用计数递增）。
         /// </summary>
         /// <remarks>支持嵌套冻结；每次调用都会递增内部计数。该方法线程安全。</remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Freeze()
         {
             Interlocked.Increment(ref freezeCount);
@@ -34,6 +37,7 @@
         /// 解除一次冻结（引用计数递减）。
         /// </summary>
         /// <remarks>当内部计数递减到小于 0 时，会将计数置为 0 以防止出现负值。该方法线程安全。</remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Unfreeze()
         {
             var newCount = Interlocked.Decrement(ref freezeCount);
@@ -48,6 +52,7 @@
         /// </summary>
         /// <param name="message">当抛出异常时使用的消息。默认值为 <see cref="DefaultFrozenMessage"/>。</param>
         /// <exception cref="InvalidOperationException">当实例处于冻结状态时抛出。</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void CheckFrozen(string message = DefaultFrozenMessage)
         {
             if (IsFrozen)

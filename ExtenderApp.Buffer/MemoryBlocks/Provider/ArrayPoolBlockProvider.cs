@@ -1,4 +1,5 @@
 ﻿using System.Buffers;
+using System.Diagnostics;
 
 namespace ExtenderApp.Buffer.MemoryBlocks
 {
@@ -50,7 +51,7 @@ namespace ExtenderApp.Buffer.MemoryBlocks
             {
                 // 先由块自身清理内部状态，再归还底层数组并回收对象
                 memoryBlock.PrepareForRelease();
-                _arrayPool.Return(memoryBlock.TArray);
+                if (memoryBlock.TArray != null) _arrayPool.Return(memoryBlock.TArray);
                 memoryBlock.TArray = default!;
                 memoryBlock.ArrayPool = default!;
                 _blockPool.Release(memoryBlock);

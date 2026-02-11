@@ -1,4 +1,5 @@
 ﻿using ExtenderApp.Abstract;
+using ExtenderApp.Buffer;
 using ExtenderApp.Contracts;
 
 namespace ExtenderApp.Common.Serializations.Binary.Formatters
@@ -75,21 +76,33 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
             }
         }
 
-        public override VersionData<T> Deserialize(ref ByteBuffer block)
+        public override VersionData<T> Deserialize(AbstractBufferReader<byte> reader)
         {
-            var version = _version.Deserialize(ref block);
+            var version = _version.Deserialize(reader);
             if (version == null)
             {
-                //throw new InvalidOperationException($"读取到的版本信息为空，无法确定使用哪个格式化器进行反序列化。序列化类型为：{typeof(TLinkClient).Name}");
                 return new VersionData<T>(version, default);
             }
 
             var formatter = GetFormatter(version);
-            var data = formatter.Deserialize(ref block);
+            var data = formatter.Deserialize(reader);
             return new VersionData<T>(version, data);
         }
 
-        public override void Serialize(ref ByteBuffer block, VersionData<T> value)
+        public override VersionData<T> Deserialize(ref SpanReader<byte> reader)
+        {
+            var version = _version.Deserialize(ref reader);
+            if (version == null)
+            {
+                return new VersionData<T>(version, default);
+            }
+
+            var formatter = GetFormatter(version);
+            var data = formatter.Deserialize(ref reader);
+            return new VersionData<T>(version, data);
+        }
+
+        public override void Serialize(AbstractBuffer<byte> buffer, VersionData<T> value)
         {
             if (Formatters.Count == 0)
             {
@@ -98,7 +111,7 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
 
             if (value.IsEmpty)
             {
-                WriteNil(ref block);
+                WriteNil(buffer);
                 return;
             }
 
@@ -107,10 +120,34 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
             {
                 throw new ArgumentNullException($"格式化器版本不能为空 {typeof(T).FullName}");
             }
-            _version.Serialize(ref block, version);
+            _version.Serialize(buffer, version);
 
             var formatter = GetFormatter(version);
-            formatter.Serialize(ref block, value.Data);
+            formatter.Serialize(buffer, value.Data);
+        }
+
+        public override void Serialize(ref SpanWriter<byte> writer, VersionData<T> value)
+        {
+            if (Formatters.Count == 0)
+            {
+                throw new InvalidOperationException($"没有可用的格式化器，请先添加格式化器。 {typeof(T).FullName}");
+            }
+
+            if (value.IsEmpty)
+            {
+                WriteNil(ref writer);
+                return;
+            }
+
+            var version = value.DataVersion;
+            if (version == null)
+            {
+                throw new ArgumentNullException($"格式化器版本不能为空 {typeof(T).FullName}");
+            }
+            _version.Serialize(ref writer, version);
+
+            var formatter = GetFormatter(version);
+            formatter.Serialize(ref writer, value.Data);
         }
 
         public override long GetLength(VersionData<T> value)
@@ -123,7 +160,7 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
             return _version.GetLength(value.DataVersion) + formatter.GetLength(value.Data);
         }
 
-        public void Serialize(ref ByteBuffer block, T value, Version version)
+        public void Serialize(AbstractBuffer<byte> block, T value, Version version)
         {
             if (Formatters.Count == 0)
             {
@@ -137,16 +174,61 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
 
             if (EqualityComparer<T>.Default.Equals(value, default))
             {
-                WriteNil(ref block);
+                WriteNil(block);
                 return;
             }
 
             IVersionDataFormatter<T> formatter = GetFormatter(version);
-            _version.Serialize(ref block, version);
-            formatter.Serialize(ref block, value);
+            _version.Serialize(block, version);
+            formatter.Serialize(block, value);
         }
 
-        public T Deserialize(ref ByteBuffer block, Version version)
+        public void Serialize(ref SpanWriter<byte> writer, T value, Version version)
+        {
+            if (Formatters.Count == 0)
+            {
+                throw new InvalidOperationException($"没有可用的格式化器，请先添加格式化器。 {typeof(T).FullName}");
+            }
+
+            if (version == null)
+            {
+                throw new ArgumentNullException($"格式化器版本不能为空 {typeof(T).FullName}");
+            }
+
+            if (EqualityComparer<T>.Default.Equals(value, default))
+            {
+                WriteNil(ref writer);
+                return;
+            }
+
+            IVersionDataFormatter<T> formatter = GetFormatter(version);
+            _version.Serialize(ref writer, version);
+            formatter.Serialize(ref writer, value);
+        }
+
+        public T Deserialize(AbstractBufferReader<byte> block, Version version)
+        {
+            if (version == null)
+            {
+                throw new ArgumentNullException("格式化器版本不能为空", nameof(version));
+            }
+
+            var binaryVersion = _version.Deserialize(block);
+            if (binaryVersion == null)
+            {
+                throw new InvalidOperationException($"读取到的版本信息为空，无法确定使用哪个格式化器进行反序列化。序列化类型为：{typeof(T).Name}");
+            }
+
+            if (binaryVersion != version)
+            {
+                throw new InvalidCastException($"文件版本和需要版本不匹配,文件版本：{binaryVersion},需要版本：{version},{typeof(T).FullName}");
+            }
+
+            var formatter = GetFormatter(version);
+            return formatter.Deserialize(block);
+        }
+
+        public T Deserialize(ref SpanReader<byte> block, Version version)
         {
             if (version == null)
             {
@@ -157,7 +239,6 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
             if (binaryVersion == null)
             {
                 throw new InvalidOperationException($"读取到的版本信息为空，无法确定使用哪个格式化器进行反序列化。序列化类型为：{typeof(T).Name}");
-
             }
 
             if (binaryVersion != version)
@@ -179,25 +260,36 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
             return _version.GetLength(version) + formatter.GetLength(value);
         }
 
-        public void Serialize(ref ByteBuffer buffer, T value)
+        public void Serialize(AbstractBuffer<byte> buffer, T value)
         {
             IVersionDataFormatter<T> formatter = LastFormatter();
 
-            _version.Serialize(ref buffer, formatter.FormatterVersion);
-            formatter.Serialize(ref buffer, value);
+            _version.Serialize(buffer, formatter.FormatterVersion);
+            formatter.Serialize(buffer, value);
         }
 
-        T IBinaryFormatter<T>.Deserialize(ref ByteBuffer block)
+        public void Serialize(ref SpanWriter<byte> writer, T value)
         {
-            var version = _version.Deserialize(ref block);
-            IVersionDataFormatter<T> formatter = version == null ? LastFormatter() : GetFormatter(version);
-            return formatter.Deserialize(ref block);
+            IVersionDataFormatter<T> formatter = LastFormatter();
+
+            _version.Serialize(ref writer, formatter.FormatterVersion);
+            formatter.Serialize(ref writer, value);
         }
 
         public long GetLength(T value)
         {
             var formatter = LastFormatter();
             return _version.GetLength(formatter.FormatterVersion) + formatter.GetLength(value);
+        }
+
+        T IBinaryFormatter<T>.Deserialize(AbstractBufferReader<byte> buffer)
+        {
+            return Deserialize(buffer).Data;
+        }
+
+        T IBinaryFormatter<T>.Deserialize(ref SpanReader<byte> buffer)
+        {
+            return Deserialize(ref buffer).Data;
         }
     }
 }

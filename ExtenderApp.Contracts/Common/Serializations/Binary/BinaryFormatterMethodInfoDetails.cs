@@ -6,23 +6,31 @@ namespace ExtenderApp.Contracts
     /// 二进制格式化器核心方法的反射信息聚合。
     /// </summary>
     /// <remarks>
-    /// 用于缓存并复用与某个具体格式化器相关的反射调用入口，典型包含：
-    /// 1) Serialize(ref ByteBuffer, T)；
-    /// 2) Deserialize(ref ByteBuffer)；
-    /// 3) GetLength(T)。
+    /// 用于缓存并复用与某个具体格式化器相关的反射调用入口。
+    /// 包含基于 AbstractBuffer 和基于 Span 的序列化与反序列化方法信息，以及长度计算方法信息。
     /// 这些 <see cref="MethodInfo"/> 通常来自已闭包的泛型格式化器实例方法。允许为 null，表示对应能力不支持或未提供。
     /// </remarks>
     public struct BinaryFormatterMethodInfoDetails
     {
         /// <summary>
-        /// 写入方法的反射信息，形如：void Serialize(ref ByteBuffer Block, T value)。
+        /// 顺序缓冲写入方法的反射信息，形如：void Serialize(AbstractBuffer&lt;byte&gt; buffer, T value)。
         /// </summary>
-        public MethodInfo Serialize { get; }
+        public MethodInfo SerializeBuffer { get; }
 
         /// <summary>
-        /// 读取方法的反射信息，形如：T Deserialize(ref ByteBuffer Block)。
+        /// 栈上写入器写入方法的反射信息，形如：void Serialize(ref SpanWriter&lt;byte&gt; writer, T value)。
         /// </summary>
-        public MethodInfo Deserialize { get; }
+        public MethodInfo SerializeSpan { get; }
+
+        /// <summary>
+        /// 顺序缓冲读取器读取方法的反射信息，形如：T Deserialize(AbstractBufferReader&lt;byte&gt; buffer)。
+        /// </summary>
+        public MethodInfo DeserializeBuffer { get; }
+
+        /// <summary>
+        /// 栈上读取器读取方法的反射信息，形如：T Deserialize(ref SpanReader&lt;byte&gt; buffer)。
+        /// </summary>
+        public MethodInfo DeserializeSpan { get; }
 
         /// <summary>
         /// 估算长度方法的反射信息，形如：long GetLength(T value)。
@@ -32,12 +40,14 @@ namespace ExtenderApp.Contracts
         /// <summary>
         /// 获取一个值，指示是否所有方法信息均为 null。
         /// </summary>
-        public bool IsEmpty => Serialize is null && Deserialize is null && GetLength is null;
+        public bool IsEmpty => SerializeBuffer is null && SerializeSpan is null && DeserializeBuffer is null && DeserializeSpan is null && GetLength is null;
 
-        public BinaryFormatterMethodInfoDetails(MethodInfo serialize, MethodInfo deserialize, MethodInfo getLength)
+        public BinaryFormatterMethodInfoDetails(MethodInfo serializeBuffer, MethodInfo serializeSpan, MethodInfo deserializeBuffer, MethodInfo deserializeSpan, MethodInfo getLength)
         {
-            Serialize = serialize;
-            Deserialize = deserialize;
+            SerializeBuffer = serializeBuffer;
+            SerializeSpan = serializeSpan;
+            DeserializeBuffer = deserializeBuffer;
+            DeserializeSpan = deserializeSpan;
             GetLength = getLength;
         }
     }

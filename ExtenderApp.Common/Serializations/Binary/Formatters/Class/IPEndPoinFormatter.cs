@@ -1,14 +1,16 @@
 ﻿using System.Net;
 using ExtenderApp.Abstract;
-using ExtenderApp.Common.Serializations.Binary.Formatters;
+using ExtenderApp.Buffer;
+using ExtenderApp.Buffer.Reader;
 using ExtenderApp.Contracts;
 
 namespace ExtenderApp.Common.Serializations.Binary.Formatters.Class
 {
+    /// <summary>
+    /// IPEndPoin 二进制格式化器
+    /// </summary>
     internal class IPEndPoinFormatter : ResolverFormatter<IPEndPoint>
     {
-        public override int DefaultLength => 1;
-
         private readonly IBinaryFormatter<IPAddress> _address;
         private readonly IBinaryFormatter<int> _int;
 
@@ -18,35 +20,59 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters.Class
             _int = resolver.GetFormatter<int>();
         }
 
-        public override IPEndPoint Deserialize(ref ByteBuffer buffer)
+        public override IPEndPoint Deserialize(AbstractBufferReader<byte> reader)
         {
-            if (TryReadNil(ref buffer))
+            if (TryReadNil(reader))
             {
-                return null;
+                return null!;
             }
 
-            var address = _address.Deserialize(ref buffer);
-            var port = _int.Deserialize(ref buffer);
+            var address = _address.Deserialize(reader);
+            var port = _int.Deserialize(reader);
             return new IPEndPoint(address, port);
         }
 
-        public override void Serialize(ref ByteBuffer buffer, IPEndPoint value)
+        public override IPEndPoint Deserialize(ref SpanReader<byte> reader)
+        {
+            if (TryReadNil(ref reader))
+            {
+                return null!;
+            }
+
+            var address = _address.Deserialize(ref reader);
+            var port = _int.Deserialize(ref reader);
+            return new IPEndPoint(address, port);
+        }
+
+        public override void Serialize(AbstractBuffer<byte> buffer, IPEndPoint value)
         {
             if (value == null)
             {
-                WriteNil(ref buffer);
+                WriteNil(buffer);
                 return;
             }
 
-            _address.Serialize(ref buffer, value.Address);
-            _int.Serialize(ref buffer, value.Port);
+            _address.Serialize(buffer, value.Address);
+            _int.Serialize(buffer, value.Port);
+        }
+
+        public override void Serialize(ref SpanWriter<byte> writer, IPEndPoint value)
+        {
+            if (value == null)
+            {
+                WriteNil(ref writer);
+                return;
+            }
+
+            _address.Serialize(ref writer, value.Address);
+            _int.Serialize(ref writer, value.Port);
         }
 
         public override long GetLength(IPEndPoint value)
         {
             if (value == null)
             {
-                return 1;
+                return NilLength;
             }
 
             return _int.DefaultLength + _address.GetLength(value.Address);

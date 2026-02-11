@@ -19,13 +19,8 @@ namespace ExtenderApp.Test
         public override void Inject(IServiceProvider serviceProvider)
         {
             base.Inject(serviceProvider);
-            //binarySerialization.Serialize(1111111111L, out ByteBuffer TArray);
-            //var value3 = binarySerialization.Deserialize<long>(TArray);
-            //LogDebug("value3:" + value3);
-            //TArray.Dispose();
-            Guid guid1 = new("sss");
-            Guid guid2 = new("sss");
-            LogDebug(guid1 == guid2);
+            // 运行自包含的测试用例，检查序列化及内存回收/冻结相关行为
+            ExtenderApp.Test.Tests.SerializationTests.RunAll(binarySerialization);
         }
 
         private ExpectLocalFileInfo CreatTestExpectLocalFileInfo(string fileName)
