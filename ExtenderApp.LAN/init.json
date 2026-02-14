@@ -1,6 +1,6 @@
 {
-  "PluginTitle": "LAN",
-  "PluginDescription": "局域网内传输数据的小实验",
-  "PluginVersion": "0.0.0.1",
-  "PluginStartupDll": "ExtenderApp.LAN.dll"
+  "Title": "LAN",
+  "Desc": "局域网内传输数据的小实验",
+  "Ver": "0.0.0.1",
+  "Startup": "ExtenderApp.LAN.dll"
 }

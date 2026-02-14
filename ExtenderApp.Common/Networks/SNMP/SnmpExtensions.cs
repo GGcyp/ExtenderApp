@@ -489,7 +489,7 @@ namespace ExtenderApp.Common.Networks.SNMP
         //        //    var ob = new ByteBlock(oidBytes);
         //        //    snmpValue = new SnmpValue(SnmpDataType.ObjectIdentifier, DataBuffer<ByteBlock>.GetBlock(ob));
         //        //    break;
-        //        case UniversalTagNumber.Sequence:
+        //        case UniversalTagNumber.SequenceBuffers:
         //            if (!tag.IsConstructed)
         //                return false;
 
@@ -497,10 +497,10 @@ namespace ExtenderApp.Common.Networks.SNMP
         //            block.Advance(temp.Consumed - block.Consumed);
         //            data = block.Read(len);
         //            if (data.Length != len)
-        //                throw new System.IO.InvalidDataException("数据长度不足，无法读取完整 Sequence 内容");
+        //                throw new System.IO.InvalidDataException("数据长度不足，无法读取完整 SequenceBuffers 内容");
 
         //            var sb = new ByteBlock(data);
-        //            snmpValue = new SnmpValue(UniversalTagNumber.Sequence, DataBuffer<ByteBlock>.Get(sb));
+        //            snmpValue = new SnmpValue(UniversalTagNumber.SequenceBuffers, DataBuffer<ByteBlock>.Get(sb));
         //            break;
         //    }
         //    return true;

@@ -31,6 +31,13 @@ namespace ExtenderApp.Common.Networks.LinkClients
 
         public AddressFamily AddressFamily => Linker.AddressFamily;
 
+        public int ReceiveBufferSize { get => Linker.ReceiveBufferSize; set => Linker.ReceiveBufferSize = value; }
+        public int SendBufferSize { get => Linker.SendBufferSize; set => Linker.SendBufferSize = value; }
+        public int ReceiveTimeout { get => Linker.ReceiveTimeout; set => Linker.ReceiveTimeout = value; }
+        public int SendTimeout { get => Linker.SendTimeout; set => Linker.SendTimeout = value; }
+
+        public ILinkClientPipeline Pipeline => throw new NotImplementedException();
+
         #endregion ILinker 直通属性
 
         public LinkClient(TLinker linker)

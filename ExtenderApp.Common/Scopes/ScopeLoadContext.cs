@@ -4,15 +4,13 @@ using System.Runtime.Loader;
 namespace ExtenderApp.Common.Scopes
 {
     /// <summary>
-    /// 插件加载上下文：使用 AssemblyDependencyResolver 定位依赖，
-    /// 并优先返回 AppDomain 已加载的程序集（保证共享契约类型唯一）。
+    /// 插件加载上下文：使用 AssemblyDependencyResolver 定位依赖， 并优先返回 AppDomain 已加载的程序集（保证共享契约类型唯一）。
     /// </summary>
     public sealed class ScopeLoadContext : AssemblyLoadContext
     {
         private readonly AssemblyDependencyResolver _resolver;
 
         /// <summary>
-        /// 
         /// </summary>
         /// <param name="pluginPath">插件主 DLL 的完整路径（用于定位依赖）。</param>
         public ScopeLoadContext(string pluginPath) : base($"PluginLoadContext:{pluginPath}", isCollectible: true)

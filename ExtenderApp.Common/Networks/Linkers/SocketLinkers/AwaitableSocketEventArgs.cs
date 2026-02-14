@@ -134,6 +134,31 @@ namespace ExtenderApp.Common.Networks
         /// <param name="socket">目标套接字（TCP 或已 Connect 的 UDP）。</param>
         /// <param name="memory">要发送的有效数据窗口。调用方需保证在本次异步发送完成前，该缓冲区保持有效且内容不被修改。</param>
         /// <param name="token">取消令牌；取消时将关闭 <paramref name="socket"/> 以中断 I/O（SAEA 不支持细粒度取消单个操作）。</param>
+        /// <returns>操作结果的 <see cref="ValueTask"/>。</returns>
+        public ValueTask<Result<SocketOperationValue>> SendAsync(Socket socket, Memory<byte> memory, CancellationToken token = default)
+        {
+            return SendAsync(socket, memory, LinkFlags.None, token);
+        }
+
+        /// <summary>
+        /// 发送指定缓冲区的数据（awaitable，支持取消）。
+        /// </summary>
+        /// <param name="socket">目标套接字（TCP 或已 Connect 的 UDP）。</param>
+        /// <param name="memory">要发送的有效数据窗口。调用方需保证在本次异步发送完成前，该缓冲区保持有效且内容不被修改。</param>
+        /// <param name="token">取消令牌；取消时将关闭 <paramref name="socket"/> 以中断 I/O（SAEA 不支持细粒度取消单个操作）。</param>
+        /// <param name="flags">发送标志。</param>
+        /// <returns>操作结果的 <see cref="ValueTask"/>。</returns>
+        public ValueTask<Result<SocketOperationValue>> SendAsync(Socket socket, Memory<byte> memory, LinkFlags flags, CancellationToken token = default)
+        {
+            return SendAsync(socket, memory, (SocketFlags)flags, token);
+        }
+
+        /// <summary>
+        /// 发送指定缓冲区的数据（awaitable，支持取消）。
+        /// </summary>
+        /// <param name="socket">目标套接字（TCP 或已 Connect 的 UDP）。</param>
+        /// <param name="memory">要发送的有效数据窗口。调用方需保证在本次异步发送完成前，该缓冲区保持有效且内容不被修改。</param>
+        /// <param name="token">取消令牌；取消时将关闭 <paramref name="socket"/> 以中断 I/O（SAEA 不支持细粒度取消单个操作）。</param>
         /// <param name="flags">发送标志，通常为 <see cref="SocketFlags.None"/>。</param>
         /// <returns>
         /// 一个表示操作结果的 <see cref="ValueTask"/>。成功时，其结果为包含 <see cref="SocketOperationValue"/> 的 <see cref="Result{T}"/>； 失败时 await 会抛出 <see
@@ -143,7 +168,7 @@ namespace ExtenderApp.Common.Networks
         /// - TCP 为字节流协议，可能发生“部分发送”；若需保证全部数据发出，请在调用方根据返回长度循环直至发送完毕。 <br/>
         /// - 对于 UDP，若套接字已 Connect 则可使用本方法；未 Connect 的 UDP 请使用 <see cref="SendToAsync(Socket, Memory{byte}, EndPoint, CancellationToken, SocketFlags)"/>。
         /// </remarks>
-        public ValueTask<Result<SocketOperationValue>> SendAsync(Socket socket, Memory<byte> memory, CancellationToken token, SocketFlags flags = SocketFlags.None)
+        public ValueTask<Result<SocketOperationValue>> SendAsync(Socket socket, Memory<byte> memory, SocketFlags flags, CancellationToken token = default)
         {
             ResetState();
             SocketFlags = flags;
@@ -173,9 +198,34 @@ namespace ExtenderApp.Common.Networks
         /// <param name="socket">目标套接字。</param>
         /// <param name="bufferList">包含多个 <see cref="ArraySegment{T}"/> 的列表。SAEA 要求非连续内存必须使用该类型。</param>
         /// <param name="token">取消令牌。</param>
+        /// <returns>操作结果的 <see cref="ValueTask"/>。</returns>
+        public ValueTask<Result<SocketOperationValue>> SendAsync(Socket socket, IList<ArraySegment<byte>> bufferList, CancellationToken token = default)
+        {
+            return SendAsync(socket, bufferList, LinkFlags.None, token);
+        }
+
+        /// <summary>
+        /// 发送非连续的多个缓冲区数据（Scatter 发送）。
+        /// </summary>
+        /// <param name="socket">目标套接字。</param>
+        /// <param name="bufferList">包含多个 <see cref="ArraySegment{T}"/> 的列表。SAEA 要求非连续内存必须使用该类型。</param>
+        /// <param name="token">取消令牌。</param>
         /// <param name="flags">发送标志。</param>
         /// <returns>操作结果的 <see cref="ValueTask"/>。</returns>
-        public ValueTask<Result<SocketOperationValue>> SendAsync(Socket socket, IList<ArraySegment<byte>> bufferList, CancellationToken token, SocketFlags flags = SocketFlags.None)
+        public ValueTask<Result<SocketOperationValue>> SendAsync(Socket socket, IList<ArraySegment<byte>> bufferList, LinkFlags flags, CancellationToken token = default)
+        {
+            return SendAsync(socket, bufferList, (SocketFlags)flags, token);
+        }
+
+        /// <summary>
+        /// 发送非连续的多个缓冲区数据（Scatter 发送）。
+        /// </summary>
+        /// <param name="socket">目标套接字。</param>
+        /// <param name="bufferList">包含多个 <see cref="ArraySegment{T}"/> 的列表。SAEA 要求非连续内存必须使用该类型。</param>
+        /// <param name="token">取消令牌。</param>
+        /// <param name="flags">发送标志。</param>
+        /// <returns>操作结果的 <see cref="ValueTask"/>。</returns>
+        public ValueTask<Result<SocketOperationValue>> SendAsync(Socket socket, IList<ArraySegment<byte>> bufferList, SocketFlags flags, CancellationToken token = default)
         {
             ResetState();
             SocketFlags = flags;
@@ -207,7 +257,6 @@ namespace ExtenderApp.Common.Networks
         /// <param name="buffer">要发送的数据缓冲。需在操作完成前保持有效且内容不被修改。</param>
         /// <param name="remoteEndPoint">目标远端地址；其 <see cref="EndPoint.AddressFamily"/> 必须与 <paramref name="socket"/> 一致。</param>
         /// <param name="token">取消令牌；取消时将关闭 <paramref name="socket"/> 以中断 I/O。</param>
-        /// <param name="flags">发送标志，通常为 <see cref="SocketFlags.None"/>。</param>
         /// <returns>
         /// 一个表示操作结果的 <see cref="ValueTask"/>。成功时，其结果为包含 <see cref="SocketOperationValue"/> 的 <see cref="Result{T}"/>； 失败时 await 会抛出 <see
         /// cref="SocketException"/>；取消时则抛出 <see cref="OperationCanceledException"/>。
@@ -216,7 +265,49 @@ namespace ExtenderApp.Common.Networks
         /// - 若要发送广播，请先设置 <c>socket.SetOption(SocketOptionLevel.Socket, SocketOptionName.Broadcast, true)</c>。 <br/>
         /// - 若套接字已 Connect，建议使用 <see cref="SendAsync(Socket, Memory{byte}, CancellationToken, SocketFlags)"/>。
         /// </remarks>
-        public ValueTask<Result<SocketOperationValue>> SendToAsync(Socket socket, Memory<byte> buffer, EndPoint remoteEndPoint, CancellationToken token = default, SocketFlags flags = SocketFlags.None)
+        public ValueTask<Result<SocketOperationValue>> SendToAsync(Socket socket, Memory<byte> buffer, EndPoint remoteEndPoint, CancellationToken token = default)
+        {
+            return SendToAsync(socket, buffer, remoteEndPoint, LinkFlags.None, token);
+        }
+
+        /// <summary>
+        /// UDP 发送到指定远端（未 Connect 的 UDP 使用）。
+        /// </summary>
+        /// <param name="socket">UDP 套接字（未 Connect）。</param>
+        /// <param name="buffer">要发送的数据缓冲。需在操作完成前保持有效且内容不被修改。</param>
+        /// <param name="remoteEndPoint">目标远端地址；其 <see cref="EndPoint.AddressFamily"/> 必须与 <paramref name="socket"/> 一致。</param>
+        /// <param name="token">取消令牌；取消时将关闭 <paramref name="socket"/> 以中断 I/O。</param>
+        /// <param name="flags">发送标志。</param>
+        /// <returns>
+        /// 一个表示操作结果的 <see cref="ValueTask"/>。成功时，其结果为包含 <see cref="SocketOperationValue"/> 的 <see cref="Result{T}"/>； 失败时 await 会抛出 <see
+        /// cref="SocketException"/>；取消时则抛出 <see cref="OperationCanceledException"/>。
+        /// </returns>
+        /// <remarks>
+        /// - 若要发送广播，请先设置 <c>socket.SetOption(SocketOptionLevel.Socket, SocketOptionName.Broadcast, true)</c>。 <br/>
+        /// - 若套接字已 Connect，建议使用 <see cref="SendAsync(Socket, Memory{byte}, CancellationToken, SocketFlags)"/>。
+        /// </remarks>
+        public ValueTask<Result<SocketOperationValue>> SendToAsync(Socket socket, Memory<byte> buffer, EndPoint remoteEndPoint, LinkFlags flags, CancellationToken token = default)
+        {
+            return SendToAsync(socket, buffer, remoteEndPoint, (SocketFlags)flags, token);
+        }
+
+        /// <summary>
+        /// UDP 发送到指定远端（未 Connect 的 UDP 使用）。
+        /// </summary>
+        /// <param name="socket">UDP 套接字（未 Connect）。</param>
+        /// <param name="buffer">要发送的数据缓冲。需在操作完成前保持有效且内容不被修改。</param>
+        /// <param name="remoteEndPoint">目标远端地址；其 <see cref="EndPoint.AddressFamily"/> 必须与 <paramref name="socket"/> 一致。</param>
+        /// <param name="token">取消令牌；取消时将关闭 <paramref name="socket"/> 以中断 I/O。</param>
+        /// <param name="flags">发送标志。</param>
+        /// <returns>
+        /// 一个表示操作结果的 <see cref="ValueTask"/>。成功时，其结果为包含 <see cref="SocketOperationValue"/> 的 <see cref="Result{T}"/>； 失败时 await 会抛出 <see
+        /// cref="SocketException"/>；取消时则抛出 <see cref="OperationCanceledException"/>。
+        /// </returns>
+        /// <remarks>
+        /// - 若要发送广播，请先设置 <c>socket.SetOption(SocketOptionLevel.Socket, SocketOptionName.Broadcast, true)</c>。 <br/>
+        /// - 若套接字已 Connect，建议使用 <see cref="SendAsync(Socket, Memory{byte}, CancellationToken, SocketFlags)"/>。
+        /// </remarks>
+        public ValueTask<Result<SocketOperationValue>> SendToAsync(Socket socket, Memory<byte> buffer, EndPoint remoteEndPoint, SocketFlags flags, CancellationToken token = default)
         {
             ResetState();
             SocketFlags = flags;
@@ -246,12 +337,43 @@ namespace ExtenderApp.Common.Networks
         /// <param name="socket">UDP 套接字。</param>
         /// <param name="bufferList">包含多个 <see cref="ArraySegment{T}"/> 的列表。SAEA 要求非连续内存必须使用该类型。</param>
         /// <param name="token">取消令牌；取消时将关闭 <paramref name="socket"/> 以中断 I/O。</param>
+        /// <returns>
+        /// 一个表示操作结果的 <see cref="ValueTask"/>。成功时，其结果为包含 <see cref="SocketOperationValue"/> 的 <see cref="Result{T}"/>； 失败时 await 会抛出 <see
+        /// cref="SocketException"/>；取消时则抛出 <see cref="OperationCanceledException"/>。
+        /// </returns>
+        public ValueTask<Result<SocketOperationValue>> SendToAsync(Socket socket, IList<ArraySegment<byte>> bufferList, CancellationToken token = default)
+        {
+            return SendToAsync(socket, bufferList, LinkFlags.None, token);
+        }
+
+        /// <summary>
+        /// UDP 发送到指定远端的多个缓冲区数据（Scatter 发送，未 Connect 的 UDP 使用）。
+        /// </summary>
+        /// <param name="socket">UDP 套接字。</param>
+        /// <param name="bufferList">包含多个 <see cref="ArraySegment{T}"/> 的列表。SAEA 要求非连续内存必须使用该类型。</param>
+        /// <param name="token">取消令牌；取消时将关闭 <paramref name="socket"/> 以中断 I/O。</param>
         /// <param name="flags">发送标志，通常为 <see cref="SocketFlags.None"/>。</param>
         /// <returns>
         /// 一个表示操作结果的 <see cref="ValueTask"/>。成功时，其结果为包含 <see cref="SocketOperationValue"/> 的 <see cref="Result{T}"/>； 失败时 await 会抛出 <see
         /// cref="SocketException"/>；取消时则抛出 <see cref="OperationCanceledException"/>。
         /// </returns>
-        public ValueTask<Result<SocketOperationValue>> SendToAsync(Socket socket, IList<ArraySegment<byte>> bufferList, CancellationToken token, SocketFlags flags = SocketFlags.None)
+        public ValueTask<Result<SocketOperationValue>> SendToAsync(Socket socket, IList<ArraySegment<byte>> bufferList, LinkFlags flags, CancellationToken token = default)
+        {
+            return SendToAsync(socket, bufferList, (SocketFlags)flags, token);
+        }
+
+        /// <summary>
+        /// UDP 发送到指定远端的多个缓冲区数据（Scatter 发送，未 Connect 的 UDP 使用）。
+        /// </summary>
+        /// <param name="socket">UDP 套接字。</param>
+        /// <param name="bufferList">包含多个 <see cref="ArraySegment{T}"/> 的列表。SAEA 要求非连续内存必须使用该类型。</param>
+        /// <param name="token">取消令牌；取消时将关闭 <paramref name="socket"/> 以中断 I/O。</param>
+        /// <param name="flags">发送标志，通常为 <see cref="SocketFlags.None"/>。</param>
+        /// <returns>
+        /// 一个表示操作结果的 <see cref="ValueTask"/>。成功时，其结果为包含 <see cref="SocketOperationValue"/> 的 <see cref="Result{T}"/>； 失败时 await 会抛出 <see
+        /// cref="SocketException"/>；取消时则抛出 <see cref="OperationCanceledException"/>。
+        /// </returns>
+        public ValueTask<Result<SocketOperationValue>> SendToAsync(Socket socket, IList<ArraySegment<byte>> bufferList, SocketFlags flags, CancellationToken token = default)
         {
             ResetState();
             SocketFlags = flags;
@@ -294,9 +416,36 @@ namespace ExtenderApp.Common.Networks
         /// - TCP：返回字节数为 0 通常表示对端优雅关闭。 <br/>
         /// - UDP：若缓冲不足可能发生截断，可通过 <see cref="SocketAsyncEventArgs.SocketFlags"/> 检查 <see cref="SocketFlags.Truncated"/>。
         /// </remarks>
-        public ValueTask<Result<SocketOperationValue>> ReceiveAsync(Socket socket, Memory<byte> buffer, CancellationToken token)
+        public ValueTask<Result<SocketOperationValue>> ReceiveAsync(Socket socket, Memory<byte> buffer, CancellationToken token = default)
+        {
+            return ReceiveAsync(socket, buffer, SocketFlags.None, token);
+        }
+
+        /// <summary>
+        /// 接收（awaitable，支持取消）。
+        /// </summary>
+        /// <param name="socket">源套接字（TCP 或已 Connect 的 UDP）。</param>
+        /// <param name="buffer">可写缓冲区；内核将在其中写入接收的数据。调用方需保证缓冲在本次操作完成前保持有效。</param>
+        /// <param name="token">取消令牌；取消时将关闭 <paramref name="socket"/> 以中断 I/O。</param>
+        /// <param name="flags">接收标志。</param>
+        /// <returns>操作结果的 <see cref="ValueTask"/>。</returns>
+        public ValueTask<Result<SocketOperationValue>> ReceiveAsync(Socket socket, Memory<byte> buffer, LinkFlags flags, CancellationToken token = default)
+        {
+            return ReceiveAsync(socket, buffer, (SocketFlags)flags, token);
+        }
+
+        /// <summary>
+        /// 接收（awaitable，支持取消）。
+        /// </summary>
+        /// <param name="socket">源套接字（TCP 或已 Connect 的 UDP）。</param>
+        /// <param name="buffer">可写缓冲区；内核将在其中写入接收的数据。调用方需保证缓冲在本次操作完成前保持有效。</param>
+        /// <param name="token">取消令牌；取消时将关闭 <paramref name="socket"/> 以中断 I/O。</param>
+        /// <param name="flags">接收标志。</param>
+        /// <returns>操作结果的 <see cref="ValueTask"/>。</returns>
+        public ValueTask<Result<SocketOperationValue>> ReceiveAsync(Socket socket, Memory<byte> buffer, SocketFlags flags, CancellationToken token = default)
         {
             ResetState();
+            SocketFlags = flags;
             this.token = token;
             pendingOperation = PendingOperation.Receive;
 
@@ -324,9 +473,36 @@ namespace ExtenderApp.Common.Networks
         /// <param name="bufferList">用于存放接收数据的 <see cref="ArraySegment{T}"/> 列表。</param>
         /// <param name="token">取消令牌。</param>
         /// <returns>操作结果的 <see cref="ValueTask"/>。</returns>
-        public ValueTask<Result<SocketOperationValue>> ReceiveAsync(Socket socket, IList<ArraySegment<byte>> bufferList, CancellationToken token)
+        public ValueTask<Result<SocketOperationValue>> ReceiveAsync(Socket socket, IList<ArraySegment<byte>> bufferList, CancellationToken token = default)
+        {
+            return ReceiveAsync(socket, bufferList, SocketFlags.None, token);
+        }
+
+        /// <summary>
+        /// 接收数据到非连续的多个缓冲区（Gather 接收）。
+        /// </summary>
+        /// <param name="socket">源套接字。</param>
+        /// <param name="bufferList">用于存放接收数据的 <see cref="ArraySegment{T}"/> 列表。</param>
+        /// <param name="token">取消令牌。</param>
+        /// <param name="flags">接收标志。</param>
+        /// <returns>操作结果的 <see cref="ValueTask"/>。</returns>
+        public ValueTask<Result<SocketOperationValue>> ReceiveAsync(Socket socket, IList<ArraySegment<byte>> bufferList, LinkFlags flags, CancellationToken token = default)
+        {
+            return ReceiveAsync(socket, bufferList, (SocketFlags)flags, token);
+        }
+
+        /// <summary>
+        /// 接收数据到非连续的多个缓冲区（Gather 接收）。
+        /// </summary>
+        /// <param name="socket">源套接字。</param>
+        /// <param name="bufferList">用于存放接收数据的 <see cref="ArraySegment{T}"/> 列表。</param>
+        /// <param name="token">取消令牌。</param>
+        /// <param name="flags">接收标志。</param>
+        /// <returns>操作结果的 <see cref="ValueTask"/>。</returns>
+        public ValueTask<Result<SocketOperationValue>> ReceiveAsync(Socket socket, IList<ArraySegment<byte>> bufferList, SocketFlags flags, CancellationToken token = default)
         {
             ResetState();
+            SocketFlags = flags;
             this.token = token;
             pendingOperation = PendingOperation.Receive;
 
@@ -364,7 +540,48 @@ namespace ExtenderApp.Common.Networks
         /// <remarks>广播/组播可通过 <see cref="SocketAsyncEventArgs.SocketFlags"/> 检查 <see cref="SocketFlags.Broadcast"/> 与 <see cref="SocketFlags.Multicast"/>。</remarks>
         public ValueTask<Result<SocketOperationValue>> ReceiveFromAsync(Socket socket, Memory<byte> buffer, EndPoint anyEndPoint, CancellationToken token = default)
         {
+            return ReceiveFromAsync(socket, buffer, anyEndPoint, SocketFlags.None, token);
+        }
+
+        /// <summary>
+        /// UDP 接收并获取来源地址（未 Connect 的 UDP 使用）。
+        /// </summary>
+        /// <param name="socket">UDP 套接字（未 Connect）。</param>
+        /// <param name="buffer">可写缓冲区；用于接收的数据存放。</param>
+        /// <param name="anyEndPoint">
+        /// 用于占位的 EndPoint，其 AddressFamily 必须与 <paramref name="socket"/> 一致（例如 new IPEndPoint(IPAddress.Any, 0)）。 完成后 <see
+        /// cref="SocketAsyncEventArgs.RemoteEndPoint"/> 将被设置为实际来源地址。
+        /// </param>
+        /// <param name="token">取消令牌；取消时将关闭 <paramref name="socket"/> 以中断 I/O。</param>
+        /// <param name="flags">接收标志。</param>
+        /// <returns>
+        /// 一个表示操作结果的 <see cref="ValueTask"/>。成功时，其结果为包含 <see cref="SocketOperationValue"/> 的 <see cref="Result{T}"/>； 失败时 await 会抛出 <see
+        /// cref="SocketException"/>；取消时则抛出 <see cref="OperationCanceledException"/>。
+        /// </returns>
+        /// <remarks>广播/组播可通过 <see cref="SocketAsyncEventArgs.SocketFlags"/> 检查 <see cref="SocketFlags.Broadcast"/> 与 <see cref="SocketFlags.Multicast"/>。</remarks>
+        public ValueTask<Result<SocketOperationValue>> ReceiveFromAsync(Socket socket, Memory<byte> buffer, EndPoint anyEndPoint, LinkFlags flags, CancellationToken token = default)
+        {
+            return ReceiveFromAsync(socket, buffer, anyEndPoint, (SocketFlags)flags, token);
+        }
+
+        /// <summary>
+        /// UDP 接收并获取来源地址（未 Connect 的 UDP 使用）。
+        /// </summary>
+        /// <param name="socket">UDP 套接字（未 Connect）。</param>
+        /// <param name="buffer">可写缓冲区；用于接收的数据存放。</param>
+        /// <param name="anyEndPoint">
+        /// 用于占位的 EndPoint，其 AddressFamily 必须与 <paramref name="socket"/> 一致。 完成后 <see cref="SocketAsyncEventArgs.RemoteEndPoint"/> 将被设置为实际来源地址。
+        /// </param>
+        /// <param name="token">取消令牌；取消时将关闭 <paramref name="socket"/> 以中断 I/O。</param>
+        /// <param name="flags">接收标志。</param>
+        /// <returns>
+        /// 一个表示操作结果的 <see cref="ValueTask"/>。成功时，其结果为包含 <see cref="SocketOperationValue"/> 的 <see cref="Result{T}"/>； 失败时 await 会抛出 <see
+        /// cref="SocketException"/>；取消时则抛出 <see cref="OperationCanceledException"/>。
+        /// </returns>
+        public ValueTask<Result<SocketOperationValue>> ReceiveFromAsync(Socket socket, Memory<byte> buffer, EndPoint anyEndPoint, SocketFlags flags, CancellationToken token = default)
+        {
             ResetState();
+            SocketFlags = flags;
             this.token = token;
             pendingOperation = PendingOperation.ReceiveFrom;
 
@@ -404,7 +621,50 @@ namespace ExtenderApp.Common.Networks
         /// </remarks>
         public ValueTask<Result<SocketOperationValue>> ReceiveMessageFromAsync(Socket socket, Memory<byte> buffer, EndPoint anyEndPoint, CancellationToken token = default)
         {
+            return ReceiveMessageFromAsync(socket, buffer, anyEndPoint, SocketFlags.None, token);
+        }
+
+        /// <summary>
+        /// UDP 接收（带 IP 层报文信息与标志），用于识别 Truncated/Broadcast/Multicast 等。
+        /// </summary>
+        /// <param name="socket">UDP 套接字（未 Connect 或 Connect 均可）。</param>
+        /// <param name="buffer">可写缓冲区；用于接收的数据存放。</param>
+        /// <param name="anyEndPoint">
+        /// 用于占位的 EndPoint，其 AddressFamily 必须与 <paramref name="socket"/> 一致。 完成后 <see cref="SocketAsyncEventArgs.RemoteEndPoint"/> 将被设置为实际来源地址。
+        /// </param>
+        /// <param name="token">取消令牌；取消时将关闭 <paramref name="socket"/> 以中断 I/O。</param>
+        /// <param name="flags">接收标志。</param>
+        /// <returns>
+        /// 一个表示操作结果的 <see cref="ValueTask"/>。成功时，其结果为包含 <see cref="SocketOperationValue"/> 的 <see cref="Result{T}"/>； 失败时 await 会抛出 <see
+        /// cref="SocketException"/>；取消时则抛出 <see cref="OperationCanceledException"/>。
+        /// </returns>
+        /// <remarks>
+        /// 要获取 <see cref="SocketAsyncEventArgs.ReceiveMessageFromPacketInfo"/>，需在套接字上启用数据报包信息： IPv4： <c>socket.SetOption(SocketOptionLevel.IP,
+        /// SocketOptionName.PacketInformation, true)</c>； IPv6： <c>socket.SetOption(SocketOptionLevel.IPv6, SocketOptionName.PacketInformation, true)</c>。
+        /// </remarks>
+        public ValueTask<Result<SocketOperationValue>> ReceiveMessageFromAsync(Socket socket, Memory<byte> buffer, EndPoint anyEndPoint, LinkFlags flags, CancellationToken token = default)
+        {
+            return ReceiveMessageFromAsync(socket, buffer, anyEndPoint, (SocketFlags)flags, token);
+        }
+
+        /// <summary>
+        /// UDP 接收（带 IP 层报文信息与标志），用于识别 Truncated/Broadcast/Multicast 等。
+        /// </summary>
+        /// <param name="socket">UDP 套接字（未 Connect 或 Connect 均可）。</param>
+        /// <param name="buffer">可写缓冲区；用于接收的数据存放。</param>
+        /// <param name="anyEndPoint">
+        /// 用于占位的 EndPoint，其 AddressFamily 必须与 <paramref name="socket"/> 一致。 完成后 <see cref="SocketAsyncEventArgs.RemoteEndPoint"/> 将被设置为实际来源地址。
+        /// </param>
+        /// <param name="token">取消令牌；取消时将关闭 <paramref name="socket"/> 以中断 I/O。</param>
+        /// <param name="flags">接收标志。</param>
+        /// <returns>
+        /// 一个表示操作结果的 <see cref="ValueTask"/>。成功时，其结果为包含 <see cref="SocketOperationValue"/> 的 <see cref="Result{T}"/>； 失败时 await 会抛出 <see
+        /// cref="SocketException"/>；取消时则抛出 <see cref="OperationCanceledException"/>。
+        /// </returns>
+        public ValueTask<Result<SocketOperationValue>> ReceiveMessageFromAsync(Socket socket, Memory<byte> buffer, EndPoint anyEndPoint, SocketFlags flags, CancellationToken token = default)
+        {
             ResetState();
+            SocketFlags = flags;
             this.token = token;
             pendingOperation = PendingOperation.ReceiveMessageFrom;
 

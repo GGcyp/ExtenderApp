@@ -1,7 +1,7 @@
 ﻿using System.Buffers;
 using ExtenderApp.Buffer.MemoryBlocks;
 
-namespace ExtenderApp.Buffer.Sequence
+namespace ExtenderApp.Buffer.SequenceBuffers
 {
     /// <summary>
     /// 内存块序列段提供者，基于 <see cref="MemoryBlockProvider{T}"/> 获取底层缓冲区并将其封装为 <see cref="SequenceBufferSegment{T}"/> 实例。
@@ -64,6 +64,10 @@ namespace ExtenderApp.Buffer.Sequence
 
             protected internal override ReadOnlyMemory<T> CommittedMemory => Block.CommittedMemory;
 
+            protected internal override ReadOnlySpan<T> CommittedSpan => Block.CommittedSpan;
+
+            protected internal override ArraySegment<T> CommittedArraySegment => Block.CommittedSegment;
+
             protected override Memory<T> GetMemotyProtected(int sizeHint = 0) => Block.GetMemory(sizeHint);
 
             protected override Span<T> GetSpanProtected(int sizeHint = 0) => Block.GetSpan(sizeHint);
@@ -74,8 +78,11 @@ namespace ExtenderApp.Buffer.Sequence
 
             public override void Unpin() => Block.Unpin();
 
-            public override SequenceBufferSegment<T> Slice(int start, int length) 
+            public override SequenceBufferSegment<T> Slice(int start, int length)
                 => SegmentProvider?.GetSegment(Block.Slice(start, length)) ?? SequenceBufferSegment<T>.Empty;
+
+            public override SequenceBufferSegment<T> Clone()
+                => SegmentProvider?.GetSegment(Block.Clone()) ?? SequenceBufferSegment<T>.Empty;
         }
     }
 }

@@ -1,6 +1,6 @@
 ﻿using System.Buffers;
 using ExtenderApp.Buffer.Reader;
-using ExtenderApp.Buffer.Sequence;
+using ExtenderApp.Buffer.SequenceBuffers;
 
 namespace ExtenderApp.Buffer
 {

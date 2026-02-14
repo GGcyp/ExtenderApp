@@ -1,6 +1,6 @@
 {
-  "PluginTitle": "Test",
-  "PluginDescription": "测试专用模组",
-  "PluginVersion": "0.0.0.1",
-  "PluginStartupDll": "ExtenderApp.Test.dll"
+  "Title": "Test",
+  "Desc": "测试专用模组",
+  "Ver": "0.0.0.1",
+  "Startup": "ExtenderApp.Test.dll"
 }

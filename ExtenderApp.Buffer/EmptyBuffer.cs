@@ -20,6 +20,11 @@ namespace ExtenderApp.Buffer
         {
         }
 
+        public override AbstractBuffer<T> Clone()
+        {
+            return this;
+        }
+
         public override Memory<T> GetMemory(int sizeHint = 0)
         {
             return Memory<T>.Empty;
@@ -32,7 +37,7 @@ namespace ExtenderApp.Buffer
 
         public override AbstractBuffer<T> Slice(long start, long length)
         {
-            return AbstractBuffer<T>.Empty;
+            return this;
         }
 
         public override T[] ToArray()
@@ -47,6 +52,11 @@ namespace ExtenderApp.Buffer
 
         protected override void ReleaseProtected()
         {
+        }
+
+        protected override AbstractBuffer<T> SliceProtected(long start, long length)
+        {
+            return this;
         }
 
         protected override bool TryReleaseProtected()

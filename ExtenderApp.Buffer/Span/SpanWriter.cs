@@ -1,3 +1,5 @@
+using System.Runtime.CompilerServices;
+
 namespace ExtenderApp.Buffer
 {
     /// <summary>
@@ -51,6 +53,7 @@ namespace ExtenderApp.Buffer
         /// </summary>
         /// <param name="value">要写入的元素值。</param>
         /// <returns>写入成功则为 <c>true</c>，否则为 <c>false</c>。</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool TryWrite(T value)
         {
             if (Remaining < 1)
@@ -65,6 +68,7 @@ namespace ExtenderApp.Buffer
         /// </summary>
         /// <param name="value">要写入的元素值。</param>
         /// <exception cref="InvalidOperationException">当目标跨度空间不足时抛出。</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Write(T value)
         {
             if (!TryWrite(value))
@@ -76,6 +80,7 @@ namespace ExtenderApp.Buffer
         /// </summary>
         /// <param name="source">源只读跨度。</param>
         /// <returns>复制成功并推进位置则返回 <c>true</c>，否则返回 <c>false</c>。</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool TryWrite(ReadOnlySpan<T> source)
         {
             if (source.Length == 0)
@@ -92,6 +97,7 @@ namespace ExtenderApp.Buffer
         /// </summary>
         /// <param name="source">源只读跨度。</param>
         /// <exception cref="InvalidOperationException">当目标跨度空间不足时抛出。</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Write(ReadOnlySpan<T> source)
         {
             if (!TryWrite(source))
@@ -103,6 +109,7 @@ namespace ExtenderApp.Buffer
         /// </summary>
         /// <param name="count">推进的元素数，必须为非负且不超过剩余。</param>
         /// <exception cref="ArgumentOutOfRangeException">当 <paramref name="count"/> 无效时抛出。</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Advance(int count)
         {
             if (count < 0 || position + count > span.Length)
@@ -115,6 +122,7 @@ namespace ExtenderApp.Buffer
         /// </summary>
         /// <param name="count">回退的元素数（非负且不大于已写入）。</param>
         /// <exception cref="ArgumentOutOfRangeException">当 <paramref name="count"/> 无效时抛出。</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Rewind(int count)
         {
             if (count < 0 || position - count < 0)
@@ -125,6 +133,7 @@ namespace ExtenderApp.Buffer
         /// <summary>
         /// 重置写入位置为起点。
         /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Reset() => position = 0;
 
         /// <summary>

@@ -1,11 +1,11 @@
-﻿using System.Buffers;
-using System.Net;
-using System.Runtime.InteropServices;
+﻿using System.Runtime.CompilerServices;
 using ExtenderApp.Abstract;
+using ExtenderApp.Buffer;
+using ExtenderApp.Common.Networks;
 using ExtenderApp.Contracts;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace ExtenderApp.Common.Networks
+namespace ExtenderApp.Common
 {
     /// <summary>
     /// 提供与链接（ILinker）及其依赖注册相关的扩展方法。
@@ -57,139 +57,391 @@ namespace ExtenderApp.Common.Networks
         #region Send
 
         /// <summary>
-        /// 同步发送一段只读内存数据。
+        /// 同步发送抽象缓冲区的数据。
         /// </summary>
         /// <param name="linker">目标链接。</param>
-        /// <param name="memory">要发送的数据窗口。</param>
-        /// <returns>发送结果（包含已发送字节数和可能的底层错误）。</returns>
-        /// <remarks>这是对 <see cref="ILinker.Send(Memory{byte})"/> 的便捷包装。</remarks>
-        public static Result<SocketOperationValue> Send(this ILinker linker, in ReadOnlyMemory<byte> memory)
-        {
-            return linker.Send(MemoryMarshal.AsMemory(memory));
-        }
-
-        
-
-        /// <summary>
-        /// 同步发送一个只读字节序列（可能由多段组成）。
-        /// </summary>
-        /// <param name="linker">目标链接。</param>
-        /// <param name="sequence">只读字节序列，将按顺序发送。</param>
-        /// <returns>发送结果（累加所有分段的已发送字节数与最后一次结果的端点/标志）。</returns>
-        /// <remarks>
-        /// - TCP：处理“部分发送”，对每个分段进行补发直到耗尽。 <br/>
-        /// - UDP：按分段逐帧发送；若需保持单报文，请先合并为单块。
-        /// </remarks>
-        public static Result<SocketOperationValue> Send(this ILinker linker, ReadOnlySequence<byte> sequence)
-        {
-            int total = 0;
-            var value = SocketOperationValue.Empty;
-
-            SequencePosition position = sequence.Start;
-            while (sequence.TryGet(ref position, out var segment))
-            {
-                var remaining = segment;
-                while (remaining.Length > 0)
-                {
-                    var result = linker.Send(remaining);
-                    if (!result)
-                        return result;
-                    value = result.Value;
-                    if (value.BytesTransferred <= 0)
-                        return Result.FromException<SocketOperationValue>(result.Exception!);
-                    total += value.BytesTransferred;
-                    if (value.BytesTransferred < remaining.Length)
-                        remaining = remaining.Slice(value.BytesTransferred);
-                    else
-                        break;
-                }
-            }
-            return Result.Success(new SocketOperationValue(total, value.RemoteEndPoint, value.ReceiveMessageFromPacketInfo));
-        }
-
-        /// <summary>
-        /// 异步发送一段只读内存数据。
-        /// </summary>
-        /// <param name="linker">目标链接。</param>
-        /// <param name="memory">要发送的数据窗口。</param>
-        /// <param name="token">取消令牌。</param>
-        /// <returns>发送结果任务（包含已发送字节数和可能的底层错误）。</returns>
-        /// <remarks>这是对 <see cref="ILinker.SendAsync(Memory{byte}, CancellationToken)"/> 的便捷包装。</remarks>
-        public static ValueTask<Result<SocketOperationValue>> SendAsync(this ILinker linker, in ReadOnlyMemory<byte> memory, CancellationToken token = default)
-        {
-            return linker.SendAsync(MemoryMarshal.AsMemory(memory), token);
-        }
-      
-
-        /// <summary>
-        /// 异步发送一个只读字节序列（可能由多段组成）。
-        /// </summary>
-        /// <param name="linker">目标链接。</param>
-        /// <param name="sequence">只读字节序列，将按顺序发送。</param>
-        /// <param name="token">取消令牌。</param>
-        /// <returns>发送结果任务（累加所有分段的已发送字节数与最后一次结果的端点/标志）。</returns>
-        /// <remarks>
-        /// - TCP：处理“部分发送”，对每个分段进行补发直到耗尽。 <br/>
-        /// - UDP：按分段逐帧发送；若需保持单报文，请先合并为单块。
-        /// </remarks>
-        public static async ValueTask<Result<SocketOperationValue>> SendAsync(this ILinker linker, ReadOnlySequence<byte> sequence, CancellationToken token = default)
-        {
-            int total = 0;
-            var value = SocketOperationValue.Empty;
-
-            SequencePosition position = sequence.Start;
-            while (sequence.TryGet(ref position, out var segment))
-            {
-                var remaining = segment;
-                while (remaining.Length > 0)
-                {
-                    var result = await linker.SendAsync(remaining, token).ConfigureAwait(false);
-
-                    if (!result)
-                        return result;
-
-                    value = result.Value;
-                    if (value.BytesTransferred <= 0)
-                        return Result.FromException<SocketOperationValue>(result.Exception!);
-
-                    total += value.BytesTransferred;
-
-                    if (value.BytesTransferred < remaining.Length)
-                        remaining = remaining.Slice(value.BytesTransferred);
-                    else
-                        break;
-                }
-            }
-
-            return Result.Success(new SocketOperationValue(total, value.RemoteEndPoint, value.ReceiveMessageFromPacketInfo));
-        }
-
-        
-
-        /// <summary>
-        /// 异步发送一段只读内存数据到指定 UDP 远端（无需显式构造 ByteBlock）。
-        /// </summary>
-        /// <typeparam name="TLinker">UDP 链接器类型。</typeparam>
-        /// <param name="linker">目标链接器。</param>
-        /// <param name="memory">要发送的只读内存。</param>
-        /// <param name="endPoint">目标远端终结点。</param>
-        /// <param name="token">取消令牌。</param>
+        /// <param name="buffer">待发送的缓冲区。</param>
+        /// <param name="flags">发送标志。</param>
         /// <returns>发送结果。</returns>
-        /// <remarks>
-        /// - 内部使用 <see cref="MemoryMarshal.AsMemory{T}(ReadOnlyMemory{T})"/> 转换为可写视图后调用底层。 <br/>
-        /// - 对大数据或频繁调用场景，可考虑预分配缓冲以减少复制。
-        /// </remarks>
-        public static ValueTask<Result<SocketOperationValue>> SendToAsync<TLinker>(this TLinker linker, in ReadOnlyMemory<byte> memory, EndPoint endPoint, CancellationToken token = default)
-            where TLinker : IUdpLinker
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Result<SocketOperationValue> Send(this ILinker linker, AbstractBuffer<byte> buffer, LinkFlags flags = LinkFlags.None)
         {
-            return linker.SendToAsync(MemoryMarshal.AsMemory(memory), endPoint, token);
+            if (buffer is SequenceBuffer<byte> sequenceBuffer)
+                return SendPrivate(linker, sequenceBuffer, flags);
+            else if (buffer is MemoryBlock<byte> memoryBlock)
+                return SendPrivate(linker, memoryBlock, flags);
+            else
+                throw new ArgumentException("不支持的缓冲区类型。", nameof(buffer));
+        }
+
+        /// <summary>
+        /// 同步发送 <see cref="MemoryBlock{T}"/> 中已提交的数据。
+        /// </summary>
+        /// <param name="linker">目标链接。</param>
+        /// <param name="memoryBlock">内存块。</param>
+        /// <param name="flags">发送标志。</param>
+        /// <returns>发送结果。</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Result<SocketOperationValue> Send(this ILinker linker, MemoryBlock<byte> memoryBlock, LinkFlags flags = LinkFlags.None)
+        {
+            ArgumentNullException.ThrowIfNull(linker, nameof(linker));
+            ArgumentNullException.ThrowIfNull(memoryBlock, nameof(memoryBlock));
+
+            return SendPrivate(linker, memoryBlock, flags);
+        }
+
+        /// <summary>
+        /// 同步发送 <see cref="SequenceBuffer{T}"/> 中的所有分段数据。
+        /// </summary>
+        /// <param name="linker">目标链接。</param>
+        /// <param name="sequenceBuffer">序列缓冲区。</param>
+        /// <param name="flags">发送标志。</param>
+        /// <returns>发送结果。</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Result<SocketOperationValue> Send(this ILinker linker, SequenceBuffer<byte> sequenceBuffer, LinkFlags flags = LinkFlags.None)
+        {
+            ArgumentNullException.ThrowIfNull(linker, nameof(linker));
+            ArgumentNullException.ThrowIfNull(sequenceBuffer, nameof(sequenceBuffer));
+
+            return SendPrivate(linker, sequenceBuffer, flags);
+        }
+
+        /// <summary>
+        /// 同步发送 <see cref="MemoryBlock{T}"/> 的已提交数据。
+        /// </summary>
+        /// <param name="linker">目标链接。</param>
+        /// <param name="memoryBlock">内存块。</param>
+        /// <param name="flags">发送标志。</param>
+        /// <returns>发送结果。</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Result<SocketOperationValue> SendPrivate(ILinker linker, MemoryBlock<byte> memoryBlock, LinkFlags flags)
+        {
+            if (memoryBlock.Committed == 0)
+                return Result.Failure<SocketOperationValue>("当前 MemoryBlock 中没有数据可发送。");
+            return linker.Send(memoryBlock.CommittedMemory, flags);
+        }
+
+        /// <summary>
+        /// 同步发送 <see cref="SequenceBuffer{T}"/> 的所有分段数据。
+        /// </summary>
+        /// <param name="linker">目标链接。</param>
+        /// <param name="sequenceBuffer">序列缓冲区。</param>
+        /// <param name="flags">发送标志。</param>
+        /// <returns>发送结果。</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Result<SocketOperationValue> SendPrivate(ILinker linker, SequenceBuffer<byte> sequenceBuffer, LinkFlags flags)
+        {
+            var segments = sequenceBuffer.ToArraySegments();
+            if (segments == null)
+                return Result.Failure<SocketOperationValue>("当前 SequenceBuffer 中没有数据可发送。");
+            return linker.Send(segments, flags);
         }
 
         #endregion Send
 
+        #region SendAsync
+
+        /// <summary>
+        /// 异步发送抽象缓冲区的数据。
+        /// </summary>
+        /// <param name="linker">目标链接。</param>
+        /// <param name="buffer">待发送的缓冲区。</param>
+        /// <param name="flags">发送标志。</param>
+        /// <param name="token">取消令牌。</param>
+        /// <returns>发送结果。</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ValueTask<Result<SocketOperationValue>> SendAsync(this ILinker linker, AbstractBuffer<byte> buffer, LinkFlags flags = LinkFlags.None, CancellationToken token = default)
+        {
+            if (buffer is SequenceBuffer<byte> sequenceBuffer)
+                return SendAsyncPrivate(linker, sequenceBuffer, flags, token);
+            else if (buffer is MemoryBlock<byte> memoryBlock)
+                return SendAsyncPrivate(linker, memoryBlock, flags, token);
+            else
+                throw new ArgumentException("不支持的缓冲区类型。", nameof(buffer));
+        }
+
+        /// <summary>
+        /// 异步发送 <see cref="MemoryBlock{T}"/> 中已提交的数据。
+        /// </summary>
+        /// <param name="linker">目标链接。</param>
+        /// <param name="memoryBlock">内存块。</param>
+        /// <param name="flags">发送标志。</param>
+        /// <param name="token">取消令牌。</param>
+        /// <returns>发送结果。</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ValueTask<Result<SocketOperationValue>> SendAsync(this ILinker linker, MemoryBlock<byte> memoryBlock, LinkFlags flags = LinkFlags.None, CancellationToken token = default)
+        {
+            ArgumentNullException.ThrowIfNull(linker, nameof(linker));
+            ArgumentNullException.ThrowIfNull(memoryBlock, nameof(memoryBlock));
+
+            return SendAsyncPrivate(linker, memoryBlock, flags, token);
+        }
+
+        /// <summary>
+        /// 异步发送 <see cref="SequenceBuffer{T}"/> 中的所有分段数据。
+        /// </summary>
+        /// <param name="linker">目标链接。</param>
+        /// <param name="sequenceBuffer">序列缓冲区。</param>
+        /// <param name="flags">发送标志。</param>
+        /// <param name="token">取消令牌。</param>
+        /// <returns>发送结果。</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ValueTask<Result<SocketOperationValue>> SendAsync(this ILinker linker, SequenceBuffer<byte> sequenceBuffer, LinkFlags flags = LinkFlags.None, CancellationToken token = default)
+        {
+            ArgumentNullException.ThrowIfNull(linker, nameof(linker));
+            ArgumentNullException.ThrowIfNull(sequenceBuffer, nameof(sequenceBuffer));
+
+            return SendAsyncPrivate(linker, sequenceBuffer, flags, token);
+        }
+
+        /// <summary>
+        /// 异步发送 <see cref="MemoryBlock{T}"/> 的已提交数据。
+        /// </summary>
+        /// <param name="linker">目标链接。</param>
+        /// <param name="memoryBlock">内存块。</param>
+        /// <param name="flags">发送标志。</param>
+        /// <param name="token">取消令牌。</param>
+        /// <returns>发送结果。</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static ValueTask<Result<SocketOperationValue>> SendAsyncPrivate(this ILinker linker, MemoryBlock<byte> memoryBlock, LinkFlags flags, CancellationToken token)
+        {
+            if (memoryBlock.Committed == 0)
+                return Result.Failure<SocketOperationValue>("当前 MemoryBlock 中没有数据可发送。");
+
+            return linker.SendAsync(memoryBlock.CommittedMemory, flags, token);
+        }
+
+        /// <summary>
+        /// 异步发送 <see cref="SequenceBuffer{T}"/> 的所有分段数据。
+        /// </summary>
+        /// <param name="linker">目标链接。</param>
+        /// <param name="sequenceBuffer">序列缓冲区。</param>
+        /// <param name="flags">发送标志。</param>
+        /// <param name="token">取消令牌。</param>
+        /// <returns>发送结果。</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static ValueTask<Result<SocketOperationValue>> SendAsyncPrivate(this ILinker linker, SequenceBuffer<byte> sequenceBuffer, LinkFlags flags, CancellationToken token)
+        {
+            var segments = sequenceBuffer.ToArraySegments();
+            if (segments == null)
+                return Result.Failure<SocketOperationValue>("当前 SequenceBuffer 中没有数据可发送。");
+
+            return linker.SendAsync(segments, flags, token);
+        }
+
+        #endregion SendAsync
+
         #region Receive
 
+        /// <summary>
+        /// 同步接收数据到抽象缓冲区。
+        /// </summary>
+        /// <param name="linker">目标链接。</param>
+        /// <param name="buffer">用于接收的缓冲区。</param>
+        /// <param name="flags">接收标志。</param>
+        /// <returns>接收结果。</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Result<SocketOperationValue> Receive(this ILinker linker, AbstractBuffer<byte> buffer, LinkFlags flags = LinkFlags.None)
+        {
+            if (buffer is SequenceBuffer<byte> sequenceBuffer)
+                return ReceivePrivate(linker, sequenceBuffer, flags);
+            else if (buffer is MemoryBlock<byte> memoryBlock)
+                return ReceivePrivate(linker, memoryBlock, flags);
+            else
+                throw new ArgumentException("不支持的缓冲区类型。", nameof(buffer));
+        }
+
+        /// <summary>
+        /// 同步接收数据到 <see cref="MemoryBlock{T}"/> 的可用空间。
+        /// </summary>
+        /// <param name="linker">目标链接。</param>
+        /// <param name="memoryBlock">内存块。</param>
+        /// <param name="flags">接收标志。</param>
+        /// <returns>接收结果。</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Result<SocketOperationValue> Receive(this ILinker linker, MemoryBlock<byte> memoryBlock, LinkFlags flags = LinkFlags.None)
+        {
+            ArgumentNullException.ThrowIfNull(linker, nameof(linker));
+            ArgumentNullException.ThrowIfNull(memoryBlock, nameof(memoryBlock));
+
+            return ReceivePrivate(linker, memoryBlock, flags);
+        }
+
+        /// <summary>
+        /// 同步接收数据到 <see cref="SequenceBuffer{T}"/> 的可用空间。
+        /// </summary>
+        /// <param name="linker">目标链接。</param>
+        /// <param name="sequenceBuffer">序列缓冲区。</param>
+        /// <param name="flags">接收标志。</param>
+        /// <returns>接收结果。</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Result<SocketOperationValue> Receive(this ILinker linker, SequenceBuffer<byte> sequenceBuffer, LinkFlags flags = LinkFlags.None)
+        {
+            ArgumentNullException.ThrowIfNull(linker, nameof(linker));
+            ArgumentNullException.ThrowIfNull(sequenceBuffer, nameof(sequenceBuffer));
+
+            return ReceivePrivate(linker, sequenceBuffer, flags);
+        }
+
+        /// <summary>
+        /// 同步接收数据到 <see cref="MemoryBlock{T}"/> 的可用空间。
+        /// </summary>
+        /// <param name="linker">目标链接。</param>
+        /// <param name="memoryBlock">内存块。</param>
+        /// <param name="flags">接收标志。</param>
+        /// <returns>接收结果。</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Result<SocketOperationValue> ReceivePrivate(ILinker linker, MemoryBlock<byte> memoryBlock, LinkFlags flags)
+        {
+            var writableSpan = memoryBlock.GetAvailableSpan();
+            if (writableSpan.IsEmpty || writableSpan.Length == 0)
+                return ReceiveFailureResult(nameof(MemoryBlock<byte>));
+            return linker.Receive(writableSpan, flags);
+        }
+
+        /// <summary>
+        /// 同步接收数据到 <see cref="SequenceBuffer{T}"/> 的可用空间。
+        /// </summary>
+        /// <param name="linker">目标链接。</param>
+        /// <param name="sequenceBuffer">序列缓冲区。</param>
+        /// <param name="flags">接收标志。</param>
+        /// <returns>接收结果。</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Result<SocketOperationValue> ReceivePrivate(ILinker linker, SequenceBuffer<byte> sequenceBuffer, LinkFlags flags)
+        {
+            var writableSequenceBuffer = sequenceBuffer.AvailableSlice();
+            if (writableSequenceBuffer.Available == 0)
+            {
+                writableSequenceBuffer.TryRelease();
+                return ReceiveFailureResult(nameof(SequenceBuffer<byte>));
+            }
+            var writableList = writableSequenceBuffer.ToArraySegments();
+            if (writableList == null)
+            {
+                writableSequenceBuffer.TryRelease();
+                return ReceiveFailureResult(nameof(SequenceBuffer<byte>));
+            }
+            writableSequenceBuffer.Freeze();
+            var result = linker.Receive(writableList, flags);
+            writableSequenceBuffer.TryRelease();
+            return result;
+        }
 
         #endregion Receive
+
+        #region ReceiveAsync
+
+        /// <summary>
+        /// 异步接收数据到抽象缓冲区。
+        /// </summary>
+        /// <param name="linker">目标链接。</param>
+        /// <param name="buffer">用于接收的缓冲区。</param>
+        /// <param name="flags">接收标志。</param>
+        /// <param name="token">取消令牌。</param>
+        /// <returns>接收结果。</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ValueTask<Result<SocketOperationValue>> ReceiveAsync(this ILinker linker, AbstractBuffer<byte> buffer, LinkFlags flags = LinkFlags.None, CancellationToken token = default)
+        {
+            if (buffer is SequenceBuffer<byte> sequenceBuffer)
+                return ReceiveAsyncPrivate(linker, sequenceBuffer, flags, token);
+            else if (buffer is MemoryBlock<byte> memoryBlock)
+                return ReceiveAsyncPrivate(linker, memoryBlock, flags, token);
+            else
+                throw new ArgumentException("不支持的缓冲区类型。", nameof(buffer));
+        }
+
+        /// <summary>
+        /// 异步接收数据到 <see cref="MemoryBlock{T}"/> 的可用空间。
+        /// </summary>
+        /// <param name="linker">目标链接。</param>
+        /// <param name="memoryBlock">内存块。</param>
+        /// <param name="flags">接收标志。</param>
+        /// <param name="token">取消令牌。</param>
+        /// <returns>接收结果。</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ValueTask<Result<SocketOperationValue>> ReceiveAsync(this ILinker linker, MemoryBlock<byte> memoryBlock, LinkFlags flags = LinkFlags.None, CancellationToken token = default)
+        {
+            ArgumentNullException.ThrowIfNull(linker, nameof(linker));
+            ArgumentNullException.ThrowIfNull(memoryBlock, nameof(memoryBlock));
+
+            return ReceiveAsyncPrivate(linker, memoryBlock, flags, token);
+        }
+
+        /// <summary>
+        /// 异步接收数据到 <see cref="SequenceBuffer{T}"/> 的可用空间。
+        /// </summary>
+        /// <param name="linker">目标链接。</param>
+        /// <param name="sequenceBuffer">序列缓冲区。</param>
+        /// <param name="flags">接收标志。</param>
+        /// <param name="token">取消令牌。</param>
+        /// <returns>接收结果。</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ValueTask<Result<SocketOperationValue>> ReceiveAsync(this ILinker linker, SequenceBuffer<byte> sequenceBuffer, LinkFlags flags = LinkFlags.None, CancellationToken token = default)
+        {
+            ArgumentNullException.ThrowIfNull(linker, nameof(linker));
+            ArgumentNullException.ThrowIfNull(sequenceBuffer, nameof(sequenceBuffer));
+
+            return ReceiveAsyncPrivate(linker, sequenceBuffer, flags, token);
+        }
+
+        /// <summary>
+        /// 异步接收数据到 <see cref="MemoryBlock{T}"/> 的可用空间。
+        /// </summary>
+        /// <param name="linker">目标链接。</param>
+        /// <param name="memoryBlock">内存块。</param>
+        /// <param name="flags">接收标志。</param>
+        /// <param name="token">取消令牌。</param>
+        /// <returns>接收结果。</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static ValueTask<Result<SocketOperationValue>> ReceiveAsyncPrivate(ILinker linker, MemoryBlock<byte> memoryBlock, LinkFlags flags, CancellationToken token)
+        {
+            var writableMemory = memoryBlock.GetAvailableMemory();
+            if (writableMemory.IsEmpty || writableMemory.Length == 0)
+                return ReceiveFailureResult(nameof(MemoryBlock<byte>));
+
+            return linker.ReceiveAsync(writableMemory, flags);
+        }
+
+        /// <summary>
+        /// 异步接收数据到 <see cref="SequenceBuffer{T}"/> 的可用空间。
+        /// </summary>
+        /// <param name="linker">目标链接。</param>
+        /// <param name="sequenceBuffer">序列缓冲区。</param>
+        /// <param name="flags">接收标志。</param>
+        /// <param name="token">取消令牌。</param>
+        /// <returns>接收结果。</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static ValueTask<Result<SocketOperationValue>> ReceiveAsyncPrivate(ILinker linker, SequenceBuffer<byte> sequenceBuffer, LinkFlags flags, CancellationToken token)
+        {
+            var writableSequenceBuffer = sequenceBuffer.AvailableSlice();
+            if (writableSequenceBuffer.Available == 0)
+            {
+                writableSequenceBuffer.TryRelease();
+                return ReceiveFailureResult(nameof(SequenceBuffer<byte>));
+            }
+            var writableList = writableSequenceBuffer.ToArraySegments();
+            if (writableList == null)
+            {
+                writableSequenceBuffer.TryRelease();
+                return ReceiveFailureResult(nameof(SequenceBuffer<byte>));
+            }
+            writableSequenceBuffer.Freeze();
+            var result = linker.ReceiveAsync(writableList, flags, token);
+            writableSequenceBuffer.TryRelease();
+            return result;
+        }
+
+        #endregion ReceiveAsync
+
+        /// <summary>
+        /// 构造接收失败的结果信息。
+        /// </summary>
+        /// <param name="bufferName">缓冲区类型名称。</param>
+        /// <returns>失败结果。</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Result<SocketOperationValue> ReceiveFailureResult(string bufferName)
+        {
+            return Result.Failure<SocketOperationValue>($"当前 {bufferName} 中没有可用空间来接收数据。");
+        }
     }
 }

@@ -1,7 +1,6 @@
 ﻿using System.Buffers;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Text;
 using ExtenderApp.Buffer.MemoryBlocks;
 
 namespace ExtenderApp.Buffer
@@ -52,6 +51,7 @@ namespace ExtenderApp.Buffer
         /// </summary>
         public override long Capacity => AvailableMemory.Length;
 
+        ///<inheritdoc/>
         public override ReadOnlySequence<T> CommittedSequence => this;
 
         /// <summary>
@@ -120,6 +120,7 @@ namespace ExtenderApp.Buffer
             return RemainingSpan;
         }
 
+        ///<inheritdoc/>
         protected override MemoryHandle PinProtected(int elementIndex)
         {
             return AvailableMemory.Slice(elementIndex).Pin();
@@ -217,6 +218,7 @@ namespace ExtenderApp.Buffer
             Span.Reverse();
         }
 
+        ///<inheritdoc/>
         protected override sealed void ReleaseProtected()
         {
             if (BlockProvider == null)
@@ -226,6 +228,7 @@ namespace ExtenderApp.Buffer
             BlockProvider = null;
         }
 
+        ///<inheritdoc/>
         protected override sealed bool TryReleaseProtected()
         {
             if (BlockProvider == null)
@@ -257,6 +260,7 @@ namespace ExtenderApp.Buffer
             BlockProvider = default!;
         }
 
+        ///<inheritdoc/>
         protected override void UpdateCommittedProtected(Span<T> span, long committedPosition)
         {
             span.CopyTo(Span.Slice((int)committedPosition));
@@ -283,16 +287,31 @@ namespace ExtenderApp.Buffer
         /// <param name="sizeHint">所需的最小可写空间大小（当为 0 时实现可选择保持当前容量或最低策略）。</param>
         protected abstract void EnsureCapacityProtected(int sizeHint);
 
+        ///<inheritdoc/>
         public override T[] ToArray() => CommittedMemory.ToArray();
 
-        /// <summary>
-        /// 对当前块内已写入的元素范围进行切片，返回一个新的 <see cref="MemoryBlock{T}"/> 实例表示该范围。
-        /// </summary>
-        /// <param name="start">切片起始索引（相对于已写入区域）。</param>
-        /// <param name="length">切片长度（元素数量）。</param>
-        /// <returns>新的 <see cref="MemoryBlock{T}"/> 实例</returns>
-        public override MemoryBlock<T> Slice(long start, long length) 
+        ///<inheritdoc/>
+        public override MemoryBlock<T> Slice(long start = 0, long length = 0)
+            => (MemoryBlock<T>)base.Slice(start, length);
+
+        ///<inheritdoc/>
+        protected override AbstractBuffer<T> SliceProtected(long start, long length)
             => FixedMemoryBlockProvider<T>.Default.GetBuffer(Memory.Slice((int)start, (int)length));
+
+        /// <summary>
+        /// 从当前块内已写入的元素范围创建一个新的 <see cref="MemoryBlock{T}"/> 实例，表示该范围的独立副本。 派生类应通过克隆底层存储来实现深复制，以确保新实例与原实例之间没有共享状态。
+        /// </summary>
+        /// <returns>返回 <see cref="MemoryBlock{T}"/> 实例</returns>
+        /// <exception cref="InvalidOperationException">当无法创建新块时生成</exception>
+        public override MemoryBlock<T> Clone()
+        {
+            var clone = BlockProvider?.GetBuffer(Memory.Length);
+            if (clone == null)
+                throw new InvalidOperationException("无法克隆内存块：未绑定提供者。请确保块已正确初始化并由提供者分配。");
+
+            clone.Write(CommittedSpan);
+            return clone;
+        }
 
         public bool Equals(MemoryBlock<T>? other) => other?.CommittedSpan.SequenceEqual(CommittedSpan) ?? false;
 

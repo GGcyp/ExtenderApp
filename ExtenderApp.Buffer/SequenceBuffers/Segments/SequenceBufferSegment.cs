@@ -1,12 +1,13 @@
 ﻿using System.Buffers;
+using System.Collections;
 
-namespace ExtenderApp.Buffer.Sequence
+namespace ExtenderApp.Buffer.SequenceBuffers
 {
     /// <summary>
     /// 表示序列中单个缓冲段的抽象基类，封装段的已提交长度、可用空间以及与相邻段的链表关系。
     /// </summary>
     /// <remarks>继承自 <see cref="ReadOnlySequenceSegment{T}"/>，用于在基于段的序列实现中维护 RunningIndex、前驱/后继关系并暴露段内内存与计数信息。 派生类需要提供具体的内存访问、已提交长度、可写容量以及推进/重置的实现。</remarks>
-    public abstract class SequenceBufferSegment<T> : ReadOnlySequenceSegment<T>, IPinnable
+    public abstract partial class SequenceBufferSegment<T> : ReadOnlySequenceSegment<T>, IPinnable, IEnumerable<SequenceBufferSegment<T>>
     {
         public static readonly SequenceBufferSegment<T> Empty = new EmptySequenceBufferSegment<T>();
 
@@ -33,6 +34,17 @@ namespace ExtenderApp.Buffer.Sequence
         protected internal abstract ReadOnlyMemory<T> CommittedMemory { get; }
 
         /// <summary>
+        /// 已提交（已写入）元素的跨度，长度等于 <see cref="Committed"/>。派生类提供具体实现以反映当前段中已写入的数据范围。调用方可以使用此属性获取当前段中已写入的数据作为只读跨度进行处理。
+        /// </summary>
+        protected internal abstract ReadOnlySpan<T> CommittedSpan { get; }
+
+        /// <summary>
+        /// 已提交（已写入）元素的数组片段，长度等于 <see cref="Committed"/>。派生类提供具体实现以反映当前段中已写入的数据范围。调用方可以使用此属性获取当前段中已写入的数据作为数组片段进行处理（如与旧 API
+        /// 兼容）。如果当前段的内存不是基于数组的，或者已提交范围不连续，则实现应抛出 InvalidOperationException 或返回一个空的 ArraySegment。
+        /// </summary>
+        protected internal abstract ArraySegment<T> CommittedArraySegment { get; }
+
+        /// <summary>
         /// 当前段中已提交（已写入）元素的数量。
         /// </summary>
         protected internal abstract long Committed { get; }
@@ -41,6 +53,11 @@ namespace ExtenderApp.Buffer.Sequence
         /// 当前段尚可写入的元素数量（剩余可用空间）。
         /// </summary>
         protected internal abstract int Available { get; }
+
+        /// <summary>
+        /// 放回当前段在整个序列中的运行索引（相对于序列起点）。
+        /// </summary>
+        public int Count => Next is null ? 1 : 1 + Next.Count;
 
         /// <summary>
         /// 获取当前段在序列中的前一个段（如果存在），否则为 null。
@@ -139,6 +156,83 @@ namespace ExtenderApp.Buffer.Sequence
             SegmentProvider = null;
         }
 
+        #region Enumerable 实现 - 支持 foreach 遍历段链表
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return ((IEnumerable<SequenceBufferSegment<T>>)this).GetEnumerator();
+        }
+
+        IEnumerator<SequenceBufferSegment<T>> IEnumerable<SequenceBufferSegment<T>>.GetEnumerator()
+        {
+            return new SegmentEnumerator(this);
+        }
+
+        /// <summary>
+        /// 返回用于遍历段链表的结构体枚举器。
+        /// </summary>
+        /// <returns>段枚举器实例。</returns>
+        public SegmentEnumerator GetEnumerator()
+        {
+            return new SegmentEnumerator(this);
+        }
+
+        /// <summary>
+        /// 段链表的结构体枚举器。
+        /// </summary>
+        public struct SegmentEnumerator : IEnumerator<SequenceBufferSegment<T>>
+        {
+            private readonly SequenceBufferSegment<T>? head;
+            private SequenceBufferSegment<T>? current;
+            private bool started;
+
+            internal SegmentEnumerator(SequenceBufferSegment<T> head)
+            {
+                this.head = head;
+                current = null;
+                started = false;
+            }
+
+            /// <inheritdoc/>
+            public SequenceBufferSegment<T> Current => current!;
+
+            /// <inheritdoc/>
+            object IEnumerator.Current => Current;
+
+            /// <inheritdoc/>
+            public bool MoveNext()
+            {
+                if (!started)
+                {
+                    current = head;
+                    started = true;
+                    return current is not null;
+                }
+
+                if (current?.Next is { } next)
+                {
+                    current = next;
+                    return true;
+                }
+
+                current = null;
+                return false;
+            }
+
+            /// <inheritdoc/>
+            public void Reset()
+            {
+                throw new NotSupportedException();
+            }
+
+            /// <inheritdoc/>
+            public void Dispose()
+            {
+            }
+        }
+
+        #endregion Enumerable 实现 - 支持 foreach 遍历段链表
+
         #region 抽象成员 - 派生类必须实现
 
         /// <summary>
@@ -181,6 +275,12 @@ namespace ExtenderApp.Buffer.Sequence
         /// <param name="length">切片的长度（必须为非负值）。</param>
         /// <returns>返回 <see cref="SequenceBufferSegment{T}"/> 实例</returns>
         public abstract SequenceBufferSegment<T> Slice(int start, int length);
+
+        /// <summary>
+        /// 将当前段克隆为一个新的段实例，通常用于在需要创建当前段的副本（如分割、复制等场景）时调用。派生类应实现具体的克隆逻辑，确保返回的新段实例具有与当前段相同的数据内容和状态，但在链表关系上是独立的。调用方应注意，克隆后的段实例可能需要重新配置前后段关系以正确链接到序列中。
+        /// </summary>
+        /// <returns>返回新 <see cref="SequenceBufferSegment{T}"/> 实例</returns>
+        public abstract SequenceBufferSegment<T> Clone();
 
         #endregion 抽象成员 - 派生类必须实现
     }

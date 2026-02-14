@@ -1,6 +1,6 @@
 {
-  "PluginTitle": "Media",
-  "PluginDescription": "一个简单的视频组件",
-  "PluginVersion": "0.0.0.1",
-  "PluginStartupDll": "ExtenderApp.Media.dll"
+  "Title": "Media",
+  "Desc": "一个简单的视频组件",
+  "Ver": "0.0.0.1",
+  "Startup": "ExtenderApp.Media.dll"
 }

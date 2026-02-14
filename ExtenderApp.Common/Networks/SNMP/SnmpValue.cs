@@ -21,7 +21,7 @@ namespace ExtenderApp.Common.Networks.SNMP
 
         /// <summary>
         /// 存放实际数据的缓冲列表（ <see cref="ValueList{DataBuffer}"/>）。
-        /// - 常见用法：对于简单类型（Integer/OctetString），该列表通常包含 1 个 <see cref="DataBuffer{T}"/>； 对于构造类型（Sequence）可能包含多个缓冲区表示子元素。
+        /// - 常见用法：对于简单类型（Integer/OctetString），该列表通常包含 1 个 <see cref="DataBuffer{T}"/>； 对于构造类型（SequenceBuffers）可能包含多个缓冲区表示子元素。
         /// - 调用方对该字段负责初始化并在不再使用时确保调用 <see cref="Dispose"/> 回收内部缓冲。
         /// </summary>
         public DataBuffer Buffer { get; }

@@ -1,5 +1,5 @@
 ﻿using System.Buffers;
-using ExtenderApp.Buffer.Sequence;
+using ExtenderApp.Buffer.SequenceBuffers;
 
 namespace ExtenderApp.Buffer
 {
@@ -7,14 +7,14 @@ namespace ExtenderApp.Buffer
     /// 基础序列实现，使用段提供者管理多个段并实现 <see cref="IBufferWriter{T}"/>。 提供在首部/末尾/中间插入段以及按位置查找段的功能。
     /// </summary>
     /// <typeparam name="T">序列中元素的类型。</typeparam>
-    public partial class SequenceBuffer<T> : AbstractBuffer<T>
+    public abstract partial class SequenceBuffer<T> : AbstractBuffer<T>
     {
         /// <summary>
         /// 自动增长的最大大小。
         /// </summary>
         private const int MaximumAutoGrowSize = 32 * 1024;
 
-        public new static readonly SequenceBuffer<T> Empty = new SequenceBuffer<T>(null!);
+        public new static readonly SequenceBuffer<T> Empty = new EmptySequenceBuffer<T>();
 
         private static readonly ReadOnlySequence<T> EmptySequence = new ReadOnlySequence<T>(SequenceBufferSegment<T>.Empty, 0, SequenceBufferSegment<T>.Empty, 0);
 
@@ -25,7 +25,7 @@ namespace ExtenderApp.Buffer
         /// </summary>
         private int minimumSpanCommitted;
 
-        internal SequenceBufferProvider<T>? OwnerProvider;
+        internal DefaultSequenceBufferProvider<T>? OwnerProvider;
 
         /// <summary>
         /// 获取或设置是否自动增加最小跨度长度。
@@ -87,11 +87,23 @@ namespace ExtenderApp.Buffer
             }
         }
 
-        internal SequenceBufferSegment<T>? First;
+        /// <summary>
+        /// 获取当前序列中段的数量（即链表中的段数）。如果序列为空，则返回 0。
+        /// </summary>
+        public int Count => First?.Count ?? 0;
 
-        internal SequenceBufferSegment<T>? Last;
+        /// <summary>
+        /// 序列中的第一段，或 null（如果序列为空）。 该属性提供对段链表头部的访问，允许外部代码遍历或操作段链表。
+        /// </summary>
+        internal SequenceBufferSegment<T>? First { get; private set; }
 
-        internal SequenceBuffer() : this(SequenceBufferSegmentProvider<T>.Shared)
+        /// <summary>
+        /// 序列中的最后一段，或 null（如果序列为空）。 该属性提供对段链表尾部的访问，允许外部代码快速定位到当前写入位置所在的段。
+        /// </summary>
+
+        internal SequenceBufferSegment<T>? Last { get; private set; }
+
+        protected SequenceBuffer() : this(SequenceBufferSegmentProvider<T>.Shared)
         {
         }
 
@@ -99,7 +111,7 @@ namespace ExtenderApp.Buffer
         /// 使用指定的段提供者创建序列实例。
         /// </summary>
         /// <param name="segmentProvider">用于创建或复用序列段的提供者，不能为空。</param>
-        internal SequenceBuffer(SequenceBufferSegmentProvider<T> segmentProvider)
+        protected SequenceBuffer(SequenceBufferSegmentProvider<T> segmentProvider)
         {
             OwnerProvider = default!;
             _segmentProvider = segmentProvider;
@@ -134,16 +146,28 @@ namespace ExtenderApp.Buffer
             ConsiderMinimumSizeIncrease();
         }
 
+        /// <summary>
+        /// 获取具有至少 <paramref name="sizeHint"/> 可写空间的段实例，优先使用当前最后一段的剩余空间，否则创建新段并追加到链表末尾。 该方法确保返回的段具有足够的可写空间以满足 sizeHint 的要求，并且在必要时会自动增加
+        /// minimumSpanCommitted 以优化未来的段创建。
+        /// </summary>
+        /// <param name="sizeHint">所需的最小可写元素数，0 表示不限。</param>
+        /// <returns>具有足够可写空间的段实例。</returns>
         private SequenceBufferSegment<T> GetSegment(int sizeHint)
         {
             if (Last != null && Last.Available >= sizeHint)
                 return Last;
 
             int minBufferSize = System.Math.Max(minimumSpanCommitted, sizeHint);
-            return CreateSegment(minBufferSize);
+            return GetSegmentForProvider(minBufferSize);
         }
 
-        private SequenceBufferSegment<T> CreateSegment(int sizeHint)
+        /// <summary>
+        /// 获取具有至少 <paramref name="sizeHint"/> 可写空间的段实例，直接通过提供者获取新段并追加到链表末尾。 该方法不考虑当前最后一段的剩余空间，适用于需要强制创建新段的场景（如某些协议头的预留空间）。 该方法确保返回的段具有足够的可写空间以满足
+        /// sizeHint 的要求，并且在必要时会自动增加 minimumSpanCommitted 以优化未来的段创建。
+        /// </summary>
+        /// <param name="sizeHint">所需的最小可写元素数，0 表示不限。</param>
+        /// <returns>具有足够可写空间的段实例。</returns>
+        private SequenceBufferSegment<T> GetSegmentForProvider(int sizeHint)
         {
             // 使用 provider 获取新的段实例（实现可以从池中租用或新建）。
             var Segment = _segmentProvider.GetSegment(sizeHint);
@@ -390,6 +414,7 @@ namespace ExtenderApp.Buffer
 
         #region Release Logic
 
+        ///<inheritdoc/>
         protected override sealed void ReleaseProtected()
         {
             if (OwnerProvider == null)
@@ -398,6 +423,7 @@ namespace ExtenderApp.Buffer
             OwnerProvider.Release(this);
         }
 
+        ///<inheritdoc/>
         protected override bool TryReleaseProtected()
         {
             if (OwnerProvider == null)
@@ -411,7 +437,7 @@ namespace ExtenderApp.Buffer
         /// 由提供者在分配后调用以初始化序列的生命周期（绑定提供者并重置段链）。
         /// </summary>
         /// <param name="provider">分配此序列的提供者实例。</param>
-        internal void Initialize(SequenceBufferProvider<T> provider)
+        internal void Initialize(DefaultSequenceBufferProvider<T> provider)
         {
             OwnerProvider = provider;
             First = null;
@@ -435,6 +461,7 @@ namespace ExtenderApp.Buffer
 
         #region Write
 
+        ///<inheritdoc/>
         public override void Write(ReadOnlySpan<T> source)
         {
             if (Available >= source.Length || Available == 0)
@@ -452,6 +479,7 @@ namespace ExtenderApp.Buffer
 
         #region Pinning
 
+        ///<inheritdoc/>
         protected override MemoryHandle PinProtected(int elementIndex)
         {
             if (First == null)
@@ -471,6 +499,7 @@ namespace ExtenderApp.Buffer
             return default;
         }
 
+        ///<inheritdoc/>
         public override void Unpin()
         {
             base.Unpin();
@@ -485,9 +514,11 @@ namespace ExtenderApp.Buffer
 
         #endregion Pinning
 
+        ///<inheritdoc/>
         public override string ToString()
             => $"SequenceBuffer (Committed: {Committed}, Capacity: {Capacity})";
 
+        ///<inheritdoc/>
         public override void Clear()
         {
             First?.Release();
@@ -496,9 +527,15 @@ namespace ExtenderApp.Buffer
             minimumSpanCommitted = 0;
         }
 
+        ///<inheritdoc/>
         public override T[] ToArray() => ((ReadOnlySequence<T>)this).ToArray();
 
-        public override AbstractBuffer<T> Slice(long start, long length)
+        ///<inheritdoc/>
+        public override SequenceBuffer<T> Slice(long start = 0, long length = 0)
+            => (SequenceBuffer<T>)base.Slice(start, length);
+
+        ///<inheritdoc/>
+        protected override SequenceBuffer<T> SliceProtected(long start, long length)
         {
             if (!TryGetSegmentByPosition(start, out var segment, out int offset))
                 throw new ArgumentOutOfRangeException(nameof(start), "起始位置超出序列范围。");
@@ -506,7 +543,7 @@ namespace ExtenderApp.Buffer
                 throw new ArgumentOutOfRangeException(nameof(length), "长度无效或超出序列范围。");
 
             // 创建一个新的 SequenceBuffer 作为切片结果，并将包含 start 的段及其后续段链接到新序列中，直到达到 length。
-            var sliceBuffer = new SequenceBuffer<T>(_segmentProvider);
+            var sliceBuffer = SequenceBuffer<T>.GetBuffer();
 
             int sliceSegmentLength = (int)System.Math.Min(segment.Committed - offset, length);
             SequenceBufferSegment<T>? first = segment.Slice(offset, sliceSegmentLength);
@@ -525,6 +562,24 @@ namespace ExtenderApp.Buffer
 
             first.UpdateRunningIndex(); // 确保切片段的 RunningIndex 是正确的
             return sliceBuffer;
+        }
+
+        /// <summary>
+        /// 深拷贝当前 <see cref="SequenceBuffer{T}"/> 实例及其所有段。
+        /// </summary>
+        /// <returns>拷贝后的 <see cref="SequenceBuffer{T}"/> 实例</returns>
+        public override SequenceBuffer<T> Clone()
+        {
+            var cloneBuffer = SequenceBuffer<T>.GetBuffer();
+
+            var current = First;
+            while (current != null)
+            {
+                var cloneSegment = current.Clone();
+                cloneBuffer.Append(cloneSegment);
+                current = current.Next;
+            }
+            return cloneBuffer;
         }
 
         /// <summary>

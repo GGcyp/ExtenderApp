@@ -6,6 +6,10 @@
     /// </summary>
     public interface ILinkClient : IDisposable, ILinkInfo
     {
+        /// <summary>
+        /// 获取当前客户端链路的处理管道。
+        /// </summary>
+        ILinkClientPipeline Pipeline { get; }
     }
 
     /// <summary>

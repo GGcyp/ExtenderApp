@@ -59,7 +59,7 @@ namespace ExtenderApp.Services
         /// </returns>
         private bool Contains(PluginInfo info)
         {
-            return GetPluginDetails(info.PluginStartupDll) is not null;
+            return GetPluginDetails(info.Startup) is not null;
         }
 
         /// <summary>

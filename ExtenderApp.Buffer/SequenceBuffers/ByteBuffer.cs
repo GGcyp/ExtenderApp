@@ -45,9 +45,9 @@ namespace ExtenderApp.Buffer
         public long Committed => Buffer.Committed;
 
         /// <summary>
-        /// 从共享提供者租用缓冲并创建 <see cref="ByteBuffer"/> 的快捷构造。等同于 <see cref="ByteBuffer(SequenceBufferProvider{byte})"/> 使用共享池。
+        /// 从共享提供者租用缓冲并创建 <see cref="ByteBuffer"/> 的快捷构造。等同于 <see cref="ByteBuffer(DefaultSequenceBufferProvider{byte})"/> 使用共享池。
         /// </summary>
-        public ByteBuffer() : this(SequenceBufferProvider<byte>.Shared)
+        public ByteBuffer() : this(SequenceBuffer<byte>.GetBuffer())
         {
         }
 
@@ -70,10 +70,10 @@ namespace ExtenderApp.Buffer
         }
 
         /// <summary>
-        /// 从指定的 <see cref="SequenceBufferProvider{byte}"/> 租用一个缓冲并创建 <see cref="ByteBuffer"/>。
+        /// 从指定的 <see cref="DefaultSequenceBufferProvider{byte}"/> 租用一个缓冲并创建 <see cref="ByteBuffer"/>。
         /// </summary>
         /// <param name="pool">用于租用缓冲区的池。</param>
-        public ByteBuffer(SequenceBufferProvider<byte> pool) : this(pool.GetBuffer())
+        public ByteBuffer(DefaultSequenceBufferProvider<byte> pool) : this(pool.GetBuffer())
         {
         }
 
@@ -181,7 +181,8 @@ namespace ExtenderApp.Buffer
         public void Advance(int count) => Buffer.Advance(count);
 
         /// <summary>
-        /// 获取指向当前可写缓冲区起始位置的引用。等价于调用 <see cref="GetSpan(int)"/> 后使用 <see cref="Span{byte}.GetPinnableReference"/>。 返回的引用可用于通过 ref 直接写入，写入完成后应调用 <see cref="Advance(int)"/> 提交已写入的元素数。
+        /// 获取指向当前可写缓冲区起始位置的引用。等价于调用 <see cref="GetSpan(int)"/> 后使用 <see cref="Span{byte}.GetPinnableReference"/>。 返回的引用可用于通过 ref 直接写入，写入完成后应调用 <see
+        /// cref="Advance(int)"/> 提交已写入的元素数。
         /// </summary>
         /// <param name="sizeHint">期望的最小连续容量（提示值，允许为 0）。</param>
         /// <returns>可写缓冲区第一个元素的引用。</returns>
@@ -240,25 +241,29 @@ namespace ExtenderApp.Buffer
         #region ToByteBuffer
 
         /// <summary>
-        /// 使用指定的 <see cref="SequenceBuffer{byte}"/> 隐式创建一个 <see cref="ByteBuffer"/>（构造器会 Freeze 传入缓冲）。</summary>
+        /// 使用指定的 <see cref="SequenceBuffer{byte}"/> 隐式创建一个 <see cref="ByteBuffer"/>（构造器会 Freeze 传入缓冲）。
+        /// </summary>
         /// <param name="buffer">源 <see cref="SequenceBuffer{byte}"/>。</param>
         public static implicit operator ByteBuffer(in SequenceBuffer<byte> buffer)
             => new ByteBuffer(buffer);
 
         /// <summary>
-        /// 从指定的 <see cref="SequenceBufferProvider{byte}"/> 隐式租用缓冲并创建 <see cref="ByteBuffer"/>。</summary>
+        /// 从指定的 <see cref="DefaultSequenceBufferProvider{byte}"/> 隐式租用缓冲并创建 <see cref="ByteBuffer"/>。
+        /// </summary>
         /// <param name="pool">缓冲区池。</param>
-        public static implicit operator ByteBuffer(SequenceBufferProvider<byte> pool)
+        public static implicit operator ByteBuffer(DefaultSequenceBufferProvider<byte> pool)
             => new ByteBuffer(pool);
 
         /// <summary>
-        /// 使用只读序列显式创建 <see cref="ByteBuffer"/>（将序列内容复制到新缓冲）。</summary>
+        /// 使用只读序列显式创建 <see cref="ByteBuffer"/>（将序列内容复制到新缓冲）。
+        /// </summary>
         /// <param name="sequence">用于初始化的新序列。</param>
         public static explicit operator ByteBuffer(ReadOnlySequence<byte> sequence)
             => new ByteBuffer(sequence);
 
         /// <summary>
-        /// 使用只读内存显式创建 <see cref="ByteBuffer"/>（将内存内容复制到新缓冲）。</summary>
+        /// 使用只读内存显式创建 <see cref="ByteBuffer"/>（将内存内容复制到新缓冲）。
+        /// </summary>
         /// <param name="memory">用于初始化的新内存。</param>
         public static explicit operator ByteBuffer(ReadOnlyMemory<byte> memory)
             => new ByteBuffer(memory);

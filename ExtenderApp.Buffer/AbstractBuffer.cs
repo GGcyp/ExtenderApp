@@ -371,12 +371,44 @@ namespace ExtenderApp.Buffer
         #endregion Pin
 
         /// <summary>
-        /// 对当前缓冲区进行切片以创建一个新的 <see cref="AbstractBuffer{T}"/> 实例，该实例表示原缓冲区中从指定起始位置开始、长度为指定值的连续元素子范围。 切片后的缓冲区共享原缓冲区的底层存储，但其容量、已提交长度和可用空间将根据切片范围进行调整。 具体实现由派生类提供，通常会返回一个新的缓冲区实例，该实例引用原缓冲区的底层存储但具有独立的写入位置和提交状态。
+        /// 对当前缓存区进行切片以创建一个新的缓冲区实例，当 <paramref name="start"/> 和 <paramref name="length"/> 都等于0时会直接返回当前实例。切片后的缓冲区与原缓冲区共享底层存储，但具有独立的写入位置和提交状态。该方法由基类的
+        /// <see cref="Slice(long, long)"/> 调用，派生类在此方法中实现具体的切片逻辑（例如创建新的缓冲区实例并设置相应的起始位置和长度）。派生实现应确保切片后的缓冲区状态被正确初始化，并且后续对切片或原缓冲区的写入/提交操作不会相互影响。
         /// </summary>
-        /// <param name="start">切片的起始位置（相对于原缓冲区的零基索引）。</param>
-        /// <param name="length">切片的长度（以元素数计）。</param>
+        /// <param name="start">切片的起始位置（以元素数计）。默认为 0，表示从原缓冲区的起始位置开始。</param>
+        /// <param name="length">切片的长度（以元素数计）。如果为 0，则表示从起始位置到原缓冲区末尾的所有元素。</param>
         /// <returns>一个新的 <see cref="AbstractBuffer{T}"/> 实例，表示原缓冲区中指定范围的切片。</returns>
-        public abstract AbstractBuffer<T> Slice(long start, long length);
+        public virtual AbstractBuffer<T> Slice(long start = 0, long length = 0)
+        {
+            if (start == 0 && length == 0)
+                return this;
+
+            if (start < 0)
+                throw new ArgumentOutOfRangeException(nameof(start), "start 必须为非负值。");
+            if (length < 0)
+                throw new ArgumentOutOfRangeException(nameof(length), "length 必须为非负值。");
+            if (start + length > Committed)
+                throw new ArgumentOutOfRangeException(nameof(length), "start + length 必须不超过已提交长度。");
+
+            if (length == 0)
+                length = Committed - start;
+
+            return SliceProtected(start, length);
+        }
+
+        /// <summary>
+        /// 对当前缓冲区进行切片以创建一个新的缓冲区实例，该实例表示原缓冲区中指定范围的元素。 切片后的缓冲区与原缓冲区共享底层存储，但具有独立的写入位置和提交状态。 该方法由基类的 <see cref="Slice(long, long)"/>
+        /// 调用，派生类在此方法中实现具体的切片逻辑（例如创建新的缓冲区实例并设置相应的起始位置和长度）。 派生实现应确保切片后的缓冲区状态被正确初始化，并且后续对切片或原缓冲区的写入/提交操作不会相互影响。
+        /// </summary>
+        /// <param name="start">切片的起始位置（以元素数计）。默认为 0，表示从原缓冲区的起始位置开始。</param>
+        /// <param name="length">切片的长度（以元素数计）。如果为 0，则表示从起始位置到原缓冲区末尾的所有元素。</param>
+        /// <returns>一个新的 <see cref="AbstractBuffer{T}"/> 实例，表示原缓冲区中指定范围的切片。</returns>
+        protected abstract AbstractBuffer<T> SliceProtected(long start, long length);
+
+        /// <summary>
+        /// 为当前缓冲区创建一个新的实例，该实例与原缓冲区共享底层存储但具有独立的写入位置和提交状态。 具体实现由派生类提供，通常会返回一个新的缓冲区实例，该实例引用原缓冲区的底层存储但具有独立的写入位置和提交状态。 克隆后的缓冲区初始状态与原缓冲区相同（例如容量、已提交长度等），但后续对克隆或原缓冲区的写入/提交操作不会相互影响。
+        /// </summary>
+        /// <returns>新的 <see cref="AbstractBuffer{T}"/> 实例</returns>
+        public abstract AbstractBuffer<T> Clone();
 
         /// <summary>
         /// 缓冲区内容转换为数组。 具体实现由派生类提供，通常会返回一个包含已提交数据的数组副本。 调用此方法可能会涉及内存分配和数据复制，因此在性能敏感场景下应谨慎使用。

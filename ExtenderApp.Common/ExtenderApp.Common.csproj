@@ -27,6 +27,10 @@
     <PackageReference Include="System.IO.Pipelines" Version="9.0.10" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Networks\LinkClients\Pipelines\" />
+  </ItemGroup>
+
 	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
 		<ItemGroup>
 			<TargetFolder Include="E:\WPF_Project\ExtenderApp\ExtenderApp\bin\Debug\net8.0-windows8.0" />

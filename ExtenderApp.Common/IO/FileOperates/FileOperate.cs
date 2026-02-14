@@ -190,7 +190,7 @@ namespace ExtenderApp.Common.IO
         /// <inheritdoc/>
         public Result<long> Read(long length, out AbstractBuffer<byte> buffer, long filePosition = 0)
         {
-            buffer = SequenceBufferProvider<byte>.Shared.GetBuffer();
+            buffer = SequenceBuffer<byte>.GetBuffer();
             var result = Read(length, buffer, filePosition);
             if (!result.IsSuccess)
             {

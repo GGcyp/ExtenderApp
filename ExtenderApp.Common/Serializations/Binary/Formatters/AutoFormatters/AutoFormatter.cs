@@ -42,12 +42,32 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
 
         #region Delegates
 
+        /// <summary>
+        /// 序列化到 <see cref="AbstractBuffer{byte}"/> 的委托。
+        /// </summary>
+        /// <param name="buffer">写入目标缓冲区。</param>
+        /// <param name="value">要序列化的值。</param>
         public delegate void SerializeBufferMethod(AbstractBuffer<byte> buffer, T value);
 
+        /// <summary>
+        /// 序列化到 <see cref="SpanWriter{byte}"/> 的委托。
+        /// </summary>
+        /// <param name="writer">写入目标写入器。</param>
+        /// <param name="value">要序列化的值。</param>
         public delegate void SerializeSpanMethod(ref SpanWriter<byte> writer, T value);
 
+        /// <summary>
+        /// 从 <see cref="AbstractBufferReader{byte}"/> 反序列化的委托。
+        /// </summary>
+        /// <param name="reader">读取源读取器。</param>
+        /// <returns>反序列化后的值。</returns>
         public delegate T DeserializeBufferMethod(AbstractBufferReader<byte> reader);
 
+        /// <summary>
+        /// 从 <see cref="SpanReader{byte}"/> 反序列化的委托。
+        /// </summary>
+        /// <param name="reader">读取源读取器。</param>
+        /// <returns>反序列化后的值。</returns>
         public delegate T DeserializeSpanMethod(ref SpanReader<byte> reader);
 
         private delegate long GetLengthMethod(T value);
@@ -136,6 +156,11 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
             _getLength = Expression.Lambda<GetLengthMethod>(totalLen, parameter).Compile();
         }
 
+        /// <summary>
+        /// 序列化到缓冲区。
+        /// </summary>
+        /// <param name="buffer">写入目标缓冲区。</param>
+        /// <param name="value">要序列化的值。</param>
         public override void Serialize(AbstractBuffer<byte> buffer, T value)
         {
             if (IsClass && value is null)
@@ -146,6 +171,11 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
             _serializeBuffer(buffer, value);
         }
 
+        /// <summary>
+        /// 序列化到写入器。
+        /// </summary>
+        /// <param name="writer">写入目标写入器。</param>
+        /// <param name="value">要序列化的值。</param>
         public override void Serialize(ref SpanWriter<byte> writer, T value)
         {
             if (IsClass && value is null)
@@ -156,6 +186,11 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
             _serializeSpan(ref writer, value);
         }
 
+        /// <summary>
+        /// 从缓冲区读取并反序列化。
+        /// </summary>
+        /// <param name="reader">读取源读取器。</param>
+        /// <returns>反序列化后的值。</returns>
         public override T Deserialize(AbstractBufferReader<byte> reader)
         {
             if (IsClass && TryReadNil(reader))
@@ -163,6 +198,11 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
             return _deserializeBuffer(reader);
         }
 
+        /// <summary>
+        /// 从读取器读取并反序列化。
+        /// </summary>
+        /// <param name="reader">读取源读取器。</param>
+        /// <returns>反序列化后的值。</returns>
         public override T Deserialize(ref SpanReader<byte> reader)
         {
             if (IsClass && TryReadNil(ref reader))
@@ -170,6 +210,11 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
             return _deserializeSpan(ref reader);
         }
 
+        /// <summary>
+        /// 获取序列化后的长度。
+        /// </summary>
+        /// <param name="value">要估算的值。</param>
+        /// <returns>序列化后的字节长度。</returns>
         public override long GetLength(T value)
         {
             if (IsClass && value is null)
@@ -177,14 +222,34 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
             return _getLength(value);
         }
 
+        /// <summary>
+        /// 初始化并收集需要自动处理的成员。
+        /// </summary>
+        /// <param name="store">成员收集器。</param>
         protected abstract void Init(AutoMemberDetailsStore store);
 
+        /// <summary>
+        /// 创建用于序列化的表达式调用。
+        /// </summary>
+        /// <param name="member">成员表达式。</param>
+        /// <param name="method">序列化方法信息。</param>
+        /// <param name="param">缓冲区/写入器参数。</param>
+        /// <param name="formatter">成员对应的格式化器。</param>
+        /// <returns>序列化调用表达式。</returns>
         private MethodCallExpression CreateSerializeExpression(MemberExpression member, MethodInfo method, ParameterExpression param, IBinaryFormatter formatter)
         {
             var instance = Expression.Convert(Expression.Constant(formatter), method.DeclaringType!);
             return Expression.Call(instance, method, param, member);
         }
 
+        /// <summary>
+        /// 创建用于反序列化的成员绑定表达式。
+        /// </summary>
+        /// <param name="memberInfo">成员信息。</param>
+        /// <param name="method">反序列化方法信息。</param>
+        /// <param name="param">读取器参数。</param>
+        /// <param name="formatter">成员对应的格式化器。</param>
+        /// <returns>成员绑定表达式。</returns>
         private MemberAssignment CreateDeserializeExpression(MemberInfo memberInfo, MethodInfo method, ParameterExpression param, IBinaryFormatter formatter)
         {
             var instance = Expression.Convert(Expression.Constant(formatter), method.DeclaringType!);
@@ -193,12 +258,25 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
             return Expression.Bind(memberInfo, call.Type != targetType ? Expression.Convert(call, targetType) : call);
         }
 
+        /// <summary>
+        /// 创建用于长度估算的表达式调用。
+        /// </summary>
+        /// <param name="member">成员表达式。</param>
+        /// <param name="method">长度估算方法信息。</param>
+        /// <param name="formatter">成员对应的格式化器。</param>
+        /// <returns>长度估算调用表达式。</returns>
         private MethodCallExpression CreateGetLengthExpression(MemberExpression member, MethodInfo method, IBinaryFormatter formatter)
         {
             var instance = Expression.Convert(Expression.Constant(formatter), method.DeclaringType!);
             return Expression.Call(instance, method, member);
         }
 
+        /// <summary>
+        /// 为指定成员创建自动成员信息。
+        /// </summary>
+        /// <param name="parameter">目标实例参数表达式。</param>
+        /// <param name="info">成员信息。</param>
+        /// <returns>自动成员信息。</returns>
         private AutoMemberDetails CreateAutoMemberInfo(Expression parameter, MemberInfo info)
         {
             Type memberType = info is PropertyInfo p ? p.PropertyType : ((FieldInfo)info).FieldType;
@@ -216,12 +294,31 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
                 formatter.DefaultLength);
         }
 
+        /// <summary>
+        /// 成员收集器，用于构建自动序列化成员列表。
+        /// </summary>
         protected struct AutoMemberDetailsStore
         {
+            /// <summary>
+            /// 自动格式化器实例。
+            /// </summary>
             private AutoFormatter<T> autoFormatter;
+
+            /// <summary>
+            /// 目标实例参数表达式。
+            /// </summary>
             private ParameterExpression parameter;
+
+            /// <summary>
+            /// 收集到的成员明细列表。
+            /// </summary>
             public List<AutoMemberDetails> memberDetails;
 
+            /// <summary>
+            /// 初始化成员收集器。
+            /// </summary>
+            /// <param name="autoFormatter">自动格式化器实例。</param>
+            /// <param name="parameter">目标实例参数表达式。</param>
             public AutoMemberDetailsStore(AutoFormatter<T> autoFormatter, ParameterExpression parameter)
             {
                 this.autoFormatter = autoFormatter;
@@ -229,6 +326,12 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
                 memberDetails = new();
             }
 
+            /// <summary>
+            /// 添加指定成员选择表达式。
+            /// </summary>
+            /// <typeparam name="TMember">成员类型。</typeparam>
+            /// <param name="selector">成员选择表达式。</param>
+            /// <returns>成员收集器。</returns>
             public AutoMemberDetailsStore Add<TMember>(Expression<Func<T, TMember>> selector)
             {
                 Expression body = selector.Body;
@@ -237,11 +340,12 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
                 return Add(m.Member);
             }
 
-            public AutoMemberDetailsStore Add(PropertyInfo propertyInfo) => Add((MemberInfo)propertyInfo);
-
-            public AutoMemberDetailsStore Add(FieldInfo fieldInfo) => Add((MemberInfo)fieldInfo);
-
-            private AutoMemberDetailsStore Add(MemberInfo info)
+            /// <summary>
+            /// 添加成员信息。
+            /// </summary>
+            /// <param name="info">成员信息。</param>
+            /// <returns>成员收集器。</returns>
+            public AutoMemberDetailsStore Add(MemberInfo info)
             {
                 var details = autoFormatter.CreateAutoMemberInfo(parameter, info);
                 for (int i = 0; i < memberDetails.Count; i++)
@@ -252,16 +356,56 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
             }
         }
 
+        /// <summary>
+        /// 自动成员明细。
+        /// </summary>
         protected readonly struct AutoMemberDetails
         {
+            /// <summary>
+            /// 序列化缓冲区表达式。
+            /// </summary>
             public Expression SerializeBuffer { get; }
+
+            /// <summary>
+            /// 序列化写入器表达式。
+            /// </summary>
             public Expression SerializeSpan { get; }
+
+            /// <summary>
+            /// 反序列化缓冲区表达式。
+            /// </summary>
             public MemberBinding DeserializeBuffer { get; }
+
+            /// <summary>
+            /// 反序列化读取器表达式。
+            /// </summary>
             public MemberBinding DeserializeSpan { get; }
+
+            /// <summary>
+            /// 获取长度表达式。
+            /// </summary>
             public Expression GetLength { get; }
+
+            /// <summary>
+            /// 成员名称。
+            /// </summary>
             public string Name { get; }
+
+            /// <summary>
+            /// 成员默认长度。
+            /// </summary>
             public int DefaultLength { get; }
 
+            /// <summary>
+            /// 初始化成员明细。
+            /// </summary>
+            /// <param name="serBuf">序列化缓冲区表达式。</param>
+            /// <param name="serSpan">序列化写入器表达式。</param>
+            /// <param name="desBuf">反序列化缓冲区表达式。</param>
+            /// <param name="desSpan">反序列化读取器表达式。</param>
+            /// <param name="getLen">获取长度表达式。</param>
+            /// <param name="name">成员名称。</param>
+            /// <param name="defLen">成员默认长度。</param>
             public AutoMemberDetails(Expression serBuf, Expression serSpan, MemberBinding desBuf, MemberBinding desSpan, Expression getLen, string name, int defLen)
             {
                 SerializeBuffer = serBuf;

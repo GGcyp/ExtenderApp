@@ -1,6 +1,6 @@
 ﻿using System.Buffers;
 
-namespace ExtenderApp.Buffer.Sequence
+namespace ExtenderApp.Buffer.SequenceBuffers
 {
     /// <summary>
     /// 空序列缓冲段，实现了一个不包含任何数据的缓冲段。
@@ -14,6 +14,15 @@ namespace ExtenderApp.Buffer.Sequence
         protected internal override int Available => 0;
 
         protected internal override ReadOnlyMemory<T> CommittedMemory => Memory<T>.Empty;
+
+        protected internal override ReadOnlySpan<T> CommittedSpan => ReadOnlySpan<T>.Empty;
+
+        protected internal override ArraySegment<T> CommittedArraySegment => ArraySegment<T>.Empty;
+
+        public override SequenceBufferSegment<T> Clone()
+        {
+            return this;
+        }
 
         public override MemoryHandle Pin(int elementIndex)
         {

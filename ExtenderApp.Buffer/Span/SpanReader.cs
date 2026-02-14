@@ -1,3 +1,5 @@
+using System.Runtime.CompilerServices;
+
 namespace ExtenderApp.Buffer
 {
     /// <summary>
@@ -53,6 +55,7 @@ namespace ExtenderApp.Buffer
         /// </summary>
         /// <param name="value">若存在下一个元素则输出该值。</param>
         /// <returns>存在下一个元素则返回 <c>true</c>，否则返回 <c>false</c>。</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool TryPeek(out T value)
         {
             if (Remaining <= 0)
@@ -69,6 +72,7 @@ namespace ExtenderApp.Buffer
         /// </summary>
         /// <param name="value">当返回 <c>true</c> 时输出读取到的元素。</param>
         /// <returns>成功读取返回 <c>true</c>，否则返回 <c>false</c>。</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool TryRead(out T value)
         {
             if (!TryPeek(out value))
@@ -82,6 +86,7 @@ namespace ExtenderApp.Buffer
         /// </summary>
         /// <param name="destination">目标跨度，用于接收复制的数据。</param>
         /// <returns>复制成功并推进位置则返回 <c>true</c>，否则返回 <c>false</c>。</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool TryRead(scoped Span<T> destination)
         {
             if (destination.Length == 0)
@@ -98,6 +103,7 @@ namespace ExtenderApp.Buffer
         /// </summary>
         /// <returns>读取到的元素。</returns>
         /// <exception cref="InvalidOperationException">当没有更多数据可读时抛出。</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public T Read()
         {
             if (Remaining <= 0)
@@ -112,6 +118,7 @@ namespace ExtenderApp.Buffer
         /// </summary>
         /// <param name="destination">目标跨度。</param>
         /// <returns>实际复制并消费的元素数。</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int Read(scoped Span<T> destination)
         {
             if (destination.Length == 0)
@@ -128,6 +135,7 @@ namespace ExtenderApp.Buffer
         /// 将读取位置向前推进指定元素数。
         /// </summary>
         /// <param name="count">推进的元素数，必须为非负且不超过剩余。</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Advance(int count)
         {
             if (count < 0 || consumed + count > span.Length)
@@ -139,6 +147,7 @@ namespace ExtenderApp.Buffer
         /// 将读取位置回退指定元素数。
         /// </summary>
         /// <param name="count">回退的元素数（非负且不超过已消费）。</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Rewind(int count)
         {
             if (count < 0 || consumed - count < 0)
@@ -149,6 +158,7 @@ namespace ExtenderApp.Buffer
         /// <summary>
         /// 重置已消费位置为 0。
         /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Reset() => consumed = 0;
 
         /// <summary>

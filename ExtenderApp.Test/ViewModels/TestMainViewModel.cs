@@ -1,7 +1,9 @@
 ﻿using ExtenderApp.Abstract;
 using ExtenderApp.Common;
 using ExtenderApp.Contracts;
+using ExtenderApp.Test.Tests;
 using ExtenderApp.ViewModels;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace ExtenderApp.Test
 {
@@ -20,7 +22,12 @@ namespace ExtenderApp.Test
         {
             base.Inject(serviceProvider);
             // 运行自包含的测试用例，检查序列化及内存回收/冻结相关行为
-            ExtenderApp.Test.Tests.SerializationTests.RunAll(binarySerialization);
+            SerializationTests.RunAll(binarySerialization);
+            //var factory = serviceProvider.GetRequiredService<ILinkerFactory<ITcpLinker>>();
+            //Task.Run(() =>
+            //{
+            //    LinkerTests.RunAll(factory, binarySerialization);
+            //});
         }
 
         private ExpectLocalFileInfo CreatTestExpectLocalFileInfo(string fileName)

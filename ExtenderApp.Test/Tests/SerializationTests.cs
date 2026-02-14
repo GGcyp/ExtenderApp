@@ -143,7 +143,7 @@ namespace ExtenderApp.Test.Tests
                     Debug.Print("[通过] TestLongStringRoundTrip");
 
                 var released = buffer.TryRelease();
-                var sprovider = SequenceBufferProvider<byte>.Shared;
+                var sprovider = DefaultSequenceBufferProvider<byte>.Shared;
                 var mprovider = MemoryBlockProvider<byte>.Shared;
                 Debug.Print($"[回收] TestLongStringRoundTrip：{released}");
             }
@@ -279,7 +279,7 @@ namespace ExtenderApp.Test.Tests
         private static void TestSliceBehavior()
         {
             var source = Enumerable.Range(0, 100).Select(value => (byte)value).ToArray();
-            var buffer = SequenceBufferProvider<byte>.Shared.GetBuffer();
+            var buffer = DefaultSequenceBufferProvider<byte>.Shared.GetBuffer();
             try
             {
                 int start = Random.Shared.Next(0, 100);

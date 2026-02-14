@@ -36,7 +36,6 @@ namespace ExtenderApp.Common.Hash
         /// <returns>返回修改后的服务集合以支持链式调用。</returns>
         internal static IServiceCollection AddHash(this IServiceCollection services)
         {
-            services.AddSingleton<IHashProvider, HashProvider>();
             services.ConfigureSingletonInstance<IBinaryFormatterStore>(b =>
             {
                 //b.AddStructFormatter<HashValue, HashValueFormatter>();

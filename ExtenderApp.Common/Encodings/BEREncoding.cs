@@ -90,7 +90,7 @@ namespace ExtenderApp.Common.Encodings
         //    if (buffer.IsEmpty)
         //        throw new ArgumentNullException(nameof(buffer));
 
-        //    Encode(ref block, buffer, Asn1Tag.Sequence);
+        //    Encode(ref block, buffer, Asn1Tag.SequenceBuffers);
         //}
 
         ///// <summary>
@@ -104,7 +104,7 @@ namespace ExtenderApp.Common.Encodings
         //    if (buffer.IsEmpty)
         //        throw new ArgumentNullException(nameof(buffer));
 
-        //    Encode(ref block, buffer, Asn1Tag.Sequence);
+        //    Encode(ref block, buffer, Asn1Tag.SequenceBuffers);
         //}
 
         ///// <summary>
@@ -160,7 +160,7 @@ namespace ExtenderApp.Common.Encodings
         ///// </summary>
         ///// <param name="block">目标写入块。</param>
         ///// <param name="buffer">源缓冲，其未读数据将作为 Value 写入。</param>
-        ///// <param name="tag">目标 ASN.1 标签（如 Sequence、Application/ContextSpecific 等）。</param>
+        ///// <param name="tag">目标 ASN.1 标签（如 SequenceBuffers、Application/ContextSpecific 等）。</param>
         //public static void Encode(ref ByteBlock block, ByteBuffer buffer, Asn1Tag tag)
         //{
         //    EncodeTag(ref block, tag);
@@ -415,7 +415,7 @@ namespace ExtenderApp.Common.Encodings
         ///// 尝试判断当前位置是否为 SEQUENCE（构造类型）且长度可用；仅做预检（若满足会推进原始块到 Tag 后并返回 true）。
         ///// </summary>
         ///// <param name="block">源字节块。</param>
-        ///// <returns>若当前位置为构造型 Sequence 且剩余长度足够返回 true，否则 false。</returns>
+        ///// <returns>若当前位置为构造型 SequenceBuffers 且剩余长度足够返回 true，否则 false。</returns>
         //public static bool TryDecodeSequence(ref ByteBlock block)
         //{
         //    var temp = block;
@@ -423,7 +423,7 @@ namespace ExtenderApp.Common.Encodings
         //        return false;
 
         //    var tag = DecodeTag(ref temp);
-        //    if (tag.ToUTagNumber() != UniversalTagNumber.Sequence || !tag.IsConstructed)
+        //    if (tag.ToUTagNumber() != UniversalTagNumber.SequenceBuffers || !tag.IsConstructed)
         //        return false;
 
         //    block.Advance(temp.Consumed - block.Consumed);

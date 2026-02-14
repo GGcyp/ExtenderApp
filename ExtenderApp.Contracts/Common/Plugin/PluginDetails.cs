@@ -17,12 +17,12 @@ namespace ExtenderApp.Contracts
         /// <summary>
         /// 获取插件标题
         /// </summary>
-        public string? Title => _pluginInfo.PluginTitle;
+        public string? Title => _pluginInfo.Title;
 
         /// <summary>
         /// 获取插件描述
         /// </summary>
-        public string? Description => _pluginInfo.PluginDescription;
+        public string? Description => _pluginInfo.Desc;
 
         /// <summary>
         /// 获取插件版本号
@@ -32,12 +32,12 @@ namespace ExtenderApp.Contracts
         /// <summary>
         /// 获取插件启动DLL文件路径
         /// </summary>
-        public string? StartupDll => _pluginInfo.PluginStartupDll;
+        public string? StartupDll => _pluginInfo.Startup;
 
         /// <summary>
         /// 获取插件打包路径
         /// </summary>
-        public string? PackPath => _pluginInfo.PackPath;
+        public string? PackPath => _pluginInfo.Pack;
 
         /// <summary>
         /// 获取或设置插件加载上下文
@@ -57,10 +57,7 @@ namespace ExtenderApp.Contracts
         /// <summary>
         /// 获取或设置过场动画视图类型。
         /// </summary>
-        /// <value>
-        /// 返回或设置一个表示过场动画视图类型的 <see cref="Type"/> 对象。
-        /// 如果该属性为 null，则表示没有设置过场动画视图类型。
-        /// </value>
+        /// <value>返回或设置一个表示过场动画视图类型的 <see cref="Type"/> 对象。 如果该属性为 null，则表示没有设置过场动画视图类型。</value>
         public Type? CutsceneViewType { get; set; }
 
         /// <summary>
@@ -86,8 +83,7 @@ namespace ExtenderApp.Contracts
         /// </summary>
         public bool IsStandingModel { get; set; }
 
-        #endregion
-
+        #endregion 设置属性
 
         /// <summary>
         /// 初始化一个插件详细信息实例
@@ -96,8 +92,8 @@ namespace ExtenderApp.Contracts
         public PluginDetails(PluginInfo modeInfo) : this()
         {
             _pluginInfo = modeInfo;
-            PluginIcon = modeInfo.PluginIcon;
-            Version = string.IsNullOrEmpty(modeInfo.PluginVersion) ? null : new Version(modeInfo.PluginVersion);
+            PluginIcon = modeInfo.Icon;
+            Version = string.IsNullOrEmpty(modeInfo.Ver) ? null : new Version(modeInfo.Ver);
         }
 
         /// <summary>
@@ -109,7 +105,7 @@ namespace ExtenderApp.Contracts
             PluginFolderPath = string.Empty;
             StartupType = null;
             LoadContext = null;
-            Version = _pluginInfo.PluginVersion == null ? null : new Version(_pluginInfo.PluginVersion);
+            Version = _pluginInfo.Ver == null ? null : new Version(_pluginInfo.Ver);
         }
     }
 }

@@ -1,6 +1,6 @@
 ﻿using ExtenderApp.Buffer.MemoryBlocks;
 
-namespace ExtenderApp.Buffer.Sequence
+namespace ExtenderApp.Buffer.SequenceBuffers
 {
     /// <summary>
     /// 为序列缓冲段提供创建/封装逻辑的抽象工厂。

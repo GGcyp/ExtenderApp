@@ -16,18 +16,31 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
         protected override void Init(AutoMemberDetailsStore store)
         {
             Type type = typeof(T);
-            PropertyInfo[] properties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.GetProperty | BindingFlags.SetProperty);
-            FieldInfo[] fields = type.GetFields(BindingFlags.Public | BindingFlags.Instance | BindingFlags.GetField | BindingFlags.SetField);
 
-            for (int i = 0; i < properties.Length; i++)
+            foreach (MemberInfo member in type.GetMembers())
             {
-                store.Add(properties[i]);
-            }
+                if (member.TryGetSerializationsMemberAttribute(out bool include))
+                {
+                    if (include)
+                        store.Add(member);
 
-            for (int i = 0; i < fields.Length; i++)
-            {
-                store.Add(fields[i]);
+                    continue;
+                }
+
+                if (member is FieldInfo field && field.IsPublic ||
+                    member is PropertyInfo property && HasPublicGetterAndSetter(property))
+                {
+                    store.Add(member);
+                }
             }
+        }
+
+        private static bool HasPublicGetterAndSetter(PropertyInfo property)
+        {
+            return property.CanRead
+                && property.CanWrite
+                && property.GetMethod?.IsPublic == true
+                && property.SetMethod?.IsPublic == true;
         }
     }
 }

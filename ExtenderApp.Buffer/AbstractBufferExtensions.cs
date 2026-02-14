@@ -211,6 +211,7 @@ namespace ExtenderApp.Buffer
         /// <param name="memory">包含目标数据的内存。</param>
         /// <param name="isBigEndian">指示内存中的字节序是否为大端：若平台为 little-endian 且本参数为 <c>true</c>，方法会对字节进行反转以恢复正确值。</param>
         /// <returns>解析得到的 <typeparamref name="T"/> 值。</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T Read<T>(this AbstractBuffer<byte> memories, bool isBigEndian = true)
             where T : unmanaged
         {
@@ -225,6 +226,7 @@ namespace ExtenderApp.Buffer
         /// <param name="size">输出的字节大小（等于 <typeparamref name="T"/> 的字节长度）。</param>
         /// <param name="isBigEndian">指示内存中的字节序是否为大端：若平台为 little-endian 且本参数为 <c>true</c>，方法会对字节进行反转以恢复正确值。</param>
         /// <returns>解析得到的 <typeparamref name="T"/> 值。</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T Read<T>(this AbstractBuffer<byte> memories, out int size, bool isBigEndian = true)
             where T : unmanaged
         {
@@ -239,6 +241,7 @@ namespace ExtenderApp.Buffer
         /// <param name="memory">包含目标数据的内存。</param>
         /// <param name="isBigEndian">指示内存中的字节序是否为大端：若平台为 little-endian 且本参数为 <c>true</c>，方法会对字节进行反转以恢复正确值。</param>
         /// <returns>解析得到的 <typeparamref name="T"/> 值。</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T Read<T>(this Memory<byte> memory, bool isBigEndian = true)
             where T : unmanaged
         {
@@ -253,6 +256,7 @@ namespace ExtenderApp.Buffer
         /// <param name="size">输出的字节大小（等于 <typeparamref name="T"/> 的字节长度）。</param>
         /// <param name="isBigEndian">指示内存中的字节序是否为大端：若平台为 little-endian 且本参数为 <c>true</c>，方法会对字节进行反转以恢复正确值。</param>
         /// <returns>解析得到的 <typeparamref name="T"/> 值。</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T Read<T>(this Memory<byte> memory, out int size, bool isBigEndian = true)
             where T : unmanaged
         {
@@ -266,6 +270,7 @@ namespace ExtenderApp.Buffer
         /// <param name="memory">包含目标数据的只读内存。</param>
         /// <param name="isBigEndian">指示内存中的字节序是否为大端：若平台为 little-endian 且本参数为 <c>true</c>，方法会对字节进行反转以恢复正确值。</param>
         /// <returns>解析得到的 <typeparamref name="T"/> 值。</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T Read<T>(this ReadOnlyMemory<byte> memory, bool isBigEndian = true)
             where T : unmanaged
         {
@@ -280,6 +285,7 @@ namespace ExtenderApp.Buffer
         /// <param name="size">输出的字节大小（等于 <typeparamref name="T"/> 的字节长度）。</param>
         /// <param name="isBigEndian">指示内存中的字节序是否为大端：若平台为 little-endian 且本参数为 <c>true</c>，方法会对字节进行反转以恢复正确值。</param>
         /// <returns>解析得到的 <typeparamref name="T"/> 值。</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T Read<T>(this ReadOnlyMemory<byte> memory, out int size, bool isBigEndian = true)
             where T : unmanaged
         {
@@ -293,6 +299,7 @@ namespace ExtenderApp.Buffer
         /// <param name="span">包含目标数据的缓冲区。</param>
         /// <param name="isBigEndian">指示缓冲区中的字节序是否为大端：若平台为 little-endian 且本参数为 <c>true</c>，方法会对字节进行反转以恢复正确值。</param>
         /// <returns>解析得到的 <typeparamref name="T"/> 值。</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T Read<T>(this scoped Span<byte> span, bool isBigEndian = true)
             where T : unmanaged
         {
@@ -307,12 +314,21 @@ namespace ExtenderApp.Buffer
         /// <param name="size">输出的字节大小（等于 <typeparamref name="T"/> 的字节长度）。</param>
         /// <param name="isBigEndian">指示缓冲区中的字节序是否为大端：若平台为 little-endian 且本参数为 <c>true</c>，方法会对字节进行反转以恢复正确值。</param>
         /// <returns>解析得到的 <typeparamref name="T"/> 值。</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T Read<T>(this scoped Span<byte> span, out int size, bool isBigEndian = true)
             where T : unmanaged
         {
             return Read<T>((ReadOnlySpan<byte>)span, out size, isBigEndian);
         }
 
+        /// <summary>
+        /// 从 <see cref="ReadOnlySpan{byte}"/> 中读取类型为 <typeparamref name="T"/> 的值（不返回大小）。
+        /// </summary>
+        /// <typeparam name="T">要读取的目标类型，必须为 <c>unmanaged</c>。</typeparam>
+        /// <param name="span">包含目标数据的缓冲区。</param>
+        /// <param name="isBigEndian">指示缓冲区中的字节序是否为大端：若平台为 little-endian 且本参数为 <c>true</c>，方法会对字节进行反转以恢复正确值。</param>
+        /// <returns>解析得到的 <typeparamref name="T"/> 值。</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T Read<T>(this scoped ReadOnlySpan<byte> span, bool isBigEndian = true)
             where T : unmanaged
         {
@@ -327,6 +343,7 @@ namespace ExtenderApp.Buffer
         /// <param name="size">输出的字节大小（等于 <typeparamref name="T"/> 的字节长度）。</param>
         /// <param name="isBigEndian">指示缓冲区中的字节序是否为大端：若平台为 little-endian 且本参数为 <c>true</c>，方法会使用临时栈缓冲反转字节以恢复正确值。</param>
         /// <returns>解析得到的 <typeparamref name="T"/> 值。</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T Read<T>(this scoped ReadOnlySpan<byte> span, out int size, bool isBigEndian = true)
             where T : unmanaged
         {
@@ -353,6 +370,7 @@ namespace ExtenderApp.Buffer
         /// <param name="sequence">包含目标数据的只读序列。</param>
         /// <param name="isBigEndian">指示序列中的字节序是否为大端：若平台为 little-endian 且本参数为 <c>true</c>，方法会对字节进行反转以恢复正确值。</param>
         /// <returns>解析得到的 <typeparamref name="T"/> 值。</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T Read<T>(this ReadOnlySequence<byte> sequence, bool isBigEndian = true)
             where T : unmanaged
         {
@@ -367,6 +385,7 @@ namespace ExtenderApp.Buffer
         /// <param name="size">输出的字节大小（等于 <typeparamref name="T"/> 的字节长度）。</param>
         /// <param name="isBigEndian">指示序列中的字节序是否为大端：若平台为 little-endian 且本参数为 <c>true</c>，方法会对字节进行反转以恢复正确值。</param>
         /// <returns>解析得到的 <typeparamref name="T"/> 值。</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T Read<T>(this ReadOnlySequence<byte> sequence, out int size, bool isBigEndian = true)
             where T : unmanaged
         {
@@ -476,5 +495,36 @@ namespace ExtenderApp.Buffer
         }
 
         #endregion TryRead
+
+        #region Slice
+
+
+        /// <summary>
+        /// 获取当前 <see cref="AbstractBuffer{T}"/> 中尚未提交部分的切片。
+        /// </summary>
+        /// <typeparam name="T">缓冲区的元素类型。</typeparam>
+        /// <param name="buffer">源缓冲区。</param>
+        /// <returns>从已提交末尾开始、长度为可用空间的切片。</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static AbstractBuffer<T> AvailableSlice<T>(this AbstractBuffer<T> buffer)
+        {
+            ArgumentNullException.ThrowIfNull(buffer, nameof(buffer));
+            return buffer.Slice(buffer.Committed, buffer.Available);
+        }
+
+        /// <summary>
+        /// 获取当前 <see cref="AbstractBuffer{T}"/> 中已提交部分的切片。
+        /// </summary>
+        /// <typeparam name="T">缓冲区的元素类型。</typeparam>
+        /// <param name="buffer">源缓冲区。</param>
+        /// <returns>从起始位置开始、长度为已提交数据的切片。</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static AbstractBuffer<T> CommittedSlice<T>(this AbstractBuffer<T> buffer)
+        {
+            ArgumentNullException.ThrowIfNull(buffer, nameof(buffer));
+            return buffer.Slice(0, buffer.Committed);
+        }
+
+        #endregion Slice
     }
 }

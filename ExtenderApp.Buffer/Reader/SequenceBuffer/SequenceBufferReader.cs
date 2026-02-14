@@ -1,5 +1,5 @@
 ﻿using System.Buffers;
-using ExtenderApp.Buffer.Sequence;
+using ExtenderApp.Buffer.SequenceBuffers;
 
 namespace ExtenderApp.Buffer.Reader
 {

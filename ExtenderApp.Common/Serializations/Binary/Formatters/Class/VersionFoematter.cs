@@ -1,8 +1,5 @@
-﻿using System;
-using ExtenderApp.Abstract;
+﻿using ExtenderApp.Abstract;
 using ExtenderApp.Buffer;
-using ExtenderApp.Buffer.Reader;
-using ExtenderApp.Contracts;
 
 namespace ExtenderApp.Common.Serializations.Binary.Formatters
 {

@@ -6,7 +6,7 @@ namespace ExtenderApp.Abstract
     /// 网络链接器接口，表示可发起并管理网络连接的低层抽象。
     /// <para>组合了链接信息、接收、发送与连接控制等能力，并提供套接字选项配置方法。</para>
     /// </summary>
-    public interface ILinker : IDisposable, ILinkInfo, ILinkReceiver, ILinkSender, ILinkConnect
+    public interface ILinker : IDisposable, ILinkInfo, ILinkReceiver, ILinkSender, ILinkConnect, ILinkBind
     {
         /// <summary>
         /// 克隆当前链接器实例（浅拷贝/仅复位数据，不执行网络操作）。

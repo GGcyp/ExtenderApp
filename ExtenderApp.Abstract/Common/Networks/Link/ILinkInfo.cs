@@ -43,6 +43,26 @@ namespace ExtenderApp.Abstract
         AddressFamily AddressFamily { get; }
 
         /// <summary>
+        /// 获取或设置接收缓冲区大小（字节）。
+        /// </summary>
+        int ReceiveBufferSize { get; set; }
+
+        /// <summary>
+        /// 获取或设置发送缓冲区大小（字节）。
+        /// </summary>
+        int SendBufferSize { get; set; }
+
+        /// <summary>
+        /// 获取或设置接收超时时间（毫秒）。
+        /// </summary>
+        int ReceiveTimeout { get; set; }
+
+        /// <summary>
+        /// 获取或设置发送超时时间（毫秒）。
+        /// </summary>
+        int SendTimeout { get; set; }
+
+        /// <summary>
         /// 本地终结点（本地地址与端口），若不可用则为 null。
         /// </summary>
         /// <remarks>
