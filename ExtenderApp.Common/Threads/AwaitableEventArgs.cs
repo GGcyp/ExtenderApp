@@ -1,6 +1,5 @@
 ﻿using System.Threading.Tasks.Sources;
 using ExtenderApp.Buffer;
-using ExtenderApp.Contracts;
 
 namespace ExtenderApp.Common.Threads
 {
@@ -24,12 +23,12 @@ namespace ExtenderApp.Common.Threads
         /// <summary>
         /// 数据缓冲区，用于在线程池线程中传递状态。
         /// </summary>
-        private DataBuffer? _buffer;
+        private ValueCache? buffer;
 
         /// <summary>
         /// 数据缓冲回调，用于在线程池线程中执行操作。
         /// </summary>
-        private Action<DataBuffer>? _callback;
+        private Action<ValueCache>? _callback;
 
         public AwaitableEventArgs()
         {
@@ -60,26 +59,25 @@ namespace ExtenderApp.Common.Threads
                 throw new ArgumentNullException(nameof(action));
 
             _callback = Execute;
-            _buffer = DataBuffer.FromValue(this, action);
+            buffer = ValueCache.FromValue(this, action);
 
             ThreadPool.UnsafeQueueUserWorkItem(this, false);
             return this;
 
-            static void Execute(DataBuffer buffer)
+            static void Execute(ValueCache buffer)
             {
-                if (buffer is not DataBuffer<AwaitableEventArgs, Action> data)
+                if (!buffer.TryGetValue(out AwaitableEventArgs args) ||
+                    !buffer.TryGetValue(out Action action))
                 {
                     buffer.Release();
                     return;
                 }
 
-                AwaitableEventArgs args = data.Item1!;
-                Action action = data.Item2!;
-
                 try
                 {
-                    action();
+                    action.Invoke();
                     args.SetResult();
+                    buffer.Release();
                 }
                 catch (Exception ex)
                 {
@@ -100,26 +98,24 @@ namespace ExtenderApp.Common.Threads
                 throw new ArgumentNullException(nameof(action));
 
             _callback = Execute;
-            _buffer = DataBuffer.FromValue(this, action, item);
+            buffer = ValueCache.FromValue(this, action, item);
 
             ThreadPool.UnsafeQueueUserWorkItem(this, false);
             return this;
 
-            static void Execute(DataBuffer buffer)
+            static void Execute(ValueCache buffer)
             {
-                if (buffer is not DataBuffer<AwaitableEventArgs, Action<T>, T> data)
+                if (!buffer.TryGetValue(out AwaitableEventArgs args) ||
+                    !buffer.TryGetValue(out Action<T> action) ||
+                    !buffer.TryGetValue(out T item))
                 {
                     buffer.Release();
                     return;
                 }
 
-                AwaitableEventArgs args = data.Item1!;
-                Action<T> action = data.Item2!;
-                T item = data.Item3!;
-
                 try
                 {
-                    action(item);
+                    action.Invoke(item);
                     args.SetResult();
                 }
                 catch (Exception ex)
@@ -143,27 +139,25 @@ namespace ExtenderApp.Common.Threads
                 throw new ArgumentNullException(nameof(action));
 
             _callback = Execute;
-            _buffer = DataBuffer.FromValue(this, action, item1, item2);
+            buffer = ValueCache.FromValue(this, action, item1, item2);
 
             ThreadPool.UnsafeQueueUserWorkItem(this, false);
             return this;
 
-            static void Execute(DataBuffer buffer)
+            static void Execute(ValueCache buffer)
             {
-                if (buffer is not DataBuffer<AwaitableEventArgs, Action<T1, T2>, T1, T2> data)
+                if (!buffer.TryGetValue(out AwaitableEventArgs args) ||
+                    !buffer.TryGetValue(out Action<T1, T2> action) ||
+                    !buffer.TryGetValue(out T1 item1) ||
+                    !buffer.TryGetValue(out T2 item2))
                 {
                     buffer.Release();
                     return;
                 }
 
-                AwaitableEventArgs args = data.Item1!;
-                Action<T1, T2> action = data.Item2!;
-                T1 item1 = data.Item3!;
-                T2 item2 = data.Item4!;
-
                 try
                 {
-                    action(item1, item2);
+                    action.Invoke(item1, item2);
                     args.SetResult();
                 }
                 catch (Exception ex)
@@ -193,8 +187,8 @@ namespace ExtenderApp.Common.Threads
             finally
             {
                 // 获取结果后立即重置，为下一次操作做准备
-                _buffer?.Release();
-                _buffer = null;
+                buffer?.Release();
+                buffer = null;
                 _callback = null;
                 vts.Reset();
                 _pool.Release(this);
@@ -215,7 +209,7 @@ namespace ExtenderApp.Common.Threads
 
         public void Execute()
         {
-            _callback?.Invoke(_buffer!);
+            _callback?.Invoke(buffer!);
         }
 
         public static implicit operator ValueTask(AwaitableEventArgs args)
@@ -229,7 +223,7 @@ namespace ExtenderApp.Common.Threads
     }
 
     /// <summary>
-    /// 表示一个可等待的、可池化的通用异步操作参数。 此类实现了 <see cref="IValueTaskSource{TResult}"/>，使其能够被 <see cref="ValueTask{TResult}"/> 等待， 从而在异步操作同步完成时避免不必要的堆内存分配。
+    /// 表示一个可等待的、可池化的通用异步操作参数。 此类实现了 <see cref="IValueTaskSource{TResult}"/>，使其能够被 <see cref="ValueTask{TResult}"/> 等待， 从而在异务操作同步完成时避免不必要的堆内存分配。
     /// </summary>
     /// <typeparam name="T">异步操作返回的结果类型。</typeparam>
     public sealed class AwaitableEventArgs<T> : IValueTaskSource<T>, IThreadPoolWorkItem
@@ -252,12 +246,12 @@ namespace ExtenderApp.Common.Threads
         /// <summary>
         /// 数据缓冲区，用于在线程池线程中传递状态。
         /// </summary>
-        private DataBuffer? _buffer;
+        private ValueCache? _buffer;
 
         /// <summary>
         /// 数据缓冲回调，用于在线程池线程中执行操作。
         /// </summary>
-        private Action<DataBuffer>? _callback;
+        private Action<ValueCache>? _callback;
 
         /// <summary>
         /// 获取当前操作的版本令牌，用于向 <see cref="ValueTask{TResult}"/> 验证此源的有效性。
@@ -298,20 +292,19 @@ namespace ExtenderApp.Common.Threads
                 throw new ArgumentNullException(nameof(func));
 
             _callback = Execute;
-            _buffer = DataBuffer.FromValue(this, func);
+            _buffer = ValueCache.FromValue(this, func);
 
             ThreadPool.UnsafeQueueUserWorkItem(this, false);
             return this;
 
-            static void Execute(DataBuffer buffer)
+            static void Execute(ValueCache buffer)
             {
-                if (buffer is not DataBuffer<AwaitableEventArgs<T>, Func<T>> data)
+                if (!buffer.TryGetValue(out AwaitableEventArgs<T> args) ||
+                    !buffer.TryGetValue(out Func<T> func))
                 {
                     buffer.Release();
                     return;
                 }
-                AwaitableEventArgs<T> args = data.Item1!;
-                Func<T> func = data.Item2!;
 
                 try
                 {
@@ -337,21 +330,20 @@ namespace ExtenderApp.Common.Threads
                 throw new ArgumentNullException(nameof(func));
 
             _callback = Execute;
-            _buffer = DataBuffer.FromValue(this, func, item1);
+            _buffer = ValueCache.FromValue(this, func, item1);
 
             ThreadPool.UnsafeQueueUserWorkItem(this, false);
             return this;
 
-            static void Execute(DataBuffer buffer)
+            static void Execute(ValueCache buffer)
             {
-                if (buffer is not DataBuffer<AwaitableEventArgs<T>, Func<T1, T>, T1> data)
+                if (!buffer.TryGetValue(out AwaitableEventArgs<T> args) ||
+                    !buffer.TryGetValue(out Func<T1, T> func) ||
+                    !buffer.TryGetValue(out T1 item1))
                 {
                     buffer.Release();
                     return;
                 }
-                AwaitableEventArgs<T> args = data.Item1!;
-                Func<T1, T> func = data.Item2!;
-                T1 item1 = data.Item3!;
 
                 try
                 {
@@ -379,23 +371,22 @@ namespace ExtenderApp.Common.Threads
                 throw new ArgumentNullException(nameof(func));
 
             _callback = Execute;
-            _buffer = DataBuffer.FromValue(this, func, item1, item2);
+            _buffer = ValueCache.FromValue(this, func, item1, item2);
 
             ThreadPool.UnsafeQueueUserWorkItem(this, false);
             return this;
 
-            static void Execute(DataBuffer buffer)
+            static void Execute(ValueCache buffer)
             {
-                if (buffer is not DataBuffer<AwaitableEventArgs<T>, Func<T1, T2, T>, T1, T2> data)
+                if (!buffer.TryGetValue(out AwaitableEventArgs<T> args) ||
+                    !buffer.TryGetValue(out Func<T1, T2, T> func) ||
+                    !buffer.TryGetValue(out T1 item1) ||
+                    !buffer.TryGetValue(out T2 item2))
                 {
                     buffer.Release();
                     return;
                 }
 
-                AwaitableEventArgs<T> args = data.Item1!;
-                Func<T1, T2, T> func = data.Item2!;
-                T1 item1 = data.Item3!;
-                T2 item2 = data.Item4!;
                 try
                 {
                     T result = func(item1, item2);

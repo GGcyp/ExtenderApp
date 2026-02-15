@@ -137,29 +137,29 @@ namespace ExtenderApp.Common.Networks
             return Result.Success(new SocketOperationValue(length, RemoteEndPoint, receiveMessageFromPacketInfo));
         }
 
-        public override void SetOption(LinkOptionLevel optionLevel, LinkOptionName optionName, DataBuffer optionValue)
+        public override ILinkInfo SetOption(LinkOptionLevel optionLevel, LinkOptionName optionName, ValueCache optionValue)
         {
-            switch (optionValue)
+            if (optionValue.TryGetValue(out byte[] byteArray))
             {
-                case DataBuffer<byte> byteBuffer:
-                    Socket.SetSocketOption((SocketOptionLevel)optionLevel, (SocketOptionName)optionName, byteBuffer);
-                    break;
-
-                case DataBuffer<int> intBuffer:
-                    Socket.SetSocketOption((SocketOptionLevel)optionLevel, (SocketOptionName)optionName, intBuffer);
-                    break;
-
-                case DataBuffer<bool> boolBuffer:
-                    Socket.SetSocketOption((SocketOptionLevel)optionLevel, (SocketOptionName)optionName, boolBuffer);
-                    break;
-
-                case DataBuffer<object> objectBuffer:
-                    Socket.SetSocketOption((SocketOptionLevel)optionLevel, (SocketOptionName)optionName, objectBuffer);
-                    break;
-
-                default:
-                    throw new ArgumentException("Unsupported option value type.", nameof(optionValue));
+                Socket.SetSocketOption((SocketOptionLevel)optionLevel, (SocketOptionName)optionName, byteArray);
+                return this;
             }
+            else if (optionValue.TryGetValue(out int intValue))
+            {
+                Socket.SetSocketOption((SocketOptionLevel)optionLevel, (SocketOptionName)optionName, intValue);
+                return this;
+            }
+            else if (optionValue.TryGetValue(out bool boolValue))
+            {
+                Socket.SetSocketOption((SocketOptionLevel)optionLevel, (SocketOptionName)optionName, boolValue);
+            }
+            else if (optionValue.TryGetValue(out object objectValue))
+            {
+                Socket.SetSocketOption((SocketOptionLevel)optionLevel, (SocketOptionName)optionName, objectValue);
+            }
+
+            optionValue.Release();
+            return this;
         }
 
         public override ILinker Clone()

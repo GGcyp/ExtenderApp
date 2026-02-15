@@ -115,6 +115,7 @@ namespace ExtenderApp.Abstract
         /// <param name="optionLevel">选项所属的协议层级（例如 IP/Tcp/Socket）。</param>
         /// <param name="optionName">要设置的选项名称。</param>
         /// <param name="optionValue">选项值。</param>
-        void SetOption(LinkOptionLevel optionLevel, LinkOptionName optionName, DataBuffer optionValue);
+        /// <returns>返回当前 <see cref="ILinkInfo"/> 实例以支持链式调用。</returns>
+        ILinkInfo SetOption(LinkOptionLevel optionLevel, LinkOptionName optionName, ValueCache optionValue);
     }
 }

@@ -1,6 +1,5 @@
 ﻿using ExtenderApp.Abstract;
 using ExtenderApp.Buffer;
-using ExtenderApp.Buffer.Reader;
 using ExtenderApp.Contracts;
 
 namespace ExtenderApp.Common.Serializations.Binary.Formatters
@@ -152,11 +151,11 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
             if (value == null)
                 return NilLength;
 
-            DataBuffer<long> dataBuffer = DataBuffer<long>.Get();
-            ProtectedGetLength(value, dataBuffer);
-            value.LoopAllChildNodes(ProtectedGetLength, dataBuffer);
-            long length = dataBuffer.Item1;
-            dataBuffer.Release();
+            var chache = ValueCache.FromValue(0L);
+            ProtectedGetLength(value, chache);
+            value.LoopAllChildNodes(ProtectedGetLength, chache);
+            chache.TryGetValue(out long length);
+            chache.Release();
             return length;
         }
 
@@ -189,10 +188,10 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
         protected abstract T ProtectedDeserialize(ref SpanReader<byte> reader);
 
         /// <summary>
-        /// 受保护的抽象方法，用于获取指定值的长度，并将结果存储在指定的 DataBuffer 中。
+        /// 受保护的抽象方法，用于获取指定值的长度，并将结果存储在指定的 ValueCache 中。
         /// </summary>
         /// <param name="value">需要获取长度的值。</param>
-        /// <param name="dataBuffer">用于存储长度结果的 DataBuffer。</param>
-        protected abstract void ProtectedGetLength(T value, DataBuffer<long> dataBuffer);
+        /// <param name="cahce">用于存储长度结果的 ValueCache。</param>
+        protected abstract void ProtectedGetLength(T value, ValueCache cahce);
     }
 }

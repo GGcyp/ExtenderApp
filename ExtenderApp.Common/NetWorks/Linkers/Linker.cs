@@ -635,7 +635,7 @@ namespace ExtenderApp.Common.Networks
         #endregion Execute
 
         /// <inheritdoc/>
-        public abstract void SetOption(LinkOptionLevel optionLevel, LinkOptionName optionName, DataBuffer optionValue);
+        public abstract ILinkInfo SetOption(LinkOptionLevel optionLevel, LinkOptionName optionName, ValueCache optionValue);
 
         /// <inheritdoc/>
         public abstract ILinker Clone();

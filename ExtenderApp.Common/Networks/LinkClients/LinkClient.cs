@@ -45,10 +45,11 @@ namespace ExtenderApp.Common.Networks.LinkClients
             Linker = linker ?? throw new ArgumentNullException(nameof(linker));
         }
 
-        public void SetOption(LinkOptionLevel optionLevel, LinkOptionName optionName, DataBuffer optionValue)
+        public ILinkInfo SetOption(LinkOptionLevel optionLevel, LinkOptionName optionName, ValueCache optionValue)
         {
             ThrowIfDisposed();
             Linker.SetOption(optionLevel, optionName, optionValue);
+            return this;
         }
     }
 

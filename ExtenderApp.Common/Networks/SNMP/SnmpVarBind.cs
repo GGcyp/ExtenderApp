@@ -27,9 +27,9 @@ namespace ExtenderApp.Common.Networks.SNMP
         {
         }
 
-        public SnmpVarBind(string oid) : this(new SnmpOid(oid), SnmpValue.Empty)
-        {
-        }
+        //public SnmpVarBind(string oid) : this(new SnmpOid(oid), SnmpValue.Empty)
+        //{
+        //}
 
         /// <summary>
         /// 使用 OID 字符串与值创建 VarBind。
@@ -40,10 +40,10 @@ namespace ExtenderApp.Common.Networks.SNMP
         {
         }
 
-        public SnmpVarBind(SnmpOid oid) : this(oid, SnmpValue.Empty)
-        {
+        //public SnmpVarBind(SnmpOid oid) : this(oid, SnmpValue.Empty)
+        //{
 
-        }
+        //}
 
         /// <summary>
         /// 使用 <see cref="SnmpOid"/> 与 <see cref="SnmpValue"/> 创建 VarBind 实例。

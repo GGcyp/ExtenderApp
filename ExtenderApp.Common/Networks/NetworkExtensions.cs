@@ -1,4 +1,6 @@
 ﻿using System.Net;
+using ExtenderApp.Abstract;
+using ExtenderApp.Buffer;
 using ExtenderApp.Common.Networks.LinkClients;
 using ExtenderApp.Contracts;
 using Microsoft.Extensions.DependencyInjection;

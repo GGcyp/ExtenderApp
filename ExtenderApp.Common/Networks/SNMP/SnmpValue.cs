@@ -5,14 +5,14 @@ using ExtenderApp.Contracts;
 namespace ExtenderApp.Common.Networks.SNMP
 {
     /// <summary>
-    /// 封装 SNMP 值的轻量结构体，承载一组 <see cref="DataBuffer"/>（通过 <see cref="ValueList{T}"/> 管理）。
+    /// 封装 SNMP 值的轻量结构体，承载一组 <see cref="ValueCache"/>（通过 <see cref="ValueList{T}"/> 管理）。
     /// </summary>
     public readonly struct SnmpValue : IDisposable
     {
-        /// <summary>
-        /// 表示空值的静态只读实例（对应 ASN.1 NULL 提示）。
-        /// </summary>
-        public static SnmpValue Empty => new(UniversalTagNumber.Null, DataBuffer.Empty);
+        ///// <summary>
+        ///// 表示空值的静态只读实例（对应 ASN.1 NULL 提示）。
+        ///// </summary>
+        //public static SnmpValue Empty => new(UniversalTagNumber.Null, ValueCache.Empty);
 
         /// <summary>
         /// 表示此值的预期 SNMP 数据类型（作为解析/格式化的提示）。 注意：Agent 返回的实际 ASN.1 tag 才是最终准则，本字段仅作便捷提示。
@@ -24,18 +24,18 @@ namespace ExtenderApp.Common.Networks.SNMP
         /// - 常见用法：对于简单类型（Integer/OctetString），该列表通常包含 1 个 <see cref="DataBuffer{T}"/>； 对于构造类型（SequenceBuffers）可能包含多个缓冲区表示子元素。
         /// - 调用方对该字段负责初始化并在不再使用时确保调用 <see cref="Dispose"/> 回收内部缓冲。
         /// </summary>
-        public DataBuffer Buffer { get; }
+        public ValueCache Buffer { get; }
 
-        /// <summary>
-        /// 获取当前值是否为空（类型为 Null 或内部缓冲列表为空）。
-        /// </summary>
-        public bool IsEmpty => Type == UniversalTagNumber.Null || DataBuffer.IsEmptyOrNull(Buffer);
+        ///// <summary>
+        ///// 获取当前值是否为空（类型为 Null 或内部缓冲列表为空）。
+        ///// </summary>
+        //public bool IsEmpty => Type == UniversalTagNumber.Null || ValueCache.IsEmptyOrNull(Buffer);
 
         /// <summary>
         /// 创建一个指定类型的 <see cref="SnmpValue"/>（未分配内部缓冲，调用方可随后填充 <see cref="Buffer"/>）。
         /// </summary>
         /// <param name="type">值的类型提示。</param>
-        public SnmpValue(UniversalTagNumber type, DataBuffer buffer) : this()
+        public SnmpValue(UniversalTagNumber type, ValueCache buffer) : this()
         {
             Type = type;
             Buffer = buffer;
@@ -66,25 +66,25 @@ namespace ExtenderApp.Common.Networks.SNMP
             Buffer.Release();
         }
 
-        public static implicit operator SnmpValue(int value)
-        {
-            return new SnmpValue(UniversalTagNumber.Integer, DataBuffer<long>.Get(value));
-        }
+        //public static implicit operator SnmpValue(int value)
+        //{
+        //    return new SnmpValue(UniversalTagNumber.Integer, DataBuffer<long>.Get(value));
+        //}
 
-        public static implicit operator SnmpValue(long value)
-        {
-            return new SnmpValue(UniversalTagNumber.Integer, DataBuffer<long>.Get(value));
-        }
+        //public static implicit operator SnmpValue(long value)
+        //{
+        //    return new SnmpValue(UniversalTagNumber.Integer, DataBuffer<long>.Get(value));
+        //}
 
-        public static implicit operator SnmpValue(byte[] value)
-        {
-            return default;
-            //return new SnmpValue(UniversalTagNumber.OctetString, DataBuffer<ByteBlock>.Get(new ByteBlock(value)));
-        }
+        //public static implicit operator SnmpValue(byte[] value)
+        //{
+        //    return default;
+        //    //return new SnmpValue(UniversalTagNumber.OctetString, DataBuffer<ByteBlock>.Get(new ByteBlock(value)));
+        //}
 
-        public static implicit operator SnmpValue(ByteBlock value)
-        {
-            return new SnmpValue(UniversalTagNumber.OctetString, DataBuffer<ByteBlock>.Get(value));
-        }
+        //public static implicit operator SnmpValue(ByteBlock value)
+        //{
+        //    return new SnmpValue(UniversalTagNumber.OctetString, DataBuffer<ByteBlock>.Get(value));
+        //}
     }
 }

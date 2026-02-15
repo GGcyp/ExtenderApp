@@ -3,7 +3,7 @@
     /// <summary>
     /// 客户端链路处理管道，负责管理一系列的处理器（Handler）。
     /// </summary>
-    public interface ILinkClientPipeline : IDisposable, IEnumerable<ILinkClientHandler>
+    public interface ILinkClientPipeline :  IEnumerable<ILinkClientHandler>
     {
         /// <summary>
         /// 在管道末尾添加处理器。
@@ -69,14 +69,14 @@
         /// </summary>
         /// <param name="name">处理器名称。</param>
         /// <returns>处理器上下文。</returns>
-        ILinkClientHandlerContext Context(string name);
+        ILinkClientHandlerContext GetContext(string name);
 
         /// <summary>
         /// 获取指定处理器的上下文。
         /// </summary>
         /// <param name="handler">处理器实例。</param>
         /// <returns>处理器上下文。</returns>
-        ILinkClientHandlerContext Context(ILinkClientHandler handler);
+        ILinkClientHandlerContext GetContext(ILinkClientHandler handler);
 
         /// <summary>
         /// 触发通道激活事件。
@@ -88,7 +88,7 @@
         /// 触发通道失活事件。
         /// </summary>
         /// <returns>当前管道实例。</returns>
-        ILinkClientPipeline Unactive();
+        ILinkClientPipeline Inactive();
 
         /// <summary>
         /// 触发通道读事件。

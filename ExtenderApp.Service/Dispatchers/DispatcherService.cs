@@ -16,7 +16,7 @@ namespace ExtenderApp.Services
         /// </summary>
         private readonly ILogger<IDispatcherService> _logeer;
 
-        private readonly ConcurrentDictionary<DataBuffer, Action<DataBuffer>> _callbacks;
+        private readonly ConcurrentDictionary<ValueCache, Action<ValueCache>> _callbacks;
         private readonly SendOrPostCallback _postCallback;
         private readonly IMainThreadContext _mainThreadContext;
         private readonly Action<Action> _toMainThread;
@@ -42,7 +42,7 @@ namespace ExtenderApp.Services
             _logeer = logger;
             _mainThreadContext = mainThreadContext;
             _callbacks = new();
-            _postCallback = new(InvokeDataBuffer);
+            _postCallback = new(InvokeDatacache);
 
             _toMainThread = InvokeAsync;
             _awayMainThread = InvokeBackgroundThread;
@@ -56,8 +56,8 @@ namespace ExtenderApp.Services
             if (action == null)
                 return;
 
-            var buffer = GetDataBuffer(action);
-            Invoke(_postCallback, buffer);
+            var cache = GetDatacache(action);
+            Invoke(_postCallback, cache);
         }
 
         /// <inheritdoc/>
@@ -66,8 +66,8 @@ namespace ExtenderApp.Services
             if (action == null)
                 return;
 
-            var buffer = GetDataBuffer(action, send);
-            Invoke(_postCallback, buffer);
+            var cache = GetDatacache(action, send);
+            Invoke(_postCallback, cache);
         }
 
         /// <inheritdoc/>
@@ -97,8 +97,8 @@ namespace ExtenderApp.Services
             if (action == null)
                 return;
 
-            var buffer = GetDataBuffer(action);
-            InvokeAsync(_postCallback, buffer);
+            var cache = GetDatacache(action);
+            InvokeAsync(_postCallback, cache);
         }
 
         /// <inheritdoc/>
@@ -107,8 +107,8 @@ namespace ExtenderApp.Services
             if (action == null)
                 return;
 
-            var buffer = GetDataBuffer(action, send);
-            InvokeAsync(_postCallback, buffer);
+            var cache = GetDatacache(action, send);
+            InvokeAsync(_postCallback, cache);
         }
 
         /// <inheritdoc/>
@@ -171,69 +171,71 @@ namespace ExtenderApp.Services
         }
 
         /// <summary>
-        /// 为无参 <see cref="Action"/> 获取一个可复用的 <see cref="DataBuffer"/>，并注册其对应的执行回调。
+        /// 为无参 <see cref="Action"/> 获取一个可复用的 <see cref="ValueCache"/>，并注册其对应的执行回调。
         /// </summary>
         /// <param name="action">要封装到缓冲区中的操作。</param>
-        /// <returns>封装了操作的 <see cref="DataBuffer"/> 实例。</returns>
-        private DataBuffer GetDataBuffer(Action action)
+        /// <returns>封装了操作的 <see cref="ValueCache"/> 实例。</returns>
+        private ValueCache GetDatacache(Action action)
         {
-            var buffer = DataBuffer<Action>.Get(action);
-            _callbacks.TryAdd(buffer, Invoke);
-            return buffer;
+            var cache = ValueCache.FromValue(action);
+            _callbacks.TryAdd(cache, Invoke);
+            return cache;
         }
 
         /// <summary>
-        /// 为带参 <see cref="Action{T}"/> 获取一个可复用的 <see cref="DataBuffer"/>，并注册其对应的执行回调。
+        /// 为带参 <see cref="Action{T}"/> 获取一个可复用的 <see cref="ValueCache"/>，并注册其对应的执行回调。
         /// </summary>
         /// <typeparam name="T">参数类型。</typeparam>
         /// <param name="action">要封装到缓冲区中的操作。</param>
         /// <param name="send">要传递给操作的参数。</param>
-        /// <returns>封装了操作与参数的 <see cref="DataBuffer"/> 实例。</returns>
-        private DataBuffer GetDataBuffer<T>(Action<T> action, T send)
+        /// <returns>封装了操作与参数的 <see cref="ValueCache"/> 实例。</returns>
+        private ValueCache GetDatacache<T>(Action<T> action, T send)
         {
-            var buffer = DataBuffer.FromValue(action, send);
-            _callbacks.TryAdd(buffer, Invoke<T>);
-            return buffer;
+            var cache = ValueCache.FromValue(action, send);
+            _callbacks.TryAdd(cache, Invoke<T>);
+            return cache;
         }
 
         /// <summary>
-        /// 从参数中解析 <see cref="DataBuffer"/>，查找并执行已注册的回调，然后释放缓冲区。
+        /// 从参数中解析 <see cref="ValueCache"/>，查找并执行已注册的回调，然后释放缓冲区。
         /// </summary>
-        /// <param name="obj">通过 <see cref="SynchronizationContext"/> 传递的对象，期望为 <see cref="DataBuffer"/>。</param>
-        private void InvokeDataBuffer(object? obj)
+        /// <param name="obj">通过 <see cref="SynchronizationContext"/> 传递的对象，期望为 <see cref="ValueCache"/>。</param>
+        private void InvokeDatacache(object? obj)
         {
-            if (obj is not DataBuffer buffer)
+            if (obj is not ValueCache cache)
                 return;
 
-            if (_callbacks.Remove(buffer, out var callback))
-                callback.Invoke(buffer);
+            if (_callbacks.Remove(cache, out var callback))
+                callback.Invoke(cache);
 
-            buffer.Release();
+            cache.Release();
         }
 
         /// <summary>
         /// 执行无参缓冲区中的操作。
         /// </summary>
-        /// <param name="buffer">包含 <see cref="Action"/> 的缓冲区。</param>
-        private static void Invoke(DataBuffer buffer)
+        /// <param name="cache">包含 <see cref="Action"/> 的缓冲区。</param>
+        private static void Invoke(ValueCache cache)
         {
-            if (buffer is DataBuffer<Action> dataBuffer)
+            if (cache.TryGetValue(out Action action))
             {
-                dataBuffer.Item1?.Invoke();
+                action.Invoke();
             }
+            cache.Release();
         }
 
         /// <summary>
         /// 执行带参缓冲区中的操作。
         /// </summary>
         /// <typeparam name="T">参数类型。</typeparam>
-        /// <param name="buffer">包含 <see cref="Action{T}"/> 与参数的缓冲区。</param>
-        private static void Invoke<T>(DataBuffer buffer)
+        /// <param name="cache">包含 <see cref="Action{T}"/> 与参数的缓冲区。</param>
+        private static void Invoke<T>(ValueCache cache)
         {
-            if (buffer is DataBuffer<Action<T>, T> dataBuffer)
+            if (cache.TryGetValue(out Action<T> action) && cache.TryGetValue(out T arg))
             {
-                dataBuffer.Item1?.Invoke(dataBuffer.Item2!);
+                action.Invoke(arg);
             }
+            cache.Release();
         }
 
         /// <inheritdoc/>

@@ -49,7 +49,7 @@ namespace ExtenderApp.Common
                 // 对于IPv6地址，创建并应用组播选项
                 optionValue = new IPv6MulticastOption(multicastAddr);
             }
-            udpLinker.SetOption(optionLevel, LinkOptionName.AddMembership, DataBuffer<object>.Get(optionValue));
+            udpLinker.SetOption(optionLevel, LinkOptionName.AddMembership, ValueCache.FromValue(optionValue));
             return udpLinker;
         }
 
@@ -78,7 +78,7 @@ namespace ExtenderApp.Common
                 // 对于IPv6地址，创建并应用组播选项
                 optionValue = new IPv6MulticastOption(multicastAddr);
             }
-            udpLinker.SetOption(optionLevel, LinkOptionName.DropMembership, DataBuffer<object>.Get(optionValue));
+            udpLinker.SetOption(optionLevel, LinkOptionName.DropMembership, ValueCache.FromValue(optionValue));
             return udpLinker;
         }
     }
