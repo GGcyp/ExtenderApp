@@ -1,17 +1,16 @@
-﻿
-namespace ExtenderApp.Contracts
+﻿namespace ExtenderApp.Contracts
 {
     /// <summary>
     /// 支持内部定时“按周期结算并输出”的线程安全值计数器。
     /// </summary>
     /// <remarks>
-    /// - 使用内部 <see cref="Timer"/> 按 <see cref="Period"/> 周期结算当前累计值，并通过 <see cref="OnPeriod"/> 输出快照。<br/>
-    /// - 即使没有调用 <see cref="Increment(long)"/>，在运行状态下也会按时结算。<br/>
-    /// - 线程安全：所有公开方法/属性均可被并发调用；内部通过 <see cref="Interlocked"/> 保证原子性。<br/>
-    /// - 事件线程：<see cref="OnPeriod"/> 在线程池计时器回调线程上触发，请避免在回调中做耗时/阻塞操作。<br/>
+    /// - 使用内部 <see cref="Timer"/> 按 <see cref="Period"/> 周期结算当前累计值，并通过 <see cref="OnPeriod"/> 输出快照。 <br/>
+    /// - 即使没有调用 <see cref="Increment(long)"/>，在运行状态下也会按时结算。 <br/>
+    /// - 线程安全：所有公开方法/属性均可被并发调用；内部通过 <see cref="Interlocked"/> 保证原子性。 <br/>
+    /// - 事件线程： <see cref="OnPeriod"/> 在线程池计时器回调线程上触发，请避免在回调中做耗时/阻塞操作。 <br/>
     /// - 生命周期：请在不再使用时调用 <see cref="Dispose"/> 或配合 using 释放，避免定时器泄漏。
     /// </remarks>
-    public class ValueCounter : IDisposable
+    public class ValueCounter : DisposableObject
     {
         /// <summary>
         /// 当前周期累计值（本周期内通过 <see cref="Increment(long)"/> 累计的总和）。
@@ -20,7 +19,7 @@ namespace ExtenderApp.Contracts
         private long count;
 
         /// <summary>
-        /// 当前周期调用次数（<see cref="Increment(long)"/> 被调用的次数）。
+        /// 当前周期调用次数（ <see cref="Increment(long)"/> 被调用的次数）。
         /// </summary>
         /// <remarks>用于统计请求频次与计算周期内平均速率。</remarks>
         private long incrementCount;
@@ -91,7 +90,7 @@ namespace ExtenderApp.Contracts
         public long LastPeriodValue => Interlocked.Read(ref lastPeriodValue);
 
         /// <summary>
-        /// 当前周期调用次数（<see cref="Increment(long)"/> 被调用的次数）。
+        /// 当前周期调用次数（ <see cref="Increment(long)"/> 被调用的次数）。
         /// </summary>
         public long CurrentPeriodIncrements => Interlocked.Read(ref incrementCount);
 
@@ -164,7 +163,7 @@ namespace ExtenderApp.Contracts
         /// 周期到达时回调（传递该周期的快照）。
         /// </summary>
         /// <remarks>
-        /// - 在回调中收到的是“刚刚结算完成”的周期数据快照（通过对 <see cref="ValueCounter"/> 的隐式转换构造）。<br/>
+        /// - 在回调中收到的是“刚刚结算完成”的周期数据快照（通过对 <see cref="ValueCounter"/> 的隐式转换构造）。 <br/>
         /// - 回调在线程池线程执行，建议快速返回；如需和 UI 交互，请自行封送到 UI 线程。
         /// </remarks>
         public event Action<Value>? OnPeriod;
@@ -172,9 +171,7 @@ namespace ExtenderApp.Contracts
         /// <summary>
         /// 统计周期。小于等于 0 表示不启用定时输出。修改该值会自动重启内部定时器。
         /// </summary>
-        /// <remarks>
-        /// 变更周期会重置 <see cref="PeriodStartUtc"/> 到当前时间并从新周期开始计数。
-        /// </remarks>
+        /// <remarks>变更周期会重置 <see cref="PeriodStartUtc"/> 到当前时间并从新周期开始计数。</remarks>
         public TimeSpan Period
         {
             get => _period;
@@ -229,9 +226,7 @@ namespace ExtenderApp.Contracts
         /// 按照传入的值增加计数器的值（线程安全，非阻塞）。
         /// </summary>
         /// <param name="value">要增加的值。</param>
-        /// <remarks>
-        /// 本方法不依赖定时器，停止状态下同样可累计；仅不会自动结算输出。
-        /// </remarks>
+        /// <remarks>本方法不依赖定时器，停止状态下同样可累计；仅不会自动结算输出。</remarks>
         public void Increment(long value)
         {
             var now = DateTimeOffset.UtcNow;
@@ -253,7 +248,7 @@ namespace ExtenderApp.Contracts
         /// 手动立即结算并输出当前周期，然后进入下个周期。
         /// </summary>
         /// <remarks>
-        /// - 当定时器处于停止或周期不合法（≤0）时，本方法不执行任何操作。<br/>
+        /// - 当定时器处于停止或周期不合法（≤0）时，本方法不执行任何操作。 <br/>
         /// - 回调在调用线程中触发（通过内部逻辑与定时回调同路径执行）。
         /// </remarks>
         public void FlushNow()
@@ -375,7 +370,7 @@ namespace ExtenderApp.Contracts
         /// 重置所有统计（Count/Total/周期信息等）。
         /// </summary>
         /// <remarks>
-        /// - 若定时器正在运行，重置后新的周期起点为当前时间。<br/>
+        /// - 若定时器正在运行，重置后新的周期起点为当前时间。 <br/>
         /// - 不会触发 <see cref="OnPeriod"/>。
         /// </remarks>
         public void Reset()
@@ -395,10 +390,7 @@ namespace ExtenderApp.Contracts
             _trackingStartUtc = now;
         }
 
-        /// <summary>
-        /// 释放内部定时器资源。等同于调用 <see cref="Stop"/>。
-        /// </summary>
-        public void Dispose()
+        protected override void DisposeManagedResources()
         {
             Stop();
         }

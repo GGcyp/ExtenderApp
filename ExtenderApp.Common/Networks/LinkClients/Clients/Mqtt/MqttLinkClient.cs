@@ -9,7 +9,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
     /// - 解析采取增量方式，支持半包与多包粘连；
     /// - 自动心跳定时器（KeepAlive）;
     /// </summary>
-    internal class MqttLinkClient : TransferLinkClient<ITcpLinker>, IMqttLinkClient
+    internal class MqttLinkClient : IMqttLinkClient
     {
         //#region 常量(报文类型 / 固定头高四位)
 
@@ -48,7 +48,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
         //public event Action? OnPingResp;
         //#endregion
 
-        public MqttLinkClient(ITcpLinker linker) : base(linker)
+        public MqttLinkClient(ITcpLinker linker)
         {
         }
 
@@ -80,20 +80,12 @@ namespace ExtenderApp.Common.Networks.LinkClients
         //    if (string.IsNullOrWhiteSpace(clientId)) throw new ArgumentException(nameof(clientId));
         //    if (port <= 0) throw new ArgumentOutOfRangeException(nameof(port));
 
-        //    _clientId = clientId;
-        //    _keepAliveSeconds = keepAliveSeconds;
+        // _clientId = clientId; _keepAliveSeconds = keepAliveSeconds;
 
-        //    await ConnectAsync(new DnsEndPoint(host, port), token);
+        // await ConnectAsync(new DnsEndPoint(host, port), token);
 
-        //    var connectPacket = BuildConnect(clientId, keepAliveSeconds, cleanSession, username, password);
-        //    try
-        //    {
-        //        await SendRawAsync(connectPacket, token);
-        //    }
-        //    finally
-        //    {
-        //        connectPacket.Dispose();
-        //    }
+        // var connectPacket = BuildConnect(clientId, keepAliveSeconds, cleanSession, username, password); try { await SendRawAsync(connectPacket,
+        // token); } finally { connectPacket.Dispose(); }
 
         //    _waitConnAck = new(TaskCreationOptions.RunContinuationsAsynchronously);
         //    // 启动心跳定时器
@@ -127,18 +119,9 @@ namespace ExtenderApp.Common.Networks.LinkClients
         //{
         //    if (string.IsNullOrEmpty(topic)) throw new ArgumentException(nameof(topic));
 
-        //    ushort pid = NextPacketId();
-        //    var sub = BuildSubscribe(topic, qos, pid);
-        //    _waitSubAck = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        // ushort pid = NextPacketId(); var sub = BuildSubscribe(topic, qos, pid); _waitSubAck = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
-        //    try
-        //    {
-        //        await SendRawAsync(sub, token);
-        //    }
-        //    finally
-        //    {
-        //        sub.Dispose();
-        //    }
+        // try { await SendRawAsync(sub, token); } finally { sub.Dispose(); }
 
         //    using var cts = CancellationTokenSource.CreateLinkedTokenSource(token);
         //    cts.CancelAfter(TimeSpan.FromSeconds(10));
@@ -204,14 +187,10 @@ namespace ExtenderApp.Common.Networks.LinkClients
         //    if (hasUser) flags |= 0b1000_0000;
         //    if (hasPass) flags |= 0b0100_0000;
 
-        //    int payloadLen = Utf8Len(clientId);
-        //    if (hasUser) payloadLen += Utf8Len(user!);
-        //    if (hasPass) payloadLen += Utf8Len(pass!);
+        // int payloadLen = Utf8Len(clientId); if (hasUser) payloadLen += Utf8Len(user!); if (hasPass) payloadLen += Utf8Len(pass!);
 
-        //    int variableLen = Utf8Len("MQTT") - 2 /*内部计算多了前缀*/ + 2 /*前缀*/ + 1 + 1 + 2;
-        //    // 实际重新计算：协议名(2+4)+level+flags+keepAlive(2)
-        //    variableLen = 2 + 4 + 1 + 1 + 2;
-        //    int remaining = variableLen + payloadLen;
+        // int variableLen = Utf8Len("MQTT") - 2 /*内部计算多了前缀*/ + 2 /*前缀*/ + 1 + 1 + 2; // 实际重新计算：协议名(2+4)+level+flags+keepAlive(2) variableLen = 2 + 4
+        // + 1 + 1 + 2; int remaining = variableLen + payloadLen;
 
         //    var buf = ByteBuffer.GetBuffer();
         //    buf.Write(FIXED_CONNECT);
@@ -333,15 +312,8 @@ namespace ExtenderApp.Common.Networks.LinkClients
         //    {
         //        _receiveBuffer.Write(span);
 
-        //        var data = _receiveBuffer.WrittenSpan;
-        //        int offset = 0;
-        //        while (true)
-        //        {
-        //            int consumed = TryParsePacket(data.Slice(offset));
-        //            if (consumed <= 0) break;
-        //            offset += consumed;
-        //            if (offset >= data.Capacity) break;
-        //        }
+        // var data = _receiveBuffer.WrittenSpan; int offset = 0; while (true) { int consumed = TryParsePacket(data.Slice(offset)); if (consumed <= 0)
+        // break; offset += consumed; if (offset >= data.Capacity) break; }
 
         //        if (offset > 0)
         //        {
@@ -368,59 +340,25 @@ namespace ExtenderApp.Common.Networks.LinkClients
         //    if (Block.Capacity < 2) return 0;
         //    byte header = Block[0];
 
-        //    // 解析 RemainingLength (var-int)
-        //    int remainingLength;
-        //    int rlBytes;
-        //    if (!TryReadVarInt(Block.Slice(1), out remainingLength, out rlBytes))
-        //        return 0;
+        // // 解析 RemainingLength (var-int) int remainingLength; int rlBytes; if (!TryReadVarInt(Block.Slice(1), out remainingLength, out rlBytes))
+        // return 0;
 
-        //    int total = 1 + rlBytes + remainingLength;
-        //    if (Block.Capacity < total) return 0; // 数据不足
+        // int total = 1 + rlBytes + remainingLength; if (Block.Capacity < total) return 0; // 数据不足
 
-        //    ReadOnlySpan<byte> body = Block.Slice(1 + rlBytes, remainingLength);
-        //    byte type = (byte)(header & 0xF0);
+        // ReadOnlySpan<byte> body = Block.Slice(1 + rlBytes, remainingLength); byte type = (byte)(header & 0xF0);
 
-        //    switch (type)
-        //    {
-        //        case FIXED_CONNACK:
-        //            if (body.Capacity >= 2)
-        //            {
-        //                byte returnCode = body[1];
-        //                OnConnAck?.Invoke(returnCode);
-        //                _waitConnAck?.TrySetResult(returnCode);
-        //            }
-        //            break;
+        // switch (type) { case FIXED_CONNACK: if (body.Capacity >= 2) { byte returnCode = body[1]; OnConnAck?.Invoke(returnCode);
+        // _waitConnAck?.TrySetResult(returnCode); } break;
 
-        //        case FIXED_PUBLISH:
-        //            {
-        //                if (body.Capacity < 2) break;
-        //                int topicLen = (body[0] << 8) | body[1];
-        //                if (body.Capacity < 2 + topicLen) break;
-        //                var topicBytes = body.Slice(2, topicLen);
-        //                string topic = Encoding.UTF8.GetString(topicBytes);
-        //                var payload = body.Slice(2 + topicLen).ToArray();
-        //                OnPublish?.Invoke(topic, payload);
-        //            }
-        //            break;
+        // case FIXED_PUBLISH: { if (body.Capacity < 2) break; int topicLen = (body[0] << 8) | body[1]; if (body.Capacity < 2 + topicLen) break; var
+        // topicBytes = body.Slice(2, topicLen); string topic = Encoding.UTF8.GetString(topicBytes); var payload = body.Slice(2 + topicLen).ToArray();
+        // OnPublish?.Invoke(topic, payload); } break;
 
-        //        case FIXED_SUBACK:
-        //            if (body.Capacity >= 3)
-        //            {
-        //                byte granted = body[2];
-        //                OnSubAck?.Invoke(granted);
-        //                _waitSubAck?.TrySetResult(granted);
-        //            }
-        //            break;
+        // case FIXED_SUBACK: if (body.Capacity >= 3) { byte granted = body[2]; OnSubAck?.Invoke(granted); _waitSubAck?.TrySetResult(granted); } break;
 
-        //        case FIXED_PINGRESP:
-        //            OnPingResp?.Invoke();
-        //            _waitPingResp?.TrySetResult(true);
-        //            break;
+        // case FIXED_PINGRESP: OnPingResp?.Invoke(); _waitPingResp?.TrySetResult(true); break;
 
-        //        default:
-        //            // 其它类型（暂不实现）
-        //            break;
-        //    }
+        // default: // 其它类型（暂不实现） break; }
 
         //    return total;
         //}
@@ -496,15 +434,13 @@ namespace ExtenderApp.Common.Networks.LinkClients
         //    private readonly MqttLinkClient _client;
         //    public RawMqttPlugin(MqttLinkClient client) => _client = client;
 
-        //    public void OnAttach(MqttLinkClient client) { }
-        //    public void OnDetach(MqttLinkClient client) { }
+        // public void OnAttach(MqttLinkClient client) { } public void OnDetach(MqttLinkClient client) { }
 
-        //    public void OnConnecting(MqttLinkClient client, EndPoint endPoint) { }
-        //    public void OnConnected(MqttLinkClient client, EndPoint? endPoint, Exception? ex) { }
-        //    public void OnDisconnecting(MqttLinkClient client) { }
-        //    public void OnDisconnected(MqttLinkClient client, Exception? ex) { }
+        // public void OnConnecting(MqttLinkClient client, EndPoint endPoint) { } public void OnConnected(MqttLinkClient client, EndPoint? endPoint,
+        // Exception? ex) { } public void OnDisconnecting(MqttLinkClient client) { } public void OnDisconnected(MqttLinkClient client, Exception? ex)
+        // { }
 
-        //    public void OnSend(MqttLinkClient client, ref LinkClientPluginSendMessage message) { }
+        // public void OnSend(MqttLinkClient client, ref LinkClientPluginSendMessage message) { }
 
         //    public void OnReceive(MqttLinkClient client, ref LinkClientPluginReceiveMessage message)
         //    {

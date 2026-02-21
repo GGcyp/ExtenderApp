@@ -1,5 +1,6 @@
 ﻿using System.Net;
 using System.Net.Sockets;
+using System.Runtime.Versioning;
 using ExtenderApp.Abstract;
 using ExtenderApp.Buffer;
 using ExtenderApp.Contracts;
@@ -16,65 +17,54 @@ namespace ExtenderApp.Common.Networks
         /// </summary>
         internal Socket Socket { get; }
 
+        /// <summary>
+        /// 初始化 <see cref="SocketLinker"/> 的新实例。
+        /// </summary>
+        /// <param name="socket">要使用的 <see cref="Socket"/> 实例。</param>
         public SocketLinker(Socket socket)
         {
             Socket = socket;
         }
 
-        #region Info
-
-        public override sealed bool Connected => Socket.Connected;
-
-        public override sealed EndPoint? LocalEndPoint => Socket.LocalEndPoint;
-
-        public override sealed EndPoint? RemoteEndPoint => Socket.RemoteEndPoint;
-
-        public override sealed SocketType SocketType => Socket.SocketType;
-
-        public override sealed ProtocolType ProtocolType => Socket.ProtocolType;
-
-        public override sealed AddressFamily AddressFamily => Socket.AddressFamily;
-
-        public override sealed int ReceiveBufferSize { get => Socket.ReceiveBufferSize; set => Socket.ReceiveBufferSize = value; }
-        public override sealed int SendBufferSize { get => Socket.SendBufferSize; set => Socket.SendBufferSize = value; }
-        public override sealed int ReceiveTimeout { get => Socket.ReceiveTimeout; set => Socket.ReceiveTimeout = value; }
-        public override sealed int SendTimeout { get => Socket.SendTimeout; set => Socket.SendTimeout = value; }
-
-        #endregion Info
-
-        protected override void ExecuteBind(EndPoint endPoint)
+        /// <inheritdoc/>
+        protected override sealed void ExecuteBind(EndPoint endPoint)
         {
             Socket.Bind(endPoint);
         }
 
-        protected override ValueTask ExecuteConnectAsync(EndPoint remoteEndPoint, CancellationToken token)
+        /// <inheritdoc/>
+        protected override sealed ValueTask ExecuteConnectAsync(EndPoint remoteEndPoint, CancellationToken token)
         {
             return Socket.ConnectAsync(remoteEndPoint, token);
         }
 
-        protected override ValueTask ExecuteDisconnectAsync(CancellationToken token)
+        /// <inheritdoc/>
+        protected override sealed ValueTask ExecuteDisconnectAsync(CancellationToken token)
         {
             return Socket.DisconnectAsync(reuseSocket: false, token);
         }
 
         #region Send
 
-        protected override sealed Result<SocketOperationValue> ExecuteSend(ReadOnlySpan<byte> span, LinkFlags flags)
+        /// <inheritdoc/>
+        protected override sealed Result<LinkOperationValue> ExecuteSend(ReadOnlySpan<byte> span, LinkFlags flags)
         {
             var length = Socket.Send(span, (SocketFlags)flags, out var errorCode);
 
             if (TryGetSocketError(errorCode, out var ex))
-                return Result.FromException<SocketOperationValue>(ex);
+                return Result.FromException<LinkOperationValue>(ex);
             return CreateOperationValue(length);
         }
 
-        protected override sealed ValueTask<Result<SocketOperationValue>> ExecuteSendAsync(Memory<byte> memory, LinkFlags flags, CancellationToken token)
+        /// <inheritdoc/>
+        protected override sealed ValueTask<Result<LinkOperationValue>> ExecuteSendAsync(Memory<byte> memory, LinkFlags flags, CancellationToken token)
         {
             var args = AwaitableSocketEventArgs.Get();
             return args.SendAsync(Socket, memory, flags, token);
         }
 
-        protected override sealed ValueTask<Result<SocketOperationValue>> ExecuteSendAsync(IList<ArraySegment<byte>> buffer, LinkFlags flags, CancellationToken token)
+        /// <inheritdoc/>
+        protected override sealed ValueTask<Result<LinkOperationValue>> ExecuteSendAsync(IList<ArraySegment<byte>> buffer, LinkFlags flags, CancellationToken token)
         {
             var args = AwaitableSocketEventArgs.Get();
             return args.SendAsync(Socket, buffer, flags, token);
@@ -84,31 +74,35 @@ namespace ExtenderApp.Common.Networks
 
         #region Receive
 
-        protected override Result<SocketOperationValue> ExecuteReceive(Span<byte> span, LinkFlags flags)
+        /// <inheritdoc/>
+        protected override sealed Result<LinkOperationValue> ExecuteReceive(Span<byte> span, LinkFlags flags)
         {
             var length = Socket.Receive(span, (SocketFlags)flags, out var errorCode);
 
             if (TryGetSocketError(errorCode, out var ex))
-                return Result.FromException<SocketOperationValue>(ex);
+                return Result.FromException<LinkOperationValue>(ex);
             return CreateOperationValue(length);
         }
 
-        protected override Result<SocketOperationValue> ExecuteReceive(IList<ArraySegment<byte>> buffer, LinkFlags flags)
+        /// <inheritdoc/>
+        protected override sealed Result<LinkOperationValue> ExecuteReceive(IList<ArraySegment<byte>> buffer, LinkFlags flags)
         {
             var length = Socket.Receive(buffer, (SocketFlags)flags, out var errorCode);
 
             if (TryGetSocketError(errorCode, out var ex))
-                return Result.FromException<SocketOperationValue>(ex);
+                return Result.FromException<LinkOperationValue>(ex);
             return CreateOperationValue(length);
         }
 
-        protected override sealed ValueTask<Result<SocketOperationValue>> ExecuteReceiveAsync(Memory<byte> memory, LinkFlags flags, CancellationToken token)
+        /// <inheritdoc/>
+        protected override sealed ValueTask<Result<LinkOperationValue>> ExecuteReceiveAsync(Memory<byte> memory, LinkFlags flags, CancellationToken token)
         {
             var args = AwaitableSocketEventArgs.Get();
             return args.ReceiveAsync(Socket, memory, token);
         }
 
-        protected override sealed ValueTask<Result<SocketOperationValue>> ExecuteReceiveAsync(IList<ArraySegment<byte>> buffer, LinkFlags flags, CancellationToken token)
+        /// <inheritdoc/>
+        protected override sealed ValueTask<Result<LinkOperationValue>> ExecuteReceiveAsync(IList<ArraySegment<byte>> buffer, LinkFlags flags, CancellationToken token)
         {
             var args = AwaitableSocketEventArgs.Get();
             return args.ReceiveAsync(Socket, buffer, token);
@@ -116,6 +110,12 @@ namespace ExtenderApp.Common.Networks
 
         #endregion Receive
 
+        /// <summary>
+        /// 尝试将套接字错误转换为异常。
+        /// </summary>
+        /// <param name="error">套接字错误码。</param>
+        /// <param name="exception">转换后的异常。</param>
+        /// <returns>是否发生错误。</returns>
         protected bool TryGetSocketError(SocketError error, out SocketException exception)
         {
             if (error == SocketError.Success)
@@ -127,49 +127,42 @@ namespace ExtenderApp.Common.Networks
             return true;
         }
 
+        /// <summary>
+        /// 创建套接字异常。
+        /// </summary>
+        /// <param name="error">套接字错误码。</param>
+        /// <returns>对应的异常实例。</returns>
         protected SocketException CreateSocketException(SocketError error)
         {
             return new SocketException((int)error);
         }
 
-        private Result<SocketOperationValue> CreateOperationValue(int length, IPPacketInformation receiveMessageFromPacketInfo = default)
+        /// <summary>
+        /// 创建操作结果。
+        /// </summary>
+        /// <param name="length">传输长度。</param>
+        /// <param name="receiveMessageFromPacketInfo">接收数据包信息。</param>
+        /// <returns>操作结果。</returns>
+        private Result<LinkOperationValue> CreateOperationValue(int length, IPPacketInformation receiveMessageFromPacketInfo = default)
         {
-            return Result.Success(new SocketOperationValue(length, RemoteEndPoint, receiveMessageFromPacketInfo));
+            return Result.Success(new LinkOperationValue(length, RemoteEndPoint, receiveMessageFromPacketInfo));
         }
 
-        public override ILinkInfo SetOption(LinkOptionLevel optionLevel, LinkOptionName optionName, ValueCache optionValue)
-        {
-            if (optionValue.TryGetValue(out byte[] byteArray))
-            {
-                Socket.SetSocketOption((SocketOptionLevel)optionLevel, (SocketOptionName)optionName, byteArray);
-                return this;
-            }
-            else if (optionValue.TryGetValue(out int intValue))
-            {
-                Socket.SetSocketOption((SocketOptionLevel)optionLevel, (SocketOptionName)optionName, intValue);
-                return this;
-            }
-            else if (optionValue.TryGetValue(out bool boolValue))
-            {
-                Socket.SetSocketOption((SocketOptionLevel)optionLevel, (SocketOptionName)optionName, boolValue);
-            }
-            else if (optionValue.TryGetValue(out object objectValue))
-            {
-                Socket.SetSocketOption((SocketOptionLevel)optionLevel, (SocketOptionName)optionName, objectValue);
-            }
-
-            optionValue.Release();
-            return this;
-        }
-
+        /// <inheritdoc/>
         public override ILinker Clone()
         {
             var socket = new Socket(AddressFamily, SocketType, ProtocolType);
             return Clone(socket);
         }
 
+        /// <summary>
+        /// 使用指定 <see cref="Socket"/> 克隆链接器。
+        /// </summary>
+        /// <param name="socket">要用于克隆的套接字。</param>
+        /// <returns>克隆后的链接器实例。</returns>
         protected abstract ILinker Clone(Socket socket);
 
+        /// <inheritdoc/>
         protected override async ValueTask DisposeAsyncManagedResources()
         {
             await base.DisposeAsyncManagedResources();

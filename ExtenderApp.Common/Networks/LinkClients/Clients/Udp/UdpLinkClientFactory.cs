@@ -2,16 +2,16 @@
 
 namespace ExtenderApp.Common.Networks.LinkClients
 {
-    internal class UdpLinkClientFactory : LinkClientFactory<IUdpTransferLinkClient, IUdpLinker>
+    internal class UdpLinkClientFactory 
     {
-        public UdpLinkClientFactory(ILinkerFactory<IUdpLinker> linkerFactory) : base(linkerFactory)
-        {
-        }
+        //public UdpLinkClientFactory(ILinkerFactory<IUdpLinker> linkerFactory) : base(linkerFactory)
+        //{
+        //}
 
-        protected override IUdpTransferLinkClient CreateLinkClient(IUdpLinker linker)
-        {
-            //return new UdpLinkClient(linker);
-            return default!;
-        }
+        //protected override IUdpTransferLinkClient CreateLinkClient(IUdpLinker linker)
+        //{
+        //    //return new UdpLinkClient(linker);
+        //    return default!;
+        //}
     }
 }

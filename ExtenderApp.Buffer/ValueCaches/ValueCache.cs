@@ -78,6 +78,201 @@ namespace ExtenderApp.Buffer
         }
 
         /// <summary>
+        /// 从五个值创建缓存实例。
+        /// </summary>
+        /// <typeparam name="T1">第一个值类型。</typeparam>
+        /// <typeparam name="T2">第二个值类型。</typeparam>
+        /// <typeparam name="T3">第三个值类型。</typeparam>
+        /// <typeparam name="T4">第四个值类型。</typeparam>
+        /// <typeparam name="T5">第五个值类型。</typeparam>
+        /// <param name="value1">第一个值。</param>
+        /// <param name="value2">第二个值。</param>
+        /// <param name="value3">第三个值。</param>
+        /// <param name="value4">第四个值。</param>
+        /// <param name="value5">第五个值。</param>
+        /// <returns>缓存实例。</returns>
+        public static ValueCache FromValue<T1, T2, T3, T4, T5>(T1 value1, T2 value2, T3 value3, T4 value4, T5 value5)
+        {
+            var buffer = ValueCacheProvider.Default.Get();
+            buffer.AddValue(value1);
+            buffer.AddValue(value2);
+            buffer.AddValue(value3);
+            buffer.AddValue(value4);
+            buffer.AddValue(value5);
+            return buffer;
+        }
+
+        /// <summary>
+        /// 从六个值创建缓存实例。
+        /// </summary>
+        /// <typeparam name="T1">第一个值类型。</typeparam>
+        /// <typeparam name="T2">第二个值类型。</typeparam>
+        /// <typeparam name="T3">第三个值类型。</typeparam>
+        /// <typeparam name="T4">第四个值类型。</typeparam>
+        /// <typeparam name="T5">第五个值类型。</typeparam>
+        /// <typeparam name="T6">第六个值类型。</typeparam>
+        /// <param name="value1">第一个值。</param>
+        /// <param name="value2">第二个值。</param>
+        /// <param name="value3">第三个值。</param>
+        /// <param name="value4">第四个值。</param>
+        /// <param name="value5">第五个值。</param>
+        /// <param name="value6">第六个值。</param>
+        /// <returns>缓存实例。</returns>
+        public static ValueCache FromValue<T1, T2, T3, T4, T5, T6>(T1 value1, T2 value2, T3 value3, T4 value4, T5 value5, T6 value6)
+        {
+            var buffer = ValueCacheProvider.Default.Get();
+            buffer.AddValue(value1);
+            buffer.AddValue(value2);
+            buffer.AddValue(value3);
+            buffer.AddValue(value4);
+            buffer.AddValue(value5);
+            buffer.AddValue(value6);
+            return buffer;
+        }
+
+        /// <summary>
+        /// 从七个值创建缓存实例。
+        /// </summary>
+        /// <typeparam name="T1">第一个值类型。</typeparam>
+        /// <typeparam name="T2">第二个值类型。</typeparam>
+        /// <typeparam name="T3">第三个值类型。</typeparam>
+        /// <typeparam name="T4">第四个值类型。</typeparam>
+        /// <typeparam name="T5">第五个值类型。</typeparam>
+        /// <typeparam name="T6">第六个值类型。</typeparam>
+        /// <typeparam name="T7">第七个值类型。</typeparam>
+        /// <param name="value1">第一个值。</param>
+        /// <param name="value2">第二个值。</param>
+        /// <param name="value3">第三个值。</param>
+        /// <param name="value4">第四个值。</param>
+        /// <param name="value5">第五个值。</param>
+        /// <param name="value6">第六个值。</param>
+        /// <param name="value7">第七个值。</param>
+        /// <returns>缓存实例。</returns>
+        public static ValueCache FromValue<T1, T2, T3, T4, T5, T6, T7>(T1 value1, T2 value2, T3 value3, T4 value4, T5 value5, T6 value6, T7 value7)
+        {
+            var buffer = ValueCacheProvider.Default.Get();
+            buffer.AddValue(value1);
+            buffer.AddValue(value2);
+            buffer.AddValue(value3);
+            buffer.AddValue(value4);
+            buffer.AddValue(value5);
+            buffer.AddValue(value6);
+            buffer.AddValue(value7);
+            return buffer;
+        }
+
+        /// <summary>
+        /// 从八个值创建缓存实例。
+        /// </summary>
+        /// <typeparam name="T1">第一个值类型。</typeparam>
+        /// <typeparam name="T2">第二个值类型。</typeparam>
+        /// <typeparam name="T3">第三个值类型。</typeparam>
+        /// <typeparam name="T4">第四个值类型。</typeparam>
+        /// <typeparam name="T5">第五个值类型。</typeparam>
+        /// <typeparam name="T6">第六个值类型。</typeparam>
+        /// <typeparam name="T7">第七个值类型。</typeparam>
+        /// <typeparam name="T8">第八个值类型。</typeparam>
+        /// <param name="value1">第一个值。</param>
+        /// <param name="value2">第二个值。</param>
+        /// <param name="value3">第三个值。</param>
+        /// <param name="value4">第四个值。</param>
+        /// <param name="value5">第五个值。</param>
+        /// <param name="value6">第六个值。</param>
+        /// <param name="value7">第七个值。</param>
+        /// <param name="value8">第八个值。</param>
+        /// <returns>缓存实例。</returns>
+        public static ValueCache FromValue<T1, T2, T3, T4, T5, T6, T7, T8>(T1 value1, T2 value2, T3 value3, T4 value4, T5 value5, T6 value6, T7 value7, T8 value8)
+        {
+            var buffer = ValueCacheProvider.Default.Get();
+            buffer.AddValue(value1);
+            buffer.AddValue(value2);
+            buffer.AddValue(value3);
+            buffer.AddValue(value4);
+            buffer.AddValue(value5);
+            buffer.AddValue(value6);
+            buffer.AddValue(value7);
+            buffer.AddValue(value8);
+            return buffer;
+        }
+
+        /// <summary>
+        /// 从九个值创建缓存实例。
+        /// </summary>
+        /// <typeparam name="T1">第一个值类型。</typeparam>
+        /// <typeparam name="T2">第二个值类型。</typeparam>
+        /// <typeparam name="T3">第三个值类型。</typeparam>
+        /// <typeparam name="T4">第四个值类型。</typeparam>
+        /// <typeparam name="T5">第五个值类型。</typeparam>
+        /// <typeparam name="T6">第六个值类型。</typeparam>
+        /// <typeparam name="T7">第七个值类型。</typeparam>
+        /// <typeparam name="T8">第八个值类型。</typeparam>
+        /// <typeparam name="T9">第九个值类型。</typeparam>
+        /// <param name="value1">第一个值。</param>
+        /// <param name="value2">第二个值。</param>
+        /// <param name="value3">第三个值。</param>
+        /// <param name="value4">第四个值。</param>
+        /// <param name="value5">第五个值。</param>
+        /// <param name="value6">第六个值。</param>
+        /// <param name="value7">第七个值。</param>
+        /// <param name="value8">第八个值。</param>
+        /// <param name="value9">第九个值。</param>
+        /// <returns>缓存实例。</returns>
+        public static ValueCache FromValue<T1, T2, T3, T4, T5, T6, T7, T8, T9>(T1 value1, T2 value2, T3 value3, T4 value4, T5 value5, T6 value6, T7 value7, T8 value8, T9 value9)
+        {
+            var buffer = ValueCacheProvider.Default.Get();
+            buffer.AddValue(value1);
+            buffer.AddValue(value2);
+            buffer.AddValue(value3);
+            buffer.AddValue(value4);
+            buffer.AddValue(value5);
+            buffer.AddValue(value6);
+            buffer.AddValue(value7);
+            buffer.AddValue(value8);
+            buffer.AddValue(value9);
+            return buffer;
+        }
+
+        /// <summary>
+        /// 从十个值创建缓存实例。
+        /// </summary>
+        /// <typeparam name="T1">第一个值类型。</typeparam>
+        /// <typeparam name="T2">第二个值类型。</typeparam>
+        /// <typeparam name="T3">第三个值类型。</typeparam>
+        /// <typeparam name="T4">第四个值类型。</typeparam>
+        /// <typeparam name="T5">第五个值类型。</typeparam>
+        /// <typeparam name="T6">第六个值类型。</typeparam>
+        /// <typeparam name="T7">第七个值类型。</typeparam>
+        /// <typeparam name="T8">第八个值类型。</typeparam>
+        /// <typeparam name="T9">第九个值类型。</typeparam>
+        /// <typeparam name="T10">第十个值类型。</typeparam>
+        /// <param name="value1">第一个值。</param>
+        /// <param name="value2">第二个值。</param>
+        /// <param name="value3">第三个值。</param>
+        /// <param name="value4">第四个值。</param>
+        /// <param name="value5">第五个值。</param>
+        /// <param name="value6">第六个值。</param>
+        /// <param name="value7">第七个值。</param>
+        /// <param name="value8">第八个值。</param>
+        /// <param name="value9">第九个值。</param>
+        /// <param name="value10">第十个值。</param>
+        /// <returns>缓存实例。</returns>
+        public static ValueCache FromValue<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>(T1 value1, T2 value2, T3 value3, T4 value4, T5 value5, T6 value6, T7 value7, T8 value8, T9 value9, T10 value10)
+        {
+            var buffer = ValueCacheProvider.Default.Get();
+            buffer.AddValue(value1);
+            buffer.AddValue(value2);
+            buffer.AddValue(value3);
+            buffer.AddValue(value4);
+            buffer.AddValue(value5);
+            buffer.AddValue(value6);
+            buffer.AddValue(value7);
+            buffer.AddValue(value8);
+            buffer.AddValue(value9);
+            buffer.AddValue(value10);
+            return buffer;
+        }
+
+        /// <summary>
         /// 链表头节点。
         /// </summary>
         internal ValueCacheItem? First { get; private set; }

@@ -6,7 +6,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
     /// <summary>
     /// Tcp 链路客户端实现。
     /// </summary>
-    public abstract class TcpLinkClient : LinkClient<ITcpLinker, ITcpLinkClient>, ITcpLinkClient
+    public abstract class TcpLinkClient : LinkClient<ITcpLinker>, ITcpLinkClient
     {
         public bool NoDelay
         {

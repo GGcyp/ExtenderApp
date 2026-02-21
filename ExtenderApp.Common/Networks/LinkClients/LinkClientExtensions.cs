@@ -1,4 +1,8 @@
-﻿using ExtenderApp.Abstract;
+﻿using System.Diagnostics;
+using System.Net;
+using ExtenderApp.Abstract;
+using ExtenderApp.Buffer;
+using ExtenderApp.Contracts;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace ExtenderApp.Common.Networks.LinkClients
@@ -15,10 +19,9 @@ namespace ExtenderApp.Common.Networks.LinkClients
         /// <returns>返回传入的 <see cref="IServiceCollection"/> 实例，以支持方法链式调用。</returns>
         public static IServiceCollection AddLinkerClient(this IServiceCollection services)
         {
-            services.AddTcpLinkClient();
-            services.AddUdpLinkClient();
-            services.AddHttpLinkClient();
-
+            //services.AddTcpLinkClient();
+            //services.AddUdpLinkClient();
+            //services.AddHttpLinkClient();
             return services;
         }
 

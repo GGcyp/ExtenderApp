@@ -129,7 +129,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
         //        }
 
         //        // 准备等待源并启动接收任务（若尚未启动）
-        //        vts.Reset();
+        //        vts.Release();
         //        EnsureReceiveTaskRunning(token);
         //        var response = await new ValueTask<HttpResponseMessage>(this, vts.Version).ConfigureAwait(false);
 
@@ -152,7 +152,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
         //        // 必要时调整请求（例如 302/303 将方法改为 GET 并清除 Body）
         //        if (response.StatusCode == HttpStatusCode.Redirect || response.StatusCode == HttpStatusCode.RedirectMethod)
         //        {
-        //            request.Method = Contracts.HttpMethod.Get;
+        //            request.Method = Contracts.HttpMethod.GetAwaitable;
         //            request.Body.Dispose();
         //        }
 

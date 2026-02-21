@@ -64,7 +64,7 @@ namespace ExtenderApp.Common
         /// <param name="flags">发送标志。</param>
         /// <returns>发送结果。</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Result<SocketOperationValue> Send(this ILinker linker, AbstractBuffer<byte> buffer, LinkFlags flags = LinkFlags.None)
+        public static Result<LinkOperationValue> Send(this ILinker linker, AbstractBuffer<byte> buffer, LinkFlags flags = LinkFlags.None)
         {
             if (buffer is SequenceBuffer<byte> sequenceBuffer)
                 return SendPrivate(linker, sequenceBuffer, flags);
@@ -82,7 +82,7 @@ namespace ExtenderApp.Common
         /// <param name="flags">发送标志。</param>
         /// <returns>发送结果。</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Result<SocketOperationValue> Send(this ILinker linker, MemoryBlock<byte> memoryBlock, LinkFlags flags = LinkFlags.None)
+        public static Result<LinkOperationValue> Send(this ILinker linker, MemoryBlock<byte> memoryBlock, LinkFlags flags = LinkFlags.None)
         {
             ArgumentNullException.ThrowIfNull(linker, nameof(linker));
             ArgumentNullException.ThrowIfNull(memoryBlock, nameof(memoryBlock));
@@ -98,7 +98,7 @@ namespace ExtenderApp.Common
         /// <param name="flags">发送标志。</param>
         /// <returns>发送结果。</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Result<SocketOperationValue> Send(this ILinker linker, SequenceBuffer<byte> sequenceBuffer, LinkFlags flags = LinkFlags.None)
+        public static Result<LinkOperationValue> Send(this ILinker linker, SequenceBuffer<byte> sequenceBuffer, LinkFlags flags = LinkFlags.None)
         {
             ArgumentNullException.ThrowIfNull(linker, nameof(linker));
             ArgumentNullException.ThrowIfNull(sequenceBuffer, nameof(sequenceBuffer));
@@ -114,10 +114,10 @@ namespace ExtenderApp.Common
         /// <param name="flags">发送标志。</param>
         /// <returns>发送结果。</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static Result<SocketOperationValue> SendPrivate(ILinker linker, MemoryBlock<byte> memoryBlock, LinkFlags flags)
+        private static Result<LinkOperationValue> SendPrivate(ILinker linker, MemoryBlock<byte> memoryBlock, LinkFlags flags)
         {
             if (memoryBlock.Committed == 0)
-                return Result.Failure<SocketOperationValue>("当前 MemoryBlock 中没有数据可发送。");
+                return Result.Failure<LinkOperationValue>("当前 MemoryBlock 中没有数据可发送。");
             return linker.Send(memoryBlock.CommittedMemory, flags);
         }
 
@@ -129,11 +129,11 @@ namespace ExtenderApp.Common
         /// <param name="flags">发送标志。</param>
         /// <returns>发送结果。</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static Result<SocketOperationValue> SendPrivate(ILinker linker, SequenceBuffer<byte> sequenceBuffer, LinkFlags flags)
+        private static Result<LinkOperationValue> SendPrivate(ILinker linker, SequenceBuffer<byte> sequenceBuffer, LinkFlags flags)
         {
             var segments = sequenceBuffer.ToArraySegments();
             if (segments == null)
-                return Result.Failure<SocketOperationValue>("当前 SequenceBuffer 中没有数据可发送。");
+                return Result.Failure<LinkOperationValue>("当前 SequenceBuffer 中没有数据可发送。");
             return linker.Send(segments, flags);
         }
 
@@ -150,7 +150,7 @@ namespace ExtenderApp.Common
         /// <param name="token">取消令牌。</param>
         /// <returns>发送结果。</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ValueTask<Result<SocketOperationValue>> SendAsync(this ILinker linker, AbstractBuffer<byte> buffer, LinkFlags flags = LinkFlags.None, CancellationToken token = default)
+        public static ValueTask<Result<LinkOperationValue>> SendAsync(this ILinker linker, AbstractBuffer<byte> buffer, LinkFlags flags = LinkFlags.None, CancellationToken token = default)
         {
             if (buffer is SequenceBuffer<byte> sequenceBuffer)
                 return SendAsyncPrivate(linker, sequenceBuffer, flags, token);
@@ -169,7 +169,7 @@ namespace ExtenderApp.Common
         /// <param name="token">取消令牌。</param>
         /// <returns>发送结果。</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ValueTask<Result<SocketOperationValue>> SendAsync(this ILinker linker, MemoryBlock<byte> memoryBlock, LinkFlags flags = LinkFlags.None, CancellationToken token = default)
+        public static ValueTask<Result<LinkOperationValue>> SendAsync(this ILinker linker, MemoryBlock<byte> memoryBlock, LinkFlags flags = LinkFlags.None, CancellationToken token = default)
         {
             ArgumentNullException.ThrowIfNull(linker, nameof(linker));
             ArgumentNullException.ThrowIfNull(memoryBlock, nameof(memoryBlock));
@@ -186,7 +186,7 @@ namespace ExtenderApp.Common
         /// <param name="token">取消令牌。</param>
         /// <returns>发送结果。</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ValueTask<Result<SocketOperationValue>> SendAsync(this ILinker linker, SequenceBuffer<byte> sequenceBuffer, LinkFlags flags = LinkFlags.None, CancellationToken token = default)
+        public static ValueTask<Result<LinkOperationValue>> SendAsync(this ILinker linker, SequenceBuffer<byte> sequenceBuffer, LinkFlags flags = LinkFlags.None, CancellationToken token = default)
         {
             ArgumentNullException.ThrowIfNull(linker, nameof(linker));
             ArgumentNullException.ThrowIfNull(sequenceBuffer, nameof(sequenceBuffer));
@@ -203,10 +203,10 @@ namespace ExtenderApp.Common
         /// <param name="token">取消令牌。</param>
         /// <returns>发送结果。</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static ValueTask<Result<SocketOperationValue>> SendAsyncPrivate(this ILinker linker, MemoryBlock<byte> memoryBlock, LinkFlags flags, CancellationToken token)
+        private static ValueTask<Result<LinkOperationValue>> SendAsyncPrivate(this ILinker linker, MemoryBlock<byte> memoryBlock, LinkFlags flags, CancellationToken token)
         {
             if (memoryBlock.Committed == 0)
-                return Result.Failure<SocketOperationValue>("当前 MemoryBlock 中没有数据可发送。");
+                return Result.Failure<LinkOperationValue>("当前 MemoryBlock 中没有数据可发送。");
 
             return linker.SendAsync(memoryBlock.CommittedMemory, flags, token);
         }
@@ -220,11 +220,11 @@ namespace ExtenderApp.Common
         /// <param name="token">取消令牌。</param>
         /// <returns>发送结果。</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static ValueTask<Result<SocketOperationValue>> SendAsyncPrivate(this ILinker linker, SequenceBuffer<byte> sequenceBuffer, LinkFlags flags, CancellationToken token)
+        private static ValueTask<Result<LinkOperationValue>> SendAsyncPrivate(this ILinker linker, SequenceBuffer<byte> sequenceBuffer, LinkFlags flags, CancellationToken token)
         {
             var segments = sequenceBuffer.ToArraySegments();
             if (segments == null)
-                return Result.Failure<SocketOperationValue>("当前 SequenceBuffer 中没有数据可发送。");
+                return Result.Failure<LinkOperationValue>("当前 SequenceBuffer 中没有数据可发送。");
 
             return linker.SendAsync(segments, flags, token);
         }
@@ -241,7 +241,7 @@ namespace ExtenderApp.Common
         /// <param name="flags">接收标志。</param>
         /// <returns>接收结果。</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Result<SocketOperationValue> Receive(this ILinker linker, AbstractBuffer<byte> buffer, LinkFlags flags = LinkFlags.None)
+        public static Result<LinkOperationValue> Receive(this ILinker linker, AbstractBuffer<byte> buffer, LinkFlags flags = LinkFlags.None)
         {
             if (buffer is SequenceBuffer<byte> sequenceBuffer)
                 return ReceivePrivate(linker, sequenceBuffer, flags);
@@ -259,7 +259,7 @@ namespace ExtenderApp.Common
         /// <param name="flags">接收标志。</param>
         /// <returns>接收结果。</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Result<SocketOperationValue> Receive(this ILinker linker, MemoryBlock<byte> memoryBlock, LinkFlags flags = LinkFlags.None)
+        public static Result<LinkOperationValue> Receive(this ILinker linker, MemoryBlock<byte> memoryBlock, LinkFlags flags = LinkFlags.None)
         {
             ArgumentNullException.ThrowIfNull(linker, nameof(linker));
             ArgumentNullException.ThrowIfNull(memoryBlock, nameof(memoryBlock));
@@ -275,7 +275,7 @@ namespace ExtenderApp.Common
         /// <param name="flags">接收标志。</param>
         /// <returns>接收结果。</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Result<SocketOperationValue> Receive(this ILinker linker, SequenceBuffer<byte> sequenceBuffer, LinkFlags flags = LinkFlags.None)
+        public static Result<LinkOperationValue> Receive(this ILinker linker, SequenceBuffer<byte> sequenceBuffer, LinkFlags flags = LinkFlags.None)
         {
             ArgumentNullException.ThrowIfNull(linker, nameof(linker));
             ArgumentNullException.ThrowIfNull(sequenceBuffer, nameof(sequenceBuffer));
@@ -291,7 +291,7 @@ namespace ExtenderApp.Common
         /// <param name="flags">接收标志。</param>
         /// <returns>接收结果。</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static Result<SocketOperationValue> ReceivePrivate(ILinker linker, MemoryBlock<byte> memoryBlock, LinkFlags flags)
+        private static Result<LinkOperationValue> ReceivePrivate(ILinker linker, MemoryBlock<byte> memoryBlock, LinkFlags flags)
         {
             var writableSpan = memoryBlock.GetAvailableSpan();
             if (writableSpan.IsEmpty || writableSpan.Length == 0)
@@ -307,7 +307,7 @@ namespace ExtenderApp.Common
         /// <param name="flags">接收标志。</param>
         /// <returns>接收结果。</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static Result<SocketOperationValue> ReceivePrivate(ILinker linker, SequenceBuffer<byte> sequenceBuffer, LinkFlags flags)
+        private static Result<LinkOperationValue> ReceivePrivate(ILinker linker, SequenceBuffer<byte> sequenceBuffer, LinkFlags flags)
         {
             var writableSequenceBuffer = sequenceBuffer.AvailableSlice();
             if (writableSequenceBuffer.Available == 0)
@@ -340,7 +340,7 @@ namespace ExtenderApp.Common
         /// <param name="token">取消令牌。</param>
         /// <returns>接收结果。</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ValueTask<Result<SocketOperationValue>> ReceiveAsync(this ILinker linker, AbstractBuffer<byte> buffer, LinkFlags flags = LinkFlags.None, CancellationToken token = default)
+        public static ValueTask<Result<LinkOperationValue>> ReceiveAsync(this ILinker linker, AbstractBuffer<byte> buffer, LinkFlags flags = LinkFlags.None, CancellationToken token = default)
         {
             if (buffer is SequenceBuffer<byte> sequenceBuffer)
                 return ReceiveAsyncPrivate(linker, sequenceBuffer, flags, token);
@@ -359,7 +359,7 @@ namespace ExtenderApp.Common
         /// <param name="token">取消令牌。</param>
         /// <returns>接收结果。</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ValueTask<Result<SocketOperationValue>> ReceiveAsync(this ILinker linker, MemoryBlock<byte> memoryBlock, LinkFlags flags = LinkFlags.None, CancellationToken token = default)
+        public static ValueTask<Result<LinkOperationValue>> ReceiveAsync(this ILinker linker, MemoryBlock<byte> memoryBlock, LinkFlags flags = LinkFlags.None, CancellationToken token = default)
         {
             ArgumentNullException.ThrowIfNull(linker, nameof(linker));
             ArgumentNullException.ThrowIfNull(memoryBlock, nameof(memoryBlock));
@@ -376,7 +376,7 @@ namespace ExtenderApp.Common
         /// <param name="token">取消令牌。</param>
         /// <returns>接收结果。</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ValueTask<Result<SocketOperationValue>> ReceiveAsync(this ILinker linker, SequenceBuffer<byte> sequenceBuffer, LinkFlags flags = LinkFlags.None, CancellationToken token = default)
+        public static ValueTask<Result<LinkOperationValue>> ReceiveAsync(this ILinker linker, SequenceBuffer<byte> sequenceBuffer, LinkFlags flags = LinkFlags.None, CancellationToken token = default)
         {
             ArgumentNullException.ThrowIfNull(linker, nameof(linker));
             ArgumentNullException.ThrowIfNull(sequenceBuffer, nameof(sequenceBuffer));
@@ -393,7 +393,7 @@ namespace ExtenderApp.Common
         /// <param name="token">取消令牌。</param>
         /// <returns>接收结果。</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static ValueTask<Result<SocketOperationValue>> ReceiveAsyncPrivate(ILinker linker, MemoryBlock<byte> memoryBlock, LinkFlags flags, CancellationToken token)
+        private static ValueTask<Result<LinkOperationValue>> ReceiveAsyncPrivate(ILinker linker, MemoryBlock<byte> memoryBlock, LinkFlags flags, CancellationToken token)
         {
             var writableMemory = memoryBlock.GetAvailableMemory();
             if (writableMemory.IsEmpty || writableMemory.Length == 0)
@@ -411,7 +411,7 @@ namespace ExtenderApp.Common
         /// <param name="token">取消令牌。</param>
         /// <returns>接收结果。</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static ValueTask<Result<SocketOperationValue>> ReceiveAsyncPrivate(ILinker linker, SequenceBuffer<byte> sequenceBuffer, LinkFlags flags, CancellationToken token)
+        private static ValueTask<Result<LinkOperationValue>> ReceiveAsyncPrivate(ILinker linker, SequenceBuffer<byte> sequenceBuffer, LinkFlags flags, CancellationToken token)
         {
             var writableSequenceBuffer = sequenceBuffer.AvailableSlice();
             if (writableSequenceBuffer.Available == 0)
@@ -439,9 +439,9 @@ namespace ExtenderApp.Common
         /// <param name="bufferName">缓冲区类型名称。</param>
         /// <returns>失败结果。</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static Result<SocketOperationValue> ReceiveFailureResult(string bufferName)
+        private static Result<LinkOperationValue> ReceiveFailureResult(string bufferName)
         {
-            return Result.Failure<SocketOperationValue>($"当前 {bufferName} 中没有可用空间来接收数据。");
+            return Result.Failure<LinkOperationValue>($"当前 {bufferName} 中没有可用空间来接收数据。");
         }
     }
 }

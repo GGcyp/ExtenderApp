@@ -6,7 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace ExtenderApp.Common.Networks.LinkClients
 {
-    internal class FileLinkClient : TransferLinkClient<ITcpLinker>, IFileLinkClient, IValueTaskSource<Result>
+    internal class FileLinkClient : IFileLinkClient, IValueTaskSource<Result>
     {
         private const int DefaultChunkSize = 65536;
         private const int FileProt = 88883;
@@ -21,7 +21,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
 
         public event EventHandler<FileRequestDecision>? RequestReceived;
 
-        public FileLinkClient(ITcpLinker linker, IServiceProvider provider) : base(linker)
+        public FileLinkClient(ITcpLinker linker, IServiceProvider provider)
         {
             vts = new();
             _slim = new(1, 1);
