@@ -9,17 +9,17 @@ namespace ExtenderApp.Abstract.Options
         /// <summary>
         /// 公开，所有人可见。
         /// </summary>
-        Public = 1 << 1,
+        Public = 1 << 1 | Internal | Protected | Private,
 
         /// <summary>
         /// 内部，仅模块或组件内部可见。
         /// </summary>
-        Internal = 1 << 2,
+        Internal = 1 << 2 | Protected | Private,
 
         /// <summary>
         /// 子类受保护，当前对象和子类可见。
         /// </summary>
-        Protected = 1 << 3,
+        Protected = 1 << 3 | Private,
 
         /// <summary>
         /// 私有，仅当前对象可见。

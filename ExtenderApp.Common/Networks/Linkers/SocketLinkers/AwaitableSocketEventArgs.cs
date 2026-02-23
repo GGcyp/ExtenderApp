@@ -803,8 +803,6 @@ namespace ExtenderApp.Common.Networks
 
         #endregion Awaitable
 
-
-
         /// <summary>
         /// 取消当前挂起的 I/O：确保仅完成一次，并关闭套接字以打断内核 I/O，然后以 <see cref="OperationCanceledException"/> 完成。
         /// </summary>

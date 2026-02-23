@@ -218,7 +218,7 @@ namespace ExtenderApp.Common.Compressions.LZ4
                         // Fill table
                         hash_table[(*(uint*)(src_p - 2) * 2654435761u) >> HASH_ADJUST] = (uint)(src_p - 2 - src_base);
 
-                        // Test next position
+                        // Test Next position
                         h = (*(uint*)src_p * 2654435761u) >> HASH_ADJUST;
                         xxx_ref = src_base + hash_table[h];
                         hash_table[h] = (uint)(src_p - src_base);
@@ -230,7 +230,7 @@ namespace ExtenderApp.Common.Compressions.LZ4
                             goto _next_match;
                         }
 
-                        // Prepare next loop
+                        // Prepare Next loop
                         src_anchor = src_p++;
                         h_fwd = (*(uint*)src_p * 2654435761u) >> HASH_ADJUST;
                     }
@@ -485,7 +485,7 @@ namespace ExtenderApp.Common.Compressions.LZ4
                         // Fill table
                         hash_table[(*(uint*)(src_p - 2) * 2654435761u) >> HASH64K_ADJUST] = (ushort)(src_p - 2 - src_base);
 
-                        // Test next position
+                        // Test Next position
                         h = (*(uint*)src_p * 2654435761u) >> HASH64K_ADJUST;
                         xxx_ref = src_base + hash_table[h];
                         hash_table[h] = (ushort)(src_p - src_base);
@@ -497,7 +497,7 @@ namespace ExtenderApp.Common.Compressions.LZ4
                             goto _next_match;
                         }
 
-                        // Prepare next loop
+                        // Prepare Next loop
                         src_anchor = src_p++;
                         h_fwd = (*(uint*)src_p * 2654435761u) >> HASH64K_ADJUST;
                     }

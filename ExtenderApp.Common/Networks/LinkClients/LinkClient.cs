@@ -2,6 +2,7 @@
 using System.Net;
 using System.Net.Sockets;
 using ExtenderApp.Abstract;
+using ExtenderApp.Abstract.Networks;
 using ExtenderApp.Abstract.Options;
 using ExtenderApp.Contracts;
 
@@ -11,13 +12,15 @@ namespace ExtenderApp.Common.Networks.LinkClients
     /// 链路客户端的抽象基类，封装对 <see cref="ILinker"/> 的委托并提供基础能力。
     /// </summary>
     /// <typeparam name="TLinker">具体的链接器类型。</typeparam>
-    public abstract class LinkClient<TLinker> : OptionsObject, ILinkClient
+    public abstract class LinkClient<TLinker> : OptionsObject, ILinkClient, ILinkClientPipeline
         where TLinker : ILinker
     {
         /// <summary>
         /// 底层链接器实例。
         /// </summary>
         protected TLinker Linker;
+
+        private readonly LinkClientPipeline _pipeline;
 
         #region ILinker 直通属性
 
@@ -61,28 +64,28 @@ namespace ExtenderApp.Common.Networks.LinkClients
         public int ReceiveBufferSize
         {
             get => GetOptionValue(LinkOptions.ReceiveBufferSizeIdentifier);
-            set => Linker.ReceiveBufferSize = value;
+            set => SetOptionValue(LinkOptions.ReceiveBufferSizeIdentifier, value);
         }
 
         /// <inheritdoc/>
         public int SendBufferSize
         {
             get => GetOptionValue(LinkOptions.SendBufferSizeIdentifier);
-            set => Linker.SendBufferSize = value;
+            set => SetOptionValue(LinkOptions.SendBufferSizeIdentifier, value);
         }
 
         /// <inheritdoc/>
         public int ReceiveTimeout
         {
             get => GetOptionValue(LinkOptions.ReceiveTimeoutIdentifier);
-            set => Linker.ReceiveTimeout = value;
+            set => SetOptionValue(LinkOptions.ReceiveTimeoutIdentifier, value);
         }
 
         /// <inheritdoc/>
         public int SendTimeout
         {
             get => GetOptionValue(LinkOptions.SendTimeoutIdentifier);
-            set => Linker.SendTimeout = value;
+            set => SetOptionValue(LinkOptions.SendTimeoutIdentifier, value);
         }
 
         #endregion ILinker 直通属性
@@ -98,12 +101,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
         protected LinkClient(TLinker linker) : base(linker)
         {
             Linker = linker ?? throw new ArgumentNullException(nameof(linker));
-        }
-
-        /// <inheritdoc/>
-        protected override ValueTask DisposeAsyncManagedResources()
-        {
-            return Linker.DisposeSafeAsync();
+            _pipeline = new();
         }
 
         /// <inheritdoc/>
@@ -121,73 +119,65 @@ namespace ExtenderApp.Common.Networks.LinkClients
         public virtual async ValueTask ConnectAsync(EndPoint remoteEndPoint, CancellationToken token = default)
         {
             ThrowIfDisposed();
+
         }
 
         /// <inheritdoc/>
         public virtual void Disconnect()
         {
-            ThrowIfDisposed();
+            DisconnectAsync().Await();
         }
 
         /// <inheritdoc/>
-        public virtual ValueTask DisconnectAsync(CancellationToken token = default)
+        public virtual async ValueTask DisconnectAsync(CancellationToken token = default)
         {
             ThrowIfDisposed();
-            return default;
+            await _pipeline.DisconnectAsync(token);
+            await Linker.DisconnectAsync(token);
         }
 
-        #region Options
+        #region Pipeline Operations
 
-        public ILinkClientPipeline AddLast(string name, ILinkClientHandler handler)
-        {
-            throw new NotImplementedException();
-        }
+        public ILinkClientPipeline AddLast<T>(string name, T handler) where T : ILinkClientHandler
+            => _pipeline.AddLast(name, handler);
 
-        public ILinkClientPipeline AddFirst(string name, ILinkClientHandler handler)
-        {
-            throw new NotImplementedException();
-        }
+        public ILinkClientPipeline AddFirst<T>(string name, T handler) where T : ILinkClientHandler
+            => _pipeline.AddFirst(name, handler);
 
-        public ILinkClientPipeline AddBefore(string baseName, string name, ILinkClientHandler handler)
-        {
-            throw new NotImplementedException();
-        }
+        public ILinkClientPipeline AddBefore<T>(string baseName, string name, T handler) where T : ILinkClientHandler
+            => _pipeline.AddBefore(baseName, name, handler);
 
-        public ILinkClientPipeline AddAfter(string baseName, string name, ILinkClientHandler handler)
-        {
-            throw new NotImplementedException();
-        }
+        public ILinkClientPipeline AddAfter<T>(string baseName, string name, T handler) where T : ILinkClientHandler
+            => _pipeline.AddAfter(baseName, name, handler);
 
-        public ILinkClientPipeline Remove(ILinkClientHandler handler)
-        {
-            throw new NotImplementedException();
-        }
+        public ILinkClientPipeline Remove<T>(T handler) where T : ILinkClientHandler
+            => _pipeline.Remove(handler);
 
         public ILinkClientHandler Remove(string name)
+            => _pipeline.Remove(name);
+
+        public ILinkClientPipeline Replace<T>(string oldName, string newName, T newHandler) where T : ILinkClientHandler
+            => _pipeline.Replace(oldName, newName, newHandler);
+
+        public ILinkClientPipeline Replace<T>(ILinkClientHandler oldHandler, string newName, T newHandler) where T : ILinkClientHandler
+            => _pipeline.Replace(oldHandler, newName, newHandler);
+
+        public IEnumerator<ILinkClientHandler> GetEnumerator() => _pipeline.GetEnumerator();
+
+        IEnumerator IEnumerable.GetEnumerator() => _pipeline.GetEnumerator();
+
+        #endregion Pipeline Operations
+
+        protected override void DisposeManagedResources()
         {
-            throw new NotImplementedException();
+            base.DisposeManagedResources();
+            Linker.DisposeSafe();
         }
 
-        public ILinkClientPipeline Replace(string oldName, string newName, ILinkClientHandler newHandler)
+        /// <inheritdoc/>
+        protected override ValueTask DisposeAsyncManagedResources()
         {
-            throw new NotImplementedException();
+            return Linker.DisposeSafeAsync();
         }
-
-        public ILinkClientPipeline Replace(ILinkClientHandler oldHandler, string newName, ILinkClientHandler newHandler)
-        {
-            throw new NotImplementedException();
-        }
-
-        public IEnumerator<ILinkClientHandler> GetEnumerator()
-        {
-            throw new NotImplementedException();
-        }
-
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return GetEnumerator();
-        }
-
-        #endregion Options
     }
 }

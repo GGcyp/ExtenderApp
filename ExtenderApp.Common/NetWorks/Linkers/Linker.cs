@@ -2,6 +2,7 @@
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using ExtenderApp.Abstract;
+using ExtenderApp.Abstract.Networks;
 using ExtenderApp.Abstract.Options;
 using ExtenderApp.Contracts;
 
@@ -164,7 +165,7 @@ namespace ExtenderApp.Common.Networks
 
             try
             {
-                ExecuteConnectAsync(remoteEndPoint, default).GetAwaiter().GetResult();
+                ExecuteConnectAsync(remoteEndPoint, default).Await(false);
             }
             finally
             {
@@ -208,7 +209,7 @@ namespace ExtenderApp.Common.Networks
             ReceiveSlim.Wait();
             try
             {
-                ExecuteDisconnectAsync(default).GetAwaiter().GetResult();
+                ExecuteDisconnectAsync(default).Await(false);
             }
             finally
             {
@@ -336,14 +337,15 @@ namespace ExtenderApp.Common.Networks
         public Result<LinkOperationValue> Send(IList<ArraySegment<byte>> buffer, LinkFlags flags)
         {
             ThrowIfDisposed();
-            var res = GetBufferLength(buffer, out long length);
-            if (!res) return res;
+            var result = GetBufferLength(buffer, out long length);
+            if (!result) 
+                return result;
 
             var lease = CapacityLimiter.Acquire(length);
             SendSlim.Wait();
             try
             {
-                var result = ExecuteSendAsync(buffer, flags, default).GetAwaiter().GetResult();
+                result = ExecuteSend(buffer, flags);
                 if (result)
                 {
                     SendCounter.Increment(result.Value.BytesTransferred);
@@ -363,9 +365,9 @@ namespace ExtenderApp.Common.Networks
 
         /// <inheritdoc/>
         /// <exception cref="ObjectDisposedException">当对象已释放时抛出。</exception>
-        public async ValueTask<Result<LinkOperationValue>> SendAsync(ReadOnlyMemory<byte> memory, CancellationToken token = default)
+        public ValueTask<Result<LinkOperationValue>> SendAsync(ReadOnlyMemory<byte> memory, CancellationToken token = default)
         {
-            return await SendAsync(memory, LinkFlags.None, token).ConfigureAwait(false);
+            return SendAsync(memory, LinkFlags.None, token);
         }
 
         /// <inheritdoc/>
@@ -397,9 +399,9 @@ namespace ExtenderApp.Common.Networks
 
         /// <inheritdoc/>
         /// <exception cref="ObjectDisposedException">当对象已释放时抛出。</exception>
-        public async ValueTask<Result<LinkOperationValue>> SendAsync(IList<ArraySegment<byte>> buffer, CancellationToken token = default)
+        public ValueTask<Result<LinkOperationValue>> SendAsync(IList<ArraySegment<byte>> buffer, CancellationToken token = default)
         {
-            return await SendAsync(buffer, LinkFlags.None, token).ConfigureAwait(false);
+            return SendAsync(buffer, LinkFlags.None, token);
         }
 
         /// <inheritdoc/>
@@ -667,6 +669,14 @@ namespace ExtenderApp.Common.Networks
         protected abstract Result<LinkOperationValue> ExecuteReceive(Span<byte> span, LinkFlags flags);
 
         /// <summary>
+        /// 执行同步发送不连续缓冲区数据的具体逻辑。
+        /// </summary>
+        /// <param name="buffer">要发送的非连续缓冲区列表。</param>
+        /// <param name="flags">发送标志。</param>
+        /// <returns>发送操作的执行结果。</returns>
+        protected abstract Result<LinkOperationValue> ExecuteSend(IList<ArraySegment<byte>> buffer, LinkFlags flags);
+
+        /// <summary>
         /// 执行同步接收非连续缓冲区数据的具体逻辑。
         /// </summary>
         /// <param name="buffer">用于填充接收数据的非连续缓冲区列表。</param>
@@ -719,14 +729,14 @@ namespace ExtenderApp.Common.Networks
         /// <inheritdoc/>
         protected override sealed void DisposeManagedResources()
         {
-            if (IsDisposed)
-                return;
+            base.DisposeManagedResources();
             DisposeAsync().GetAwaiter().GetResult();
         }
 
         /// <inheritdoc/>
         protected override async ValueTask DisposeAsyncManagedResources()
         {
+            await base.DisposeAsyncManagedResources().ConfigureAwait(false);
             await SendSlim.WaitAsync().ConfigureAwait(false);
             await ReceiveSlim.WaitAsync().ConfigureAwait(false);
 

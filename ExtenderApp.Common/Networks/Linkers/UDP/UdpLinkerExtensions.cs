@@ -1,9 +1,8 @@
 ﻿using System.Net;
 using System.Net.Sockets;
 using ExtenderApp.Abstract;
-using ExtenderApp.Buffer;
+using ExtenderApp.Abstract.Networks;
 using ExtenderApp.Common.Networks;
-using ExtenderApp.Contracts;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace ExtenderApp.Common
@@ -37,7 +36,6 @@ namespace ExtenderApp.Common
         public static IUdpLinker AddMulticastGroup(this IUdpLinker udpLinker, IPAddress multicastAddr)
         {
             // 根据不同的地址族设置组播成员资格
-            LinkOptionLevel optionLevel = LinkOptionLevel.IP;
             object optionValue;
             if (udpLinker.AddressFamily == AddressFamily.InterNetwork)
             {
@@ -49,7 +47,8 @@ namespace ExtenderApp.Common
                 // 对于IPv6地址，创建并应用组播选项
                 optionValue = new IPv6MulticastOption(multicastAddr);
             }
-            udpLinker.SetOption(optionLevel, LinkOptionName.AddMembership, ValueCache.FromValue(optionValue));
+            udpLinker.TryUnRegisterOption(LinkOptions.DropMulticastGroupIdentifier); // 确保之前没有设置过相反的选项
+            udpLinker.SetOptionValue(LinkOptions.AddMulticastGroupIdentifier, optionValue);
             return udpLinker;
         }
 
@@ -65,8 +64,13 @@ namespace ExtenderApp.Common
         /// </remarks>
         public static IUdpLinker DropMulticastGroup(this IUdpLinker udpLinker, IPAddress multicastAddr)
         {
+            if (!udpLinker.TryGetOptionValue(LinkOptions.AddMulticastGroupIdentifier, out var existingOption))
+            {
+                // 如果之前没有设置过加入组播的选项，则直接返回，不需要执行移除操作
+                return udpLinker;
+            }
+
             // 根据不同的地址族设置组播成员资格
-            LinkOptionLevel optionLevel = LinkOptionLevel.IP;
             object optionValue;
             if (udpLinker.AddressFamily == AddressFamily.InterNetwork)
             {
@@ -78,7 +82,8 @@ namespace ExtenderApp.Common
                 // 对于IPv6地址，创建并应用组播选项
                 optionValue = new IPv6MulticastOption(multicastAddr);
             }
-            udpLinker.SetOption(optionLevel, LinkOptionName.DropMembership, ValueCache.FromValue(optionValue));
+            udpLinker.TryUnRegisterOption(LinkOptions.AddMulticastGroupIdentifier); // 确保之前没有设置过相反的选项
+            udpLinker.SetOptionValue(LinkOptions.DropMulticastGroupIdentifier, optionValue);
             return udpLinker;
         }
     }

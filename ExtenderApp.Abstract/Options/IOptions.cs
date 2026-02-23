@@ -8,9 +8,19 @@ namespace ExtenderApp.Abstract
     public interface IOptions
     {
         /// <summary>
-        /// 获取所有已注册的公开选项标识符。
+        /// 获取所有已注册的公开选项标识符和对应的选项值。
         /// </summary>
-        IEnumerable<OptionIdentifier> RegisteredOptionsIdentifier { get; }
+        IEnumerable<(OptionIdentifier, OptionValue)> RegisteredOptionsIdentifier { get; }
+
+        /// <summary>
+        /// 当注册或注销选项时触发的事件，提供选项标识符和对应的选项值信息。
+        /// </summary>
+        event EventHandler<(OptionIdentifier, OptionValue)>? RegisterOptionEvent;
+
+        /// <summary>
+        /// 当注销选项时触发的事件，提供选项标识符和对应的选项值信息。
+        /// </summary>
+        event EventHandler<(OptionIdentifier, OptionValue)>? UnRegisterOptionEvent;
 
         #region RegisterOption
 
@@ -36,7 +46,7 @@ namespace ExtenderApp.Abstract
         /// <param name="identifier">选项标识符。</param>
         /// <param name="value">选项值。</param>
         /// <param name="valueChangeHandler">选项值变更事件处理器。</param>
-        void RegisterOption<T>(OptionIdentifier<T> identifier, T value, EventHandler<T> valueChangeHandler);
+        void RegisterOption<T>(OptionIdentifier<T> identifier, T value, EventHandler<(OptionIdentifier, T)> valueChangeHandler);
 
         /// <summary>
         /// 注销指定标识符的选项。
@@ -62,7 +72,7 @@ namespace ExtenderApp.Abstract
         /// <param name="identifier">选项标识符。</param>
         /// <param name="handler">变更事件处理器。</param>
         /// <exception cref="InvalidOperationException">未找到指定的选项标识符。</exception>
-        void RegisterOptionChange<T>(OptionIdentifier<T> identifier, EventHandler<T> handler);
+        void RegisterOptionChange<T>(OptionIdentifier<T> identifier, EventHandler<(OptionIdentifier, T)> handler);
 
         /// <summary>
         /// 注销选项值变更事件。
@@ -71,7 +81,7 @@ namespace ExtenderApp.Abstract
         /// <param name="identifier">选项标识符。</param>
         /// <param name="handler">变更事件处理器。</param>
         /// <exception cref="InvalidOperationException">未找到指定的选项标识符。</exception>
-        void UnregisterOptionChange<T>(OptionIdentifier<T> identifier, EventHandler<T> handler);
+        void UnregisterOptionChange<T>(OptionIdentifier<T> identifier, EventHandler<(OptionIdentifier, T)> handler);
 
         #endregion RegisterOptionChange
 

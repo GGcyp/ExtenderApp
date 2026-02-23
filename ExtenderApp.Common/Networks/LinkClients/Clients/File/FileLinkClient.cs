@@ -33,24 +33,24 @@ namespace ExtenderApp.Common.Networks.LinkClients
             //FormatterManager!.AddBinaryFormatter<FileResponse>(OnResponse);
         }
 
-        private void OnResponse(LinkClientReceivedValue<FileResponse> response)
-        {
-            if (!response.Value.IsAccepted)
-            {
-                vts.SetResult(Result.Failure("文件推送请求被拒绝。"));
-                return;
-            }
-        }
+        //private void OnResponse(LinkClientReceivedValue<FileResponse> response)
+        //{
+        //    if (!response.Value.IsAccepted)
+        //    {
+        //        vts.SetResult(Result.Failure("文件推送请求被拒绝。"));
+        //        return;
+        //    }
+        //}
 
-        private void OnFilePacket(LinkClientReceivedValue<FileDataPacket> packet)
-        {
-            throw new NotImplementedException();
-        }
+        //private void OnFilePacket(LinkClientReceivedValue<FileDataPacket> packet)
+        //{
+        //    throw new NotImplementedException();
+        //}
 
-        private void OnRequest(LinkClientReceivedValue<FileDtoRequest> request)
-        {
-            OnRequestAsync(request).ConfigureAwait(false);
-        }
+        //private void OnRequest(LinkClientReceivedValue<FileDtoRequest> request)
+        //{
+        //    OnRequestAsync(request).ConfigureAwait(false);
+        //}
 
         private async Task OnRequestAsync(FileDtoRequest request)
         {

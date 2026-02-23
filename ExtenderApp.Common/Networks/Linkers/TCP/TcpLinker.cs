@@ -1,6 +1,7 @@
 ﻿using System.Net;
 using System.Net.Sockets;
 using ExtenderApp.Abstract;
+using ExtenderApp.Abstract.Networks;
 using ExtenderApp.Common.Networks;
 
 namespace ExtenderApp.Common
@@ -12,12 +13,13 @@ namespace ExtenderApp.Common
     {
         public bool NoDelay
         {
-            get => Socket.NoDelay;
-            set => Socket.NoDelay = value;
+            get => GetOptionValue(LinkOptions.NoDelayIdentifier);
+            set => SetOptionValue(LinkOptions.NoDelayIdentifier, value);
         }
 
         public TcpLinker(Socket socket) : base(socket)
         {
+            RegisterOption(LinkOptions.NoDelayIdentifier, LinkOptions.NoDelayIdentifier.DefaultValue, static (o, item) => ((TcpLinker)o!).NoDelay = item.Item2);
         }
 
         public void Connect(IPAddress[] addresses, int port)
@@ -25,7 +27,7 @@ namespace ExtenderApp.Common
             ConnectAsync(addresses, port).GetAwaiter().GetResult();
         }
 
-        public ValueTask ConnectAsync(IPAddress[] addresses, int port, CancellationToken token = default)
+        public async ValueTask ConnectAsync(IPAddress[] addresses, int port, CancellationToken token = default)
         {
             SendSlim.Wait();
             ReceiveSlim.Wait();
@@ -35,7 +37,8 @@ namespace ExtenderApp.Common
             {
                 throw new ArgumentOutOfRangeException(nameof(port), "端口号超出有效范围。");
             }
-            return Socket.ConnectAsync(addresses, port, token);
+            await Socket.ConnectAsync(addresses, port, token);
+            Connected = true;
         }
 
         protected override ILinker Clone(Socket socket)

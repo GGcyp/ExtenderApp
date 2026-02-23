@@ -11,7 +11,7 @@
         /// <param name="name">处理器名称。</param>
         /// <param name="handler">处理器实例。</param>
         /// <returns>当前管道实例。</returns>
-        ILinkClientPipeline AddLast(string name, ILinkClientHandler handler);
+        ILinkClientPipeline AddLast<T>(string name, T handler) where T : ILinkClientHandler ;
 
         /// <summary>
         /// 在管道开头添加处理器。
@@ -19,7 +19,7 @@
         /// <param name="name">处理器名称。</param>
         /// <param name="handler">处理器实例。</param>
         /// <returns>当前管道实例。</returns>
-        ILinkClientPipeline AddFirst(string name, ILinkClientHandler handler);
+        ILinkClientPipeline AddFirst<T>(string name, T handler) where T : ILinkClientHandler;
 
         /// <summary>
         /// 在指定处理器之前添加处理器。
@@ -28,7 +28,7 @@
         /// <param name="name">处理器名称。</param>
         /// <param name="handler">处理器实例。</param>
         /// <returns>当前管道实例。</returns>
-        ILinkClientPipeline AddBefore(string baseName, string name, ILinkClientHandler handler);
+        ILinkClientPipeline AddBefore<T>(string baseName, string name, T handler) where T : ILinkClientHandler;
 
         /// <summary>
         /// 在指定处理器之后添加处理器。
@@ -37,14 +37,14 @@
         /// <param name="name">处理器名称。</param>
         /// <param name="handler">处理器实例。</param>
         /// <returns>当前管道实例。</returns>
-        ILinkClientPipeline AddAfter(string baseName, string name, ILinkClientHandler handler);
+        ILinkClientPipeline AddAfter<T>(string baseName, string name, T handler) where T : ILinkClientHandler;
 
         /// <summary>
         /// 从管道中移除指定处理器。
         /// </summary>
         /// <param name="handler">要移除的处理器实例。</param>
         /// <returns>当前管道实例。</returns>
-        ILinkClientPipeline Remove(ILinkClientHandler handler);
+        ILinkClientPipeline Remove<T>(T handler) where T : ILinkClientHandler;
 
         /// <summary>
         /// 从管道中移除指定名称的处理器。
@@ -60,7 +60,7 @@
         /// <param name="newName">新处理器名称。</param>
         /// <param name="newHandler">新处理器实例。</param>
         /// <returns>当前管道实例。</returns>
-        ILinkClientPipeline Replace(string oldName, string newName, ILinkClientHandler newHandler);
+        ILinkClientPipeline Replace<T>(string oldName, string newName, T newHandler) where T : ILinkClientHandler;
 
         /// <summary>
         /// 替换指定处理器实例。
@@ -69,6 +69,6 @@
         /// <param name="newName">新处理器名称。</param>
         /// <param name="newHandler">新处理器实例。</param>
         /// <returns>当前管道实例。</returns>
-        ILinkClientPipeline Replace(ILinkClientHandler oldHandler, string newName, ILinkClientHandler newHandler);
+        ILinkClientPipeline Replace<T>(ILinkClientHandler oldHandler, string newName, T newHandler) where T : ILinkClientHandler;
     }
 }

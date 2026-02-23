@@ -14,15 +14,15 @@ namespace ExtenderApp.Abstract.Options
         private readonly ConcurrentDictionary<OptionIdentifier, OptionValue> _options;
 
         ///<inheritdoc/>
-        public IEnumerable<OptionIdentifier> RegisteredOptionsIdentifier => _options.Keys.Where(key => key.GetVisibility == OptionVisibility.Public);
+        public event EventHandler<(OptionIdentifier, OptionValue)>? RegisterOptionEvent;
+
+        ///<inheritdoc/>
+        public event EventHandler<(OptionIdentifier, OptionValue)>? UnRegisterOptionEvent;
+
+        ///<inheritdoc/>
+        public IEnumerable<(OptionIdentifier, OptionValue)> RegisteredOptionsIdentifier => _options.Where(kv => kv.Key.GetVisibility == OptionVisibility.Public).Select(kv => (kv.Key, kv.Value));
 
         public OptionsObject(IOptions options) : this()
-        {
-            ArgumentNullException.ThrowIfNull(options, nameof(options));
-            RegisterOptions(options, true);
-        }
-
-        public OptionsObject(OptionsObject options) : this()
         {
             ArgumentNullException.ThrowIfNull(options, nameof(options));
             RegisterOptions(options, true);
@@ -38,30 +38,45 @@ namespace ExtenderApp.Abstract.Options
         ///<inheritdoc/>
         public void RegisterOption<T>(OptionIdentifier<T> identifier)
         {
-            RegisterOption(identifier, default(T)!);
+            ArgumentNullException.ThrowIfNull(identifier, nameof(identifier));
+            OptionValue<T> optionValue = identifier.GetDefaultOptionValue();
+
+            RegisterOption(identifier, optionValue);
         }
 
         ///<inheritdoc/>
         public void RegisterOption<T>(OptionIdentifier<T> identifier, T value)
         {
             ArgumentNullException.ThrowIfNull(identifier, nameof(identifier));
-            OptionValue<T> optionValue = new(value);
+            OptionValue<T> optionValue = new(identifier, value);
 
-            if (!_options.ContainsKey(identifier))
-                _options.TryAdd(identifier, optionValue);
-            else
-                throw new InvalidOperationException($"当前选项标识符已存在，无法重复注册。{identifier}");
+            RegisterOption(identifier, optionValue);
         }
 
         ///<inheritdoc/>
-        public void RegisterOption<T>(OptionIdentifier<T> identifier, T value, EventHandler<T> valueChangeHandler)
+        public void RegisterOption<T>(OptionIdentifier<T> identifier, T value, EventHandler<(OptionIdentifier, T)> valueChangeHandler)
         {
             ArgumentNullException.ThrowIfNull(identifier, nameof(identifier));
-            OptionValue<T> optionValue = new(value);
-            optionValue.Changed += valueChangeHandler;
+            OptionValue<T> optionValue = new(identifier, value);
+            optionValue.ChangedHandler += valueChangeHandler;
 
+            RegisterOption(identifier, optionValue);
+        }
+
+        /// <summary>
+        /// 注册选项对象到当前选项管理器中，并触发注册事件。
+        /// </summary>
+        /// <param name="identifier">选项标识符。</param>
+        /// <param name="optionValue">选项值。</param>
+        /// <exception cref="InvalidOperationException">当选项标识符已存在时抛出。</exception>
+        private void RegisterOption(OptionIdentifier identifier, OptionValue optionValue)
+        {
             if (!_options.ContainsKey(identifier))
+            {
                 _options.TryAdd(identifier, optionValue);
+                OnRegisterOption(identifier, optionValue);
+                RegisterOptionEvent?.Invoke(this, (identifier, optionValue));
+            }
             else
                 throw new InvalidOperationException($"当前选项标识符已存在，无法重复注册。{identifier}");
         }
@@ -75,23 +90,22 @@ namespace ExtenderApp.Abstract.Options
         /// <exception cref="InvalidOperationException">当选项标识符已存在时抛出。</exception>
         protected void RegisterOptions(IOptions options, bool needRegisterChange)
         {
-            if (options is not OptionsObject optionsObject)
-                throw new ArgumentException("只能注册 OptionsObject 类型的选项对象。", nameof(options));
-
-            var dictionary = optionsObject._options;
-            foreach (var identifier in dictionary.Keys)
+            foreach (var (identifier, optionValue) in options.RegisteredOptionsIdentifier)
             {
-                if (identifier.GetVisibility != OptionVisibility.Public)
-                    continue;
-
-                if (dictionary.TryGetValue(identifier, out var optionValue))
-                {
-                    if (!_options.ContainsKey(identifier))
-                        _options.TryAdd(identifier, optionValue!.Clone(needRegisterChange));
-                    else
-                        throw new InvalidOperationException($"当前选项标识符已存在，无法重复注册。{identifier}");
-                }
+                if (!_options.ContainsKey(identifier))
+                    _options.TryAdd(identifier, optionValue!.Clone(needRegisterChange));
+                else
+                    throw new InvalidOperationException($"当前选项标识符已存在，无法重复注册。{identifier}");
             }
+        }
+
+        /// <summary>
+        /// 当注册选项时触发的虚方法，允许子类在选项注册后执行额外的逻辑。
+        /// </summary>
+        /// <param name="identifier">选项标识符。</param>
+        /// <param name="optionValue">选项值。</param>
+        protected virtual void OnRegisterOption(OptionIdentifier identifier, OptionValue optionValue)
+        {
         }
 
         #endregion RegisterOption
@@ -172,7 +186,11 @@ namespace ExtenderApp.Abstract.Options
                 throw new InvalidOperationException($"指定的选项标识符不可见，无法删除选项。{identifier}");
 
             if (_options.TryRemove(identifier, out var value))
+            {
                 value.Dispose();
+                OnUnRegisterOption(identifier, value);
+                UnRegisterOptionEvent?.Invoke(this, (identifier, value));
+            }
         }
 
         /// <summary>
@@ -190,9 +208,20 @@ namespace ExtenderApp.Abstract.Options
             if (_options.TryRemove(identifier, out var value))
             {
                 value.Dispose();
+                OnUnRegisterOption(identifier, value);
+                UnRegisterOptionEvent?.Invoke(this, (identifier, value));
                 return true;
             }
             return false;
+        }
+
+        /// <summary>
+        /// 当注销选项时触发的虚方法，允许子类在选项注销后执行额外的逻辑。
+        /// </summary>
+        /// <param name="identifier">选项标识符。</param>
+        /// <param name="optionValue">选项值。</param>
+        protected virtual void OnUnRegisterOption(OptionIdentifier identifier, OptionValue optionValue)
+        {
         }
 
         #endregion UnRegisterOption
@@ -200,13 +229,13 @@ namespace ExtenderApp.Abstract.Options
         #region RegisterOptionChange
 
         ///<inheritdoc/>
-        public void RegisterOptionChange<T>(OptionIdentifier<T> identifier, EventHandler<T> handler)
+        public void RegisterOptionChange<T>(OptionIdentifier<T> identifier, EventHandler<(OptionIdentifier, T)> handler)
         {
             RegisterOptionChangeByVisibility(identifier, handler, OptionVisibility.Public);
         }
 
         ///<inheritdoc/>
-        public void UnregisterOptionChange<T>(OptionIdentifier<T> identifier, EventHandler<T> handler)
+        public void UnregisterOptionChange<T>(OptionIdentifier<T> identifier, EventHandler<(OptionIdentifier, T)> handler)
         {
             UnregisterOptionChangeByVisibility(identifier, handler);
         }
@@ -218,7 +247,7 @@ namespace ExtenderApp.Abstract.Options
         /// <param name="identifier">选项标识符。</param>
         /// <param name="handler">变更事件处理器。</param>
         /// <exception cref="InvalidOperationException">未找到指定的选项标识符。</exception>
-        protected internal void RegisterOptionChangeInternal<T>(OptionIdentifier<T> identifier, EventHandler<T> handler)
+        protected internal void RegisterOptionChangeInternal<T>(OptionIdentifier<T> identifier, EventHandler<(OptionIdentifier, T)> handler)
         {
             RegisterOptionChangeByVisibility(identifier, handler, OptionVisibility.Internal);
         }
@@ -230,7 +259,7 @@ namespace ExtenderApp.Abstract.Options
         /// <param name="identifier">选项标识符。</param>
         /// <param name="handler">变更事件处理器。</param>
         /// <exception cref="InvalidOperationException">未找到指定的选项标识符。</exception>
-        protected void RegisterOptionChangeProtected<T>(OptionIdentifier<T> identifier, EventHandler<T> handler)
+        protected void RegisterOptionChangeProtected<T>(OptionIdentifier<T> identifier, EventHandler<(OptionIdentifier, T)> handler)
         {
             RegisterOptionChangeByVisibility(identifier, handler, OptionVisibility.Protected);
         }
@@ -243,7 +272,7 @@ namespace ExtenderApp.Abstract.Options
         /// <param name="handler">变更事件处理器。</param>
         /// <param name="visibility">可见性。</param>
         /// <exception cref="InvalidOperationException">指定的选项标识符不可见或未找到。</exception>
-        private void RegisterOptionChangeByVisibility<T>(OptionIdentifier<T> identifier, EventHandler<T> handler, OptionVisibility visibility)
+        private void RegisterOptionChangeByVisibility<T>(OptionIdentifier<T> identifier, EventHandler<(OptionIdentifier, T)> handler, OptionVisibility visibility)
         {
             ArgumentNullException.ThrowIfNull(identifier, nameof(identifier));
             if (CheckOptionVisibility(identifier.GetVisibility, visibility))
@@ -252,7 +281,7 @@ namespace ExtenderApp.Abstract.Options
             if (!TryGetOptionValue(identifier, out OptionValue<T> optionValue))
                 throw new InvalidOperationException($"未找到指定的选项标识符，无法注册选项值变更事件。{identifier}");
 
-            optionValue.Changed += handler;
+            optionValue.ChangedHandler += handler;
         }
 
         /// <summary>
@@ -262,14 +291,14 @@ namespace ExtenderApp.Abstract.Options
         /// <param name="identifier">选项标识符。</param>
         /// <param name="handler">变更事件处理器。</param>
         /// <exception cref="InvalidOperationException">未找到指定的选项标识符。</exception>
-        private void UnregisterOptionChangeByVisibility<T>(OptionIdentifier<T> identifier, EventHandler<T> handler)
+        private void UnregisterOptionChangeByVisibility<T>(OptionIdentifier<T> identifier, EventHandler<(OptionIdentifier, T)> handler)
         {
             ArgumentNullException.ThrowIfNull(identifier, nameof(identifier));
 
             if (!TryGetOptionValue(identifier, out OptionValue<T> optionValue))
                 throw new InvalidOperationException($"未找到指定的选项标识符，无法注销选项值变更事件。{identifier}");
 
-            optionValue.Changed -= handler;
+            optionValue.ChangedHandler -= handler;
         }
 
         #endregion RegisterOptionChange
@@ -444,7 +473,8 @@ namespace ExtenderApp.Abstract.Options
             if (!TryGetOptionValue(identifier, out OptionValue<T> optionValue))
                 throw new InvalidOperationException($"未找到指定的选项标识符，无法设置选项值。{identifier}");
 
-            optionValue.UpdateValue(this, value);
+            optionValue.UpdateValue(this, (identifier, value));
+            OnOptionValueChanged(identifier, optionValue);
         }
 
         /// <summary>
@@ -462,10 +492,20 @@ namespace ExtenderApp.Abstract.Options
 
             if (TryGetOptionValue(identifier, out OptionValue<T> optionValue))
             {
-                optionValue.UpdateValue(this, value);
+                optionValue.UpdateValue(this, (identifier, value));
+                OnOptionValueChanged(identifier, optionValue);
                 return true;
             }
             return false;
+        }
+
+        /// <summary>
+        /// 当选项值发生变化时触发的虚方法，允许子类在选项值变化后执行额外的逻辑。
+        /// </summary>
+        /// <param name="identifier">选项标识符。</param>
+        /// <param name="optionValue">选项值对象。</param>
+        protected virtual void OnOptionValueChanged(OptionIdentifier identifier, OptionValue optionValue)
+        {
         }
 
         #endregion SetOption

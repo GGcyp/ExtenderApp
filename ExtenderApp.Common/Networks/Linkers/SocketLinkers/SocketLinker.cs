@@ -1,8 +1,8 @@
 ﻿using System.Net;
 using System.Net.Sockets;
-using System.Runtime.Versioning;
 using ExtenderApp.Abstract;
-using ExtenderApp.Buffer;
+using ExtenderApp.Abstract.Networks;
+using ExtenderApp.Abstract.Options;
 using ExtenderApp.Contracts;
 
 namespace ExtenderApp.Common.Networks
@@ -44,12 +44,56 @@ namespace ExtenderApp.Common.Networks
             return Socket.DisconnectAsync(reuseSocket: false, token);
         }
 
+        protected override void OnRegisterOption(OptionIdentifier identifier, OptionValue optionValue)
+        {
+            if (LinkOptions.ReceiveBufferSizeIdentifier.TryBindChangedHandler(optionValue, static (o, item) => ((SocketLinker)o!).Socket.ReceiveBufferSize = item.Item2))
+                return;
+            if (LinkOptions.SendBufferSizeIdentifier.TryBindChangedHandler(optionValue, static (o, item) => ((SocketLinker)o!).Socket.SendBufferSize = item.Item2))
+                return;
+            if (LinkOptions.ReceiveTimeoutIdentifier.TryBindChangedHandler(optionValue, static (o, item) => ((SocketLinker)o!).Socket.ReceiveTimeout = item.Item2))
+                return;
+            if (LinkOptions.SendTimeoutIdentifier.TryBindChangedHandler(optionValue, static (o, item) => ((SocketLinker)o!).Socket.SendTimeout = item.Item2))
+                return;
+        }
+
+        protected override void OnOptionValueChanged(OptionIdentifier identifier, OptionValue optionValue)
+        {
+            switch (identifier)
+            {
+                case SocketOptionIdentifier<int> socketOptionIdentifierInt:
+                    Socket.SetSocketOption(socketOptionIdentifierInt.SocketLevel, socketOptionIdentifierInt.SocketName, (socketOptionIdentifierInt.ConvertOptionValue(optionValue)).Value);
+                    return;
+
+                case SocketOptionIdentifier<bool> socketOptionIdentifierBool:
+                    Socket.SetSocketOption(socketOptionIdentifierBool.SocketLevel, socketOptionIdentifierBool.SocketName, (socketOptionIdentifierBool.ConvertOptionValue(optionValue)).Value);
+                    return;
+
+                case SocketOptionIdentifier<object> socketOptionIdentifierObject:
+                    Socket.SetSocketOption(socketOptionIdentifierObject.SocketLevel, socketOptionIdentifierObject.SocketName, (socketOptionIdentifierObject.ConvertOptionValue(optionValue)).Value);
+                    return;
+
+                case SocketOptionIdentifier<byte[]> socketOptionIdentifierByteArray:
+                    Socket.SetSocketOption(socketOptionIdentifierByteArray.SocketLevel, socketOptionIdentifierByteArray.SocketName, (socketOptionIdentifierByteArray.ConvertOptionValue(optionValue)).Value);
+                    return;
+            }
+        }
+
         #region Send
 
         /// <inheritdoc/>
         protected override sealed Result<LinkOperationValue> ExecuteSend(ReadOnlySpan<byte> span, LinkFlags flags)
         {
             var length = Socket.Send(span, (SocketFlags)flags, out var errorCode);
+
+            if (TryGetSocketError(errorCode, out var ex))
+                return Result.FromException<LinkOperationValue>(ex);
+            return CreateOperationValue(length);
+        }
+
+        /// <inheritdoc/>
+        protected override sealed Result<LinkOperationValue> ExecuteSend(IList<ArraySegment<byte>> buffer, LinkFlags flags)
+        {
+            var length = Socket.Send(buffer, (SocketFlags)flags, out var errorCode);
 
             if (TryGetSocketError(errorCode, out var ex))
                 return Result.FromException<LinkOperationValue>(ex);

@@ -23,12 +23,13 @@ namespace ExtenderApp.Test
             base.Inject(serviceProvider);
             // 运行自包含的测试用例，检查序列化及内存回收/冻结相关行为
             //SerializationTests.RunAll(binarySerialization);
-            //var factory = serviceProvider.GetRequiredService<ILinkerFactory<ITcpLinker>>();
-            //Task.Run(() =>
-            //{
-            //    LinkerTests.RunAll(factory, binarySerialization);
-            //});
-            AwaitableEventArgsTests.RunAll();
+            var factory = serviceProvider.GetRequiredService<ILinkerFactory<ITcpLinker>>();
+            Task.Run(() =>
+            {
+                LinkerTests.RunAll(factory, binarySerialization);
+            });
+            //AwaitableEventArgsTests.RunAll();
+            //IOptionsTests.RunAll();
         }
 
         private ExpectLocalFileInfo CreatTestExpectLocalFileInfo(string fileName)

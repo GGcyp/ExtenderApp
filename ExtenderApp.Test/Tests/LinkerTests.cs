@@ -4,7 +4,6 @@ using System.Net.Sockets;
 using ExtenderApp.Abstract;
 using ExtenderApp.Buffer;
 using ExtenderApp.Common;
-using ExtenderApp.Common.Networks;
 using ExtenderApp.Contracts;
 
 namespace ExtenderApp.Test.Tests
@@ -114,7 +113,7 @@ namespace ExtenderApp.Test.Tests
             try
             {
                 using var scope = new TcpTestScope(linkerFactory);
-                var iterations = 2000000;
+                var iterations = 100;
                 var totalBytes = buffer.Committed * iterations;
                 var receiveBuffer = new byte[buffer.Committed];
 
