@@ -6,17 +6,27 @@ using ExtenderApp.Contracts;
 
 namespace ExtenderApp.Common.Networks.LinkClients
 {
+    /// <summary>
+    /// LinkClientPipeline实现，使用双向链表存储处理器上下文，支持动态添加、移除和替换处理器。
+    /// </summary>
     internal sealed class LinkClientPipeline : ILinkClientPipeline, ILinkClientHandlerContextOperations
     {
-        private LinkClientHandlerContext head;
-        private LinkClientHandlerContext tail;
+        /// <summary>
+        /// 头哨兵节点，简化链表操作
+        /// </summary>
+        private readonly LinkClientHandlerContext _head;
+
+        /// <summary>
+        /// 尾哨兵节点，简化链表操作
+        /// </summary>
+        private readonly LinkClientHandlerContext _tail;
 
         public LinkClientPipeline()
         {
-            head = new HeadLinkClientHandlerContext();
-            tail = new TailLinkClientHandlerContext();
-            head.Next = tail;
-            tail.Prev = head;
+            _head = new HeadLinkClientHandlerContext();
+            _tail = new TailLinkClientHandlerContext();
+            _head.Next = _tail;
+            _tail.Prev = _head;
         }
 
         private static LinkClientHandlerContext<T> CreateContext<T>(string name, T handler) where T : ILinkClientHandler
@@ -24,9 +34,12 @@ namespace ExtenderApp.Common.Networks.LinkClients
             return new LinkClientHandlerContext<T>(name, handler);
         }
 
+        #region Pipeline Operations
+
+        ///<inheritdoc/>
         public ILinkClientPipeline AddAfter<T>(string baseName, string name, T handler) where T : ILinkClientHandler
         {
-            var ctx = head;
+            var ctx = _head;
             while (ctx != null && ctx.Name != baseName)
                 ctx = ctx.Next!;
             if (ctx == null)
@@ -41,9 +54,10 @@ namespace ExtenderApp.Common.Networks.LinkClients
             return this;
         }
 
+        ///<inheritdoc/>
         public ILinkClientPipeline AddBefore<T>(string baseName, string name, T handler) where T : ILinkClientHandler
         {
-            var ctx = head.Next;
+            var ctx = _head.Next;
             while (ctx != null && ctx.Name != baseName)
                 ctx = ctx.Next;
             if (ctx == null)
@@ -58,32 +72,35 @@ namespace ExtenderApp.Common.Networks.LinkClients
             return this;
         }
 
+        ///<inheritdoc/>
         public ILinkClientPipeline AddFirst<T>(string name, T handler) where T : ILinkClientHandler
         {
-            var next = head.Next!;
+            var next = _head.Next!;
             var newCtx = CreateContext(name, handler);
             newCtx.Next = next;
-            newCtx.Prev = head;
-            head.Next = newCtx;
+            newCtx.Prev = _head;
+            _head.Next = newCtx;
             next.Prev = newCtx;
             return this;
         }
 
+        ///<inheritdoc/>
         public ILinkClientPipeline AddLast<T>(string name, T handler) where T : ILinkClientHandler
         {
-            var prev = tail.Prev!;
+            var prev = _tail.Prev!;
             var newCtx = CreateContext(name, handler);
-            newCtx.Next = tail;
+            newCtx.Next = _tail;
             newCtx.Prev = prev;
             prev.Next = newCtx;
-            tail.Prev = newCtx;
+            _tail.Prev = newCtx;
             return this;
         }
 
+        ///<inheritdoc/>
         public ILinkClientPipeline Remove<T>(T handler) where T : ILinkClientHandler
         {
-            var ctx = head.Next;
-            while (ctx != null && ctx != tail)
+            var ctx = _head.Next;
+            while (ctx != null && ctx != _tail)
             {
                 if (ReferenceEquals(ctx.Handler, handler))
                 {
@@ -99,10 +116,11 @@ namespace ExtenderApp.Common.Networks.LinkClients
             return this;
         }
 
+        ///<inheritdoc/>
         public ILinkClientHandler Remove(string name)
         {
-            var ctx = head.Next;
-            while (ctx != null && ctx != tail)
+            var ctx = _head.Next;
+            while (ctx != null && ctx != _tail)
             {
                 if (ctx.Name == name)
                 {
@@ -119,10 +137,11 @@ namespace ExtenderApp.Common.Networks.LinkClients
             return null!;
         }
 
+        ///<inheritdoc/>
         public ILinkClientPipeline Replace<T>(string oldName, string newName, T newHandler) where T : ILinkClientHandler
         {
-            var ctx = head.Next;
-            while (ctx != null && ctx != tail)
+            var ctx = _head.Next;
+            while (ctx != null && ctx != _tail)
             {
                 if (ctx.Name == oldName)
                 {
@@ -139,10 +158,11 @@ namespace ExtenderApp.Common.Networks.LinkClients
             throw new KeyNotFoundException($"Handler not found: {oldName}");
         }
 
+        ///<inheritdoc/>
         public ILinkClientPipeline Replace<T>(ILinkClientHandler oldHandler, string newName, T newHandler) where T : ILinkClientHandler
         {
-            var ctx = head.Next;
-            while (ctx != null && ctx != tail)
+            var ctx = _head.Next;
+            while (ctx != null && ctx != _tail)
             {
                 if (ReferenceEquals(ctx.Handler, oldHandler))
                 {
@@ -159,34 +179,39 @@ namespace ExtenderApp.Common.Networks.LinkClients
             throw new KeyNotFoundException("Handler not found");
         }
 
-        #region Operations
+        #endregion Pipeline Operations
 
+        #region Handlers Operations
+
+        ///<inheritdoc/>
         public ValueTask<Result> BindAsync(EndPoint localAddress, CancellationToken token = default)
-            => tail.BindAsync(localAddress, token);
+            => _tail.BindAsync(localAddress, token);
 
+        ///<inheritdoc/>
         public ValueTask<Result> CloseAsync(CancellationToken token = default)
-            => tail.CloseAsync(token);
+            => _tail.CloseAsync(token);
 
+        ///<inheritdoc/>
         public ValueTask<Result> ConnectAsync(EndPoint remoteAddress, EndPoint localAddress, CancellationToken token = default)
-            => head.ConnectAsync(remoteAddress, localAddress, token);
+            => _head.ConnectAsync(remoteAddress, localAddress, token);
 
+        ///<inheritdoc/>
         public ValueTask<Result> DisconnectAsync(CancellationToken token = default)
-            => head.DisconnectAsync(token);
+            => _head.DisconnectAsync(token);
 
+        ///<inheritdoc/>
         public ValueTask ExceptionCaught(Exception exception)
-            => head.ExceptionCaught(exception);
+            => _head.ExceptionCaught(exception);
 
+        ///<inheritdoc/>
         public ValueTask<Result<int>> InboundHandleAsync(ValueCache cache, CancellationToken token = default)
-        {
-            return head.InboundHandleAsync(cache, token);
-        }
+            => _head.InboundHandleAsync(cache, token);
 
+        ///<inheritdoc/>
         public ValueTask<Result> OutboundHandleAsync(ValueCache cache, CancellationToken token = default)
-        {
-            return tail.OutboundHandleAsync(cache, token);
-        }
+            => _tail.OutboundHandleAsync(cache, token);
 
-        #endregion Operations
+        #endregion Handlers Operations
 
         #region Enumerable
 
@@ -234,14 +259,10 @@ namespace ExtenderApp.Common.Networks.LinkClients
         }
 
         public IEnumerator<ILinkClientHandler> GetEnumerator()
-        {
-            return new Enumerator(head.Next, tail);
-        }
+            => new Enumerator(_head.Next, _tail);
 
         IEnumerator IEnumerable.GetEnumerator()
-        {
-            return GetEnumerator();
-        }
+            => GetEnumerator();
 
         #endregion Enumerable
     }

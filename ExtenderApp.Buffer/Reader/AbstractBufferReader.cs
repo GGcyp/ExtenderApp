@@ -63,25 +63,15 @@ namespace ExtenderApp.Buffer
         /// Provider 在分配读取器后应调用此方法。
         /// </summary>
         /// <param name="buffer">要绑定的缓冲区。</param>
-        protected internal virtual void Initialize(AbstractBuffer<T> buffer)
+        protected internal virtual void Initialize(AbstractBufferReaderProvider<T> provider, AbstractBuffer<T> buffer)
         {
+            ReaderProvider = provider ?? throw new ArgumentNullException(nameof(provider));
             Buffer = buffer ?? throw new ArgumentNullException(nameof(buffer));
             Consumed = 0;
 
             // 冻结缓冲区以防止被回收，并冻结写入以防止写入侧在读取期间修改数据
             Buffer.Freeze();
             Buffer.FreezeWrite();
-        }
-
-        /// <summary>
-        /// 在将读取器返回提供者/池之前调用以清理状态并解除写入冻结。
-        /// </summary>
-        protected internal virtual void PrepareForRelease()
-        {
-            Buffer?.UnfreezeWrite();
-            Buffer?.TryRelease();
-            Buffer = default!;
-            Consumed = 0;
         }
 
         /// <summary>
@@ -214,13 +204,15 @@ namespace ExtenderApp.Buffer
         /// </summary>
         public void Reset()
         {
+            Buffer.UnfreezeWrite();
+            Buffer.TryRelease();
+            Buffer = default!;
             Consumed = 0;
         }
 
-        public void Release()
+        public virtual void Release()
         {
             Reset();
-            Buffer.TryRelease();
             ReaderProvider.Release(this);
         }
 

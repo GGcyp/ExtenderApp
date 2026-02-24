@@ -56,23 +56,19 @@ namespace ExtenderApp.Buffer.Reader
         /// 初始化读取器状态并绑定到指定缓冲区。供提供者在分配读取器时调用。
         /// </summary>
         /// <param name="buffer">要绑定的序列缓冲区。</param>
-        protected internal override void Initialize(AbstractBuffer<T> buffer)
+        protected internal override void Initialize(AbstractBufferReaderProvider<T> provider, AbstractBuffer<T> buffer)
         {
-            base.Initialize(buffer);
+            base.Initialize(provider, buffer);
             currentSegment = Buffer.First;
             segmentConsumed = 0;
             Consumed = 0;
         }
 
-        /// <summary>
-        /// 在将读取器回收到池中之前重置其状态，清除对缓冲区的引用并重置内部定位。 供提供者在回收时调用。
-        /// </summary>
-        protected internal override void PrepareForRelease()
+        public override void Release()
         {
-            base.PrepareForRelease();
+            base.Release();
             currentSegment = null;
             segmentConsumed = 0;
-            Consumed = 0;
         }
 
         /// <summary>

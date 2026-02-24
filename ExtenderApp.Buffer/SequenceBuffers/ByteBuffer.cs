@@ -69,13 +69,7 @@ namespace ExtenderApp.Buffer
             Write(sequence);
         }
 
-        /// <summary>
-        /// 从指定的 <see cref="DefaultSequenceBufferProvider{byte}"/> 租用一个缓冲并创建 <see cref="ByteBuffer"/>。
-        /// </summary>
-        /// <param name="pool">用于租用缓冲区的池。</param>
-        public ByteBuffer(DefaultSequenceBufferProvider<byte> pool) : this(pool.GetBuffer())
-        {
-        }
+
 
         /// <summary>
         /// 使用已有的 <see cref="SequenceBuffer{byte}"/> 创建包装器。构造时会对传入缓冲调用 <see cref="SequenceBuffer{T}.Freeze"/> 以防止在使用期间被回收。
@@ -247,12 +241,6 @@ namespace ExtenderApp.Buffer
         public static implicit operator ByteBuffer(in SequenceBuffer<byte> buffer)
             => new ByteBuffer(buffer);
 
-        /// <summary>
-        /// 从指定的 <see cref="DefaultSequenceBufferProvider{byte}"/> 隐式租用缓冲并创建 <see cref="ByteBuffer"/>。
-        /// </summary>
-        /// <param name="pool">缓冲区池。</param>
-        public static implicit operator ByteBuffer(DefaultSequenceBufferProvider<byte> pool)
-            => new ByteBuffer(pool);
 
         /// <summary>
         /// 使用只读序列显式创建 <see cref="ByteBuffer"/>（将序列内容复制到新缓冲）。

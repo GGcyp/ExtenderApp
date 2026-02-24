@@ -7,11 +7,13 @@ namespace ExtenderApp.Buffer.SequenceBuffers
     /// 表示序列中单个缓冲段的抽象基类，封装段的已提交长度、可用空间以及与相邻段的链表关系。
     /// </summary>
     /// <remarks>继承自 <see cref="ReadOnlySequenceSegment{T}"/>，用于在基于段的序列实现中维护 RunningIndex、前驱/后继关系并暴露段内内存与计数信息。 派生类需要提供具体的内存访问、已提交长度、可写容量以及推进/重置的实现。</remarks>
-    public abstract partial class SequenceBufferSegment<T> : ReadOnlySequenceSegment<T>, IPinnable, IEnumerable<SequenceBufferSegment<T>>
+    public sealed partial class SequenceBufferSegment<T> : ReadOnlySequenceSegment<T>, IPinnable, IEnumerable<SequenceBufferSegment<T>>
     {
-        public static readonly SequenceBufferSegment<T> Empty = new EmptySequenceBufferSegment<T>();
+        public static readonly SequenceBufferSegment<T> Empty = new SequenceBufferSegment<T>();
 
-        protected internal SequenceBufferSegmentProvider<T>? SegmentProvider;
+        internal SequenceBufferSegmentProvider<T>? SegmentProvider;
+
+        private MemoryBlock<T> memoryBlock;
 
         /// <summary>
         /// 当前段在整个序列中的起始索引（相对于序列起点）。
@@ -26,33 +28,33 @@ namespace ExtenderApp.Buffer.SequenceBuffers
         /// <summary>
         /// 当前段所持有的可读/已提交内存片（派生类提供具体实现）。
         /// </summary>
-        protected internal abstract new Memory<T> Memory { get; }
+        internal new Memory<T> Memory => memoryBlock.Memory;
 
         /// <summary>
         /// 已提交（已写入）内存片，长度等于 <see cref="Committed"/>。派生类提供具体实现以反映当前段中已写入的数据范围。
         /// </summary>
-        protected internal abstract ReadOnlyMemory<T> CommittedMemory { get; }
+        internal ReadOnlyMemory<T> CommittedMemory => memoryBlock.CommittedMemory;
 
         /// <summary>
         /// 已提交（已写入）元素的跨度，长度等于 <see cref="Committed"/>。派生类提供具体实现以反映当前段中已写入的数据范围。调用方可以使用此属性获取当前段中已写入的数据作为只读跨度进行处理。
         /// </summary>
-        protected internal abstract ReadOnlySpan<T> CommittedSpan { get; }
+        internal ReadOnlySpan<T> CommittedSpan => memoryBlock.CommittedSpan;
 
         /// <summary>
         /// 已提交（已写入）元素的数组片段，长度等于 <see cref="Committed"/>。派生类提供具体实现以反映当前段中已写入的数据范围。调用方可以使用此属性获取当前段中已写入的数据作为数组片段进行处理（如与旧 API
         /// 兼容）。如果当前段的内存不是基于数组的，或者已提交范围不连续，则实现应抛出 InvalidOperationException 或返回一个空的 ArraySegment。
         /// </summary>
-        protected internal abstract ArraySegment<T> CommittedArraySegment { get; }
+        internal ArraySegment<T> CommittedArraySegment => memoryBlock.CommittedSegment;
 
         /// <summary>
         /// 当前段中已提交（已写入）元素的数量。
         /// </summary>
-        protected internal abstract long Committed { get; }
+        internal long Committed => memoryBlock.Committed;
 
         /// <summary>
         /// 当前段尚可写入的元素数量（剩余可用空间）。
         /// </summary>
-        protected internal abstract int Available { get; }
+        internal int Available { get; }
 
         /// <summary>
         /// 放回当前段在整个序列中的运行索引（相对于序列起点）。
@@ -73,18 +75,30 @@ namespace ExtenderApp.Buffer.SequenceBuffers
             set => base.Next = value;
         }
 
+        public SequenceBufferSegment()
+        {
+            Prev = null;
+            Next = null;
+            SegmentStart = 0;
+            RunningIndex = 0;
+            memoryBlock = MemoryBlock<T>.Empty;
+        }
+
         /// <summary>
         /// 由提供者在分配后调用以初始化段的生命周期（绑定提供者并重置链表/索引状态）。
         /// </summary>
         /// <param name="provider">分配此段的提供者实例。</param>
-        internal void Initialize(SequenceBufferSegmentProvider<T> provider)
+        internal void Initialize(SequenceBufferSegmentProvider<T> provider, MemoryBlock<T> memoryBlock)
         {
             SegmentProvider = provider ?? throw new ArgumentNullException(nameof(provider));
             Prev = null;
             Next = null;
             SegmentStart = 0;
             RunningIndex = 0;
-            base.Memory = ReadOnlyMemory<T>.Empty;
+
+            this.memoryBlock = memoryBlock;
+            memoryBlock.CommittedChanged += UpdateRunningIndex;
+            base.Memory = memoryBlock.CommittedMemory;
         }
 
         /// <summary>
@@ -108,19 +122,19 @@ namespace ExtenderApp.Buffer.SequenceBuffers
         /// </summary>
         /// <param name="sizeHint">建议的最小可用大小（可为 0，表示不作特殊建议）。</param>
         /// <returns>用于写入的 <see cref="Memory{T}"/>。</returns>
-        internal Memory<T> GetMemory(int sizeHint = 0) => GetMemotyProtected(sizeHint);
+        internal Memory<T> GetMemory(int sizeHint = 0) => memoryBlock.GetMemory(sizeHint);
 
         /// <summary>
         /// 获取一个至少包含 <paramref name="sizeHint"/> 个元素的可写 <see cref="Span{T}"/>。
         /// </summary>
         /// <param name="sizeHint">建议的最小可用大小（可为 0，表示不作特殊建议）。</param>
         /// <returns>用于写入的 <see cref="Span{T}"/>。</returns>
-        internal Span<T> GetSpan(int sizeHint = 0) => GetSpanProtected(sizeHint);
+        internal Span<T> GetSpan(int sizeHint = 0) => memoryBlock.GetSpan(sizeHint);
 
         /// <summary>
         /// 重新计算并更新自身及后续所有段的 <see cref="RunningIndex"/>，以确保每段的运行索引反映序列中的真实位置。
         /// </summary>
-        protected internal void UpdateRunningIndex()
+        internal void UpdateRunningIndex()
         {
             RunningIndex = Prev != null ? Prev.RunningIndex + Prev.Committed : 0;
             base.Memory = CommittedMemory;
@@ -133,9 +147,7 @@ namespace ExtenderApp.Buffer.SequenceBuffers
         /// <param name="count">推进的元素数量（必须为非负值）。</param>
         internal void Advance(int count)
         {
-            if (count < 0)
-                throw new ArgumentOutOfRangeException(nameof(count), "推进的元素数量必须为非负值。");
-            AdvanceProtected(count);
+            memoryBlock.Advance(count);
             base.Memory = CommittedMemory;
         }
 
@@ -154,7 +166,39 @@ namespace ExtenderApp.Buffer.SequenceBuffers
             base.Memory = ReadOnlyMemory<T>.Empty;
             SegmentProvider?.ReleaseSegment(this);
             SegmentProvider = null;
+            memoryBlock.CommittedChanged -= UpdateRunningIndex;
+            memoryBlock.TryRelease();
+            memoryBlock = null!;
         }
+
+        /// <summary>
+        /// 从指定元素索引处固定当前段的内存，返回一个 <see cref="MemoryHandle"/> 用于访问固定的内存位置。派生类应实现具体的固定逻辑（如调用 GCHandle.Alloc 或其他机制），并确保在不再需要访问时调用 <see cref="Unpin"/> 释放固定资源。
+        /// </summary>
+        /// <param name="elementIndex">指定索引</param>
+        /// <returns><see cref="MemoryHandle"/> 实例</returns>
+        public MemoryHandle Pin(int elementIndex) => memoryBlock.Pin(elementIndex);
+
+        /// <summary>
+        /// 释放之前通过 <see cref="Pin(int)"/> 固定的内存资源。派生类应实现具体的释放逻辑（如调用 GCHandle.Free 或其他机制），以确保固定的内存能够被垃圾回收器正确管理。
+        /// </summary>
+        public void Unpin() => memoryBlock.Unpin();
+
+        /// <summary>
+        /// 从当前段的指定起始位置和长度创建一个新的段实例，表示当前段内的一个子范围。派生类应实现具体的切片逻辑，确保返回的新段正确反映指定范围内的数据，并且与当前段共享相同的底层内存（如果适用）。调用方应确保传入的 <paramref name="start"/> 和
+        /// <paramref name="length"/> 参数在当前段的有效范围内。返回的新段实例应具有独立的前后段关系，以便在序列中正确链接和管理。
+        /// </summary>
+        /// <param name="start">切片的起始位置（相对于当前段的起点）。</param>
+        /// <param name="length">切片的长度（必须为非负值）。</param>
+        /// <returns>返回 <see cref="SequenceBufferSegment{T}"/> 实例</returns>
+        public SequenceBufferSegment<T> Slice(int start, int length)
+            => SegmentProvider?.GetSegment(memoryBlock.Slice(start, length)) ?? Empty;
+
+        /// <summary>
+        /// 将当前段克隆为一个新的段实例，通常用于在需要创建当前段的副本（如分割、复制等场景）时调用。派生类应实现具体的克隆逻辑，确保返回的新段实例具有与当前段相同的数据内容和状态，但在链表关系上是独立的。调用方应注意，克隆后的段实例可能需要重新配置前后段关系以正确链接到序列中。
+        /// </summary>
+        /// <returns>返回新 <see cref="SequenceBufferSegment{T}"/> 实例</returns>
+        public SequenceBufferSegment<T> Clone()
+            => SegmentProvider?.GetSegment(memoryBlock.Clone()) ?? Empty;
 
         #region Enumerable 实现 - 支持 foreach 遍历段链表
 
@@ -232,56 +276,5 @@ namespace ExtenderApp.Buffer.SequenceBuffers
         }
 
         #endregion Enumerable 实现 - 支持 foreach 遍历段链表
-
-        #region 抽象成员 - 派生类必须实现
-
-        /// <summary>
-        /// 派生类提供具体的可写内存获取实现。实现应返回一个从当前写入位置开始、至少包含 <paramref name="sizeHint"/> 个元素的 <see cref="Memory{T}"/>。
-        /// </summary>
-        /// <param name="sizeHint">期望的最小可写元素数（可为 0 表示不作特殊建议）。</param>
-        /// <returns>可用于写入的 <see cref="Memory{T}"/>（从当前写入位置到可用末尾或扩容后的空间）。</returns>
-        protected abstract Memory<T> GetMemotyProtected(int sizeHint = 0);
-
-        /// <summary>
-        /// 派生类提供具体的可写跨度获取实现。实现应返回一个从当前写入位置开始、至少包含 <paramref name="sizeHint"/> 个元素的 <see cref="Span{T}"/>。
-        /// </summary>
-        /// <param name="sizeHint">期望的最小可写元素数（可为 0 表示不作特殊建议）。</param>
-        /// <returns>可用于写入的 <see cref="Span{T}"/>（从当前写入位置到可用末尾或扩容后的空间）。</returns>
-        protected abstract Span<T> GetSpanProtected(int sizeHint = 0);
-
-        /// <summary>
-        /// 由派生类实现的推进逻辑，将当前段的已提交长度向前推进指定数量。实现应确保推进后的已提交长度不超过当前段的总容量，并且调用方传入的 <paramref name="count"/> 必须为非负值。推进后，调用方会自动更新基类的 Memory 属性以反映新的已提交内存范围。
-        /// </summary>
-        /// <param name="count">推进的元素数量。</param>
-        protected abstract void AdvanceProtected(int count);
-
-        /// <summary>
-        /// 从指定元素索引处固定当前段的内存，返回一个 <see cref="MemoryHandle"/> 用于访问固定的内存位置。派生类应实现具体的固定逻辑（如调用 GCHandle.Alloc 或其他机制），并确保在不再需要访问时调用 <see cref="Unpin"/> 释放固定资源。
-        /// </summary>
-        /// <param name="elementIndex">指定索引</param>
-        /// <returns><see cref="MemoryHandle"/> 实例</returns>
-        public abstract MemoryHandle Pin(int elementIndex);
-
-        /// <summary>
-        /// 释放之前通过 <see cref="Pin(int)"/> 固定的内存资源。派生类应实现具体的释放逻辑（如调用 GCHandle.Free 或其他机制），以确保固定的内存能够被垃圾回收器正确管理。
-        /// </summary>
-        public abstract void Unpin();
-
-        /// <summary>
-        /// 从当前段的指定起始位置和长度创建一个新的段实例，表示当前段内的一个子范围。派生类应实现具体的切片逻辑，确保返回的新段正确反映指定范围内的数据，并且与当前段共享相同的底层内存（如果适用）。调用方应确保传入的 <paramref name="start"/> 和
-        /// <paramref name="length"/> 参数在当前段的有效范围内。返回的新段实例应具有独立的前后段关系，以便在序列中正确链接和管理。
-        /// </summary>
-        /// <param name="start">切片的起始位置（相对于当前段的起点）。</param>
-        /// <param name="length">切片的长度（必须为非负值）。</param>
-        /// <returns>返回 <see cref="SequenceBufferSegment{T}"/> 实例</returns>
-        public abstract SequenceBufferSegment<T> Slice(int start, int length);
-
-        /// <summary>
-        /// 将当前段克隆为一个新的段实例，通常用于在需要创建当前段的副本（如分割、复制等场景）时调用。派生类应实现具体的克隆逻辑，确保返回的新段实例具有与当前段相同的数据内容和状态，但在链表关系上是独立的。调用方应注意，克隆后的段实例可能需要重新配置前后段关系以正确链接到序列中。
-        /// </summary>
-        /// <returns>返回新 <see cref="SequenceBufferSegment{T}"/> 实例</returns>
-        public abstract SequenceBufferSegment<T> Clone();
-
-        #endregion 抽象成员 - 派生类必须实现
     }
 }

@@ -34,25 +34,25 @@ namespace ExtenderApp.Buffer
         /// <summary>
         /// 当前块所属的内存块提供者（如果有）。 派生类在分配或扩展底层存储时应将此属性设置为提供者实例，以便在释放时正确归还资源。 该属性不应由外部调用方直接使用；它是供派生类和提供者内部管理资源生命周期的机制。
         /// </summary>
-        protected internal MemoryBlockProvider<T>? BlockProvider;
+        private MemoryBlockProvider<T>? ownerProvider;
 
         /// <summary>
         /// 获取当前块已使用的元素数量。
         /// </summary>
-        public override long Committed => committed;
+        public override sealed long Committed => committed;
 
         /// <summary>
         /// 获取当前块剩余可写入的元素数量，等于 <see cref="AvailableMemory"/> 的长度减去 <see cref="end"/>。
         /// </summary>
-        public override int Available => AvailableMemory.Length - committed;
+        public override sealed int Available => AvailableMemory.Length - committed;
 
         /// <summary>
         /// 当前内存块的总容量，等于 <see cref="AvailableMemory"/> 的长度。
         /// </summary>
-        public override long Capacity => AvailableMemory.Length;
+        public override sealed long Capacity => AvailableMemory.Length;
 
         ///<inheritdoc/>
-        public override ReadOnlySequence<T> CommittedSequence => this;
+        public override sealed ReadOnlySequence<T> CommittedSequence => this;
 
         /// <summary>
         /// 派生类应提供的底层可用内存（包含已写入与未写入部分）。 该属性不应分配新的底层存储；派生类负责提供稳定的 MemoryOwner 实现（例如来自池或 MemoryOwner）。
@@ -83,7 +83,7 @@ namespace ExtenderApp.Buffer
         /// 获取当前块内未读的数组块（如果底层 MemoryOwner 是基于数组的）。 该属性仅在底层 MemoryOwner 实现为数组时有效，否则返回一个空的 ArraySegment。 注意：返回的 ArraySegment 的偏移和长度是相对于底层数组的，且包含已写入部分（从
         /// start 到 end）。 调用方应根据需要调整偏移和长度以访问特定范围。 派生类不应重写此属性；它基于 <see cref="AvailableMemory"/> 的实现自动提供。
         /// </summary>
-        public virtual ArraySegment<T> CommittedSegment
+        public ArraySegment<T> CommittedSegment
         {
             get
             {
@@ -103,7 +103,7 @@ namespace ExtenderApp.Buffer
         /// </summary>
         /// <param name="sizeHint">期望的最小可写元素数（可选），当为 0 时仅保证至少 1 个可写元素（视实现而定）。</param>
         /// <returns>用于写入的可写内存片块（从当前写入位置到底层可用内存末尾）。</returns>
-        public override Memory<T> GetMemory(int sizeHint = 0)
+        public override sealed Memory<T> GetMemory(int sizeHint = 0)
         {
             EnsureCapacity(sizeHint);
             return RemainingMemory;
@@ -114,14 +114,14 @@ namespace ExtenderApp.Buffer
         /// </summary>
         /// <param name="sizeHint">期望的最小可写元素数（可选）。</param>
         /// <returns>用于写入的可写跨度（从当前写入位置到底层可用内存末尾）。</returns>
-        public override Span<T> GetSpan(int sizeHint = 0)
+        public override sealed Span<T> GetSpan(int sizeHint = 0)
         {
             EnsureCapacity(sizeHint);
             return RemainingSpan;
         }
 
         ///<inheritdoc/>
-        protected override MemoryHandle PinProtected(int elementIndex)
+        protected override sealed MemoryHandle PinProtected(int elementIndex)
         {
             return AvailableMemory.Slice(elementIndex).Pin();
         }
@@ -131,7 +131,7 @@ namespace ExtenderApp.Buffer
         /// </summary>
         /// <param name="count">要前移的元素数量（非负）。</param>
         /// <exception cref="ArgumentOutOfRangeException">当 <paramref name="count"/> 为负或移动后 <see cref="end"/> 超过底层内存长度时抛出。</exception>
-        public override void Advance(int count)
+        public override sealed void Advance(int count)
         {
             CheckWriteFrozen();
             if (count < 0 || committed + count > AvailableMemory.Length)
@@ -188,7 +188,7 @@ namespace ExtenderApp.Buffer
         /// <summary>
         /// 清空已写入数据并在必要时清除引用，恢复到初始未使用状态。 此方法会触发 <see cref="ConsumedChanged"/> 事件。
         /// </summary>
-        public override void Clear()
+        public override sealed void Clear()
         {
             CheckWriteFrozen();
             ClearReferences(0, committed);
@@ -221,21 +221,25 @@ namespace ExtenderApp.Buffer
         ///<inheritdoc/>
         protected override sealed void ReleaseProtected()
         {
-            if (BlockProvider == null)
+            ClearReferences(0, committed);
+            committed = 0;
+            if (ownerProvider == null)
                 throw new InvalidOperationException("无法释放内存块：未绑定提供者。请确保块已正确初始化并由提供者分配。");
 
-            BlockProvider.Release(this);
-            BlockProvider = null;
+            ownerProvider.Release(this);
+            ownerProvider = null;
         }
 
         ///<inheritdoc/>
         protected override sealed bool TryReleaseProtected()
         {
-            if (BlockProvider == null)
+            ClearReferences(0, committed);
+            committed = 0;
+            if (ownerProvider == null)
                 return false;
 
-            BlockProvider.Release(this);
-            BlockProvider = null;
+            ownerProvider.Release(this);
+            ownerProvider = null;
             return true;
         }
 
@@ -245,23 +249,12 @@ namespace ExtenderApp.Buffer
         /// <param name="provider">分配此块的提供者实例。</param>
         protected internal virtual void Initialize(MemoryBlockProvider<T> provider)
         {
-            BlockProvider = provider;
+            ownerProvider = provider;
             committed = 0;
-        }
-
-        /// <summary>
-        /// 由提供者在回收前调用以重置块的内部状态（清除已提交计数与对提供者的引用）。 不负责清理底层存储（由提供者在回收时根据实现决定）。
-        /// </summary>
-        protected internal void PrepareForRelease()
-        {
-            // 清除已写入数据引用以协助回收
-            ClearReferences(0, committed);
-            committed = 0;
-            BlockProvider = default!;
         }
 
         ///<inheritdoc/>
-        protected override void UpdateCommittedProtected(Span<T> span, long committedPosition)
+        protected override sealed void UpdateCommittedProtected(Span<T> span, long committedPosition)
         {
             span.CopyTo(Span.Slice((int)committedPosition));
         }
@@ -291,11 +284,11 @@ namespace ExtenderApp.Buffer
         public override T[] ToArray() => CommittedMemory.ToArray();
 
         ///<inheritdoc/>
-        public override MemoryBlock<T> Slice(long start = 0, long length = 0)
+        public override sealed MemoryBlock<T> Slice(long start = 0, long length = 0)
             => (MemoryBlock<T>)base.Slice(start, length);
 
         ///<inheritdoc/>
-        protected override AbstractBuffer<T> SliceProtected(long start, long length)
+        protected override sealed AbstractBuffer<T> SliceProtected(long start, long length)
             => FixedMemoryBlockProvider<T>.Default.GetBuffer(Memory.Slice((int)start, (int)length));
 
         /// <summary>
@@ -303,9 +296,9 @@ namespace ExtenderApp.Buffer
         /// </summary>
         /// <returns>返回 <see cref="MemoryBlock{T}"/> 实例</returns>
         /// <exception cref="InvalidOperationException">当无法创建新块时生成</exception>
-        public override MemoryBlock<T> Clone()
+        public override sealed MemoryBlock<T> Clone()
         {
-            var clone = BlockProvider?.GetBuffer(Memory.Length);
+            var clone = ownerProvider?.GetBuffer(Memory.Length);
             if (clone == null)
                 throw new InvalidOperationException("无法克隆内存块：未绑定提供者。请确保块已正确初始化并由提供者分配。");
 
@@ -315,11 +308,11 @@ namespace ExtenderApp.Buffer
 
         public bool Equals(MemoryBlock<T>? other) => other?.CommittedSpan.SequenceEqual(CommittedSpan) ?? false;
 
-        public override bool Equals(object? obj) => obj is MemoryBlock<T> other && Equals(other);
+        public override sealed bool Equals(object? obj) => obj is MemoryBlock<T> other && Equals(other);
 
-        public override int GetHashCode() => HashCode.Combine(CommittedMemory);
+        public override sealed int GetHashCode() => HashCode.Combine(CommittedMemory);
 
-        public override string ToString()
+        public override sealed string ToString()
         {
             return $"MemoryBlock<{typeof(T).Name}>: Committed={Committed}, Available={Available}, Capacity={Capacity}";
         }

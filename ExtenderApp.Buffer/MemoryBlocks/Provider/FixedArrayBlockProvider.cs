@@ -56,11 +56,10 @@ namespace ExtenderApp.Buffer.MemoryBlocks
         {
             var block = _blockPool.Get();
             block.Segment = segment;
-            block.BlockProvider = this;
             return block;
         }
 
-        protected override void ReleaseProtected(MemoryBlock<T> buffer)
+        protected override sealed void ReleaseProtected(MemoryBlock<T> buffer)
         {
             if (buffer is FixedArrayMemoryBlock fixedBlock)
             {
@@ -94,14 +93,14 @@ namespace ExtenderApp.Buffer.MemoryBlocks
             /// <summary>
             /// 返回底层可用内存（固定不变），映射到当前 <see cref="Segment"/>。
             /// </summary>
-            protected override Memory<T> AvailableMemory => Segment;
+            protected override sealed Memory<T> AvailableMemory => Segment;
 
             /// <summary>
             /// 固定数组内存块无法扩容：若请求的 <paramref name="sizeHint"/> 超过剩余可写空间，则抛出 <see cref="InvalidOperationException"/>。
             /// </summary>
             /// <param name="sizeHint">期望的最小可写元素数。</param>
             /// <exception cref="InvalidOperationException">始终在尝试扩容时抛出，因为底层数组为固定大小。</exception>
-            protected override void EnsureCapacityProtected(int sizeHint)
+            protected override sealed void EnsureCapacityProtected(int sizeHint)
             {
                 throw new InvalidOperationException("底层数组为固定大小，无法扩容以满足请求的写入空间。");
             }

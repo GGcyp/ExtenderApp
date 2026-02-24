@@ -105,7 +105,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
         }
 
         /// <inheritdoc/>
-        public Result<LinkOperationValue> SendAsync<T>(T value, CancellationToken token = default)
+        public virtual Result<LinkOperationValue> SendAsync<T>(T value, CancellationToken token = default)
         {
             return default;
         }
@@ -113,13 +113,27 @@ namespace ExtenderApp.Common.Networks.LinkClients
         /// <inheritdoc/>
         public virtual void Connect(EndPoint remoteEndPoint)
         {
+            Connect(remoteEndPoint, null!);
         }
 
         /// <inheritdoc/>
-        public virtual async ValueTask ConnectAsync(EndPoint remoteEndPoint, CancellationToken token = default)
+        public void Connect(EndPoint remoteEndPoint, EndPoint localAddress)
+        {
+            ConnectAsync(remoteEndPoint, localAddress).Await();
+        }
+
+        /// <inheritdoc/>
+        public virtual ValueTask ConnectAsync(EndPoint remoteEndPoint, CancellationToken token = default)
+        {
+            return ConnectAsync(remoteEndPoint, null!, token);
+        }
+
+        /// <inheritdoc/>
+        public virtual async ValueTask ConnectAsync(EndPoint remoteEndPoint, EndPoint localAddress, CancellationToken token = default)
         {
             ThrowIfDisposed();
-
+            await _pipeline.ConnectAsync(remoteEndPoint, localAddress, token);
+            await Linker.ConnectAsync(remoteEndPoint, localAddress, token);
         }
 
         /// <inheritdoc/>

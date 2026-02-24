@@ -24,15 +24,15 @@ namespace ExtenderApp.Buffer.MemoryBlocks
             _memoryPool = memoryPool ?? throw new ArgumentNullException(nameof(memoryPool));
         }
 
-        protected override MemoryBlock<T> CreateBufferProtected(int sizeHint)
+        protected override sealed MemoryBlock<T> CreateBufferProtected(int sizeHint)
         {
             var block = _blockPool.Get();
             block.MemoryPool = _memoryPool;
-            block.BlockProvider = this;
+            block.Initialize(this);
             return block;
         }
 
-        protected override void ReleaseProtected(MemoryBlock<T> buffer)
+        protected override sealed void ReleaseProtected(MemoryBlock<T> buffer)
         {
             if (buffer is MemoryPoolMemoryBlock poolBlock)
             {
@@ -55,16 +55,15 @@ namespace ExtenderApp.Buffer.MemoryBlocks
             public MemoryPool<T> MemoryPool;
             public IMemoryOwner<T> MemoryOwner;
 
-            protected override Memory<T> AvailableMemory => MemoryOwner.Memory;
+            protected override sealed Memory<T> AvailableMemory => MemoryOwner.Memory;
 
             public MemoryPoolMemoryBlock()
             {
                 MemoryPool = default!;
                 MemoryOwner = default!;
-                BlockProvider = default!;
             }
 
-            protected override void EnsureCapacityProtected(int sizeHint)
+            protected override sealed void EnsureCapacityProtected(int sizeHint)
             {
                 var newMemoryOwner = MemoryPool.Rent(sizeHint);
                 if (MemoryOwner != null)

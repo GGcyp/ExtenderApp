@@ -38,7 +38,7 @@ namespace ExtenderApp.Buffer.MemoryBlocks
         /// 获取一个能够承载至少 <paramref name="sizeHint"/> 个元素的内存块（从对象池获取）。 返回的内存块包装由 <see cref="_memoryPool"/> 租用的 <see cref="IMemoryOwner{T}"/>，该块不可扩容。
         /// </summary>
         /// <param name="sizeHint">建议的最小容量（元素数）。</param>
-        protected override MemoryBlock<T> CreateBufferProtected(int sizeHint)
+        protected override sealed MemoryBlock<T> CreateBufferProtected(int sizeHint)
         {
             var owner = sizeHint > 0 ? _memoryPool.Rent(sizeHint) : _memoryPool.Rent(DefaultInitialBlockSize);
             return GetBuffer(owner);
@@ -54,11 +54,11 @@ namespace ExtenderApp.Buffer.MemoryBlocks
             if (memory == null) throw new ArgumentNullException(nameof(memory));
             var block = _blockPool.Get();
             block.MemoryOwner = memory;
-            block.BlockProvider = this;
+            block.Initialize(this);
             return block;
         }
 
-        protected override void ReleaseProtected(MemoryBlock<T> buffer)
+        protected override sealed void ReleaseProtected(MemoryBlock<T> buffer)
         {
             if (buffer is MemoryOwnerMemoryBlock ownerBlock)
             {
@@ -90,18 +90,18 @@ namespace ExtenderApp.Buffer.MemoryBlocks
             /// <summary>
             /// 返回底层可用内存（固定不变，由 MemoryOwner 提供）。
             /// </summary>
-            protected override Memory<T> AvailableMemory => MemoryOwner.Memory;
+            protected override sealed Memory<T> AvailableMemory => MemoryOwner.Memory;
 
             /// <summary>
             /// 对于固定大小的内存块，不允许扩容；当请求的可写空间大于剩余时抛出异常。
             /// </summary>
             /// <param name="sizeHint">期望的最小可写元素数。</param>
-            protected override void EnsureCapacityProtected(int sizeHint)
+            protected override sealed void EnsureCapacityProtected(int sizeHint)
             {
                 throw new InvalidOperationException("底层为固定大小的内存，无法扩容以满足请求的写入空间。");
             }
 
-            protected override void DisposeManagedResources()
+            protected override sealed void DisposeManagedResources()
             {
                 base.DisposeManagedResources();
                 MemoryOwner?.Dispose();

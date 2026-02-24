@@ -14,12 +14,12 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
     {
         private const int MinStackallocLength = 2048;
         private readonly IBinaryFormatter<int> _int;
-        private readonly Encoding encoding;
+        private readonly Encoding _encoding;
 
         public StringFormatter(IBinaryFormatterResolver resolver) : base(resolver)
         {
             _int = GetFormatter<int>();
-            encoding = Encoding.UTF8;
+            _encoding = Encoding.UTF8;
         }
 
         public override string Deserialize(AbstractBufferReader<byte> reader)
@@ -41,7 +41,7 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
             string result = string.Empty;
             if (reader is MemoryBlockReader<byte> memoryBlockReader)
             {
-                result = encoding.GetString(memoryBlockReader.UnreadSpan.Slice(0, length));
+                result = _encoding.GetString(memoryBlockReader.UnreadSpan.Slice(0, length));
                 memoryBlockReader.Advance(length);
                 return result;
             }
@@ -50,17 +50,17 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
             if (length < MinStackallocLength)
             {
                 reader.Read(span.Slice(0, length));
-                return encoding.GetString(span.Slice(0, length));
+                return _encoding.GetString(span.Slice(0, length));
             }
 
-            var decoder = encoding.GetDecoder();
+            var decoder = _encoding.GetDecoder();
             int remaining = length;
-            MemoryBlock<char> charMemoryBlock = MemoryBlock<char>.GetBuffer(encoding.GetMaxCharCount(length));
+            MemoryBlock<char> charMemoryBlock = MemoryBlock<char>.GetBuffer(_encoding.GetMaxCharCount(length));
             while (remaining > 0)
             {
                 int read = System.Math.Min(remaining, span.Length);
                 reader.Read(span.Slice(0, read));
-                decoder.Convert(span.Slice(0, read), charMemoryBlock.RemainingSpan, remaining == read, out int bytesUsed, out int charsUsed, out _);
+                decoder.Convert(span.Slice(0, read), charMemoryBlock.GetAvailableSpan(), remaining == read, out int bytesUsed, out int charsUsed, out _);
                 charMemoryBlock.Advance(charsUsed);
                 remaining -= bytesUsed;
             }
@@ -86,7 +86,7 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
             if (length > reader.Remaining)
                 throw new InvalidOperationException("数据长度超过剩余数据长度，无法反序列化为字符串类型。");
 
-            string result = encoding.GetString(reader.UnreadSpan.Slice(0, length));
+            string result = _encoding.GetString(reader.UnreadSpan.Slice(0, length));
             reader.Advance(length);
             return result;
         }
@@ -99,12 +99,12 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
                 return;
             }
 
-            int byteCount = encoding.GetByteCount(value);
+            int byteCount = _encoding.GetByteCount(value);
 
             buffer.Write(BinaryOptions.String);
             _int.Serialize(buffer, byteCount);
             var span = buffer.GetSpan(byteCount);
-            byteCount = encoding.GetBytes(value, span);
+            byteCount = _encoding.GetBytes(value, span);
             buffer.Advance(byteCount);
         }
 
@@ -116,11 +116,11 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
                 return;
             }
 
-            int byteCount = encoding.GetByteCount(value);
+            int byteCount = _encoding.GetByteCount(value);
 
             writer.Write(BinaryOptions.String);
             _int.Serialize(ref writer, byteCount);
-            encoding.GetBytes(value, writer.UnwrittenSpan.Slice(0, byteCount));
+            byteCount = _encoding.GetBytes(value, writer.UnwrittenSpan.Slice(0, byteCount));
             writer.Advance(byteCount);
         }
 
@@ -131,7 +131,7 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
                 return DefaultLength;
             }
 
-            int byteCount = encoding.GetByteCount(value);
+            int byteCount = _encoding.GetByteCount(value);
             long result = _int.GetLength(byteCount) + 1;
             result += byteCount;
 

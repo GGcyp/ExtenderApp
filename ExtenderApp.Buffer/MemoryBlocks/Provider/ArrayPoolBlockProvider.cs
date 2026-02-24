@@ -1,5 +1,4 @@
 ﻿using System.Buffers;
-using System.Diagnostics;
 
 namespace ExtenderApp.Buffer.MemoryBlocks
 {
@@ -37,20 +36,19 @@ namespace ExtenderApp.Buffer.MemoryBlocks
         /// </summary>
         /// <param name="sizeHint">建议的最小容量（元素数）。实现可以忽略或用于选择合适大小的数组。</param>
         /// <returns>一个来自对象池且已配置为从数组池租用底层数组的 <see cref="MemoryBlock{T}"/> 实例。</returns>
-        protected override MemoryBlock<T> CreateBufferProtected(int sizeHint)
+        protected override sealed MemoryBlock<T> CreateBufferProtected(int sizeHint)
         {
             var block = _blockPool.Get();
             block.ArrayPool = _arrayPool;
             block.Initialize(this);
+            block.GetMemory(sizeHint); // 预先分配底层数组以满足初始容量提示
             return block;
         }
 
-        protected override void ReleaseProtected(MemoryBlock<T> buffer)
+        protected override sealed void ReleaseProtected(MemoryBlock<T> buffer)
         {
             if (buffer is ArrayPoolMemoryBlock memoryBlock)
             {
-                // 先由块自身清理内部状态，再归还底层数组并回收对象
-                memoryBlock.PrepareForRelease();
                 if (memoryBlock.TArray != null) _arrayPool.Return(memoryBlock.TArray);
                 memoryBlock.TArray = default!;
                 memoryBlock.ArrayPool = default!;
@@ -103,7 +101,7 @@ namespace ExtenderApp.Buffer.MemoryBlocks
             /// <summary>
             /// 返回当前内存块的底层可用内存（包含已提交与未提交部分）。
             /// </summary>
-            protected override Memory<T> AvailableMemory => TArray;
+            protected override sealed Memory<T> AvailableMemory => TArray;
 
             /// <summary>
             /// 构造函数：对象从池中获取后，字段由提供者初始化。
@@ -114,7 +112,7 @@ namespace ExtenderApp.Buffer.MemoryBlocks
                 TArray = default!;
             }
 
-            protected override void EnsureCapacityProtected(int sizeHint)
+            protected override sealed void EnsureCapacityProtected(int sizeHint)
             {
                 if (TArray == null)
                 {

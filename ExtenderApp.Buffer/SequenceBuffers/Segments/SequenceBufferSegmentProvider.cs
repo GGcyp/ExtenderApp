@@ -1,4 +1,5 @@
-﻿using ExtenderApp.Buffer.MemoryBlocks;
+﻿using System.Diagnostics;
+using ExtenderApp.Buffer.MemoryBlocks;
 
 namespace ExtenderApp.Buffer.SequenceBuffers
 {
@@ -10,24 +11,34 @@ namespace ExtenderApp.Buffer.SequenceBuffers
     /// 派生类负责实现具体的段包装策略（见 <see cref="GetSegmentProtected(MemoryBlock{T})"/>）以及释放策略（见 <see cref="ReleaseSegmentProtected(SequenceBufferSegment{T})"/>）。
     /// </remarks>
     /// <typeparam name="T">段中元素的类型。</typeparam>
-    public abstract class SequenceBufferSegmentProvider<T>
+    public sealed class SequenceBufferSegmentProvider<T>
     {
+        private static readonly Lazy<SequenceBufferSegmentProvider<T>> _default =
+            new(static () => new());
+
         /// <summary>
         /// 默认共享的段提供者实例，指向基于内存块实现的提供者（由具体实现初始化）。
         /// </summary>
-        public static SequenceBufferSegmentProvider<T> Shared = MemoryBlockSegmentProvider<T>.Default;
+        public static SequenceBufferSegmentProvider<T> Shared = _default.Value;
+
+        private readonly ObjectPool<SequenceBufferSegment<T>> _pool =
+            ObjectPool.Create<SequenceBufferSegment<T>>();
 
         /// <summary>
         /// 内部的内存块提供者，用于获取底层的 <see cref="MemoryBlock{T}"/> 实例以供封装成序列段。
         /// </summary>
         private readonly MemoryBlockProvider<T> _provider;
 
+        public SequenceBufferSegmentProvider() : this(MemoryBlockProvider<T>.Shared)
+        {
+        }
+
         /// <summary>
         /// 使用指定的内存块提供者创建 <see cref="SequenceBufferSegmentProvider{T}"/> 实例。
         /// </summary>
         /// <param name="provider">用于提供底层 <see cref="MemoryBlock{T}"/> 的缓冲工厂，不能为空。</param>
         /// <exception cref="ArgumentNullException"><paramref name="provider"/> 为 null 时抛出。</exception>
-        protected SequenceBufferSegmentProvider(MemoryBlockProvider<T> provider)
+        public SequenceBufferSegmentProvider(MemoryBlockProvider<T> provider)
         {
             _provider = provider ?? throw new ArgumentNullException(nameof(provider));
         }
@@ -39,9 +50,8 @@ namespace ExtenderApp.Buffer.SequenceBuffers
         /// <returns>一个包装好的 <see cref="SequenceBufferSegment{T}"/> 实例。派生实现可决定是否复用或新建。 返回的段必须与其底层 <see cref="MemoryBlock{T}"/> 的生命周期策略一致（例如归还到提供者或由调用方负责释放）。</returns>
         public SequenceBufferSegment<T> GetSegment(int sizeHint)
         {
-            var buffer = _provider.GetBuffer(sizeHint);
-            var segment = GetSegmentProtected(buffer);
-            segment.Initialize(this);
+            var block = _provider.GetBuffer(sizeHint);
+            var segment = GetSegment(block);
             return segment;
         }
 
@@ -56,17 +66,10 @@ namespace ExtenderApp.Buffer.SequenceBuffers
             if (block is null)
                 throw new ArgumentNullException(nameof(block));
 
-            var segment = GetSegmentProtected(block);
-            segment.Initialize(this);
+            var segment = _pool.Get();
+            segment.Initialize(this, block);
             return segment;
         }
-
-        /// <summary>
-        /// 将由内部提供者返回的 <see cref="MemoryBlock{T}"/> 包装为 <see cref="SequenceBufferSegment{T}"/>。
-        /// </summary>
-        /// <param name="block">由内部提供者提供的 <see cref="MemoryBlock{T}"/>，不会为 null。</param>
-        /// <returns>与 <paramref name="block"/> 对应的 <see cref="SequenceBufferSegment{T}"/> 实例。</returns>
-        protected abstract SequenceBufferSegment<T> GetSegmentProtected(MemoryBlock<T> block);
 
         /// <summary>
         /// 释放指定的段实例（外部入口）。
@@ -77,13 +80,8 @@ namespace ExtenderApp.Buffer.SequenceBuffers
         {
             if (segment is null)
                 throw new ArgumentNullException(nameof(segment));
-            ReleaseSegmentProtected(segment);
-        }
 
-        /// <summary>
-        /// 释放指定的段实例（由派生类实现具体回收逻辑，例如将底层内存块归还到提供者或清理资源）。
-        /// </summary>
-        /// <param name="segment">要释放的段，不能为空。</param>
-        protected abstract void ReleaseSegmentProtected(SequenceBufferSegment<T> segment);
+            _pool.Release(segment);
+        }
     }
 }

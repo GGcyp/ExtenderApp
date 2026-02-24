@@ -33,6 +33,9 @@ namespace ExtenderApp.Buffer
         /// </summary>
         private long writeFreezeCount;
 
+        /// <summary>
+        /// 当前缓冲区是否处于固定状态（被 Pin 调用且尚未 Unpin）。 该属性通过内部计数器 pinCount 来跟踪固定状态，确保在多次 Pin 调用后仍能正确反映当前是否处于固定状态。 派生类在实现 PinProtected 和 UnpinProtected 时应确保正确更新 pinCount 以保持 IsPinned 的准确性。
+        /// </summary>
         public bool IsPinned => Interlocked.CompareExchange(ref pinCount, 0, 0) > 0;
 
         /// <summary>
@@ -415,12 +418,6 @@ namespace ExtenderApp.Buffer
         /// </summary>
         /// <returns>转存好的数组实例</returns>
         public abstract T[] ToArray();
-
-        protected override void Dispose(bool disposing)
-        {
-            Release();
-            base.Dispose(disposing);
-        }
 
         public override string ToString()
             => $"AbstractBuffer<{typeof(T).Name}>: Capacity={Capacity}, Committed={Committed}, Available={Available}, IsFrozen={IsFrozen}, IsWriteFrozen={IsWriteFrozen}, IsPinned={IsPinned}";

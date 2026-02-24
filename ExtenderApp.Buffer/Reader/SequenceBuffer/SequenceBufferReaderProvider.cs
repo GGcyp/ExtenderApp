@@ -17,7 +17,7 @@ namespace ExtenderApp.Buffer.Reader
         {
             var reader = _readerPool.Get();
             reader.ReaderProvider = this;
-            reader.Initialize(buffer);
+            reader.Initialize(this, buffer);
             return reader;
         }
 
@@ -25,7 +25,6 @@ namespace ExtenderApp.Buffer.Reader
         {
             if (reader is SequenceBufferReader<T> seqReader)
             {
-                seqReader.PrepareForRelease();
                 seqReader.ReaderProvider = default!;
                 _readerPool.Release(seqReader);
             }

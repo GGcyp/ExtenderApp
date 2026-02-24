@@ -74,14 +74,13 @@ namespace ExtenderApp.Common.Serializations.Binary
 
         public override T Deserialize<T>(AbstractBuffer<byte> buffer)
         {
-            if (TryGetFormatter(out IBinaryFormatter<T> formatter))
-            {
-                var arr = buffer.ToArray();
-                SpanReader<byte> reader = new(arr);
-                var result = formatter.Deserialize(ref reader);
-                return result;
-            }
-            return default!;
+            if(buffer is MemoryBlock<byte> memoryBlock)
+                    return Deserialize<T>(memoryBlock.CommittedSpan);
+
+            var reader = buffer.ToReader();
+            var result = Deserialize<T>(reader);
+            reader.Release();
+            return result;
         }
 
         public override T Deserialize<T>(AbstractBufferReader<byte> reader)

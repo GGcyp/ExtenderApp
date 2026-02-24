@@ -183,12 +183,12 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
         protected static bool TryReadMark(AbstractBufferReader<byte> reader, byte mark)
         {
             ArgumentNullException.ThrowIfNull(reader, nameof(reader));
-            if (reader.Read() != mark)
+            if (reader.TryPeek(out byte value) && value == mark)
             {
-                reader.Rewind(1);
-                return false;
+                reader.Read();
+                return true;
             }
-            return true;
+            return false;
         }
 
         /// <summary>

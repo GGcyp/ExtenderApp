@@ -155,37 +155,36 @@ namespace ExtenderApp.Common.Networks
         /// <exception cref="ObjectDisposedException">当对象已释放时抛出。</exception>
         public void Connect(EndPoint remoteEndPoint)
         {
-            ThrowIfDisposed();
-            // 保证连接/断开与收发互斥，避免在 I/O 中途切换连接状态
-            SendSlim.Wait();
-            ReceiveSlim.Wait();
-
-            if (Connected)
-                Disconnect();
-
-            try
-            {
-                ExecuteConnectAsync(remoteEndPoint, default).Await(false);
-            }
-            finally
-            {
-                RemoteEndPoint = remoteEndPoint;
-                Connected = true;
-                ReceiveSlim.Release();
-                SendSlim.Release();
-            }
+            ConnectAsync(remoteEndPoint).Await();
         }
 
         /// <inheritdoc/>
         /// <exception cref="ObjectDisposedException">当对象已释放时抛出。</exception>
-        public async ValueTask ConnectAsync(EndPoint remoteEndPoint, CancellationToken token = default)
+        public void Connect(EndPoint remoteEndPoint, EndPoint localAddress)
+        {
+            ConnectAsync(remoteEndPoint, localAddress).Await();
+        }
+
+        /// <inheritdoc/>
+        /// <exception cref="ObjectDisposedException">当对象已释放时抛出。</exception>
+        public ValueTask ConnectAsync(EndPoint remoteEndPoint, CancellationToken token = default)
+        {
+            return ConnectAsync(remoteEndPoint, null!, token);
+        }
+
+        /// <inheritdoc/>
+        /// <exception cref="ObjectDisposedException">当对象已释放时抛出。</exception>
+        public async ValueTask ConnectAsync(EndPoint remoteEndPoint, EndPoint localAddress, CancellationToken token = default)
         {
             ThrowIfDisposed();
             await SendSlim.WaitAsync(token).ConfigureAwait(false);
             await ReceiveSlim.WaitAsync(token).ConfigureAwait(false);
 
-            if (Connected)
+            if (Connected && RemoteEndPoint != remoteEndPoint)
                 await DisconnectAsync(token).ConfigureAwait(false);
+
+            if (localAddress != null && LocalEndPoint != localAddress)
+                ExecuteBind(localAddress);
 
             try
             {
@@ -338,7 +337,7 @@ namespace ExtenderApp.Common.Networks
         {
             ThrowIfDisposed();
             var result = GetBufferLength(buffer, out long length);
-            if (!result) 
+            if (!result)
                 return result;
 
             var lease = CapacityLimiter.Acquire(length);

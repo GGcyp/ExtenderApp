@@ -27,8 +27,6 @@ namespace ExtenderApp.Buffer.MemoryBlocks
         {
             if (buffer is FixedMemoryBlock memoryBlock)
             {
-                // 先由块自身清理内部状态，再归还底层数组并回收对象
-                memoryBlock.PrepareForRelease();
                 memoryBlock.FixedMemory = Memory<T>.Empty;
                 _blockPool.Release(memoryBlock);
             }
@@ -71,13 +69,13 @@ namespace ExtenderApp.Buffer.MemoryBlocks
             /// <summary>
             /// 可用的内存区域（等同于 <see cref="FixedMemory"/>）。
             /// </summary>
-            protected override Memory<T> AvailableMemory => FixedMemory;
+            protected override sealed Memory<T> AvailableMemory => FixedMemory;
 
             /// <summary>
             /// 初始化内存块并将可读区设置为固定内存的长度。
             /// </summary>
             /// <param name="provider">调用者的提供者实例。</param>
-            protected internal override void Initialize(MemoryBlockProvider<T> provider)
+            protected internal override sealed void Initialize(MemoryBlockProvider<T> provider)
             {
                 base.Initialize(provider);
                 Advance(FixedMemory.Length);
@@ -87,7 +85,7 @@ namespace ExtenderApp.Buffer.MemoryBlocks
             /// 固定内存块不支持扩展容量，调用此方法将抛出 <see cref="NotSupportedException"/>。
             /// </summary>
             /// <param name="sizeHint">建议的扩展大小（忽略）。</param>
-            protected override void EnsureCapacityProtected(int sizeHint)
+            protected override sealed void EnsureCapacityProtected(int sizeHint)
             {
                 throw new NotSupportedException("当前不支持扩展固定大小的内存块。");
             }

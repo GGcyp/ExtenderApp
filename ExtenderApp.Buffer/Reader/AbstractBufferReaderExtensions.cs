@@ -1,10 +1,28 @@
-﻿namespace ExtenderApp.Buffer
+﻿using ExtenderApp.Buffer.Reader;
+
+namespace ExtenderApp.Buffer
 {
     /// <summary>
     /// 为 <see cref="AbstractBufferReader{byte}"/> 提供的扩展方法集合。
     /// </summary>
     public static class AbstractBufferReaderExtensions
     {
+        /// <summary>
+        /// 将 <see cref="AbstractBuffer{T}"/> 转换为对应的 <see cref="AbstractBufferReader{T}"/> 实例。 支持的输入类型包括 <see cref="MemoryBlock{T}"/> 和 <see cref="SequenceBuffer{T}"/>，其他类型将抛出 <see cref="InvalidOperationException"/>。 该方法通过检查输入 buffer 的实际类型来选择合适的 reader 提供者，以确保正确创建 reader 实例。
+        /// </summary>
+        /// <typeparam name="T">对应类型<see cref="{T}"/></typeparam>
+        /// <param name="buffer">要转换的 <see cref="AbstractBuffer{T}"/> 实例。</param>
+        /// <returns>与输入 buffer 对应的 <see cref="AbstractBufferReader{T}"/> 实例。</returns>
+        public static AbstractBufferReader<T> ToReader<T>(this AbstractBuffer<T> buffer)
+        {
+            if (buffer is MemoryBlock<T> memoryBlock)
+                return MemoryBlockReaderProvider<T>.Default.GetReader(memoryBlock);
+            if (buffer is SequenceBuffer<T> sequenceBuffer)
+                return SequenceBufferReaderProvider<T>.Default.GetReader(sequenceBuffer);
+
+            throw new InvalidOperationException($"无法为类型 {buffer.GetType()} 创建对应的 {typeof(AbstractBufferReader<T>)} 实例。");
+        }
+
         /// <summary>
         /// 从 reader 的未读序列中读取类型为 <typeparamref name="T"/> 的值，并按读取字节数前进 reader。 默认按 big-endian 解释字节序，可以通过 <paramref name="isBigEndian"/> 指定。
         /// </summary>

@@ -31,6 +31,28 @@ namespace ExtenderApp.Abstract
         void Connect(EndPoint remoteEndPoint);
 
         /// <summary>
+        /// 同步连接到指定远端终结点。
+        /// </summary>
+        /// <param name="remoteEndPoint">
+        /// 目标远端终结点，不能为 <c>null</c>。
+        /// </param>
+        /// <param name="localAddress">
+        /// 本地终结点，不能为 <c>null</c>。
+        /// </param>
+        /// <remarks>
+        /// - 对于面向连接的协议（例如 TCP），应建立到 <paramref
+        ///   name="remoteEndPoint"/> 的连接。
+        /// - 对于无连接协议（例如 UDP），实现可选择将套接字的默认远端设置为
+        ///   <paramref name="remoteEndPoint"/> 或执行等效操作。
+        /// - 若当前已处于连接状态，重复调用应抛出异常或由实现明确文档化其行为（例如忽略或重新连接）。
+        /// - 参数非法（例如
+        ///   <c>null</c>）或对象已释放应抛出相应的异常（例如 <see
+        ///   cref="System.ArgumentNullException"/>、
+        ///   <see cref="System.ObjectDisposedException"/>）。
+        /// </remarks>
+        void Connect(EndPoint remoteEndPoint, EndPoint localAddress);
+
+        /// <summary>
         /// 异步连接到指定远端终结点。
         /// </summary>
         /// <param name="remoteEndPoint">目标远端终结点，不能为空。</param>
@@ -43,6 +65,21 @@ namespace ExtenderApp.Abstract
         /// cref="OperationCanceledException"/> 或以已取消的语义完成任务（应在实现文档中说明）。
         /// </returns>
         ValueTask ConnectAsync(EndPoint remoteEndPoint, CancellationToken token = default);
+
+        /// <summary>
+        /// 异步连接到指定远端终结点。
+        /// </summary>
+        /// <param name="remoteEndPoint">目标远端终结点，不能为空。</param>
+        /// <param name="localAddress">本地终结点，不能为空。</param>
+        /// <param name="token">
+        /// 用于取消连接操作的 <see cref="CancellationToken"/>。实现应在取消时尽快中止连接并释放相关临时资源。
+        /// </param>
+        /// <returns>
+        /// 一个表示异步连接操作的 <see
+        /// cref="ValueTask"/>。在取消时可以抛出 <see
+        /// cref="OperationCanceledException"/> 或以已取消的语义完成任务（应在实现文档中说明）。
+        /// </returns>
+        ValueTask ConnectAsync(EndPoint remoteEndPoint, EndPoint localAddress, CancellationToken token = default);
 
         /// <summary>
         /// 同步断开当前连接并释放底层会话资源。
