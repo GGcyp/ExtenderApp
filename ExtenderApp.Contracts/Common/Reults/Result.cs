@@ -7,6 +7,9 @@ namespace ExtenderApp.Contracts
     /// </summary>
     public readonly struct Result : IEquatable<Result>
     {
+        public const string DefaultSuccessMessage = "OK";
+        public const string DefaultFailureMessage = "Failure";
+
         /// <summary>
         /// 获取一个值，该值指示操作是否成功。
         /// </summary>
@@ -101,14 +104,14 @@ namespace ExtenderApp.Contracts
         /// <summary>
         /// 创建一个表示成功的 <see cref="Result"/>。
         /// </summary>
-        public static Result Success(string? message = "OK") => new(true, message);
+        public static Result Success(string? message = DefaultSuccessMessage) => new(true, message);
 
         /// <summary>
         /// 创建一个表示不成功的 <see cref="Result"/>。
         /// </summary>
         /// <param name="message"></param>
         /// <returns></returns>
-        public static Result Failure(string? message = "Failure") => new(false, message);
+        public static Result Failure(string? message = DefaultFailureMessage) => new(false, message);
 
         /// <summary>
         /// 创建一个表示异常的 <see cref="Result"/>。
@@ -126,7 +129,7 @@ namespace ExtenderApp.Contracts
         /// <summary>
         /// 创建一个表示成功的 <see cref="Result{T}"/>。
         /// </summary>
-        public static Result<T> Success<T>(T data, string? message = "OK") => new(true, data, message);
+        public static Result<T> Success<T>(T data, string? message = DefaultSuccessMessage) => new(true, data, message);
 
         /// <summary>
         /// 创建一个表示不成功的 <see cref="Result{T}"/>。
@@ -134,7 +137,7 @@ namespace ExtenderApp.Contracts
         /// <typeparam name="T"></typeparam>
         /// <param name="message"></param>
         /// <returns></returns>
-        public static Result<T> Failure<T>(string? message = "Failure") => new(false, default(T), message);
+        public static Result<T> Failure<T>(string? message = DefaultFailureMessage) => new(false, default(T), message);
 
         /// <summary>
         /// 创建一个表示异常的 <see cref="Result{T}"/>。
@@ -202,12 +205,7 @@ namespace ExtenderApp.Contracts
         /// </summary>
         public T? Value { get; }
 
-        /// <summary>
-        /// 初始化一个不带数据的 <see cref="Result{T}"/> 新实例。
-        /// </summary>
-        /// <param name="isSuccess">操作是否成功。</param>
-        /// <param name="message">与结果相关的可选消息。</param>
-        public Result(bool isSuccess, string? message) : this(isSuccess, default, message, null)
+        public Result(bool isSuccess) : this(isSuccess, default, null, null)
         {
         }
 

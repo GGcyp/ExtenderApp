@@ -3,21 +3,21 @@
 namespace ExtenderApp.Common.Serializations.Binary.Formatters
 {
     /// <summary>
-    /// 队列格式化器类，继承自<see cref="InterfaceEnumerableFormatter{T, Queue{T}}" />。
+    /// 队列格式化器类，继承自 <see cref="InterfaceEnumerableFormatter{T, Queue{T}}"/>。
     /// </summary>
     /// <typeparam name="T">队列中元素的类型。</typeparam>
-    internal class QueueFormatter<T> : InterfaceEnumerableFormatter<T, Queue<T>>
+    internal sealed class QueueFormatter<T> : InterfaceEnumerableFormatter<T, Queue<T>>
     {
         public QueueFormatter(IBinaryFormatterResolver resolver) : base(resolver)
         {
         }
 
-        protected override void Add(Queue<T> collection, T value)
+        protected override sealed void Add(Queue<T> collection, T value)
         {
             collection.Enqueue(value);
         }
 
-        protected override Queue<T> Create(int count)
+        protected override sealed Queue<T> Create(int count)
         {
             return new Queue<T>(count);
         }

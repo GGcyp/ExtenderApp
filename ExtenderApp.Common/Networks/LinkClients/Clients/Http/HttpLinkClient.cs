@@ -129,7 +129,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
         //        }
 
         //        // 准备等待源并启动接收任务（若尚未启动）
-        //        vts.Release();
+        //        vts.TryRelease();
         //        EnsureReceiveTaskRunning(token);
         //        var response = await new ValueTask<HttpResponseMessage>(this, vts.Version).ConfigureAwait(false);
 
@@ -153,7 +153,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
         //        if (response.StatusCode == HttpStatusCode.Redirect || response.StatusCode == HttpStatusCode.RedirectMethod)
         //        {
         //            request.Method = Contracts.HttpMethod.GetAwaitable;
-        //            request.Body.Dispose();
+        //            request.Body.TryRelease();
         //        }
 
         //        if (!string.Equals(currentUri.Host, newUri.Host, StringComparison.OrdinalIgnoreCase) || currentUri.Port != newUri.Port)

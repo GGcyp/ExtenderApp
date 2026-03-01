@@ -138,7 +138,6 @@ namespace ExtenderApp.Buffer
                 throw new ArgumentOutOfRangeException(nameof(count), "count 必须是非负数，且移动后的结束索引不能超过内存长度。");
 
             committed += count;
-            OnCommittedChanged();
         }
 
         /// <summary>
@@ -154,7 +153,6 @@ namespace ExtenderApp.Buffer
 
             committed -= count;
             ClearReferences(committed, count);
-            OnCommittedChanged();
         }
 
         /// <summary>
@@ -192,7 +190,6 @@ namespace ExtenderApp.Buffer
         {
             CheckWriteFrozen();
             ClearReferences(0, committed);
-            OnCommittedChanged();
         }
 
         /// <summary>
@@ -251,6 +248,7 @@ namespace ExtenderApp.Buffer
         {
             ownerProvider = provider;
             committed = 0;
+            IsActived = true;
         }
 
         ///<inheritdoc/>

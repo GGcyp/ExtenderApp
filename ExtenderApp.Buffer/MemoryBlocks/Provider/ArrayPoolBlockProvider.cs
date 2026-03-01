@@ -89,6 +89,22 @@ namespace ExtenderApp.Buffer.MemoryBlocks
         }
 
         /// <summary>
+        /// 获取一个新的 <see cref="MemoryBlock{T}"/>，并将指定的内存放入该内存块。 并且当前内存块的底层数组将从数组池租用以容纳该内存。
+        /// </summary>
+        /// <param name="array">要写入内存块的数组。</param>
+        /// <param name="committed">数组中已提交的数据长度。</param>
+        /// <returns>返回已初始化并包含写入数据的 <see cref="MemoryBlock{T}"/> 实例。调用方负责在不再使用时释放或归还该内存块。</returns>
+        internal MemoryBlock<T> GetBuffer(T[] array, int committed)
+        {
+            var block = _blockPool.Get();
+            block.ArrayPool = _arrayPool;
+            block.TArray = array;
+            block.Initialize(this);
+            block.Advance(committed);
+            return block;
+        }
+
+        /// <summary>
         /// 数组池内存块的具体实现：它维护一个来自数组池的底层数组，并在释放时根据是否使用池进行适当的清理和归还。
         /// </summary>
         private sealed class ArrayPoolMemoryBlock : MemoryBlock<T>

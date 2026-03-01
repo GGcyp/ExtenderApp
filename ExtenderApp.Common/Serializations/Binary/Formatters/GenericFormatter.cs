@@ -8,7 +8,7 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
     /// 一个通用的二进制格式化器，用于依赖注入中的二进制格式化器生成。
     /// </summary>
     /// <typeparam name="T">需要被二进制格式化的类型。</typeparam>
-    internal class GenericFormatter<T> : ResolverFormatter<T>
+    internal sealed class GenericFormatter<T> : ResolverFormatter<T>
     {
         private IBinaryFormatter<T> _innerFormatter;
 
@@ -17,29 +17,29 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
             _innerFormatter = resolver.GetFormatter<T>();
         }
 
-        public override int DefaultLength => _innerFormatter.DefaultLength;
+        public override sealed int DefaultLength => _innerFormatter.DefaultLength;
 
-        public override void Serialize(AbstractBuffer<byte> buffer, T value)
-        {
-            _innerFormatter.Serialize(buffer, value);
-        }
-
-        public override void Serialize(ref SpanWriter<byte> writer, T value)
+        public override sealed void Serialize(ref BinaryWriterAdapter writer, T value)
         {
             _innerFormatter.Serialize(ref writer, value);
         }
 
-        public override T Deserialize(AbstractBufferReader<byte> reader)
+        public override sealed void Serialize(ref SpanWriter<byte> writer, T value)
         {
-            return _innerFormatter.Deserialize(reader);
+            _innerFormatter.Serialize(ref writer, value);
         }
 
-        public override T Deserialize(ref SpanReader<byte> reader)
+        public override sealed T Deserialize(ref BinaryReaderAdapter reader)
         {
             return _innerFormatter.Deserialize(ref reader);
         }
 
-        public override long GetLength(T value)
+        public override sealed T Deserialize(ref SpanReader<byte> reader)
+        {
+            return _innerFormatter.Deserialize(ref reader);
+        }
+
+        public override sealed long GetLength(T value)
         {
             return _innerFormatter.GetLength(value);
         }

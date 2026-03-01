@@ -1,6 +1,5 @@
 ﻿using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using ExtenderApp.Abstract;
 using ExtenderApp.Buffer;
 using ExtenderApp.Contracts;
 
@@ -33,8 +32,19 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
         /// <returns>序列化后的总字节数。</returns>
         private delegate long GetLengthDelegate(T value);
 
+        /// <summary>
+        /// 序列化委托实例
+        /// </summary>
         private readonly SerializeDelegate _serializeInvoker;
+
+        /// <summary>
+        /// 反序列化委托实例
+        /// </summary>
         private readonly DeserializeDelegate _deserializeInvoker;
+
+        /// <summary>
+        /// 获取序列化长度委托实例
+        /// </summary>
         private readonly GetLengthDelegate _getLengthInvoker;
 
         /// <summary>
@@ -71,12 +81,15 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
             return arr;
         }
 
+        /// <summary>
+        /// 当前格式化器对应的类型标记字节（根据 T 在构造函数中确定）。 用于快速验证读取数据的类型兼容性以及在序列化时写入正确的标记。 反序列化时会检查读取到的 mark 是否与 _mark 兼容（即数据大小不超过 _mark 对应的类型），以防止错误地将较大或不兼容的数据读入当前类型。
+        /// </summary>
         private readonly byte _mark;
 
         /// <summary>
         /// 默认的序列化字节长度（类型标记 + 数据），基于泛型类型 T 的静态大小计算。
         /// </summary>
-        public override int DefaultLength { get; }
+        public override sealed int DefaultLength { get; }
 
         /// <summary>
         /// 构造函数：根据泛型 <typeparamref name="T"/> 决定使用哪条序列化/反序列化路径并初始化委托缓存。
@@ -101,7 +114,18 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
             _mark = BinaryOptions.GetByteByType<T>();
         }
 
-        public override T Deserialize(ref SpanReader<byte> reader)
+        public override sealed T Deserialize(ref BinaryReaderAdapter reader)
+        {
+            Span<byte> buffer = stackalloc byte[Math.Min((int)reader.Remaining, DefaultLength)];
+            reader.TryPeek(buffer);
+
+            SpanReader<byte> spanReader = new(buffer);
+            T result = Deserialize(ref spanReader);
+            reader.Advance(spanReader.Consumed);
+            return result;
+        }
+
+        public override sealed T Deserialize(ref SpanReader<byte> reader)
         {
             if (!reader.TryPeek(out byte mark))
                 throw new InvalidOperationException("无法读取类型标记，数据已读尽。");
@@ -112,39 +136,20 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
             return _deserializeInvoker(ref reader);
         }
 
-        public override void Serialize(ref SpanWriter<byte> writer, T value)
+        public override sealed void Serialize(ref BinaryWriterAdapter writer, T value)
+        {
+            Span<byte> span = writer.GetSpan(DefaultLength);
+            SpanWriter<byte> spanWriter = new(span);
+            _serializeInvoker(ref spanWriter, value);
+            writer.Advance(spanWriter.Consumed);
+        }
+
+        public override sealed void Serialize(ref SpanWriter<byte> writer, T value)
         {
             _serializeInvoker(ref writer, value);
         }
 
-        public override T Deserialize(AbstractBufferReader<byte> reader)
-        {
-            if (!reader.TryPeek(out byte mark))
-                throw new InvalidOperationException("无法读取类型标记，数据已读尽。");
-
-            if (GetSizeByMark(mark) > GetSizeByMark(_mark))
-                throw new InvalidOperationException($"无法将数据内{BinaryOptions.GetNameByMark(mark)}类型转换成{BinaryOptions.GetNameByMark(_mark)}");
-
-            // 对于非托管类型，通常很小，直接读取到栈上 Span 处理以复用逻辑
-            long totalLen = GetSizeByMark(mark) + 1;
-            Span<byte> temp = stackalloc byte[(int)totalLen];
-            if (reader.Read(temp) != (int)totalLen)
-                throw new InvalidDataException("数据包不完整，无法反序列化。");
-
-            var spanReader = new SpanReader<byte>(temp);
-            return _deserializeInvoker(ref spanReader);
-        }
-
-        public override void Serialize(AbstractBuffer<byte> buffer, T value)
-        {
-            var length = GetLength(value);
-            var span = buffer.GetSpan((int)length);
-            var writer = new SpanWriter<byte>(span);
-            Serialize(ref writer, value);
-            buffer.Advance(writer.Consumed);
-        }
-
-        public override long GetLength(T value)
+        public override sealed long GetLength(T value)
         {
             return _getLengthInvoker(value);
         }

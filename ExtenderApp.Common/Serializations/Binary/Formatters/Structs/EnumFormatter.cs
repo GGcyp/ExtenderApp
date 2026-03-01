@@ -4,26 +4,25 @@ using ExtenderApp.Buffer;
 
 namespace ExtenderApp.Common.Serializations.Binary.Formatters
 {
-    internal class EnumFormatter<T> : ResolverFormatter<T>
+    internal sealed class EnumFormatter<T> : ResolverFormatter<T>
         where T : struct, Enum
     {
-        private delegate void EnumAbstractBufferSerialize(AbstractBuffer<byte> buffer, T value);
-
         private delegate void EnumSpanWriterSerialize(ref SpanWriter<byte> writer, T value);
 
-        private delegate T EnumAbstractBufferReaderDeserialize(AbstractBufferReader<byte> reader);
+        private delegate T EnumBinaryReaderAdapterDeserialize(ref BinaryReaderAdapter reader);
 
         private delegate T EnumSpanReaderDeserialize(ref SpanReader<byte> reader);
 
         private delegate long EnumGetLength(T value);
 
-        private EnumAbstractBufferSerialize abstractBufferSerialize = default!;
+        // 存储非泛型委托与状态；针对 BinaryWriterAdapter 的泛型序列化路径在运行时根据底层类型选择对应的格式化器调用。
         private EnumSpanWriterSerialize spanWriterSerializer = default!;
-        private EnumAbstractBufferReaderDeserialize abstractBufferReaderDeserialize = default!;
+
+        private EnumBinaryReaderAdapterDeserialize abstractBufferReaderDeserialize = default!;
         private EnumSpanReaderDeserialize spanReaderDeserialize = default!;
         private EnumGetLength getLength = default!;
 
-        public override int DefaultLength { get; }
+        public override sealed int DefaultLength { get; }
 
         public EnumFormatter(IBinaryFormatterResolver resolver) : base(resolver)
         {
@@ -71,35 +70,39 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
         private int CreateEnumSerialize<TType>(IBinaryFormatter<TType> formatter)
             where TType : struct
         {
-            abstractBufferSerialize = (buffer, value) => formatter.Serialize(buffer, Unsafe.As<T, TType>(ref value));
+            // 保存非泛型委托（针对 SpanWriter/SpanReader/AbstractBufferReaderAdapter 路径）。
             spanWriterSerializer = (ref SpanWriter<byte> writer, T value) => formatter.Serialize(ref writer, Unsafe.As<T, TType>(ref value));
-            abstractBufferReaderDeserialize = (reader) => { var v = formatter.Deserialize(reader); return Unsafe.As<TType, T>(ref v); };
+            abstractBufferReaderDeserialize = (ref BinaryReaderAdapter reader) => { var v = formatter.Deserialize(ref reader); return Unsafe.As<TType, T>(ref v); };
             spanReaderDeserialize = (ref SpanReader<byte> reader) => { var v = formatter.Deserialize(ref reader); return Unsafe.As<TType, T>(ref v); };
             getLength = (T val) => formatter.GetLength(Unsafe.As<T, TType>(ref val));
+
             return formatter.DefaultLength;
         }
 
-        public override void Serialize(AbstractBuffer<byte> buffer, T value)
-        {
-            abstractBufferSerialize.Invoke(buffer, value);
-        }
-
-        public override void Serialize(ref SpanWriter<byte> writer, T value)
+        public override sealed void Serialize(ref SpanWriter<byte> writer, T value)
         {
             spanWriterSerializer.Invoke(ref writer, value);
         }
 
-        public override T Deserialize(AbstractBufferReader<byte> reader)
+        public override sealed void Serialize(ref BinaryWriterAdapter writer, T value)
         {
-            return abstractBufferReaderDeserialize.Invoke(reader);
+            Span<byte> span = writer.GetSpan(DefaultLength);
+            SpanWriter<byte> spanWriter = new SpanWriter<byte>(span);
+            spanWriterSerializer.Invoke(ref spanWriter, value);
+            writer.Advance(DefaultLength);
         }
 
-        public override T Deserialize(ref SpanReader<byte> reader)
+        public override sealed T Deserialize(ref BinaryReaderAdapter reader)
+        {
+            return abstractBufferReaderDeserialize.Invoke(ref reader);
+        }
+
+        public override sealed T Deserialize(ref SpanReader<byte> reader)
         {
             return spanReaderDeserialize.Invoke(ref reader);
         }
 
-        public override long GetLength(T value)
+        public override sealed long GetLength(T value)
         {
             return getLength.Invoke(value);
         }

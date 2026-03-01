@@ -1,4 +1,6 @@
-﻿namespace ExtenderApp.Buffer
+﻿using System.Runtime.CompilerServices;
+
+namespace ExtenderApp.Buffer
 {
     /// <summary>
     /// 默认可以被销毁对象的对象池
@@ -18,7 +20,7 @@
         {
         }
 
-        public override T Get()
+        public override sealed T Get()
         {
             if (_isDisposed)
             {
@@ -33,7 +35,7 @@
             }
         }
 
-        public override void Release(T obj)
+        public override sealed void Release(T obj)
         {
             if (_isDisposed || !ReleaseCore(obj))
             {
@@ -54,6 +56,7 @@
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void DisposeItem(T? item)
         {
             if (item is IDisposable disposable)

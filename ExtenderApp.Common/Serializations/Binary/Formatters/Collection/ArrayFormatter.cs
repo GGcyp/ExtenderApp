@@ -9,9 +9,6 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
     /// <typeparam name="T">数组元素的类型</typeparam>
     public sealed class ArrayFormatter<T> : ResolverFormatter<T[]?>
     {
-        /// <summary>
-        /// 二进制格式化器
-        /// </summary>
         private readonly IBinaryFormatter<T> _t;
 
         private readonly IBinaryFormatter<int> _int;
@@ -29,24 +26,7 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
             _int = GetFormatter<int>();
         }
 
-        public override void Serialize(AbstractBuffer<byte> buffer, T[]? value)
-        {
-            if (value == null || value == Array.Empty<T>())
-            {
-                WriteNil(buffer);
-            }
-            else
-            {
-                WriteArrayHeader(buffer);
-                _int.Serialize(buffer, value.Length);
-                for (int i = 0; i < value.Length; i++)
-                {
-                    _t.Serialize(buffer, value[i]);
-                }
-            }
-        }
-
-        public override void Serialize(ref SpanWriter<byte> writer, T[]? value)
+        public override sealed void Serialize(ref BinaryWriterAdapter writer, T[]? value)
         {
             if (value == null || value == Array.Empty<T>())
             {
@@ -63,37 +43,28 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
             }
         }
 
-        public override T[]? Deserialize(AbstractBufferReader<byte> reader)
+        public override sealed void Serialize(ref SpanWriter<byte> writer, T[]? value)
         {
-            if (TryReadNil(reader))
+            if (value == null || value == Array.Empty<T>())
             {
-                return default;
+                WriteNil(ref writer);
             }
-
-            if (!TryReadArrayHeader(reader))
+            else
             {
-                throw new InvalidOperationException("数据格式不匹配，无法反序列化为数组");
+                WriteArrayHeader(ref writer);
+                _int.Serialize(ref writer, value.Length);
+                for (int i = 0; i < value.Length; i++)
+                {
+                    _t.Serialize(ref writer, value[i]);
+                }
             }
-
-            var len = _int.Deserialize(reader);
-            if (len == 0)
-            {
-                return Array.Empty<T>();
-            }
-
-            var array = new T[len];
-            for (int i = 0; i < array.Length; i++)
-            {
-                array[i] = _t.Deserialize(reader);
-            }
-            return array;
         }
 
-        public override T[]? Deserialize(ref SpanReader<byte> reader)
+        public override sealed T[]? Deserialize(ref BinaryReaderAdapter reader)
         {
             if (TryReadNil(ref reader))
             {
-                return default;
+                return Array.Empty<T>();
             }
 
             if (!TryReadArrayHeader(ref reader))
@@ -115,7 +86,33 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
             return array;
         }
 
-        public override long GetLength(T[]? value)
+        public override sealed T[]? Deserialize(ref SpanReader<byte> reader)
+        {
+            if (TryReadNil(ref reader))
+            {
+                return Array.Empty<T>();
+            }
+
+            if (!TryReadArrayHeader(ref reader))
+            {
+                throw new InvalidOperationException("数据格式不匹配，无法反序列化为数组");
+            }
+
+            var len = _int.Deserialize(ref reader);
+            if (len == 0)
+            {
+                return Array.Empty<T>();
+            }
+
+            var array = new T[len];
+            for (int i = 0; i < array.Length; i++)
+            {
+                array[i] = _t.Deserialize(ref reader);
+            }
+            return array;
+        }
+
+        public override sealed long GetLength(T[]? value)
         {
             if (value == null)
             {

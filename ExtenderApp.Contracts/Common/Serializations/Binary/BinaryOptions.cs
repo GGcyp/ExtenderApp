@@ -1,105 +1,106 @@
 ﻿namespace ExtenderApp.Contracts
 {
     /// <summary>
-    /// 二进制选项类（不可变标记，使用静态只读字段）。
-    /// 将原可写属性改为静态只读字段以避免运行时被篡改并提高库的稳定性。
-    /// 额外提供：按 mark 可查的名称数组和从 <see cref="System.Type"/> 到 mark 的查表以提高查找性能与可维护性。
+    /// 二进制选项类（不可变标记，使用静态只读字段）。 将原可写属性改为静态只读字段以避免运行时被篡改并提高库的稳定性。 额外提供：按 mark 可查的名称数组和从 <see cref="System.Type"/> 到 mark 的查表以提高查找性能与可维护性。
     /// </summary>
     public static class BinaryOptions
     {
         /// <summary>
         /// 空值编码。
         /// </summary>
-        public static readonly byte Nil = 0xc0;
+        public const byte Nil = 0xc0;
 
         /// <summary>
         /// 布尔值 False 编码。
         /// </summary>
-        public static readonly byte False = 0xc2;
+        public const byte False = 0xc2;
 
         /// <summary>
         /// 布尔值 True 编码。
         /// </summary>
-        public static readonly byte True = 0xc3;
+        public const byte True = 0xc3;
 
         /// <summary>
         /// 32 位浮点数数据标记。
         /// </summary>
-        public static readonly byte Float32 = 0xca;
+        public const byte Float32 = 0xca;
 
         /// <summary>
         /// 64 位浮点数数据标记。
         /// </summary>
-        public static readonly byte Float64 = 0xcb;
+        public const byte Float64 = 0xcb;
 
         /// <summary>
         /// 8 位无符号整数数据标记。
         /// </summary>
-        public static readonly byte UInt8 = 0xcc;
+        public const byte UInt8 = 0xcc;
 
         /// <summary>
         /// 16 位无符号整数数据标记。
         /// </summary>
-        public static readonly byte UInt16 = 0xcd;
+        public const byte UInt16 = 0xcd;
 
         /// <summary>
         /// 32 位无符号整数数据标记。
         /// </summary>
-        public static readonly byte UInt32 = 0xce;
+        public const byte UInt32 = 0xce;
 
         /// <summary>
         /// 64 位无符号整数数据标记。
         /// </summary>
-        public static readonly byte UInt64 = 0xcf;
+        public const byte UInt64 = 0xcf;
 
         /// <summary>
         /// 8 位有符号整数数据标记。
         /// </summary>
-        public static readonly byte Int8 = 0xd0;
+        public const byte Int8 = 0xd0;
 
         /// <summary>
         /// 16 位有符号整数数据标记。
         /// </summary>
-        public static readonly byte Int16 = 0xd1;
+        public const byte Int16 = 0xd1;
 
         /// <summary>
         /// 32 位有符号整数数据标记。
         /// </summary>
-        public static readonly byte Int32 = 0xd2;
+        public const byte Int32 = 0xd2;
 
         /// <summary>
         /// 64 位有符号整数数据标记。
         /// </summary>
-        public static readonly byte Int64 = 0xd3;
-
-        /// <summary>
-        /// 8 位字符串长度编码标记。
-        /// </summary>
-        public static readonly byte String = 0xd9;
+        public const byte Int64 = 0xd3;
 
         /// <summary>
         /// 数组长度编码标记。
         /// </summary>
-        public static readonly byte Array = 0xdd;
+        public const byte Array = 0xdd;
 
         /// <summary>
         /// Map 头标记。
         /// </summary>
-        public static readonly byte MapHeader = 0xde;
+        public const byte MapHeader = 0xde;
+
+        public const byte Ex4 = 0x04;
+
+        public const byte Ex8 = 0x06;
+
+        public const byte Ex16 = 0x0a;
+
+        public const byte Str8 = 0xd9;
+        public const byte Str16 = 0xda;
+        public const byte Str32 = 0xdb;
 
         /// <summary>
-        /// 按 mark（0-255）可索引的名称数组。未设置项会被填为占位文本。
-        /// 用于高性能按 mark 查找名称（通过索引直接获取，取代大量 if/else）。
+        /// 按 mark（0-255）可索引的名称数组。未设置项会被填为占位文本。 用于高性能按 mark 查找名称（通过索引直接获取，取代大量 if/else）。
         /// </summary>
         private static readonly string[] NameByMark = CreateNameByMark();
 
         /// <summary>
-        /// 从 CLR 类型映射到二进制标记的查表（Type -> mark）。
-        /// 在序列化时可用于快速把 CLR 类型映射为对应的标记字节。
+        /// 从 CLR 类型映射到二进制标记的查表（Type -&gt; mark）。 在序列化时可用于快速把 CLR 类型映射为对应的标记字节。
         /// </summary>
         private static readonly Dictionary<Type, byte> TypeToMark = CreateTypeToMark();
 
-        private static readonly string EmptyName = "当前标记为空";
+        private const string EmptyName = "当前标记为空";
 
         private static string[] CreateNameByMark()
         {
@@ -118,9 +119,14 @@
             arr[Int16] = nameof(Int16);
             arr[Int32] = nameof(Int32);
             arr[Int64] = nameof(Int64);
-            arr[String] = nameof(String);
+            arr[Str8] = nameof(Str8);
+            arr[Str16] = nameof(Str16);
+            arr[Str32] = nameof(Str32);
             arr[Array] = nameof(Array);
             arr[MapHeader] = nameof(MapHeader);
+            arr[Ex4] = nameof(Ex4);
+            arr[Ex8] = nameof(Ex8);
+            arr[Ex16] = nameof(Ex16);
 
             for (int i = 0; i < arr.Length; i++)
             {

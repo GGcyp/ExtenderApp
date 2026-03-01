@@ -4,14 +4,14 @@ using ExtenderApp.Contracts;
 namespace ExtenderApp.Common.Serializations.Binary.Formatters
 {
     /// <summary>
-    /// 一个内部密封类，继承自 <see cref="BinaryFormatter{List<TLinkClient>}"/>，用于格式化 List<TLinkClient> 类型的对象。
+    /// 列表格式化器：专门处理 <see cref="List{T}"/> 类型的二进制序列化和反序列化。 通过继承自 <see cref="InterfaceCollectionFormatter{T, List{T}}"/>，它实现了针对列表的特定行为，
+    /// 包括创建具有适当容量的列表实例和将元素添加到列表中。 该格式化器利用二进制格式化器解析器来获取元素类型的格式化器，从而支持对列表中元素的正确序列化和反序列化。
     /// </summary>
-    /// <typeparam name="T">List 中元素的类型。</typeparam>
-    internal sealed class ListFormatter<T> : InterfaceListFormatter<T, List<T>>
+    /// <typeparam name="T"></typeparam>
+    internal sealed class ListFormatter<T> : InterfaceCollectionFormatter<T, List<T>>
     {
         public ListFormatter(IBinaryFormatterResolver resolver) : base(resolver)
         {
-
         }
 
         protected override void Add(List<T> collection, T value)

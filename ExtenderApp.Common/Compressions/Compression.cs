@@ -15,7 +15,7 @@ namespace ExtenderApp.Common.Compressions
         public abstract bool TryCompress(ReadOnlySpan<byte> span, out AbstractBuffer<byte> output);
 
         /// <inheritdoc/>
-        public abstract bool TryCompress(AbstractBuffer<byte> input, out AbstractBuffer<byte> output, CompressionType compression = CompressionType.Block);
+        public abstract bool TryCompress<TBuffer>(TBuffer input, out AbstractBuffer<byte> output, CompressionType compressionType = CompressionType.Block) where TBuffer : AbstractBuffer<byte>;
 
         #endregion TryCompress
 
@@ -25,7 +25,7 @@ namespace ExtenderApp.Common.Compressions
         public abstract bool TryDecompress(ReadOnlySpan<byte> span, out AbstractBuffer<byte> output);
 
         /// <inheritdoc/>
-        public abstract bool TryDecompress(AbstractBuffer<byte> input, out AbstractBuffer<byte> output);
+        public abstract bool TryDecompress<TBuffer>(TBuffer input, out AbstractBuffer<byte> output) where TBuffer : AbstractBuffer<byte>;
 
         #endregion TryDecompress
     }

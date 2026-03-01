@@ -9,7 +9,7 @@
         /// 写入一帧。
         /// </summary>
         /// <param name="mediaType">帧所属媒体类型。</param>
-        /// <param name="frame">媒体帧（调用方在返回后仍会 Dispose；Sink 不应持有该实例）。</param>
+        /// <param name="frame">媒体帧（调用方在返回后仍会 TryRelease；Sink 不应持有该实例）。</param>
         void WriteFrame(FFmpegMediaType mediaType, FFmpegFrame frame);
     }
 }

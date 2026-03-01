@@ -8,6 +8,12 @@ namespace ExtenderApp.Buffer
     public class ValueCache : IEquatable<ValueCache>
     {
         /// <summary>
+        /// 获取默认的缓存实例，实例来自对象池管理，使用后请调用 <see cref="Release"/> 方法回收。
+        /// </summary>
+        /// <returns>缓存实例。</returns>
+        public static ValueCache GetCache() => ValueCacheProvider.Default.Get();
+
+        /// <summary>
         /// 从单个值创建缓存实例。
         /// </summary>
         /// <typeparam name="T">值类型。</typeparam>
@@ -281,6 +287,13 @@ namespace ExtenderApp.Buffer
         /// 链表尾节点。
         /// </summary>
         internal ValueCacheItem? Last { get; private set; }
+
+        /// <summary>
+        /// 只能由 <see cref="ValueCacheProvider"/> 创建实例，确保对象池管理的正确性。
+        /// </summary>
+        internal ValueCache()
+        {
+        }
 
         /// <summary>
         /// 比较当前缓存与另一个缓存是否相等。

@@ -7,13 +7,13 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
     /// 默认的对象格式化器类，继承自 <see cref="ResolverFormatter{T}"/> 类。
     /// </summary>
     /// <typeparam name="T">要格式化的对象的类型。</typeparam>
-    internal class DefaultObjectFormatter<T> : AutoFormatter<T>
+    internal sealed class DefaultObjectFormatter<T> : AutoFormatter<T>
     {
         public DefaultObjectFormatter(IBinaryFormatterResolver resolver) : base(resolver)
         {
         }
 
-        protected override void Init(AutoMemberDetailsStore store)
+        protected override sealed void Init(AutoMemberDetailsStore store)
         {
             Type type = typeof(T);
 

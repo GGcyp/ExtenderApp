@@ -16,10 +16,10 @@ namespace ExtenderApp.Common.IO.FileParsers
         public abstract byte[] Serialize<T>(T value);
 
         ///<inheritdoc/>
-        public abstract void Serialize<T>(T value, ref SpanWriter<byte> span);
+        public abstract void Serialize<T>(ref SpanWriter<byte> writer, T value);
 
         ///<inheritdoc/>
-        public abstract void Serialize<T>(T value, AbstractBuffer<byte> buffer);
+        public abstract void Serialize<T>(ref BinaryWriterAdapter writer, T value);
 
         ///<inheritdoc/>
         public abstract void Serialize<T>(T value, out AbstractBuffer<byte> buffer);
@@ -29,16 +29,10 @@ namespace ExtenderApp.Common.IO.FileParsers
         #region Deserialize
 
         ///<inheritdoc/>
-        public abstract T? Deserialize<T>(ReadOnlySpan<byte> span);
-
-        ///<inheritdoc/>
         public abstract T? Deserialize<T>(ref SpanReader<byte> reader);
 
         ///<inheritdoc/>
-        public abstract T? Deserialize<T>(AbstractBuffer<byte> buffer);
-
-        ///<inheritdoc/>
-        public abstract T? Deserialize<T>(AbstractBufferReader<byte> reader);
+        public abstract T? Deserialize<T>(ref BinaryReaderAdapter reader);
 
         #endregion Deserialize
     }

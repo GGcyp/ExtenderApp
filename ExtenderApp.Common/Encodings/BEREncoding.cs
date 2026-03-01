@@ -71,12 +71,12 @@ namespace ExtenderApp.Common.Encodings
         //    EncodeTag(ref block, new Asn1Tag(TagClass.Universal, (int)UniversalTagNumber.UTF8String, false));
 
         //    Encoding encoding = Encoding.UTF8;
-        //    int length = encoding.GetByteCount(value);
-        //    EncodeLength(ref block, length);
+        //    int _intLength = encoding.GetByteCount(value);
+        //    EncodeLength(ref block, _intLength);
 
-        //    Span<byte> span = block.GetSpan(length);
+        //    Span<byte> span = block.GetSpan(_intLength);
         //    Encoding.UTF8.GetBytes(value, span);
-        //    block.Advance(length);
+        //    block.Advance(_intLength);
         //}
 
         ///// <summary>
@@ -118,7 +118,7 @@ namespace ExtenderApp.Common.Encodings
         //    ByteBlock stringBlock = new();
         //    stringBlock.Write(value, encoding ?? Encoding.ASCII);
         //    Encode(ref block, stringBlock, Asn1Tag.PrimitiveOctetString);
-        //    stringBlock.Dispose();
+        //    stringBlock.TryRelease();
         //}
 
         ///// <summary>
@@ -220,7 +220,7 @@ namespace ExtenderApp.Common.Encodings
 
         //        // 反转字节并设置最高位（除最后一个）
         //        var numberSpan = numberBlock.CommittedSpan;
-        //        for (int i = numberSpan.Length - 1; i >= 0; i--)
+        //        for (int i = numberSpan.Committed - 1; i >= 0; i--)
         //        {
         //            byte t = numberSpan[i];
         //            if (i != 0)
@@ -229,7 +229,7 @@ namespace ExtenderApp.Common.Encodings
         //            }
         //            block.Write(t);
         //        }
-        //        numberBlock.Dispose();
+        //        numberBlock.TryRelease();
         //    }
         //}
 
@@ -237,23 +237,23 @@ namespace ExtenderApp.Common.Encodings
         ///// 按 BER 规则编码长度并写入目标块（支持短/长格式，长格式最大支持 4 字节长度）。
         ///// </summary>
         ///// <param name="block">目标写入块。</param>
-        ///// <param name="length">要编码的长度（非负）。</param>
-        ///// <exception cref="ArgumentOutOfRangeException">当 <paramref name="length"/> 为负值时抛出。</exception>
-        //public static void EncodeLength(ref ByteBlock block, int length)
+        ///// <param name="_intLength">要编码的长度（非负）。</param>
+        ///// <exception cref="ArgumentOutOfRangeException">当 <paramref name="_intLength"/> 为负值时抛出。</exception>
+        //public static void EncodeLength(ref ByteBlock block, int _intLength)
         //{
-        //    if (length < 0) throw new ArgumentOutOfRangeException(nameof(length));
+        //    if (_intLength < 0) throw new ArgumentOutOfRangeException(nameof(_intLength));
 
         //    // 短格式（长度<128）
-        //    if (length <= 0x7F)
+        //    if (_intLength <= 0x7F)
         //    {
-        //        block.Write((byte)length);
+        //        block.Write((byte)_intLength);
         //        return;
         //    }
 
         //    // 长格式（长度>=128）
         //    ByteBlock lengthBlock = new(5);
         //    int byteCount = 0;
-        //    int temp = length;
+        //    int temp = _intLength;
         //    // 计算需要的字节数
         //    while (temp > 0)
         //    {
@@ -265,7 +265,7 @@ namespace ExtenderApp.Common.Encodings
         //                           // 第一个字节：0x80 + 字节数
         //    block.Write((byte)(0x80 | byteCount));
         //    block.Write(lengthBlock);
-        //    lengthBlock.Dispose();
+        //    lengthBlock.TryRelease();
         //}
 
         ///// <summary>
@@ -301,23 +301,23 @@ namespace ExtenderApp.Common.Encodings
         //    if (tag.IsConstructed || tag.ToUTagNumber() != UniversalTagNumber.Integer)
         //        throw new InvalidDataException("不是整数类型的BER数据");
 
-        //    int length = DecodeLength(ref block);
-        //    if (length <= 0)
+        //    int _intLength = DecodeLength(ref block);
+        //    if (_intLength <= 0)
         //        throw new InvalidDataException("无效的整数长度");
 
-        //    ReadOnlySpan<byte> src = block.Read(length);
+        //    ReadOnlySpan<byte> src = block.Read(_intLength);
         //    bool negative = (src[0] & 0x80) != 0;
 
         //    Span<byte> big = stackalloc byte[8];
         //    big.Fill(negative ? (byte)0xFF : (byte)0x00);
 
-        //    if (length <= 8)
+        //    if (_intLength <= 8)
         //    {
-        //        src.CopyTo(big.Slice(8 - length));
+        //        src.CopyTo(big.Slice(8 - _intLength));
         //    }
         //    else
         //    {
-        //        int extra = length - 8;
+        //        int extra = _intLength - 8;
         //        byte pad = negative ? (byte)0xFF : (byte)0x00;
         //        for (int i = 0; i < extra; i++)
         //        {
@@ -342,8 +342,8 @@ namespace ExtenderApp.Common.Encodings
         //    if (tag.IsConstructed || tag.ToUTagNumber() != UniversalTagNumber.Boolean)
         //        throw new InvalidDataException("不是布尔类型的BER数据");
 
-        //    int length = DecodeLength(ref block);
-        //    if (length != 1)
+        //    int _intLength = DecodeLength(ref block);
+        //    if (_intLength != 1)
         //        throw new InvalidDataException("无效的布尔长度");
 
         //    byte valueByte = block.Read();
@@ -362,8 +362,8 @@ namespace ExtenderApp.Common.Encodings
         //    if (tag.ToUTagNumber() != UniversalTagNumber.UTF8String)
         //        throw new InvalidDataException("不是UTF8字符串类型的BER数据");
 
-        //    int length = DecodeLength(ref block);
-        //    ReadOnlySpan<byte> valueBytes = block.Read(length);
+        //    int _intLength = DecodeLength(ref block);
+        //    ReadOnlySpan<byte> valueBytes = block.Read(_intLength);
         //    return Encoding.UTF8.GetString(valueBytes);
         //}
 
@@ -384,8 +384,8 @@ namespace ExtenderApp.Common.Encodings
         //    if (tag.ToUTagNumber() != UniversalTagNumber.OctetString)
         //        return false;
 
-        //    int length = DecodeLength(ref temp);
-        //    valueBlock.Write(temp.Read(length));
+        //    int _intLength = DecodeLength(ref temp);
+        //    valueBlock.Write(temp.Read(_intLength));
         //    block.Advance(temp.Consumed - block.Consumed);
         //    return true;
         //}
@@ -403,8 +403,8 @@ namespace ExtenderApp.Common.Encodings
         //    var tag = DecodeTag(ref temp);
         //    if (tag.ToUTagNumber() != UniversalTagNumber.Null)
         //        return false;
-        //    int length = DecodeLength(ref block);
-        //    if (length != 0)
+        //    int _intLength = DecodeLength(ref block);
+        //    if (_intLength != 0)
         //        return false;
 
         //    block.Advance(temp.Consumed - block.Consumed);
@@ -427,8 +427,8 @@ namespace ExtenderApp.Common.Encodings
         //        return false;
 
         //    block.Advance(temp.Consumed - block.Consumed);
-        //    int length = DecodeLength(ref block);
-        //    if (block.Remaining < length)
+        //    int _intLength = DecodeLength(ref block);
+        //    if (block.Remaining < _intLength)
         //        return false;
 
         //    return true;

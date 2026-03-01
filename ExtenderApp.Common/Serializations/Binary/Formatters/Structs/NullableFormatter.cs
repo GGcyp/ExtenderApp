@@ -20,21 +20,7 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
             _formatter = GetFormatter<T>();
         }
 
-        public override int DefaultLength => _formatter.DefaultLength;
-
-        public override void Serialize(AbstractBuffer<byte> buffer, T? value)
-        {
-            if (value.HasValue)
-            {
-                _formatter.Serialize(buffer, value.Value);
-            }
-            else
-            {
-                WriteNil(buffer);
-            }
-        }
-
-        public override void Serialize(ref SpanWriter<byte> writer, T? value)
+        public override sealed void Serialize(ref SpanWriter<byte> writer, T? value)
         {
             if (value.HasValue)
             {
@@ -46,16 +32,19 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
             }
         }
 
-        public override T? Deserialize(AbstractBufferReader<byte> reader)
+        public override sealed void Serialize(ref BinaryWriterAdapter writer, T? value)
         {
-            if (TryReadNil(reader))
+            if (value.HasValue)
             {
-                return null;
+                _formatter.Serialize(ref writer, value.Value);
             }
-            return _formatter.Deserialize(reader);
+            else
+            {
+                WriteNil(ref writer);
+            }
         }
 
-        public override T? Deserialize(ref SpanReader<byte> reader)
+        public override sealed T? Deserialize(ref BinaryReaderAdapter reader)
         {
             if (TryReadNil(ref reader))
             {
@@ -64,7 +53,16 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
             return _formatter.Deserialize(ref reader);
         }
 
-        public override long GetLength(T? value)
+        public override sealed T? Deserialize(ref SpanReader<byte> reader)
+        {
+            if (TryReadNil(ref reader))
+            {
+                return null;
+            }
+            return _formatter.Deserialize(ref reader);
+        }
+
+        public override sealed long GetLength(T? value)
         {
             return value.HasValue ? _formatter.GetLength(value.Value) : 1;
         }

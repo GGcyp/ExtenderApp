@@ -97,7 +97,6 @@ namespace ExtenderApp.Buffer.SequenceBuffers
             RunningIndex = 0;
 
             this.memoryBlock = memoryBlock;
-            memoryBlock.CommittedChanged += UpdateRunningIndex;
             base.Memory = memoryBlock.CommittedMemory;
         }
 
@@ -166,7 +165,6 @@ namespace ExtenderApp.Buffer.SequenceBuffers
             base.Memory = ReadOnlyMemory<T>.Empty;
             SegmentProvider?.ReleaseSegment(this);
             SegmentProvider = null;
-            memoryBlock.CommittedChanged -= UpdateRunningIndex;
             memoryBlock.TryRelease();
             memoryBlock = null!;
         }

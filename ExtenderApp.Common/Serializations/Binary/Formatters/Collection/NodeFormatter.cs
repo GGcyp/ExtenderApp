@@ -1,4 +1,5 @@
-﻿using ExtenderApp.Abstract;
+﻿using System.Buffers;
+using ExtenderApp.Abstract;
 using ExtenderApp.Buffer;
 using ExtenderApp.Contracts;
 
@@ -17,20 +18,15 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
             _int = GetFormatter<int>();
         }
 
-        /// <summary>
-        /// 从顺序缓冲读取器反序列化一个 <see cref="Node{T}"/>。
-        /// </summary>
-        /// <param name="reader">来源顺序缓冲读取器。</param>
-        /// <returns>反序列化得到的节点对象。</returns>
-        public override sealed T Deserialize(AbstractBufferReader<byte> reader)
+        public override sealed T Deserialize(ref BinaryReaderAdapter reader)
         {
-            if (TryReadNil(reader))
+            if (TryReadNil(ref reader))
             {
                 return default!;
             }
 
-            T root = ProtectedDeserialize(reader);
-            int count = _int.Deserialize(reader);
+            T root = ProtectedDeserialize(ref reader);
+            int count = _int.Deserialize(ref reader);
             if (count == 0)
                 return root;
 
@@ -42,8 +38,8 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
                 var (parent, childCount) = queue.Pop();
                 for (int i = 0; i < childCount; i++)
                 {
-                    T child = ProtectedDeserialize(reader);
-                    int subCount = _int.Deserialize(reader);
+                    T child = ProtectedDeserialize(ref reader);
+                    int subCount = _int.Deserialize(ref reader);
                     parent.Add(child);
                     if (subCount > 0)
                         queue.Push((child, subCount));
@@ -87,16 +83,11 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
             return root;
         }
 
-        /// <summary>
-        /// 将 <see cref="Node{T}"/> 序列化并写入顺序缓冲。
-        /// </summary>
-        /// <param name="buffer">目标顺序缓冲。</param>
-        /// <param name="value">要序列化的节点。</param>
-        public override sealed void Serialize(AbstractBuffer<byte> buffer, T value)
+        public override sealed void Serialize(ref BinaryWriterAdapter writer, T value)
         {
             if (value == null)
             {
-                WriteNil(buffer);
+                WriteNil(ref writer);
                 return;
             }
 
@@ -105,8 +96,8 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
             while (queue.Count > 0)
             {
                 T node = queue.Dequeue();
-                ProtectedSerialize(buffer, node);
-                _int.Serialize(buffer, node.Count);
+                ProtectedSerialize(ref writer, node);
+                _int.Serialize(ref writer, node.Count);
                 for (int i = 0; i < node.Count; i++)
                 {
                     queue.Enqueue(node[i]);
@@ -162,9 +153,9 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
         /// <summary>
         /// 受保护的序列化方法（顺序缓冲路径）。
         /// </summary>
-        /// <param name="buffer">目标顺序缓冲。</param>
+        /// <param name="writer">目标顺序缓冲。</param>
         /// <param name="value">要序列化的节点。</param>
-        protected abstract void ProtectedSerialize(AbstractBuffer<byte> buffer, T value);
+        protected abstract void ProtectedSerialize(ref BinaryWriterAdapter writer, T value);
 
         /// <summary>
         /// 受保护的序列化方法（栈上写入器路径）。
@@ -178,7 +169,7 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
         /// </summary>
         /// <param name="reader">来源顺序缓冲读取器。</param>
         /// <returns>反序列化得到的节点。</returns>
-        protected abstract T ProtectedDeserialize(AbstractBufferReader<byte> reader);
+        protected abstract T ProtectedDeserialize(ref BinaryReaderAdapter reader);
 
         /// <summary>
         /// 受保护的反序列化方法（栈上读取器路径）。

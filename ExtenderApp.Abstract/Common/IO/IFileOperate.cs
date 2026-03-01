@@ -62,7 +62,15 @@ namespace ExtenderApp.Abstract
         /// <returns>返回操作结果的 <see cref="Result{T}"/>；成功时其 <see cref="Result{T}.Value"/> 为实际写入的字节数。</returns>
         /// <exception cref="ArgumentNullException">当 <paramref name="buffer"/> 为 null 时抛出。</exception>
         /// <exception cref="ArgumentOutOfRangeException">当 <paramref name="filePosition"/> 为负值时抛出。</exception>
-        Result<long> Write(AbstractBuffer<byte> buffer, long filePosition = 0);
+        Result<long> Write<TBuffer>(TBuffer buffer, long filePosition = 0) where TBuffer : AbstractBuffer<byte>;
+
+        /// <summary>
+        /// 将通过 <see cref="BinaryReaderAdapter"/> 提供的数据写入文件（同步），并返回实际写入的字节数。
+        /// </summary>
+        /// <param name="reader">用于从中读取要写入数据的读取器（按引用传入）。</param>
+        /// <param name="filePosition">写入起始位置（字节偏移），默认为 0。</param>
+        /// <returns>返回操作结果的 <see cref="Result{T}"/>；成功时其 <see cref="Result{T}.Value"/> 表示实际写入的字节数。</returns>
+        Result<long> Write(ref BinaryReaderAdapter reader, long filePosition = 0);
 
         #endregion Write
 
@@ -76,7 +84,7 @@ namespace ExtenderApp.Abstract
         /// <param name="token">可选的取消令牌，用于取消异步写入操作。</param>
         /// <returns>表示异步操作的 <see cref="ValueTask{Result{T}}"/>。成功时其 <see cref="Result{T}.Value"/> 为实际写入的字节数。</returns>
         /// <exception cref="ArgumentNullException">当 <paramref name="buffer"/> 为 null 时抛出。</exception>
-        ValueTask<Result<long>> WriteAsync(AbstractBuffer<byte> buffer, long filePosition = 0, CancellationToken token = default);
+        ValueTask<Result<long>> WriteAsync<TBuffer>(TBuffer buffer, long filePosition = 0, CancellationToken token = default) where TBuffer : AbstractBuffer<byte>;
 
         #endregion WriteAsync
 
@@ -115,7 +123,16 @@ namespace ExtenderApp.Abstract
         /// <param name="buffer">目标缓冲区，用于接收读取到的数据。</param>
         /// <param name="filePosition">起始读取位置（字节偏移）。</param>
         /// <returns>返回实际写入目标缓冲区的字节数（封装在 <see cref="Result{T}"/> 中）。</returns>
-        Result<long> Read(long length, AbstractBuffer<byte> buffer, long filePosition = 0);
+        Result<long> Read<TBuffer>(long length, TBuffer buffer, long filePosition = 0) where TBuffer : AbstractBuffer<byte>;
+
+        /// <summary>
+        /// 从文件中读取指定长度的数据并写入到 <see cref="BinaryWriterAdapter"/>（同步），并返回实际写入到写入器的字节数。
+        /// </summary>
+        /// <param name="length">期望读取的字节数（非负）。</param>
+        /// <param name="writer">用于接收读取数据的写入器（按引用传入）。</param>
+        /// <param name="filePosition">起始读取位置（字节偏移），默认为 0。</param>
+        /// <returns>返回操作结果的 <see cref="Result{T}"/>；成功时其 <see cref="Result{T}.Value"/> 表示实际读取并写入的字节数。</returns>
+        Result<long> Read(long length, ref BinaryWriterAdapter writer, long filePosition = 0);
 
         /// <summary>
         /// 将文件数据读取到提供的缓冲区中（同步），并通过 out 返回用于接收数据的缓冲区实例。
@@ -155,7 +172,7 @@ namespace ExtenderApp.Abstract
         /// <param name="filePosition">起始读取位置（字节偏移）。</param>
         /// <param name="token">可选的取消令牌。</param>
         /// <returns>表示异步操作的 <see cref="ValueTask{Result{T}}"/>；成功时其 <see cref="Result{T}.Value"/> 为实际读取的字节数。</returns>
-        ValueTask<Result<long>> ReadAsync(long length, AbstractBuffer<byte> buffer, long filePosition = 0, CancellationToken token = default);
+        ValueTask<Result<long>> ReadAsync<TBuffer>(long length, TBuffer buffer, long filePosition = 0, CancellationToken token = default) where TBuffer : AbstractBuffer<byte>;
 
         /// <summary>
         /// 异步读取指定长度的数据并返回作为缓冲区实例（实现者可复用/池化返回的缓冲区）。

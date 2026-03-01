@@ -3,8 +3,10 @@ using ExtenderApp.Buffer;
 
 namespace ExtenderApp.Common.Serializations.Binary.Formatters
 {
-    /// <summary> 内部类 VersionFormatter，继承自 ResolverFormatter<Version> 类。 用于格式化 Version 类型的对象。 </summary>
-    internal class VersionFoematter : ResolverFormatter<Version>
+    /// <summary>
+    /// 版本格式化器：提供将 <see cref="Version"/> 类型序列化为二进制表示和从二进制表示反序列化的功能。 通过序列化版本的主要、次要、构建和修订号来实现。 支持处理 null 值以表示未设置的版本信息。
+    /// </summary>
+    internal sealed class VersionFoematter : ResolverFormatter<Version>
     {
         private readonly IBinaryFormatter<int> _int;
 
@@ -13,50 +15,35 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
             _int = GetFormatter<int>();
         }
 
-        public override int DefaultLength => _int.DefaultLength * 4 + NilLength;
-
-        public override void Serialize(AbstractBuffer<byte> buffer, Version value)
-        {
-            if (value == null)
-            {
-                WriteNil(buffer);
-                return;
-            }
-            _int.Serialize(buffer, value.Major);
-            _int.Serialize(buffer, value.Minor);
-            _int.Serialize(buffer, value.Build);
-            _int.Serialize(buffer, value.Revision);
-        }
-
-        public override void Serialize(ref SpanWriter<byte> writer, Version value)
+        public override sealed void Serialize(ref BinaryWriterAdapter writer, Version value)
         {
             if (value == null)
             {
                 WriteNil(ref writer);
                 return;
             }
+
             _int.Serialize(ref writer, value.Major);
             _int.Serialize(ref writer, value.Minor);
             _int.Serialize(ref writer, value.Build);
             _int.Serialize(ref writer, value.Revision);
         }
 
-        public override Version Deserialize(AbstractBufferReader<byte> reader)
+        public override sealed void Serialize(ref SpanWriter<byte> writer, Version value)
         {
-            if (TryReadNil(reader))
+            if (value == null)
             {
-                return null!;
+                WriteNil(ref writer);
+                return;
             }
 
-            var major = _int.Deserialize(reader);
-            var minor = _int.Deserialize(reader);
-            var build = _int.Deserialize(reader);
-            var revision = _int.Deserialize(reader);
-
-            return new Version(major, minor, build, revision);
+            _int.Serialize(ref writer, value.Major);
+            _int.Serialize(ref writer, value.Minor);
+            _int.Serialize(ref writer, value.Build);
+            _int.Serialize(ref writer, value.Revision);
         }
 
-        public override Version Deserialize(ref SpanReader<byte> reader)
+        public override sealed Version Deserialize(ref BinaryReaderAdapter reader)
         {
             if (TryReadNil(ref reader))
             {
@@ -71,7 +58,22 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
             return new Version(major, minor, build, revision);
         }
 
-        public override long GetLength(Version value)
+        public override sealed Version Deserialize(ref SpanReader<byte> reader)
+        {
+            if (TryReadNil(ref reader))
+            {
+                return null!;
+            }
+
+            var major = _int.Deserialize(ref reader);
+            var minor = _int.Deserialize(ref reader);
+            var build = _int.Deserialize(ref reader);
+            var revision = _int.Deserialize(ref reader);
+
+            return new Version(major, minor, build, revision);
+        }
+
+        public override sealed long GetLength(Version value)
         {
             if (value == null)
             {

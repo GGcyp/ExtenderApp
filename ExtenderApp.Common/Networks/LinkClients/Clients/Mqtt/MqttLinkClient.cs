@@ -85,7 +85,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
         // await ConnectAsync(new DnsEndPoint(host, port), token);
 
         // var connectPacket = BuildConnect(clientId, keepAliveSeconds, cleanSession, username, password); try { await SendRawAsync(connectPacket,
-        // token); } finally { connectPacket.Dispose(); }
+        // token); } finally { connectPacket.TryRelease(); }
 
         //    _waitConnAck = new(TaskCreationOptions.RunContinuationsAsynchronously);
         //    // 启动心跳定时器
@@ -108,7 +108,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
         //    }
         //    finally
         //    {
-        //        Publish.Dispose();
+        //        Publish.TryRelease();
         //    }
         //}
 
@@ -121,7 +121,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
 
         // ushort pid = NextPacketId(); var sub = BuildSubscribe(topic, qos, pid); _waitSubAck = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
-        // try { await SendRawAsync(sub, token); } finally { sub.Dispose(); }
+        // try { await SendRawAsync(sub, token); } finally { sub.TryRelease(); }
 
         //    using var cts = CancellationTokenSource.CreateLinkedTokenSource(token);
         //    cts.CancelAfter(TimeSpan.FromSeconds(10));
@@ -142,7 +142,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
         //    }
         //    finally
         //    {
-        //        ping.Dispose();
+        //        ping.TryRelease();
         //    }
 
         //    using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
@@ -161,7 +161,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
         //    }
         //    finally
         //    {
-        //        disc.Dispose();
+        //        disc.TryRelease();
         //    }
         //    await DisconnectAsync(token);
         //    StopKeepAlive();
@@ -406,7 +406,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
         //            }
         //            finally
         //            {
-        //                ping.Dispose();
+        //                ping.TryRelease();
         //            }
         //        }
         //    }
@@ -416,8 +416,8 @@ namespace ExtenderApp.Common.Networks.LinkClients
         //private void StopKeepAlive()
         //{
         //    try { _keepAliveCts?.Cancel(); } catch { }
-        //    _keepAliveTimer?.Dispose();
-        //    _keepAliveCts?.Dispose();
+        //    _keepAliveTimer?.TryRelease();
+        //    _keepAliveCts?.TryRelease();
         //    _keepAliveTimer = null;
         //    _keepAliveCts = null;
         //}

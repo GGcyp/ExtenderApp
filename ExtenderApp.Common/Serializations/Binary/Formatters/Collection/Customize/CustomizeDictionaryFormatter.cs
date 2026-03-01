@@ -1,5 +1,4 @@
 ﻿using ExtenderApp.Abstract;
-using ExtenderApp.Contracts;
 
 namespace ExtenderApp.Common.Serializations.Binary.Formatters
 {
@@ -9,7 +8,7 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
     /// <typeparam name="TKey">字典的键类型。</typeparam>
     /// <typeparam name="TValue">字典的值类型。</typeparam>
     /// <typeparam name="TDictionary">字典类型，必须实现 <see cref="IDictionary{TKey, TValue}"/> 接口且拥有无参构造函数。</typeparam>
-    internal class CustomizeDictionaryFormatter<TKey, TValue, TDictionary> : InterfaceDictionaryFormatter<TKey, TValue, TDictionary> where TDictionary : IDictionary<TKey, TValue>, new()
+    internal sealed class CustomizeDictionaryFormatter<TKey, TValue, TDictionary> : InterfaceDictionaryFormatter<TKey, TValue, TDictionary> where TDictionary : IDictionary<TKey, TValue>, new()
     {
         /// <summary>
         /// 集合辅助类实例。
@@ -33,7 +32,7 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
         /// </summary>
         /// <param name="count">字典的初始容量。</param>
         /// <returns>返回一个新的字典实例。</returns>
-        protected override TDictionary Create(int count)
+        protected override sealed TDictionary Create(int count)
         {
             return _collectionHelpers.CreateCollection(count);
         }

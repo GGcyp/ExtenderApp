@@ -33,7 +33,7 @@ namespace ExtenderApp.Test.Tests
         private static void TestPrimitiveLong(IBinarySerialization binarySerialization)
         {
             const long expected = 1111111111L;
-            binarySerialization.Serialize(expected, out AbstractBuffer<byte> buffer);
+            binarySerialization.Serialize(expected, out var buffer);
             try
             {
                 var actual = binarySerialization.Deserialize<long>(buffer);
@@ -56,7 +56,7 @@ namespace ExtenderApp.Test.Tests
         private static void TestStringFreezeBehavior(IBinarySerialization binarySerialization)
         {
             const string test = "hello-serialization";
-            binarySerialization.Serialize(test, out AbstractBuffer<byte> buffer);
+            binarySerialization.Serialize(test, out var buffer);
             try
             {
                 var value = binarySerialization.Deserialize<string>(buffer);
@@ -85,7 +85,7 @@ namespace ExtenderApp.Test.Tests
         private static void TestWriteFrozenBehavior(IBinarySerialization binarySerialization)
         {
             var sample = new byte[] { 1, 2, 3, 4, 5 };
-            binarySerialization.Serialize(sample, out AbstractBuffer<byte> buffer);
+            binarySerialization.Serialize(sample, out var buffer);
             try
             {
                 buffer.FreezeWrite();
@@ -110,7 +110,7 @@ namespace ExtenderApp.Test.Tests
         private static void TestStringRoundTrip(IBinarySerialization binarySerialization)
         {
             const string expected = "序列化-反序列化-字符串";
-            binarySerialization.Serialize(expected, out AbstractBuffer<byte> buffer);
+            binarySerialization.Serialize(expected, out var buffer);
             try
             {
                 var actual = binarySerialization.Deserialize<string>(buffer);
@@ -133,7 +133,7 @@ namespace ExtenderApp.Test.Tests
         private static void TestLongStringRoundTrip(IBinarySerialization binarySerialization)
         {
             string expected = new string('测', 10000) + "-超长字符串-" + new string('试', 10000);
-            binarySerialization.Serialize(expected, out AbstractBuffer<byte> buffer);
+            binarySerialization.Serialize(expected, out var buffer);
             try
             {
                 var actual = binarySerialization.Deserialize<string>(buffer);
@@ -158,7 +158,7 @@ namespace ExtenderApp.Test.Tests
         private static void TestGuidRoundTrip(IBinarySerialization binarySerialization)
         {
             Guid expected = Guid.NewGuid();
-            binarySerialization.Serialize(expected, out AbstractBuffer<byte> buffer);
+            binarySerialization.Serialize(expected, out var buffer);
             try
             {
                 var actual = binarySerialization.Deserialize<Guid>(buffer);
@@ -181,7 +181,7 @@ namespace ExtenderApp.Test.Tests
         private static void TestTimeSpanRoundTrip(IBinarySerialization binarySerialization)
         {
             TimeSpan expected = TimeSpan.FromDays(1.5) + TimeSpan.FromMilliseconds(1234);
-            binarySerialization.Serialize(expected, out AbstractBuffer<byte> buffer);
+            binarySerialization.Serialize(expected, out var buffer);
             try
             {
                 var actual = binarySerialization.Deserialize<TimeSpan>(buffer);
@@ -208,7 +208,7 @@ namespace ExtenderApp.Test.Tests
             for (int i = 0; i < iterations; i++)
             {
                 long expected = i * 1024L + 7;
-                binarySerialization.Serialize(expected, out AbstractBuffer<byte> buffer);
+                binarySerialization.Serialize(expected, out var buffer);
                 try
                 {
                     var actual = binarySerialization.Deserialize<long>(buffer);
@@ -226,12 +226,12 @@ namespace ExtenderApp.Test.Tests
 
         private static void TestBufferReuse(IBinarySerialization binarySerialization)
         {
-            binarySerialization.Serialize(12345, out AbstractBuffer<byte> firstBuffer);
+            binarySerialization.Serialize(12345, out var firstBuffer);
             var firstInstance = firstBuffer;
             var firstReleased = firstBuffer.TryRelease();
             Debug.Print($"[回收] TestBufferReuse 首次回收：{firstReleased}");
 
-            binarySerialization.Serialize(67890, out AbstractBuffer<byte> secondBuffer);
+            binarySerialization.Serialize(67890, out var secondBuffer);
             var reused = ReferenceEquals(firstInstance, secondBuffer);
             Debug.Print($"[复用] TestBufferReuse 是否复用同一实例：{reused}");
             if (!secondBuffer.TryRelease())
@@ -252,7 +252,7 @@ namespace ExtenderApp.Test.Tests
                 Duration = TimeSpan.FromMinutes(90)
             };
 
-            binarySerialization.Serialize(expected, out AbstractBuffer<byte> buffer);
+            binarySerialization.Serialize(expected, out var buffer);
             try
             {
                 var actual = binarySerialization.Deserialize<CustomTestModel>(buffer);
@@ -285,7 +285,7 @@ namespace ExtenderApp.Test.Tests
                 int start = Random.Shared.Next(0, 100);
                 int length = Random.Shared.Next(1, 100 - start);
                 buffer.Write(source);
-                Debug.Print($"[信息] TestSliceBehavior 创建切片：Start={start}, Length={length}");
+                Debug.Print($"[信息] TestSliceBehavior 创建切片：Start={start}, Committed={length}");
                 var slice = buffer.Slice(start, length);
                 try
                 {

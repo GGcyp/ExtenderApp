@@ -2,18 +2,18 @@
 
 namespace ExtenderApp.Common.Serializations.Binary.Formatters
 {
-    internal class LinkedListFormatter<T> : InterfaceCollectionFormatter<T, LinkedList<T>>
+    internal sealed class LinkedListFormatter<T> : InterfaceCollectionFormatter<T, LinkedList<T>>
     {
         public LinkedListFormatter(IBinaryFormatterResolver resolver) : base(resolver)
         {
         }
 
-        protected override void Add(LinkedList<T> collection, T value)
+        protected override sealed void Add(LinkedList<T> collection, T value)
         {
             collection.AddLast(value);
         }
 
-        protected override LinkedList<T> Create(int count)
+        protected override sealed LinkedList<T> Create(int count)
         {
             return new LinkedList<T>();
         }

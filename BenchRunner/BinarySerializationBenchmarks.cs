@@ -23,9 +23,13 @@ namespace BenchRunner
 
         // buffer created for the deserialize benchmark per iteration
         private AbstractBuffer<byte>? _deserializeBuffer;
+        // buffer prepared for string deserialize benchmark
+        private AbstractBuffer<byte>? _deserializeStringBuffer;
 
         private byte[]? _mpBytes;
         private byte[]? _binaryBytes;
+        private byte[]? _mpStringBytes;
+        private byte[]? _binaryStringBytes;
 
         [GlobalSetup]
         public void GlobalSetup()
@@ -50,8 +54,7 @@ namespace BenchRunner
 
                 _sampleString = new string('²â', 1024);
 
-                // Pre-warm/initialize formatters and JIT for both serialization implementations
-                // Warm-up for custom binary serialization
+                // Pre-warm/initialize formatters and JIT for both serialization implementations Warm-up for custom binary serialization
                 _serialization.Serialize(_sampleObject, out var warmBuf);
                 try
                 {
@@ -70,6 +73,10 @@ namespace BenchRunner
                 _serialization.Serialize(_sampleObject, out _deserializeBuffer);
                 // prepare contiguous binary bytes for SpanReader-based deserialize benchmark
                 _binaryBytes = _serialization.Serialize(_sampleObject);
+                // prepare buffers/bytes for string benchmarks
+                _serialization.Serialize(_sampleString, out _deserializeStringBuffer);
+                _binaryStringBytes = _serialization.Serialize(_sampleString);
+                _mpStringBytes = MessagePackSerializer.Serialize(_sampleString, _mpOptions);
                 // prepare MessagePack bytes (already set to _mpBytes)
 
                 _initialized = true;
@@ -87,22 +94,15 @@ namespace BenchRunner
         {
             try { _provider?.Dispose(); } catch { }
             try { _deserializeBuffer?.TryRelease(); } catch { }
+            try { _deserializeStringBuffer?.TryRelease(); } catch { }
         }
 
-        [Benchmark(Description = "Serialize<Object> -> AbstractBuffer")]
-        public void Serialize_Object_To_AbstractBuffer()
+        [Benchmark(Description = "Serialize<Long> -> AbstractBuffer")]
+        public void Serialize_Long_To_AbstractBuffer()
         {
             var serialization = _serialization!;
-            serialization.Serialize(_sampleObject, out AbstractBuffer<byte> buffer);
+            serialization.Serialize(1231321354561, out var buffer);
             // release buffer to avoid memory leaks
-            try { buffer.TryRelease(); } catch { }
-        }
-
-        [Benchmark(Description = "Serialize<byte[]> -> AbstractBuffer")]
-        public void Serialize_ByteArray_To_AbstractBuffer()
-        {
-            var serialization = _serialization!;
-            serialization.Serialize(_sampleBytes, out AbstractBuffer<byte> buffer);
             try { buffer.TryRelease(); } catch { }
         }
 
@@ -110,7 +110,40 @@ namespace BenchRunner
         public void Serialize_String_To_AbstractBuffer()
         {
             var serialization = _serialization!;
-            serialization.Serialize(_sampleString, out AbstractBuffer<byte> buffer);
+            serialization.Serialize(_sampleString, out var buffer);
+            try { buffer.TryRelease(); } catch { }
+        }
+
+        [Benchmark(Description = "Serialize<Object> -> AbstractBuffer")]
+        public void Serialize_Object_To_AbstractBuffer()
+        {
+            var serialization = _serialization!;
+            serialization.Serialize(_sampleObject, out var buffer);
+            // release buffer to avoid memory leaks
+            try { buffer.TryRelease(); } catch { }
+        }
+
+        [Benchmark(Description = "Deserialize<AbstractBuffer> -> String")]
+        public string? Deserialize_AbstractBuffer_To_String()
+        {
+            try
+            {
+                var serialization = _serialization!;
+                var buf = _deserializeStringBuffer!;
+                return serialization.Deserialize<string>(buf);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Deserialize string from AbstractBuffer exception: {ex}");
+                return null;
+            }
+        }
+
+        [Benchmark(Description = "Serialize<byte[]> -> AbstractBuffer")]
+        public void Serialize_ByteArray_To_AbstractBuffer()
+        {
+            var serialization = _serialization!;
+            serialization.Serialize(_sampleBytes, out var buffer);
             try { buffer.TryRelease(); } catch { }
         }
 
@@ -133,23 +166,6 @@ namespace BenchRunner
             }
         }
 
-        [Benchmark(Description = "Deserialize<byte[]> -> Object (SpanReader)")]
-        public CustomTestModel? Deserialize_Bytes_SpanReader_To_Object()
-        {
-            try
-            {
-                var serialization = _serialization!;
-                var bytes = _binaryBytes!; // prepared in GlobalSetup
-                var reader = new SpanReader<byte>(bytes);
-                return serialization.Deserialize<CustomTestModel>(ref reader);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"SpanReader deserialize exception: {ex}");
-                return null;
-            }
-        }
-
         // MessagePack benchmarks
         [Benchmark(Description = "MessagePack Serialize<Object> -> byte[]")]
         public void MessagePack_Serialize_Object()
@@ -157,6 +173,29 @@ namespace BenchRunner
             var bytes = MessagePackSerializer.Serialize(_sampleObject, _mpOptions);
             // keep bytes alive briefly
             if (bytes == null) throw new InvalidOperationException();
+        }
+
+        [Benchmark(Description = "MessagePack Serialize<String> -> byte[]")]
+        public void MessagePack_Serialize_String()
+        {
+            var bytes = MessagePackSerializer.Serialize(_sampleString, _mpOptions);
+            // keep bytes alive briefly
+            if (bytes == null) throw new InvalidOperationException();
+        }
+
+        [Benchmark(Description = "MessagePack Deserialize<string> -> string")]
+        public string? MessagePack_Deserialize_String()
+        {
+            try
+            {
+                var bytes = _mpStringBytes!; // prepared in GlobalSetup
+                return MessagePackSerializer.Deserialize<string>(bytes, _mpOptions);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"MessagePack deserialize string exception: {ex}");
+                return null;
+            }
         }
 
         [Benchmark(Description = "MessagePack Deserialize<byte[]> -> Object")]
@@ -174,6 +213,23 @@ namespace BenchRunner
             }
         }
 
+        [Benchmark(Description = "Deserialize<byte[]> -> Object (SpanReader)")]
+        public CustomTestModel? Deserialize_Bytes_SpanReader_To_Object()
+        {
+            try
+            {
+                var serialization = _serialization!;
+                var bytes = _binaryBytes!; // prepared in GlobalSetup
+                var reader = new SpanReader<byte>(bytes);
+                return serialization.Deserialize<CustomTestModel>(ref reader);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"SpanReader deserialize exception: {ex}");
+                return null;
+            }
+        }
+
         [Benchmark(Description = "Serialize<Object> -> SpanWriter")]
         public void Serialize_Object_To_SpanWriter()
         {
@@ -182,7 +238,7 @@ namespace BenchRunner
             var block = MemoryBlock<byte>.GetBuffer(len);
             Span<byte> span = block.GetSpan(len);
             var writer = new SpanWriter<byte>(span);
-            serialization.Serialize(_sampleObject, ref writer);
+            serialization.Serialize(ref writer, _sampleObject);
             block.TryRelease(); // release buffer after use
         }
 
@@ -194,19 +250,20 @@ namespace BenchRunner
             var block = MemoryBlock<byte>.GetBuffer(len);
             Span<byte> span = block.GetSpan(len);
             var writer = new SpanWriter<byte>(span);
-            serialization.Serialize(_sampleObject, ref writer);
+            serialization.Serialize(ref writer, _sampleBytes);
             block.TryRelease(); // release buffer after use
         }
 
         [Benchmark(Description = "Serialize<string> -> SpanWriter")]
         public void Serialize_String_To_SpanWriter()
         {
+            const int len = 10 * 1024; // for string, we can use a fixed length since it's known to be 1024 chars (and we can assume UTF-8 encoding for worst case)
+
             var serialization = _serialization!;
-            int len = (int)serialization.GetLength(_sampleString);
             var block = MemoryBlock<byte>.GetBuffer(len);
             Span<byte> span = block.GetSpan(len);
             var writer = new SpanWriter<byte>(span);
-            serialization.Serialize(_sampleObject, ref writer);
+            serialization.Serialize(ref writer, _sampleString);
             block.TryRelease(); // release buffer after use
         }
 

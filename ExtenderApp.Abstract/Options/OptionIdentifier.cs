@@ -93,7 +93,7 @@
         /// 返回选项名称的字符串表示。
         /// </summary>
         /// <returns>选项名称。</returns>
-        public override string ToString() => $"{Name} (Get: {GetVisibility}, Set: {SetVisibility})";
+        public override string ToString() => $"{Name} (GetBuffer: {GetVisibility}, Set: {SetVisibility})";
     }
 
     /// <summary>

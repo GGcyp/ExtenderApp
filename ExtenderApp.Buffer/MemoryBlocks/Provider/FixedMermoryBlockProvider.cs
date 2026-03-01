@@ -18,7 +18,7 @@ namespace ExtenderApp.Buffer.MemoryBlocks
 
         private readonly ObjectPool<FixedMemoryBlock> _blockPool = ObjectPool.Create<FixedMemoryBlock>();
 
-        protected override MemoryBlock<T> CreateBufferProtected(int sizeHint)
+        protected override sealed MemoryBlock<T> CreateBufferProtected(int sizeHint)
         {
             return GetBuffer(new T[sizeHint]);
         }
@@ -59,7 +59,7 @@ namespace ExtenderApp.Buffer.MemoryBlocks
             return block;
         }
 
-        private class FixedMemoryBlock : MemoryBlock<T>
+        private sealed class FixedMemoryBlock : MemoryBlock<T>
         {
             /// <summary>
             /// 被包装的固定内存区域。

@@ -77,6 +77,7 @@ namespace ExtenderApp.Common.Serializations.Binary
         {
             store.AddNullableFormatter<byte>();
             store.Add<byte[], ByteArrayFormatter>();
+            store.Add<Memory<byte>, ByteMemoryFormatter>();
             store.AddListFormatter<byte>();
             store.AddLinkedListFormatter<byte>();
             store.AddQueueFormatter<byte>();

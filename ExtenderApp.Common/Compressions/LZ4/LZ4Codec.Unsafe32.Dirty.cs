@@ -91,7 +91,7 @@ namespace ExtenderApp.Common.Compressions.LZ4
                             xxx_ref--;
                         }
 
-                        // EncodeSequence Literal length
+                        // EncodeSequence Literal _intLength
                         length = (int)(src_p - src_anchor);
                         xxx_token = dst_p++;
 
@@ -358,7 +358,7 @@ namespace ExtenderApp.Common.Compressions.LZ4
                             xxx_ref--;
                         }
 
-                        // EncodeSequence Literal length
+                        // EncodeSequence Literal _intLength
                         length = (int)(src_p - src_anchor);
                         xxx_token = dst_p++;
 

@@ -1,60 +1,74 @@
-﻿using System;
-using ExtenderApp.Abstract;
+﻿using ExtenderApp.Abstract;
 using ExtenderApp.Buffer;
-using ExtenderApp.Buffer.Reader;
-using ExtenderApp.Contracts;
 
 namespace ExtenderApp.Common.Serializations.Binary.Formatters
 {
     /// <summary>
-    /// UriFormatter 类，继承自 ResolverFormatter<Uri> 类。
-    /// 用于格式化 Uri 类型的对象。
+    /// Uri 类型的二进制格式化器。 通过将 Uri 转换为字符串进行序列化和反序列化，支持 null 值。 在反序列化时，如果字符串为空或 null，则返回 null Uri。
     /// </summary>
-    internal class UriFormatter : ResolverFormatter<Uri>
+    internal sealed class UriFormatter : ResolverFormatter<Uri>
     {
-        private readonly IBinaryFormatter<string> _formatter;
+        private readonly IBinaryFormatter<string> _string;
 
         public UriFormatter(IBinaryFormatterResolver resolver) : base(resolver)
         {
-            _formatter = GetFormatter<string>();
+            _string = GetFormatter<string>();
         }
 
-        public override int DefaultLength => _formatter.DefaultLength;
-
-        public override Uri Deserialize(AbstractBufferReader<byte> reader)
+        public override sealed Uri Deserialize(ref BinaryReaderAdapter reader)
         {
-            var result = _formatter.Deserialize(reader);
+            if (TryReadNil(ref reader))
+            {
+                return null!;
+            }
+
+            var result = _string.Deserialize(ref reader);
             if (string.IsNullOrEmpty(result))
                 return null!;
             return new Uri(result);
         }
 
-        public override Uri Deserialize(ref SpanReader<byte> reader)
+        public override sealed Uri Deserialize(ref SpanReader<byte> reader)
         {
-            var result = _formatter.Deserialize(ref reader);
+            if (TryReadNil(ref reader))
+            {
+                return null!;
+            }
+
+            var result = _string.Deserialize(ref reader);
             if (string.IsNullOrEmpty(result))
                 return null!;
             return new Uri(result);
         }
 
-        public override void Serialize(AbstractBuffer<byte> buffer, Uri value)
+        public override sealed void Serialize(ref BinaryWriterAdapter writer, Uri value)
         {
-            _formatter.Serialize(buffer, value?.ToString() ?? string.Empty);
+            if (value == null)
+            {
+                WriteNil(ref writer);
+                return;
+            }
+            _string.Serialize(ref writer, value?.ToString() ?? string.Empty);
         }
 
-        public override void Serialize(ref SpanWriter<byte> writer, Uri value)
+        public override sealed void Serialize(ref SpanWriter<byte> writer, Uri value)
         {
-            _formatter.Serialize(ref writer, value?.ToString() ?? string.Empty);
+            if (value == null)
+            {
+                WriteNil(ref writer);
+                return;
+            }
+            _string.Serialize(ref writer, value?.ToString() ?? string.Empty);
         }
 
-        public override long GetLength(Uri value)
+        public override sealed long GetLength(Uri value)
         {
             if (value == null)
             {
                 return NilLength;
             }
 
-            return _formatter.GetLength(value.ToString());
+            return _string.GetLength(value.ToString());
         }
     }
 }

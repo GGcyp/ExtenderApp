@@ -1,20 +1,12 @@
-﻿using System;
-using System.Buffers;
-using ExtenderApp.Buffer;
+﻿using System.Buffers;
 using ExtenderApp.Contracts;
 
 namespace ExtenderApp.Common.IO
 {
     /// <summary>
-    /// 文件并发操作类，继承自ConcurrentOperate泛型类
+    /// 文件流文件操作类，使用FileStream进行文件操作，适用于需要频繁读写文件的场景。
     /// </summary>
-    /// <typeparam name="FileOperatePolicy">
-    /// 文件操作策略类型
-    /// </typeparam>
-    /// <typeparam name="FileOperateData">
-    /// 文件操作数据类型
-    /// </typeparam>
-    public class FileStreamFileOperate : FileOperate
+    public sealed class FileStreamFileOperate : FileOperate
     {
         /// <summary>
         /// 并发访问控制信号量
@@ -31,7 +23,8 @@ namespace ExtenderApp.Common.IO
             _slim = new(1, 1);
         }
 
-        protected override void ChangeCapacity(long length)
+        ///<inheritdoc/>
+        protected override sealed void ChangeCapacity(long length)
         {
             _slim.Wait();
             try
@@ -46,7 +39,8 @@ namespace ExtenderApp.Common.IO
 
         #region Read
 
-        protected override byte[] ExecuteRead(long filePosition, int length)
+        ///<inheritdoc/>
+        protected override sealed byte[] ExecuteRead(long filePosition, int length)
         {
             _slim.Wait();
             try
@@ -61,7 +55,8 @@ namespace ExtenderApp.Common.IO
             }
         }
 
-        protected override int ExecuteRead(long filePosition, Span<byte> span)
+        ///<inheritdoc/>
+        protected override sealed int ExecuteRead(long filePosition, Span<byte> span)
         {
             _slim.Wait();
             try
@@ -74,8 +69,8 @@ namespace ExtenderApp.Common.IO
             }
         }
 
-
-        protected override async ValueTask<byte[]> ExecuteReadAsync(long filePosition, int length, CancellationToken token)
+        ///<inheritdoc/>
+        protected override sealed async ValueTask<byte[]> ExecuteReadAsync(long filePosition, int length, CancellationToken token)
         {
             _slim.Wait();
             try
@@ -90,31 +85,13 @@ namespace ExtenderApp.Common.IO
             }
         }
 
-        protected override async ValueTask<long> ExecuteReadAsync(long filePosition, long length, AbstractBuffer<byte> buffer, CancellationToken token)
+        ///<inheritdoc/>
+        protected override sealed async ValueTask<long> ExecuteReadAsync(long filePosition, Memory<byte> memory, CancellationToken token)
         {
             _slim.Wait();
             try
             {
-                long remaining = length;
-                long totalRead = 0;
-                while (remaining > 0)
-                {
-                    int readLength = (int)Math.Min(remaining, buffer.Available);
-                    if (readLength == 0)
-                    {
-                        break;
-                    }
-                    int bytesRead = await RandomAccess.ReadAsync(Stream.SafeFileHandle, buffer.GetMemory(readLength), filePosition, token);
-                    if (bytesRead == 0)
-                    {
-                        break;
-                    }
-                    buffer.Advance(bytesRead);
-                    filePosition += bytesRead;
-                    remaining -= bytesRead;
-                    totalRead += bytesRead;
-                }
-                return totalRead;
+                return await RandomAccess.ReadAsync(Stream.SafeFileHandle, memory, filePosition, token);
             }
             finally
             {
@@ -122,16 +99,18 @@ namespace ExtenderApp.Common.IO
             }
         }
 
-        #endregion
+        #endregion Read
 
         #region Write
 
-        protected override void ExecuteWrite(long filePosition, ReadOnlySpan<byte> span)
+        ///<inheritdoc/>
+        protected override sealed long ExecuteWrite(long filePosition, ReadOnlySpan<byte> span)
         {
             _slim.Wait();
             try
             {
                 RandomAccess.Write(Stream.SafeFileHandle, span, filePosition);
+                return span.Length;
             }
             finally
             {
@@ -139,19 +118,19 @@ namespace ExtenderApp.Common.IO
             }
         }
 
-        protected override long ExecuteWrite(long filePosition, AbstractBuffer<byte> buffer)
+        ///<inheritdoc/>
+        protected override sealed long ExecuteWrite(long filePosition, ReadOnlySequence<byte> sequence)
         {
             _slim.Wait();
             try
             {
-                ReadOnlySequence<byte> sequence = buffer.CommittedSequence;
                 SequencePosition position = sequence.Start;
                 while (sequence.TryGet(ref position, out ReadOnlyMemory<byte> memory))
                 {
                     RandomAccess.Write(Stream.SafeFileHandle, memory.Span, filePosition);
                     filePosition += memory.Length;
                 }
-                return buffer.Committed;
+                return sequence.Length;
             }
             finally
             {
@@ -159,19 +138,19 @@ namespace ExtenderApp.Common.IO
             }
         }
 
-        protected override async ValueTask<long> ExecuteWriteAsync(long filePosition, AbstractBuffer<byte> buffer, CancellationToken token)
+        ///<inheritdoc/>
+        protected override sealed async ValueTask<long> ExecuteWriteAsync(long filePosition, ReadOnlySequence<byte> sequence, CancellationToken token)
         {
             _slim.Wait();
             try
             {
-                ReadOnlySequence<byte> sequence = buffer.CommittedSequence;
                 SequencePosition position = sequence.Start;
                 while (sequence.TryGet(ref position, out ReadOnlyMemory<byte> memory))
                 {
                     await RandomAccess.WriteAsync(Stream.SafeFileHandle, memory, filePosition);
                     filePosition += memory.Length;
                 }
-                return buffer.Committed;
+                return sequence.Length;
             }
             finally
             {
@@ -179,6 +158,6 @@ namespace ExtenderApp.Common.IO
             }
         }
 
-        #endregion
+        #endregion Write
     }
 }

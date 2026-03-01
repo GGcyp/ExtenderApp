@@ -8,14 +8,13 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
     /// </summary>
     /// <typeparam name="TKey">字典键的类型。</typeparam>
     /// <typeparam name="TValue">字典值的类型。</typeparam>
-    public class DictionaryFormatter<TKey, TValue> : InterfaceDictionaryFormatter<TKey, TValue, Dictionary<TKey, TValue>> where TKey : notnull
+    public sealed class DictionaryFormatter<TKey, TValue> : InterfaceDictionaryFormatter<TKey, TValue, Dictionary<TKey, TValue>> where TKey : notnull
     {
         public DictionaryFormatter(IBinaryFormatterResolver resolver) : base(resolver)
         {
-
         }
 
-        protected override Dictionary<TKey, TValue> Create(int count)
+        protected override sealed Dictionary<TKey, TValue> Create(int count)
         {
             return new Dictionary<TKey, TValue>(count);
         }

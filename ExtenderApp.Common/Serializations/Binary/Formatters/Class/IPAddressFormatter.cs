@@ -1,7 +1,5 @@
 ﻿using System.Net;
-using ExtenderApp.Abstract;
 using ExtenderApp.Buffer;
-using ExtenderApp.Buffer.Reader;
 using ExtenderApp.Contracts;
 
 namespace ExtenderApp.Common.Serializations.Binary.Formatters.Class
@@ -9,51 +7,62 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters.Class
     /// <summary>
     /// IPAddress 的二进制格式化器。
     /// </summary>
-    public class IPAddressFormatter : ResolverFormatter<IPAddress>
+    public sealed class IPAddressFormatter : BinaryFormatter<IPAddress>
     {
-        public override int DefaultLength => 1;
+        private const int IPv4Length = 4;
+        private const int IPv6Length = 16;
 
-        private readonly IBinaryFormatter<byte[]> _bytes;
-
-        public IPAddressFormatter(IBinaryFormatterResolver resolver) : base(resolver)
+        public override sealed IPAddress Deserialize(ref BinaryReaderAdapter reader)
         {
-            _bytes = resolver.GetFormatter<byte[]>();
-        }
-
-        public override IPAddress Deserialize(AbstractBufferReader<byte> reader)
-        {
-            if (TryReadNil(reader))
-            {
-                return null!;
-            }
-
-            var bytes = _bytes.Deserialize(reader);
-            return new IPAddress(bytes);
-        }
-
-        public override IPAddress Deserialize(ref SpanReader<byte> reader)
-        {
+            IPAddress address = null!;
             if (TryReadNil(ref reader))
             {
-                return null!;
+                return address;
             }
 
-            var bytes = _bytes.Deserialize(ref reader);
-            return new IPAddress(bytes);
-        }
-
-        public override void Serialize(AbstractBuffer<byte> buffer, IPAddress value)
-        {
-            if (value == null)
+            if (TryReadMark(ref reader, BinaryOptions.Ex4) && reader.Remaining >= IPv4Length)
             {
-                WriteNil(buffer);
-                return;
+                Span<byte> buffer = stackalloc byte[IPv4Length];
+                reader.TryRead(buffer);
+                address = new IPAddress(buffer);
             }
 
-            _bytes.Serialize(buffer, value.GetAddressBytes());
+            if (TryReadMark(ref reader, BinaryOptions.Ex16) && reader.Remaining >= IPv6Length)
+            {
+                Span<byte> buffer = stackalloc byte[IPv6Length];
+                reader.TryRead(buffer);
+                address = new IPAddress(buffer);
+            }
+
+            return address;
         }
 
-        public override void Serialize(ref SpanWriter<byte> writer, IPAddress value)
+        public override sealed IPAddress Deserialize(ref SpanReader<byte> reader)
+        {
+            IPAddress address = null!;
+            int length = 0;
+            if (TryReadNil(ref reader))
+            {
+                return address;
+            }
+
+            if (TryReadMark(ref reader, BinaryOptions.Ex4) && reader.Remaining >= IPv4Length)
+            {
+                address = new IPAddress(reader.UnreadSpan.Slice(0, IPv4Length));
+                length = 4;
+            }
+
+            if (TryReadMark(ref reader, BinaryOptions.Ex16) && reader.Remaining >= IPv6Length)
+            {
+                address = new IPAddress(reader.UnreadSpan.Slice(0, IPv6Length));
+                length = IPv6Length;
+            }
+
+            reader.Advance(length);
+            return address;
+        }
+
+        public override sealed void Serialize(ref BinaryWriterAdapter writer, IPAddress value)
         {
             if (value == null)
             {
@@ -61,17 +70,41 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters.Class
                 return;
             }
 
-            _bytes.Serialize(ref writer, value.GetAddressBytes());
+            WriteMark(ref writer, GetMark(value));
+            value.TryWriteBytes(writer.GetSpan((int)GetLength(value)), out int bytesWritten);
+            writer.Advance(bytesWritten);
         }
 
-        public override long GetLength(IPAddress value)
+        public override sealed void Serialize(ref SpanWriter<byte> writer, IPAddress value)
+        {
+            if (value == null)
+            {
+                WriteNil(ref writer);
+                return;
+            }
+            if (GetLength(value) > writer.Remaining)
+            {
+                throw new InvalidOperationException("无法写入，写入器剩余空间不足。");
+            }
+
+            WriteMark(ref writer, GetMark(value));
+            value.TryWriteBytes(writer.UnwrittenSpan, out int bytesWritten);
+            writer.Advance(bytesWritten);
+        }
+
+        public override sealed long GetLength(IPAddress value)
         {
             if (value == null)
             {
                 return NilLength;
             }
 
-            return _bytes.GetLength(value.GetAddressBytes());
+            return value.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork ? 4 : 16;
+        }
+
+        private static byte GetMark(IPAddress value)
+        {
+            return value.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork ? BinaryOptions.Ex4 : BinaryOptions.Ex16;
         }
     }
 }

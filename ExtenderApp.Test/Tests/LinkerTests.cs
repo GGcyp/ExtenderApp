@@ -35,7 +35,7 @@ namespace ExtenderApp.Test.Tests
             var payload = $"linker-sync:{DateTimeOffset.UtcNow:O}";
 
             using var scope = new TcpTestScope(linkerFactory);
-            binarySerialization.Serialize(payload, out AbstractBuffer<byte> buffer);
+            binarySerialization.Serialize(payload, out var buffer);
             try
             {
                 var sendResult = scope.Client.Send(buffer);
@@ -72,7 +72,7 @@ namespace ExtenderApp.Test.Tests
             var payload = $"linker-async:{DateTimeOffset.UtcNow:O}";
 
             using var scope = new TcpTestScope(linkerFactory);
-            binarySerialization.Serialize(payload, out AbstractBuffer<byte> buffer);
+            binarySerialization.Serialize(payload, out var buffer);
             try
             {
                 var sendResult = await scope.Client.SendAsync(buffer, token: CancellationToken.None).ConfigureAwait(false);
@@ -109,7 +109,7 @@ namespace ExtenderApp.Test.Tests
             var payload = new byte[16 * 1024];
             Random.Shared.NextBytes(payload);
 
-            binarySerialization.Serialize(payload, out AbstractBuffer<byte> buffer);
+            binarySerialization.Serialize(payload, out var buffer);
             try
             {
                 using var scope = new TcpTestScope(linkerFactory);

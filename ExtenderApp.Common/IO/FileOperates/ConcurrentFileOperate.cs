@@ -1,4 +1,5 @@
-﻿using System.Collections.Concurrent;
+﻿using System.Buffers;
+using System.Collections.Concurrent;
 using ExtenderApp.Buffer;
 using ExtenderApp.Contracts;
 
@@ -10,7 +11,7 @@ namespace ExtenderApp.Common.IO.FileOperates
     /// - 当新请求与已有区间重叠时，进入等待，直到有线程释放重叠区间；
     /// - 通过 <see cref="_wakeup"/> 以“单次唤醒”的方式通知等待者重新竞争，避免惊群。
     /// </summary>
-    internal class ConcurrentFileOperate : FileOperate
+    internal sealed class ConcurrentFileOperate : FileOperate
     {
         /// <summary>
         /// 当前已登记的正在操作的区间集合，元素为 (Start, end)。
@@ -41,14 +42,16 @@ namespace ExtenderApp.Common.IO.FileOperates
             _wakeup = new(0, int.MaxValue);
         }
 
-        protected override void ChangeCapacity(long length)
+        ///<inheritdoc/>
+        protected override sealed void ChangeCapacity(long length)
         {
             Stream.SetLength(length);
         }
 
         #region Read
 
-        protected override byte[] ExecuteRead(long filePosition, int length)
+        ///<inheritdoc/>
+        protected override sealed byte[] ExecuteRead(long filePosition, int length)
         {
             EnterOperate(filePosition, length);
             try
@@ -63,7 +66,8 @@ namespace ExtenderApp.Common.IO.FileOperates
             }
         }
 
-        protected override int ExecuteRead(long filePosition, Span<byte> span)
+        ///<inheritdoc/>
+        protected override sealed int ExecuteRead(long filePosition, Span<byte> span)
         {
             EnterOperate(filePosition, span.Length);
             try
@@ -76,7 +80,8 @@ namespace ExtenderApp.Common.IO.FileOperates
             }
         }
 
-        protected override async ValueTask<byte[]> ExecuteReadAsync(long filePosition, int length, CancellationToken token)
+        ///<inheritdoc/>
+        protected override sealed async ValueTask<byte[]> ExecuteReadAsync(long filePosition, int length, CancellationToken token)
         {
             await EnterOperateAsync(filePosition, length);
             try
@@ -91,23 +96,17 @@ namespace ExtenderApp.Common.IO.FileOperates
             }
         }
 
-        protected override async ValueTask<long> ExecuteReadAsync(long filePosition, long length, AbstractBuffer<byte> buffer, CancellationToken token)
+        ///<inheritdoc/>
+        protected override sealed async ValueTask<long> ExecuteReadAsync(long filePosition, Memory<byte> memory, CancellationToken token)
         {
-            await EnterOperateAsync(filePosition, buffer.Committed);
+            await EnterOperateAsync(filePosition, memory.Length);
             try
             {
-                var sequence = buffer.CommittedSequence;
-                SequencePosition position = sequence.Start;
-                while (sequence.TryGet(ref position, out ReadOnlyMemory<byte> memory))
-                {
-                    await RandomAccess.WriteAsync(Stream.SafeFileHandle, memory, filePosition);
-                    filePosition += memory.Length;
-                }
-                return buffer.Committed;
+                return await RandomAccess.ReadAsync(Stream.SafeFileHandle, memory, filePosition, token);
             }
             finally
             {
-                ExitOperate(filePosition, buffer.Committed);
+                ExitOperate(filePosition, memory.Length);
             }
         }
 
@@ -115,12 +114,14 @@ namespace ExtenderApp.Common.IO.FileOperates
 
         #region Write
 
-        protected override void ExecuteWrite(long filePosition, ReadOnlySpan<byte> span)
+        ///<inheritdoc/>
+        protected override sealed long ExecuteWrite(long filePosition, ReadOnlySpan<byte> span)
         {
             EnterOperate(filePosition, span.Length);
             try
             {
                 RandomAccess.Write(Stream.SafeFileHandle, span, filePosition);
+                return span.Length;
             }
             finally
             {
@@ -128,50 +129,50 @@ namespace ExtenderApp.Common.IO.FileOperates
             }
         }
 
-        protected override long ExecuteWrite(long filePosition, AbstractBuffer<byte> buffer)
+        ///<inheritdoc/>
+        protected override sealed long ExecuteWrite(long filePosition, ReadOnlySequence<byte> sequence)
         {
-            EnterOperate(filePosition, buffer.Committed);
+            EnterOperate(filePosition, sequence.Length);
             try
             {
-                var sequence = buffer.CommittedSequence;
                 SequencePosition position = sequence.Start;
                 while (sequence.TryGet(ref position, out ReadOnlyMemory<byte> memory))
                 {
                     RandomAccess.Write(Stream.SafeFileHandle, memory.Span, filePosition);
                     filePosition += memory.Length;
                 }
-                return buffer.Committed;
+                return sequence.Length;
             }
             finally
             {
-                ExitOperate(filePosition, buffer.Committed);
+                ExitOperate(filePosition, sequence.Length);
             }
         }
 
-        protected override async ValueTask<long> ExecuteWriteAsync(long filePosition, AbstractBuffer<byte> buffer, CancellationToken token)
+        ///<inheritdoc/>
+        protected override sealed async ValueTask<long> ExecuteWriteAsync(long filePosition, ReadOnlySequence<byte> sequence, CancellationToken token)
         {
-            await EnterOperateAsync(filePosition, buffer.Committed);
+            await EnterOperateAsync(filePosition, sequence.Length, token);
             try
             {
-                var sequence = buffer.CommittedSequence;
                 SequencePosition position = sequence.Start;
                 while (sequence.TryGet(ref position, out ReadOnlyMemory<byte> memory))
                 {
                     await RandomAccess.WriteAsync(Stream.SafeFileHandle, memory, filePosition);
                     filePosition += memory.Length;
                 }
-                return buffer.Committed;
+                return sequence.Length;
             }
             finally
             {
-                ExitOperate(filePosition, buffer.Committed);
+                ExitOperate(filePosition, sequence.Length);
             }
         }
 
         #endregion Write
 
         /// <summary>
-        /// 检查给定区间 [position, position + length) 是否可以立即操作（与已登记区间无重叠）。
+        /// 检查给定区间 [position, position + _intLength) 是否可以立即操作（与已登记区间无重叠）。
         /// </summary>
         /// <param name="position">操作起始偏移。</param>
         /// <param name="length">操作长度。</param>

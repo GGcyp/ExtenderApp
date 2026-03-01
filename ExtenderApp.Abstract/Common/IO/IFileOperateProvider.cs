@@ -8,7 +8,7 @@ namespace ExtenderApp.Abstract
     /// <remarks>
     /// 约定与建议：
     /// - 生命周期：调用方获取到 <see cref="IFileOperate"/> 后，应在使用完毕时调用 <see cref="ReleaseOperate(IFileOperate)"/> 或对应的释放方法，
-    ///   以便实现有机会进行对象池复用或资源回收；如实现不支持复用，释放应等价于调用 IFileOperate.Dispose()。
+    ///   以便实现有机会进行对象池复用或资源回收；如实现不支持复用，释放应等价于调用 IFileOperate.TryRelease()。
     /// - 选择策略：若未显式指定 <see cref="FileOperateType"/>，实现可根据默认策略或运行环境（如优先 FileStream）选择具体实现；
     ///   若显式指定但不受支持，推荐抛出 <see cref="NotSupportedException"/>。
     /// - 线程安全：若提供者在内部复用/缓存实例，应保证并发访问安全或在文档中明确并发模型。

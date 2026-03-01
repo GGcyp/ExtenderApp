@@ -1,4 +1,5 @@
-﻿using System.Runtime.InteropServices;
+﻿using System.Buffers;
+using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using ExtenderApp.Abstract;
 using ExtenderApp.Buffer;
@@ -12,8 +13,14 @@ namespace ExtenderApp.Common.IO
     /// </summary>
     public abstract class FileOperate : DisposableObject, IFileOperate
     {
-        private const int FileChunkSize = 64 * 1024; // 64KB 分块大小，适合大多数文件系统和应用场景
+        /// <summary>
+        /// 文件读写时使用的默认分块大小（字节）。用于分批读取/写入以避免一次性分配过大缓冲区。
+        /// </summary>
+        private const int FileChunkSize = 32 * 1024; // 32KB 分块大小，适合大多数文件系统和应用场景
 
+        /// <summary>
+        /// 默认的容量扩展对齐粒度（字节）。在按策略预分配或对齐时使用（例如 Windows 常见的 64KB 对齐）。
+        /// </summary>
         private const int AllocationGranularity = 64 * 1024; // 保守对齐（Windows 常见）
 
         /// <summary>
@@ -86,6 +93,130 @@ namespace ExtenderApp.Common.IO
             Capacity = Info.Exists ? Info.FileSize : 1;
         }
 
+        #region Write
+
+        /// <inheritdoc/>
+        public Result<int> Write(ReadOnlySpan<byte> span, long filePosition = 0)
+        {
+            try
+            {
+                if (span.Length == 0)
+                    return Result.Success(0);
+
+                if (span.IsEmpty)
+                    throw new ArgumentNullException(nameof(span));
+                if (filePosition < 0)
+                    throw new ArgumentOutOfRangeException(nameof(filePosition));
+                if (!CanWrite)
+                    return Result.Failure<int>("文件不支持写入操作。");
+
+                EnsureCapacityForWrite(filePosition, span.Length);
+                ExecuteWrite(filePosition, span);
+                LastOperateTime = DateTime.Now;
+                return Result.Success(span.Length);
+            }
+            catch (Exception ex)
+            {
+                return Result.FromException<int>(ex);
+            }
+        }
+
+        /// <inheritdoc/>
+        public Result<long> Write<TBuffer>(TBuffer buffer, long filePosition = 0) where TBuffer : AbstractBuffer<byte>
+        {
+            try
+            {
+                ThrowIfDisposed();
+                ArgumentNullException.ThrowIfNull(buffer, nameof(buffer));
+                if (!CanWrite)
+                    return Result.Failure<long>("文件不支持写入操作。");
+
+                var sequence = buffer.CommittedSequence;
+                if (sequence.IsEmpty)
+                    return Result.Success(0L);
+
+                EnsureCapacityForWrite(filePosition, sequence.Length);
+
+                buffer.Freeze();
+                long written = ExecuteWrite(filePosition, sequence);
+
+                LastOperateTime = DateTime.Now;
+                return Result.Success(written);
+            }
+            catch (Exception ex)
+            {
+                return Result.FromException<long>(ex);
+            }
+            finally
+            {
+                buffer.TryRelease();
+            }
+        }
+
+        /// <inheritdoc/>
+        public Result<long> Write(ref BinaryReaderAdapter reader, long filePosition = 0)
+        {
+            try
+            {
+                ThrowIfDisposed();
+                if (reader.IsEmpty)
+                    return Result.Failure<long>("提供的读取器没有数据可写入。");
+                if (!CanWrite)
+                    return Result.Failure<long>("文件不支持写入操作。");
+                if (reader.Remaining == 0)
+                    return Result.Success(0L);
+
+                EnsureCapacityForWrite(filePosition, reader.Remaining);
+
+                long written = ExecuteWrite(filePosition, reader.UnreadSequence);
+
+                LastOperateTime = DateTime.Now;
+                return Result.Success(written);
+            }
+            catch (Exception ex)
+            {
+                return Result.FromException<long>(ex);
+            }
+        }
+
+        #endregion Write
+
+        #region WriteAsync
+
+        /// <inheritdoc/>
+        public async ValueTask<Result<long>> WriteAsync<TBuffer>(TBuffer buffer, long filePosition = 0, CancellationToken token = default) where TBuffer : AbstractBuffer<byte>
+        {
+            try
+            {
+                ThrowIfDisposed();
+                ArgumentNullException.ThrowIfNull(buffer, nameof(buffer));
+                if (!CanWrite)
+                    return Result.Failure<long>("文件不支持写入操作。");
+
+                var sequence = buffer.CommittedSequence;
+                if (sequence.IsEmpty)
+                    return Result.Success(0L);
+
+                EnsureCapacityForWrite(filePosition, sequence.Length);
+
+                buffer.Freeze();
+                long written = await ExecuteWriteAsync(filePosition, sequence, token);
+
+                LastOperateTime = DateTime.Now;
+                return Result.Success(written);
+            }
+            catch (Exception ex)
+            {
+                return Result.FromException<long>(ex);
+            }
+            finally
+            {
+                buffer.TryRelease();
+            }
+        }
+
+        #endregion WriteAsync
+
         #region Read
 
         /// <inheritdoc/>
@@ -144,8 +275,51 @@ namespace ExtenderApp.Common.IO
             }
         }
 
+        public Result<long> Read(long length, ref BinaryWriterAdapter writer, long filePosition = 0)
+        {
+            try
+            {
+                ThrowIfDisposed();
+                if (writer.IsEmpty)
+                    return Result.Failure<long>("提供的写入器没有可用空间来写入数据。");
+                if (length == 0)
+                    return Result.Success(0L);
+                if (filePosition < 0)
+                    throw new ArgumentOutOfRangeException(nameof(filePosition));
+                if (length < 0)
+                    throw new ArgumentOutOfRangeException(nameof(length));
+                if (!CanRead)
+                    return Result.Failure<long>("文件不支持读取操作。");
+
+                long remaining = length;
+                long totalRead = 0;
+                while (remaining > 0)
+                {
+                    int readSize = (int)System.Math.Min(remaining, FileChunkSize);
+                    var span = writer.GetSpan(readSize).Slice(0, readSize);
+                    int read = ExecuteRead(filePosition + totalRead, span);
+                    if (read <= 0)
+                        break;
+
+                    writer.Advance(read);
+                    totalRead += read;
+                    remaining -= read;
+
+                    if (read < readSize)
+                        break;
+                }
+
+                LastOperateTime = DateTime.Now;
+                return Result.Success(totalRead);
+            }
+            catch (Exception ex)
+            {
+                return Result.FromException<long>(ex);
+            }
+        }
+
         /// <inheritdoc/>
-        public Result<long> Read(long length, AbstractBuffer<byte> buffer, long filePosition = 0)
+        public Result<long> Read<TBuffer>(long length, TBuffer buffer, long filePosition = 0) where TBuffer : AbstractBuffer<byte>
         {
             try
             {
@@ -160,6 +334,7 @@ namespace ExtenderApp.Common.IO
                 if (!CanRead)
                     return Result.Failure<long>("文件不支持读取操作。");
 
+                buffer.Freeze();
                 long remaining = length;
                 long totalRead = 0;
                 while (remaining > 0)
@@ -190,13 +365,29 @@ namespace ExtenderApp.Common.IO
         /// <inheritdoc/>
         public Result<long> Read(long length, out AbstractBuffer<byte> buffer, long filePosition = 0)
         {
-            buffer = SequenceBuffer<byte>.GetBuffer();
-            var result = Read(length, buffer, filePosition);
-            if (!result.IsSuccess)
+            buffer = default;
+            Result<long> result = default;
+            try
             {
-                buffer.TryRelease();
+                if (length < FileChunkSize)
+                {
+                    var block = MemoryBlock<byte>.GetBuffer((int)length);
+                    buffer = block;
+                    result = Read(length, block, filePosition);
+                }
+                else
+                {
+                    SequenceBuffer<byte> sequence = SequenceBuffer<byte>.GetBuffer();
+                    buffer = sequence;
+                    result = Read(length, sequence, filePosition);
+                }
+                return Result.Success(result)!;
             }
-            return result;
+            catch (Exception ex)
+            {
+                buffer?.TryRelease();
+                return Result.FromException<Result<long>>(ex);
+            }
         }
 
         #endregion Read
@@ -233,7 +424,34 @@ namespace ExtenderApp.Common.IO
         }
 
         /// <inheritdoc/>
-        public async ValueTask<Result<long>> ReadAsync(long length, AbstractBuffer<byte> buffer, long filePosition = 0, CancellationToken token = default)
+        public async ValueTask<Result<AbstractBuffer<byte>>> ReadAsync(long length, long filePosition = 0, CancellationToken token = default)
+        {
+            AbstractBuffer<byte> buffer = default!;
+            try
+            {
+                if (length < FileChunkSize)
+                {
+                    var block = MemoryBlock<byte>.GetBuffer((int)length);
+                    buffer = block;
+                    var result = await ReadAsync(length, block, filePosition, token);
+                }
+                else
+                {
+                    SequenceBuffer<byte> sequence = SequenceBuffer<byte>.GetBuffer();
+                    buffer = sequence;
+                    await ReadAsync(length, sequence, filePosition, token);
+                }
+                return Result.Success(buffer)!;
+            }
+            catch (Exception ex)
+            {
+                buffer?.TryRelease();
+                return Result.FromException<AbstractBuffer<byte>>(ex);
+            }
+        }
+
+        /// <inheritdoc/>
+        public async ValueTask<Result<long>> ReadAsync<TBuffer>(long length, TBuffer buffer, long filePosition = 0, CancellationToken token = default) where TBuffer : AbstractBuffer<byte>
         {
             try
             {
@@ -248,7 +466,25 @@ namespace ExtenderApp.Common.IO
                 if (!CanRead)
                     return Result.Failure<long>("文件不支持读取操作。");
 
-                long totalRead = await ExecuteReadAsync(filePosition, length, buffer, token);
+                buffer.Freeze();
+                long remaining = length;
+                long totalRead = 0;
+                while (remaining > 0)
+                {
+                    int readSize = (int)System.Math.Min(remaining, FileChunkSize);
+                    var memory = buffer.GetMemory(readSize).Slice(0, readSize);
+                    int read = (int)await ExecuteReadAsync(filePosition + totalRead, memory, token);
+                    if (read <= 0)
+                        break;
+
+                    buffer.Advance(read);
+                    totalRead += read;
+                    remaining -= read;
+
+                    if (read < readSize)
+                        break;
+                }
+
                 LastOperateTime = DateTime.Now;
                 return Result.Success(totalRead);
             }
@@ -258,108 +494,7 @@ namespace ExtenderApp.Common.IO
             }
         }
 
-        /// <inheritdoc/>
-        public async ValueTask<Result<AbstractBuffer<byte>>> ReadAsync(long length, long filePosition = 0, CancellationToken token = default)
-        {
-            SequenceBuffer<byte> buffer = SequenceBuffer<byte>.GetBuffer();
-            var result = await ReadAsync(length, buffer, filePosition, token);
-            if (!result.IsSuccess)
-            {
-                buffer.TryRelease();
-                return Result.Failure<AbstractBuffer<byte>>();
-            }
-            return Result.Success<AbstractBuffer<byte>>(buffer)!;
-        }
-
         #endregion ReadAsync
-
-        #region Write
-
-        /// <inheritdoc/>
-        public Result<int> Write(ReadOnlySpan<byte> span, long filePosition = 0)
-        {
-            try
-            {
-                if (span.Length == 0)
-                    return Result.Success(0);
-
-                if (span.IsEmpty)
-                    throw new ArgumentNullException(nameof(span));
-                if (filePosition < 0)
-                    throw new ArgumentOutOfRangeException(nameof(filePosition));
-                if (!CanWrite)
-                    return Result.Failure<int>("文件不支持写入操作。");
-
-                EnsureCapacityForWrite(filePosition, span.Length);
-                ExecuteWrite(filePosition, span);
-                LastOperateTime = DateTime.Now;
-                return Result.Success(span.Length);
-            }
-            catch (Exception ex)
-            {
-                return Result.FromException<int>(ex);
-            }
-        }
-
-        /// <inheritdoc/>
-        public Result<long> Write(AbstractBuffer<byte> buffer, long filePosition = 0)
-        {
-            try
-            {
-                ThrowIfDisposed();
-                ArgumentNullException.ThrowIfNull(buffer, nameof(buffer));
-                if (!CanWrite)
-                    return Result.Failure<long>("文件不支持写入操作。");
-
-                var sequence = buffer.CommittedSequence;
-                if (sequence.IsEmpty)
-                    return Result.Success(0L);
-
-                EnsureCapacityForWrite(filePosition, sequence.Length);
-
-                long written = ExecuteWrite(filePosition, buffer);
-
-                LastOperateTime = DateTime.Now;
-                return Result.Success(written);
-            }
-            catch (Exception ex)
-            {
-                return Result.FromException<long>(ex);
-            }
-        }
-
-        #endregion Write
-
-        #region WriteAsync
-
-        /// <inheritdoc/>
-        public async ValueTask<Result<long>> WriteAsync(AbstractBuffer<byte> buffer, long filePosition = 0, CancellationToken token = default)
-        {
-            try
-            {
-                ThrowIfDisposed();
-                ArgumentNullException.ThrowIfNull(buffer, nameof(buffer));
-                if (!CanWrite)
-                    return Result.Failure<long>("文件不支持写入操作。");
-
-                var sequence = buffer.CommittedSequence;
-                if (sequence.IsEmpty)
-                    return Result.Success(0L);
-
-                EnsureCapacityForWrite(filePosition, sequence.Length);
-
-                long written = await ExecuteWriteAsync(filePosition, buffer, token);
-
-                LastOperateTime = DateTime.Now;
-                return Result.Success(written);
-            }
-            catch (Exception ex)
-            {
-                return Result.FromException<long>(ex);
-            }
-        }
-
-        #endregion WriteAsync
 
         #region Execute
 
@@ -368,24 +503,27 @@ namespace ExtenderApp.Common.IO
         /// <summary>
         /// 派生类同步写入实现：将 span 写入到 filePosition。
         /// </summary>
-        protected abstract void ExecuteWrite(long filePosition, ReadOnlySpan<byte> span);
+        protected abstract long ExecuteWrite(long filePosition, ReadOnlySpan<byte> span);
 
         /// <summary>
         /// 派生类同步写入实现：将缓冲区内容写入到 filePosition，并返回实际写入的字节数。
         /// </summary>
-        protected abstract long ExecuteWrite(long filePosition, AbstractBuffer<byte> buffer);
+        /// <param name="filePosition">写入的文件偏移位置。</param>
+        /// <param name="sequence">提供数据的只读序列。</param>
+        /// <returns>实际写入的字节数。</returns>
+        protected abstract long ExecuteWrite(long filePosition, ReadOnlySequence<byte> sequence);
 
         /// <summary>
         /// 派生类异步写入实现：将缓冲区内容写入到 filePosition，并返回实际写入的字节数。
         /// </summary>
-        protected abstract ValueTask<long> ExecuteWriteAsync(long filePosition, AbstractBuffer<byte> buffer, CancellationToken token);
+        protected abstract ValueTask<long> ExecuteWriteAsync(long filePosition, ReadOnlySequence<byte> sequence, CancellationToken token);
 
         #endregion ExecuteWrite
 
         #region ExecuteRead
 
         /// <summary>
-        /// 派生类同步读取实现：从 filePosition 读取 length 字节并返回。
+        /// 派生类同步读取实现：从 filePosition 读取 _intLength 字节并返回。
         /// </summary>
         protected abstract byte[] ExecuteRead(long filePosition, int length);
 
@@ -395,14 +533,14 @@ namespace ExtenderApp.Common.IO
         protected abstract int ExecuteRead(long filePosition, Span<byte> span);
 
         /// <summary>
-        /// 派生类异步读取实现：从 filePosition 读取 length 字节并返回。
+        /// 派生类异步读取实现：从 filePosition 读取 _intLength 字节并返回。
         /// </summary>
         protected abstract ValueTask<byte[]> ExecuteReadAsync(long filePosition, int length, CancellationToken token);
 
         /// <summary>
         /// 派生类异步读取实现：从 filePosition 读取并填充 memory，返回实际读取。
         /// </summary>
-        protected abstract ValueTask<long> ExecuteReadAsync(long filePosition, long length, AbstractBuffer<byte> buffer, CancellationToken token);
+        protected abstract ValueTask<long> ExecuteReadAsync(long filePosition, Memory<byte> memory, CancellationToken token);
 
         #endregion ExecuteRead
 
@@ -482,6 +620,9 @@ namespace ExtenderApp.Common.IO
 
         #region GetFileGuid
 
+        /// <summary>
+        /// 用于调用 Win32 API 获取文件句柄信息的结构映射。仅在 Windows 平台用于内部文件标识/元信息检索。
+        /// </summary>
         [StructLayout(LayoutKind.Sequential)]
         private struct BY_HANDLE_FILE_INFORMATION
         {
@@ -497,6 +638,12 @@ namespace ExtenderApp.Common.IO
             public uint FileIndexLow;
         }
 
+        /// <summary>
+        /// 调用 Win32 的 GetFileInformationByHandle 来检索文件相关的底层信息（仅 Windows）。
+        /// </summary>
+        /// <param name="hFile">要查询的文件句柄。</param>
+        /// <param name="lpFileInformation">输出的文件信息结构。</param>
+        /// <returns>如果调用成功则返回 <c>true</c>，否则返回 <c>false</c>。</returns>
         [DllImport("kernel32.dll", SetLastError = true)]
         private static extern bool GetFileInformationByHandle(SafeFileHandle hFile, out BY_HANDLE_FILE_INFORMATION lpFileInformation);
 

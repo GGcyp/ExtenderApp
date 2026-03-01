@@ -75,7 +75,7 @@ namespace ExtenderApp.Buffer
         /// 使用指定的托管数组创建一个 <see cref="ByteBlock"/> 实例（零拷贝包装）。
         /// </summary>
         /// <param name="bytes">用于初始化的托管字节数组（不能为 null）。</param>
-        /// <remarks>该构造函数通过提供者将指定数组包装为底层内存块——不会复制数组内容。调用方负责数组的生命周期和并发访问； Dispose 行为取决于提供者实现，可能不会将数组归还。</remarks>
+        /// <remarks>该构造函数通过提供者将指定数组包装为底层内存块——不会复制数组内容。调用方负责数组的生命周期和并发访问； TryRelease 行为取决于提供者实现，可能不会将数组归还。</remarks>
         public ByteBlock(byte[] bytes) : this(FixedArrayBlockProvider<byte>.Default.GetBuffer(bytes))
         {
         }
@@ -84,7 +84,7 @@ namespace ExtenderApp.Buffer
         /// 使用指定的 <see cref="IMemoryOwner{T}"/> 创建 <see cref="ByteBlock"/>（将 owner 作为底层存储）。
         /// </summary>
         /// <param name="memoryOwner">要包装的 <see cref="IMemoryOwner{byte}"/>（不能为 null）。</param>
-        /// <remarks>某些提供者在回收时可能会 Dispose 该 owner，调用方应明确所有权与生命周期约定，避免在本实例 Dispose 之后继续使用 owner。</remarks>
+        /// <remarks>某些提供者在回收时可能会 TryRelease 该 owner，调用方应明确所有权与生命周期约定，避免在本实例 TryRelease 之后继续使用 owner。</remarks>
         public ByteBlock(IMemoryOwner<byte> memoryOwner) : this(MemoryOwnerBlockProvider<byte>.Default.GetBuffer(memoryOwner))
         {
         }

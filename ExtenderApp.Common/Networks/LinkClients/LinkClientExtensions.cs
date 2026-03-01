@@ -1,7 +1,6 @@
 ﻿using System.Diagnostics;
 using System.Net;
 using ExtenderApp.Abstract;
-using ExtenderApp.Buffer;
 using ExtenderApp.Contracts;
 using Microsoft.Extensions.DependencyInjection;
 

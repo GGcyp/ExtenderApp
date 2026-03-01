@@ -59,7 +59,7 @@ namespace ExtenderApp.Buffer
             _createFunc = policy.Create;
             _releaseFunc = policy.Release;
             _fastItem = default!;
-            _maxCapacity = maximumRetained - 1;  // -1 to account for _fastItem
+            _maxCapacity = maximumRetained;
             _items = new();
         }
 
@@ -81,6 +81,7 @@ namespace ExtenderApp.Buffer
                 return _createFunc();
             }
 
+            Interlocked.Decrement(ref numItems);
             return item;
         }
 
@@ -105,19 +106,25 @@ namespace ExtenderApp.Buffer
                 return false;
             }
 
-            if (_fastItem != null || Interlocked.CompareExchange(ref _fastItem, obj, null) != null)
+            // 先尝试放入快速槽位（_fastItem），使用原子 CompareExchange 保证线程安全。 如果快速槽位为空，则将 obj 放入并直接返回成功；否则把对象加入队列并根据容量调整 numItems。
+            var prev = Interlocked.CompareExchange(ref _fastItem, obj, null);
+            if (prev == null)
             {
-                if (Interlocked.Increment(ref numItems) <= _maxCapacity)
-                {
-                    _items.Enqueue(obj);
-                    return true;
-                }
-
-                Interlocked.Decrement(ref numItems);
-                return false;
+                // 成功放入快速槽
+                Interlocked.Increment(ref numItems);
+                return true;
             }
 
-            return true;
+            // 快速槽已被占用，尝试增加计数并入队
+            if (Interlocked.Increment(ref numItems) <= _maxCapacity)
+            {
+                _items.Enqueue(obj);
+                return true;
+            }
+
+            // 超出容量，回退计数并返回失败
+            Interlocked.Decrement(ref numItems);
+            return false;
         }
     }
 }

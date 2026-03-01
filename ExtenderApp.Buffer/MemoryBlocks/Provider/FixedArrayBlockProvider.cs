@@ -20,7 +20,7 @@ namespace ExtenderApp.Buffer.MemoryBlocks
         /// </summary>
         /// <param name="sizeHint">建议的最小容量（元素数）。为 0 表示可以返回空数组封装的内存块。</param>
         /// <returns>一个可写的 <see cref="MemoryBlock{T}"/> 实例（来自内部对象池）。</returns>
-        protected override MemoryBlock<T> CreateBufferProtected(int sizeHint)
+        protected override sealed MemoryBlock<T> CreateBufferProtected(int sizeHint)
         {
             return GetBuffer(new T[sizeHint]);
         }

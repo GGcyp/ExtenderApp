@@ -152,7 +152,7 @@ namespace ExtenderApp.ViewModels
         /// </summary>
         /// <typeparam name="TState">作用域状态类型。</typeparam>
         /// <param name="state">作用域状态。</param>
-        /// <returns>返回 IDisposable，在 Dispose 时结束作用域。</returns>
+        /// <returns>返回 IDisposable，在 TryRelease 时结束作用域。</returns>
         public IDisposable? BeginScope<TState>(TState state) where TState : notnull
         {
             return Logger.BeginScope(state);

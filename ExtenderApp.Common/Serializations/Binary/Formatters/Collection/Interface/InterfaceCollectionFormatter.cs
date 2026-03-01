@@ -8,7 +8,7 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
     /// </summary>
     /// <typeparam name="T">集合中元素的类型。</typeparam>
     /// <typeparam name="TCollection">集合的类型。</typeparam>
-    public abstract class InterfaceCollectionFormatter<T, TCollection> : ResolverFormatter<TCollection?>
+    public abstract class InterfaceCollectionFormatter<T, TCollection> : ResolverFormatter<TCollection>
         where TCollection : ICollection<T>
     {
         /// <summary>
@@ -27,25 +27,7 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
             _int = resolver.GetFormatter<int>();
         }
 
-        public override void Serialize(AbstractBuffer<byte> buffer, TCollection? value)
-        {
-            if (value == null)
-            {
-                WriteNil(buffer);
-                return;
-            }
-
-            var count = value.Count;
-            WriteArrayHeader(buffer);
-            _int.Serialize(buffer, count);
-
-            foreach (T item in value)
-            {
-                _t.Serialize(buffer, item);
-            }
-        }
-
-        public override void Serialize(ref SpanWriter<byte> writer, TCollection? value)
+        public override sealed void Serialize(ref BinaryWriterAdapter writer, TCollection value)
         {
             if (value == null)
             {
@@ -63,34 +45,29 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
             }
         }
 
-        public override TCollection? Deserialize(AbstractBufferReader<byte> reader)
+        public override sealed void Serialize(ref SpanWriter<byte> writer, TCollection value)
         {
-            if (TryReadNil(reader))
+            if (value == null)
             {
-                return default;
+                WriteNil(ref writer);
+                return;
             }
 
-            if (!TryReadArrayHeader(reader))
+            var count = value.Count;
+            WriteArrayHeader(ref writer);
+            _int.Serialize(ref writer, count);
+
+            foreach (T item in value)
             {
-                throw new InvalidOperationException("数据类型不匹配。");
+                _t.Serialize(ref writer, item);
             }
-
-            var len = _int.Deserialize(reader);
-
-            var result = Create(len);
-            for (int i = 0; i < len; i++)
-            {
-                Add(result, _t.Deserialize(reader));
-            }
-
-            return result;
         }
 
-        public override TCollection? Deserialize(ref SpanReader<byte> reader)
+        public override sealed TCollection Deserialize(ref BinaryReaderAdapter reader)
         {
             if (TryReadNil(ref reader))
             {
-                return default;
+                return default!;
             }
 
             if (!TryReadArrayHeader(ref reader))
@@ -109,7 +86,30 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
             return result;
         }
 
-        public override long GetLength(TCollection? value)
+        public override sealed TCollection Deserialize(ref SpanReader<byte> reader)
+        {
+            if (TryReadNil(ref reader))
+            {
+                return default!;
+            }
+
+            if (!TryReadArrayHeader(ref reader))
+            {
+                throw new InvalidOperationException("数据类型不匹配。");
+            }
+
+            var len = _int.Deserialize(ref reader);
+
+            var result = Create(len);
+            for (int i = 0; i < len; i++)
+            {
+                Add(result, _t.Deserialize(ref reader));
+            }
+
+            return result;
+        }
+
+        public override sealed long GetLength(TCollection? value)
         {
             if (value == null)
             {

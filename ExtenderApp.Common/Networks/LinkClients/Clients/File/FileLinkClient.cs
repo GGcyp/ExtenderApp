@@ -68,7 +68,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
             //var bitField = result.Value;
             //var requestList = request.FileDtos;
             //ValueOrList<FileDto> dtos = new(bitField.TrueCount);
-            //for (int i = 0; i < bitField.Length; i++)
+            //for (int i = 0; i < bitField.Committed; i++)
             //{
             //    if (bitField[i])
             //    {

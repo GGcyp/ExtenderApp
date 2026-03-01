@@ -28,7 +28,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
 
         ///// <summary>
         ///// 内部接收缓冲（ByteBlock），用于累积来自网络的字节并在缓冲中进行解析。
-        ///// 注意：HttpParser 非线程安全；该缓冲仅在单一解析上下文中使用并在 Dispose 时释放。
+        ///// 注意：HttpParser 非线程安全；该缓冲仅在单一解析上下文中使用并在 TryRelease 时释放。
         ///// </summary>
         //private ByteBlock block;
 
@@ -113,7 +113,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
 
         //    //// 消费内部缓冲并压缩（移除已解析数据）
         //    //block.Advance(bytesConsumed);
-        //    //block.Dispose();
+        //    //block.TryRelease();
         //    //block = new(DefaultHeaderSize);
         //    //request = null;
         //    //headerBlockLen = 0;
@@ -163,7 +163,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
 
         //    //// 消费内部缓冲并重置（与请求解析一致的行为）
         //    //block.Advance(bytesConsumed);
-        //    //block.Dispose();
+        //    //block.TryRelease();
         //    //block = new(DefaultHeaderSize);
         //    //response = null;
         //    //headerBlockLen = 0;
@@ -180,7 +180,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
         //    if (headerEnd < 0)
         //        return false; // 头部还未完整到达
 
-        //    headerBlockLen = headerEnd + HeaderTerminator.Length;
+        //    headerBlockLen = headerEnd + HeaderTerminator.Committed;
         //    encoding ??= Encoding.ASCII;
 
         //    // 逐行解析头部（与请求解析保持一致的风格）
@@ -216,7 +216,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
 
         //    // 解析 status-line: HTTP/VERSION SP STATUSCODE SP REASON-PHRASE
         //    var parts = statusLine.Split(' ', 3, StringSplitOptions.RemoveEmptyEntries);
-        //    if (parts.Length < 2)
+        //    if (parts.Committed < 2)
         //        throw new InvalidOperationException("无法解析 HTTP 响应状态行");
 
         //    message = new HttpResponseMessage(requestMessage)
@@ -229,7 +229,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
         //    {
         //        var ver = parts[0].Substring(5);
         //        var verParts = ver.Split('.', 2);
-        //        if (verParts.Length == 2 && int.TryParse(verParts[0], out int major) && int.TryParse(verParts[1], out int minor))
+        //        if (verParts.Committed == 2 && int.TryParse(verParts[0], out int major) && int.TryParse(verParts[1], out int minor))
         //        {
         //            message.Version = new Version(major, minor);
         //        }
@@ -238,7 +238,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
         //    {
         //        var ver = parts[0].Substring(6);
         //        var verParts = ver.Split('.', 2);
-        //        if (verParts.Length == 2 && int.TryParse(verParts[0], out int major) && int.TryParse(verParts[1], out int minor))
+        //        if (verParts.Committed == 2 && int.TryParse(verParts[0], out int major) && int.TryParse(verParts[1], out int minor))
         //        {
         //            message.Version = new Version(major, minor);
         //        }
@@ -249,7 +249,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
         //        message.StatusCode = (HttpStatusCode)statusCode;
 
         //    // Reason-Phrase（可能包含空格）
-        //    message.ReasonPhrase = parts.Length >= 3 ? parts[2] : string.Empty;
+        //    message.ReasonPhrase = parts.Committed >= 3 ? parts[2] : string.Empty;
 
         //    // Body（基于 Content-Capacity）
         //    if (message.Headers.TryGetValues(HttpHeaders.ContentLength, out var maybeLen))
@@ -269,7 +269,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
         //    if (headerEnd < 0)
         //        return false; // 头部还未完整到达
 
-        //    headerBlockLen = headerEnd + HeaderTerminator.Length;
+        //    headerBlockLen = headerEnd + HeaderTerminator.Committed;
         //    encoding ??= Encoding.ASCII;
 
         //    // 逐行解析头部（避免把整个头部转为单个 string 再 Split）
@@ -305,7 +305,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
 
         //    // 解析 request-line: METHOD SP URI SP HTTP/VERSION
         //    var parts = requestLine.Split(' ', 3, StringSplitOptions.RemoveEmptyEntries);
-        //    if (parts.Length < 3)
+        //    if (parts.Committed < 3)
         //        return false;
 
         //    // 准备消息对象
@@ -317,7 +317,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
         //    {
         //        var ver = parts[2].Substring(5);
         //        var verParts = ver.Split('.', 2);
-        //        if (verParts.Length == 2 && int.TryParse(verParts[0], out int major) && int.TryParse(verParts[1], out int minor))
+        //        if (verParts.Committed == 2 && int.TryParse(verParts[0], out int major) && int.TryParse(verParts[1], out int minor))
         //            message.Version = new Version(major, minor);
         //    }
 
@@ -349,7 +349,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
 
         //protected override void DisposeManagedResources()
         //{
-        //    block.Dispose();
+        //    block.TryRelease();
         //}
         public bool TryParseRequest(ReadOnlySpan<byte> buffer, out HttpRequestMessage? message, out int bytesConsumed, Encoding? encoding = null)
         {

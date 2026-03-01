@@ -2,6 +2,7 @@
 using System.Reflection;
 using ExtenderApp.Abstract;
 using ExtenderApp.Buffer;
+using ExtenderApp.Common.Caches.ByteAllocator;
 
 namespace ExtenderApp.Common.Serializations.Binary.Formatters
 {
@@ -19,9 +20,9 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
         #region ParameterExpressions
 
         /// <summary>
-        /// 用于表达式树的共享参数： <see cref="AbstractBuffer{byte}"/>。
+        /// 用于表达式树的共享参数：ref <see cref="BinaryWriterAdapter"/>（顺序缓冲写入适配器）， 使用引用类型参数以匹配委托签名中对写入适配器的按引用传递（ref）语义。
         /// </summary>
-        public static readonly ParameterExpression BufferParameter = Expression.Parameter(typeof(AbstractBuffer<byte>), "buffer");
+        public static readonly ParameterExpression BufferWriterParameter = Expression.Parameter(typeof(BinaryWriterAdapter).MakeByRefType(), "writer");
 
         /// <summary>
         /// 用于表达式树的共享参数：ref <see cref="SpanWriter{byte}"/>。
@@ -29,9 +30,9 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
         public static readonly ParameterExpression SpanWriterParameter = Expression.Parameter(typeof(SpanWriter<byte>).MakeByRefType(), "writer");
 
         /// <summary>
-        /// 用于表达式树的共享参数： <see cref="AbstractBufferReader{byte}"/>。
+        /// 用于表达式树的共享参数：ref <see cref="BinaryReaderAdapter"/>（顺序缓冲读取适配器）， 使用引用类型参数以匹配委托签名中对读取适配器的按引用传递（ref）语义。
         /// </summary>
-        public static readonly ParameterExpression BufferReaderParameter = Expression.Parameter(typeof(AbstractBufferReader<byte>), "reader");
+        public static readonly ParameterExpression BufferReaderParameter = Expression.Parameter(typeof(BinaryReaderAdapter).MakeByRefType(), "reader");
 
         /// <summary>
         /// 用于表达式树的共享参数：ref <see cref="SpanReader{byte}"/>。
@@ -40,47 +41,13 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
 
         #endregion ParameterExpressions
 
-        #region Delegates
-
-        /// <summary>
-        /// 序列化到 <see cref="AbstractBuffer{byte}"/> 的委托。
-        /// </summary>
-        /// <param name="buffer">写入目标缓冲区。</param>
-        /// <param name="value">要序列化的值。</param>
-        public delegate void SerializeBufferMethod(AbstractBuffer<byte> buffer, T value);
-
-        /// <summary>
-        /// 序列化到 <see cref="SpanWriter{byte}"/> 的委托。
-        /// </summary>
-        /// <param name="writer">写入目标写入器。</param>
-        /// <param name="value">要序列化的值。</param>
-        public delegate void SerializeSpanMethod(ref SpanWriter<byte> writer, T value);
-
-        /// <summary>
-        /// 从 <see cref="AbstractBufferReader{byte}"/> 反序列化的委托。
-        /// </summary>
-        /// <param name="reader">读取源读取器。</param>
-        /// <returns>反序列化后的值。</returns>
-        public delegate T DeserializeBufferMethod(AbstractBufferReader<byte> reader);
-
-        /// <summary>
-        /// 从 <see cref="SpanReader{byte}"/> 反序列化的委托。
-        /// </summary>
-        /// <param name="reader">读取源读取器。</param>
-        /// <returns>反序列化后的值。</returns>
-        public delegate T DeserializeSpanMethod(ref SpanReader<byte> reader);
-
-        private delegate long GetLengthMethod(T value);
-
-        #endregion Delegates
-
-        private readonly SerializeBufferMethod _serializeBuffer = static (AbstractBuffer<byte> _, T _) =>
+        private readonly SerializeWriterMethod _serializeWriter = static (ref BinaryWriterAdapter _, T _) =>
                 throw new InvalidOperationException(string.Format("未调用Init,无法序列化:{0}", typeof(T).FullName));
 
         private readonly SerializeSpanMethod _serializeSpan = static (ref SpanWriter<byte> _, T _) =>
                 throw new InvalidOperationException(string.Format("未调用Init,无法序列化:{0}", typeof(T).FullName));
 
-        private readonly DeserializeBufferMethod _deserializeBuffer = static (AbstractBufferReader<byte> _) =>
+        private readonly DeserializeReaderMethod _deserializeReader = static (ref BinaryReaderAdapter _) =>
                 throw new InvalidOperationException(string.Format("未调用Init,无法反序列化:{0}", typeof(T).FullName));
 
         private readonly DeserializeSpanMethod _deserializeSpan = static (ref SpanReader<byte> _) =>
@@ -136,7 +103,7 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
                 DefaultLength = NilLength;
 
             // 编译 Serialize 方法
-            _serializeBuffer = Expression.Lambda<SerializeBufferMethod>(Expression.Block(serializesBuffer), BufferParameter, parameter).Compile();
+            _serializeWriter = Expression.Lambda<SerializeWriterMethod>(Expression.Block(serializesBuffer), BufferWriterParameter, parameter).Compile();
             _serializeSpan = Expression.Lambda<SerializeSpanMethod>(Expression.Block(serializesSpan), SpanWriterParameter, parameter).Compile();
 
             // 编译 Deserialize 方法
@@ -144,7 +111,7 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
                 ? Expression.New(type)
                 : Expression.New(type.GetConstructor(Type.EmptyTypes) ?? throw new InvalidOperationException(string.Format("类型 {0} 缺少公共无参构造函数。", type.FullName)));
 
-            _deserializeBuffer = Expression.Lambda<DeserializeBufferMethod>(Expression.MemberInit(newExpr, deserializesBuffer), BufferReaderParameter).Compile();
+            _deserializeReader = Expression.Lambda<DeserializeReaderMethod>(Expression.MemberInit(newExpr, deserializesBuffer), BufferReaderParameter).Compile();
             _deserializeSpan = Expression.Lambda<DeserializeSpanMethod>(Expression.MemberInit(newExpr, deserializesSpan), SpanReaderParameter).Compile();
 
             // 编译 GetLength 方法
@@ -157,18 +124,19 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
         }
 
         /// <summary>
-        /// 序列化到缓冲区。
+        /// 序列化到缓冲区写入器中。
         /// </summary>
-        /// <param name="buffer">写入目标缓冲区。</param>
+        /// <typeparam name="TBufferWriter"></typeparam>
+        /// <param name="writer">写入目标缓冲区。</param>
         /// <param name="value">要序列化的值。</param>
-        public override void Serialize(AbstractBuffer<byte> buffer, T value)
+        public override sealed void Serialize(ref BinaryWriterAdapter writer, T value)
         {
             if (IsClass && value is null)
             {
-                WriteNil(buffer);
+                WriteNil(ref writer);
                 return;
             }
-            _serializeBuffer(buffer, value);
+            _serializeWriter(ref writer, value);
         }
 
         /// <summary>
@@ -176,7 +144,7 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
         /// </summary>
         /// <param name="writer">写入目标写入器。</param>
         /// <param name="value">要序列化的值。</param>
-        public override void Serialize(ref SpanWriter<byte> writer, T value)
+        public override sealed void Serialize(ref SpanWriter<byte> writer, T value)
         {
             if (IsClass && value is null)
             {
@@ -191,11 +159,11 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
         /// </summary>
         /// <param name="reader">读取源读取器。</param>
         /// <returns>反序列化后的值。</returns>
-        public override T Deserialize(AbstractBufferReader<byte> reader)
+        public override sealed T Deserialize(ref BinaryReaderAdapter reader)
         {
-            if (IsClass && TryReadNil(reader))
+            if (IsClass && TryReadNil(ref reader))
                 return default!;
-            return _deserializeBuffer(reader);
+            return _deserializeReader(ref reader);
         }
 
         /// <summary>
@@ -203,7 +171,7 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
         /// </summary>
         /// <param name="reader">读取源读取器。</param>
         /// <returns>反序列化后的值。</returns>
-        public override T Deserialize(ref SpanReader<byte> reader)
+        public override sealed T Deserialize(ref SpanReader<byte> reader)
         {
             if (IsClass && TryReadNil(ref reader))
                 return default!;
@@ -215,7 +183,7 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
         /// </summary>
         /// <param name="value">要估算的值。</param>
         /// <returns>序列化后的字节长度。</returns>
-        public override long GetLength(T value)
+        public override sealed long GetLength(T value)
         {
             if (IsClass && value is null)
                 return NilLength;
@@ -285,7 +253,7 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
             var md = formatter.MethodInfoDetails;
 
             return new AutoMemberDetails(
-                CreateSerializeExpression(member, md.SerializeBuffer, BufferParameter, formatter),
+                CreateSerializeExpression(member, md.SerializeBuffer, BufferWriterParameter, formatter),
                 CreateSerializeExpression(member, md.SerializeSpan, SpanWriterParameter, formatter),
                 CreateDeserializeExpression(info, md.DeserializeBuffer, BufferReaderParameter, formatter),
                 CreateDeserializeExpression(info, md.DeserializeSpan, SpanReaderParameter, formatter),

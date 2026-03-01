@@ -16,19 +16,19 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
             _long = GetFormatter<long>();
         }
 
-        public override void Serialize(AbstractBuffer<byte> buffer, TimeSpan value)
-        {
-            _long.Serialize(buffer, value.Ticks);
-        }
-
         public override void Serialize(ref SpanWriter<byte> writer, TimeSpan value)
         {
             _long.Serialize(ref writer, value.Ticks);
         }
 
-        public override TimeSpan Deserialize(AbstractBufferReader<byte> reader)
+        public override void Serialize(ref BinaryWriterAdapter writer, TimeSpan value)
         {
-            return new TimeSpan(_long.Deserialize(reader));
+            _long.Serialize(ref writer, value.Ticks);
+        }
+
+        public override TimeSpan Deserialize(ref BinaryReaderAdapter reader)
+        {
+            return new TimeSpan(_long.Deserialize(ref reader));
         }
 
         public override TimeSpan Deserialize(ref SpanReader<byte> reader)

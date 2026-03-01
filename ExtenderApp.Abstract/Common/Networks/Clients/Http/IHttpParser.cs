@@ -19,7 +19,7 @@ namespace ExtenderApp.Abstract
         /// <param name="message">
         /// 输出解析得到的 <see cref="Contracts.HttpRequestMessage"/> 实例。
         /// 当方法返回 false 或解析不完整时该值应为 <c>null</c>。
-        /// 注意：返回非 null 的消息通常实现了 <see cref="System.IDisposable"/>，调用方应在适当时机调用 <c>Dispose()</c> 以释放可能的底层缓冲/资源。
+        /// 注意：返回非 null 的消息通常实现了 <see cref="System.IDisposable"/>，调用方应在适当时机调用 <c>TryRelease()</c> 以释放可能的底层缓冲/资源。
         /// </param>
         /// <param name="bytesConsumed">
         /// 输出被解析并可丢弃的字节数（等于请求的总字节长度）。
@@ -45,7 +45,7 @@ namespace ExtenderApp.Abstract
         /// <param name="message">
         /// 输出解析得到的 <see cref="Contracts.HttpResponseMessage"/> 实例。
         /// 当方法返回 false 或解析不完整时该值应为 <c>null</c>。
-        /// 注意：返回非 null 的消息通常实现了 <see cref="System.IDisposable"/>，调用方应在适当时机调用 <c>Dispose()</c> 以释放可能的底层缓冲/资源。
+        /// 注意：返回非 null 的消息通常实现了 <see cref="System.IDisposable"/>，调用方应在适当时机调用 <c>TryRelease()</c> 以释放可能的底层缓冲/资源。
         /// </param>
         /// <param name="bytesConsumed">
         /// 输出被解析并可丢弃的字节数（等于响应的总字节长度）。

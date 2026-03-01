@@ -17,7 +17,7 @@
             }
             catch
             {
-                // 忽略 Dispose 过程中发生的异常
+                // 忽略 TryRelease 过程中发生的异常
             }
         }
 
@@ -41,7 +41,7 @@
             }
             catch
             {
-                // 忽略 Dispose 过程中发生的异常
+                // 忽略 TryRelease 过程中发生的异常
                 return ValueTask.CompletedTask;
             }
         }
@@ -60,7 +60,7 @@
             }
             catch
             {
-                // 忽略 Dispose 过程中发生的异常
+                // 忽略 TryRelease 过程中发生的异常
                 return ValueTask.CompletedTask;
             }
         }

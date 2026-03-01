@@ -16,7 +16,7 @@ namespace ExtenderApp.Buffer.ValueBuffers
         /// </summary>
         internal static ValueCacheProvider Default => _default.Value;
 
-        private readonly ObjectPool<ValueCache> _pool = ObjectPool.Create<ValueCache>();
+        private readonly ObjectPool<ValueCache> _pool = ObjectPool.Create(static () => new ValueCache());
 
         /// <summary>
         /// 从对象池获取 ValueCache 实例。

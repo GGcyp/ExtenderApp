@@ -5,8 +5,8 @@ using ExtenderApp.Contracts;
 namespace ExtenderApp.Buffer
 {
     /// <summary>
-    /// 通用的只读缓冲区读取器，基于 <see cref="AbstractBuffer{T}"/> 的已提交序列实现简单的前向读取操作。
-    /// 构造时会对目标缓冲区调用 <see cref="FreezeObject.Freeze"/> 以防止在被引用时被回收；使用结束后应调用 <see cref="Dispose"/> 以尝试释放/解冻缓冲区引用。
+    /// 通用的只读缓冲区读取器，基于 <see cref="AbstractBuffer{T}"/> 的已提交序列实现简单的前向读取操作。 构造时会对目标缓冲区调用 <see cref="FreezeObject.Freeze"/> 以防止在被引用时被回收；使用结束后应调用 <see
+    /// cref="Dispose"/> 以尝试释放/解冻缓冲区引用。
     /// </summary>
     /// <typeparam name="T">元素类型。</typeparam>
     public abstract class AbstractBufferReader<T> : DisposableObject
@@ -42,8 +42,7 @@ namespace ExtenderApp.Buffer
         public bool IsCompleted => Remaining == 0;
 
         /// <summary>
-        /// 返回当前未读取的只读序列视图（从当前已消费位置到已提交末尾）。
-        /// 若已无未读数据则返回 <see cref="ReadOnlySequence{T}.Empty"/>.
+        /// 返回当前未读取的只读序列视图（从当前已消费位置到已提交末尾）。 若已无未读数据则返回 <see cref="ReadOnlySequence{T}.Empty"/>.
         /// </summary>
         public abstract ReadOnlySequence<T> UnreadSequence { get; }
 
@@ -59,8 +58,7 @@ namespace ExtenderApp.Buffer
         }
 
         /// <summary>
-        /// 初始化此读取器以绑定到指定缓冲区。会冻结缓冲区的引用（防止回收）并冻结写入以阻止并发写入。
-        /// Provider 在分配读取器后应调用此方法。
+        /// 初始化此读取器以绑定到指定缓冲区。会冻结缓冲区的引用（防止回收）并冻结写入以阻止并发写入。 Provider 在分配读取器后应调用此方法。
         /// </summary>
         /// <param name="buffer">要绑定的缓冲区。</param>
         protected internal virtual void Initialize(AbstractBufferReaderProvider<T> provider, AbstractBuffer<T> buffer)

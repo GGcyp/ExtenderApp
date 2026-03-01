@@ -16,9 +16,7 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
         /// <summary>
         /// 获取当前格式化器的版本信息
         /// </summary>
-        /// <Value>
-        /// 返回 System.Version 对象，表示格式化器的版本号
-        /// </Value>
+        /// <Value>返回 System.Version 对象，表示格式化器的版本号</Value>
         /// <remarks>
         /// 1. 必须由派生类实现具体版本号
         /// 2. 用于版本兼容性检查
@@ -32,7 +30,6 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
         /// <exception cref="ArgumentNullException">当 resolver 为 null 时抛出</exception>
         protected VersionDataFormatter(IBinaryFormatterResolver resolver) : base(resolver)
         {
-
         }
     }
 }

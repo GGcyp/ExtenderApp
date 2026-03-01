@@ -26,7 +26,7 @@ namespace ExtenderApp.Common.Networks
         {
             //ValueIPAddress valueIPAddress = ValueIPAddress.FromIPAddress(ipAddress);
             //var result = valueIPAddress.ToUInt32();
-            //valueIPAddress.Dispose();
+            //valueIPAddress.TryRelease();
             //return result;
             return 0;
         }

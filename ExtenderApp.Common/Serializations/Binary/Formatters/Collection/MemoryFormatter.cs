@@ -1,11 +1,14 @@
 ﻿using ExtenderApp.Abstract;
 using ExtenderApp.Buffer;
-using ExtenderApp.Buffer.Reader;
-using ExtenderApp.Contracts;
 
 namespace ExtenderApp.Common.Serializations.Binary.Formatters
 {
-    internal class MemoryFormatter<T> : ResolverFormatter<Memory<T>>
+    /// <summary>
+    /// 内存格式化器：提供对 <see cref="Memory{T}"/> 类型的二进制序列化和反序列化支持。 通过将内存视为元素的连续集合，格式化器能够高效地处理内存数据。
+    /// 在序列化时，首先写入一个数组头和长度信息，然后逐个序列化内存中的元素；在反序列化时，根据数组头和长度信息重建内存对象。 此格式化器适用于需要在二进制协议中传输内存数据的场景，确保数据结构清晰且易于解析。
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    internal sealed class MemoryFormatter<T> : ResolverFormatter<Memory<T>>
     {
         private readonly IBinaryFormatter<T> _t;
         private readonly IBinaryFormatter<int> _int;
@@ -16,33 +19,7 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
             _int = GetFormatter<int>();
         }
 
-        public override Memory<T> Deserialize(AbstractBufferReader<byte> reader)
-        {
-            if (TryReadNil(reader))
-            {
-                return Memory<T>.Empty;
-            }
-
-            if (!TryReadArrayHeader(reader))
-            {
-                ThrowOperationException("无法将当前数据反序列化为 Memory<T> 类型的值，数据格式不匹配。");
-            }
-
-            var length = _int.Deserialize(reader);
-            if (length == 0)
-            {
-                return Memory<T>.Empty;
-            }
-
-            var array = new T[length];
-            for (var i = 0; i < length; i++)
-            {
-                array[i] = _t.Deserialize(reader);
-            }
-            return new Memory<T>(array);
-        }
-
-        public override Memory<T> Deserialize(ref SpanReader<byte> reader)
+        public override sealed Memory<T> Deserialize(ref BinaryReaderAdapter reader)
         {
             if (TryReadNil(ref reader))
             {
@@ -68,23 +45,33 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
             return new Memory<T>(array);
         }
 
-        public override void Serialize(AbstractBuffer<byte> buffer, Memory<T> value)
+        public override sealed Memory<T> Deserialize(ref SpanReader<byte> reader)
         {
-            if (value.IsEmpty)
+            if (TryReadNil(ref reader))
             {
-                WriteNil(buffer);
-                return;
+                return Memory<T>.Empty;
             }
 
-            WriteArrayHeader(buffer);
-            _int.Serialize(buffer, value.Length);
-            for (var i = 0; i < value.Length; i++)
+            if (!TryReadArrayHeader(ref reader))
             {
-                _t.Serialize(buffer, value.Span[i]);
+                ThrowOperationException("无法将当前数据反序列化为 Memory<T> 类型的值，数据格式不匹配。");
             }
+
+            var length = _int.Deserialize(ref reader);
+            if (length == 0)
+            {
+                return Memory<T>.Empty;
+            }
+
+            var array = new T[length];
+            for (var i = 0; i < length; i++)
+            {
+                array[i] = _t.Deserialize(ref reader);
+            }
+            return new Memory<T>(array);
         }
 
-        public override void Serialize(ref SpanWriter<byte> writer, Memory<T> value)
+        public override sealed void Serialize(ref BinaryWriterAdapter writer, Memory<T> value)
         {
             if (value.IsEmpty)
             {
@@ -100,12 +87,28 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
             }
         }
 
-        public override long GetLength(Memory<T> value)
+        public override sealed void Serialize(ref SpanWriter<byte> writer, Memory<T> value)
+        {
+            if (value.IsEmpty)
+            {
+                WriteNil(ref writer);
+                return;
+            }
+
+            WriteArrayHeader(ref writer);
+            _int.Serialize(ref writer, value.Length);
+            for (var i = 0; i < value.Length; i++)
+            {
+                _t.Serialize(ref writer, value.Span[i]);
+            }
+        }
+
+        public override sealed long GetLength(Memory<T> value)
         {
             if (value.IsEmpty)
                 return NilLength;
 
-            long length = 1 + _int.DefaultLength; // array header + length field (approx)
+            long length = _int.GetLength(value.Length); // TargetArray header + _intLength field (approx)
             for (var i = 0; i < value.Length; i++)
             {
                 length += _t.GetLength(value.Span[i]);

@@ -16,7 +16,7 @@ namespace ExtenderApp.Buffer
         private readonly ReadOnlySpan<T> span;
 
         /// <summary>
-        /// 当前已消费的元素数（相对于起点）。必须保证在 [0, span.Length] 范围内，且推进/回退操作必须保持该不变式。
+        /// 当前已消费的元素数（相对于起点）。必须保证在 [0, span.Committed] 范围内，且推进/回退操作必须保持该不变式。
         /// </summary>
         private int consumed;
 

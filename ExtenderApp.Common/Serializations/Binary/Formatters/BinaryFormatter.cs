@@ -1,4 +1,5 @@
-﻿using ExtenderApp.Abstract;
+﻿using System.Runtime.CompilerServices;
+using ExtenderApp.Abstract;
 using ExtenderApp.Buffer;
 using ExtenderApp.Common.Expressions;
 using ExtenderApp.Contracts;
@@ -15,24 +16,59 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
     /// <typeparam name="T">要序列化/反序列化的目标类型。</typeparam>
     public abstract class BinaryFormatter<T> : IBinaryFormatter<T>
     {
-        private delegate void SerializeSpanMethod(ref SpanWriter<byte> writer, T value);
+        /// <summary>
+        /// 在栈上写入器（ <see cref="SpanWriter{byte}"/>）上序列化值的方法签名（委托）。 实现者应在写入后推进写入器的位置。
+        /// </summary>
+        /// <param name="writer">目标栈上写入器（按引用传递）。</param>
+        /// <param name="value">要序列化的实例值。</param>
+        protected delegate void SerializeSpanMethod(ref SpanWriter<byte> writer, T value);
 
-        private delegate T DeserializeSpanMethod(ref SpanReader<byte> reader);
+        /// <summary>
+        /// 在顺序缓冲适配器（ <see cref="BinaryWriterAdapter"/>）上序列化值的方法签名（委托）。 实现者应在写入后推进适配器的写入位置。
+        /// </summary>
+        /// <param name="writer">目标顺序缓冲写入适配器（按引用传递）。</param>
+        /// <param name="value">要序列化的实例值。</param>
+        protected delegate void SerializeWriterMethod(ref BinaryWriterAdapter writer, T value);
+
+        /// <summary>
+        /// 在栈上读取器（ <see cref="SpanReader{byte}"/>）上反序列化值的方法签名（委托）。 实现者应在读取后推进读取器的位置并返回解析得到的实例。
+        /// </summary>
+        /// <param name="reader">来源栈上读取器（按引用传递）。</param>
+        /// <returns>反序列化得到的 <typeparamref name="T"/> 实例。</returns>
+        protected delegate T DeserializeSpanMethod(ref SpanReader<byte> reader);
+
+        /// <summary>
+        /// 在顺序缓冲读取适配器（ <see cref="BinaryReaderAdapter"/>）上反序列化值的方法签名（委托）。 实现者应在读取后推进适配器的已消费位置并返回解析得到的实例。
+        /// </summary>
+        /// <param name="reader">来源顺序缓冲读取适配器（按引用传递）。</param>
+        /// <returns>反序列化得到的 <typeparamref name="T"/> 实例。</returns>
+        protected delegate T DeserializeReaderMethod(ref BinaryReaderAdapter reader);
+
+        /// <summary>
+        /// 计算序列化指定值所需字节数的方法签名（委托）。 返回值可以是精确长度或合理的估算值，供预分配缓冲时使用。
+        /// </summary>
+        /// <param name="value">要估算长度的实例值。</param>
+        /// <returns>序列化该值所需的字节数（长整型）。</returns>
+        protected delegate long GetLengthMethod(T value);
 
         /// <summary>
         /// 用于保护延迟初始化 <see cref="_methodInfoDetails"/> 的锁对象。
         /// </summary>
         private static readonly object _lock = new();
 
+        /// <summary>
+        /// 默认的 Nil 标记长度（字节数）。在许多二进制协议中，Nil（或 Null）标记通常占用一个字节，因此默认值设为 1。派生类可以根据具体协议需求重写 <see cref="DefaultLength"/> 属性以提供更准确的默认长度估算。
+        /// </summary>
         protected const int NilLength = 1;
 
         /// <summary>
-        /// 缓存的当前格式化器方法信息详情（懒初始化）。
+        /// 当前格式化器的序列化/反序列化/长度计算方法的信息详情（线程安全，延迟初始化）。 包含基于 AbstractBuffer 和基于 Span 的方法信息。 通过反射获取并缓存相关方法的 MethodInfo，以支持动态调用和性能优化。 派生类无需直接操作此字段，而是通过
+        /// <see cref="MethodInfoDetails"/> 属性访问。 该字段在第一次访问时会被初始化，并在后续访问中复用以避免重复反射开销。
         /// </summary>
         private BinaryFormatterMethodInfoDetails _methodInfoDetails;
 
         /// <summary>
-        /// 获取当前格式化器的序列化/反序列化/长度计算方法的信息详情（线程安全，延迟初始化）。 使用双重检查锁定以避免重复初始化开销。
+        /// 获取当前格式化器的序列化/反序列化/长度计算方法的信息详情（线程安全，延迟初始化）。
         /// </summary>
         public BinaryFormatterMethodInfoDetails MethodInfoDetails
         {
@@ -44,11 +80,11 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
                     {
                         if (_methodInfoDetails.IsEmpty)
                         {
-                            var serializeBuffer = this.GetMethodInfo((Action<AbstractBuffer<byte>, T>)Serialize);
+                            var serializeBuffer = this.GetMethodInfo((SerializeWriterMethod)Serialize);
                             var serializeSpan = this.GetMethodInfo((SerializeSpanMethod)Serialize);
-                            var deserializeBuffer = this.GetMethodInfo((Func<AbstractBufferReader<byte>, T>)Deserialize);
+                            var deserializeBuffer = this.GetMethodInfo((DeserializeReaderMethod)Deserialize);
                             var deserializeSpan = this.GetMethodInfo((DeserializeSpanMethod)Deserialize);
-                            var getLength = this.GetMethodInfo(GetLength);
+                            var getLength = this.GetMethodInfo((GetLengthMethod)GetLength);
 
                             _methodInfoDetails = new BinaryFormatterMethodInfoDetails(serializeBuffer, serializeSpan, deserializeBuffer, deserializeSpan, getLength);
                         }
@@ -72,24 +108,24 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
         }
 
         /// <inheritdoc/>
-        /// <param name="buffer">目标顺序缓冲，数据将被写入该缓冲并推进其写入位置。</param>
-        /// <param name="value">要序列化的实例值。</param>
-        public abstract void Serialize(AbstractBuffer<byte> buffer, T value);
-
-        /// <inheritdoc/>
         /// <param name="writer">目标栈上写入器（按引用），方法将在写入后推进其位置。</param>
         /// <param name="value">要序列化的实例值。</param>
         public abstract void Serialize(ref SpanWriter<byte> writer, T value);
 
         /// <inheritdoc/>
-        /// <param name="reader">来源顺序缓冲读取器，方法将从中读取数据并推进其已消费位置。</param>
-        /// <returns>反序列化得到的 <typeparamref name="T"/> 实例。</returns>
-        public abstract T Deserialize(AbstractBufferReader<byte> reader);
+        /// <param name="buffer">目标顺序缓冲，数据将被写入该缓冲并推进其写入位置。</param>
+        /// <param name="value">要序列化的实例值。</param>
+        public abstract void Serialize(ref BinaryWriterAdapter writer, T value);
 
         /// <inheritdoc/>
         /// <param name="reader">来源栈上读取器（按引用），方法将在读取后推进其位置。</param>
         /// <returns>反序列化得到的 <typeparamref name="T"/> 实例。</returns>
         public abstract T Deserialize(ref SpanReader<byte> reader);
+
+        /// <inheritdoc/>
+        /// <param name="reader">来源顺序缓冲读取器，方法将从中读取数据并推进其已消费位置。</param>
+        /// <returns>反序列化得到的 <typeparamref name="T"/> 实例。</returns>
+        public abstract T Deserialize(ref BinaryReaderAdapter reader);
 
         /// <summary>
         /// 获取序列化指定值所需的字节数（可以是精确值或合理估算）。 派生类必须实现此方法。
@@ -103,6 +139,7 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
         /// </summary>
         /// <param name="reader">来源栈上读取器。</param>
         /// <returns>若匹配数组标记返回 true，否则返回 false 并回退。</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected static bool TryReadArrayHeader(ref SpanReader<byte> reader)
         {
             return TryReadMark(ref reader, BinaryOptions.Array);
@@ -113,6 +150,7 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
         /// </summary>
         /// <param name="reader">来源栈上读取器。</param>
         /// <returns>若匹配字典头标记返回 true，否则返回 false 并回退。</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected static bool TryReadMapHeader(ref SpanReader<byte> reader)
         {
             return TryReadMark(ref reader, BinaryOptions.MapHeader);
@@ -123,6 +161,7 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
         /// </summary>
         /// <param name="reader">数据来源栈上读取器。</param>
         /// <returns>若匹配 Nil 标记返回 true，否则返回 false 并回退。</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected static bool TryReadNil(ref SpanReader<byte> reader)
         {
             return TryReadMark(ref reader, BinaryOptions.Nil);
@@ -134,6 +173,7 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
         /// <param name="reader">栈上读取器。</param>
         /// <param name="mark">期望的标记字节。</param>
         /// <returns>匹配成功返回 true，否则返回 false。</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected static bool TryReadMark(ref SpanReader<byte> reader, byte mark)
         {
             if (reader.Read() != mark)
@@ -145,47 +185,50 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
         }
 
         /// <summary>
-        /// 尝试从顺序缓冲读取器判断当前位置是否为数组头部标记；如果不是，则回退读取位置。
+        /// 尝试从顺序缓冲读取适配器判断当前位置是否为数组头部标记；如果不是，则不消费任何字节并返回 false。
         /// </summary>
-        /// <param name="reader">来源顺序缓冲读取器。</param>
-        /// <returns>匹配成功返回 true，否则返回 false。</returns>
-        protected static bool TryReadArrayHeader(AbstractBufferReader<byte> reader)
+        /// <param name="reader">来源顺序缓冲读取适配器。</param>
+        /// <returns>若匹配数组标记返回 true，否则返回 false。</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        protected static bool TryReadArrayHeader(ref BinaryReaderAdapter reader)
         {
-            return TryReadMark(reader, BinaryOptions.Array);
+            return TryReadMark(ref reader, BinaryOptions.Array);
         }
 
         /// <summary>
-        /// 尝试从顺序缓冲读取器判断当前位置是否为字典（Map）头部标记；如果不是，则回退读取位置。
+        /// 尝试从顺序缓冲读取适配器判断当前位置是否为字典（Map）头部标记；如果不是，则不消费任何字节并返回 false。
         /// </summary>
-        /// <param name="reader">来源顺序缓冲读取器。</param>
-        /// <returns>匹配成功返回 true，否则返回 false。</returns>
-        protected static bool TryReadMapHeader(AbstractBufferReader<byte> reader)
+        /// <param name="reader">来源顺序缓冲读取适配器。</param>
+        /// <returns>若匹配字典头标记返回 true，否则返回 false。</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        protected static bool TryReadMapHeader(ref BinaryReaderAdapter reader)
         {
-            return TryReadMark(reader, BinaryOptions.MapHeader);
+            return TryReadMark(ref reader, BinaryOptions.MapHeader);
         }
 
         /// <summary>
-        /// 尝试从顺序缓冲读取器判断当前位置是否为 Nil 标记；如果不是，则回退读取位置。
+        /// 尝试从顺序缓冲读取适配器判断当前位置是否为 Nil 标记；如果不是，则不消费任何字节并返回 false。
         /// </summary>
-        /// <param name="reader">来源顺序缓冲读取器。</param>
-        /// <returns>匹配成功返回 true，否则返回 false。</returns>
-        protected static bool TryReadNil(AbstractBufferReader<byte> reader)
+        /// <param name="reader">来源顺序缓冲读取适配器。</param>
+        /// <returns>若匹配 Nil 标记返回 true，否则返回 false。</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        protected static bool TryReadNil(ref BinaryReaderAdapter reader)
         {
-            return TryReadMark(reader, BinaryOptions.Nil);
+            return TryReadMark(ref reader, BinaryOptions.Nil);
         }
 
         /// <summary>
-        /// 尝试从顺序缓冲读取器读取指定标记位；匹配失败时回退位置。
+        /// 尝试从顺序缓冲读取适配器读取指定标记位；若未匹配则不移动适配器已消费位置。
         /// </summary>
-        /// <param name="reader">顺序缓冲读取器。</param>
+        /// <param name="reader">顺序缓冲读取适配器。</param>
         /// <param name="mark">期望的标记字节。</param>
         /// <returns>匹配成功返回 true，否则返回 false。</returns>
-        protected static bool TryReadMark(AbstractBufferReader<byte> reader, byte mark)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        protected static bool TryReadMark(ref BinaryReaderAdapter reader, byte mark)
         {
-            ArgumentNullException.ThrowIfNull(reader, nameof(reader));
             if (reader.TryPeek(out byte value) && value == mark)
             {
-                reader.Read();
+                reader.Advance(1);
                 return true;
             }
             return false;
@@ -195,6 +238,7 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
         /// 向栈上写入器写入数组头标记并推进位置。
         /// </summary>
         /// <param name="writer">目标栈上写入器。</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected static void WriteArrayHeader(ref SpanWriter<byte> writer)
         {
             writer.Write(BinaryOptions.Array);
@@ -204,6 +248,7 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
         /// 向栈上写入器写入字典（Map）头标记并推进位置。
         /// </summary>
         /// <param name="writer">目标栈上写入器。</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected static void WriteMapHeader(ref SpanWriter<byte> writer)
         {
             writer.Write(BinaryOptions.MapHeader);
@@ -213,42 +258,69 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
         /// 向栈上写入器写入 Nil 标记位并推进位置。
         /// </summary>
         /// <param name="writer">目标栈上写入器。</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected static void WriteNil(ref SpanWriter<byte> writer)
         {
             writer.Write(BinaryOptions.Nil);
         }
 
         /// <summary>
-        /// 向顺序缓冲写入数组头标记并推进位置。
+        /// 向栈上写入器写入任意标记字节并推进位置。
         /// </summary>
-        /// <param name="writer">目标顺序缓冲。</param>
-        protected static void WriteArrayHeader(AbstractBuffer<byte> writer)
+        /// <param name="writer">目标栈上写入器。</param>
+        /// <param name="mark">要写入的标记字节。</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        protected static void WriteMark(ref SpanWriter<byte> writer, byte mark)
+        {
+            writer.Write(mark);
+        }
+
+        /// <summary>
+        /// 向顺序缓冲写入器写入数组头标记并推进写入位置。
+        /// </summary>
+        /// <param name="writer">目标顺序缓冲写入适配器（按引用传递）。</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        protected static void WriteArrayHeader(ref BinaryWriterAdapter writer)
         {
             writer.Write(BinaryOptions.Array);
         }
 
         /// <summary>
-        /// 向顺序缓冲写入字典（Map）头标记并推进位置。
+        /// 向栈上写入器写入字典（Map）头标记并推进位置。
         /// </summary>
-        /// <param name="writer">目标顺序缓冲。</param>
-        protected static void WriteMapHeader(AbstractBuffer<byte> writer)
+        /// <param name="writer">目标栈上写入器。</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        protected static void WriteMapHeader(ref BinaryWriterAdapter writer)
         {
             writer.Write(BinaryOptions.MapHeader);
         }
 
         /// <summary>
-        /// 向顺序缓冲写入 Nil 标记位并推进位置。
+        /// 向栈上写入器写入 Nil 标记位并推进位置。
         /// </summary>
-        /// <param name="writer">目标顺序缓冲。</param>
-        protected static void WriteNil(AbstractBuffer<byte> writer)
+        /// <param name="writer">目标栈上写入器。</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        protected static void WriteNil(ref BinaryWriterAdapter writer)
         {
             writer.Write(BinaryOptions.Nil);
+        }
+
+        /// <summary>
+        /// 向顺序缓冲写入器写入任意标记字节并推进写入位置。
+        /// </summary>
+        /// <param name="writer">目标顺序缓冲写入适配器（按引用传递）。</param>
+        /// <param name="mark">要写入的标记字节。</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        protected static void WriteMark(ref BinaryWriterAdapter writer, byte mark)
+        {
+            writer.Write(mark);
         }
 
         /// <summary>
         /// 抛出一个操作相关的 <see cref="InvalidOperationException"/>。
         /// </summary>
         /// <param name="message">异常消息。</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected static void ThrowOperationException(string message)
         {
             throw new InvalidOperationException(message);

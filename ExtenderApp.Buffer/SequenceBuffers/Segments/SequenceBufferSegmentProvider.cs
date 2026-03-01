@@ -1,5 +1,4 @@
-﻿using System.Diagnostics;
-using ExtenderApp.Buffer.MemoryBlocks;
+﻿using ExtenderApp.Buffer.MemoryBlocks;
 
 namespace ExtenderApp.Buffer.SequenceBuffers
 {

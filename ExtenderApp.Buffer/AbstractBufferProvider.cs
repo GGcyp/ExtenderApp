@@ -1,4 +1,5 @@
-﻿using ExtenderApp.Contracts;
+﻿using System.Diagnostics;
+using ExtenderApp.Contracts;
 
 namespace ExtenderApp.Buffer
 {
@@ -16,10 +17,7 @@ namespace ExtenderApp.Buffer
         /// 获取一个可用于写入的缓冲实例。
         /// </summary>
         /// <param name="sizeHint">期望的最小容量（以元素数计）。传 0 表示不作特殊建议。</param>
-        /// <returns>
-        /// 一个满足或尽量满足 <paramref name="sizeHint"/> 要求的 <typeparamref name="TBuffer"/> 实例。
-        /// 实现可以返回新建实例或池中复用的实例，调用者应按实现约定负责后续的释放/回收操作。
-        /// </returns>
+        /// <returns>一个满足或尽量满足 <paramref name="sizeHint"/> 要求的 <typeparamref name="TBuffer"/> 实例。 实现可以返回新建实例或池中复用的实例，调用者应按实现约定负责后续的释放/回收操作。</returns>
         public TBuffer GetBuffer(int sizeHint = DefaultInitialBufferSize)
         {
             return CreateBufferProtected(sizeHint);
@@ -29,19 +27,14 @@ namespace ExtenderApp.Buffer
         /// 派生类实现：创建或提供一个满足 <paramref name="sizeHint"/> 要求的缓冲实例。
         /// </summary>
         /// <param name="sizeHint">期望的最小容量（以元素数计）。传 0 表示不作特殊建议。</param>
-        /// <returns>
-        /// 一个 <typeparamref name="TBuffer"/> 实例，调用者将使用该实例进行写入并负责遵循库中关于生命周期的约定。
-        /// </returns>
+        /// <returns>一个 <typeparamref name="TBuffer"/> 实例，调用者将使用该实例进行写入并负责遵循库中关于生命周期的约定。</returns>
         protected abstract TBuffer CreateBufferProtected(int sizeHint);
 
         /// <summary>
         /// 释放/归还一个由 <see cref="GetBuffer"/> 获取到的缓冲实例。
         /// </summary>
         /// <param name="buffer">要释放或归还的 <typeparamref name="TBuffer"/> 实例，不能为空。</param>
-        /// <remarks>
-        /// 实现应根据提供者的策略（例如对象池或直接销毁）回收该实例，并确保在释放后该实例不再被外部使用。
-        /// 调用者必须遵循生命周期约定：在释放后不得继续使用该缓冲实例，且在并发场景下需自行保证同步。
-        /// </remarks>
+        /// <remarks>实现应根据提供者的策略（例如对象池或直接销毁）回收该实例，并确保在释放后该实例不再被外部使用。 调用者必须遵循生命周期约定：在释放后不得继续使用该缓冲实例，且在并发场景下需自行保证同步。</remarks>
         /// <exception cref="ArgumentNullException"><paramref name="buffer"/> 为 <c>null</c> 时抛出。</exception>
         public void Release(TBuffer buffer)
         {

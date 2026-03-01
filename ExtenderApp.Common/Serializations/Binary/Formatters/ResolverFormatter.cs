@@ -3,8 +3,7 @@
 namespace ExtenderApp.Common.Serializations.Binary.Formatters
 {
     /// <summary>
-    /// 基于解析器 <see cref="IBinaryFormatterResolver"/> 的序列化/反序列化抽象基类。
-    /// 提供按需获取其它类型格式化器的能力，并内置对 Nil 标记的写入与检测辅助方法。
+    /// 基于解析器 <see cref="IBinaryFormatterResolver"/> 的序列化/反序列化抽象基类。 提供按需获取其它类型格式化器的能力，并内置对 Nil 标记的写入与检测辅助方法。
     /// </summary>
     /// <typeparam name="T">目标序列化/反序列化的类型。</typeparam>
     public abstract class ResolverFormatter<T> : BinaryFormatter<T>
@@ -14,16 +13,13 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
         /// </summary>
         private readonly IBinaryFormatterResolver _resolver;
 
-        public override int DefaultLength { get; }
-
         /// <summary>
         /// 使用给定的解析器初始化实例，并缓存 Nil 格式化器。
         /// </summary>
         /// <param name="resolver">格式化器解析器。</param>
-        protected ResolverFormatter(IBinaryFormatterResolver resolver)
+        protected ResolverFormatter(IBinaryFormatterResolver resolver) : base()
         {
             _resolver = resolver;
-            DefaultLength = NilLength;
         }
 
         /// <summary>

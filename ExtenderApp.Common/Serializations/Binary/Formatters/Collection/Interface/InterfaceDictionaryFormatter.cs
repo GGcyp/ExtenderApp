@@ -1,7 +1,5 @@
 ﻿using ExtenderApp.Abstract;
 using ExtenderApp.Buffer;
-using ExtenderApp.Buffer.Reader;
-using ExtenderApp.Contracts;
 
 namespace ExtenderApp.Common.Serializations.Binary.Formatters
 {
@@ -11,7 +9,7 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
     /// <typeparam name="TKey">键的类型。</typeparam>
     /// <typeparam name="TValue">值的类型。</typeparam>
     /// <typeparam name="TDictionary">具体的字典类型。</typeparam>
-    public abstract class InterfaceDictionaryFormatter<TKey, TValue, TDictionary> : ResolverFormatter<TDictionary?> where TDictionary : IDictionary<TKey, TValue>
+    public abstract class InterfaceDictionaryFormatter<TKey, TValue, TDictionary> : ResolverFormatter<TDictionary> where TDictionary : IDictionary<TKey, TValue>
     {
         private readonly IBinaryFormatter<TKey> _key;
         private readonly IBinaryFormatter<TValue> _value;
@@ -24,31 +22,31 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
             _int = GetFormatter<int>();
         }
 
-        public override TDictionary? Deserialize(AbstractBufferReader<byte> reader)
+        public override sealed TDictionary Deserialize(ref BinaryReaderAdapter reader)
         {
-            if (TryReadNil(reader))
+            if (TryReadNil(ref reader))
             {
-                return default;
+                return default!;
             }
 
-            if (!TryReadMapHeader(reader))
+            if (!TryReadMapHeader(ref reader))
             {
                 ThrowOperationException("数据不是映射类型。");
             }
 
-            int count = _int.Deserialize(reader);
+            int count = _int.Deserialize(ref reader);
             TDictionary dict = Create(count);
             for (int i = 0; i < count; i++)
             {
-                var key = _key.Deserialize(reader);
-                var value = _value.Deserialize(reader);
+                var key = _key.Deserialize(ref reader);
+                var value = _value.Deserialize(ref reader);
                 dict.Add(key, value);
             }
 
             return dict;
         }
 
-        public override TDictionary? Deserialize(ref SpanReader<byte> reader)
+        public override sealed TDictionary Deserialize(ref SpanReader<byte> reader)
         {
             if (TryReadNil(ref reader))
             {
@@ -72,24 +70,7 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
             return dict;
         }
 
-        public override void Serialize(AbstractBuffer<byte> buffer, TDictionary? value)
-        {
-            if (value == null)
-            {
-                WriteNil(buffer);
-                return;
-            }
-
-            WriteMapHeader(buffer);
-            _int.Serialize(buffer, value.Count);
-            foreach (var kvp in value)
-            {
-                _key.Serialize(buffer, kvp.Key);
-                _value.Serialize(buffer, kvp.Value);
-            }
-        }
-
-        public override void Serialize(ref SpanWriter<byte> writer, TDictionary? value)
+        public override sealed void Serialize(ref BinaryWriterAdapter writer, TDictionary value)
         {
             if (value == null)
             {
@@ -106,7 +87,24 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
             }
         }
 
-        public override long GetLength(TDictionary? value)
+        public override sealed void Serialize(ref SpanWriter<byte> writer, TDictionary value)
+        {
+            if (value == null)
+            {
+                WriteNil(ref writer);
+                return;
+            }
+
+            WriteMapHeader(ref writer);
+            _int.Serialize(ref writer, value.Count);
+            foreach (var kvp in value)
+            {
+                _key.Serialize(ref writer, kvp.Key);
+                _value.Serialize(ref writer, kvp.Value);
+            }
+        }
+
+        public override sealed long GetLength(TDictionary? value)
         {
             if (value == null)
             {

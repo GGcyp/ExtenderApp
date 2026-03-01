@@ -46,7 +46,7 @@ namespace ExtenderApp.FFmpegEngines.Decoders
         /// </item>
         /// </list>
         /// </para>
-        /// <para>生命周期：构造时创建并 init；Dispose 时释放。</para>
+        /// <para>生命周期：构造时创建并 init；TryRelease 时释放。</para>
         /// </summary>
         private NativeIntPtr<SwrContext> swrContext;
 

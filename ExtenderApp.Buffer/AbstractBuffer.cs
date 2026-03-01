@@ -9,7 +9,7 @@ namespace ExtenderApp.Buffer
     /// 表示用于写入缓冲区的抽象写入器。
     /// </summary>
     /// <remarks>继承自 <see cref="FreezeObject"/>，在调用 <see cref="Release"/> 前会检查冻结状态以避免在被引用时回收。 实现者应提供用于推进写入位置和获取可写内存/跨度的具体逻辑。 实现此抽象类的类型通常用于可重用或池化的缓冲写入场景。</remarks>
-    public abstract class AbstractBuffer<T> : FreezeObject, IBufferWriter<T>, IPinnable, IEnumerable<ReadOnlyMemory<T>>
+    public abstract partial class AbstractBuffer<T> : FreezeObject, IBufferWriter<T>, IPinnable, IEnumerable<ReadOnlyMemory<T>>
     {
         private const string ErrorMessage = "当前缓存还被引用中，无法进行回收操作。";
         private const string WriteFrozenMessage = "当前缓存处于写入冻结状态，无法进行写入操作。";
@@ -34,7 +34,8 @@ namespace ExtenderApp.Buffer
         private long writeFreezeCount;
 
         /// <summary>
-        /// 当前缓冲区是否处于固定状态（被 Pin 调用且尚未 Unpin）。 该属性通过内部计数器 pinCount 来跟踪固定状态，确保在多次 Pin 调用后仍能正确反映当前是否处于固定状态。 派生类在实现 PinProtected 和 UnpinProtected 时应确保正确更新 pinCount 以保持 IsPinned 的准确性。
+        /// 当前缓冲区是否处于固定状态（被 Pin 调用且尚未 Unpin）。 该属性通过内部计数器 pinCount 来跟踪固定状态，确保在多次 Pin 调用后仍能正确反映当前是否处于固定状态。 派生类在实现 PinProtected 和 UnpinProtected 时应确保正确更新
+        /// pinCount 以保持 IsPinned 的准确性。
         /// </summary>
         public bool IsPinned => Interlocked.CompareExchange(ref pinCount, 0, 0) > 0;
 
@@ -99,14 +100,9 @@ namespace ExtenderApp.Buffer
         public abstract ReadOnlySequence<T> CommittedSequence { get; }
 
         /// <summary>
-        /// 当已提交长度发生变化时触发的事件。订阅者可在此更新缓存的外部状态（例如序列长度缓存）。
+        /// 获取一个值，指示当前缓冲区是否处于激活状态（已准备好接受写入）。 该属性由具体实现定义其语义，通常用于指示缓冲区是否已正确初始化并且可以安全地进行写入操作。 调用方可以根据此属性的值来决定是否执行写入或其他相关操作。
         /// </summary>
-        public event Action? CommittedChanged;
-
-        /// <summary>
-        /// 触发 <see cref="CommittedChanged"/> 事件以通知已提交长度已变更。
-        /// </summary>
-        protected void OnCommittedChanged() => CommittedChanged?.Invoke();
+        public bool IsActived { get; protected set; } = false;
 
         /// <summary>
         /// 将写入位置向前推进指定数量的元素。
@@ -256,8 +252,7 @@ namespace ExtenderApp.Buffer
             if (committedPosition < 0 || committedPosition + span.Length > Committed)
                 throw new ArgumentOutOfRangeException(nameof(committedPosition), "committedPosition 必须在已写入范围内，且 span 能完全写入。");
 
-            UpdateCommittedProtected(span, (int)committedPosition);
-            OnCommittedChanged();
+            UpdateCommittedProtected(span, committedPosition);
         }
 
         /// <summary>
@@ -278,10 +273,14 @@ namespace ExtenderApp.Buffer
         /// <returns>如果成功释放则返回 true；如果当前对象处于冻结状态（被引用）则返回 false。</returns>
         public bool TryRelease()
         {
+            if (!IsActived)
+                return false;
+
             Unfreeze(); // 尝试解除冻结以允许回收（如果当前未被冻结）
             if (IsFrozen || IsWriteFrozen)
                 return false;
 
+            IsActived = false;
             return TryReleaseProtected();
         }
 
@@ -292,10 +291,14 @@ namespace ExtenderApp.Buffer
         /// <exception cref="InvalidOperationException">当当前缓冲区被引用（冻结）时抛出。</exception>
         public void Release()
         {
+            if (!IsActived)
+                throw new InvalidOperationException("当前缓冲区未处于激活状态，无法进行回收操作。");
+
             Unfreeze(); // 尝试解除冻结以允许回收（如果当前未被冻结）
             CheckWriteFrozen();
             CheckFrozen(ErrorMessage);
             ReleaseProtected();
+            IsActived = false;
         }
 
         /// <summary>
@@ -444,7 +447,7 @@ namespace ExtenderApp.Buffer
         /// 隐式将缓冲区转换为只读序列，便于将已提交数据作为 <see cref="ReadOnlySequence{T}"/> 传递。
         /// </summary>
         /// <param name="buffer">源缓冲区实例。</param>
-        public static implicit operator ReadOnlySequence<T>(AbstractBuffer<T> buffer)
+        public static explicit operator ReadOnlySequence<T>(AbstractBuffer<T> buffer)
             => buffer.CommittedSequence;
 
         #region ToBuffer

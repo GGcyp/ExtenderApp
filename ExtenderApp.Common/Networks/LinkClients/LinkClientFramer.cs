@@ -9,7 +9,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
     /// <summary>
     /// 链路客户端的帧化器实现。 负责：
     /// - 将接收到的字节流按协议解析为 Frame（TryBERDecodeSequence）；
-    /// - 根据消息类型与负载长度构造可写帧头以供发送（EncodeSequence）。 实现遵循 ILinkClientFramer 的契约（接口中已经包含了对外方法的详细文档）， 此类管理接收缓存以处理半包/粘包场景，并在 Dispose 时释放缓存资源。
+    /// - 根据消息类型与负载长度构造可写帧头以供发送（EncodeSequence）。 实现遵循 ILinkClientFramer 的契约（接口中已经包含了对外方法的详细文档）， 此类管理接收缓存以处理半包/粘包场景，并在 TryRelease 时释放缓存资源。
     /// </summary>
     public class LinkClientFramer : DisposableObject
     {
@@ -59,9 +59,9 @@ namespace ExtenderApp.Common.Networks.LinkClients
             if (span.IsEmpty || span.Length <= 0)
                 return;
 
-            //// 格式: [magic?][length:int32 BE][payload:length]
-            //int magicLen = Magic.Length;
-            //int headerLen = magicLen + intLength; //4 bytes length
+            //// 格式: [magic?][_intLength:int32 BE][payload:_intLength]
+            //int magicLen = Magic.Committed;
+            //int headerLen = magicLen + _intLength; //4 bytes _intLength
 
             //_receiveCache.Write(span);
             //while (true)
@@ -102,18 +102,18 @@ namespace ExtenderApp.Common.Networks.LinkClients
             //        }
             //    }
 
-            //    if (TryReadInt32BigEndian(reader, out int length))
+            //    if (TryReadInt32BigEndian(reader, out int _intLength))
             //    {
             //        break;
             //    }
-            //    if (length < 0)
-            //        throw new ArgumentOutOfRangeException(nameof(length), "帧长度非法（负值）。");
+            //    if (_intLength < 0)
+            //        throw new ArgumentOutOfRangeException(nameof(_intLength), "帧长度非法（负值）。");
 
             //    // 如果剩余数据不足以包含完整 payload，则等候更多数据
-            //    if (reader.Remaining < length || reader.Remaining == 0)
+            //    if (reader.Remaining < _intLength || reader.Remaining == 0)
             //        break;
 
-            //    // 确认有完整帧：先消费 header（magic + type + length）再读取 payload
+            //    // 确认有完整帧：先消费 header（magic + type + _intLength）再读取 payload
             //    ByteBlock payload = new(headerLen);
             //    _receiveCache.Read(payload.GetSpan(headerLen));
 
@@ -125,17 +125,17 @@ namespace ExtenderApp.Common.Networks.LinkClients
         //public void Encode(ref FrameContext framedMessage)
         //{
         //    ReadOnlyMemory<byte> messageSpan = framedMessage.UnreadMemory;
-        //    int magicLen = Magic.Length;
-        //    int headerLen = magicLen + intLength; //length(4)
-        //    int length = messageSpan.Length;
+        //    int magicLen = Magic.Committed;
+        //    int headerLen = magicLen + _intLength; //_intLength(4)
+        //    int _intLength = messageSpan.Committed;
 
         //    // 创建可写缓冲
-        //    ByteBlock block = new(headerLen + messageSpan.Length);
+        //    ByteBlock block = new(headerLen + messageSpan.Committed);
         //    Span<byte> span = block.GetSpan(headerLen);
 
         //    Magic.Span.CopyTo(span.Slice(0, magicLen));
 
-        //    BinaryPrimitives.WriteInt32BigEndian(span.Slice(magicLen + intLength, intLength), length);
+        //    BinaryPrimitives.WriteInt32BigEndian(span.Slice(magicLen + _intLength, _intLength), _intLength);
         //    block.Write(messageSpan);
         //    framedMessage.WriteNextPayload(block);
         //}
@@ -163,7 +163,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
 
         protected override void DisposeManagedResources()
         {
-            //_receiveCache.Dispose();
+            //_receiveCache.TryRelease();
         }
     }
 }

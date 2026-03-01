@@ -5,7 +5,7 @@ using ExtenderApp.Contracts;
 
 namespace ExtenderApp.Common.Serializations.Binary.Formatters.Collection
 {
-    internal class ByteArrayFormatter : ResolverFormatter<byte[]>
+    internal sealed class ByteArrayFormatter : ResolverFormatter<byte[]>
     {
         private readonly IBinaryFormatter<int> _int;
 
@@ -14,30 +14,30 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters.Collection
             _int = GetFormatter<int>();
         }
 
-        public override byte[] Deserialize(AbstractBufferReader<byte> reader)
+        public override sealed byte[] Deserialize(ref BinaryReaderAdapter reader)
         {
-            if (TryReadNil(reader))
+            if (TryReadNil(ref reader))
             {
                 return Array.Empty<byte>();
             }
 
-            if (!TryReadArrayHeader(reader))
+            if (!TryReadArrayHeader(ref reader))
             {
                 throw new Exception("无法反序列化数据，数据类型不匹配。");
             }
 
-            var len = _int.Deserialize(reader);
+            var len = _int.Deserialize(ref reader);
             if (len == 0)
             {
                 return Array.Empty<byte>();
             }
 
             byte[] array = new byte[len];
-            reader.Read(array.AsSpan());
+            reader.TryRead(array);
             return array;
         }
 
-        public override byte[] Deserialize(ref SpanReader<byte> reader)
+        public override sealed byte[] Deserialize(ref SpanReader<byte> reader)
         {
             if (TryReadNil(ref reader))
             {
@@ -60,22 +60,9 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters.Collection
             return array;
         }
 
-        public override void Serialize(AbstractBuffer<byte> buffer, byte[] value)
+        public override sealed void Serialize(ref BinaryWriterAdapter writer, byte[] value)
         {
-            if (value == null)
-            {
-                WriteNil(buffer);
-                return;
-            }
-
-            WriteArrayHeader(buffer);
-            _int.Serialize(buffer, value.Length);
-            buffer.Write(value);
-        }
-
-        public override void Serialize(ref SpanWriter<byte> writer, byte[] value)
-        {
-            if (value == null)
+            if (value == null || value == Array.Empty<byte>())
             {
                 WriteNil(ref writer);
                 return;
@@ -86,7 +73,20 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters.Collection
             writer.Write(value);
         }
 
-        public override long GetLength(byte[] value)
+        public override sealed void Serialize(ref SpanWriter<byte> writer, byte[] value)
+        {
+            if (value == null || value == Array.Empty<byte>())
+            {
+                WriteNil(ref writer);
+                return;
+            }
+
+            WriteArrayHeader(ref writer);
+            _int.Serialize(ref writer, value.Length);
+            writer.Write(value);
+        }
+
+        public override sealed long GetLength(byte[] value)
         {
             if (value == null)
             {

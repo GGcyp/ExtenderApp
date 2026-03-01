@@ -1,11 +1,11 @@
 ﻿using System.Runtime.Loader;
+using System.Text;
 using Autofac;
 using Autofac.Extensions.DependencyInjection;
 using ExtenderApp.Abstract;
 using ExtenderApp.Common;
 using ExtenderApp.Contracts;
 using Microsoft.Extensions.DependencyInjection;
-using System.Text;
 
 namespace BenchRunner
 {

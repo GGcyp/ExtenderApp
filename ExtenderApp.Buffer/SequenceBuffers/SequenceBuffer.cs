@@ -9,11 +9,6 @@ namespace ExtenderApp.Buffer
     /// <typeparam name="T">序列中元素的类型。</typeparam>
     public sealed partial class SequenceBuffer<T> : AbstractBuffer<T>
     {
-        /// <summary>
-        /// 自动增长的最大大小。
-        /// </summary>
-        private const int MaximumAutoGrowSize = 32 * 1024;
-
         public new static readonly SequenceBuffer<T> Empty = new SequenceBuffer<T>();
 
         private static readonly ReadOnlySequence<T> EmptySequence = new ReadOnlySequence<T>(SequenceBufferSegment<T>.Empty, 0, SequenceBufferSegment<T>.Empty, 0);
@@ -157,8 +152,8 @@ namespace ExtenderApp.Buffer
             if (Last != null && Last.Available >= sizeHint)
                 return Last;
 
-            int minBufferSize = System.Math.Max(minimumSpanCommitted, sizeHint);
-            return GetSegmentForProvider(minBufferSize);
+            sizeHint = System.Math.Max(minimumSpanCommitted, sizeHint);
+            return GetSegmentForProvider(sizeHint);
         }
 
         /// <summary>
@@ -169,7 +164,7 @@ namespace ExtenderApp.Buffer
         /// <returns>具有足够可写空间的段实例。</returns>
         private SequenceBufferSegment<T> GetSegmentForProvider(int sizeHint)
         {
-            // 使用 provider 获取新的段实例（实现可以从池中租用或新建）。
+            // 使用 ownerProvider 获取新的段实例（实现可以从池中租用或新建）。
             var Segment = _segmentProvider.GetSegment(sizeHint);
             Append(Segment);
             return Segment;
@@ -197,7 +192,7 @@ namespace ExtenderApp.Buffer
                 return;
             }
 
-            // 若 Last 已被消费过一部分，直接在其后追加新段
+            // 若 last 已被消费过一部分，直接在其后追加新段
             if (Last.Committed > 0)
             {
                 Last.SetNext(segment);
@@ -205,7 +200,7 @@ namespace ExtenderApp.Buffer
                 return;
             }
 
-            // Last 是空（或未消费）且需要替换为新段 —— 先完成链入再释放旧段，确保在释放期间链表保持可恢复状态
+            // last 是空（或未消费）且需要替换为新段 —— 先完成链入再释放旧段，确保在释放期间链表保持可恢复状态
             var oldLast = Last;
             var prev = oldLast.Prev;
 
@@ -349,7 +344,7 @@ namespace ExtenderApp.Buffer
             return false;
         }
 
-        protected override void UpdateCommittedProtected(Span<T> span, long committedPosition)
+        protected override sealed void UpdateCommittedProtected(Span<T> span, long committedPosition)
         {
             // 将指定的已写入数据 span 按绝对位置 committedPosition 写回到对应段的已提交区域。 先确保段的 RunningIndex 是最新的，然后定位到起始段并逐段复制。
             if (span.IsEmpty)
@@ -395,6 +390,14 @@ namespace ExtenderApp.Buffer
             }
         }
 
+        /// <summary>
+        /// 从首段开始更新所有段的 RunningIndex，以确保它们与当前链表结构和已提交长度保持同步。 该方法在段链发生结构性变更（如插入/删除段）后应被调用，以维护 RunningIndex 的正确性。
+        /// </summary>
+        public void UpdateRunningIndex()
+        {
+            First?.UpdateRunningIndex();
+        }
+
         #endregion Segment Operations
 
         /// <summary>
@@ -402,9 +405,9 @@ namespace ExtenderApp.Buffer
         /// </summary>
         private void ConsiderMinimumSizeIncrease()
         {
-            if (AutoIncreaseMinimumSpanCommitted && minimumSpanCommitted < MaximumAutoGrowSize)
+            if (AutoIncreaseMinimumSpanCommitted && minimumSpanCommitted < MaximumSequenceSegmentSize)
             {
-                int autoSize = System.Math.Min(MaximumAutoGrowSize, (int)System.Math.Min(int.MaxValue, Committed / 2));
+                int autoSize = System.Math.Min(MaximumSequenceSegmentSize, (int)System.Math.Min(int.MaxValue, Committed / 2));
                 if (minimumSpanCommitted < autoSize)
                 {
                     minimumSpanCommitted = autoSize;
@@ -455,6 +458,7 @@ namespace ExtenderApp.Buffer
             First = null;
             Last = null;
             minimumSpanCommitted = 0;
+            IsActived = true;
         }
 
         #endregion Release

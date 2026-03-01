@@ -1,6 +1,6 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿using System.Buffers;
+using System.Diagnostics.CodeAnalysis;
 using System.IO.MemoryMappedFiles;
-using ExtenderApp.Buffer;
 using ExtenderApp.Contracts;
 
 namespace ExtenderApp.Common.IO
@@ -93,11 +93,6 @@ namespace ExtenderApp.Common.IO
             }
         }
 
-        protected override void ExecuteWrite(long filePosition, ReadOnlySpan<byte> span)
-        {
-            throw new NotImplementedException();
-        }
-
         protected override byte[] ExecuteRead(long filePosition, int length)
         {
             throw new NotImplementedException();
@@ -118,17 +113,22 @@ namespace ExtenderApp.Common.IO
             throw new NotImplementedException();
         }
 
-        protected override long ExecuteWrite(long filePosition, AbstractBuffer<byte> buffer)
+        protected override long ExecuteWrite(long filePosition, ReadOnlySpan<byte> span)
         {
             throw new NotImplementedException();
         }
 
-        protected override ValueTask<long> ExecuteWriteAsync(long filePosition, AbstractBuffer<byte> buffer, CancellationToken token)
+        protected override long ExecuteWrite(long filePosition, ReadOnlySequence<byte> memories)
         {
             throw new NotImplementedException();
         }
 
-        protected override ValueTask<long> ExecuteReadAsync(long filePosition, long length, AbstractBuffer<byte> buffer, CancellationToken token)
+        protected override ValueTask<long> ExecuteWriteAsync(long filePosition, ReadOnlySequence<byte> memories, CancellationToken token)
+        {
+            throw new NotImplementedException();
+        }
+
+        protected override ValueTask<long> ExecuteReadAsync(long filePosition, Memory<byte> memory, CancellationToken token)
         {
             throw new NotImplementedException();
         }

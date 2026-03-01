@@ -30,7 +30,7 @@ namespace ExtenderApp.FFmpegEngines.Decoders
         /// 用途：在 FFmpeg 的 swscale 模块中负责像素格式转换与缩放（例如 YUV420P -> RGB24）。
         /// </para>
         /// <para>
-        /// 生命周期：构造时创建，析构/Dispose 时释放；同一解码器实例内复用以避免频繁创建带来的性能损耗。
+        /// 生命周期：构造时创建，析构/TryRelease 时释放；同一解码器实例内复用以避免频繁创建带来的性能损耗。
         /// </para>
         /// </summary>
         private NativeIntPtr<SwsContext> swsContext;
