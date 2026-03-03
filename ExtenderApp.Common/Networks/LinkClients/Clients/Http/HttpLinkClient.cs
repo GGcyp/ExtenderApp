@@ -152,7 +152,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
         //        // 必要时调整请求（例如 302/303 将方法改为 GET 并清除 Body）
         //        if (response.StatusCode == HttpStatusCode.Redirect || response.StatusCode == HttpStatusCode.RedirectMethod)
         //        {
-        //            request.Method = Contracts.HttpMethod.GetAwaitable;
+        //            request.Method = Contracts.HttpMethod.GetAwaitableEventSource;
         //            request.Body.TryRelease();
         //        }
 

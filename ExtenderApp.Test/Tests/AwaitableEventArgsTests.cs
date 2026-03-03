@@ -4,7 +4,7 @@ using ExtenderApp.Common.Threads;
 namespace ExtenderApp.Test.Tests
 {
     /// <summary>
-    /// <see cref="AwaitableEventArgs"/> 测试集合。
+    /// <see cref="AwaitableEventSource"/> 测试集合。
     /// </summary>
     internal static class AwaitableEventArgsTests
     {
@@ -13,7 +13,7 @@ namespace ExtenderApp.Test.Tests
         /// </summary>
         public static void RunAll()
         {
-            Debug.Print("-- AwaitableEventArgs 测试开始 --");
+            Debug.Print("-- AwaitableEventSource 测试开始 --");
             Task.Run(async () =>
             {
                 await TestActionResult();
@@ -27,21 +27,21 @@ namespace ExtenderApp.Test.Tests
                 await Test4();
                 await TestMultipleAwaitGeneric();
                 await TestMultipleAwaitGeneric2();
-                Debug.Print("-- AwaitableEventArgs 测试结束 --");
+                Debug.Print("-- AwaitableEventSource 测试结束 --");
             });
         }
 
         private static async ValueTask TestActionResult()
         {
             bool executed = false;
-            await AwaitableEventArgs.FromResult(() => executed = true);
+            await AwaitableEventSource.FromResult(() => executed = true);
 
             Debug.Print(executed ? "[通过] TestActionResult" : "[失败] TestActionResult");
         }
 
         private static async ValueTask TestFuncResult()
         {
-            int result = await AwaitableEventArgs.FromResult(() => 42);
+            int result = await AwaitableEventSource.FromResult(() => 42);
 
             Debug.Print(result == 42 ? "[通过] TestFuncResult" : "[失败] TestFuncResult");
         }
@@ -50,7 +50,7 @@ namespace ExtenderApp.Test.Tests
         {
             try
             {
-                await AwaitableEventArgs.FromException(new InvalidOperationException("test"));
+                await AwaitableEventSource.FromException(new InvalidOperationException("test"));
                 Debug.Print("[失败] TestException");
             }
             catch (InvalidOperationException)
@@ -67,7 +67,7 @@ namespace ExtenderApp.Test.Tests
         {
             const int delayMilliseconds = 200;
             var stopwatch = Stopwatch.StartNew();
-            await AwaitableEventArgs.FromResult(() => Task.Delay(delayMilliseconds).GetAwaiter().GetResult());
+            await AwaitableEventSource.FromResult(() => Task.Delay(delayMilliseconds).GetAwaiter().GetResult());
             stopwatch.Stop();
 
             Debug.Print(stopwatch.ElapsedMilliseconds >= delayMilliseconds
@@ -79,7 +79,7 @@ namespace ExtenderApp.Test.Tests
         {
             const int delayMilliseconds = 150;
             var stopwatch = Stopwatch.StartNew();
-            int result = await AwaitableEventArgs.FromResult(() =>
+            int result = await AwaitableEventSource.FromResult(() =>
             {
                 Task.Delay(delayMilliseconds);
                 return 7;
@@ -95,7 +95,7 @@ namespace ExtenderApp.Test.Tests
         {
             using var cts = new CancellationTokenSource();
             cts.Cancel();
-            var awaitable = AwaitableEventArgs.GetAwaitable().SetResult(token => token.ThrowIfCancellationRequested(), cts.Token);
+            var awaitable = AwaitableEventSource.GetAwaitableEventSource().SetResult(token => token.ThrowIfCancellationRequested(), cts.Token);
 
             try
             {
@@ -115,7 +115,7 @@ namespace ExtenderApp.Test.Tests
         private static async ValueTask Test1()
         {
             var stopwatch = Stopwatch.StartNew();
-            var args1 = AwaitableEventArgs<int>.GetAwaitable();
+            var args1 = AwaitableEventSource<int>.GetAwaitable();
             Test2(args1).ConfigureAwait(false);
             Debug.Print("开始等待");
             await Task.Delay(1000);
@@ -123,7 +123,7 @@ namespace ExtenderApp.Test.Tests
             Debug.Print($"结束等待 {stopwatch.ElapsedMilliseconds}ms");
             args1.SetResult(123);
 
-            var args2 = AwaitableEventArgs<int>.GetAwaitable();
+            var args2 = AwaitableEventSource<int>.GetAwaitable();
             Debug.Print((args1 == args2).ToString());
             Test2(args2).ConfigureAwait(false);
             await Task.Delay(1000);
@@ -138,7 +138,7 @@ namespace ExtenderApp.Test.Tests
 
         private static async Task Test3()
         {
-            var args = AwaitableEventArgs.GetAwaitable();
+            var args = AwaitableEventSource.GetAwaitableEventSource();
             for (int i = 0; i < 5; i++)
             {
                 Temp(args, i);
@@ -147,7 +147,7 @@ namespace ExtenderApp.Test.Tests
             await Task.Delay(1000);
             args.SetResult();
 
-            async ValueTask Temp(AwaitableEventArgs args, int index)
+            async ValueTask Temp(AwaitableEventSource args, int index)
             {
                 await args;
                 Debug.Print($"Task {index} received signal");
@@ -156,7 +156,7 @@ namespace ExtenderApp.Test.Tests
 
         private static async Task Test4()
         {
-            var args = AwaitableEventArgs.GetAwaitable();
+            var args = AwaitableEventSource.GetAwaitableEventSource();
             for (int i = 0; i < 5; i++)
             {
                 Temp(args, i);
@@ -168,7 +168,7 @@ namespace ExtenderApp.Test.Tests
 
             await Task.Delay(1000);
 
-            async ValueTask Temp(AwaitableEventArgs args, int index)
+            async ValueTask Temp(AwaitableEventSource args, int index)
             {
                 await args;
                 Debug.Print($"Task {index} received signal");
@@ -177,7 +177,7 @@ namespace ExtenderApp.Test.Tests
 
         private static async Task TestMultipleAwaitGeneric()
         {
-            var args = AwaitableEventArgs<int>.GetAwaitable();
+            var args = AwaitableEventSource<int>.GetAwaitable();
 
             for (int i = 0; i < 5; i++)
             {
@@ -187,7 +187,7 @@ namespace ExtenderApp.Test.Tests
             await Task.Delay(1000);
             args.SetResult(99);
 
-            async ValueTask Temp(AwaitableEventArgs<int> args, int index)
+            async ValueTask Temp(AwaitableEventSource<int> args, int index)
             {
                 int result = await args;
                 Debug.Print($"Task {index} received result {result}");
@@ -196,7 +196,7 @@ namespace ExtenderApp.Test.Tests
 
         private static async Task TestMultipleAwaitGeneric2()
         {
-            var args = AwaitableEventArgs<int>.GetAwaitable();
+            var args = AwaitableEventSource<int>.GetAwaitable();
 
             for (int i = 0; i < 5; i++)
             {
@@ -209,7 +209,7 @@ namespace ExtenderApp.Test.Tests
 
             await Task.Delay(1000);
 
-            async ValueTask Temp(AwaitableEventArgs<int> args, int index)
+            async ValueTask Temp(AwaitableEventSource<int> args, int index)
             {
                 int result = await args;
                 Debug.Print($"Task {index} received result {result}");

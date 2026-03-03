@@ -21,7 +21,8 @@ namespace ExtenderApp.Buffer
         public static void Write<T>(this AbstractBuffer<byte> memories, T value, bool isBigEndian = true)
             where T : unmanaged
         {
-            memories.Write(value, out _, isBigEndian);
+            memories.Write(value, out int size, isBigEndian);
+            memories.Advance(size);
         }
 
         /// <summary>
@@ -162,6 +163,15 @@ namespace ExtenderApp.Buffer
             where T : unmanaged
         {
             return memory.Span.TryWrite(value, out size, isBigEndian);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool TryWrite<T>(this AbstractBuffer<byte> memories, T value, bool isBigEndian = true)
+            where T : unmanaged
+        {
+            var result = TryWrite(memories, value, out int size, isBigEndian);
+            memories.Advance(size);
+            return result;
         }
 
         /// <summary>

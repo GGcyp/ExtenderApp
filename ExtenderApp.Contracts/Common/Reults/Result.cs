@@ -135,6 +135,15 @@ namespace ExtenderApp.Contracts
         /// 创建一个表示不成功的 <see cref="Result{T}"/>。
         /// </summary>
         /// <typeparam name="T"></typeparam>
+        /// <param name="data">操作返回的数据。</param>
+        /// <param name="message"></param>
+        /// <returns></returns>
+        public static Result<T> Failure<T>(T data, string? message = DefaultFailureMessage) => new(false, data, message);
+
+        /// <summary>
+        /// 创建一个表示不成功的 <see cref="Result{T}"/>。
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
         /// <param name="message"></param>
         /// <returns></returns>
         public static Result<T> Failure<T>(string? message = DefaultFailureMessage) => new(false, default(T), message);

@@ -51,7 +51,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
 
         ///<inheritdoc/>
         [Skip(SkipFlags.ExceptionCaught)]
-        public virtual ValueTask ExceptionCaught(ILinkClientHandlerContext context, Exception exception)
+        public virtual void ExceptionCaught(ILinkClientHandlerContext context, Exception exception)
             => context.ExceptionCaught(exception);
 
         ///<inheritdoc/>

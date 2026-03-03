@@ -60,7 +60,7 @@ namespace ExtenderApp.Abstract
         /// 当处理器捕获异常时调用。
         /// </summary>
         /// <param name="exception">捕获到的异常。</param>
-        ValueTask ExceptionCaught(ILinkClientHandlerContext context, Exception exception);
+        void ExceptionCaught(ILinkClientHandlerContext context, Exception exception);
 
         /// <summary>
         /// 处理入站数据。

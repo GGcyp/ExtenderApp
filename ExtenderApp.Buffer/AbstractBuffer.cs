@@ -6,6 +6,86 @@ using ExtenderApp.Contracts;
 namespace ExtenderApp.Buffer
 {
     /// <summary>
+    /// 内存缓冲区的抽象基类，提供了用于写入数据、管理提交状态、冻结/解冻以及固定/解除固定的核心功能。 该类定义了缓冲区的基本行为和接口，具体的存储实现由派生类负责。 通过继承 <see cref="FreezeObject"/> 来管理冻结状态以防止在被引用时回收，并实现 <see
+    /// cref="IBufferWriter{T}"/> 和 <see cref="IPinnable"/> 接口以支持标准的缓冲写入和固定操作。
+    /// </summary>
+    public static class AbstractBuffer
+    {
+        /// <summary>
+        /// 提供用于创建或获取各种 <see cref="AbstractBuffer{T}"/> 实例的工厂方法集合。 该静态类简化了不同来源（数组、Span、Sequence 等）向 <see cref="AbstractBuffer{T}"/> 的转换。
+        /// </summary>
+        /// <remarks>所有方法均返回可用于读取/写入的 <see cref="AbstractBuffer{T}"/> 实例，可能为池化或包装实现。</remarks>
+
+        /// <summary>
+        /// 获取一个空的 <see cref="AbstractBuffer{T}"/> 实例，表示一个容量为 0 的缓冲区。
+        /// </summary>
+        /// <typeparam name="T">缓冲区元素的类型。</typeparam>
+        public static AbstractBuffer<T> Empty<T>() => AbstractBuffer<T>.Empty;
+
+        /// <summary>
+        /// 获取一个来自 <see cref="MemoryBlock{T}"/> 的缓冲区实例，使用默认的尺寸策略分配或复用底层存储。
+        /// </summary>
+        /// <typeparam name="T">缓冲区元素类型。</typeparam>
+        /// <returns>一个可写的 <see cref="AbstractBuffer{T}"/> 实例。</returns>
+        public static AbstractBuffer<T> GetBlock<T>() => MemoryBlock<T>.GetBuffer();
+
+        /// <summary>
+        /// 获取一个指定大小的 <see cref="MemoryBlock{T}"/> 缓冲区实例。
+        /// </summary>
+        /// <typeparam name="T">缓冲区元素类型。</typeparam>
+        /// <param name="size">请求的最小元素数量。</param>
+        /// <returns>具有至少 <paramref name="size"/> 可用空间的 <see cref="AbstractBuffer{T}"/> 实例。</returns>
+        public static AbstractBuffer<T> GetBlock<T>(int size) => MemoryBlock<T>.GetBuffer(size);
+
+        /// <summary>
+        /// 使用给定的只读跨度创建一个基于该跨度的 <see cref="AbstractBuffer{T}"/>。 返回的缓冲区包装了传入的 <see cref="ReadOnlySpan{T}"/> 数据（通常会复制或封装为只读块，具体取决于实现）。
+        /// </summary>
+        /// <typeparam name="T">缓冲区元素类型。</typeparam>
+        /// <param name="span">用于初始化缓冲区的只读跨度。</param>
+        /// <returns>表示 <paramref name="span"/> 内容的 <see cref="AbstractBuffer{T}"/> 实例。</returns>
+        public static AbstractBuffer<T> GetBlock<T>(ReadOnlySpan<T> span) => MemoryBlock<T>.GetBuffer(span);
+
+        /// <summary>
+        /// 使用给定的只读内存创建一个基于该内存的 <see cref="AbstractBuffer{T}"/>。
+        /// </summary>
+        /// <typeparam name="T">缓冲区元素类型。</typeparam>
+        /// <param name="memory">用于初始化缓冲区的只读内存。</param>
+        /// <returns>表示 <paramref name="memory"/> 内容的 <see cref="AbstractBuffer{T}"/> 实例。</returns>
+        public static AbstractBuffer<T> GetBlock<T>(ReadOnlyMemory<T> memory) => MemoryBlock<T>.GetBuffer(memory);
+
+        /// <summary>
+        /// 使用给定的数组创建一个基于该数组的 <see cref="AbstractBuffer{T}"/>。
+        /// </summary>
+        /// <typeparam name="T">缓冲区元素类型。</typeparam>
+        /// <param name="array">用于初始化缓冲区的数组。</param>
+        /// <returns>表示 <paramref name="array"/> 内容的 <see cref="AbstractBuffer{T}"/> 实例。</returns>
+        public static AbstractBuffer<T> GetBlock<T>(T[] array) => MemoryBlock<T>.GetBuffer(array);
+
+        /// <summary>
+        /// 使用给定的数组段创建一个基于该段的 <see cref="AbstractBuffer{T}"/>。
+        /// </summary>
+        /// <typeparam name="T">缓冲区元素类型。</typeparam>
+        /// <param name="segment">用于初始化缓冲区的数组段。</param>
+        /// <returns>表示 <paramref name="segment"/> 内容的 <see cref="AbstractBuffer{T}"/> 实例。</returns>
+        public static AbstractBuffer<T> GetBlock<T>(ArraySegment<T> segment) => MemoryBlock<T>.GetBuffer(segment);
+
+        /// <summary>
+        /// 使用给定的 <see cref="ReadOnlySequence{T}"/> 创建一个序列缓冲区 <see cref="AbstractBuffer{T}"/>。 该方法适用于多段数据的场景（例如流式或分段内存）。
+        /// </summary>
+        /// <typeparam name="T">缓冲区元素类型。</typeparam>
+        /// <param name="sequence">初始化缓冲区的只读序列。</param>
+        /// <returns>表示 <paramref name="sequence"/> 的 <see cref="AbstractBuffer{T}"/> 实例。</returns>
+        public static AbstractBuffer<T> GetSequence<T>(ReadOnlySequence<T> sequence) => SequenceBuffer<T>.GetBuffer(sequence);
+
+        /// <summary>
+        /// 获取一个空的序列缓冲区实例（不包含任何段），通常用于表示空的 ReadOnlySequence 场景。
+        /// </summary>
+        /// <typeparam name="T">缓冲区元素类型。</typeparam>
+        /// <returns>空的 <see cref="AbstractBuffer{T}"/> 实例。</returns>
+        public static AbstractBuffer<T> GetSequence<T>() => SequenceBuffer<T>.GetBuffer();
+    }
+
+    /// <summary>
     /// 表示用于写入缓冲区的抽象写入器。
     /// </summary>
     /// <remarks>继承自 <see cref="FreezeObject"/>，在调用 <see cref="Release"/> 前会检查冻结状态以避免在被引用时回收。 实现者应提供用于推进写入位置和获取可写内存/跨度的具体逻辑。 实现此抽象类的类型通常用于可重用或池化的缓冲写入场景。</remarks>

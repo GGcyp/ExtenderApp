@@ -8,6 +8,6 @@ namespace ExtenderApp.Abstract
     /// </summary>
     public interface ILinkClient : IDisposable, ILinkInfo, ILinkConnect, ILinkOption
     {
-        Result<LinkOperationValue> SendAsync<T>(T value, CancellationToken token = default);
+        ValueTask<Result<LinkOperationValue>> SendAsync<T>(T value, CancellationToken token = default);
     }
 }

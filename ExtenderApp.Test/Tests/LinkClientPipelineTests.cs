@@ -117,8 +117,10 @@ namespace ExtenderApp.Test.Tests
             public ValueTask<Result> BindAsync(ILinkClientHandlerContext context, EndPoint localAddress, CancellationToken token = default)
                 => new ValueTask<Result>(Result.Success());
 
-            public ValueTask ExceptionCaught(ILinkClientHandlerContext context, Exception exception)
-                => ValueTask.CompletedTask;
+            public void ExceptionCaught(ILinkClientHandlerContext context, Exception exception)
+            {
+
+            }
 
             public ValueTask<Result<int>> InboundHandleAsync(ILinkClientHandlerContext context, ValueCache cache, CancellationToken token = default)
                 => new ValueTask<Result<int>>(Result.Success(0));

@@ -21,17 +21,20 @@ namespace ExtenderApp.Common.Networks.LinkClients
         /// </summary>
         private readonly LinkClientHandlerContext _tail;
 
-        public LinkClientPipeline()
+        private readonly ILinkClient _linkClient;
+
+        public LinkClientPipeline(ILinkClient linkClient)
         {
-            _head = new HeadLinkClientHandlerContext();
-            _tail = new TailLinkClientHandlerContext();
+            _linkClient = linkClient;
+            _head = new HeadLinkClientHandlerContext(linkClient);
+            _tail = new TailLinkClientHandlerContext(linkClient);
             _head.Next = _tail;
             _tail.Prev = _head;
         }
 
-        private static LinkClientHandlerContext<T> CreateContext<T>(string name, T handler) where T : ILinkClientHandler
+        private static LinkClientHandlerContext<T> CreateContext<T>(string name, ILinkClient linkClient, T handler) where T : ILinkClientHandler
         {
-            return new LinkClientHandlerContext<T>(name, handler);
+            return new LinkClientHandlerContext<T>(name, linkClient, handler);
         }
 
         #region Pipeline Operations
@@ -43,9 +46,9 @@ namespace ExtenderApp.Common.Networks.LinkClients
             while (ctx != null && ctx.Name != baseName)
                 ctx = ctx.Next!;
             if (ctx == null)
-                throw new KeyNotFoundException($"Base handler not found: {baseName}");
+                throw new KeyNotFoundException($"未发现名为 {baseName} 的处理器");
 
-            var newCtx = CreateContext(name, handler);
+            var newCtx = CreateContext(name, _linkClient, handler);
             var next = ctx.Next!;
             newCtx.Next = next;
             newCtx.Prev = ctx;
@@ -61,10 +64,10 @@ namespace ExtenderApp.Common.Networks.LinkClients
             while (ctx != null && ctx.Name != baseName)
                 ctx = ctx.Next;
             if (ctx == null)
-                throw new KeyNotFoundException($"Base handler not found: {baseName}");
+                throw new KeyNotFoundException($"未发现名为 {baseName} 的处理器");
 
             var prev = ctx.Prev!;
-            var newCtx = CreateContext(name, handler);
+            var newCtx = CreateContext(name, _linkClient, handler);
             newCtx.Next = ctx;
             newCtx.Prev = prev;
             prev.Next = newCtx;
@@ -76,7 +79,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
         public ILinkClientPipeline AddFirst<T>(string name, T handler) where T : ILinkClientHandler
         {
             var next = _head.Next!;
-            var newCtx = CreateContext(name, handler);
+            var newCtx = CreateContext(name, _linkClient, handler);
             newCtx.Next = next;
             newCtx.Prev = _head;
             _head.Next = newCtx;
@@ -88,7 +91,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
         public ILinkClientPipeline AddLast<T>(string name, T handler) where T : ILinkClientHandler
         {
             var prev = _tail.Prev!;
-            var newCtx = CreateContext(name, handler);
+            var newCtx = CreateContext(name, _linkClient, handler);
             newCtx.Next = _tail;
             newCtx.Prev = prev;
             prev.Next = newCtx;
@@ -145,7 +148,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
             {
                 if (ctx.Name == oldName)
                 {
-                    var newCtx = CreateContext(newName, newHandler);
+                    var newCtx = CreateContext(newName, _linkClient, newHandler);
                     newCtx.Prev = ctx.Prev!;
                     newCtx.Next = ctx.Next!;
                     ctx.Prev!.Next = newCtx;
@@ -166,7 +169,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
             {
                 if (ReferenceEquals(ctx.Handler, oldHandler))
                 {
-                    var newCtx = CreateContext(newName, newHandler);
+                    var newCtx = CreateContext(newName, _linkClient, newHandler);
                     newCtx.Prev = ctx.Prev!;
                     newCtx.Next = ctx.Next!;
                     ctx.Prev!.Next = newCtx;
@@ -200,7 +203,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
             => _head.DisconnectAsync(token);
 
         ///<inheritdoc/>
-        public ValueTask ExceptionCaught(Exception exception)
+        public void ExceptionCaught(Exception exception)
             => _head.ExceptionCaught(exception);
 
         ///<inheritdoc/>
@@ -265,5 +268,69 @@ namespace ExtenderApp.Common.Networks.LinkClients
             => GetEnumerator();
 
         #endregion Enumerable
+
+        #region HeadLinkClientHandlerContext
+
+        /// <summary>
+        /// 管道头部的处理器上下文，用于将 <see cref="HeadLinkClientHandler"/> 绑定到特定的上下文名称。 该上下文在管道构建时作为第一项，承载默认的头部处理器实例。
+        /// </summary>
+        private class HeadLinkClientHandlerContext : LinkClientHandlerContext
+        {
+            /// <summary>
+            /// 管道中头部的链接客户端处理器，作为链式处理的起始节点。
+            /// </summary>
+            private class HeadLinkClientHandler : LinkClientHandler
+            {
+                public override void ExceptionCaught(ILinkClientHandlerContext context, Exception exception)
+                {
+                    throw exception;
+                }
+            }
+
+            /// <summary>
+            /// 通用的头部处理器实例，作为管道头部的默认处理器，提供基础的连接和数据处理能力。 该实例在所有头部上下文中共享，确保一致的行为和资源利用。
+            /// </summary>
+            private static readonly HeadLinkClientHandler headLinkClientHandler = new HeadLinkClientHandler();
+
+            /// <summary>
+            /// 使用指定名称创建 <see cref="HeadLinkClientHandlerContext"/> 实例，并将默认的头部处理器关联到该上下文。
+            /// </summary>
+            /// <param name="name">上下文名称，用于标识该处理器在管道中的位置或用途。</param>
+            public HeadLinkClientHandlerContext(ILinkClient linkClient) : base("Head", linkClient, headLinkClientHandler, typeof(HeadLinkClientHandler))
+            {
+            }
+        }
+
+        #endregion HeadLinkClientHandlerContext
+
+        #region TailLinkClientHandlerContext
+
+        /// <summary>
+        /// 管道尾部的处理器上下文，用于将 <see cref="TailLinkClientHandler"/> 绑定到尾部上下文。 该上下文在管道构建时作为最后一项，承载默认的尾部处理器实例。
+        /// </summary>
+        private class TailLinkClientHandlerContext : LinkClientHandlerContext
+        {
+            /// <summary>
+            /// 管道中尾部的链接客户端处理器，作为链式处理的终结节点。
+            /// </summary>
+            private class TailLinkClientHandler : LinkClientHandler
+            {
+                public override void ExceptionCaught(ILinkClientHandlerContext context, Exception exception)
+                {
+                    throw exception;
+                }
+            }
+
+            private static readonly TailLinkClientHandler tailLinkClientHandler = new TailLinkClientHandler();
+
+            /// <summary>
+            /// 创建默认的尾部上下文实例，名称为 "Tail"，并关联默认的尾部处理器。
+            /// </summary>
+            public TailLinkClientHandlerContext(ILinkClient linkClient) : base("Tail", linkClient, tailLinkClientHandler, typeof(TailLinkClientHandler))
+            {
+            }
+        }
+
+        #endregion TailLinkClientHandlerContext
     }
 }

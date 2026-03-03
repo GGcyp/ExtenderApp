@@ -40,8 +40,7 @@ namespace ExtenderApp.Abstract
         /// 当处理器捕获异常时调用。
         /// </summary>
         /// <param name="exception">捕获到的异常。</param>
-        /// <param name="token">取消令牌。</param>
-        ValueTask ExceptionCaught(Exception exception);
+        void ExceptionCaught(Exception exception);
 
         /// <summary>
         /// 执行入站处理并向下一个处理器传递事件。

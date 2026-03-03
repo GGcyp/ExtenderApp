@@ -20,7 +20,7 @@ namespace ExtenderApp.Common.Serializations.Binary.Formatters
 
         public StringFormatter(IBinaryFormatterResolver resolver) : base(resolver)
         {
-            _encoding = Encoding.UTF8;
+            _encoding = Encoding.GetEncoding(0);
         }
 
         #region Deserialize

@@ -7,9 +7,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="Common\Networks\Clients\Tcp\**" />
-    <EmbeddedResource Remove="Common\Networks\Clients\Tcp\**" />
-    <None Remove="Common\Networks\Clients\Tcp\**" />
+    <Compile Remove="Networks\Clients\Tcp\**" />
+    <EmbeddedResource Remove="Networks\Clients\Tcp\**" />
+    <None Remove="Networks\Clients\Tcp\**" />
   </ItemGroup>
 
   <ItemGroup>

@@ -50,6 +50,18 @@ namespace ExtenderApp.Contracts
         }
 
         /// <summary>
+        /// 初始化 <see cref="LinkOperationValue"/> 结构的新实例，基于另一个实例并更新传输字节数。
+        /// </summary>
+        /// <param name="linkOperationValue">要基于的操作结果实例。</param>
+        /// <param name="bytesTransferred">新的传输字节数。</param>
+        public LinkOperationValue(LinkOperationValue linkOperationValue, int bytesTransferred)
+        {
+            BytesTransferred = bytesTransferred;
+            RemoteEndPoint = linkOperationValue.RemoteEndPoint;
+            ReceiveMessageFromPacketInfo = linkOperationValue.ReceiveMessageFromPacketInfo;
+        }
+
+        /// <summary>
         /// 隐式转换为传输的字节数。
         /// </summary>
         /// <param name="result">操作结果。</param>

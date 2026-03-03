@@ -9,9 +9,7 @@ using ExtenderApp.Contracts;
 namespace ExtenderApp.Common.Networks
 {
     /// <summary>
-    /// 表示链接客户端处理器在管道中的上下文节点。
-    /// 每个上下文包裹一个 <see cref="ILinkClientHandler"/> 实例，并维护管道中前后相邻的上下文引用，
-    /// 提供对处理器方法的查找与转发（包括入站/出站调用、异常处理、绑定/连接等）。
+    /// 表示链接客户端处理器在管道中的上下文节点。 每个上下文包裹一个 <see cref="ILinkClientHandler"/> 实例，并维护管道中前后相邻的上下文引用， 提供对处理器方法的查找与转发（包括入站/出站调用、异常处理、绑定/连接等）。
     /// </summary>
     internal abstract class LinkClientHandlerContext : DisposableObject, ILinkClientHandlerContext
     {
@@ -58,10 +56,14 @@ namespace ExtenderApp.Common.Networks
         public ILinkClientHandler Handler { get; }
 
         /// <summary>
-        /// 获取当前处理器的跳过标志（由处理器方法上的 <see cref="SkipAttribute"/> 决定），
-        /// 用于在查找下一个可用上下文时跳过不参与特定方向（入站/出站）的处理器。
+        /// 获取当前处理器的跳过标志（由处理器方法上的 <see cref="SkipAttribute"/> 决定）， 用于在查找下一个可用上下文时跳过不参与特定方向（入站/出站）的处理器。
         /// </summary>
         public SkipFlags HandlerSkipFlags { get; }
+
+        /// <summary>
+        /// 获取当前上下文所属的链接客户端实例。该属性在上下文被添加到管道时由管道设置，并在整个上下文生命周期内保持不变。
+        /// </summary>
+        public ILinkClient LinkClient { get; }
 
         /// <summary>
         /// 管道中下一个上下文节点（入站方向）。该字段是易变的以支持并发更新。
@@ -77,8 +79,9 @@ namespace ExtenderApp.Common.Networks
         /// 使用指定名称和处理器创建上下文，并使用处理器实际类型来计算跳过标志。
         /// </summary>
         /// <param name="name">上下文名称。</param>
+        /// <param name="linkClient">所属的链接客户端实例。</param>
         /// <param name="handler">要关联的处理器实例。</param>
-        public LinkClientHandlerContext(string name, ILinkClientHandler handler) : this(name, handler, handler.GetType())
+        public LinkClientHandlerContext(string name, ILinkClient linkClient, ILinkClientHandler handler) : this(name, linkClient, handler, handler.GetType())
         {
         }
 
@@ -86,11 +89,13 @@ namespace ExtenderApp.Common.Networks
         /// 使用指定名称、处理器及处理器类型创建上下文。该构造函数允许调用方显式传入处理器类型以优化标志计算。
         /// </summary>
         /// <param name="name">上下文名称。</param>
+        /// <param name="linkClient">所属的链接客户端实例。</param>
         /// <param name="handler">要关联的处理器实例。</param>
         /// <param name="handlerType">处理器的 <see cref="Type"/>，用于获取方法上的 <see cref="SkipAttribute"/> 信息。</param>
-        public LinkClientHandlerContext(string name, ILinkClientHandler handler, Type handlerType)
+        public LinkClientHandlerContext(string name, ILinkClient linkClient, ILinkClientHandler handler, Type handlerType)
         {
             Name = name;
+            LinkClient = linkClient;
             Handler = handler;
             HandlerSkipFlags = GetSkipFlags(handlerType);
             Next = default!;
@@ -159,18 +164,17 @@ namespace ExtenderApp.Common.Networks
             => Handler.CloseAsync(this, token);
 
         /// <summary>
-        /// 将异常沿入站方向传递到下一个合适的处理器上下文进行处理。
-        /// 若无下游处理器则返回一个表示异常的失败 <see cref="ValueTask"/>。
+        /// 将异常沿入站方向传递到下一个合适的处理器上下文进行处理。 若无下游处理器则返回一个表示异常的失败 <see cref="ValueTask"/>。
         /// </summary>
         /// <param name="exception">要传递的异常。</param>
         /// <returns>用于等待异常处理完成的任务。</returns>
-        public ValueTask ExceptionCaught(Exception exception)
-            => FindContextInbound()?.InvokeExceptionCaught(exception) ?? ValueTask.FromException(exception);
+        public void ExceptionCaught(Exception exception)
+            => FindContextInbound()?.InvokeExceptionCaught(exception);
 
         /// <summary>
         /// 调用当前处理器的异常处理实现。
         /// </summary>
-        private ValueTask InvokeExceptionCaught(Exception exception)
+        private void InvokeExceptionCaught(Exception exception)
             => Handler.ExceptionCaught(this, exception);
 
         /// <summary>
@@ -254,7 +258,7 @@ namespace ExtenderApp.Common.Networks
         /// </summary>
         /// <param name="name">上下文名称，用于标识该处理器在管道中的位置或用途。</param>
         /// <param name="handler">类型化的处理器实例。</param>
-        public LinkClientHandlerContext(string name, T handler) : base(name, handler, typeof(T))
+        public LinkClientHandlerContext(string name, ILinkClient linkClient, T handler) : base(name, linkClient, handler, typeof(T))
         {
         }
     }

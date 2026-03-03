@@ -14,5 +14,10 @@
         /// 获取对应的处理器实例。
         /// </summary>
         ILinkClientHandler Handler { get; }
+
+        /// <summary>
+        /// 获取对应连接客户端实例。
+        /// </summary>
+        ILinkClient LinkClient { get; }
     }
 }

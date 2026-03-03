@@ -1,5 +1,6 @@
 ﻿using System.Net;
 using ExtenderApp.Abstract;
+using ExtenderApp.Abstract.Networks;
 
 namespace ExtenderApp.Common.Networks.LinkClients
 {
@@ -11,7 +12,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
         public bool NoDelay
         {
             get => Linker.NoDelay;
-            set => Linker.NoDelay = value;
+            set => SetOptionValue(LinkOptions.NoDelayIdentifier, value);
         }
 
         public TcpLinkClient(ITcpLinker linker) : base(linker)

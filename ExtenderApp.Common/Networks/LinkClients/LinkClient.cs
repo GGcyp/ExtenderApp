@@ -4,6 +4,7 @@ using System.Net.Sockets;
 using ExtenderApp.Abstract;
 using ExtenderApp.Abstract.Networks;
 using ExtenderApp.Abstract.Options;
+using ExtenderApp.Buffer;
 using ExtenderApp.Contracts;
 
 namespace ExtenderApp.Common.Networks.LinkClients
@@ -12,7 +13,7 @@ namespace ExtenderApp.Common.Networks.LinkClients
     /// 链路客户端的抽象基类，封装对 <see cref="ILinker"/> 的委托并提供基础能力。
     /// </summary>
     /// <typeparam name="TLinker">具体的链接器类型。</typeparam>
-    public abstract class LinkClient<TLinker> : OptionsObject, ILinkClient, ILinkClientPipeline
+    public class LinkClient<TLinker> : OptionsObject, ILinkClient, ILinkClientPipeline
         where TLinker : ILinker
     {
         /// <summary>
@@ -98,17 +99,63 @@ namespace ExtenderApp.Common.Networks.LinkClients
         /// 初始化 <see cref="LinkClient{TLinker}"/> 的新实例。
         /// </summary>
         /// <param name="linker">要使用的链接器实例。</param>
-        protected LinkClient(TLinker linker) : base(linker)
+        public LinkClient(TLinker linker) : base(linker)
         {
             Linker = linker ?? throw new ArgumentNullException(nameof(linker));
-            _pipeline = new();
+            _pipeline = new(this);
         }
 
         /// <inheritdoc/>
-        public virtual Result<LinkOperationValue> SendAsync<T>(T value, CancellationToken token = default)
+        public virtual async ValueTask<Result<LinkOperationValue>> SendAsync<T>(T value, CancellationToken token = default)
         {
-            return default;
+            if (!Connected)
+                throw new InvalidOperationException("当前链接未建立，无法发送数据。");
+
+            var outCache = ValueCache.FromValue(value);
+            await _pipeline.OutboundHandleAsync(outCache, token);
+
+            LinkOperationValue result = new(0, RemoteEndPoint, default);
+            var sequence = SequenceBuffer<byte>.GetBuffer();
+            while (true)
+            {
+                while (outCache.TryGetValue(out AbstractBuffer<byte> operationValue))
+                {
+                    if (sequence.Committed + operationValue.Committed > SendBufferSize)
+                    {
+                        break;
+                    }
+
+                    outCache.TryTakeValue(out operationValue);
+                    sequence.Append(operationValue);
+                    operationValue.TryRelease();
+                    continue;
+                }
+
+                try
+                {
+                    if (sequence.Committed > 0)
+                    {
+                        var sendResult = await Linker.SendAsync(sequence, token);
+                        result = new(sendResult, sendResult.Value.BytesTransferred + result.BytesTransferred);
+                        sequence.Clear();
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    return Result.FromException<LinkOperationValue>(ex);
+                }
+            }
+
+            outCache.Release();
+            sequence.TryRelease();
+            return Result.Success(result);
         }
+
+        #region Connect/Disconnect
 
         /// <inheritdoc/>
         public virtual void Connect(EndPoint remoteEndPoint)
@@ -149,6 +196,8 @@ namespace ExtenderApp.Common.Networks.LinkClients
             await _pipeline.DisconnectAsync(token);
             await Linker.DisconnectAsync(token);
         }
+
+        #endregion Connect/Disconnect
 
         #region Pipeline Operations
 
