@@ -91,9 +91,13 @@ namespace ExtenderApp.Common.Networks.LinkClients
 
         #endregion ILinker 直通属性
 
-        private CancellationTokenSource? receiveCts;
+        private readonly object _lock = new object();
 
         private Task? receiveTask;
+
+        private CancellationTokenSource? receiveCts;
+
+        public bool HasReceiveTask => receiveTask != null;
 
         /// <summary>
         /// 初始化 <see cref="LinkClient{TLinker}"/> 的新实例。
@@ -106,13 +110,13 @@ namespace ExtenderApp.Common.Networks.LinkClients
         }
 
         /// <inheritdoc/>
-        public virtual async ValueTask<Result<LinkOperationValue>> SendAsync<T>(T value, CancellationToken token = default)
+        public ValueTask<Result<LinkOperationValue>> SendAsync<T>(T value, CancellationToken token = default)
         {
             if (!Connected)
                 throw new InvalidOperationException("当前链接未建立，无法发送数据。");
 
             var outCache = ValueCache.FromValue(value);
-            await _pipeline.OutboundHandleAsync(outCache, token);
+            _pipeline.OutboundHandleAsync(outCache, token).Await();
 
             LinkOperationValue result = new(0, RemoteEndPoint, default);
             var sequence = SequenceBuffer<byte>.GetBuffer();
@@ -127,7 +131,6 @@ namespace ExtenderApp.Common.Networks.LinkClients
 
                     outCache.TryTakeValue(out operationValue);
                     sequence.Append(operationValue);
-                    operationValue.TryRelease();
                     continue;
                 }
 
@@ -135,8 +138,8 @@ namespace ExtenderApp.Common.Networks.LinkClients
                 {
                     if (sequence.Committed > 0)
                     {
-                        var sendResult = await Linker.SendAsync(sequence, token);
-                        result = new(sendResult, sendResult.Value.BytesTransferred + result.BytesTransferred);
+                        var sendResult = Linker.SendAsync(sequence, token).Await().Value;
+                        result = new(sendResult, sendResult.BytesTransferred + result.BytesTransferred);
                         sequence.Clear();
                     }
                     else
@@ -153,6 +156,48 @@ namespace ExtenderApp.Common.Networks.LinkClients
             outCache.Release();
             sequence.TryRelease();
             return Result.Success(result);
+        }
+
+        /// <summary>
+        /// 开始接收数据并通过管道处理。该方法会启动一个后台任务持续接收数据，直到链接关闭或对象被释放。
+        /// </summary>
+        public void StartReceive()
+        {
+            if (HasReceiveTask)
+                return;
+
+            lock (_lock)
+            {
+                if (HasReceiveTask)
+                    return;
+
+                receiveCts = new CancellationTokenSource();
+                receiveTask = ReceiveAsync();
+            }
+        }
+
+        /// <summary>
+        /// 接收数据的核心逻辑方法，在后台任务中运行。该方法会持续调用链接器的接收方法，并将接收到的数据通过管道进行处理，直到链接关闭或对象被释放。
+        /// </summary>
+        /// <returns>一个表示接收操作的任务。</returns>
+        private Task ReceiveAsync()
+        {
+            CancellationToken token = receiveCts!.Token;
+            SequenceBuffer<byte> sequence = SequenceBuffer<byte>.GetBuffer();
+            ValueCache cache = ValueCache.GetCache();
+
+            while (!token.IsCancellationRequested)
+            {
+                var memory = sequence.GetMemory(ReceiveBufferSize);
+                var receiveResult = Linker.ReceiveAsync(memory, token).Await().Value;
+                sequence.Advance(receiveResult.BytesTransferred);
+                cache.AddValue(sequence);
+                var result = _pipeline.InboundHandleAsync(cache, token).Await();
+                sequence.Advance(result);
+            }
+
+            sequence.TryRelease();
+            return Task.CompletedTask;
         }
 
         #region Connect/Disconnect

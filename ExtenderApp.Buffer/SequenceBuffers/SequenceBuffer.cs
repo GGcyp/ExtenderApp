@@ -211,6 +211,7 @@ namespace ExtenderApp.Buffer
 
             oldLast.Release();
             Last = segment;
+            Advance((int)segment.Committed); // 将写入位置推进到新段的末尾（如果新段已部分提交）
         }
 
         /// <summary>

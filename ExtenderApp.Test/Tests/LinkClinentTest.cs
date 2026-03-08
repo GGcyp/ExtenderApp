@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using System.Net;
+using System.Net.Sockets;
 using ExtenderApp.Abstract;
 using ExtenderApp.Buffer;
 using ExtenderApp.Common.Networks.LinkClients;
@@ -19,7 +20,71 @@ namespace ExtenderApp.Test.Tests
             TempMessageHandler messageHandler = new();
             client.AddLast("TempMessageHandler", messageHandler);
 
-            await client.SendAsync(100000);
+            TcpListener listener = new(IPAddress.Loopback, 12345);
+            listener.Start();
+            var acceptSocketTask = listener.AcceptSocketAsync();
+
+            // create a raw TcpClient to send test data to the accepted server socket.
+            using var tcpClient = new TcpClient();
+            await tcpClient.ConnectAsync(IPAddress.Loopback, 12345);
+            var socket = await acceptSocketTask;
+
+            try
+            {
+                // start server-side reader
+                await Start(socket);
+
+                // send several integers from the client side to the accepted socket
+                var stream = tcpClient.GetStream();
+                for (int i = 0; i < 10; i++)
+                {
+                    var bytes = BitConverter.GetBytes(100000 + i);
+                    await stream.WriteAsync(bytes, 0, bytes.Length);
+                    await stream.FlushAsync();
+                    await Task.Delay(50);
+                }
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
+            finally
+            {
+                try { socket.Shutdown(SocketShutdown.Both); } catch { }
+                try { socket.Close(); } catch { }
+                try { listener.Stop(); } catch { }
+            }
+        }
+
+        private static ValueTask Start(Socket socket)
+        {
+            Task.Run(() => { StartLocalClient(socket); });
+            return ValueTask.CompletedTask;
+        }
+
+        private static async ValueTask StartLocalClient(Socket socket)
+        {
+            try
+            {
+                byte[] buffer = new byte[1024];
+                while (true)
+                {
+                    // 使用 ReceiveAsync 返回实际接收字节数，避免解析未初始化的数据
+                    var received = await socket.ReceiveAsync(buffer, SocketFlags.None);
+                    if (received <= 0)
+                        break;
+
+                    if (received >= 4)
+                    {
+                        int val = BitConverter.ToInt32(buffer, 0);
+                        Debug.Print(val.ToString());
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
         }
 
         private sealed class TempHandler : LinkClientHandler
@@ -61,7 +126,6 @@ namespace ExtenderApp.Test.Tests
                 int value = reader.Read<int>();
                 Debug.Print("Deserialized value: {0}", value);
                 return Result.Success(value);
-
             }
 
             protected override ValueTask<Result> SerializationMessageAsync(int value, AbstractBuffer<byte> buffer)

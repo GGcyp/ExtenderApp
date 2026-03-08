@@ -91,13 +91,14 @@ namespace ExtenderApp.Buffer.SequenceBuffers
         internal void Initialize(SequenceBufferSegmentProvider<T> provider, MemoryBlock<T> memoryBlock)
         {
             SegmentProvider = provider ?? throw new ArgumentNullException(nameof(provider));
+            this.memoryBlock = memoryBlock ?? throw new ArgumentNullException(nameof(memoryBlock));
+            base.Memory = memoryBlock.CommittedMemory;
+            memoryBlock.Freeze();
+
             Prev = null;
             Next = null;
             SegmentStart = 0;
             RunningIndex = 0;
-
-            this.memoryBlock = memoryBlock;
-            base.Memory = memoryBlock.CommittedMemory;
         }
 
         /// <summary>
