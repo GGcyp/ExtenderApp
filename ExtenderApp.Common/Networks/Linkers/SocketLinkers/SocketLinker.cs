@@ -33,15 +33,31 @@ namespace ExtenderApp.Common.Networks
         }
 
         /// <inheritdoc/>
-        protected override sealed ValueTask ExecuteConnectAsync(EndPoint remoteEndPoint, CancellationToken token)
+        protected override sealed async ValueTask<Result> ExecuteConnectAsync(EndPoint remoteEndPoint, CancellationToken token)
         {
-            return Socket.ConnectAsync(remoteEndPoint, token);
+            try
+            {
+                await Socket.ConnectAsync(remoteEndPoint, token).ConfigureAwait(false);
+                return Result.Success();
+            }
+            catch (Exception ex)
+            {
+                return Result.FromException(ex);
+            }
         }
 
         /// <inheritdoc/>
-        protected override sealed ValueTask ExecuteDisconnectAsync(CancellationToken token)
+        protected override sealed async ValueTask<Result> ExecuteDisconnectAsync(CancellationToken token)
         {
-            return Socket.DisconnectAsync(reuseSocket: false, token);
+            try
+            {
+                await Socket.DisconnectAsync(reuseSocket: false, token).ConfigureAwait(false);
+                return Result.Success();
+            }
+            catch (Exception ex)
+            {
+                return Result.FromException(ex);
+            }
         }
 
         protected override void OnRegisterOption(OptionIdentifier identifier, OptionValue optionValue)

@@ -30,7 +30,7 @@ namespace ExtenderApp.Common.Networks
         /// </summary>
         /// <param name="linker">要从中获取流的链路器实例。</param>
         /// <returns>成功时返回 <see cref="TcpLinkerStream"/>，否则返回 <c>null</c>。</returns>
-        public static TcpLinkerStream? GetStream(this ILinker linker)
+        public static TcpLinkerStream? GetTcpStream(this ILinker linker)
         {
             if (linker is not ITcpLinker tcpLinker)
             {

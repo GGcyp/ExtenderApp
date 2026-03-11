@@ -158,6 +158,13 @@ namespace ExtenderApp.Contracts
         /// </summary>
         public static Result<T> FromException<T>(Exception exception, string message) => new(false, default, message, exception);
 
+        /// <summary>
+        /// 创建一个表示异常的 <see cref="Result{TValue}"/>，其中异常类型由类型参数 <typeparamref name="TException"/> 指定，并使用默认构造函数实例化该异常。
+        /// </summary>
+        /// <typeparam name="TValue"></typeparam>
+        /// <typeparam name="TException"></typeparam>
+        /// <returns></returns>
+        /// <exception cref="TException"></exception>
         public static Result FromException<TValue, TException>() where TException : Exception, new()
         {
             try
@@ -167,6 +174,32 @@ namespace ExtenderApp.Contracts
             catch (Exception)
             {
                 return FromException<TValue>(new TException());
+            }
+        }
+
+        /// <summary>
+        /// 返回两个结果的逻辑与（AND）组合。 只有当两个结果都成功时，才返回成功；如果两个结果都失败，则返回一个包含两个失败消息的失败结果；如果只有一个结果失败，则返回该失败结果。
+        /// </summary>
+        /// <param name="result1">第一个结果。</param>
+        /// <param name="result2">第二个结果。</param>
+        /// <returns>逻辑与组合的结果。</returns>
+        public static Result And(Result result1, Result result2)
+        {
+            if (result1.IsSuccess && result2.IsSuccess)
+            {
+                return Success();
+            }
+            else if (!result1.IsSuccess && !result2.IsSuccess)
+            {
+                return Failure($"{result1.Message}；{result2.Message}");
+            }
+            else if (!result1.IsSuccess)
+            {
+                return Failure(result1.Message ?? DefaultFailureMessage);
+            }
+            else
+            {
+                return Failure(result2.Message ?? DefaultFailureMessage);
             }
         }
 
@@ -183,6 +216,9 @@ namespace ExtenderApp.Contracts
         /// </summary>
         public static implicit operator string?(Result result)
             => result.Message;
+
+        public static implicit operator Exception(Result result)
+            => result.Exception!;
 
         public static implicit operator ValueTask<Result>(Result result)
             => ValueTask.FromResult(result);
@@ -324,5 +360,8 @@ namespace ExtenderApp.Contracts
 
         public static implicit operator ValueTask<Result<T>>(Result<T> result)
             => ValueTask.FromResult(result);
+
+        public static implicit operator Exception(Result<T> result)
+            => result.Exception!;
     }
 }

@@ -5,7 +5,7 @@ namespace ExtenderApp.Buffer
     /// <summary>
     /// 用于临时存放多种类型值的缓存容器（链表结构）。
     /// </summary>
-    public class ValueCache : IEquatable<ValueCache>
+    public sealed class ValueCache : IEquatable<ValueCache>
     {
         /// <summary>
         /// 获取默认的缓存实例，实例来自对象池管理，使用后请调用 <see cref="Release"/> 方法回收。
@@ -500,6 +500,32 @@ namespace ExtenderApp.Buffer
         }
 
         /// <summary>
+        /// 检查缓存中是否包含指定类型的值。
+        /// </summary>
+        /// <typeparam name="T">指定类型 <see cref="{T}"/> </typeparam>
+        /// <returns>包含则为 true ,否者为 false</returns>
+        public bool Contains<T>()
+        {
+            if (First == null)
+                return false;
+
+            var item = First;
+            while (item != null)
+            {
+                if (item is ValueBufferItem<T> valueBuffer)
+                {
+                    return true;
+                }
+                else if (item is ValueBufferItem<object> objectBuffer && objectBuffer.Value is T typedValue)
+                {
+                    return true;
+                }
+                item = item.Next;
+            }
+            return false;
+        }
+
+        /// <summary>
         /// 追加节点到链表尾部。
         /// </summary>
         /// <typeparam name="T">节点值类型。</typeparam>
@@ -554,7 +580,7 @@ namespace ExtenderApp.Buffer
         /// <summary>
         /// 清空所有节点并重置链表。
         /// </summary>
-        internal void Clear()
+        public void Clear()
         {
             var item = First;
             while (item != null)

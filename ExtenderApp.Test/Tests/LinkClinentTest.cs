@@ -3,8 +3,8 @@ using System.Net;
 using System.Net.Sockets;
 using ExtenderApp.Abstract;
 using ExtenderApp.Buffer;
-using ExtenderApp.Common.Networks.LinkClients;
-using ExtenderApp.Common.Networks.LinkClients.Handlers;
+using ExtenderApp.Common.Networks.LinkChannels;
+using ExtenderApp.Common.Networks.LinkChannels.Handlers;
 using ExtenderApp.Contracts;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -14,33 +14,34 @@ namespace ExtenderApp.Test.Tests
     {
         public static async Task TestLinkClientHandlerAsync(IServiceProvider serviceProvider)
         {
-            LinkClient<ITcpLinker> client = new(serviceProvider.GetRequiredService<ITcpLinker>());
+            LinkChannel channel = new(serviceProvider.GetRequiredService<ITcpLinker>());
             var handler = new TempHandler();
-            client.AddLast("TempHandler", handler);
+            channel.AddLast("TempHandler", handler);
             TempMessageHandler messageHandler = new();
-            client.AddLast("TempMessageHandler", messageHandler);
+            channel.AddLast("TempMessageHandler", messageHandler);
 
-            TcpListener listener = new(IPAddress.Loopback, 12345);
+            var ip = new IPEndPoint(IPAddress.Loopback, 12345);
+            TcpListener listener = new(ip);
             listener.Start();
-            var acceptSocketTask = listener.AcceptSocketAsync();
+            var acceptSocketTask = listener.AcceptSocketAsync().ConfigureAwait(false);
 
-            // create a raw TcpClient to send test data to the accepted server socket.
-            using var tcpClient = new TcpClient();
-            await tcpClient.ConnectAsync(IPAddress.Loopback, 12345);
+
+            var channelConnectTask = channel.ConnectAsync(ip).ConfigureAwait(false);
             var socket = await acceptSocketTask;
+            await channelConnectTask;
 
+            var block = MemoryBlock<byte>.GetBuffer(1024);
+            BitConverter.GetBytes(123456).CopyTo(block.GetSpan(1024));
+            block.Advance(1024);
             try
             {
                 // start server-side reader
                 await Start(socket);
 
-                // send several integers from the client side to the accepted socket
-                var stream = tcpClient.GetStream();
                 for (int i = 0; i < 10; i++)
                 {
-                    var bytes = BitConverter.GetBytes(100000 + i);
-                    await stream.WriteAsync(bytes, 0, bytes.Length);
-                    await stream.FlushAsync();
+                    block.Freeze();
+                    await channel.SendAsync(block);
                     await Task.Delay(50);
                 }
             }
@@ -50,9 +51,8 @@ namespace ExtenderApp.Test.Tests
             }
             finally
             {
-                try { socket.Shutdown(SocketShutdown.Both); } catch { }
-                try { socket.Close(); } catch { }
-                try { listener.Stop(); } catch { }
+                await channel.DisconnectAsync();
+                block.TryRelease();
             }
         }
 
@@ -70,7 +70,7 @@ namespace ExtenderApp.Test.Tests
                 while (true)
                 {
                     // 使用 ReceiveAsync 返回实际接收字节数，避免解析未初始化的数据
-                    var received = await socket.ReceiveAsync(buffer, SocketFlags.None);
+                    var received = await socket.ReceiveAsync(buffer, SocketFlags.None).ConfigureAwait(false);
                     if (received <= 0)
                         break;
 
@@ -87,35 +87,36 @@ namespace ExtenderApp.Test.Tests
             }
         }
 
-        private sealed class TempHandler : LinkClientHandler
+        private sealed class TempHandler : LinkChannelHandler
         {
-            public override void Active(ILinkClientHandlerContext context)
+            public override ValueTask<Result> ActiveAsync(ILinkChannelHandlerContext context, CancellationToken token = default)
             {
                 Debug.Print("Handler {0} is active.", context.Name);
-                base.Active(context);
+                return context.ActiveAsync(token);
             }
 
-            public override ValueTask<Result> BindAsync(ILinkClientHandlerContext context, EndPoint localAddress, CancellationToken token = default)
+            public override ValueTask<Result> BindAsync(ILinkChannelHandlerContext context, EndPoint localAddress, CancellationToken token = default)
             {
                 Debug.Print("Handler {0} is binding to local address: {1}", context.Name, localAddress);
-                return base.BindAsync(context, localAddress, token);
+                return context.BindAsync(localAddress, token);
             }
 
-            public override ValueTask<Result> CloseAsync(ILinkClientHandlerContext context, CancellationToken token = default)
+            public override ValueTask<Result> CloseAsync(ILinkChannelHandlerContext context, CancellationToken token = default)
             {
                 Debug.Print("Handler {0} is closing the connection.", context.Name);
-                return base.CloseAsync(context, token);
+                return context.CloseAsync(token);
             }
 
-            public override ValueTask<Result<int>> InboundHandleAsync(ILinkClientHandlerContext context, ValueCache cache, CancellationToken token = default)
+            public override ValueTask<Result> InboundHandleAsync(ILinkChannelHandlerContext context, ValueCache cache, CancellationToken token = default)
             {
                 Debug.Print("Handler {0} is handling inbound data.", context.Name);
-                return base.InboundHandleAsync(context, cache, token);
+                return context.InboundHandleAsync(cache, token);
             }
 
-            public override ValueTask<Result> OutboundHandleAsync(ILinkClientHandlerContext context, ValueCache cache, CancellationToken token = default)
+            public override ValueTask<Result> OutboundHandleAsync(ILinkChannelHandlerContext context, ValueCache cache, CancellationToken token = default)
             {
-                return base.OutboundHandleAsync(context, cache, token);
+                Debug.Print("Handler {0} is handling outbound data.", context.Name);
+                return context.OutboundHandleAsync(cache, token);
             }
         }
 

@@ -48,11 +48,26 @@ namespace ExtenderApp.Common
         }
 
         /// <summary>
-        /// 阻塞等待一个 <see cref="ValueTask"/> 完成（同步等待）。仅当任务尚未完成时才调用等待。
+        /// 阻塞等待一个 <see cref="ValueTask"/> 完成（同步等待）。
+        /// 当任务尚未完成时，会通过其 awaiter 同步阻塞当前线程直到任务完成并传播任何异常。
+        /// 请谨慎在有同步上下文（例如 UI 线程）中调用，可能导致死锁；推荐优先使用异步等待。
         /// </summary>
-        /// <param name="task">要等待完成的 <see cref="ValueTask"/>。</param>
-        /// <param name="continueOnCapturedContext">指示是否在捕获的上下文中继续执行后续代码。默认为 true。</param>
-        public static void Await(this ValueTask task, bool continueOnCapturedContext = true)
+        /// <param name="task">要等待完成的 <see cref="ValueTask"/> 实例。</param>
+        public static void Await(this ValueTask task)
+        {
+            if (!task.IsCompleted)
+            {
+                task.GetAwaiter().GetResult();
+            }
+        }
+
+        /// <summary>
+        /// 阻塞等待一个 <see cref="ValueTask"/> 完成（同步等待），可指定是否在捕获的同步上下文中继续执行后续操作。
+        /// 当 <paramref name="continueOnCapturedContext"/> 为 <c>false</c> 时会使用 <c>ConfigureAwait(false)</c>，以降低在同步上下文中死锁的风险。
+        /// </summary>
+        /// <param name="task">要等待完成的 <see cref="ValueTask"/> 实例。</param>
+        /// <param name="continueOnCapturedContext">指示是否在捕获的同步上下文中继续执行。若为 <c>false</c>，内部会调用 <c>ConfigureAwait(false)</c>。</param>
+        public static void Await(this ValueTask task, bool continueOnCapturedContext)
         {
             if (!task.IsCompleted)
             {
@@ -61,19 +76,29 @@ namespace ExtenderApp.Common
         }
 
         /// <summary>
-        /// 阻塞等待一个返回值的 <see cref="ValueTask{TResult}"/> 完成并返回其结果（同步等待）。仅当任务尚未完成时才调用等待。
+        /// 阻塞等待一个返回结果的 <see cref="ValueTask{T}"/> 完成并返回其结果（同步等待）。
+        /// 该方法会通过 awaiter 同步阻塞当前线程并在任务完成后返回结果或抛出异常。
+        /// 请谨慎在有同步上下文（例如 UI 线程）中调用，优先使用异步 API 以避免死锁。
         /// </summary>
-        /// <typeparam name="T"><see cref="ValueTask{TResult}"/> 的结果类型。</typeparam>
-        /// <param name="task">要等待完成的 <see cref="ValueTask{TResult}"/>。</param>
-        /// <param name="continueOnCapturedContext">指示是否在捕获的上下文中继续执行后续代码。默认为 true。</param>
-        /// <returns>任务完成时的结果。</returns>
-        public static T Await<T>(this ValueTask<T> task, bool continueOnCapturedContext = true)
+        /// <typeparam name="T">任务结果类型。</typeparam>
+        /// <param name="task">要等待完成的 <see cref="ValueTask{T}"/> 实例。</param>
+        /// <returns>任务完成时的结果值。</returns>
+        public static T Await<T>(this ValueTask<T> task)
         {
-            if (!task.IsCompleted)
-            {
-                task.ConfigureAwait(continueOnCapturedContext).GetAwaiter().GetResult();
-            }
-            return task.Result;
+            return task.GetAwaiter().GetResult();
+        }
+
+        /// <summary>
+        /// 阻塞等待一个返回结果的 <see cref="ValueTask{T}"/> 完成并返回其结果（同步等待），可指定是否在捕获的同步上下文中继续执行后续操作。
+        /// 当 <paramref name="continueOnCapturedContext"/> 为 <c>false</c> 时会使用 <c>ConfigureAwait(false)</c>，以降低在同步上下文中死锁的风险。
+        /// </summary>
+        /// <typeparam name="T">任务结果类型。</typeparam>
+        /// <param name="task">要等待完成的 <see cref="ValueTask{T}"/> 实例。</param>
+        /// <param name="continueOnCapturedContext">指示是否在捕获的同步上下文中继续执行。若为 <c>false</c>，内部会调用 <c>ConfigureAwait(false)</c>。</param>
+        /// <returns>任务完成时的结果值。</returns>
+        public static T Await<T>(this ValueTask<T> task, bool continueOnCapturedContext)
+        {
+            return task.ConfigureAwait(continueOnCapturedContext).GetAwaiter().GetResult();
         }
     }
 }

@@ -153,28 +153,28 @@ namespace ExtenderApp.Common.Networks
 
         /// <inheritdoc/>
         /// <exception cref="ObjectDisposedException">当对象已释放时抛出。</exception>
-        public void Connect(EndPoint remoteEndPoint)
+        public Result Connect(EndPoint remoteEndPoint)
         {
-            ConnectAsync(remoteEndPoint).Await();
+            return ConnectAsync(remoteEndPoint).Await(false);
         }
 
         /// <inheritdoc/>
         /// <exception cref="ObjectDisposedException">当对象已释放时抛出。</exception>
-        public void Connect(EndPoint remoteEndPoint, EndPoint localAddress)
+        public Result Connect(EndPoint remoteEndPoint, EndPoint localAddress)
         {
-            ConnectAsync(remoteEndPoint, localAddress).Await();
+            return ConnectAsync(remoteEndPoint, localAddress).Await(false);
         }
 
         /// <inheritdoc/>
         /// <exception cref="ObjectDisposedException">当对象已释放时抛出。</exception>
-        public ValueTask ConnectAsync(EndPoint remoteEndPoint, CancellationToken token = default)
+        public ValueTask<Result> ConnectAsync(EndPoint remoteEndPoint, CancellationToken token = default)
         {
             return ConnectAsync(remoteEndPoint, null!, token);
         }
 
         /// <inheritdoc/>
         /// <exception cref="ObjectDisposedException">当对象已释放时抛出。</exception>
-        public async ValueTask ConnectAsync(EndPoint remoteEndPoint, EndPoint localAddress, CancellationToken token = default)
+        public async ValueTask<Result> ConnectAsync(EndPoint remoteEndPoint, EndPoint localAddress, CancellationToken token = default)
         {
             ThrowIfDisposed();
             await SendSlim.WaitAsync(token).ConfigureAwait(false);
@@ -188,7 +188,7 @@ namespace ExtenderApp.Common.Networks
 
             try
             {
-                await ExecuteConnectAsync(remoteEndPoint, token).ConfigureAwait(false);
+                return await ExecuteConnectAsync(remoteEndPoint, token).ConfigureAwait(false);
             }
             finally
             {
@@ -201,34 +201,21 @@ namespace ExtenderApp.Common.Networks
 
         /// <inheritdoc/>
         /// <exception cref="ObjectDisposedException">当对象已释放时抛出。</exception>
-        public void Disconnect()
+        public Result Disconnect()
         {
-            ThrowIfDisposed();
-            SendSlim.Wait();
-            ReceiveSlim.Wait();
-            try
-            {
-                ExecuteDisconnectAsync(default).Await(false);
-            }
-            finally
-            {
-                Connected = false;
-                RemoteEndPoint = null;
-                ReceiveSlim.Release();
-                SendSlim.Release();
-            }
+            return DisconnectAsync().Await(false);
         }
 
         /// <inheritdoc/>
         /// <exception cref="ObjectDisposedException">当对象已释放时抛出。</exception>
-        public async ValueTask DisconnectAsync(CancellationToken token = default)
+        public async ValueTask<Result> DisconnectAsync(CancellationToken token = default)
         {
             ThrowIfDisposed();
             await SendSlim.WaitAsync(token).ConfigureAwait(false);
             await ReceiveSlim.WaitAsync(token).ConfigureAwait(false);
             try
             {
-                await ExecuteDisconnectAsync(token).ConfigureAwait(false);
+                return await ExecuteDisconnectAsync(token).ConfigureAwait(false);
             }
             finally
             {
@@ -310,6 +297,7 @@ namespace ExtenderApp.Common.Networks
         {
             if (memory.IsEmpty || memory.Length <= 0)
                 return Result.Failure<LinkOperationValue>(BufferExpandString);
+
             return Send(memory.Span, LinkFlags.None);
         }
 
@@ -320,6 +308,7 @@ namespace ExtenderApp.Common.Networks
         {
             if (memory.IsEmpty || memory.Length <= 0)
                 return Result.Failure<LinkOperationValue>(BufferExpandString);
+
             return Send(memory.Span, flags);
         }
 
@@ -612,15 +601,15 @@ namespace ExtenderApp.Common.Networks
         /// </summary>
         /// <param name="remoteEndPoint">目标远端终结点。</param>
         /// <param name="token">用于取消操作的令牌。</param>
-        /// <returns>一个表示异步连接操作的 <see cref="ValueTask"/>。</returns>
-        protected abstract ValueTask ExecuteConnectAsync(EndPoint remoteEndPoint, CancellationToken token);
+        /// <returns>一个表示异步连接操作的 <see cref="ValueTask{Result}"/>。</returns>
+        protected abstract ValueTask<Result> ExecuteConnectAsync(EndPoint remoteEndPoint, CancellationToken token);
 
         /// <summary>
         /// 执行实际的异步断开操作，由子类根据具体网络协议实现。
         /// </summary>
         /// <param name="token">用于取消操作的令牌。</param>
-        /// <returns>一个表示异步断开操作的 <see cref="ValueTask"/>。</returns>
-        protected abstract ValueTask ExecuteDisconnectAsync(CancellationToken token);
+        /// <returns>一个表示异步断开操作的 <see cref="ValueTask{Result}"/>。</returns>
+        protected abstract ValueTask<Result> ExecuteDisconnectAsync(CancellationToken token);
 
         /// <summary>
         /// 执行实际的绑定操作，由子类根据具体网络协议实现。

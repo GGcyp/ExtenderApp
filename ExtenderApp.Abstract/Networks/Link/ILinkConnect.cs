@@ -1,4 +1,5 @@
 ﻿using System.Net;
+using ExtenderApp.Contracts;
 
 namespace ExtenderApp.Abstract
 {
@@ -28,10 +29,14 @@ namespace ExtenderApp.Abstract
         ///   cref="System.ArgumentNullException"/>、
         ///   <see cref="System.ObjectDisposedException"/>）。
         /// </remarks>
-        void Connect(EndPoint remoteEndPoint);
+        /// <returns>
+        /// 表示连接操作结果的 <see cref="Result"/>，调用方应根据 <see cref="Result"/>
+        /// 的成功或失败状态采取后续操作（例如重试或记录错误）。
+        /// </returns>
+        Result Connect(EndPoint remoteEndPoint);
 
         /// <summary>
-        /// 同步连接到指定远端终结点。
+        /// 同步连接到指定远端终结点并绑定到指定本地地址。
         /// </summary>
         /// <param name="remoteEndPoint">
         /// 目标远端终结点，不能为 <c>null</c>。
@@ -50,7 +55,10 @@ namespace ExtenderApp.Abstract
         ///   cref="System.ArgumentNullException"/>、
         ///   <see cref="System.ObjectDisposedException"/>）。
         /// </remarks>
-        void Connect(EndPoint remoteEndPoint, EndPoint localAddress);
+        /// <returns>
+        /// 表示连接操作结果的 <see cref="Result"/>，包含成功/失败信息及可选错误描述。
+        /// </returns>
+        Result Connect(EndPoint remoteEndPoint, EndPoint localAddress);
 
         /// <summary>
         /// 异步连接到指定远端终结点。
@@ -60,14 +68,12 @@ namespace ExtenderApp.Abstract
         /// 用于取消连接操作的 <see cref="CancellationToken"/>。实现应在取消时尽快中止连接并释放相关临时资源。
         /// </param>
         /// <returns>
-        /// 一个表示异步连接操作的 <see
-        /// cref="ValueTask"/>。在取消时可以抛出 <see
-        /// cref="OperationCanceledException"/> 或以已取消的语义完成任务（应在实现文档中说明）。
+        /// 一个表示异步连接操作的 <see cref="ValueTask{Result}"/>。
         /// </returns>
-        ValueTask ConnectAsync(EndPoint remoteEndPoint, CancellationToken token = default);
+        ValueTask<Result> ConnectAsync(EndPoint remoteEndPoint, CancellationToken token = default);
 
         /// <summary>
-        /// 异步连接到指定远端终结点。
+        /// 异步连接到指定远端终结点并绑定到指定本地地址。
         /// </summary>
         /// <param name="remoteEndPoint">目标远端终结点，不能为空。</param>
         /// <param name="localAddress">本地终结点，不能为空。</param>
@@ -75,11 +81,9 @@ namespace ExtenderApp.Abstract
         /// 用于取消连接操作的 <see cref="CancellationToken"/>。实现应在取消时尽快中止连接并释放相关临时资源。
         /// </param>
         /// <returns>
-        /// 一个表示异步连接操作的 <see
-        /// cref="ValueTask"/>。在取消时可以抛出 <see
-        /// cref="OperationCanceledException"/> 或以已取消的语义完成任务（应在实现文档中说明）。
+        /// 一个表示异步连接操作的 <see cref="ValueTask{Result}"/>。
         /// </returns>
-        ValueTask ConnectAsync(EndPoint remoteEndPoint, EndPoint localAddress, CancellationToken token = default);
+        ValueTask<Result> ConnectAsync(EndPoint remoteEndPoint, EndPoint localAddress, CancellationToken token = default);
 
         /// <summary>
         /// 同步断开当前连接并释放底层会话资源。
@@ -91,7 +95,10 @@ namespace ExtenderApp.Abstract
         /// - 调用后对象可进入已断开或已释放状态；后续对已释放对象的操作应抛出
         ///   <see cref="System.ObjectDisposedException"/>（或由实现明确文档化）。
         /// </remarks>
-        void Disconnect();
+        /// <returns>
+        /// 表示断开操作结果的 <see cref="Result"/>，调用方可根据该结果判断操作是否成功。
+        /// </returns>
+        Result Disconnect();
 
         /// <summary>
         /// 异步断开当前连接并释放底层会话资源。
@@ -100,10 +107,8 @@ namespace ExtenderApp.Abstract
         /// 用于取消断开过程的 <see cref="CancellationToken"/>。实现应尊重该令牌。
         /// </param>
         /// <returns>
-        /// 一个表示异步断开操作的 <see
-        /// cref="ValueTask"/>。在取消时可以抛出 <see
-        /// cref="OperationCanceledException"/> 或以已取消的语义完成任务（应在实现文档中说明）。
+        /// 一个表示异步断开操作的 <see cref="ValueTask{Result}"/>。
         /// </returns>
-        ValueTask DisconnectAsync(CancellationToken token = default);
+        ValueTask<Result> DisconnectAsync(CancellationToken token = default);
     }
 }

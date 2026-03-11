@@ -115,7 +115,7 @@ namespace ExtenderApp.Buffer
         /// <param name="buffer">目标 <see cref="ByteBuffer"/> 实例（按引用传递）。</param>
         /// <param name="value">要写入的字符串（可为 null 或空）。</param>
         /// <param name="encoding">指定编码，若为 null 则使用默认编码。</param>
-        public static void WriteString(this ref ByteBuffer buffer, string? value, Encoding? encoding = null)
+        public static void Write(this ref ByteBuffer buffer, string? value, Encoding? encoding = null)
         {
             if (string.IsNullOrEmpty(value)) return;
             encoding ??= DefaultEncoding;

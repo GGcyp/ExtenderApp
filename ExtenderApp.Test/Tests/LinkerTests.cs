@@ -2,7 +2,6 @@ using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
 using ExtenderApp.Abstract;
-using ExtenderApp.Buffer;
 using ExtenderApp.Common;
 using ExtenderApp.Contracts;
 

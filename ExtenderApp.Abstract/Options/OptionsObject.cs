@@ -22,10 +22,25 @@ namespace ExtenderApp.Abstract.Options
         ///<inheritdoc/>
         public IEnumerable<(OptionIdentifier, OptionValue)> RegisteredOptionsIdentifier => _options.Where(kv => kv.Key.GetVisibility == OptionVisibility.Public).Select(kv => (kv.Key, kv.Value));
 
+        /// <summary>
+        /// 获取当前选项管理器中所有可见性为 Internal 或 Public 的选项标识符和对应的选项对象。
+        /// </summary>
+        protected internal IEnumerable<(OptionIdentifier, OptionValue)> RegisteredInternalOptionsIdentifier => _options.Where(kv => kv.Key.GetVisibility == (OptionVisibility.Internal | OptionVisibility.Public)).Select(kv => (kv.Key, kv.Value));
+
+        /// <summary>
+        /// 获取当前选项管理器中所有可见性为 Protected、Internal 或 Public 的选项标识符和对应的选项对象。
+        /// </summary>
+        protected IEnumerable<(OptionIdentifier, OptionValue)> RegisteredProtectedOptionsIdentifier => _options.Where(kv => kv.Key.GetVisibility == (OptionVisibility.Protected | OptionVisibility.Internal | OptionVisibility.Public)).Select(kv => (kv.Key, kv.Value));
+
+        /// <summary>
+        /// 获取当前选项管理器中已注册的选项数量。
+        /// </summary>
+        public int OptionCount => _options.Count;
+
         public OptionsObject(IOptions options) : this()
         {
             ArgumentNullException.ThrowIfNull(options, nameof(options));
-            RegisterOptions(options, true);
+            RegisterOptions(options);
         }
 
         public OptionsObject()
@@ -85,10 +100,10 @@ namespace ExtenderApp.Abstract.Options
         /// 将另一个选项对象中的选项注册到当前对象中。
         /// </summary>
         /// <param name="options">要注册的选项对象。</param>
-        /// <param name="needRegisterChange">指示是否需要注册值变化事件。</param>
+        /// <param name="needRegisterChange">指示是否需要注册值变化事件。(默认值为 true)</param>
         /// <exception cref="ArgumentException">当 options 不是 OptionsObject 类型时抛出。</exception>
         /// <exception cref="InvalidOperationException">当选项标识符已存在时抛出。</exception>
-        protected void RegisterOptions(IOptions options, bool needRegisterChange)
+        protected void RegisterOptions(IOptions options, bool needRegisterChange = true)
         {
             foreach (var (identifier, optionValue) in options.RegisteredOptionsIdentifier)
             {
@@ -509,6 +524,21 @@ namespace ExtenderApp.Abstract.Options
         }
 
         #endregion SetOption
+
+        #region Contains Option
+
+        /// <summary>
+        /// 检查当前选项管理器中是否包含指定标识符的选项。
+        /// </summary>
+        /// <param name="identifier">选项标识符。</param>
+        /// <returns>包含返回 true，否则返回 false。</returns>
+        public bool ContainsOption(OptionIdentifier identifier)
+        {
+            ArgumentNullException.ThrowIfNull(identifier, nameof(identifier));
+            return _options.ContainsKey(identifier);
+        }
+
+        #endregion Contains Option
 
         #region GetOptionValue
 

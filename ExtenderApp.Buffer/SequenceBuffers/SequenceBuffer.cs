@@ -30,21 +30,17 @@ namespace ExtenderApp.Buffer
         /// <summary>
         /// 返回表示已提交数据的只读序列。
         /// </summary>
-        public override sealed ReadOnlySequence<T> CommittedSequence => this;
+        public override ReadOnlySequence<T> CommittedSequence => this;
 
         /// <summary>
         /// 当前序列中已提交（已写入）元素的总数。
         /// </summary>
-        public override sealed long Committed
+        public override long Committed
         {
             get
             {
-                if (First == null)
+                if (First == null || Last == null)
                     return 0;
-
-                First.UpdateRunningIndex();
-                if (Last == null)
-                    return First.Committed;
 
                 return Last.RunningIndex + Last.Committed;
             }
@@ -53,16 +49,12 @@ namespace ExtenderApp.Buffer
         /// <summary>
         /// 序列可见的总容量（已提交 + 最后一段剩余可写空间）。
         /// </summary>
-        public override sealed long Capacity
+        public override long Capacity
         {
             get
             {
-                if (First == null)
+                if (First == null || Last == null)
                     return 0;
-
-                First.UpdateRunningIndex();
-                if (Last == null)
-                    return First.Committed + First.Available;
 
                 return Last.RunningIndex + Last.Committed + Last.Available;
             }
@@ -71,7 +63,7 @@ namespace ExtenderApp.Buffer
         /// <summary>
         /// 当前可直接写入的元素数量（最后一段的剩余可写空间）。
         /// </summary>
-        public override sealed int Available
+        public override int Available
         {
             get
             {
@@ -117,21 +109,21 @@ namespace ExtenderApp.Buffer
         /// </summary>
         /// <param name="sizeHint">所需的最小可写元素数，0 表示不限。</param>
         /// <returns>用于写入的 <see cref="Memory{T}"/>。</returns>
-        public override sealed Memory<T> GetMemory(int sizeHint = 0) => GetSegment(sizeHint).GetMemory(sizeHint);
+        public override Memory<T> GetMemory(int sizeHint = 0) => GetSegment(sizeHint).GetMemory(sizeHint);
 
         /// <summary>
         /// 获取具有至少 <paramref name="sizeHint"/> 可写空间的跨度，返回值从当前写入位置开始。
         /// </summary>
         /// <param name="sizeHint">所需的最小可写元素数，0 表示不限。</param>
         /// <returns>用于写入的 <see cref="Span{T}"/>。</returns>
-        public override sealed Span<T> GetSpan(int sizeHint = 0) => GetSegment(sizeHint).GetSpan(sizeHint);
+        public override Span<T> GetSpan(int sizeHint = 0) => GetSegment(sizeHint).GetSpan(sizeHint);
 
         /// <summary>
         /// 将当前写入位置向前推进 <paramref name="count"/> 个元素。
         /// </summary>
         /// <param name="count">推进的元素数量（必须为非负值，且不得超过当前段的可写范围）。</param>
         /// <exception cref="InvalidOperationException">若在未获取内存前调用该方法将抛出。</exception>
-        public override sealed void Advance(int count)
+        public override void Advance(int count)
         {
             CheckWriteFrozen();
             if (Last is null)
@@ -211,7 +203,7 @@ namespace ExtenderApp.Buffer
 
             oldLast.Release();
             Last = segment;
-            Advance((int)segment.Committed); // 将写入位置推进到新段的末尾（如果新段已部分提交）
+            Last.UpdateRunningIndex(); // 确保新段的 RunningIndex 是正确的
         }
 
         /// <summary>
@@ -231,6 +223,7 @@ namespace ExtenderApp.Buffer
             // 将新段作为头部，并连接原先的头部为下一个
             segment.SetNext(First);
             First = segment;
+            First.UpdateRunningIndex();
         }
 
         /// <summary>
@@ -345,7 +338,7 @@ namespace ExtenderApp.Buffer
             return false;
         }
 
-        protected override sealed void UpdateCommittedProtected(Span<T> span, long committedPosition)
+        protected override void UpdateCommittedProtected(Span<T> span, long committedPosition)
         {
             // 将指定的已写入数据 span 按绝对位置 committedPosition 写回到对应段的已提交区域。 先确保段的 RunningIndex 是最新的，然后定位到起始段并逐段复制。
             if (span.IsEmpty)
@@ -419,7 +412,7 @@ namespace ExtenderApp.Buffer
         #region Release
 
         ///<inheritdoc/>
-        protected override sealed void ReleaseProtected()
+        protected override void ReleaseProtected()
         {
             First?.Release();
             First = null;
@@ -434,7 +427,7 @@ namespace ExtenderApp.Buffer
         }
 
         ///<inheritdoc/>
-        protected override sealed bool TryReleaseProtected()
+        protected override bool TryReleaseProtected()
         {
             First?.Release();
             First = null;
@@ -467,7 +460,7 @@ namespace ExtenderApp.Buffer
         #region Write
 
         ///<inheritdoc/>
-        public override sealed void Write(ReadOnlySpan<T> source)
+        public override void Write(ReadOnlySpan<T> source)
         {
             if (Available >= source.Length || Available == 0)
             {
@@ -485,7 +478,7 @@ namespace ExtenderApp.Buffer
         #region Pinning
 
         ///<inheritdoc/>
-        protected override sealed MemoryHandle PinProtected(int elementIndex)
+        protected override MemoryHandle PinProtected(int elementIndex)
         {
             if (First == null)
                 throw new InvalidOperationException("序列为空，无法固定元素。");
@@ -505,7 +498,7 @@ namespace ExtenderApp.Buffer
         }
 
         ///<inheritdoc/>
-        public override sealed void Unpin()
+        public override void Unpin()
         {
             base.Unpin();
             var segment = First;
@@ -520,11 +513,11 @@ namespace ExtenderApp.Buffer
         #endregion Pinning
 
         ///<inheritdoc/>
-        public override sealed string ToString()
+        public override string ToString()
             => $"SequenceBuffer (Committed: {Committed}, Capacity: {Capacity})";
 
         ///<inheritdoc/>
-        public override sealed void Clear()
+        public override void Clear()
         {
             First?.Release();
             First = null;
@@ -533,14 +526,14 @@ namespace ExtenderApp.Buffer
         }
 
         ///<inheritdoc/>
-        public override sealed T[] ToArray() => ((ReadOnlySequence<T>)this).ToArray();
+        public override T[] ToArray() => ((ReadOnlySequence<T>)this).ToArray();
 
         ///<inheritdoc/>
-        public override sealed SequenceBuffer<T> Slice(long start = 0, long length = 0)
+        public override SequenceBuffer<T> Slice(long start = 0, long length = 0)
             => (SequenceBuffer<T>)base.Slice(start, length);
 
         ///<inheritdoc/>
-        protected override sealed SequenceBuffer<T> SliceProtected(long start, long length)
+        protected override SequenceBuffer<T> SliceProtected(long start, long length)
         {
             if (!TryGetSegmentByPosition(start, out var segment, out int offset))
                 throw new ArgumentOutOfRangeException(nameof(start), "起始位置超出序列范围。");
@@ -573,7 +566,7 @@ namespace ExtenderApp.Buffer
         /// 深拷贝当前 <see cref="SequenceBuffer{T}"/> 实例及其所有段。
         /// </summary>
         /// <returns>拷贝后的 <see cref="SequenceBuffer{T}"/> 实例</returns>
-        public override sealed SequenceBuffer<T> Clone()
+        public override SequenceBuffer<T> Clone()
         {
             var cloneBuffer = SequenceBuffer<T>.GetBuffer();
 

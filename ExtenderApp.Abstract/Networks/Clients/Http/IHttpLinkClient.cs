@@ -1,13 +1,13 @@
 ﻿using System.Net.Security;
-using HttpRequestMessage = ExtenderApp.Contracts.HttpRequestMessage;
-using HttpResponseMessage = ExtenderApp.Contracts.HttpResponseMessage;
+using HttpRequestMessage = ExtenderApp.Abstract.Networks.HttpRequestMessage;
+using HttpResponseMessage = ExtenderApp.Abstract.Networks.HttpResponseMessage;
 
 namespace ExtenderApp.Abstract
 {
     /// <summary>
-    /// Http 链路客户端抽象，扩展自 <see cref="ILinkClient"/>，提供发送 HTTP 请求的能力。
+    /// Http 链路客户端抽象，扩展自 <see cref="ILinkChannel"/>，提供发送 HTTP 请求的能力。
     /// </summary>
-    public interface IHttpLinkClient : ILinkClient
+    public interface IHttpLinkClient
     {
         /// <summary>
         /// 发送一个 HTTP 请求并异步等待解析完成的响应。
@@ -17,13 +17,5 @@ namespace ExtenderApp.Abstract
         /// <param name="token">可选取消令牌。</param>
         /// <returns>解析完成的 HttpResponseMessage。</returns>
         ValueTask<HttpResponseMessage> SendAsync(HttpRequestMessage request, SslClientAuthenticationOptions? options = null, CancellationToken token = default);
-
-        /// <summary>
-        /// 放入新的 HTTP 解析器实例。
-        /// </summary>
-        /// <param name="httpParser">解析器实例</param>
-        /// <param name="token">解除令牌</param>
-        /// <returns>结构体线程任务</returns>
-        ValueTask SetHttpParser(IHttpParser httpParser, CancellationToken token = default);
     }
 }

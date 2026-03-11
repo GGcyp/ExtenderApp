@@ -4,7 +4,7 @@ namespace ExtenderApp.Common.Networks
 {
     /// <summary>
     /// 将 <see cref="ITcpLinker"/> 适配为 <see cref="Stream"/>，以便在其上创建 <see cref="System.Net.Security.SslStream"/> 或用于按 <see cref="Stream"/> 接口进行读写。
-    /// 
+    ///
     /// 说明：
     /// - 本实现以可用性为主，适合将异步的 Linker 收发封装为 <see cref="Stream"/>；
     /// - 读操作从底层 Linker 接收数据并复制到调用方缓冲；写操作将调用方缓冲数据一次性复制后通过 Linker.SendAsync 发送；
@@ -44,7 +44,8 @@ namespace ExtenderApp.Common.Networks
         /// <summary>
         /// 此适配流的 Flush 是空操作（无缓冲写入在写方法中立即发送）。
         /// </summary>
-        public override void Flush() { /* no-op */ }
+        public override void Flush()
+        { /* no-op */ }
 
         /// <inheritdoc/>
         public override int Read(byte[] buffer, int offset, int count)

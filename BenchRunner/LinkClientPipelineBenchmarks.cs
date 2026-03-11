@@ -4,14 +4,14 @@ using System.Net;
 using BenchmarkDotNet.Attributes;
 using ExtenderApp.Abstract;
 using ExtenderApp.Buffer;
-using ExtenderApp.Common.Networks.LinkClients;
+using ExtenderApp.Common.Networks.LinkChannels;
 using ExtenderApp.Contracts;
 
 [MemoryDiagnoser]
 public class LinkClientPipelineBenchmarks
 {
-    private ILinkClientPipeline pipeline;
-    private ILinkClientHandler dummy;
+    private ILinkChannelPipeline pipeline;
+    private ILinkChannelHandler dummy;
 
     [GlobalSetup]
     public void Setup()
@@ -22,8 +22,8 @@ public class LinkClientPipelineBenchmarks
             .FirstOrDefault(a => a.GetName().Name.Equals("ExtenderApp.Common", StringComparison.OrdinalIgnoreCase))
             ?? throw new InvalidOperationException("ExtenderApp.Common not loaded");
 
-        var type = asm.GetType("ExtenderApp.Common.Networks.LinkClients.LinkClientPipeline", throwOnError: true);
-        pipeline = (ILinkClientPipeline)Activator.CreateInstance(type)!;
+        var type = asm.GetType("ExtenderApp.Common.Networks.LinkChannels.LinkClientPipeline", throwOnError: true);
+        pipeline = (ILinkChannelPipeline)Activator.CreateInstance(type)!;
 
         // 简单实现的 ILinkClientHandler，用于测试
         dummy = new DummyHandler();
@@ -41,13 +41,13 @@ public class LinkClientPipelineBenchmarks
     {
         for (int i = 0; i < 100; i++)
             pipeline.AddLast("h" + i, dummy);
-        var cnt = pipeline.Cast<ILinkClientHandler>().Count();
+        var cnt = pipeline.Cast<ILinkChannelHandler>().Count();
         // 清理
         for (int i = 0; i < 100; i++)
             pipeline.Remove("h" + i);
     }
 
-    private class DummyHandler : LinkClientHandler
+    private class DummyHandler : LinkChannelHandler
     {
     }
 }

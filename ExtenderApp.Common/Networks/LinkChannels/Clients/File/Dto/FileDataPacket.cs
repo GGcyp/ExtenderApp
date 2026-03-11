@@ -1,0 +1,37 @@
+﻿using ExtenderApp.Buffer;
+
+namespace ExtenderApp.Common.Networks.LinkChannels
+{
+    /// <summary>
+    /// 文件数据包。
+    /// </summary>
+    internal readonly struct FileDataPacket : IDisposable
+    {
+        /// <summary>
+        /// 文件的唯一标识符。
+        /// </summary>
+        public Guid FileId { get; }
+
+        /// <summary>
+        /// 数据块在文件中的起始位置。
+        /// </summary>
+        public long Position { get; }
+
+        /// <summary>
+        /// 数据块内容。
+        /// </summary>
+        public AbstractBuffer<byte> Data { get; }
+
+        public FileDataPacket(Guid fileId, long position, AbstractBuffer<byte> data)
+        {
+            FileId = fileId;
+            Position = position;
+            Data = data;
+        }
+
+        public void Dispose()
+        {
+            Data.Dispose();
+        }
+    }
+}

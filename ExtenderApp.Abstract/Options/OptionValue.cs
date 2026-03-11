@@ -30,6 +30,12 @@ namespace ExtenderApp.Abstract.Options
         /// <returns>一个新的 <see cref="OptionValue"/> 实例，包含与当前实例相同的值。</returns>
         public abstract OptionValue Clone(bool needRegisterChange);
 
+        /// <summary>
+        /// 获取选项值的字符串表示形式。这个方法可以用于将选项值转换为适合显示或存储的格式。
+        /// </summary>
+        /// <returns>选项值的字符串表示形式。</returns>
+        public abstract string ValueToString();
+
         public bool Equals(OptionValue? other)
         {
             return ReferenceEquals(this, other) ||
@@ -113,6 +119,8 @@ namespace ExtenderApp.Abstract.Options
         public override object GetValue() => Value!;
 
         public override string ToString() => $"{Identifier.Name}: {Value}";
+
+        public override string ValueToString() => Value?.ToString() ?? string.Empty;
 
         public static bool operator ==(OptionValue<T>? left, OptionValue<T>? right) =>
             left is null ? right is null : left.Equals(right);
