@@ -81,7 +81,7 @@ namespace ExtenderApp.Common.Networks.LinkChannels
             };
         }
 
-        //public async ValueTask SetHttpParser(IHttpParser httpParser, CancellationToken token = default)
+        //public async ValueTask SetHttpParser(IHttpParser httpParser, Token token = default)
         //{
         //    ArgumentNullException.ThrowIfNull(httpParser, nameof(httpParser));
 
@@ -167,7 +167,7 @@ namespace ExtenderApp.Common.Networks.LinkChannels
         ///// <param name="requestUri">目标 URI，不能为空。</param>
         ///// <param name="token">取消令牌。</param>
         ///// <returns>表示连接操作的 ValueTask。</returns>
-        //private ValueTask ConnectAsync(Uri? requestUri, CancellationToken token)
+        //private ValueTask ConnectAsync(Uri? requestUri, Token token)
         //{
         //    ArgumentNullException.ThrowIfNull(requestUri);
         //    int port = requestUri.Port > 0 ? requestUri.Port : 80;
@@ -177,7 +177,7 @@ namespace ExtenderApp.Common.Networks.LinkChannels
         ///// <summary>
         ///// 将 ByteBuffer 转换并通过底层 Linker 发送（用于明文请求）。
         ///// </summary>
-        //private ValueTask SendRequestMessage(ByteBuffer byteBuffer, CancellationToken token)
+        //private ValueTask SendRequestMessage(ByteBuffer byteBuffer, Token token)
         //{
         //    //return SendRequestMessage(byteBuffer.CommittedSequence, byteBuffer.Rental, token);
         //    return ValueTask.CompletedTask;
@@ -186,7 +186,7 @@ namespace ExtenderApp.Common.Networks.LinkChannels
         ///// <summary>
         ///// 将 ByteBuffer 转换并通过 SslStream 写出（用于 HTTPS 请求发送前，SslStream 已完成握手）。
         ///// </summary>
-        //private ValueTask SendAuthenticateRequestMessage(ByteBuffer byteBuffer, CancellationToken token)
+        //private ValueTask SendAuthenticateRequestMessage(ByteBuffer byteBuffer, Token token)
         //{
         //    return default;
         //}

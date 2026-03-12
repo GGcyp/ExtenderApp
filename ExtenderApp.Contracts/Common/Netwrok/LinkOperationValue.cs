@@ -61,6 +61,14 @@ namespace ExtenderApp.Contracts
             ReceiveMessageFromPacketInfo = linkOperationValue.ReceiveMessageFromPacketInfo;
         }
 
+        public override string ToString()
+        {
+            return string.Format("已传输 {0} 字节{1}{2}",
+                BytesTransferred,
+                RemoteEndPoint != null ? $", 远端: {RemoteEndPoint}" : string.Empty,
+                ReceiveMessageFromPacketInfo.Equals(default) ? string.Empty : $", 报文信息: {ReceiveMessageFromPacketInfo}");
+        }
+
         /// <summary>
         /// 隐式转换为传输的字节数。
         /// </summary>

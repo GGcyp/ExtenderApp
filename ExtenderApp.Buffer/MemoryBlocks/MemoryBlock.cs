@@ -252,7 +252,7 @@ namespace ExtenderApp.Buffer
         }
 
         ///<inheritdoc/>
-        protected override sealed void UpdateCommittedProtected(Span<T> span, long committedPosition)
+        protected override sealed void UpdateCommittedProtected(ReadOnlySpan<T> span, long committedPosition)
         {
             span.CopyTo(Span.Slice((int)committedPosition));
         }

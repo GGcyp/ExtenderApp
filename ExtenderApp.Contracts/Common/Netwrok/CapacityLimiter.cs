@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks.Sources;
+﻿using System.Collections.Concurrent;
+using System.Threading.Tasks.Sources;
 
 namespace ExtenderApp.Contracts
 {
@@ -16,7 +17,24 @@ namespace ExtenderApp.Contracts
     /// </remarks>
     public class CapacityLimiter : DisposableObject
     {
-        // 内部锁保护所有共享状态：_capacity/_used/_queue/_disposed
+        private static readonly ConcurrentStack<Waiter> _waiterPool = new();
+        private static Waiter RentWaiter(long amount, CancellationToken token)
+        {
+            if (!_waiterPool.TryPop(out var waiter))
+            {
+                waiter = new Waiter();
+            }
+            waiter.AmountNeeded = amount;
+            waiter.Token = token;
+            return waiter;
+        }
+
+        private static void ReturnWaiter(Waiter waiter)
+        {
+            waiter.Token = default; // 确保不持有过期的 CancellationToken
+            _waiterPool.Push(waiter);
+        }
+
         private readonly object _lock = new();
 
         private long _capacity;
@@ -183,7 +201,7 @@ namespace ExtenderApp.Contracts
                         var w = (Waiter)state!;
                         w.Canceled = true;
                         // 尝试标记为取消，并唤醒等待方
-                        w.TrySetCanceled();
+                        w.SetCanceled();
                     }, waiter)
                     : default;
 
@@ -215,7 +233,7 @@ namespace ExtenderApp.Contracts
             if (vt.IsCompletedSuccessfully)
                 return vt.Result;
 
-            return vt.AsTask().GetAwaiter().GetResult();
+            return vt.GetAwaiter().GetResult();
         }
 
         /// <summary>
@@ -263,7 +281,7 @@ namespace ExtenderApp.Contracts
                     _used += next.AmountNeeded;
 
                     // 完成并发回 Lease
-                    next.TrySetResult(new Lease(this, next.AmountNeeded));
+                    next.SetResult(new Lease(this, next.AmountNeeded));
                     next.CleanupAfterCompletion();
                 }
                 else
@@ -293,7 +311,7 @@ namespace ExtenderApp.Contracts
                 {
                     var w = _queue.Dequeue();
                     w.Canceled = true;
-                    w.TrySetCanceled();
+                    w.SetCanceled();
                     w.CleanupAfterCompletion();
                 }
             }
@@ -345,64 +363,63 @@ namespace ExtenderApp.Contracts
         /// - 当前实现为 struct，存在“值复制”风险：取消回调与队列中存放的实例可能并非同一份， 会导致取消标记与完成信号作用于不同副本，进而造成容量泄漏或多余完成。
         /// - 若要彻底规避该问题，建议改为 class 并以引用语义参与队列与回调。
         /// </summary>
-        private struct Waiter : IValueTaskSource<Lease>
+        private class Waiter : IValueTaskSource<Lease>
         {
             /// <summary>
             /// 单次完成用的任务源。 RunContinuationsAsynchronously = true 以避免在持锁路径内同步执行延续造成阻塞/递归。
             /// </summary>
-            private readonly ManualResetValueTaskSourceCore<Lease> _core;
+            private ManualResetValueTaskSourceCore<Lease> vts;
 
             /// <summary>
             /// 本等待者所需的容量数量。
             /// </summary>
-            public readonly long AmountNeeded;
+            public long AmountNeeded;
 
             /// <summary>
             /// 是否已被外部取消。队列在发放前会清理已取消的等待者。
             /// </summary>
-            public bool Canceled;
+            public bool Canceled => Token.IsCancellationRequested;
+
+            public short Version => vts.Version;
 
             /// <summary>
-            /// 取消令牌的注册句柄；在完成/取消后需显式释放以避免泄漏。
+            /// 取消令牌；在完成/取消后需显式释放以避免泄漏。
             /// </summary>
-            public CancellationTokenRegistration Reg;
+            public CancellationToken Token;
 
             /// <summary>
             /// 使用请求量初始化等待者。
             /// </summary>
             /// <param name="amount">申请的容量数量（必须 &gt; 0）。</param>
-            public Waiter(long amount)
+            public Waiter()
             {
-                AmountNeeded = amount;
-                _core = new ManualResetValueTaskSourceCore<Lease>()
-                {
-                    RunContinuationsAsynchronously = true
-                };
-                Canceled = false;
-                Reg = default;
+                vts = new();
             }
 
             /// <summary>
             /// 将当前 IValueTaskSource 包装为 Task 返回，供外部再包装为 ValueTask 使用。 说明：这是一次性任务源，内部使用固定 token=0。
             /// </summary>
-            public Task<Lease> Task => new ValueTask<Lease>(this, 0).AsTask();
+            public ValueTask<Lease> GetLeaseAsync() => new ValueTask<Lease>(this, Version);
 
             /// <summary>
             /// 尝试以成功结果完成等待者，返回对应的 <see cref="Lease"/>。 注意：该调用应仅发生一次；重复完成将抛出异常。
             /// </summary>
-            public void TrySetResult(Lease lease)
+            public void SetResult(Lease lease)
             {
-                _core.SetResult(lease);
+                if (Canceled)
+                    return;
+
+                vts.SetResult(lease);
             }
 
             /// <summary>
             /// 将等待者标记为取消（以异常形式完成）。 若已被其它路径完成则吞掉异常以保证幂等。
             /// </summary>
-            public void TrySetCanceled()
+            public void SetCanceled()
             {
                 try
                 {
-                    _core.SetException(new TaskCanceledException());
+                    vts.SetException(new TaskCanceledException());
                 }
                 catch
                 {
@@ -410,26 +427,26 @@ namespace ExtenderApp.Contracts
                 }
             }
 
-            /// <summary>
-            /// 在完成/取消后清理注册资源，避免令牌注册泄漏。
-            /// </summary>
-            public void CleanupAfterCompletion()
-            {
-                Reg.Dispose();
-            }
-
-            // IValueTaskSource 实现：由 ValueTask 基础设施调用
             /// <inheritdoc/>
             public Lease GetResult(short token)
-                => _core.GetResult(token);
+            {
+                try
+                {
+                    return vts.GetResult(token);
+                }
+                finally
+                {
+                    ReturnWaiter(this);
+                }
+            }
 
             /// <inheritdoc/>
             public ValueTaskSourceStatus GetStatus(short token)
-                => _core.GetStatus(token);
+                => vts.GetStatus(token);
 
             /// <inheritdoc/>
             public void OnCompleted(Action<object?> continuation, object? state, short token, ValueTaskSourceOnCompletedFlags flags)
-                => _core.OnCompleted(continuation, state, token, flags);
+                => vts.OnCompleted(continuation, state, token, flags);
         }
     }
 }

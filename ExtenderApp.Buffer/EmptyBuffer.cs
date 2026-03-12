@@ -64,7 +64,7 @@ namespace ExtenderApp.Buffer
             return true;
         }
 
-        protected override void UpdateCommittedProtected(Span<T> span, long committedPosition)
+        protected override void UpdateCommittedProtected(ReadOnlySpan<T> span, long committedPosition)
         {
         }
     }

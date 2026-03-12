@@ -25,7 +25,6 @@ namespace ExtenderApp.Test.Tests
             listener.Start();
             var acceptSocketTask = listener.AcceptSocketAsync().ConfigureAwait(false);
 
-
             var channelConnectTask = channel.ConnectAsync(ip).ConfigureAwait(false);
             var socket = await acceptSocketTask;
             await channelConnectTask;
@@ -33,6 +32,8 @@ namespace ExtenderApp.Test.Tests
             var block = MemoryBlock<byte>.GetBuffer(1024);
             BitConverter.GetBytes(123456).CopyTo(block.GetSpan(1024));
             block.Advance(1024);
+            block.Freeze();
+            channel.StartReceive();
             try
             {
                 // start server-side reader
@@ -40,9 +41,9 @@ namespace ExtenderApp.Test.Tests
 
                 for (int i = 0; i < 10; i++)
                 {
-                    block.Freeze();
-                    await channel.SendAsync(block);
-                    await Task.Delay(50);
+                    var temp = await channel.SendAsync(block).ConfigureAwait(false);
+                    Debug.Print(temp.ToString());
+                    await Task.Delay(50).ConfigureAwait(false);
                 }
             }
             catch (Exception ex)
@@ -70,7 +71,7 @@ namespace ExtenderApp.Test.Tests
                 while (true)
                 {
                     // 使用 ReceiveAsync 返回实际接收字节数，避免解析未初始化的数据
-                    var received = await socket.ReceiveAsync(buffer, SocketFlags.None).ConfigureAwait(false);
+                    var received = await socket.ReceiveAsync(buffer).ConfigureAwait(false);
                     if (received <= 0)
                         break;
 
@@ -78,6 +79,7 @@ namespace ExtenderApp.Test.Tests
                     {
                         int val = BitConverter.ToInt32(buffer, 0);
                         Debug.Print(val.ToString());
+                        var temp = await socket.SendAsync(buffer, SocketFlags.None).ConfigureAwait(false);
                     }
                 }
             }

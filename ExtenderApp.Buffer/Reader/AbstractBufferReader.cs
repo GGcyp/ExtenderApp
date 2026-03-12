@@ -189,7 +189,7 @@ namespace ExtenderApp.Buffer
         /// 将读取位置回退指定数量的元素（可以跨段回退）。
         /// </summary>
         /// <param name="count">回退的元素数量（必须为非负且不超过当前已消费）。</param>
-        public void Rewind(int count)
+        public void Rewind(long count)
         {
             if (count < 0 || count > Consumed)
                 throw new ArgumentOutOfRangeException(nameof(count));

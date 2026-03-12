@@ -1,38 +1,27 @@
-﻿using System.Buffers;
-
-namespace ExtenderApp.Buffer
+﻿namespace ExtenderApp.Buffer
 {
     /// <summary>
     /// 对 AbstractBuffer<byte> 的 Stream 适配器，允许将 AbstractBuffer 用作 Stream 进行读写。
     /// </summary>
-    public class AbstractBufferStream : Stream
+    public sealed class AbstractBufferStream : Stream
     {
-        private readonly AbstractBuffer<byte> _buffer;
-        private long _position;
-        private bool _disposed;
+        private long position;
+        private long length;
+        private bool disposed;
+        private AbstractBuffer<byte>? buffer;
 
-        public AbstractBufferStream() : this(AbstractBuffer.GetBlock<byte>())
-        {
-        }
+        public override bool CanRead => !disposed && buffer != null;
 
-        public AbstractBufferStream(AbstractBuffer<byte> buffer)
-        {
-            _buffer = buffer ?? throw new ArgumentNullException(nameof(buffer));
-            _position = 0;
-        }
+        public override bool CanSeek => !disposed;
 
-        public override bool CanRead => true;
-
-        public override bool CanSeek => false;
-
-        public override bool CanWrite => true;
+        public override bool CanWrite => !disposed;
 
         public override long Length
         {
             get
             {
                 ThrowIfDisposed();
-                return _buffer.Committed;
+                return length;
             }
         }
 
@@ -41,115 +30,174 @@ namespace ExtenderApp.Buffer
             get
             {
                 ThrowIfDisposed();
-                return _position;
+                return position;
             }
-            set => throw new NotSupportedException("AbstractBufferStream does not support setting Position.");
+            set
+            {
+                ThrowIfDisposed();
+                Seek(value, SeekOrigin.Begin);
+            }
+        }
+
+        public AbstractBufferStream(AbstractBuffer<byte>? buffer) : this()
+        {
+            this.buffer = buffer;
+        }
+
+        public AbstractBufferStream()
+        {
         }
 
         public override void Flush()
         {
-            // underlying buffer is in-memory; nothing to flush
             ThrowIfDisposed();
         }
+
+        #region
 
         public override int Read(byte[] buffer, int offset, int count)
         {
-            ThrowIfDisposed();
-            if (buffer == null) throw new ArgumentNullException(nameof(buffer));
-            if (offset < 0 || count < 0 || offset + count > buffer.Length) throw new ArgumentOutOfRangeException();
+            if (offset < 0 || count < 0 || offset + count > buffer.Length)
+                throw new ArgumentOutOfRangeException();
 
-            long available = _buffer.Committed - _position;
-            if (available <= 0) return 0;
-
-            int toRead = (int)Math.Min(available, count);
-            var destSpan = new Span<byte>(buffer, offset, toRead);
-            CopyFromSequence(_buffer.CommittedSequence, _position, destSpan);
-            _position += toRead;
-            return toRead;
+            return Read(buffer.AsSpan(offset, count));
         }
+
+        public override int Read(Span<byte> buffer)
+        {
+            ThrowIfDisposed();
+            if (buffer == null)
+                throw new ArgumentNullException(nameof(buffer));
+            if (this.buffer == null)
+                throw new InvalidOperationException("当前流内没有可读取数据");
+            if (position > this.buffer.Committed)
+                return 0;
+
+            var reader = this.buffer.ToReader();
+            reader.Advance((int)position);
+
+            int remaining = (int)Math.Min(reader.Remaining, buffer.Length);
+            reader.TryRead(buffer.Slice(0, remaining));
+            position += remaining;
+            reader.Release();
+            return remaining;
+        }
+
+        #endregion
+
+        #region Write
+
+        public override void Write(byte[] buffer, int offset, int count)
+        {
+            if (offset < 0 || count < 0 || offset + count > buffer.Length)
+                throw new ArgumentOutOfRangeException();
+
+            Write(buffer.AsSpan(offset, count));
+        }
+
+        public override void Write(ReadOnlySpan<byte> buffer)
+        {
+            ThrowIfDisposed();
+            if (buffer == null)
+                throw new ArgumentNullException(nameof(buffer));
+            if (this.buffer == null)
+                this.buffer = MemoryBlock<byte>.GetBuffer((int)length);
+
+            int count = buffer.Length;
+            if (position + count < this.buffer.Committed)
+            {
+                this.buffer.UpdateCommitted(buffer, position);
+            }
+            else if (position == this.buffer.Committed)
+            {
+                this.buffer.Write(buffer);
+            }
+            else if (position < this.buffer.Committed && position + count > this.buffer.Committed)
+            {
+                int committedCount = (int)(this.buffer.Committed - position);
+                this.buffer.UpdateCommitted(buffer.Slice(0, committedCount), position);
+                this.buffer.Write(buffer.Slice(committedCount, count - committedCount));
+            }
+            else if (position > this.buffer.Committed && position < this.buffer.Capacity)
+            {
+                int diff = (int)(position - this.buffer.Committed);
+                this.buffer.Advance(diff);
+                this.buffer.Write(buffer);
+            }
+            else
+            {
+                int diff = (int)(position - this.buffer.Capacity);
+                this.buffer.Advance(this.buffer.Available);
+                this.buffer.GetSpan(diff + count);
+                this.buffer.Advance(diff);
+                this.buffer.Write(buffer);
+            }
+
+            position += count;
+        }
+
+        #endregion
 
         public override long Seek(long offset, SeekOrigin origin)
         {
-            throw new NotSupportedException("Seek is not supported.");
+            ThrowIfDisposed();
+
+            long newPos;
+            switch (origin)
+            {
+                case SeekOrigin.Begin:
+                    newPos = offset;
+                    break;
+
+                case SeekOrigin.Current:
+                    newPos = position + offset;
+                    break;
+
+                case SeekOrigin.End:
+                    newPos = Length + offset;
+                    break;
+
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(origin), origin, null);
+            }
+
+            if (newPos < 0)
+                throw new IndexOutOfRangeException();
+
+            position = newPos;
+            return position;
         }
 
         public override void SetLength(long value)
         {
-            throw new NotSupportedException("SetLength is not supported.");
-        }
-
-        public override void Write(byte[] buffer, int offset, int count)
-        {
-            ThrowIfDisposed();
-            if (offset < 0 || count < 0 || offset + count > buffer.Length) throw new ArgumentOutOfRangeException();
-
-            // append to underlying buffer
-            _buffer.Write(new ReadOnlySpan<byte>(buffer, offset, count));
-            // after write, position moves to end of committed data
-            _position = _buffer.Committed;
+            length = value;
         }
 
         protected override void Dispose(bool disposing)
         {
-            if (!_disposed)
+            if (!disposed)
             {
                 if (disposing)
                 {
                     // Try to release the buffer if possible
                     try
                     {
-                        _buffer.UnfreezeWrite();
-                        _buffer.TryRelease();
+                        buffer?.TryRelease();
                     }
                     catch
                     {
                         // ignore
                     }
                 }
-                _disposed = true;
+                disposed = true;
             }
             base.Dispose(disposing);
         }
 
         private void ThrowIfDisposed()
         {
-            if (_disposed) throw new ObjectDisposedException(nameof(AbstractBufferStream));
-        }
-
-        private static void CopyFromSequence(ReadOnlySequence<byte> sequence, long position, Span<byte> destination)
-        {
-            if (destination.Length == 0) return;
-            if (position < 0) throw new ArgumentOutOfRangeException(nameof(position));
-            if (sequence.IsEmpty)
-            {
-                destination.Clear();
-                return;
-            }
-
-            long skip = position;
-            int written = 0;
-            foreach (var mem in sequence)
-            {
-                var span = mem.Span;
-                if (skip >= span.Length)
-                {
-                    skip -= span.Length;
-                    continue;
-                }
-
-                var src = span.Slice((int)skip);
-                int take = Math.Min(src.Length, destination.Length - written);
-                src.Slice(0, take).CopyTo(destination.Slice(written, take));
-                written += take;
-                skip = 0;
-                if (written == destination.Length) break;
-            }
-
-            if (written < destination.Length)
-            {
-                // zero the rest
-                destination.Slice(written).Clear();
-            }
+            if (disposed)
+                throw new ObjectDisposedException(nameof(AbstractBufferStream));
         }
     }
 }

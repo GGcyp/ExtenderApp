@@ -318,12 +318,11 @@ namespace ExtenderApp.Buffer
         #region Update
 
         /// <summary>
-        /// 更新已提交长度以反映已写入数据的状态变化。调用此方法时会验证传入的跨度和提交位置是否在有效范围内，并在验证通过后调用 <see cref="UpdateCommittedProtected"/> 以执行实际的提交状态更新逻辑。 更新完成后会触发 <see
-        /// cref="OnCommittedChanged"/> 以通知订阅者提交长度已变更。
+        /// 更新已提交长度以反映已写入数据的状态变化。调用此方法时会验证传入的跨度和提交位置是否在有效范围内，以执行实际的提交状态更新逻辑。
         /// </summary>
         /// <param name="span">需要更新后的数据片段。</param>
         /// <param name="committedPosition">需要更新的坐标位置。</param>
-        public void UpdateCommitted(Span<T> span, long committedPosition = 0)
+        public void UpdateCommitted(ReadOnlySpan<T> span, long committedPosition = 0)
         {
             CheckWriteFrozen();
             if (span.IsEmpty)
@@ -341,7 +340,7 @@ namespace ExtenderApp.Buffer
         /// </summary>
         /// <param name="span">需要更新后的数据片段。</param>
         /// <param name="committedPosition">需要更新的坐标位置。</param>
-        protected abstract void UpdateCommittedProtected(Span<T> span, long committedPosition);
+        protected abstract void UpdateCommittedProtected(ReadOnlySpan<T> span, long committedPosition);
 
         #endregion Update
 

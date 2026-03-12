@@ -18,7 +18,7 @@ namespace ExtenderApp.Common.Networks.LinkChannels.Handlers
         public override async ValueTask<Result> InboundHandleAsync(ILinkChannelHandlerContext context, ValueCache cache, CancellationToken token = default)
         {
             if (token.IsCancellationRequested)
-                return Result.Failure(0);
+                return Result.Failure();
 
             try
             {
@@ -28,7 +28,7 @@ namespace ExtenderApp.Common.Networks.LinkChannels.Handlers
                     if (result)
                     {
                         T value = result!;
-                        Callback?.Invoke(context.LinkClient, value);
+                        Callback?.Invoke(context.LinkChannel, value);
                         buffer.TryRelease();
                     }
                 }
@@ -51,7 +51,6 @@ namespace ExtenderApp.Common.Networks.LinkChannels.Handlers
                 {
                     AbstractBuffer<byte> buffer = _isClassType ? AbstractBuffer.GetSequence<byte>() : AbstractBuffer.GetBlock<byte>();
                     var result = await SerializationMessageAsync(value, buffer);
-                    buffer.Freeze();
 
                     if (result)
                         cache.AddValue(buffer);

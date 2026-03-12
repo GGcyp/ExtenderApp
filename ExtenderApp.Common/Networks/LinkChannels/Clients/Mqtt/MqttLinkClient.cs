@@ -74,7 +74,7 @@ namespace ExtenderApp.Common.Networks.LinkChannels
         //    bool cleanSession = true,
         //    string? username = null,
         //    string? password = null,
-        //    CancellationToken token = default)
+        //    Token token = default)
         //{
         //    if (string.IsNullOrWhiteSpace(host)) throw new ArgumentException(nameof(host));
         //    if (string.IsNullOrWhiteSpace(clientId)) throw new ArgumentException(nameof(clientId));
@@ -97,7 +97,7 @@ namespace ExtenderApp.Common.Networks.LinkChannels
         //    ReadOnlyMemory<byte> payload,
         //    QosLevel qos = QosLevel.AtMostOnce,
         //    bool retain = false,
-        //    CancellationToken token = default)
+        //    Token token = default)
         //{
         //    if (string.IsNullOrEmpty(topic)) throw new ArgumentException(nameof(topic));
         //    if (qos != QosLevel.AtMostOnce) throw new NotSupportedException("示例仅实现 QoS0");
@@ -115,7 +115,7 @@ namespace ExtenderApp.Common.Networks.LinkChannels
         //public async ValueTask SubscribeAsync(
         //    string topic,
         //    QosLevel qos = QosLevel.AtMostOnce,
-        //    CancellationToken token = default)
+        //    Token token = default)
         //{
         //    if (string.IsNullOrEmpty(topic)) throw new ArgumentException(nameof(topic));
 
@@ -125,14 +125,14 @@ namespace ExtenderApp.Common.Networks.LinkChannels
 
         //    using var cts = CancellationTokenSource.CreateLinkedTokenSource(token);
         //    cts.CancelAfter(TimeSpan.FromSeconds(10));
-        //    using (cts.Token.RegisterKeyCapture(() => _waitSubAck.TrySetCanceled(cts.Token)))
+        //    using (cts.Token.RegisterKeyCapture(() => _waitSubAck.SetCanceled(cts.Token)))
         //    {
         //        byte granted = await _waitSubAck.Task.ConfigureAwait(false);
         //        OnSubAck?.Invoke(granted);
         //    }
         //}
 
-        //public async ValueTask PingAsync(CancellationToken token = default)
+        //public async ValueTask PingAsync(Token token = default)
         //{
         //    _waitPingResp = new(TaskCreationOptions.RunContinuationsAsynchronously);
         //    var ping = BuildFixed(FIXED_PINGREQ);
@@ -146,13 +146,13 @@ namespace ExtenderApp.Common.Networks.LinkChannels
         //    }
 
         //    using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
-        //    using (cts.Token.RegisterKeyCapture(() => _waitPingResp.TrySetCanceled(cts.Token)))
+        //    using (cts.Token.RegisterKeyCapture(() => _waitPingResp.SetCanceled(cts.Token)))
         //    {
         //        await _waitPingResp.Task.ConfigureAwait(false);
         //    }
         //}
 
-        //public async ValueTask DisconnectBrokerAsync(CancellationToken token = default)
+        //public async ValueTask DisconnectBrokerAsync(Token token = default)
         //{
         //    var disc = BuildFixed(FIXED_DISCONNECT);
         //    try
@@ -287,7 +287,7 @@ namespace ExtenderApp.Common.Networks.LinkChannels
 
         //#region 发送底层
 
-        //private ValueTask SendRawAsync(ByteBuffer packet, CancellationToken token)
+        //private ValueTask SendRawAsync(ByteBuffer packet, Token token)
         //    => Linker.SendAsync(packet.CommittedSequence, token);
 
         //private ushort NextPacketId()
@@ -348,15 +348,15 @@ namespace ExtenderApp.Common.Networks.LinkChannels
         // ReadOnlySpan<byte> body = Block.Slice(1 + rlBytes, remainingLength); byte type = (byte)(header & 0xF0);
 
         // switch (type) { case FIXED_CONNACK: if (body.Capacity >= 2) { byte returnCode = body[1]; OnConnAck?.Invoke(returnCode);
-        // _waitConnAck?.TrySetResult(returnCode); } break;
+        // _waitConnAck?.SetResult(returnCode); } break;
 
         // case FIXED_PUBLISH: { if (body.Capacity < 2) break; int topicLen = (body[0] << 8) | body[1]; if (body.Capacity < 2 + topicLen) break; var
         // topicBytes = body.Slice(2, topicLen); string topic = Encoding.UTF8.GetString(topicBytes); var payload = body.Slice(2 + topicLen).ToArray();
         // OnPublish?.Invoke(topic, payload); } break;
 
-        // case FIXED_SUBACK: if (body.Capacity >= 3) { byte granted = body[2]; OnSubAck?.Invoke(granted); _waitSubAck?.TrySetResult(granted); } break;
+        // case FIXED_SUBACK: if (body.Capacity >= 3) { byte granted = body[2]; OnSubAck?.Invoke(granted); _waitSubAck?.SetResult(granted); } break;
 
-        // case FIXED_PINGRESP: OnPingResp?.Invoke(); _waitPingResp?.TrySetResult(true); break;
+        // case FIXED_PINGRESP: OnPingResp?.Invoke(); _waitPingResp?.SetResult(true); break;
 
         // default: // 其它类型（暂不实现） break; }
 
@@ -392,7 +392,7 @@ namespace ExtenderApp.Common.Networks.LinkChannels
         //    _ = RunKeepAliveAsync(_keepAliveTimer, _keepAliveCts.Token);
         //}
 
-        //private async Task RunKeepAliveAsync(PeriodicTimer timer, CancellationToken token)
+        //private async Task RunKeepAliveAsync(PeriodicTimer timer, Token token)
         //{
         //    try
         //    {

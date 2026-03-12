@@ -21,6 +21,6 @@
         /// <summary>
         /// 获取此上下文所属的链路通道实例，处理器可通过该通道访问底层链接与选项。
         /// </summary>
-        ILinkChannel LinkClient { get; }
+        ILinkChannel LinkChannel { get; }
     }
 }

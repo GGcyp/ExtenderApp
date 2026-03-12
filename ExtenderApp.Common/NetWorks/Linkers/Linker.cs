@@ -13,7 +13,7 @@ namespace ExtenderApp.Common.Networks
     /// </summary>
     public abstract class Linker : OptionsObject, ILinker
     {
-        private const int DefaultCapacity = 16 * 1024;
+        private const int DefaultCapacity = 65536;
         private const string BufferExpandString = "缓冲区长度不足";
 
         /// <summary>

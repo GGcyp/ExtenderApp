@@ -140,7 +140,7 @@ namespace ExtenderApp.Common.Networks.LinkChannels
         //    framedMessage.WriteNextPayload(block);
         //}
 
-        //public ValueTask<FrameContext> ReadFrameAsync(CancellationToken token = default)
+        //public ValueTask<FrameContext> ReadFrameAsync(Token token = default)
         //{
         //    return _frameChannel.Reader.ReadAsync(token);
         //}

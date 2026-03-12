@@ -63,7 +63,7 @@ namespace ExtenderApp.Common.Networks
         /// <summary>
         /// 获取当前上下文所属的链接客户端实例。该属性在上下文被添加到管道时由管道设置，并在整个上下文生命周期内保持不变。
         /// </summary>
-        public ILinkChannel LinkClient { get; }
+        public ILinkChannel LinkChannel { get; }
 
         /// <summary>
         /// 管道中下一个上下文节点（入站方向）。该字段是易变的以支持并发更新。
@@ -95,7 +95,7 @@ namespace ExtenderApp.Common.Networks
         public LinkChannelHandlerContext(string name, ILinkChannel linkClient, ILinkChannelHandler handler, Type handlerType)
         {
             Name = name;
-            LinkClient = linkClient;
+            LinkChannel = linkClient;
             Handler = handler;
             HandlerSkipFlags = GetSkipFlags(handlerType);
             Next = default!;
@@ -113,8 +113,8 @@ namespace ExtenderApp.Common.Networks
         /// </summary>
         /// <param name="token">取消令牌。</param>
         /// <returns>处理结果的异步 <see cref="ValueTask{Result}"/>。</returns>
-        private ValueTask<Result> InvokeActiveAsync(CancellationToken token)
-            => Handler.ActiveAsync(this, token);
+        internal ValueTask<Result> InvokeActiveAsync(CancellationToken token)
+            => CheckCancellationRequested(token, out Result result) ? result : Handler.ActiveAsync(this, token);
 
         /// <inheritdoc/>
         public ValueTask<Result> InactiveAsync(CancellationToken token = default)
@@ -125,8 +125,8 @@ namespace ExtenderApp.Common.Networks
         /// </summary>
         /// <param name="token">取消令牌。</param>
         /// <returns>处理结果的异步 <see cref="ValueTask{Result}"/>。</returns>
-        private ValueTask<Result> InvokeInactiveAsync(CancellationToken token)
-            => Handler.InactiveAsync(this, token);
+        internal ValueTask<Result> InvokeInactiveAsync(CancellationToken token)
+            => CheckCancellationRequested(token, out Result result) ? result : Handler.InactiveAsync(this, token);
 
         /// <inheritdoc/>
         public ValueTask<Result> ConnectAsync(EndPoint remoteAddress, EndPoint localAddress, CancellationToken token = default)
@@ -135,8 +135,8 @@ namespace ExtenderApp.Common.Networks
         /// <summary>
         /// 调用当前处理器的连接实现。封装对 <see cref="ILinkChannelHandler.ConnectAsync"/> 的调用。
         /// </summary>
-        private ValueTask<Result> InvokeConnectAsync(EndPoint remoteAddress, EndPoint localAddress, CancellationToken token = default)
-            => Handler.ConnectAsync(this, remoteAddress, localAddress, token);
+        internal ValueTask<Result> InvokeConnectAsync(EndPoint remoteAddress, EndPoint localAddress, CancellationToken token = default)
+            => CheckCancellationRequested(token, out Result result) ? result : Handler.ConnectAsync(this, remoteAddress, localAddress, token);
 
         /// <inheritdoc/>
         public ValueTask<Result> DisconnectAsync(CancellationToken token = default)
@@ -145,8 +145,8 @@ namespace ExtenderApp.Common.Networks
         /// <summary>
         /// 调用当前处理器的断开实现。封装对 <see cref="ILinkChannelHandler.DisconnectAsync"/> 的调用。
         /// </summary>
-        private ValueTask<Result> InvokeDisconnectAsync(CancellationToken token)
-            => Handler.DisconnectAsync(this, token);
+        internal ValueTask<Result> InvokeDisconnectAsync(CancellationToken token)
+            => CheckCancellationRequested(token, out Result result) ? result : Handler.DisconnectAsync(this, token);
 
         /// <inheritdoc/>
         public ValueTask<Result> BindAsync(EndPoint localAddress, CancellationToken token = default)
@@ -155,8 +155,8 @@ namespace ExtenderApp.Common.Networks
         /// <summary>
         /// 调用当前处理器的绑定实现。封装对 <see cref="ILinkChannelHandler.BindAsync"/> 的调用。
         /// </summary>
-        private ValueTask<Result> InvokeBindAsync(EndPoint localAddress, CancellationToken token)
-            => Handler.BindAsync(this, localAddress, token);
+        internal ValueTask<Result> InvokeBindAsync(EndPoint localAddress, CancellationToken token)
+            => CheckCancellationRequested(token, out Result result) ? result : Handler.BindAsync(this, localAddress, token);
 
         /// <inheritdoc/>
         public ValueTask<Result> CloseAsync(CancellationToken token = default)
@@ -165,8 +165,8 @@ namespace ExtenderApp.Common.Networks
         /// <summary>
         /// 调用当前处理器的关闭实现。封装对 <see cref="ILinkChannelHandler.CloseAsync"/> 的调用。
         /// </summary>
-        private ValueTask<Result> InvokeCloseAsync(CancellationToken token)
-            => Handler.CloseAsync(this, token);
+        internal ValueTask<Result> InvokeCloseAsync(CancellationToken token)
+            => CheckCancellationRequested(token, out Result result) ? result : Handler.CloseAsync(this, token);
 
         /// <inheritdoc/>
         public Result ExceptionCaught(Exception exception)
@@ -175,7 +175,7 @@ namespace ExtenderApp.Common.Networks
         /// <summary>
         /// 调用当前处理器的异常处理实现。封装对 <see cref="ILinkChannelHandler.ExceptionCaught"/> 的调用。
         /// </summary>
-        private Result InvokeExceptionCaught(Exception exception)
+        internal Result InvokeExceptionCaught(Exception exception)
             => Handler.ExceptionCaught(this, exception);
 
         /// <summary>
@@ -191,8 +191,8 @@ namespace ExtenderApp.Common.Networks
         /// <summary>
         /// 调用当前处理器的入站处理实现。封装对 <see cref="ILinkChannelHandler.InboundHandleAsync"/> 的调用。
         /// </summary>
-        private ValueTask<Result> InvokeInboundHandleAsync(ValueCache cache, CancellationToken token)
-            => Handler.InboundHandleAsync(this, cache, token);
+        internal ValueTask<Result> InvokeInboundHandleAsync(ValueCache cache, CancellationToken token)
+            => CheckCancellationRequested(token, out Result result) ? result : Handler.InboundHandleAsync(this, cache, token);
 
         /// <summary>
         /// 将出站数据处理请求沿出站方向传递到上一个合适的处理器上下文。
@@ -207,8 +207,8 @@ namespace ExtenderApp.Common.Networks
         /// <summary>
         /// 调用当前处理器的出站处理实现。封装对 <see cref="ILinkChannelHandler.OutboundHandleAsync"/> 的调用。
         /// </summary>
-        private ValueTask<Result> InvokeOutboundHandleAsync(ValueCache cache, CancellationToken token)
-            => Handler.OutboundHandleAsync(this, cache, token);
+        internal ValueTask<Result> InvokeOutboundHandleAsync(ValueCache cache, CancellationToken token)
+            => CheckCancellationRequested(token, out Result result) ? result : Handler.OutboundHandleAsync(this, cache, token);
 
         #endregion Invoke
 
@@ -243,6 +243,21 @@ namespace ExtenderApp.Common.Networks
         }
 
         #endregion FindContext
+
+        private bool CheckCancellationRequested(CancellationToken token, out Result result)
+        {
+            try
+            {
+                result = Result.Success();
+                token.ThrowIfCancellationRequested();
+                return false;
+            }
+            catch (OperationCanceledException ex)
+            {
+                result = Result.FromException(ex);
+                return true;
+            }
+        }
 
         protected override void DisposeManagedResources()
         {

@@ -18,33 +18,28 @@ namespace ExtenderApp.Common.Networks.LinkChannels
         private SslStream? sslStream;
         private TcpLinkerStream? tcpLinkerStream;
 
-        public override void Added(ILinkChannelHandlerContext context)
-        {
-            tcpLinkerStream = GetTcpLinkerStream(context);
-        }
-
         public override async ValueTask<Result> ActiveAsync(ILinkChannelHandlerContext context, CancellationToken token = default)
         {
             try
             {
-                tcpLinkerStream = GetTcpLinkerStream(context) ?? throw new InvalidOperationException("当前连接不是TCP连接，无法使用SSL");
+                if (context.LinkChannel.Linker is not ITcpLinker tcpLinker)
+                    throw new InvalidOperationException("当前连接不是TCP连接，无法使用SSL");
+
+                tcpLinkerStream = tcpLinker.GetStream();
                 sslStream = new(tcpLinkerStream, false);
                 await sslStream.AuthenticateAsClientAsync(AuthenticationOptions, token).ConfigureAwait(false);
-                return Result.Success();
+                return Result.Success("SSL 已连接");
             }
             catch (Exception ex)
             {
-                var result = context.ExceptionCaught(ex);
-
-                return result ?
-                    result :
-                    Result.FromException(ex, "SSL authentication failed.");
+                return context.ExceptionCaught(ex);
             }
         }
 
-        private static TcpLinkerStream? GetTcpLinkerStream(ILinkChannelHandlerContext context)
+        public override ValueTask<Result> CloseAsync(ILinkChannelHandlerContext context, CancellationToken token = default)
         {
-            return default;
+            sslStream!.Close();
+            return context.CloseAsync(token);
         }
     }
 }

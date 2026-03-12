@@ -4,7 +4,7 @@ using ExtenderApp.Abstract;
 namespace ExtenderApp.Common.Networks.LinkChannels
 {
     /// <summary>
-    /// LinkClientFactory 类用于创建 LinkClient 实例。
+    /// LinkClientFactory 类用于创建 LinkChannel 实例。
     /// </summary>
     public abstract class LinkClientFactory<TLinkClient, TLinker> : ILinkClientFactory<TLinkClient>
         where TLinkClient : ILinkChannel

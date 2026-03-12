@@ -26,9 +26,9 @@ namespace ExtenderApp.Common.Networks.LinkChannels
         public LinkChannelPipeline(LinkChannel linkClient)
         {
             _linkClient = linkClient;
-            var linkerTransportHandler = new LinkerTransportHandler(linkClient);
-            _head = new HeadLinkChannelHandlerContext(linkClient, linkerTransportHandler);
-            _tail = new TailLinkChannelHandlerContext(linkClient);
+            var handler = new LinkerTransportHandler(linkClient);
+            _head = new HeadContext(linkClient, handler);
+            _tail = new TailContext(linkClient);
             _head.Next = _tail;
             _tail.Prev = _head;
         }
@@ -189,39 +189,39 @@ namespace ExtenderApp.Common.Networks.LinkChannels
 
         ///<inheritdoc/>
         public ValueTask<Result> ActiveAsync(CancellationToken token = default)
-            => _head.ActiveAsync(token);
+            => _head.InvokeActiveAsync(token);
 
         ///<inheritdoc/>
         public ValueTask<Result> InactiveAsync(CancellationToken token = default)
-            => _head.InactiveAsync(token);
+            => _head.InvokeInactiveAsync(token);
 
         ///<inheritdoc/>
         public ValueTask<Result> BindAsync(EndPoint localAddress, CancellationToken token = default)
-            => _tail.BindAsync(localAddress, token);
+            => _tail.InvokeBindAsync(localAddress, token);
 
         ///<inheritdoc/>
         public ValueTask<Result> CloseAsync(CancellationToken token = default)
-            => _tail.CloseAsync(token);
+            => _tail.InvokeCloseAsync(token);
 
         ///<inheritdoc/>
         public ValueTask<Result> ConnectAsync(EndPoint remoteAddress, EndPoint localAddress, CancellationToken token = default)
-            => _tail.ConnectAsync(remoteAddress, localAddress, token);
+            => _tail.InvokeConnectAsync(remoteAddress, localAddress, token);
 
         ///<inheritdoc/>
         public ValueTask<Result> DisconnectAsync(CancellationToken token = default)
-            => _tail.DisconnectAsync(token);
+            => _tail.InvokeDisconnectAsync(token);
 
         ///<inheritdoc/>
         public Result ExceptionCaught(Exception exception)
-            => _head.ExceptionCaught(exception);
+            => _head.InvokeExceptionCaught(exception);
 
         ///<inheritdoc/>
         public ValueTask<Result> InboundHandleAsync(ValueCache cache, CancellationToken token = default)
-            => _head.InboundHandleAsync(cache, token);
+            => _head.InvokeInboundHandleAsync(cache, token);
 
         ///<inheritdoc/>
         public ValueTask<Result> OutboundHandleAsync(ValueCache cache, CancellationToken token = default)
-            => _tail.OutboundHandleAsync(cache, token);
+            => _tail.InvokeOutboundHandleAsync(cache, token);
 
         #endregion Handlers Operations
 
@@ -283,7 +283,7 @@ namespace ExtenderApp.Common.Networks.LinkChannels
         /// <summary>
         /// 管道头部的处理器上下文，用于将 <see cref="HeadLinkChannelHandler"/> 绑定到特定的上下文名称。 该上下文在管道构建时作为第一项，承载默认的头部处理器实例。
         /// </summary>
-        private sealed class HeadLinkChannelHandlerContext : LinkChannelHandlerContext
+        private sealed class HeadContext : LinkChannelHandlerContext
         {
             /// <summary>
             /// 管道中头部的链接客户端处理器，作为链式处理的起始节点。
@@ -306,9 +306,9 @@ namespace ExtenderApp.Common.Networks.LinkChannels
             }
 
             /// <summary>
-            /// 使用指定名称创建 <see cref="HeadLinkChannelHandlerContext"/> 实例，并将默认的头部处理器关联到该上下文。
+            /// 使用指定名称创建 <see cref="HeadContext"/> 实例，并将默认的头部处理器关联到该上下文。
             /// </summary>
-            public HeadLinkChannelHandlerContext(LinkChannel linkClient, ILinkChannelHandler handler) : base("Head", linkClient, new HeadLinkChannelHandler(handler), typeof(HeadLinkChannelHandler))
+            public HeadContext(LinkChannel linkClient, ILinkChannelHandler handler) : base("Head", linkClient, new HeadLinkChannelHandler(handler), typeof(HeadLinkChannelHandler))
             {
             }
         }
@@ -320,7 +320,7 @@ namespace ExtenderApp.Common.Networks.LinkChannels
         /// <summary>
         /// 管道尾部的处理器上下文，用于将 <see cref="TailLinkChannelHandler"/> 绑定到尾部上下文。 该上下文在管道构建时作为最后一项，承载默认的尾部处理器实例。
         /// </summary>
-        private sealed class TailLinkChannelHandlerContext : LinkChannelHandlerContext
+        private sealed class TailContext : LinkChannelHandlerContext
         {
             /// <summary>
             /// 管道中尾部的链接客户端处理器，作为链式处理的终结节点。
@@ -338,7 +338,7 @@ namespace ExtenderApp.Common.Networks.LinkChannels
             /// <summary>
             /// 创建默认的尾部上下文实例，名称为 "Tail"，并关联默认的尾部处理器。
             /// </summary>
-            public TailLinkChannelHandlerContext(ILinkChannel linkClient) : base("Tail", linkClient, tailLinkChannelHandler, typeof(TailLinkChannelHandler))
+            public TailContext(ILinkChannel linkClient) : base("Tail", linkClient, tailLinkChannelHandler, typeof(TailLinkChannelHandler))
             {
             }
         }

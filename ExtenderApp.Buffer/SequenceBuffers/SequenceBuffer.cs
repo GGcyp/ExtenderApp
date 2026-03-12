@@ -338,7 +338,7 @@ namespace ExtenderApp.Buffer
             return false;
         }
 
-        protected override void UpdateCommittedProtected(Span<T> span, long committedPosition)
+        protected override void UpdateCommittedProtected(ReadOnlySpan<T> span, long committedPosition)
         {
             // 将指定的已写入数据 span 按绝对位置 committedPosition 写回到对应段的已提交区域。 先确保段的 RunningIndex 是最新的，然后定位到起始段并逐段复制。
             if (span.IsEmpty)

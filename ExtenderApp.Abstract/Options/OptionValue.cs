@@ -87,7 +87,7 @@ namespace ExtenderApp.Abstract.Options
         /// <summary>
         /// 更新选项的具体值，并在值发生变化时触发 <see cref="ChangedHandler"/> 事件。
         /// </summary>
-        /// <param name="sender">触发事件的发送者。</param>
+        /// <param name="sender">触发事件的发送者（通常为包含此 OptionValue 的 OptionsObject）。</param>
         /// <param name="item">包含选项标识符和新的选项值的元组。</param>
         public void UpdateValue(object? sender, (OptionIdentifier, T) item)
         {
@@ -98,7 +98,7 @@ namespace ExtenderApp.Abstract.Options
             if (!EqualityComparer<T>.Default.Equals(Value, newValue))
             {
                 Value = newValue;
-                ChangedHandler?.Invoke(this, (Identifier, newValue));
+                ChangedHandler?.Invoke(sender, (Identifier, newValue));
             }
         }
 

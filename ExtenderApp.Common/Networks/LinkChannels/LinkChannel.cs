@@ -17,7 +17,7 @@ namespace ExtenderApp.Common.Networks.LinkChannels
         /// <summary>
         /// 底层链接器实例。
         /// </summary>
-        internal ILinker Linker { get; }
+        public ILinker Linker { get; }
 
         private readonly LinkChannelPipeline _pipeline;
 
@@ -165,21 +165,14 @@ namespace ExtenderApp.Common.Networks.LinkChannels
         {
             var token = receiveCts!.Token;
             var cache = ValueCache.GetCache();
-
             try
             {
                 while (!token.IsCancellationRequested)
                 {
-                    var block = MemoryBlock<byte>.GetBuffer();
-                    var memory = block.GetMemory(ReceiveBufferSize);
-                    var receiveResult = (await Linker.ReceiveAsync(memory, token)).Value;
-
-                    block.Advance(receiveResult.BytesTransferred);
-                    cache.AddValue(block);
-                    var result = (await _pipeline.InboundHandleAsync(cache, token));
+                    var result = await _pipeline.InboundHandleAsync(cache, token).ConfigureAwait(false);
+                    result.ThrowExceptionWithOriginalStackTraceIfError();
 
                     cache.Clear();
-                    block.TryRelease();
                 }
             }
             catch (Exception)
@@ -233,10 +226,15 @@ namespace ExtenderApp.Common.Networks.LinkChannels
         }
 
         /// <inheritdoc/>
-        public virtual ValueTask<Result> DisconnectAsync(CancellationToken token = default)
+        public virtual async ValueTask<Result> DisconnectAsync(CancellationToken token = default)
         {
             ThrowIfDisposed();
-            return _pipeline.DisconnectAsync(token);
+
+            receiveCts?.Cancel();
+            if (HasReceiveTask)
+                await receiveTask!.ConfigureAwait(false);
+
+            return await _pipeline.DisconnectAsync(token).ConfigureAwait(false);
         }
 
         #endregion Connect/Disconnect

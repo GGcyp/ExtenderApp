@@ -1,11 +1,11 @@
 ﻿using System.Diagnostics;
 using System.Text;
 using ExtenderApp.Abstract;
+using ExtenderApp.Abstract.Networks;
+using ExtenderApp.Abstract.Options;
 using ExtenderApp.Contracts;
 using ExtenderApp.Test.Tests;
 using ExtenderApp.ViewModels;
-using ExtenderApp.Abstract.Options;
-using ExtenderApp.Abstract.Networks;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace ExtenderApp.Test
@@ -24,6 +24,8 @@ namespace ExtenderApp.Test
         public override void Inject(IServiceProvider serviceProvider)
         {
             base.Inject(serviceProvider);
+
+            //AbstractBufferStreamTests.RunAll();
 
             LinkClinentTest.TestLinkClientHandlerAsync(serviceProvider).Wait();
             //LinkerTests.RunAll(serviceProvider.GetRequiredService<ILinkerFactory<ITcpLinker>>(), binarySerialization);

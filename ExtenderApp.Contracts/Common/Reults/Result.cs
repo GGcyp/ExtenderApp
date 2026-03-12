@@ -9,11 +9,7 @@ namespace ExtenderApp.Contracts
     {
         public const string DefaultSuccessMessage = "OK";
         public const string DefaultFailureMessage = "Failure";
-
-        /// <summary>
-        /// 获取一个值，该值指示操作是否成功。
-        /// </summary>
-        public bool IsSuccess { get; }
+        public const string DefaultMessage = "No message provided";
 
         /// <summary>
         /// 获取与结果相关的可选消息。
@@ -24,6 +20,16 @@ namespace ExtenderApp.Contracts
         /// 获取与失败结果相关的异常（如有）。
         /// </summary>
         public Exception? Exception { get; }
+
+        /// <summary>
+        /// 获取一个值，该值指示操作是否成功。
+        /// </summary>
+        public bool IsSuccess { get; }
+
+        /// <summary>
+        /// 获取一个值，该值指示结果是否包含异常。 只有当结果表示失败且包含异常时才为 true。
+        /// </summary>
+        public bool HasException => Exception != null;
 
         /// <summary>
         /// 初始化 <see cref="Result"/> 结构的新实例。
@@ -44,7 +50,7 @@ namespace ExtenderApp.Contracts
         /// <returns>描述结果状态和消息的字符串。</returns>
         public override string ToString()
         {
-            return string.Format("{0}，返回信息{1}", IsSuccess ? "OK" : "FromException", Message ?? (IsSuccess ? "OK" : "未发现返回信息"));
+            return string.Format("{0}，返回信息{1}", IsSuccess ? DefaultSuccessMessage : DefaultFailureMessage, Message ?? (IsSuccess ? DefaultSuccessMessage : DefaultMessage));
         }
 
         /// <inheritdoc/>
@@ -217,8 +223,8 @@ namespace ExtenderApp.Contracts
         public static implicit operator string?(Result result)
             => result.Message;
 
-        public static implicit operator Exception(Result result)
-            => result.Exception!;
+        public static implicit operator Exception?(Result result)
+            => result.Exception;
 
         public static implicit operator ValueTask<Result>(Result result)
             => ValueTask.FromResult(result);
@@ -234,6 +240,11 @@ namespace ExtenderApp.Contracts
         /// 获取一个值，该值指示操作是否成功。
         /// </summary>
         public bool IsSuccess { get; }
+
+        /// <summary>
+        /// 获取一个值，该值指示结果是否包含异常。 只有当结果表示失败且包含异常时才为 true。
+        /// </summary>
+        public bool HasException => Exception != null;
 
         /// <summary>
         /// 获取与结果相关的可选消息。
@@ -318,7 +329,7 @@ namespace ExtenderApp.Contracts
         /// <returns>描述结果状态、消息和数据的字符串。</returns>
         public override string ToString()
         {
-            return string.Format("{0}，返回信息{1}，数据：{2}", IsSuccess ? "OK" : "FromException", Message ?? (IsSuccess ? "OK" : "未发现返回信息"), Value?.ToString() ?? "null");
+            return string.Format("{0}，返回信息{1}，数据：{2}", IsSuccess ? Result.DefaultSuccessMessage : Result.DefaultFailureMessage, Message ?? (IsSuccess ? Result.DefaultSuccessMessage : Result.DefaultMessage), Value?.ToString() ?? "null");
         }
 
         public static bool operator ==(Result<T> left, Result<T> right)
@@ -361,7 +372,7 @@ namespace ExtenderApp.Contracts
         public static implicit operator ValueTask<Result<T>>(Result<T> result)
             => ValueTask.FromResult(result);
 
-        public static implicit operator Exception(Result<T> result)
-            => result.Exception!;
+        public static implicit operator Exception?(Result<T> result)
+            => result.Exception;
     }
 }

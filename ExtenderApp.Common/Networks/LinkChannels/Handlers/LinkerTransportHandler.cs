@@ -26,15 +26,18 @@ namespace ExtenderApp.Common.Networks.LinkChannels
 
         public override async ValueTask<Result> ConnectAsync(ILinkChannelHandlerContext context, EndPoint remoteAddress, EndPoint localAddress, CancellationToken token = default)
         {
+            if (token.IsCancellationRequested)
+                return Result.Failure("连接操作已被取消。");
+
             try
             {
                 Result result = await Linker.ConnectAsync(remoteAddress, localAddress, token).ConfigureAwait(false);
                 if (!result)
-                    return context.ExceptionCaught(result);
+                    return result.HasException ? context.ExceptionCaught(result.Exception!) : result;
 
                 result = await context.ActiveAsync(token).ConfigureAwait(false);
-                if (!result)
-                    return context.ExceptionCaught(result);
+                if (!result && result.HasException)
+                    return context.ExceptionCaught(result.Exception!);
 
                 return result;
             }
@@ -46,15 +49,18 @@ namespace ExtenderApp.Common.Networks.LinkChannels
 
         public override async ValueTask<Result> DisconnectAsync(ILinkChannelHandlerContext context, CancellationToken token = default)
         {
+            if (token.IsCancellationRequested)
+                return Result.Failure("断开操作已被取消。");
+
             try
             {
                 Result result = await Linker.DisconnectAsync(token).ConfigureAwait(false);
                 if (!result)
-                    return context.ExceptionCaught(result);
+                    return result.HasException ? context.ExceptionCaught(result.Exception!) : result;
 
                 result = await context.InactiveAsync(token).ConfigureAwait(false);
-                if (!result)
-                    return context.ExceptionCaught(result);
+                if (!result && result.HasException)
+                    return context.ExceptionCaught(result.Exception!);
 
                 return result;
             }
@@ -66,8 +72,13 @@ namespace ExtenderApp.Common.Networks.LinkChannels
 
         public override async ValueTask<Result> OutboundHandleAsync(ILinkChannelHandlerContext context, ValueCache cache, CancellationToken token = default)
         {
+            if (token.IsCancellationRequested)
+                return Result.Failure("发送操作已被取消。");
+
             int sendBufferSize = Linker.SendBufferSize;
             var sequence = SequenceBuffer<byte>.GetBuffer();
+            var releaseCache = ValueCache.GetCache();
+            var resultValue = new LinkOperationValue();
             try
             {
                 // 将 cache 中的所有缓冲追加到 sequence 中（直到达到 send window）
@@ -79,17 +90,19 @@ namespace ExtenderApp.Common.Networks.LinkChannels
                     }
 
                     cache.TryTakeValue(out operationValue);
+                    operationValue.Freeze();
                     sequence.Append(operationValue);
-                    if (operationValue is SequenceBuffer<byte> sequenceBuffer)
-                        sequenceBuffer.TryRelease();
-
+                    releaseCache.AddValue(operationValue);
                     continue;
                 }
 
                 if (sequence.Committed > 0)
                 {
                     var result = await Linker!.SendAsync(sequence, token).ConfigureAwait(false);
-                    cache.AddValue(result);
+                    if (!result)
+                        return result.HasException ? context.ExceptionCaught(result.Exception!) : result;
+
+                    resultValue = new(result, resultValue.BytesTransferred + result.Value.BytesTransferred);
                     sequence.Clear();
                 }
 
@@ -101,22 +114,27 @@ namespace ExtenderApp.Common.Networks.LinkChannels
             }
             finally
             {
+                cache.AddValue(resultValue);
                 sequence.TryRelease();
+                while (releaseCache.TryTakeValue(out AbstractBuffer<byte> buffer))
+                    buffer.TryRelease();
+                releaseCache.Release();
             }
         }
 
         public override async ValueTask<Result> InboundHandleAsync(ILinkChannelHandlerContext context, ValueCache cache, CancellationToken token = default)
         {
-            if (!cache.TryGetValue(out MemoryBlock<byte> buffer))
-            {
-                return Result.Failure("没有可用的缓冲区进行接收。");
-            }
+            if (token.IsCancellationRequested)
+                return Result.Failure("接收操作已被取消。");
 
             try
             {
-                var linkOperationValue = await Linker.ReceiveAsync(buffer, token).ConfigureAwait(false);
-                cache.AddValue(linkOperationValue);
+                var block = MemoryBlock<byte>.GetBuffer(context.LinkChannel.ReceiveBufferSize);
+                var result = await Linker.ReceiveAsync(block, token).ConfigureAwait(false);
+                if (!result)
+                    return result.HasException ? context.ExceptionCaught(result.Exception!) : result;
 
+                cache.AddValue(result.Value);
                 return await context.InboundHandleAsync(cache, token).ConfigureAwait(false);
             }
             catch (Exception ex)

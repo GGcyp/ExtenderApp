@@ -444,13 +444,15 @@ namespace ExtenderApp.Abstract
         /// 若目标内存没有可写空间，则直接返回失败结果。
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static ValueTask<Result<LinkOperationValue>> ReceiveAsyncPrivate(ILinker linker, MemoryBlock<byte> memoryBlock, LinkFlags flags, CancellationToken token)
+        private static async ValueTask<Result<LinkOperationValue>> ReceiveAsyncPrivate(ILinker linker, MemoryBlock<byte> memoryBlock, LinkFlags flags, CancellationToken token)
         {
             var writableMemory = memoryBlock.GetAvailableMemory();
             if (writableMemory.IsEmpty || writableMemory.Length == 0)
                 return ReceiveFailureResult(nameof(MemoryBlock<byte>));
 
-            return linker.ReceiveAsync(writableMemory, flags);
+            var result = await linker.ReceiveAsync(writableMemory, flags).ConfigureAwait(false);
+            memoryBlock.Advance(result.Value.BytesTransferred);
+            return result;
         }
 
         /// <summary>
