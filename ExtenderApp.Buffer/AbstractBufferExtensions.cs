@@ -6,16 +6,14 @@ using System.Text;
 namespace ExtenderApp.Buffer
 {
     /// <summary>
-    /// 提供针对 <see cref="AbstractBuffer{byte}"/>、<see cref="Span{byte}"/> 和相关类型的读写扩展方法，
-    /// 包括对非托管类型的二进制写入、字符串写入以及尝试写入的辅助方法。
+    /// 提供针对 <see cref="AbstractBuffer{byte}"/>、 <see cref="Span{byte}"/> 和相关类型的读写扩展方法， 包括对非托管类型的二进制写入、字符串写入以及尝试写入的辅助方法。
     /// </summary>
     public static class AbstractBufferExtensions
     {
         #region Write
 
         /// <summary>
-        /// 将指定非托管值写入到目标 <see cref="AbstractBuffer{byte}"/> 的可写区，并以指定字节序写入。
-        /// 写入前会通过 <see cref="AbstractBuffer{T}.GetSpan(int)"/> 获取可写区域并在写入后由调用方推进写指针。
+        /// 将指定非托管值写入到目标 <see cref="AbstractBuffer{byte}"/> 的可写区，并以指定字节序写入。 写入前会通过 <see cref="AbstractBuffer{T}.GetSpan(int)"/> 获取可写区域并在写入后由调用方推进写指针。
         /// </summary>
         /// <typeparam name="T">要写入的值类型，必须为 <c>unmanaged</c>。</typeparam>
         /// <param name="buffer">目标缓冲区实例（不能为 <c>null</c>）。</param>
@@ -113,8 +111,7 @@ namespace ExtenderApp.Buffer
         }
 
         /// <summary>
-        /// 将指定字符串按指定编码写入到目标 <see cref="AbstractBuffer{byte}"/>（不包含长度或终止符），并推进写指针。
-        /// 若 <paramref name="value"/> 为 <c>null</c> 或空字符串则不执行任何写入。
+        /// 将指定字符串按指定编码写入到目标 <see cref="AbstractBuffer{byte}"/>（不包含长度或终止符），并推进写指针。 若 <paramref name="value"/> 为 <c>null</c> 或空字符串则不执行任何写入。
         /// </summary>
         /// <param name="buffer">目标缓冲区（不能为 <c>null</c>）。</param>
         /// <param name="value">要写入的字符串。</param>

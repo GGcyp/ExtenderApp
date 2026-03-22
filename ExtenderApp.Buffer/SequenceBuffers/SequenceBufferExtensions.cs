@@ -60,6 +60,53 @@ namespace ExtenderApp.Buffer
             return buffer.First;
         }
 
+        #region Write
+
+        /// <summary>
+        /// 将 <see cref="MemoryBlock{T}"/> 的已提交部分写入 <see cref="SequenceBuffer{T}"/>。
+        /// </summary>
+        /// <typeparam name="T">缓冲区的元素类型。</typeparam>
+        /// <param name="buffer">目标序列缓冲区。</param>
+        /// <param name="sourceBuffer">源内存块。</param>
+        /// <returns>写入后的 <see cref="SequenceBuffer{T}"/>。</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static SequenceBuffer<T> Write<T>(this SequenceBuffer<T> buffer, MemoryBlock<T> sourceBuffer)
+        {
+            ArgumentNullException.ThrowIfNull(buffer, nameof(buffer));
+            ArgumentNullException.ThrowIfNull(sourceBuffer, nameof(sourceBuffer));
+
+            buffer.Write(sourceBuffer.CommittedSpan);
+            return buffer;
+        }
+
+        /// <summary>
+        /// 将 <see cref="SequenceBuffer{T}"/> 的已提交部分写入另一个 <see cref="SequenceBuffer{T}"/>。
+        /// </summary>
+        /// <typeparam name="T">缓冲区的元素类型。</typeparam>
+        /// <param name="buffer">目标序列缓冲区。</param>
+        /// <param name="sourceBuffer">源序列缓冲区。</param>
+        /// <returns>写入后的 <see cref="SequenceBuffer{T}"/>。</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static SequenceBuffer<T> Write<T>(this SequenceBuffer<T> buffer, SequenceBuffer<T> sourceBuffer)
+        {
+            ArgumentNullException.ThrowIfNull(buffer, nameof(buffer));
+            ArgumentNullException.ThrowIfNull(sourceBuffer, nameof(sourceBuffer));
+
+            buffer.Write(sourceBuffer.CommittedSequence);
+            return buffer;
+        }
+
+        public static AbstractBuffer<T> Write<T>(this AbstractBuffer<T> buffer, SequenceBuffer<T> sourceBuffer)
+        {
+            ArgumentNullException.ThrowIfNull(buffer, nameof(buffer));
+            ArgumentNullException.ThrowIfNull(sourceBuffer, nameof(sourceBuffer));
+
+            buffer.Write(sourceBuffer.CommittedSequence);
+            return buffer;
+        }
+
+        #endregion Write
+
         #region Append
 
         /// <summary>

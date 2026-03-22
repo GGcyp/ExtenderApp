@@ -87,6 +87,34 @@ namespace ExtenderApp.Common.Networks.LinkChannels
             set => SetOptionValue(LinkOptions.SendTimeoutIdentifier, value);
         }
 
+        /// <inheritdoc/>
+        public bool DualMode
+        {
+            get => GetOptionValue(LinkOptions.DualModeIdentifier);
+            set => SetOptionValue(LinkOptions.DualModeIdentifier, value);
+        }
+
+        /// <inheritdoc/>
+        public bool ExclusiveAddressUse
+        {
+            get => GetOptionValue(LinkOptions.ExclusiveAddressUseIdentifier);
+            set => SetOptionValue(LinkOptions.ExclusiveAddressUseIdentifier, value);
+        }
+
+        /// <inheritdoc/>
+        public bool IsBound
+        {
+            get => GetOptionValue(LinkOptions.IsBoundIdentifier);
+            set => SetOptionValue(LinkOptions.IsBoundIdentifier, value);
+        }
+
+        /// <inheritdoc/>
+        public short Ttl
+        {
+            get => GetOptionValue(LinkOptions.TtlIdentifier);
+            set => SetOptionValue(LinkOptions.TtlIdentifier, value);
+        }
+
         #endregion ILinker 直通属性
 
         private readonly object _lock = new object();
@@ -123,7 +151,7 @@ namespace ExtenderApp.Common.Networks.LinkChannels
                 var result = await _pipeline.OutboundHandleAsync(outCache, token).ConfigureAwait(false);
 
                 if (!result)
-                    return Result.FromException<LinkOperationValue>(result.Exception!);
+                    return Result.FromException<LinkOperationValue>(result.ResultException!);
                 else if (outCache.TryTakeValue(out LinkOperationValue linkOperationValue))
                     return Result.Success(linkOperationValue);
                 else

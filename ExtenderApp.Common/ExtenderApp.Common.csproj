@@ -20,6 +20,15 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="Networks\Http\HttpHeaderHelps.cs" />
+    <Compile Include="Networks\Http\HttpLinkClient.cs" />
+    <Compile Include="Networks\Http\HttpLinkClientExtensions.cs" />
+    <Compile Include="Networks\Http\HttpRequestMessageHandler.cs" />
+    <Compile Include="Networks\Http\HttpResponseMessageHandler.cs" />
+    <Compile Include="Networks\Http\SslHandler.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\ExtenderApp.Abstract\ExtenderApp.Abstract.csproj" />
   </ItemGroup>
 
@@ -29,7 +38,7 @@
 
 	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
 		<ItemGroup>
-			<TargetFolder Include="E:\WPF_Project\ExtenderApp\ExtenderApp\bin\Debug\net8.0-windows8.0" />
+			<TargetFolder Include="$(SolutionDir)ExtenderApp\bin\$(Configuration)\net8.0-windows8.0" />
 		</ItemGroup>
 		<MakeDir Directories="%(TargetFolder.Identity)\lib" Condition="!Exists('%(TargetFolder.Identity)\lib')" />
 		<Exec Command="copy &quot;$(TargetDir)\$(ProjectName).dll&quot; &quot;%(TargetFolder.Identity)\lib\$(ProjectName).dll&quot;" />

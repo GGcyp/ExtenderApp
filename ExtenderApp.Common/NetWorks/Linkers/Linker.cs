@@ -113,6 +113,34 @@ namespace ExtenderApp.Common.Networks
             set => SetOptionValue(LinkOptions.SendTimeoutIdentifier, value);
         }
 
+        /// <inheritdoc/>
+        public bool DualMode
+        {
+            get => GetOptionValue(LinkOptions.DualModeIdentifier);
+            set => SetOptionValue(LinkOptions.DualModeIdentifier, value);
+        }
+
+        /// <inheritdoc/>
+        public bool ExclusiveAddressUse
+        {
+            get => GetOptionValue(LinkOptions.ExclusiveAddressUseIdentifier);
+            set => SetOptionValue(LinkOptions.ExclusiveAddressUseIdentifier, value);
+        }
+
+        /// <inheritdoc/>
+        public bool IsBound
+        {
+            get => GetOptionValue(LinkOptions.IsBoundIdentifier);
+            set => SetOptionValue(LinkOptions.IsBoundIdentifier, value);
+        }
+
+        /// <inheritdoc/>
+        public short Ttl
+        {
+            get => GetOptionValue(LinkOptions.TtlIdentifier);
+            set => SetOptionValue(LinkOptions.TtlIdentifier, value);
+        }
+
         #endregion Properties
 
         /// <summary>
@@ -131,7 +159,6 @@ namespace ExtenderApp.Common.Networks
             SendSlim = new(1, 1);
             ReceiveSlim = new(1, 1);
 
-            RegisterOption(LinkOptions.CapacityLimiterIdentifier, new(capacity));
             RegisterOption(LinkOptions.SendCounterIdentifier, new());
             RegisterOption(LinkOptions.ReceiveCounterIdentifier, new());
             RegisterOption(LinkOptions.ConnectedIdentifier, false);
@@ -144,12 +171,17 @@ namespace ExtenderApp.Common.Networks
             RegisterOption(LinkOptions.SendBufferSizeIdentifier);
             RegisterOption(LinkOptions.ReceiveTimeoutIdentifier);
             RegisterOption(LinkOptions.SendTimeoutIdentifier);
+            RegisterOption(LinkOptions.DualModeIdentifier);
+            RegisterOption(LinkOptions.TtlIdentifier);
+            RegisterOption(LinkOptions.ExclusiveAddressUseIdentifier);
+            RegisterOption(LinkOptions.IsBoundIdentifier, false);
+            RegisterOption(LinkOptions.CapacityLimiterIdentifier, new(ReceiveBufferSize + SendBufferSize));
 
             SendCounter.Start();
             ReceiveCounter.Start();
         }
 
-        #region Connect/Close
+        #region Connect/Disconnect
 
         /// <inheritdoc/>
         /// <exception cref="ObjectDisposedException">当对象已释放时抛出。</exception>
@@ -226,7 +258,7 @@ namespace ExtenderApp.Common.Networks
             }
         }
 
-        #endregion Connect/Close
+        #endregion Connect/Disconnect
 
         #region Bind
 
@@ -242,6 +274,7 @@ namespace ExtenderApp.Common.Networks
                 if (Connected)
                     throw new InvalidOperationException("已连接时不允许绑定。");
                 ExecuteBind(endPoint);
+                IsBound = true;
             }
             finally
             {
@@ -693,6 +726,9 @@ namespace ExtenderApp.Common.Networks
 
         /// <inheritdoc/>
         public abstract ILinker Clone();
+
+        /// <inheritdoc/>
+        public abstract void Close();
 
         /// <summary>
         /// 计算非连续缓冲区列表的总字节长度，并执行基础状态验证。

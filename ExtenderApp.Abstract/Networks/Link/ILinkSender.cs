@@ -32,7 +32,7 @@ namespace ExtenderApp.Abstract
         /// <param name="memory">要发送的有效数据窗口。调用方负责提供合适的长度与内容。</param>
         /// <returns>
         /// 一个包含 <see cref="LinkOperationValue"/> 的 <see cref="Result{T}"/> 实例，其中： <br/>- 成功时，可通过 <see
-        /// cref="LinkOperationValue.BytesTransferred"/> 获取实际发出的字节数。 <br/>- 失败时， <see cref="Result.Exception"/> 包含相应的网络或逻辑异常信息。
+        /// cref="LinkOperationValue.BytesTransferred"/> 获取实际发出的字节数。 <br/>- 失败时， <see cref="Result.ResultException"/> 包含相应的网络或逻辑异常信息。
         /// </returns>
         Result<LinkOperationValue> Send(ReadOnlyMemory<byte> memory);
 
@@ -43,7 +43,7 @@ namespace ExtenderApp.Abstract
         /// <param name="flags">发送标志。</param>
         /// <returns>
         /// 一个包含 <see cref="LinkOperationValue"/> 的 <see cref="Result{T}"/> 实例，其中： <br/>- 成功时，可通过 <see
-        /// cref="LinkOperationValue.BytesTransferred"/> 获取实际发出的字节数。 <br/>- 失败时， <see cref="Result.Exception"/> 包含相应的网络或逻辑异常信息。
+        /// cref="LinkOperationValue.BytesTransferred"/> 获取实际发出的字节数。 <br/>- 失败时， <see cref="Result.ResultException"/> 包含相应的网络或逻辑异常信息。
         /// </returns>
         Result<LinkOperationValue> Send(ReadOnlyMemory<byte> memory, LinkFlags flags);
 

@@ -4,20 +4,22 @@ using System.Threading.Tasks.Sources;
 namespace ExtenderApp.Contracts
 {
     /// <summary>
-    /// 容量闸门（按总量配额进行加权申请与释放，容量不足时可等待）。 线程安全，支持 FIFO 公平发放与取消等待。
+    /// 表示一个按总容量进行配额控制的闸门。线程安全，支持按权重申请与释放容量，并在容量不足时按 FIFO 排队等待。
     /// </summary>
-    /// <remarks>
-    /// 用途示例：
-    /// - 发送限流：按字节数申请，发送完成后归还；
-    /// - 并发门控：按任务权重申请槽位；
-    /// - 批量处理：容量不足时按 FIFO 排队等待。
-    ///
-    /// 公平性：仅在满足队首请求时才继续发放，保持 FIFO 公平。 取消：调用方在 <see cref="AcquireAsync(long, CancellationToken)"/> 或 <see cref="Acquire(long, CancellationToken)"/>
-    /// 传入可取消的 <see cref="CancellationToken"/>， 在未满足前可取消等待；取消的等待将被清理并跳过。 释放：建议通过 <see cref="Lease"/>（using/await using）自动释放，避免忘记调用 <see cref="Release(long)"/>。
-    /// </remarks>
+    /// <remarks>用途示例：发送限流（按字节）、并发门控（按任务权重）、批量处理（容量不足时排队）。 队列保证 FIFO 公平性：只有当队首请求可满足时才发放容量。建议使用 <see cref="Lease"/> 自动归还容量以避免泄漏。</remarks>
     public class CapacityLimiter : DisposableObject
     {
+        /// <summary>
+        /// 等待者对象池，复用以减少分配。
+        /// </summary>
         private static readonly ConcurrentStack<Waiter> _waiterPool = new();
+
+        /// <summary>
+        /// 从对象池租用一个 <see cref="Waiter"/> 并初始化其请求信息。
+        /// </summary>
+        /// <param name="amount">请求的容量数量。</param>
+        /// <param name="token">用于取消等待的令牌。</param>
+        /// <returns>已初始化的等待者实例。</returns>
         private static Waiter RentWaiter(long amount, CancellationToken token)
         {
             if (!_waiterPool.TryPop(out var waiter))
@@ -29,27 +31,49 @@ namespace ExtenderApp.Contracts
             return waiter;
         }
 
+        /// <summary>
+        /// 将等待者返回对象池并清理引用字段。
+        /// </summary>
+        /// <param name="waiter">要回收的等待者。</param>
         private static void ReturnWaiter(Waiter waiter)
         {
             waiter.Token = default; // 确保不持有过期的 CancellationToken
             _waiterPool.Push(waiter);
         }
 
+        /// <summary>
+        /// 保护内部状态的锁对象。
+        /// </summary>
         private readonly object _lock = new();
 
+        /// <summary>
+        /// 总容量（由 <see cref="Capacity"/> 公开）。
+        /// </summary>
         private long _capacity;
+
+        /// <summary>
+        /// 当前已占用的容量（由 <see cref="Used"/> 公开）。
+        /// </summary>
         private long _used;
+
+        /// <summary>
+        /// 单次申请上限的内部存储（由 <see cref="MaxSingleAmount"/> 公开）。
+        /// </summary>
         private long _maxSingleAmount;
 
-        // 等待队列（FIFO），元素记录需求量与TCS
+        /// <summary>
+        /// 等待队列（FIFO），每项为一个等待的请求及其完成源。
+        /// </summary>
         private readonly Queue<Waiter> _queue = new();
 
         /// <summary>
-        /// 使用指定总容量创建一个容量闸门。
+        /// 使用指定的总容量创建一个 <see cref="CapacityLimiter"/> 实例。
         /// </summary>
-        /// <param name="capacity">总容量（必须 &gt; 0）。</param>
-        /// <param name="maxSingleAmount">单次申请上限（&gt; 0 启用限制，&lt;= 0 表示不限制）。</param>
-        /// <exception cref="ArgumentOutOfRangeException">当 <paramref name="capacity"/> 小于等于 0 时抛出。</exception>
+        /// <param name="capacity">总容量（必须大于 0）。</param>
+        /// <param name="maxSingleAmount">单次申请上限（大于 0 表示启用限制；小于等于 0 表示无上限）。</param>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// 当 <paramref name="capacity"/> 小于等于 0，或 <paramref name="maxSingleAmount"/> 大于 capacity 时抛出。
+        /// </exception>
         public CapacityLimiter(long capacity, long maxSingleAmount = 0)
         {
             if (capacity <= 0)
@@ -63,16 +87,16 @@ namespace ExtenderApp.Contracts
         }
 
         /// <summary>
-        /// 单次申请上限（&gt; 0 启用限制，&lt;= 0 表示不限制）。
+        /// 获取当前的单次申请上限。若值小于等于 0，则表示不限制单次申请大小。
         /// </summary>
         public long MaxSingleAmount => Volatile.Read(ref _maxSingleAmount);
 
         /// <summary>
         /// 设置单次申请上限。
         /// </summary>
-        /// <param name="maxSingleAmount">单次申请上限（&gt; 0 启用限制，&lt;= 0 表示不限制）。</param>
+        /// <param name="maxSingleAmount">新的单次申请上限（大于 0 启用限制；小于等于 0 表示不限制）。</param>
         /// <exception cref="ArgumentOutOfRangeException">当 <paramref name="maxSingleAmount"/> 大于当前总容量时抛出。</exception>
-        /// <exception cref="ObjectDisposedException">实例已释放。</exception>
+        /// <exception cref="ObjectDisposedException">当实例已释放时抛出。</exception>
         public void SetMaxSingleAmount(long maxSingleAmount)
         {
             lock (_lock)
@@ -85,27 +109,27 @@ namespace ExtenderApp.Contracts
         }
 
         /// <summary>
-        /// 当前总容量。
+        /// 获取当前总容量。
         /// </summary>
         public long Capacity => Volatile.Read(ref _capacity);
 
         /// <summary>
-        /// 当前已占用量。
+        /// 获取当前已占用的容量数量。
         /// </summary>
         public long Used => Volatile.Read(ref _used);
 
         /// <summary>
-        /// 当前可用量（= <see cref="Capacity"/> - <see cref="Used"/>）。
+        /// 获取当前可用容量（等于 <see cref="Capacity"/> 减去 <see cref="Used"/>）。
         /// </summary>
         public long Available => Capacity - Used;
 
         /// <summary>
-        /// 设置新的总容量。
+        /// 更新总容量。新的容量必须大于 0 且不得小于当前已占用量，否则抛出异常。 更新后会尝试唤醒等待队列以分发刚释放出来的容量。
         /// </summary>
-        /// <param name="newCapacity">新的总容量（必须 &gt; 0，且不得小于当前已占用量）。</param>
+        /// <param name="newCapacity">新的总容量。</param>
         /// <exception cref="ArgumentOutOfRangeException">当 <paramref name="newCapacity"/> 小于等于 0 时抛出。</exception>
-        /// <exception cref="InvalidOperationException">当 <paramref name="newCapacity"/> 小于当前 <see cref="Used"/> 时抛出。</exception>
-        /// <exception cref="ObjectDisposedException">实例已释放。</exception>
+        /// <exception cref="InvalidOperationException">当 <paramref name="newCapacity"/> 小于当前已占用量时抛出。</exception>
+        /// <exception cref="ObjectDisposedException">当实例已释放时抛出。</exception>
         public void SetCapacity(long newCapacity)
         {
             if (newCapacity <= 0) throw new ArgumentOutOfRangeException(nameof(newCapacity));
@@ -120,13 +144,13 @@ namespace ExtenderApp.Contracts
         }
 
         /// <summary>
-        /// 尝试立即申请指定数量的容量，若不足则返回 false（不进入等待队列）。
+        /// 尝试立即获取指定数量的容量。如果当前可用且无人排队，则立即分配并返回 true；否则返回 false，不进入等待队列。
         /// </summary>
-        /// <param name="amount">申请量（必须 &gt; 0）。</param>
-        /// <param name="lease">成功时返回可释放的 <see cref="Lease"/>；失败时为默认值。</param>
-        /// <returns>能否立即获得所需容量。</returns>
-        /// <exception cref="ArgumentOutOfRangeException">当 <paramref name="amount"/> 小于等于 0 时抛出。</exception>
-        /// <exception cref="ObjectDisposedException">实例已释放。</exception>
+        /// <param name="amount">请求的容量数量。</param>
+        /// <param name="lease">成功时返回对应的 <see cref="Lease"/>，失败时为默认值。</param>
+        /// <returns>是否成功分配到容量。</returns>
+        /// <exception cref="ArgumentOutOfRangeException">当 <paramref name="amount"/> 小于等于 0 或超出单次上限时抛出。</exception>
+        /// <exception cref="ObjectDisposedException">当实例已释放时抛出。</exception>
         public bool TryAcquire(long amount, out Lease lease)
         {
             ValidateAmount(amount);
@@ -146,38 +170,13 @@ namespace ExtenderApp.Contracts
         }
 
         /// <summary>
-        /// 异步尝试立即申请指定数量的容量，若不足则返回无效租约（不进入等待队列）。
+        /// 异步申请指定数量的容量。若当前不足则将请求排入 FIFO 等待队列，直到可满足或被取消。
         /// </summary>
-        /// <param name="amount">申请量（必须 &gt; 0）。</param>
-        /// <param name="token">取消令牌；若已取消则抛出 <see cref="TaskCanceledException"/>。</param>
-        /// <returns>成功时返回有效的 <see cref="Lease"/>；失败时返回默认值。</returns>
-        /// <exception cref="ArgumentOutOfRangeException">当 <paramref name="amount"/> 小于等于 0 时抛出。</exception>
-        /// <exception cref="ObjectDisposedException">实例已释放。</exception>
-        /// <exception cref="TaskCanceledException">令牌已取消。</exception>
-        public ValueTask<Lease> TryAcquireAsync(long amount, CancellationToken token = default)
-        {
-            token.ThrowIfCancellationRequested();
-            ValidateAmount(amount);
-            lock (_lock)
-            {
-                ThrowIfDisposed();
-                if (_queue.Count == 0 && (_capacity - _used) >= amount)
-                {
-                    _used += amount;
-                    return ValueTask.FromResult(new Lease(this, amount));
-                }
-            }
-            return ValueTask.FromResult(default(Lease));
-        }
-
-        /// <summary>
-        /// 申请指定数量的容量；若当前不足则进入等待队列（FIFO），直到可用或被取消。
-        /// </summary>
-        /// <param name="amount">申请量（必须 &gt; 0）。</param>
-        /// <param name="token">取消令牌，若可取消且尚未满足，则会取消等待并抛出 <see cref="TaskCanceledException"/>。</param>
-        /// <returns>完成时返回可释放的 <see cref="Lease"/>。</returns>
-        /// <exception cref="ArgumentOutOfRangeException">当 <paramref name="amount"/> 小于等于 0 时抛出。</exception>
-        /// <exception cref="ObjectDisposedException">实例已释放。</exception>
+        /// <param name="amount">请求的容量数量。</param>
+        /// <param name="token">用于取消等待的令牌。</param>
+        /// <returns>一个完成时携带 <see cref="Lease"/> 的 <see cref="ValueTask{TResult}"/>。</returns>
+        /// <exception cref="ArgumentOutOfRangeException">当 <paramref name="amount"/> 小于等于 0 或超出单次上限时抛出。</exception>
+        /// <exception cref="ObjectDisposedException">当实例已释放时抛出。</exception>
         public ValueTask<Lease> AcquireAsync(long amount, CancellationToken token)
         {
             ValidateAmount(amount);
@@ -194,34 +193,20 @@ namespace ExtenderApp.Contracts
                 }
 
                 // 不足则进入等待队列，按 FIFO 公平排队
-                var waiter = new Waiter(amount);
-                waiter.Reg = token.CanBeCanceled
-                    ? token.Register(static state =>
-                    {
-                        var w = (Waiter)state!;
-                        w.Canceled = true;
-                        // 尝试标记为取消，并唤醒等待方
-                        w.SetCanceled();
-                    }, waiter)
-                    : default;
-
+                var waiter = RentWaiter(amount, token);
                 _queue.Enqueue(waiter);
-                return new ValueTask<Lease>(waiter.Task);
+                return waiter;
             }
         }
 
         /// <summary>
-        /// 同步申请指定数量的容量；若当前不足则阻塞等待直到可用或被取消。
+        /// 同步方式申请容量。优先尝试快速路径；若不可用则回退到 <see cref="AcquireAsync(long, CancellationToken)"/> 并阻塞等待结果。
         /// </summary>
-        /// <param name="amount">申请量（必须 &gt; 0）。</param>
-        /// <param name="token">取消令牌；在等待期间被触发将抛出 <see cref="TaskCanceledException"/>。</param>
-        /// <returns>完成时返回可释放的 <see cref="Lease"/>。</returns>
-        /// <exception cref="ArgumentOutOfRangeException">当 <paramref name="amount"/> 小于等于 0 时抛出。</exception>
-        /// <exception cref="ObjectDisposedException">实例已释放。</exception>
-        /// <exception cref="TaskCanceledException">在等待过程中被取消。</exception>
-        /// <remarks>
-        /// 实现说明：优先尝试 <see cref="TryAcquire(long, out Lease)"/> 的快路径； 在不足时回退到 <see cref="AcquireAsync(long, CancellationToken)"/> 并以阻塞方式等待。 由于内部使用 RunContinuationsAsynchronously，因此阻塞等待不会造成死锁。
-        /// </remarks>
+        /// <param name="amount">请求的容量数量。</param>
+        /// <returns>完成时返回对应的 <see cref="Lease"/>。</returns>
+        /// <exception cref="ArgumentOutOfRangeException">当 <paramref name="amount"/> 小于等于 0 或超出单次上限时抛出。</exception>
+        /// <exception cref="ObjectDisposedException">当实例已释放时抛出。</exception>
+        /// <exception cref="TaskCanceledException">等待期间若被取消则抛出。</exception>
         public Lease Acquire(long amount)
         {
             // 快路径：尝试立即获取
@@ -237,12 +222,12 @@ namespace ExtenderApp.Contracts
         }
 
         /// <summary>
-        /// 归还指定数量的容量。
+        /// 归还已占用的容量并尝试唤醒等待队列中的请求。
         /// </summary>
-        /// <param name="amount">归还量（必须 &gt; 0）。</param>
+        /// <param name="amount">要归还的容量数量。</param>
         /// <exception cref="ArgumentOutOfRangeException">当 <paramref name="amount"/> 小于等于 0 时抛出。</exception>
         /// <exception cref="InvalidOperationException">当归还量大于当前已占用量时抛出。</exception>
-        /// <exception cref="ObjectDisposedException">实例已释放。</exception>
+        /// <exception cref="ObjectDisposedException">当实例已释放时抛出。</exception>
         public void Release(long amount)
         {
             ValidateAmount(amount);
@@ -259,7 +244,7 @@ namespace ExtenderApp.Contracts
         }
 
         /// <summary>
-        /// 在持有锁的情况下，尽可能按 FIFO 满足等待队列。 该方法仅在内部被调用，调用前必须已加锁。
+        /// 在持有内部锁的前提下，按 FIFO 顺序尽可能满足队列中的等待请求。 仅供内部调用，调用时必须已持有 <see cref="_lock"/>。
         /// </summary>
         private void TrySatisfyQueue_NoLock()
         {
@@ -270,7 +255,7 @@ namespace ExtenderApp.Contracts
                 while (_queue.Count > 0 && _queue.Peek().Canceled)
                 {
                     var canceled = _queue.Dequeue();
-                    canceled.CleanupAfterCompletion();
+                    ReturnWaiter(canceled);
                 }
                 if (_queue.Count == 0) break;
 
@@ -281,8 +266,7 @@ namespace ExtenderApp.Contracts
                     _used += next.AmountNeeded;
 
                     // 完成并发回 Lease
-                    next.SetResult(new Lease(this, next.AmountNeeded));
-                    next.CleanupAfterCompletion();
+                    next.SetResult(this);
                 }
                 else
                 {
@@ -292,8 +276,10 @@ namespace ExtenderApp.Contracts
         }
 
         /// <summary>
-        /// 校验数量必须为正数。
+        /// 验证请求/释放数量是否合法（必须大于 0 且不超过单次上限）。
         /// </summary>
+        /// <param name="amount">待校验的数量。</param>
+        /// <exception cref="ArgumentOutOfRangeException">当数量不合法时抛出。</exception>
         private void ValidateAmount(long amount)
         {
             if (amount <= 0) throw new ArgumentOutOfRangeException(nameof(amount));
@@ -302,6 +288,9 @@ namespace ExtenderApp.Contracts
                 throw new ArgumentOutOfRangeException(nameof(amount));
         }
 
+        /// <summary>
+        /// 释放托管资源：取消并清理所有仍在等待队列中的请求。
+        /// </summary>
         protected override void DisposeManagedResources()
         {
             lock (_lock)
@@ -310,22 +299,20 @@ namespace ExtenderApp.Contracts
                 while (_queue.Count > 0)
                 {
                     var w = _queue.Dequeue();
-                    w.Canceled = true;
                     w.SetCanceled();
-                    w.CleanupAfterCompletion();
                 }
             }
         }
 
         /// <summary>
-        /// 容量租约。通过 using/await using 在作用域结束时自动归还已申请的容量。
+        /// 表示一次已分配的容量租约。使用 <c>using</c> 或 <c>await using</c> 可在作用域结束时自动归还容量。
         /// </summary>
         public readonly struct Lease : IDisposable, IAsyncDisposable
         {
             private readonly CapacityLimiter? _cLimiter;
 
             /// <summary>
-            /// 本次申请的容量数量。
+            /// 本次租约包含的容量数量。
             /// </summary>
             public long Amount { get; }
 
@@ -336,12 +323,12 @@ namespace ExtenderApp.Contracts
             }
 
             /// <summary>
-            /// 租约是否有效。
+            /// 指示此租约是否有效（是否绑定到一个 <see cref="CapacityLimiter"/> 实例）。
             /// </summary>
             public bool IsValid => _cLimiter is not null;
 
             /// <summary>
-            /// 同步释放租约并归还容量。
+            /// 同步释放租约并将容量归还到所属的 <see cref="CapacityLimiter"/>。
             /// </summary>
             public void Dispose()
             {
@@ -349,7 +336,7 @@ namespace ExtenderApp.Contracts
             }
 
             /// <summary>
-            /// 异步释放租约并归还容量。
+            /// 异步释放租约（实现 IAsyncDisposable），并将容量归还。
             /// </summary>
             public ValueTask DisposeAsync()
             {
@@ -359,61 +346,54 @@ namespace ExtenderApp.Contracts
         }
 
         /// <summary>
-        /// 等待者：表示一次待满足的容量请求及其完成源。 注意：
-        /// - 当前实现为 struct，存在“值复制”风险：取消回调与队列中存放的实例可能并非同一份， 会导致取消标记与完成信号作用于不同副本，进而造成容量泄漏或多余完成。
-        /// - 若要彻底规避该问题，建议改为 class 并以引用语义参与队列与回调。
+        /// 内部等待者：封装一次待满足的容量请求及其 <see cref="IValueTaskSource{TResult}"/> 完成源。 实现为 class 以避免值复制带来的语义问题。
         /// </summary>
         private class Waiter : IValueTaskSource<Lease>
         {
             /// <summary>
-            /// 单次完成用的任务源。 RunContinuationsAsynchronously = true 以避免在持锁路径内同步执行延续造成阻塞/递归。
+            /// 用于一次性完成的任务源，异步执行延续以避免在持锁路径内执行回调。
             /// </summary>
             private ManualResetValueTaskSourceCore<Lease> vts;
 
             /// <summary>
-            /// 本等待者所需的容量数量。
+            /// 请求所需的容量数量。
             /// </summary>
             public long AmountNeeded;
 
             /// <summary>
-            /// 是否已被外部取消。队列在发放前会清理已取消的等待者。
+            /// 是否已通过外部 CancellationToken 被取消。
             /// </summary>
             public bool Canceled => Token.IsCancellationRequested;
 
             public short Version => vts.Version;
 
             /// <summary>
-            /// 取消令牌；在完成/取消后需显式释放以避免泄漏。
+            /// 与此等待者关联的取消令牌。
             /// </summary>
             public CancellationToken Token;
 
             /// <summary>
-            /// 使用请求量初始化等待者。
+            /// 创建一个新的等待者并初始化内部任务源。
             /// </summary>
-            /// <param name="amount">申请的容量数量（必须 &gt; 0）。</param>
             public Waiter()
             {
                 vts = new();
             }
 
             /// <summary>
-            /// 将当前 IValueTaskSource 包装为 Task 返回，供外部再包装为 ValueTask 使用。 说明：这是一次性任务源，内部使用固定 token=0。
+            /// 以成功结果完成等待者并传回对应的 <see cref="Lease"/>。 如果已被取消或已完成则不会重复完成。
             /// </summary>
-            public ValueTask<Lease> GetLeaseAsync() => new ValueTask<Lease>(this, Version);
-
-            /// <summary>
-            /// 尝试以成功结果完成等待者，返回对应的 <see cref="Lease"/>。 注意：该调用应仅发生一次；重复完成将抛出异常。
-            /// </summary>
-            public void SetResult(Lease lease)
+            /// <param name="capacityLimiter">产生租约的闸门实例。</param>
+            public void SetResult(CapacityLimiter capacityLimiter)
             {
                 if (Canceled)
                     return;
 
-                vts.SetResult(lease);
+                vts.SetResult(new Lease(capacityLimiter, AmountNeeded));
             }
 
             /// <summary>
-            /// 将等待者标记为取消（以异常形式完成）。 若已被其它路径完成则吞掉异常以保证幂等。
+            /// 将等待者以取消状态完成（抛出 <see cref="TaskCanceledException"/>）。 幂等：若已完成则忽略异常。
             /// </summary>
             public void SetCanceled()
             {
@@ -447,6 +427,8 @@ namespace ExtenderApp.Contracts
             /// <inheritdoc/>
             public void OnCompleted(Action<object?> continuation, object? state, short token, ValueTaskSourceOnCompletedFlags flags)
                 => vts.OnCompleted(continuation, state, token, flags);
+
+            public static implicit operator ValueTask<Lease>(Waiter waiter) => new ValueTask<Lease>(waiter, waiter.Version);
         }
     }
 }

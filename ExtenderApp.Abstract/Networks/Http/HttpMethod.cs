@@ -1,10 +1,9 @@
-﻿namespace ExtenderApp.Abstract
+﻿namespace ExtenderApp.Abstract.Networks
 {
     /// <summary>
-    /// 表示 HTTP 方法（如 GET/POST）的不可变值类型。
-    /// 比较时不区分大小写（使用 <see cref="StringComparison.OrdinalIgnoreCase"/>）。
+    /// 表示 HTTP 方法（如 GET/POST）的不可变值类型。 比较时不区分大小写（使用 <see cref="StringComparison.OrdinalIgnoreCase"/>）。
     /// </summary>
-    /// <param name="Method"> 方法字符串（例如 "GET"、"POST"）。建议使用大写惯例，但比较不区分大小写。 </param>
+    /// <param name="Method">方法字符串（例如 "GET"、"POST"）。建议使用大写惯例，但比较不区分大小写。</param>
     public readonly record struct HttpMethod(string Method)
     {
         /// <summary>

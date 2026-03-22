@@ -19,8 +19,7 @@ namespace ExtenderApp.Abstract
         public static Type StartupType = typeof(IStartup);
 
         /// <summary>
-        /// 尝试从给定的 <see cref="Assembly"/> 中找到并实例化符合条件的启动类（泛型）。
-        /// 实例化失败或类型不匹配将返回 false。
+        /// 尝试从给定的 <see cref="Assembly"/> 中找到并实例化符合条件的启动类（泛型）。 实例化失败或类型不匹配将返回 false。
         /// </summary>
         /// <typeparam name="TStartup">期望的启动类型，需实现 <see cref="IStartup"/>。</typeparam>
         /// <param name="assembly">要搜索的程序集实例。</param>
@@ -54,8 +53,7 @@ namespace ExtenderApp.Abstract
         }
 
         /// <summary>
-        /// 尝试从给定的 <see cref="Assembly"/> 中找到并实例化符合条件的启动类（非泛型）。
-        /// 实例化失败或类型不匹配将返回 false。
+        /// 尝试从给定的 <see cref="Assembly"/> 中找到并实例化符合条件的启动类（非泛型）。 实例化失败或类型不匹配将返回 false。
         /// </summary>
         /// <param name="assembly">要搜索的程序集实例。</param>
         /// <param name="startup">找到并成功创建的 <see cref="IStartup"/> 实例（输出）。</param>
@@ -135,6 +133,27 @@ namespace ExtenderApp.Abstract
                 return;
             }
 
+            // Use a resolving handler so that dependencies next to the assembly can be found
+            Assembly? Resolver(AssemblyLoadContext alc, AssemblyName name)
+            {
+                try
+                {
+                    var dir = Path.GetDirectoryName(path);
+                    if (string.IsNullOrEmpty(dir))
+                        return null;
+
+                    var candidate = Path.Combine(dir, name.Name + ".dll");
+                    if (File.Exists(candidate))
+                        return alc.LoadFromAssemblyPath(candidate);
+                }
+                catch
+                {
+                    // ignore resolver failures
+                }
+                return null;
+            }
+
+            context.Resolving += Resolver;
             try
             {
                 // 托管程序集：装载并查找 IStartup
@@ -147,6 +166,10 @@ namespace ExtenderApp.Abstract
             catch
             {
                 // 装载或实例化失败时不抛出（调用者已在外部负责记录/处理）
+            }
+            finally
+            {
+                context.Resolving -= Resolver;
             }
         }
 
@@ -170,34 +193,72 @@ namespace ExtenderApp.Abstract
                 throw new FileNotFoundException("要加载的程序集文件夹路径未找到", FolderPath);
 
             string[] dllPaths = Directory.GetFiles(FolderPath, "*.dll", SearchOption.AllDirectories);
-            foreach (var path in dllPaths)
-            {
-                if (!IsManagedAssembly(path))
-                {
-                    // 非托管库：尝试加载并继续下一文件
-                    NativeLibrary.Load(path);
-                    continue;
-                }
 
-                Assembly assembly = context.LoadFromAssemblyPath(path);
+            // Add a resolver that looks in the target folder for dependency dlls
+            Assembly? Resolver(AssemblyLoadContext alc, AssemblyName name)
+            {
+                try
+                {
+                    var candidate = Path.Combine(FolderPath, name.Name + ".dll");
+                    if (File.Exists(candidate))
+                        return alc.LoadFromAssemblyPath(candidate);
+                }
+                catch
+                {
+                    // ignore
+                }
+                return null;
             }
 
-            // 托管程序集：装载并调用 IStartup（每个文件独立处理）
-            foreach (var assembly in context.Assemblies)
+            context.Resolving += Resolver;
+            try
             {
-                if (!assembly.TryGetStartup(out IStartup startup))
-                    continue;
+                foreach (var path in dllPaths)
+                {
+                    if (!IsManagedAssembly(path))
+                    {
+                        // 非托管库：尝试加载并继续下一文件
+                        try { NativeLibrary.Load(path); } catch { }
+                        continue;
+                    }
 
-                startup.AddService(services);
+                    try
+                    {
+                        context.LoadFromAssemblyPath(path);
+                    }
+                    catch
+                    {
+                        // 个别程序集装载失败时忽略，继续处理其它文件
+                    }
+                }
+
+                // 托管程序集：装载并调用 IStartup（每个文件独立处理）
+                foreach (var assembly in context.Assemblies)
+                {
+                    try
+                    {
+                        if (!assembly.TryGetStartup(out IStartup startup))
+                            continue;
+
+                        startup.AddService(services);
+                    }
+                    catch
+                    {
+                        // Ignore failures per assembly
+                    }
+                }
+            }
+            finally
+            {
+                context.Resolving -= Resolver;
             }
         }
 
         /// <summary>
-        /// 判断指定文件是否为托管 (.NET) 程序集。
-        /// 实现策略：
+        /// 判断指定文件是否为托管 (.NET) 程序集。 实现策略：
         /// 1) 优先使用 <see cref="PEReader"/> 检查 PE headers 中是否包含 CLR header（CorHeader）并且具有元数据；
-        /// 2) 当无法使用 PEReader 时回退到 <see cref="AssemblyName.GetAssemblyName(string)"/>（该方法在非托管文件上会抛出 <see cref="BadImageFormatException"/>）。
-        /// 返回 true 表示看起来是托管程序集（包含 CLR header / 可被识别为 .NET 程序集）。
+        /// 2) 当无法使用 PEReader 时回退到 <see cref="AssemblyName.GetAssemblyName(string)"/>（该方法在非托管文件上会抛出 <see cref="BadImageFormatException"/>）。 返回 true
+        /// 表示看起来是托管程序集（包含 CLR header / 可被识别为 .NET 程序集）。
         /// </summary>
         /// <param name="path">要检查的文件路径。</param>
         /// <returns>是托管程序集返回 true，否则返回 false。</returns>

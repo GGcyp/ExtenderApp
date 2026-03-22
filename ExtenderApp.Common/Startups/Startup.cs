@@ -8,12 +8,7 @@ namespace ExtenderApp.Common
     /// </summary>
     public abstract class Startup : IStartup
     {
-        /// <summary>
-        /// 添加服务
-        /// </summary>
-        /// <param name="services">服务集合</param>
-        public virtual void AddService(IServiceCollection services)
-        {
-        }
+        ///<inheritdoc/>
+        public abstract void AddService(IServiceCollection services);
     }
 }

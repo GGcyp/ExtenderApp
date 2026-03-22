@@ -19,10 +19,10 @@ namespace ExtenderApp.Logging
                     path: "logs/app-.log",
                     rollingInterval: RollingInterval.Day,
                     retainedFileCountLimit: 14,
-                    outputTemplate: "[{Timestamp:yyyy-MM-dd HH:mm:ss.fff} {Level:u3}] {Message:lj}{NewLine}{Exception}"
+                    outputTemplate: "[{Timestamp:yyyy-MM-dd HH:mm:ss.fff} {Level:u3}] {Message:lj}{NewLine}{ResultException}"
                 )
 #if DEBUG
-                .WriteTo.Debug(outputTemplate: "[{Timestamp:HH:mm:ss.fff} {Level:u3}] {Message:lj}{NewLine}{Exception}")
+                .WriteTo.Debug(outputTemplate: "[{Timestamp:HH:mm:ss.fff} {Level:u3}] {Message:lj}{NewLine}{ResultException}")
 #endif
                 .CreateLogger();
 

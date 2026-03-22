@@ -14,7 +14,7 @@ namespace ExtenderApp.Abstract.Networks
         /// <summary>
         /// HTTP 头部与主体之间的分隔符（CRLF CRLF）。等于 "\r\n\r\n"。
         /// </summary>
-        public const string CRLF_CRLF = "\r\n\r\n";
+        public static readonly byte[] HeaderTerminator = { (byte)'\r', (byte)'\n', (byte)'\r', (byte)'\n' };
 
         /// <summary>
         /// 空格字符常量，常用于构造/解析 HTTP 报文时作为分隔符。

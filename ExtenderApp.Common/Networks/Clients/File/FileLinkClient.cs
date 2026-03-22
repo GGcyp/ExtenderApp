@@ -129,7 +129,7 @@ namespace ExtenderApp.Common.Networks.LinkChannels
             //    var result = sendValueTask.GetAwaiter().GetResult();
             //    if (!result)
             //    {
-            //        return ValueTask.FromException<Result>(result.Exception ?? new Exception("发送文件推送请求失败。"));
+            //        return ValueTask.FromException<Result>(result.ResultException ?? new ResultException("发送文件推送请求失败。"));
             //    }
             //}
 

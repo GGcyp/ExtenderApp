@@ -64,11 +64,31 @@ namespace ExtenderApp.Buffer
         /// </summary>
         /// <typeparam name="T">缓冲区的元素类型。</typeparam>
         /// <param name="buffer">目标缓冲区。</param>
-        /// <param name="memoryBlock">源内存块。</param>
+        /// <param name="sourceBuffer">源内存块。</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void Write<T>(this MemoryBlock<T> buffer, MemoryBlock<T> memoryBlock)
+        public static MemoryBlock<T> Write<T>(this MemoryBlock<T> buffer, MemoryBlock<T> sourceBuffer)
         {
-            buffer.Write(memoryBlock.CommittedSpan);
+            ArgumentNullException.ThrowIfNull(buffer, nameof(buffer));
+            ArgumentNullException.ThrowIfNull(sourceBuffer, nameof(sourceBuffer));
+
+            buffer.Write(sourceBuffer.CommittedSpan);
+            return buffer;
+        }
+
+        /// <summary>
+        /// 将 <see cref="SequenceBuffer{T}"/> 的已提交内容写入 <see cref="MemoryBlock{T}"/>。
+        /// </summary>
+        /// <typeparam name="T">缓冲区的元素类型。</typeparam>
+        /// <param name="buffer">目标内存块。</param>
+        /// <param name="sourceBuffer">源序列缓冲区。</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static MemoryBlock<T> Write<T>(this MemoryBlock<T> buffer, SequenceBuffer<T> sourceBuffer)
+        {
+            ArgumentNullException.ThrowIfNull(buffer, nameof(buffer));
+            ArgumentNullException.ThrowIfNull(sourceBuffer, nameof(sourceBuffer));
+
+            buffer.Write(sourceBuffer.CommittedSequence);
+            return buffer;
         }
 
         /// <summary>
@@ -76,11 +96,15 @@ namespace ExtenderApp.Buffer
         /// </summary>
         /// <typeparam name="T">缓冲区的元素类型。</typeparam>
         /// <param name="buffer">目标缓冲区。</param>
-        /// <param name="memoryBlock">源内存块。</param>
+        /// <param name="sourceBuffer">源内存块。</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void Write<T>(this AbstractBuffer<T> buffer, MemoryBlock<T> memoryBlock)
+        public static AbstractBuffer<T> Write<T>(this AbstractBuffer<T> buffer, MemoryBlock<T> sourceBuffer)
         {
-            buffer.Write(memoryBlock.CommittedSpan);
+            ArgumentNullException.ThrowIfNull(buffer, nameof(buffer));
+            ArgumentNullException.ThrowIfNull(sourceBuffer, nameof(sourceBuffer));
+
+            buffer.Write(sourceBuffer.CommittedSpan);
+            return buffer;
         }
 
         #endregion Write

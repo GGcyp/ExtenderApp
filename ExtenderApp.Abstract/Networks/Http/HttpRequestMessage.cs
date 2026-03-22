@@ -7,8 +7,7 @@ using ExtenderApp.Buffer;
 namespace ExtenderApp.Abstract.Networks
 {
     /// <summary>
-    /// 表示一个 HTTP 请求消息对象。该对象通过基类的选项集合存储方法、URI、头、参数和请求体等信息，
-    /// 并提供将请求序列化为字节缓冲区的功能以便发送。
+    /// 表示一个 HTTP 请求消息对象。该对象通过基类的选项集合存储方法、URI、头、参数和请求体等信息， 并提供将请求序列化为字节缓冲区的功能以便发送。
     /// </summary>
     public class HttpRequestMessage : OptionsObject
     {
@@ -148,7 +147,7 @@ namespace ExtenderApp.Abstract.Networks
                 return;
 
             WriteToBody(text, encoding);
-            Headers.SetOptionValue(HttpHeaderOptions.ContentTypeOption, string.IsNullOrEmpty(contentType) ? $"text/plain; charset={encoding.WebName}" : contentType);
+            Headers.SetOptionValue(HttpHeaderOptions.ContentTypeIdentifier, string.IsNullOrEmpty(contentType) ? $"text/plain; charset={encoding.WebName}" : contentType);
         }
 
         /// <summary>
@@ -161,12 +160,11 @@ namespace ExtenderApp.Abstract.Networks
             ArgumentNullException.ThrowIfNull(buffer, nameof(buffer));
 
             Body = buffer;
-            Headers.SetOptionValue(HttpHeaderOptions.ContentTypeOption, contentType);
+            Headers.SetOptionValue(HttpHeaderOptions.ContentTypeIdentifier, contentType);
         }
 
         /// <summary>
-        /// 使用系统默认编码将当前 Params 转为 application/x-www-form-urlencoded 并作为请求体。
-        /// 该操作会覆盖现有 Body。
+        /// 使用系统默认编码将当前 Params 转为 application/x-www-form-urlencoded 并作为请求体。 该操作会覆盖现有 Body。
         /// </summary>
         public void SetFormContentFromParams()
         {
@@ -174,8 +172,7 @@ namespace ExtenderApp.Abstract.Networks
         }
 
         /// <summary>
-        /// 使用指定编码将当前 Params 转为 application/x-www-form-urlencoded 并作为请求体。
-        /// 该操作会覆盖现有 Body，并设置相应的 Content-Type。
+        /// 使用指定编码将当前 Params 转为 application/x-www-form-urlencoded 并作为请求体。 该操作会覆盖现有 Body，并设置相应的 Content-Type。
         /// </summary>
         /// <param name="encoding">用于编码表单的字符编码。</param>
         public void SetFormContentFromParams(Encoding encoding)
@@ -189,9 +186,9 @@ namespace ExtenderApp.Abstract.Networks
             WriteToBody(form, encoding);
 
             string contentType = string.Format("application/x-www-form-urlencoded; charset={0}", encoding.WebName);
-            if (!Headers.TrySetOptionValue(HttpHeaderOptions.ContentTypeOption, contentType))
+            if (!Headers.TrySetOptionValue(HttpHeaderOptions.ContentTypeIdentifier, contentType))
             {
-                Headers.RegisterOption(HttpHeaderOptions.ContentTypeOption, contentType);
+                Headers.RegisterOption(HttpHeaderOptions.ContentTypeIdentifier, contentType);
             }
         }
 
@@ -229,7 +226,7 @@ namespace ExtenderApp.Abstract.Networks
             bool skipParams = false;
             if (Method.Equals(HttpMethod.Get))
             {
-                if (Headers.TryGetOptionValue(HttpHeaderOptions.ContentTypeOption, out string ct) &&
+                if (Headers.TryGetOptionValue(HttpHeaderOptions.ContentTypeIdentifier, out string ct) &&
                     !string.IsNullOrEmpty(ct) &&
                     ct.StartsWith("application/x-www-form-urlencoded", StringComparison.OrdinalIgnoreCase) &&
                     Body != null &&
@@ -316,7 +313,7 @@ namespace ExtenderApp.Abstract.Networks
             bool skipParams = false;
             if (Method.Equals(HttpMethod.Get))
             {
-                if (Headers.TryGetOptionValue(HttpHeaderOptions.ContentTypeOption, out string ct) &&
+                if (Headers.TryGetOptionValue(HttpHeaderOptions.ContentTypeIdentifier, out string ct) &&
                     !string.IsNullOrEmpty(ct) &&
                     ct.StartsWith("application/x-www-form-urlencoded", StringComparison.OrdinalIgnoreCase) &&
                     Body != null &&

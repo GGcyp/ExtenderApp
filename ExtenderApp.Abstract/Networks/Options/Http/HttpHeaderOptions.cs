@@ -1,5 +1,6 @@
-﻿using System.Net;
-using System.Text;
+﻿using System.Collections.ObjectModel;
+using System.Diagnostics.CodeAnalysis;
+using System.Net;
 using ExtenderApp.Abstract.Options;
 using ExtenderApp.Buffer;
 using ExtenderApp.Contracts;
@@ -283,271 +284,330 @@ namespace ExtenderApp.Abstract.Networks
         #region HttpHeaders OptionIdentifiers
 
         /// <summary>
-        /// `Cache-Control` 对应的选项标识，值类型为 <see cref="ValueOrList{T}"/>（<c>T</c> 为 <see cref="string"/>）。
+        /// `Cache-Control` 对应的选项标识，值类型为 <see cref="ValueOrList{T}"/>（ <c>T</c> 为 <see cref="string"/>）。
         /// </summary>
-        public static readonly OptionIdentifier<ValueOrList<string>> CacheControlOption = new(CacheControl);
+        public static readonly OptionIdentifier<ValueOrList<string>> CacheControlIdentifier = new(CacheControl);
 
         /// <summary>
-        /// `Connection` 对应的选项标识，值类型为 <see cref="ValueOrList{T}"/>（<c>T</c> 为 <see cref="string"/>）。
+        /// `Connection` 对应的选项标识，值类型为 <see cref="ValueOrList{T}"/>（ <c>T</c> 为 <see cref="string"/>）。
         /// </summary>
-        public static readonly OptionIdentifier<ValueOrList<string>> ConnectionOption = new(Connection);
+        public static readonly OptionIdentifier<ValueOrList<string>> ConnectionIdentifier = new(Connection);
 
         /// <summary>
         /// `Date` 对应的选项标识，值类型为 <see cref="DateTimeOffset"/>。
         /// </summary>
-        public static readonly OptionIdentifier<DateTimeOffset> DateOption = new(Date);
+        public static readonly OptionIdentifier<DateTimeOffset> DateIdentifier = new(Date);
 
         /// <summary>
         /// `Keep-Alive` 对应的选项标识，值类型为 <see cref="string"/>。
         /// </summary>
-        public static readonly OptionIdentifier<string> KeepAliveOption = new(KeepAlive);
+        public static readonly OptionIdentifier<string> KeepAliveIdentifier = new(KeepAlive);
 
         /// <summary>
-        /// `Pragma` 对应的选项标识，值类型为 <see cref="ValueOrList{T}"/>（<c>T</c> 为 <see cref="string"/>）。
+        /// `Pragma` 对应的选项标识，值类型为 <see cref="ValueOrList{T}"/>（ <c>T</c> 为 <see cref="string"/>）。
         /// </summary>
-        public static readonly OptionIdentifier<ValueOrList<string>> PragmaOption = new(Pragma);
+        public static readonly OptionIdentifier<ValueOrList<string>> PragmaIdentifier = new(Pragma);
 
         /// <summary>
-        /// `Trailer` 对应的选项标识，值类型为 <see cref="ValueOrList{T}"/>（<c>T</c> 为 <see cref="string"/>）。
+        /// `Trailer` 对应的选项标识，值类型为 <see cref="ValueOrList{T}"/>（ <c>T</c> 为 <see cref="string"/>）。
         /// </summary>
-        public static readonly OptionIdentifier<ValueOrList<string>> TrailerOption = new(Trailer);
+        public static readonly OptionIdentifier<ValueOrList<string>> TrailerIdentifier = new(Trailer);
 
         /// <summary>
-        /// `Transfer-Encoding` 对应的选项标识，值类型为 <see cref="ValueOrList{T}"/>（<c>T</c> 为 <see cref="string"/>）。
+        /// `Transfer-Encoding` 对应的选项标识，值类型为 <see cref="ValueOrList{T}"/>（ <c>T</c> 为 <see cref="string"/>）。
         /// </summary>
-        public static readonly OptionIdentifier<ValueOrList<string>> TransferEncodingOption = new(TransferEncoding);
+        public static readonly OptionIdentifier<ValueOrList<string>> TransferEncodingIdentifier = new(TransferEncoding);
 
         /// <summary>
-        /// `Upgrade` 对应的选项标识，值类型为 <see cref="ValueOrList{T}"/>（<c>T</c> 为 <see cref="string"/>）。
+        /// `Upgrade` 对应的选项标识，值类型为 <see cref="ValueOrList{T}"/>（ <c>T</c> 为 <see cref="string"/>）。
         /// </summary>
-        public static readonly OptionIdentifier<ValueOrList<string>> UpgradeOption = new(Upgrade);
+        public static readonly OptionIdentifier<ValueOrList<string>> UpgradeIdentifier = new(Upgrade);
 
         /// <summary>
-        /// `Via` 对应的选项标识，值类型为 <see cref="ValueOrList{T}"/>（<c>T</c> 为 <see cref="string"/>）。
+        /// `Via` 对应的选项标识，值类型为 <see cref="ValueOrList{T}"/>（ <c>T</c> 为 <see cref="string"/>）。
         /// </summary>
-        public static readonly OptionIdentifier<ValueOrList<string>> ViaOption = new(Via);
+        public static readonly OptionIdentifier<ValueOrList<string>> ViaIdentifier = new(Via);
 
         /// <summary>
-        /// `Warning` 对应的选项标识，值类型为 <see cref="ValueOrList{T}"/>（<c>T</c> 为 <see cref="string"/>）。
+        /// `Warning` 对应的选项标识，值类型为 <see cref="ValueOrList{T}"/>（ <c>T</c> 为 <see cref="string"/>）。
         /// </summary>
-        public static readonly OptionIdentifier<ValueOrList<string>> WarningOption = new(Warning);
+        public static readonly OptionIdentifier<ValueOrList<string>> WarningIdentifier = new(Warning);
 
         /// <summary>
-        /// `Allow` 对应的选项标识，值类型为 <see cref="ValueOrList{T}"/>（<c>T</c> 为 <see cref="string"/>）。
+        /// `Allow` 对应的选项标识，值类型为 <see cref="ValueOrList{T}"/>（ <c>T</c> 为 <see cref="string"/>）。
         /// </summary>
-        public static readonly OptionIdentifier<ValueOrList<string>> AllowOption = new(Allow);
+        public static readonly OptionIdentifier<ValueOrList<string>> AllowIdentifier = new(Allow);
 
         /// <summary>
         /// `Content-Length` 对应的选项标识，值类型为 <see cref="long"/>。
         /// </summary>
-        public static readonly OptionIdentifier<long> ContentLengthOption = new(ContentLength);
+        public static readonly OptionIdentifier<long> ContentLengthIdentifier = new(ContentLength);
 
         /// <summary>
         /// `Content-Type` 对应的选项标识，值类型为 <see cref="string"/>。
         /// </summary>
-        public static readonly OptionIdentifier<string> ContentTypeOption = new(ContentType);
+        public static readonly OptionIdentifier<string> ContentTypeIdentifier = new(ContentType);
 
         /// <summary>
-        /// `Content-Encoding` 对应的选项标识，值类型为 <see cref="ValueOrList{T}"/>（<c>T</c> 为 <see cref="string"/>）。
+        /// `Content-Encoding` 对应的选项标识，值类型为 <see cref="ValueOrList{T}"/>（ <c>T</c> 为 <see cref="string"/>）。
         /// </summary>
-        public static readonly OptionIdentifier<ValueOrList<string>> ContentEncodingOption = new(ContentEncoding);
+        public static readonly OptionIdentifier<ValueOrList<string>> ContentEncodingIdentifier = new(ContentEncoding);
 
         /// <summary>
-        /// `Content-Langauge` 对应的选项标识，值类型为 <see cref="ValueOrList{T}"/>（<c>T</c> 为 <see cref="string"/>）。
+        /// `Content-Langauge` 对应的选项标识，值类型为 <see cref="ValueOrList{T}"/>（ <c>T</c> 为 <see cref="string"/>）。
         /// </summary>
-        public static readonly OptionIdentifier<ValueOrList<string>> ContentLanguageOption = new(ContentLanguage);
+        public static readonly OptionIdentifier<ValueOrList<string>> ContentLanguageIdentifier = new(ContentLanguage);
 
         /// <summary>
         /// `Content-Location` 对应的选项标识，值类型为 <see cref="string"/>。
         /// </summary>
-        public static readonly OptionIdentifier<string> ContentLocationOption = new(ContentLocation);
+        public static readonly OptionIdentifier<string> ContentLocationIdentifier = new(ContentLocation);
 
         /// <summary>
         /// `Content-MD5` 对应的选项标识，值类型为 <see cref="string"/>。
         /// </summary>
-        public static readonly OptionIdentifier<string> ContentMd5Option = new(ContentMd5);
+        public static readonly OptionIdentifier<string> ContentMd5Identifier = new(ContentMd5);
 
         /// <summary>
         /// `Content-Range` 对应的选项标识，值类型为 <see cref="string"/>。
         /// </summary>
-        public static readonly OptionIdentifier<string> ContentRangeOption = new(ContentRange);
+        public static readonly OptionIdentifier<string> ContentRangeIdentifier = new(ContentRange);
 
         /// <summary>
         /// `Expires` 对应的选项标识，值类型为 <see cref="DateTimeOffset"/>。
         /// </summary>
-        public static readonly OptionIdentifier<DateTimeOffset> ExpiresOption = new(Expires);
+        public static readonly OptionIdentifier<DateTimeOffset> ExpiresIdentifier = new(Expires);
 
         /// <summary>
         /// `Last-Modified` 对应的选项标识，值类型为 <see cref="DateTimeOffset"/>。
         /// </summary>
-        public static readonly OptionIdentifier<DateTimeOffset> LastModifiedOption = new(LastModified);
+        public static readonly OptionIdentifier<DateTimeOffset> LastModifiedIdentifier = new(LastModified);
 
         /// <summary>
-        /// `Accept` 对应的选项标识，值类型为 <see cref="ValueOrList{T}"/>（<c>T</c> 为 <see cref="string"/>）。
+        /// `Accept` 对应的选项标识，值类型为 <see cref="ValueOrList{T}"/>（ <c>T</c> 为 <see cref="string"/>）。
         /// </summary>
-        public static readonly OptionIdentifier<ValueOrList<string>> AcceptOption = new(Accept);
+        public static readonly OptionIdentifier<ValueOrList<string>> AcceptIdentifier = new(Accept);
 
         /// <summary>
-        /// `Accept-Charset` 对应的选项标识，值类型为 <see cref="ValueOrList{T}"/>（<c>T</c> 为 <see cref="string"/>）。
+        /// `Accept-Charset` 对应的选项标识，值类型为 <see cref="ValueOrList{T}"/>（ <c>T</c> 为 <see cref="string"/>）。
         /// </summary>
-        public static readonly OptionIdentifier<ValueOrList<string>> AcceptCharsetOption = new(AcceptCharset);
+        public static readonly OptionIdentifier<ValueOrList<string>> AcceptCharsetIdentifier = new(AcceptCharset);
 
         /// <summary>
-        /// `Accept-Encoding` 对应的选项标识，值类型为 <see cref="ValueOrList{T}"/>（<c>T</c> 为 <see cref="string"/>）。
+        /// `Accept-Encoding` 对应的选项标识，值类型为 <see cref="ValueOrList{T}"/>（ <c>T</c> 为 <see cref="string"/>）。
         /// </summary>
-        public static readonly OptionIdentifier<ValueOrList<string>> AcceptEncodingOption = new(AcceptEncoding);
+        public static readonly OptionIdentifier<ValueOrList<string>> AcceptEncodingIdentifier = new(AcceptEncoding);
 
         /// <summary>
-        /// `Accept-Langauge` 对应的选项标识，值类型为 <see cref="ValueOrList{T}"/>（<c>T</c> 为 <see cref="string"/>）。
+        /// `Accept-Langauge` 对应的选项标识，值类型为 <see cref="ValueOrList{T}"/>（ <c>T</c> 为 <see cref="string"/>）。
         /// </summary>
-        public static readonly OptionIdentifier<ValueOrList<string>> AcceptLanguageOption = new(AcceptLanguage);
+        public static readonly OptionIdentifier<ValueOrList<string>> AcceptLanguageIdentifier = new(AcceptLanguage);
 
         /// <summary>
         /// `Authorization` 对应的选项标识，值类型为 <see cref="string"/>。
         /// </summary>
-        public static readonly OptionIdentifier<string> AuthorizationOption = new(Authorization);
+        public static readonly OptionIdentifier<string> AuthorizationIdentifier = new(Authorization);
 
         /// <summary>
         /// `Cookie` 对应的选项标识，值类型为 <see cref="string"/>。
         /// </summary>
-        public static readonly OptionIdentifier<string> CookieOption = new(Cookie);
+        public static readonly OptionIdentifier<string> CookieIdentifier = new(Cookie);
 
         /// <summary>
         /// `Expect` 对应的选项标识，值类型为 <see cref="string"/>。
         /// </summary>
-        public static readonly OptionIdentifier<string> ExpectOption = new(Expect);
+        public static readonly OptionIdentifier<string> ExpectIdentifier = new(Expect);
 
         /// <summary>
         /// `From` 对应的选项标识，值类型为 <see cref="string"/>。
         /// </summary>
-        public static readonly OptionIdentifier<string> FromOption = new(From);
+        public static readonly OptionIdentifier<string> FromIdentifier = new(From);
 
         /// <summary>
         /// `Host` 对应的选项标识，值类型为 <see cref="string"/>。
         /// </summary>
-        public static readonly OptionIdentifier<string> HostOption = new(Host);
+        public static readonly OptionIdentifier<string> HostIdentifier = new(Host);
 
         /// <summary>
-        /// `If-Match` 对应的选项标识，值类型为 <see cref="ValueOrList{T}"/>（<c>T</c> 为 <see cref="string"/>）。
+        /// `If-Match` 对应的选项标识，值类型为 <see cref="ValueOrList{T}"/>（ <c>T</c> 为 <see cref="string"/>）。
         /// </summary>
-        public static readonly OptionIdentifier<ValueOrList<string>> IfMatchOption = new(IfMatch);
+        public static readonly OptionIdentifier<ValueOrList<string>> IfMatchIdentifier = new(IfMatch);
 
         /// <summary>
         /// `If-Modified-Since` 对应的选项标识，值类型为 <see cref="DateTimeOffset"/>。
         /// </summary>
-        public static readonly OptionIdentifier<DateTimeOffset> IfModifiedSinceOption = new(IfModifiedSince);
+        public static readonly OptionIdentifier<DateTimeOffset> IfModifiedSinceIdentifier = new(IfModifiedSince);
 
         /// <summary>
-        /// `If-None-Match` 对应的选项标识，值类型为 <see cref="ValueOrList{T}"/>（<c>T</c> 为 <see cref="string"/>）。
+        /// `If-None-Match` 对应的选项标识，值类型为 <see cref="ValueOrList{T}"/>（ <c>T</c> 为 <see cref="string"/>）。
         /// </summary>
-        public static readonly OptionIdentifier<ValueOrList<string>> IfNoneMatchOption = new(IfNoneMatch);
+        public static readonly OptionIdentifier<ValueOrList<string>> IfNoneMatchIdentifier = new(IfNoneMatch);
 
         /// <summary>
         /// `If-Range` 对应的选项标识，值类型为 <see cref="string"/>。
         /// </summary>
-        public static readonly OptionIdentifier<string> IfRangeOption = new(IfRange);
+        public static readonly OptionIdentifier<string> IfRangeIdentifier = new(IfRange);
 
         /// <summary>
         /// `If-Unmodified-Since` 对应的选项标识，值类型为 <see cref="DateTimeOffset"/>。
         /// </summary>
-        public static readonly OptionIdentifier<DateTimeOffset> IfUnmodifiedSinceOption = new(IfUnmodifiedSince);
+        public static readonly OptionIdentifier<DateTimeOffset> IfUnmodifiedSinceIdentifier = new(IfUnmodifiedSince);
 
         /// <summary>
         /// `Max-Forwards` 对应的选项标识，值类型为 <see cref="int"/>。
         /// </summary>
-        public static readonly OptionIdentifier<int> MaxForwardsOption = new(MaxForwards);
+        public static readonly OptionIdentifier<int> MaxForwardsIdentifier = new(MaxForwards);
 
         /// <summary>
         /// `Proxy-Authorization` 对应的选项标识，值类型为 <see cref="string"/>。
         /// </summary>
-        public static readonly OptionIdentifier<string> ProxyAuthorizationOption = new(ProxyAuthorization);
+        public static readonly OptionIdentifier<string> ProxyAuthorizationIdentifier = new(ProxyAuthorization);
 
         /// <summary>
         /// `Referer` 对应的选项标识，值类型为 <see cref="string"/>。
         /// </summary>
-        public static readonly OptionIdentifier<string> RefererOption = new(Referer);
+        public static readonly OptionIdentifier<string> RefererIdentifier = new(Referer);
 
         /// <summary>
         /// `Range` 对应的选项标识，值类型为 <see cref="string"/>。
         /// </summary>
-        public static readonly OptionIdentifier<string> RangeOption = new(Range);
+        public static readonly OptionIdentifier<string> RangeIdentifier = new(Range);
 
         /// <summary>
-        /// `TE` 对应的选项标识，值类型为 <see cref="ValueOrList{T}"/>（<c>T</c> 为 <see cref="string"/>）。
+        /// `TE` 对应的选项标识，值类型为 <see cref="ValueOrList{T}"/>（ <c>T</c> 为 <see cref="string"/>）。
         /// </summary>
-        public static readonly OptionIdentifier<ValueOrList<string>> TeOption = new(Te);
+        public static readonly OptionIdentifier<ValueOrList<string>> TeIdentifier = new(Te);
 
         /// <summary>
         /// `Translate` 对应的选项标识，值类型为 <see cref="string"/>。
         /// </summary>
-        public static readonly OptionIdentifier<string> TranslateOption = new(Translate);
+        public static readonly OptionIdentifier<string> TranslateIdentifier = new(Translate);
 
         /// <summary>
         /// `User-Agent` 对应的选项标识，值类型为 <see cref="string"/>。
         /// </summary>
-        public static readonly OptionIdentifier<string> UserAgentOption = new(UserAgent);
+        public static readonly OptionIdentifier<string> UserAgentIdentifier = new(UserAgent);
 
         /// <summary>
         /// `Accept-Ranges` 对应的选项标识，值类型为 <see cref="string"/>。
         /// </summary>
-        public static readonly OptionIdentifier<string> AcceptRangesOption = new(AcceptRanges);
+        public static readonly OptionIdentifier<string> AcceptRangesIdentifier = new(AcceptRanges);
 
         /// <summary>
         /// `Age` 对应的选项标识，值类型为 <see cref="int"/>。
         /// </summary>
-        public static readonly OptionIdentifier<int> AgeOption = new(Age);
+        public static readonly OptionIdentifier<int> AgeIdentifier = new(Age);
 
         /// <summary>
         /// `Etag` 对应的选项标识，值类型为 <see cref="string"/>。
         /// </summary>
-        public static readonly OptionIdentifier<string> ETagOption = new(ETag);
+        public static readonly OptionIdentifier<string> ETagIdentifier = new(ETag);
 
         /// <summary>
         /// `Location` 对应的选项标识，值类型为 <see cref="string"/>。
         /// </summary>
-        public static readonly OptionIdentifier<string> LocationOption = new(Location);
+        public static readonly OptionIdentifier<string> LocationIdentifier = new(Location);
 
         /// <summary>
         /// `Proxy-Authenticate` 对应的选项标识，值类型为 <see cref="string"/>。
         /// </summary>
-        public static readonly OptionIdentifier<string> ProxyAuthenticateOption = new(ProxyAuthenticate);
+        public static readonly OptionIdentifier<string> ProxyAuthenticateIdentifier = new(ProxyAuthenticate);
 
         /// <summary>
         /// `Retry-After` 对应的选项标识，值类型为 <see cref="string"/>。
         /// </summary>
-        public static readonly OptionIdentifier<string> RetryAfterOption = new(RetryAfter);
+        public static readonly OptionIdentifier<string> RetryAfterIdentifier = new(RetryAfter);
 
         /// <summary>
         /// `Server` 对应的选项标识，值类型为 <see cref="string"/>。
         /// </summary>
-        public static readonly OptionIdentifier<string> ServerOption = new(Server);
+        public static readonly OptionIdentifier<string> ServerIdentifier = new(Server);
 
         /// <summary>
-        /// `Set-Cookie` 对应的选项标识，值类型为 <see cref="ValueOrList{T}"/>（<c>T</c> 为 <see cref="string"/>）。
+        /// `Set-Cookie` 对应的选项标识，值类型为 <see cref="ValueOrList{T}"/>（ <c>T</c> 为 <see cref="string"/>）。
         /// </summary>
-        public static readonly OptionIdentifier<ValueOrList<string>> SetCookieOption = new(SetCookie);
+        public static readonly OptionIdentifier<ValueOrList<string>> SetCookieIdentifier = new(SetCookie);
 
         /// <summary>
-        /// `Vary` 对应的选项标识，值类型为 <see cref="ValueOrList{T}"/>（<c>T</c> 为 <see cref="string"/>）。
+        /// `Vary` 对应的选项标识，值类型为 <see cref="ValueOrList{T}"/>（ <c>T</c> 为 <see cref="string"/>）。
         /// </summary>
-        public static readonly OptionIdentifier<ValueOrList<string>> VaryOption = new(Vary);
+        public static readonly OptionIdentifier<ValueOrList<string>> VaryIdentifier = new(Vary);
 
         /// <summary>
-        /// `WWW-Authenticate` 对应的选项标识，值类型为 <see cref="ValueOrList{T}"/>（<c>T</c> 为 <see cref="string"/>）。
+        /// `WWW-Authenticate` 对应的选项标识，值类型为 <see cref="ValueOrList{T}"/>（ <c>T</c> 为 <see cref="string"/>）。
         /// </summary>
-        public static readonly OptionIdentifier<ValueOrList<string>> WwwAuthenticateOption = new(WwwAuthenticate);
+        public static readonly OptionIdentifier<ValueOrList<string>> WwwAuthenticateIdentifier = new(WwwAuthenticate);
 
         /// <summary>
         /// `Origin` 对应的选项标识，值类型为 <see cref="string"/>。
         /// </summary>
-        public static readonly OptionIdentifier<string> OriginOption = new(Origin);
+        public static readonly OptionIdentifier<string> OriginIdentifier = new(Origin);
 
         /// <summary>
         /// `Content-Disposition` 对应的选项标识，值类型为 <see cref="string"/>。
         /// </summary>
-        public static readonly OptionIdentifier<string> ContentDispositionOption = new(ContentDisposition);
+        public static readonly OptionIdentifier<string> ContentDispositionIdentifier = new(ContentDisposition);
 
         #endregion HttpHeaders OptionIdentifiers
+
+        /// <summary>
+        /// 头部名称与对应选项标识的字典，用于根据头部名称快速获取对应的选项标识。
+        /// </summary>
+        private static ReadOnlyDictionary<string, OptionIdentifier> HeaderDict = new(new Dictionary<string, OptionIdentifier>(StringComparer.OrdinalIgnoreCase)
+        {
+            { CacheControl, CacheControlIdentifier },
+            { Connection, ConnectionIdentifier },
+            { Date, DateIdentifier },
+            { KeepAlive, KeepAliveIdentifier },
+            { Pragma, PragmaIdentifier },
+            { Trailer, TrailerIdentifier },
+            { TransferEncoding, TransferEncodingIdentifier },
+            { Upgrade, UpgradeIdentifier },
+            { Via, ViaIdentifier },
+            { Warning, WarningIdentifier },
+            { Allow, AllowIdentifier },
+            { ContentLength, ContentLengthIdentifier },
+            { ContentType, ContentTypeIdentifier },
+            { ContentEncoding, ContentEncodingIdentifier },
+            { ContentLanguage, ContentLanguageIdentifier },
+            { ContentLocation, ContentLocationIdentifier },
+            { ContentMd5, ContentMd5Identifier },
+            { ContentRange, ContentRangeIdentifier },
+            { Expires, ExpiresIdentifier },
+            { LastModified, LastModifiedIdentifier },
+            { Accept, AcceptIdentifier },
+            { AcceptCharset, AcceptCharsetIdentifier },
+            { AcceptEncoding, AcceptEncodingIdentifier },
+            { AcceptLanguage, AcceptLanguageIdentifier },
+            { Authorization, AuthorizationIdentifier },
+            { Cookie, CookieIdentifier },
+            { Expect, ExpectIdentifier },
+            { From, FromIdentifier },
+            { Host, HostIdentifier },
+            { IfMatch, IfMatchIdentifier },
+            { IfModifiedSince, IfModifiedSinceIdentifier },
+            { IfNoneMatch, IfNoneMatchIdentifier },
+            { IfRange, IfRangeIdentifier },
+            { IfUnmodifiedSince, IfUnmodifiedSinceIdentifier },
+            { MaxForwards, MaxForwardsIdentifier },
+            { ProxyAuthorization, ProxyAuthorizationIdentifier },
+            { Referer, RefererIdentifier },
+            { Range, RangeIdentifier },
+            { Te, TeIdentifier },
+            { Translate, TranslateIdentifier },
+            { UserAgent, UserAgentIdentifier },
+        });
+
+        /// <summary>
+        /// 尝试根据给定的头部名称获取对应的选项标识。
+        /// </summary>
+        /// <param name="headerName">头部名称</param>
+        /// <param name="optionIdentifier">对应的选项标识</param>
+        /// <returns>如果找到对应的选项标识，则返回 <c>true</c>；否则返回 <c>false</c>。</returns>
+        public static bool TryGetOptionIdentifier(string headerName, [NotNullWhen(true)] out OptionIdentifier? optionIdentifier)
+        {
+            return HeaderDict.TryGetValue(headerName, out optionIdentifier);
+        }
 
         /// <summary>
         /// 将 HttpRequestHeader 枚举转换为对应的字符串表示。
@@ -668,9 +728,9 @@ namespace ExtenderApp.Abstract.Networks
                     host += ":" + requestUri.Port;
 
                 // 优先尝试设置，若未注册则注册该选项并设置初始值
-                if (!headers.TrySetOptionValue(HostOption, host))
+                if (!headers.TrySetOptionValue(HostIdentifier, host))
                 {
-                    headers.RegisterOption(HostOption, host);
+                    headers.RegisterOption(HostIdentifier, host);
                 }
             }
 
@@ -679,26 +739,26 @@ namespace ExtenderApp.Abstract.Networks
                 // Content-Length：当有 body 且未设置时尝试设置或注册
                 if (body.Committed > 0)
                 {
-                    if (!headers.TrySetOptionValue(ContentLengthOption, body.Committed))
+                    if (!headers.TrySetOptionValue(ContentLengthIdentifier, body.Committed))
                     {
-                        headers.RegisterOption(ContentLengthOption, body.Committed);
+                        headers.RegisterOption(ContentLengthIdentifier, body.Committed);
                     }
                 }
 
                 // 默认 Content-Type（仅在 body 存在且未显式设置时生效）
                 if (!string.IsNullOrEmpty(defaultContentType) && body.Committed > 0)
                 {
-                    if (!headers.TrySetOptionValue(ContentTypeOption, defaultContentType))
+                    if (!headers.TrySetOptionValue(ContentTypeIdentifier, defaultContentType))
                     {
-                        headers.RegisterOption(ContentTypeOption, defaultContentType);
+                        headers.RegisterOption(ContentTypeIdentifier, defaultContentType);
                     }
                 }
             }
 
-            if (headers.ContainsOption(ContentLengthOption) && headers.ContainsOption(TransferEncodingOption))
+            if (headers.ContainsOption(ContentLengthIdentifier) && headers.ContainsOption(TransferEncodingIdentifier))
             {
                 // 如果同时存在 Content-Length 和 Transfer-Encoding，则移除 Content-Length
-                headers.UnRegisterOption(ContentLengthOption);
+                headers.UnRegisterOption(ContentLengthIdentifier);
             }
         }
 
@@ -715,23 +775,23 @@ namespace ExtenderApp.Abstract.Networks
 
             if (body.Committed > 0)
             {
-                if (!headers.TrySetOptionValue(ContentLengthOption, body.Committed))
+                if (!headers.TrySetOptionValue(ContentLengthIdentifier, body.Committed))
                 {
-                    headers.RegisterOption(ContentLengthOption, body.Committed);
+                    headers.RegisterOption(ContentLengthIdentifier, body.Committed);
                 }
             }
 
             if (!string.IsNullOrEmpty(defaultContentType) && body.Committed > 1)
             {
-                if (!headers.TrySetOptionValue(ContentTypeOption, defaultContentType))
+                if (!headers.TrySetOptionValue(ContentTypeIdentifier, defaultContentType))
                 {
-                    headers.RegisterOption(ContentTypeOption, defaultContentType);
+                    headers.RegisterOption(ContentTypeIdentifier, defaultContentType);
                 }
             }
 
-            if (!headers.TrySetOptionValue(DateOption, DateTimeOffset.UtcNow))
+            if (!headers.TrySetOptionValue(DateIdentifier, DateTimeOffset.UtcNow))
             {
-                headers.RegisterOption(DateOption, DateTimeOffset.UtcNow);
+                headers.RegisterOption(DateIdentifier, DateTimeOffset.UtcNow);
             }
         }
     }

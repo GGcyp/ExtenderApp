@@ -287,7 +287,7 @@ namespace ExtenderApp.Buffer
 
         ///<inheritdoc/>
         protected override sealed AbstractBuffer<T> SliceProtected(long start, long length)
-            => FixedMemoryBlockProvider<T>.Default.GetBuffer(Memory.Slice((int)start, (int)length));
+            => ArrayPoolBlockProvider<T>.Default.GetBuffer(CommittedSpan.Slice((int)start, (int)length));
 
         /// <summary>
         /// 从当前块内已写入的元素范围创建一个新的 <see cref="MemoryBlock{T}"/> 实例，表示该范围的独立副本。 派生类应通过克隆底层存储来实现深复制，以确保新实例与原实例之间没有共享状态。

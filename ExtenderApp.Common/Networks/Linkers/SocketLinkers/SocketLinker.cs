@@ -21,7 +21,7 @@ namespace ExtenderApp.Common.Networks
         /// 初始化 <see cref="SocketLinker"/> 的新实例。
         /// </summary>
         /// <param name="socket">要使用的 <see cref="Socket"/> 实例。</param>
-        public SocketLinker(Socket socket)
+        public SocketLinker(Socket socket) : base()
         {
             Socket = socket;
         }
@@ -69,6 +69,17 @@ namespace ExtenderApp.Common.Networks
             if (LinkOptions.ReceiveTimeoutIdentifier.TryBindChangedHandler(optionValue, static (o, item) => ((SocketLinker)o!).Socket.ReceiveTimeout = item.Item2))
                 return;
             if (LinkOptions.SendTimeoutIdentifier.TryBindChangedHandler(optionValue, static (o, item) => ((SocketLinker)o!).Socket.SendTimeout = item.Item2))
+                return;
+            if (LinkOptions.DualModeIdentifier.TryBindChangedHandler(optionValue, static (o, item) =>
+            {
+                var socket = ((SocketLinker)o!).Socket;
+                if (socket.AddressFamily == AddressFamily.InterNetworkV6)
+                    socket.DualMode = item.Item2;
+            }))
+                return;
+            if (LinkOptions.ExclusiveAddressUseIdentifier.TryBindChangedHandler(optionValue, static (o, item) => ((SocketLinker)o!).Socket.ExclusiveAddressUse = item.Item2))
+                return;
+            if (LinkOptions.TtlIdentifier.TryBindChangedHandler(optionValue, static (o, item) => ((SocketLinker)o!).Socket.Ttl = item.Item2))
                 return;
         }
 
@@ -213,6 +224,11 @@ namespace ExtenderApp.Common.Networks
         {
             var socket = new Socket(AddressFamily, SocketType, ProtocolType);
             return Clone(socket);
+        }
+
+        public override void Close()
+        {
+            Socket.Close();
         }
 
         /// <summary>

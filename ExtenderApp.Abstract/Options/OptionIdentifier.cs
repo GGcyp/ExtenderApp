@@ -227,6 +227,44 @@
             ? value :
             throw new InvalidCastException($"无法获取选项值。期望标识: {this}, 实际标识: {optionValue.Identifier}");
 
+        /// <summary>
+        /// 尝试将一个类型安全的值设置到非类型安全的 <see cref="OptionValue"/> 中。 当 <paramref name="optionValue"/> 与当前标识匹配且能够成功转换为 <see cref="OptionValue{T}"/> 时，
+        /// 将输出转换后的值并返回 <c>true</c>，否则返回 <c>false</c>。
+        /// </summary>
+        /// <param name="optionValue">要设置的非类型安全选项值对象。</param>
+        /// <param name="value">要设置的类型安全值。</param>
+        /// <returns>若成功设置则为 <c>true</c>，否则为 <c>false</c>。</returns>
+        public bool TrySetValue(OptionValue optionValue, T value)
+        {
+            if (TryConvertOptionValue(optionValue, out var typedOptionValue))
+            {
+                typedOptionValue.Value = value;
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// 将一个类型安全的值设置到非类型安全的 <see cref="OptionValue"/> 中。 当 <paramref name="optionValue"/> 与当前标识匹配且能够成功转换为 <see cref="OptionValue{T}"/> 时设置成功，否则抛出
+        /// <see cref="InvalidCastException"/>。
+        /// </summary>
+        /// <param name="optionValue">要设置的非类型安全选项值对象。</param>
+        /// <param name="value">要设置的类型安全值。</param>
+        /// <exception cref="InvalidCastException">当 <paramref name="optionValue"/> 的标识不匹配或类型不为 <see cref="OptionValue{T}"/> 时抛出。</exception>
+        public void SetValue(OptionValue optionValue, T value)
+        {
+            if (!TrySetValue(optionValue, value))
+            {
+                throw new InvalidCastException($"无法设置选项值。期望标识: {this}, 实际标识: {optionValue.Identifier}");
+            }
+        }
+
+        public override string ToString() => $"IdentifierName: {Name} ValueName: {typeof(T).Name} (GetVisibility: {GetVisibility}, SetVisibility: {SetVisibility})";
+
+        /// <summary>
+        /// 获取默认选项值。 该方法返回一个新的 <see cref="OptionValue{T}"/> 实例，其标识为当前对象，值为 <see cref="DefaultValue"/>。 默认选项值表示当选项未被显式设置时的默认状态或配置。
+        /// </summary>
+        /// <returns>默认选项值。</returns>
         public override OptionValue<T> GetDefaultOptionValue()
             => new OptionValue<T>(this, DefaultValue);
     }

@@ -23,7 +23,7 @@ namespace ExtenderApp.Test.Tests
             }
             catch (Exception ex)
             {
-                Debug.Print($"LinkClientPipelineTests: Exception: {ex}");
+                Debug.Print($"LinkClientPipelineTests: ResultException: {ex}");
             }
         }
 

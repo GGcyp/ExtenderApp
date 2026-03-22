@@ -1,8 +1,6 @@
 ﻿namespace ExtenderApp.Buffer
 {
-    /// <summary>
-    /// 对 AbstractBuffer<byte> 的 Stream 适配器，允许将 AbstractBuffer 用作 Stream 进行读写。
-    /// </summary>
+    /// <summary> 对 AbstractBuffer<byte> 的 Stream 适配器，允许将 AbstractBuffer 用作 Stream 进行读写。 </summary>
     public sealed class AbstractBufferStream : Stream
     {
         private long position;
@@ -53,13 +51,11 @@
             ThrowIfDisposed();
         }
 
-        #region
+        #region Read
 
         public override int Read(byte[] buffer, int offset, int count)
         {
-            if (offset < 0 || count < 0 || offset + count > buffer.Length)
-                throw new ArgumentOutOfRangeException();
-
+            ValidateBufferArguments(buffer, offset, count);
             return Read(buffer.AsSpan(offset, count));
         }
 
@@ -73,7 +69,7 @@
             if (position > this.buffer.Committed)
                 return 0;
 
-            var reader = this.buffer.ToReader();
+            var reader = this.buffer.GetReader();
             reader.Advance((int)position);
 
             int remaining = (int)Math.Min(reader.Remaining, buffer.Length);
@@ -83,15 +79,13 @@
             return remaining;
         }
 
-        #endregion
+        #endregion Read
 
         #region Write
 
         public override void Write(byte[] buffer, int offset, int count)
         {
-            if (offset < 0 || count < 0 || offset + count > buffer.Length)
-                throw new ArgumentOutOfRangeException();
-
+            ValidateBufferArguments(buffer, offset, count);
             Write(buffer.AsSpan(offset, count));
         }
 
@@ -136,7 +130,7 @@
             position += count;
         }
 
-        #endregion
+        #endregion Write
 
         public override long Seek(long offset, SeekOrigin origin)
         {

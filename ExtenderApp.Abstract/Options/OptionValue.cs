@@ -63,7 +63,7 @@ namespace ExtenderApp.Abstract.Options
         /// <summary>
         /// 获取选项的具体值。
         /// </summary>
-        public T Value { get; private set; }
+        public T Value { get; internal set; }
 
         /// <summary>
         /// 当选项值发生变化时触发的事件。事件参数为新的选项值。

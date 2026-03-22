@@ -16,7 +16,7 @@ namespace ExtenderApp.Abstract
         /// <returns>
         /// 一个 <see cref="Result{T}"/> 实例，其中：
         /// - 成功时， <see cref="Result{T}.Data"/> 包含一个 <see cref="LinkOperationValue"/>，其 <see cref="LinkOperationValue.BytesTransferred"/> 表示实际发送的字节数。
-        /// - 失败时， <see cref="Result.Exception"/> 包含相应的异常信息。
+        /// - 失败时， <see cref="Result.ResultException"/> 包含相应的异常信息。
         /// </returns>
         Result<LinkOperationValue> SendTo(Memory<byte> memory, EndPoint endPoint);
 

@@ -6,8 +6,7 @@ using ExtenderApp.Buffer;
 namespace ExtenderApp.Abstract.Networks
 {
     /// <summary>
-    /// 表示 HTTP 响应消息（状态行 + 头部 + 可选主体）。
-    /// 此对象可能持有底层字节缓冲区资源（<see cref="Body"/>），使用完毕请调用 Dispose 或释放相关资源。
+    /// 表示 HTTP 响应消息（状态行 + 头部 + 可选主体）。 此对象可能持有底层字节缓冲区资源（ <see cref="Body"/>），使用完毕请调用 Dispose 或释放相关资源。
     /// </summary>
     public class HttpResponseMessage : OptionsObject
     {
@@ -36,7 +35,7 @@ namespace ExtenderApp.Abstract.Networks
             {
                 if (TryGetOptionValue(HttpResponseOptions.BodyOption, out var buffer))
                 {
-                    buffer.TryRelease();
+                    buffer?.TryRelease();
                 }
                 SetOptionValue(HttpResponseOptions.BodyOption, value);
             }
@@ -79,11 +78,10 @@ namespace ExtenderApp.Abstract.Networks
         }
 
         /// <summary>
-        /// 使用指定关联请求创建一个新的 <see cref="HttpResponseMessage"/> 实例。
-        /// 该构造函数会在内部注册响应所需的选项项（头部、版本、状态码、说明短语等）。
+        /// 使用指定关联请求创建一个新的 <see cref="HttpResponseMessage"/> 实例。 该构造函数会在内部注册响应所需的选项项（头部、版本、状态码、说明短语等）。
         /// </summary>
         /// <param name="requestMessage">可选的关联请求消息（用于参考），可以为 <c>null</c>。</param>
-        public HttpResponseMessage(HttpRequestMessage? requestMessage)
+        public HttpResponseMessage(HttpRequestMessage? requestMessage = default)
         {
             RegisterOption(HttpResponseOptions.BodyOption);
             RegisterOption(HttpResponseOptions.VersionOption);
@@ -116,7 +114,7 @@ namespace ExtenderApp.Abstract.Networks
                 return;
 
             WriteToBody(text, encoding);
-            Headers.SetOptionValue(HttpHeaderOptions.ContentTypeOption, string.IsNullOrEmpty(contentType) ? $"text/plain; charset={encoding.WebName}" : contentType);
+            Headers.SetOptionValue(HttpHeaderOptions.ContentTypeIdentifier, string.IsNullOrEmpty(contentType) ? $"text/plain; charset={encoding.WebName}" : contentType);
         }
 
         /// <summary>
@@ -129,7 +127,7 @@ namespace ExtenderApp.Abstract.Networks
             ArgumentNullException.ThrowIfNull(buffer, nameof(buffer));
 
             Body = buffer;
-            Headers.SetOptionValue(HttpHeaderOptions.ContentTypeOption, contentType);
+            Headers.SetOptionValue(HttpHeaderOptions.ContentTypeIdentifier, contentType);
         }
 
         /// <summary>
@@ -147,8 +145,7 @@ namespace ExtenderApp.Abstract.Networks
         }
 
         /// <summary>
-        /// 获取响应首部字符串（状态行 + 头部，不包含主体）。
-        /// 使用系统默认编码（ANSI code page）对文本部分进行编码。
+        /// 获取响应首部字符串（状态行 + 头部，不包含主体）。 使用系统默认编码（ANSI code page）对文本部分进行编码。
         /// </summary>
         /// <returns>仅包含状态行与头部的字符串，已以 CRLF 结束。</returns>
         public string GetResponseString()
@@ -208,10 +205,10 @@ namespace ExtenderApp.Abstract.Networks
         }
 
         /// <summary>
-        /// 将完整响应（首行 + 头部 + 可选 Body）写入提供的序列缓冲，文本部分使用 ASCII 编码。
+        /// 将完整响应（首行 + 头部 + 可选 Body）写入提供的序列缓冲，文本部分使用 Latin1 编码。
         /// </summary>
         /// <param name="buffer">目标 <see cref="SequenceBuffer{byte}"/>，不能为空。</param>
-        public void WriteToBuffer(SequenceBuffer<byte> buffer) => WriteToBuffer(buffer, Encoding.ASCII);
+        public void WriteToBuffer(SequenceBuffer<byte> buffer) => WriteToBuffer(buffer, Encoding.Latin1);
 
         /// <summary>
         /// 将完整响应（首行 + 头部 + 可选 Body）写入提供的序列缓冲，文本部分使用指定编码。

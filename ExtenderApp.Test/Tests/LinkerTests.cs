@@ -40,7 +40,7 @@ namespace ExtenderApp.Test.Tests
                 var sendResult = scope.Client.Send(buffer);
                 if (!sendResult)
                 {
-                    Debug.Print($"[ ß∞‹] TestTcpSerializedRoundTrip Send: {sendResult.Exception}");
+                    Debug.Print($"[ ß∞‹] TestTcpSerializedRoundTrip Send: {sendResult.ResultException}");
                     return;
                 }
 
@@ -77,7 +77,7 @@ namespace ExtenderApp.Test.Tests
                 var sendResult = await scope.Client.SendAsync(buffer, token: CancellationToken.None).ConfigureAwait(false);
                 if (!sendResult)
                 {
-                    Debug.Print($"[ ß∞‹] TestTcpSerializedRoundTripAsync Send: {sendResult.Exception}");
+                    Debug.Print($"[ ß∞‹] TestTcpSerializedRoundTripAsync Send: {sendResult.ResultException}");
                     return;
                 }
 
@@ -123,7 +123,7 @@ namespace ExtenderApp.Test.Tests
                     var sendResult = scope.Client.Send(buffer);
                     if (!sendResult)
                     {
-                        Debug.Print($"[ ß∞‹] TestTcpSendRate Send: {sendResult.Exception}");
+                        Debug.Print($"[ ß∞‹] TestTcpSendRate Send: {sendResult.ResultException}");
                         return;
                     }
 
@@ -157,7 +157,7 @@ namespace ExtenderApp.Test.Tests
             {
                 var result = linker.Receive(remaining);
                 if (!result)
-                    throw result.Exception ?? new InvalidOperationException("Ω” ’ ß∞‹°£");
+                    throw result.ResultException ?? new InvalidOperationException("Ω” ’ ß∞‹°£");
 
                 var transferred = result.Value.BytesTransferred;
                 if (transferred <= 0)
@@ -174,7 +174,7 @@ namespace ExtenderApp.Test.Tests
             {
                 var result = await linker.ReceiveAsync(remaining, LinkFlags.None).ConfigureAwait(false);
                 if (!result)
-                    throw result.Exception ?? new InvalidOperationException("Ω” ’ ß∞‹°£");
+                    throw result.ResultException ?? new InvalidOperationException("Ω” ’ ß∞‹°£");
 
                 var transferred = result.Value.BytesTransferred;
                 if (transferred <= 0)

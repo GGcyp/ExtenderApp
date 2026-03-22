@@ -10,7 +10,7 @@ namespace ExtenderApp.Buffer
         /// <param name="initialCapacity">建议的初始容量（元素数量）。实现可将其作为预分配或增长的提示。</param>
         /// <returns>返回一个已初始化的 <see cref="MemoryBlock{T}"/> 实例。返回的实例可能来自内部池，调用方在不再使用时应按约定释放或归还该内存块（例如调用 <see cref="Dispose"/> 或相关的释放方法）。</returns>
         public static MemoryBlock<T> GetBuffer(int initialCapacity = 16)
-            => MemoryBlockProvider<T>.Shared.GetBuffer(initialCapacity);
+            => ArrayPoolBlockProvider<T>.Default.GetBuffer(initialCapacity);
 
         /// <summary>
         /// 从指定的可写跨度创建并返回一个内存块，并将 <paramref name="span"/> 的内容写入该内存块。

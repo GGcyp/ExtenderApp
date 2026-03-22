@@ -33,11 +33,11 @@ namespace ExtenderApp.Common.Networks.LinkChannels
             {
                 Result result = await Linker.ConnectAsync(remoteAddress, localAddress, token).ConfigureAwait(false);
                 if (!result)
-                    return result.HasException ? context.ExceptionCaught(result.Exception!) : result;
+                    return result.HasException ? context.ExceptionCaught(result.ResultException!) : result;
 
                 result = await context.ActiveAsync(token).ConfigureAwait(false);
                 if (!result && result.HasException)
-                    return context.ExceptionCaught(result.Exception!);
+                    return context.ExceptionCaught(result.ResultException!);
 
                 return result;
             }
@@ -56,11 +56,11 @@ namespace ExtenderApp.Common.Networks.LinkChannels
             {
                 Result result = await Linker.DisconnectAsync(token).ConfigureAwait(false);
                 if (!result)
-                    return result.HasException ? context.ExceptionCaught(result.Exception!) : result;
+                    return result.HasException ? context.ExceptionCaught(result.ResultException!) : result;
 
                 result = await context.InactiveAsync(token).ConfigureAwait(false);
                 if (!result && result.HasException)
-                    return context.ExceptionCaught(result.Exception!);
+                    return context.ExceptionCaught(result.ResultException!);
 
                 return result;
             }
@@ -100,7 +100,7 @@ namespace ExtenderApp.Common.Networks.LinkChannels
                 {
                     var result = await Linker!.SendAsync(sequence, token).ConfigureAwait(false);
                     if (!result)
-                        return result.HasException ? context.ExceptionCaught(result.Exception!) : result;
+                        return result.HasException ? context.ExceptionCaught(result.ResultException!) : result;
 
                     resultValue = new(result, resultValue.BytesTransferred + result.Value.BytesTransferred);
                     sequence.Clear();
@@ -132,9 +132,9 @@ namespace ExtenderApp.Common.Networks.LinkChannels
                 var block = MemoryBlock<byte>.GetBuffer(context.LinkChannel.ReceiveBufferSize);
                 var result = await Linker.ReceiveAsync(block, token).ConfigureAwait(false);
                 if (!result)
-                    return result.HasException ? context.ExceptionCaught(result.Exception!) : result;
+                    return result.HasException ? context.ExceptionCaught(result.ResultException!) : result;
 
-                cache.AddValue(result.Value);
+                cache.AddValue(block);
                 return await context.InboundHandleAsync(cache, token).ConfigureAwait(false);
             }
             catch (Exception ex)

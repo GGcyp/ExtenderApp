@@ -6,38 +6,54 @@ namespace ExtenderApp.Common.Networks.LinkChannels.Handlers
 {
     public abstract class MessageHandler<T> : LinkChannelHandler
     {
-        private readonly bool _isClassType;
+        protected static readonly Result<T> NeedMoreDataResult = Result.Failure<T>(default!, "Need more data");
 
         public event Action<ILinkChannel, T>? Callback;
 
-        public MessageHandler() : base()
+        public MessageDirection Direction { get; set; }
+
+        public MessageHandler() : this(MessageDirection.Both)
         {
-            _isClassType = typeof(T).IsClass;
+        }
+
+        public MessageHandler(MessageDirection direction) : base()
+        {
+            Direction = direction;
         }
 
         public override async ValueTask<Result> InboundHandleAsync(ILinkChannelHandlerContext context, ValueCache cache, CancellationToken token = default)
         {
             if (token.IsCancellationRequested)
                 return Result.Failure();
+            if ((Direction & MessageDirection.Inbound) == 0)
+                return await context.InboundHandleAsync(cache, token).ConfigureAwait(false);
 
             try
             {
-                if (cache.TryTakeValue<AbstractBuffer<byte>>(out var buffer))
+                if (cache.TryGetValue(out MemoryBlock<byte> buffer))
                 {
                     var result = await DeserializationMessageAsync(buffer);
                     if (result)
                     {
                         T value = result!;
                         Callback?.Invoke(context.LinkChannel, value);
+                        cache.TryTakeValue(out buffer);
                         buffer.TryRelease();
                     }
+                    else if (result == NeedMoreDataResult)
+                    {
+                        cache.TryTakeValue(out buffer);
+                        buffer.TryRelease();
+                    }
+                    else
+                        return result.HasException ? context.ExceptionCaught(result.ResultException!) : result;
                 }
 
                 return await context.InboundHandleAsync(cache, token).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
-                return context.ExceptionCaught(ex);
+                return ExceptionCaught(context, ex);
             }
         }
 
@@ -45,28 +61,30 @@ namespace ExtenderApp.Common.Networks.LinkChannels.Handlers
         {
             if (token.IsCancellationRequested)
                 return Result.Failure();
+            if ((Direction & MessageDirection.Outbound) == 0)
+                return await context.OutboundHandleAsync(cache, token).ConfigureAwait(false);
+
             try
             {
                 while (cache.TryTakeValue(out T value))
                 {
-                    AbstractBuffer<byte> buffer = _isClassType ? AbstractBuffer.GetSequence<byte>() : AbstractBuffer.GetBlock<byte>();
-                    var result = await SerializationMessageAsync(value, buffer);
+                    var result = await SerializationMessageAsync(value);
 
                     if (result)
-                        cache.AddValue(buffer);
+                        cache.AddValue(result.Value);
                     else
-                        return context.ExceptionCaught(result);
+                        return result.HasException ? context.ExceptionCaught(result.ResultException!) : result;
                 }
                 return await context.OutboundHandleAsync(cache, token).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
-                return context.ExceptionCaught(ex);
+                return ExceptionCaught(context, ex);
             }
         }
 
-        protected abstract ValueTask<Result> SerializationMessageAsync(T value, AbstractBuffer<byte> buffer);
+        protected abstract ValueTask<Result<AbstractBuffer<byte>>> SerializationMessageAsync(T value);
 
-        protected abstract ValueTask<Result<T>> DeserializationMessageAsync(AbstractBuffer<byte> reader);
+        protected abstract ValueTask<Result<T>> DeserializationMessageAsync(MemoryBlock<byte> block);
     }
 }

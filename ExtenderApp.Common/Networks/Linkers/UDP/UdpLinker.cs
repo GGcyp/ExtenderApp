@@ -1,6 +1,8 @@
 ﻿using System.Net;
 using System.Net.Sockets;
 using ExtenderApp.Abstract;
+using ExtenderApp.Abstract.Networks;
+using ExtenderApp.Abstract.Options;
 using ExtenderApp.Contracts;
 
 namespace ExtenderApp.Common.Networks
@@ -12,6 +14,17 @@ namespace ExtenderApp.Common.Networks
     {
         public UdpLinker(Socket socket) : base(socket)
         {
+            RegisterOption(LinkOptions.DontFragmentIdentifier);
+            RegisterOption(LinkOptions.EnableBroadcastIdentifier);
+        }
+
+        protected override void OnRegisterOption(OptionIdentifier identifier, OptionValue optionValue)
+        {
+            base.OnRegisterOption(identifier, optionValue);
+            if (LinkOptions.DontFragmentIdentifier.TryBindChangedHandler(optionValue, static (o, item) => ((SocketLinker)o!).Socket.DontFragment = item.Item2))
+                return;
+            if (LinkOptions.EnableBroadcastIdentifier.TryBindChangedHandler(optionValue, static (o, item) => ((SocketLinker)o!).Socket.EnableBroadcast = item.Item2))
+                return;
         }
 
         public Result<LinkOperationValue> SendTo(Memory<byte> memory, EndPoint endPoint)

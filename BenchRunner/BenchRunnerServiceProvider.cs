@@ -56,7 +56,7 @@ namespace BenchRunner
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Exception while resolving services:");
+                Console.WriteLine("ResultException while resolving services:");
                 Console.WriteLine(FormatException(ex));
             }
         }

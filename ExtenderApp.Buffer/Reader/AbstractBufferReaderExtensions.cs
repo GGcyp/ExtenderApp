@@ -13,7 +13,7 @@ namespace ExtenderApp.Buffer
         /// <typeparam name="T">对应类型<see cref="{T}"/></typeparam>
         /// <param name="buffer">要转换的 <see cref="AbstractBuffer{T}"/> 实例。</param>
         /// <returns>与输入 buffer 对应的 <see cref="AbstractBufferReader{T}"/> 实例。</returns>
-        public static AbstractBufferReader<T> ToReader<T>(this AbstractBuffer<T> buffer)
+        public static AbstractBufferReader<T> GetReader<T>(this AbstractBuffer<T> buffer)
         {
             if (buffer is MemoryBlock<T> memoryBlock)
                 return MemoryBlockReaderProvider<T>.Default.GetReader(memoryBlock);

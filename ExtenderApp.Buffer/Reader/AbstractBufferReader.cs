@@ -159,7 +159,7 @@ namespace ExtenderApp.Buffer
         /// <returns>实际复制并消费的元素数量（可能小于目标长度）。</returns>
         public int Read(Span<T> destination)
         {
-            if (destination.Length == 0)
+            if (destination.Length == 0 || Remaining == 0)
                 return 0;
 
             int toRead = (int)Math.Min(Remaining, destination.Length);

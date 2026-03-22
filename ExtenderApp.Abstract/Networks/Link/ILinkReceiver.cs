@@ -31,7 +31,7 @@ namespace ExtenderApp.Abstract
         /// <param name="memory">可写缓冲区，用于承载本次接收的数据。调用方负责提供合适大小的缓冲区。</param>
         /// <returns>
         /// 一个包含 <see cref="LinkOperationValue"/> 的 <see cref="Result{T}"/> 实例，其中： <br/>- 成功时，可通过 <see
-        /// cref="LinkOperationValue.BytesTransferred"/> 获取实际收到的字节数。 <br/>- 失败时， <see cref="Result.Exception"/> 包含相应的异常信息。
+        /// cref="LinkOperationValue.BytesTransferred"/> 获取实际收到的字节数。 <br/>- 失败时， <see cref="Result.ResultException"/> 包含相应的异常信息。
         /// </returns>
         Result<LinkOperationValue> Receive(Memory<byte> memory);
 

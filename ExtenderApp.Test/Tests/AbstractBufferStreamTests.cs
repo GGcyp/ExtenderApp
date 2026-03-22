@@ -30,7 +30,7 @@ namespace ExtenderApp.Test.Tests
             }
             catch (Exception ex)
             {
-                Debug.Print($"AbstractBufferStreamTests: Exception: {ex}");
+                Debug.Print($"AbstractBufferStreamTests: ResultException: {ex}");
                 throw;
             }
         }

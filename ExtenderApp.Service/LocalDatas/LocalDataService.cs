@@ -45,7 +45,7 @@ namespace ExtenderApp.Services
             //    TLinkClient? result = _binaryParser.Read<TLinkClient>(GetFileInfo(fileName));
             //    return Result.Success(result);
             //}
-            //catch (Exception ex)
+            //catch (ResultException ex)
             //{
             //    _logger.LogError(ex, "加载本地数据时发生错误，文件名：{FileName}", fileName);
             //    return Result.FromException<TLinkClient?>(ex);
@@ -61,7 +61,7 @@ namespace ExtenderApp.Services
             //    var result = await _binaryParser.ReadAsync<TLinkClient>(GetFileInfo(fileName), token);
             //    return Result.Success(result);
             //}
-            //catch (Exception ex)
+            //catch (ResultException ex)
             //{
             //    _logger.LogError(ex, "加载本地数据时发生错误，文件名：{FileName}", fileName);
             //    return Result.FromException<TLinkClient?>(ex);
@@ -81,7 +81,7 @@ namespace ExtenderApp.Services
             //    _binaryParser.Write(GetFileInfo(fileName), data, compressionType);
             //    return Result.Success();
             //}
-            //catch (Exception ex)
+            //catch (ResultException ex)
             //{
             //    _logger.LogError(ex, "保存本地数据时发生错误，文件名：{FileName}", fileName);
             //    return Result.FromException(ex);
@@ -99,7 +99,7 @@ namespace ExtenderApp.Services
             //{
             //    return _binaryParser.WriteAsync(GetFileInfo(fileName), data, compressionType, token);
             //}
-            //catch (Exception ex)
+            //catch (ResultException ex)
             //{
             //    _logger.LogError(ex, "保存本地数据时发生错误，文件名：{FileName}", fileName);
             //    return ValueTask.FromException<Result>(ex);

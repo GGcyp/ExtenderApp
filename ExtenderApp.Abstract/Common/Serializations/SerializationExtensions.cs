@@ -297,7 +297,7 @@ namespace ExtenderApp.Abstract
 
             if (compression.TryDecompress(span, out var buffer))
             {
-                var reader = buffer.ToReader();
+                var reader = buffer.GetReader();
                 var result = serialization.Deserialize<T>(reader);
                 buffer.TryRelease();
                 return result;

@@ -19,7 +19,7 @@ namespace ExtenderApp.Contracts
         /// <summary>
         /// 获取与失败结果相关的异常（如有）。
         /// </summary>
-        public Exception? Exception { get; }
+        public Exception? ResultException { get; }
 
         /// <summary>
         /// 获取一个值，该值指示操作是否成功。
@@ -29,7 +29,7 @@ namespace ExtenderApp.Contracts
         /// <summary>
         /// 获取一个值，该值指示结果是否包含异常。 只有当结果表示失败且包含异常时才为 true。
         /// </summary>
-        public bool HasException => Exception != null;
+        public bool HasException => ResultException != null;
 
         /// <summary>
         /// 初始化 <see cref="Result"/> 结构的新实例。
@@ -41,7 +41,7 @@ namespace ExtenderApp.Contracts
         {
             IsSuccess = isSuccess;
             Message = message;
-            Exception = exception;
+            ResultException = exception;
         }
 
         /// <summary>
@@ -58,7 +58,7 @@ namespace ExtenderApp.Contracts
         {
             return IsSuccess == other.IsSuccess &&
                    Message == other.Message &&
-                   EqualityComparer<Exception?>.Default.Equals(Exception, other.Exception);
+                   ResultException == other.ResultException;
         }
 
         /// <inheritdoc/>
@@ -70,7 +70,7 @@ namespace ExtenderApp.Contracts
         /// <inheritdoc/>
         public override int GetHashCode()
         {
-            return HashCode.Combine(IsSuccess, Message, Exception);
+            return HashCode.Combine(IsSuccess, Message, ResultException);
         }
 
         /// <summary>
@@ -78,9 +78,9 @@ namespace ExtenderApp.Contracts
         /// </summary>
         public void ThrowExceptionIfError()
         {
-            if (!IsSuccess && Exception != null)
+            if (!IsSuccess && ResultException != null)
             {
-                throw Exception;
+                throw ResultException;
             }
         }
 
@@ -89,9 +89,9 @@ namespace ExtenderApp.Contracts
         /// </summary>
         public void ThrowExceptionWithOriginalStackTraceIfError()
         {
-            if (!IsSuccess && Exception != null)
+            if (!IsSuccess && ResultException != null)
             {
-                ExceptionDispatchInfo.Capture(Exception).Throw();
+                ExceptionDispatchInfo.Capture(ResultException).Throw();
             }
         }
 
@@ -224,7 +224,7 @@ namespace ExtenderApp.Contracts
             => result.Message;
 
         public static implicit operator Exception?(Result result)
-            => result.Exception;
+            => result.ResultException;
 
         public static implicit operator ValueTask<Result>(Result result)
             => ValueTask.FromResult(result);
@@ -244,7 +244,7 @@ namespace ExtenderApp.Contracts
         /// <summary>
         /// 获取一个值，该值指示结果是否包含异常。 只有当结果表示失败且包含异常时才为 true。
         /// </summary>
-        public bool HasException => Exception != null;
+        public bool HasException => ResultException != null;
 
         /// <summary>
         /// 获取与结果相关的可选消息。
@@ -254,7 +254,7 @@ namespace ExtenderApp.Contracts
         /// <summary>
         /// 获取与失败结果相关的异常（如有）。
         /// </summary>
-        public Exception? Exception { get; }
+        public Exception? ResultException { get; }
 
         /// <summary>
         /// 获取操作返回的数据。
@@ -277,7 +277,7 @@ namespace ExtenderApp.Contracts
             IsSuccess = isSuccess;
             Value = data;
             Message = message;
-            Exception = exception;
+            ResultException = exception;
         }
 
         /// <summary>
@@ -285,9 +285,9 @@ namespace ExtenderApp.Contracts
         /// </summary>
         public void ThrowExceptionIfError()
         {
-            if (!IsSuccess && Exception != null)
+            if (!IsSuccess && ResultException != null)
             {
-                throw Exception;
+                throw ResultException;
             }
         }
 
@@ -296,9 +296,9 @@ namespace ExtenderApp.Contracts
         /// </summary>
         public void ThrowExceptionWithOriginalStackTraceIfError()
         {
-            if (!IsSuccess && Exception != null)
+            if (!IsSuccess && ResultException != null)
             {
-                ExceptionDispatchInfo.Capture(Exception).Throw();
+                ExceptionDispatchInfo.Capture(ResultException).Throw();
             }
         }
 
@@ -308,7 +308,7 @@ namespace ExtenderApp.Contracts
             return IsSuccess == other.IsSuccess &&
                    EqualityComparer<T?>.Default.Equals(Value, other.Value) &&
                    Message == other.Message &&
-                   EqualityComparer<Exception?>.Default.Equals(Exception, other.Exception);
+                   EqualityComparer<Exception?>.Default.Equals(ResultException, other.ResultException);
         }
 
         /// <inheritdoc/>
@@ -320,7 +320,7 @@ namespace ExtenderApp.Contracts
         /// <inheritdoc/>
         public override int GetHashCode()
         {
-            return HashCode.Combine(IsSuccess, Value, Message, Exception);
+            return HashCode.Combine(IsSuccess, Value, Message, ResultException);
         }
 
         /// <summary>
@@ -358,7 +358,7 @@ namespace ExtenderApp.Contracts
         /// 定义从 <see cref="Result{T}"/> 到 <see cref="Result"/> 的隐式转换，会丢失数据。
         /// </summary>
         public static implicit operator Result(Result<T> result)
-            => new Result(result.IsSuccess, result.Message, result.Exception);
+            => new Result(result.IsSuccess, result.Message, result.ResultException);
 
         /// <summary>
         /// 定义从 <see cref="Result{T}"/> 到其数据类型 <typeparamref name="T"/> 的隐式转换。
@@ -373,6 +373,6 @@ namespace ExtenderApp.Contracts
             => ValueTask.FromResult(result);
 
         public static implicit operator Exception?(Result<T> result)
-            => result.Exception;
+            => result.ResultException;
     }
 }

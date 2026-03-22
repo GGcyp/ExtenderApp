@@ -437,7 +437,7 @@ namespace ExtenderApp.Common.Networks.LinkChannels
         // public void OnAttach(MqttLinkClient client) { } public void OnDetach(MqttLinkClient client) { }
 
         // public void OnConnecting(MqttLinkClient client, EndPoint endPoint) { } public void OnConnected(MqttLinkClient client, EndPoint? endPoint,
-        // Exception? ex) { } public void OnDisconnecting(MqttLinkClient client) { } public void OnDisconnected(MqttLinkClient client, Exception? ex)
+        // ResultException? ex) { } public void OnDisconnecting(MqttLinkClient client) { } public void OnDisconnected(MqttLinkClient client, ResultException? ex)
         // { }
 
         // public void OnSend(MqttLinkClient client, ref LinkClientPluginSendMessage message) { }

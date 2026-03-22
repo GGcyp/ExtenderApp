@@ -1,8 +1,14 @@
 ﻿using System.Diagnostics;
 using System.Net;
+using System.Net.Security;
 using System.Net.Sockets;
+using System.Security.Cryptography.X509Certificates;
+using System.Text;
 using ExtenderApp.Abstract;
+using ExtenderApp.Abstract.Networks;
 using ExtenderApp.Buffer;
+using ExtenderApp.Common.Networks;
+using ExtenderApp.Common.Networks.Http;
 using ExtenderApp.Common.Networks.LinkChannels;
 using ExtenderApp.Common.Networks.LinkChannels.Handlers;
 using ExtenderApp.Contracts;
@@ -15,46 +21,64 @@ namespace ExtenderApp.Test.Tests
         public static async Task TestLinkClientHandlerAsync(IServiceProvider serviceProvider)
         {
             LinkChannel channel = new(serviceProvider.GetRequiredService<ITcpLinker>());
-            var handler = new TempHandler();
-            channel.AddLast("TempHandler", handler);
-            TempMessageHandler messageHandler = new();
-            channel.AddLast("TempMessageHandler", messageHandler);
-
-            var ip = new IPEndPoint(IPAddress.Loopback, 12345);
-            TcpListener listener = new(ip);
-            listener.Start();
-            var acceptSocketTask = listener.AcceptSocketAsync().ConfigureAwait(false);
-
-            var channelConnectTask = channel.ConnectAsync(ip).ConfigureAwait(false);
-            var socket = await acceptSocketTask;
-            await channelConnectTask;
-
-            var block = MemoryBlock<byte>.GetBuffer(1024);
-            BitConverter.GetBytes(123456).CopyTo(block.GetSpan(1024));
-            block.Advance(1024);
-            block.Freeze();
+            //channel.AddLast(nameof(SslHandler), new SslHandler(new System.Net.Security.SslClientAuthenticationOptions
+            //{
+            //    EnabledSslProtocols = System.Security.Authentication.SslProtocols.Tls12 | System.Security.Authentication.SslProtocols.Tls13,
+            //    CertificateRevocationCheckMode = X509RevocationMode.Online,
+            //    EncryptionPolicy = EncryptionPolicy.RequireEncryption,
+            //}));
+            HttpResponseMessageHandler responseHandler = new(MessageDirection.Inbound);
+            responseHandler.Callback += (channel, message) =>
+            {
+                Debug.Print("Received HTTP response: {0} {1}", message.StatusCode, message.ReasonPhrase);
+                //Debug.Print(Encoding.UTF8.GetString(message.Body.ToMemoryBlock().CommittedSpan));
+            };
+            channel.AddLast(nameof(HttpRequestMessageHandler), new HttpRequestMessageHandler(MessageDirection.Outbound));
+            channel.AddLast(nameof(HttpResponseMessageHandler), responseHandler);
+            Uri uri = new Uri("http://www.baidu.com/");
+            await channel.ConnectAsync(new DnsEndPoint(uri.Host, uri.Port)).ConfigureAwait(false);
             channel.StartReceive();
-            try
-            {
-                // start server-side reader
-                await Start(socket);
+            await channel.SendAsync(new HttpRequestMessage(HttpMethod.Get, uri)).ConfigureAwait(false);
+            //var handler = new TempHandler();
+            //channel.AddLast("TempHandler", handler);
+            //TempMessageHandler messageHandler = new();
+            //channel.AddLast("TempMessageHandler", messageHandler);
 
-                for (int i = 0; i < 10; i++)
-                {
-                    var temp = await channel.SendAsync(block).ConfigureAwait(false);
-                    Debug.Print(temp.ToString());
-                    await Task.Delay(50).ConfigureAwait(false);
-                }
-            }
-            catch (Exception ex)
-            {
-                throw;
-            }
-            finally
-            {
-                await channel.DisconnectAsync();
-                block.TryRelease();
-            }
+            //var ip = new IPEndPoint(IPAddress.Loopback, 12345);
+            //TcpListener listener = new(ip);
+            //listener.Start();
+            //var acceptSocketTask = listener.AcceptSocketAsync().ConfigureAwait(false);
+
+            //var channelConnectTask = channel.ConnectAsync(ip).ConfigureAwait(false);
+            //var socket = await acceptSocketTask;
+            //await channelConnectTask;
+
+            //var block = MemoryBlock<byte>.GetBuffer(1024);
+            //BitConverter.GetBytes(123456).CopyTo(block.GetSpan(1024));
+            //block.Advance(1024);
+            //block.Freeze();
+            //channel.StartReceive();
+            //try
+            //{
+            //    // start server-side reader
+            //    await Start(socket);
+
+            //    for (int i = 0; i < 10; i++)
+            //    {
+            //        var temp = await channel.SendAsync(block).ConfigureAwait(false);
+            //        Debug.Print(temp.ToString());
+            //        await Task.Delay(50).ConfigureAwait(false);
+            //    }
+            //}
+            //catch (ResultException ex)
+            //{
+            //    throw;
+            //}
+            //finally
+            //{
+            //    await channel.DisconnectAsync();
+            //    block.TryRelease();
+            //}
         }
 
         private static ValueTask Start(Socket socket)
@@ -117,25 +141,27 @@ namespace ExtenderApp.Test.Tests
 
             public override ValueTask<Result> OutboundHandleAsync(ILinkChannelHandlerContext context, ValueCache cache, CancellationToken token = default)
             {
-                Debug.Print("Handler {0} is handling outbound data.", context.Name);
+                //Debug.Print("Handler {0} is handling outbound data.", context.Name);
+                Debug.Print("Outbound cache contains int: {0}", cache.TryGetValue<AbstractBuffer<byte>>(out var value) ? value.ToString() : "No int value");
                 return context.OutboundHandleAsync(cache, token);
             }
         }
 
         private sealed class TempMessageHandler : MessageHandler<int>
         {
-            protected override ValueTask<Result<int>> DeserializationMessageAsync(AbstractBuffer<byte> reader)
+            protected override ValueTask<Result<int>> DeserializationMessageAsync(MemoryBlock<byte> block)
             {
-                int value = reader.Read<int>();
+                int value = block.Read<int>();
                 Debug.Print("Deserialized value: {0}", value);
                 return Result.Success(value);
             }
 
-            protected override ValueTask<Result> SerializationMessageAsync(int value, AbstractBuffer<byte> buffer)
+            protected override ValueTask<Result<AbstractBuffer<byte>>> SerializationMessageAsync(int value)
             {
+                MemoryBlock<byte> buffer = MemoryBlock<byte>.GetBuffer();
                 buffer.Write(value);
                 Debug.Print("Serialized value: {0}", value);
-                return Result.Success();
+                return Result.Success((AbstractBuffer<byte>)buffer);
             }
         }
     }

@@ -1,4 +1,5 @@
 ﻿using System.Net.Sockets;
+using ExtenderApp.Abstract.Options;
 
 namespace ExtenderApp.Abstract.Networks
 {
@@ -18,5 +19,15 @@ namespace ExtenderApp.Abstract.Networks
         /// <c>MulticastOption</c> 或 <c>IPv6MulticastOption</c>）。
         /// </summary>
         public static readonly SocketOptionIdentifier<object> DropMulticastGroupIdentifier = new("DropMulticastGroup", SocketOptionLevel.IP, SocketOptionName.DropMembership);
+
+        /// <summary>
+        /// 是否允许发送广播（UDP）。
+        /// </summary>
+        public static readonly OptionIdentifier<bool> EnableBroadcastIdentifier = new("EnableBroadcast");
+
+        /// <summary>
+        /// 是否禁止 IP 分片（仅对 IPv4 有效）。
+        /// </summary>
+        public static readonly OptionIdentifier<bool> DontFragmentIdentifier = new("DontFragment");
     }
 }
